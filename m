@@ -1,106 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab3A1Vyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:54:32 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:65444 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab3A1Vya (ORCPT
+	id S1754731Ab3A1Vzn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:55:43 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54617 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135Ab3A1Vzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:54:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <4311642.nDd2RCVeDc@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan>
-	<4311642.nDd2RCVeDc@vostro.rjw.lan>
-Date: Mon, 28 Jan 2013 13:54:30 -0800
-X-Google-Sender-Auth: BVU19M1iG0gXOCgwbwMzMh7HUxQ
-Message-ID: <CAE9FiQWz=KJLBVjon4QLm-VwxxvJYh284YhAy_Saya2weUtLaw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] ACPI scan handlers
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	Mon, 28 Jan 2013 16:55:41 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Jiang Liu <liuj97@gmail.com>, Toshi Kani <toshi.kani@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCHv3 1/6] debugfs: add get/set for atomic types
+Date: Mon, 28 Jan 2013 15:49:22 -0600
+Message-Id: <1359409767-30092-2-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012821-3620-0000-0000-00000104B466
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 4:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, January 24, 2013 01:26:56 AM Rafael J. Wysocki wrote:
->> Hi All,
->>
->> There is a considerable amount of confusion in the ACPI subsystem about what
->> ACPI drivers are used for.  Namely, some of them are used as "normal" device
->> drivers that bind to devices and handle them using ACPI control methods (like
->> the fan or battery drivers), but some of them are just used for handling
->> namespace events, such as the creation or removal of device nodes (I guess it
->> would be fair to call that an abuse of the driver core).  These two roles are
->> quite distinct, which is particularly visible from the confusion about the role
->> of the .remove() callback.
->>
->> For the "normal" drivers this callback is simply used to handle situations in
->> which the driver needs to be unbound from the device, because one of them
->> (either the device or the driver) is going away.  That operation can't really
->> fail, it just needs to do the necessary cleanup.
->>
->> However, for the namespace events handling "drivers" .remove() means that not
->> only the device node in question, but generally also the whole subtree below it
->> needs to be prepared for removal, which may involve deleting multiple device
->> objects belonging to different bus types and so on and which very well may fail
->> (for example, those devices may be used for such things like swap or they may be
->> memory banks used by the kernel and it may not be safe to remove them at the
->> moment etc.).  Moreover, for these things the removal of the "driver" doesn't
->> really make sense, because it has to be there to handle the namespace events it
->> is designed to handle or else things will go remarkably awry in some places.
->>
->> To resolve all that mess I'd like to do the following, which in part is inspired
->> by the recent Toshi Kani's hotplug framework proposal and in part is based on
->> some discussions I had with Bjorn and others (the code references made below are
->> based on the current contens of linux-pm.git/linux-next).
->>
->> 1) Introduce a special data type for "ACPI namespace event handlers" like:
->>
->> struct acpi_scan_handler {
->>       const struct acpi_device_id *ids;
->>       struct list_head list_node;
->>       int (*attach)(struct acpi_device *adev);
->>       int (*untie)(struct acpi_device *adev);
->>       int (*reclaim)(struct acpi_device *adev);
->>       void (*detach)(struct acpi_device *adev);
->> };
->
-> After some reconsideration I think that the "untie" and "reclaim" things won't
-> be really useful at this level.  This means that I only need ACPI scan handlers
-> to do .attach() and .detach() and all of that becomes really simple, so I don't
-> see reason to wait with that change.
->
-> The following patches introduce ACPI scan handlers and make some use of them.
->
-> [1/4] Introduce struct acpi_scan_handler for configuration tasks depending on
->       device IDs.
->
-> [2/4] Make ACPI PCI root driver use struct acpi_scan_handler.
->
-> [3/4] Make ACPI PCI IRQ link driver use struct acpi_scan_handler.
->
-> [4/4] Use struct acpi_scan_handler for creating platform devices enumerated via ACPI.
+debugfs currently lack the ability to create attributes
+that set/get atomic_t values.
 
-Good, esp you move away hard code in scan.c for platform devices.
+This patch adds support for this through a new
+debugfs_create_atomic_t() function.
 
-Test with pci root bus hotplug, and it works well.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/debugfs/file.c       |   42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/debugfs.h |    2 ++
+ 2 files changed, 44 insertions(+)
 
-So for all 4,
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c5ca6ae..fa26d5b 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -21,6 +21,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/atomic.h>
+ 
+ static ssize_t default_read_file(struct file *file, char __user *buf,
+ 				 size_t count, loff_t *ppos)
+@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+ 
++static int debugfs_atomic_t_set(void *data, u64 val)
++{
++	atomic_set((atomic_t *)data, val);
++	return 0;
++}
++static int debugfs_atomic_t_get(void *data, u64 *val)
++{
++	*val = atomic_read((atomic_t *)data);
++	return 0;
++}
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
++			debugfs_atomic_t_set, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
++
++/**
++ * debugfs_create_atomic_t - create a debugfs file that is used to read and
++ * write an atomic_t value
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @value: a pointer to the variable that the file should read to and write
++ *         from.
++ */
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				 struct dentry *parent, atomic_t *value)
++{
++	/* if there are no write bits set, make read only */
++	if (!(mode & S_IWUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_ro);
++	/* if there are no read bits set, make write only */
++	if (!(mode & S_IRUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_wo);
++
++	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+ 
+ static ssize_t read_file_bool(struct file *file, char __user *user_buf,
+ 			      size_t count, loff_t *ppos)
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 66c434f..51fea70 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
+ 				  struct dentry *parent, u64 *value);
+ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ 				     struct dentry *parent, size_t *value);
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				     struct dentry *parent, atomic_t *value);
+ struct dentry *debugfs_create_bool(const char *name, umode_t mode,
+ 				  struct dentry *parent, u32 *value);
+ 
+-- 
+1.7.9.5
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-
-It will have some merging conflicts change in drivers/acpi/internel.h
-in pci/next for pci root bus hotplug support.
-But it should be very simple to solve it.
-
-Thanks
-
-Yinghai
