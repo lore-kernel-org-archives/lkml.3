@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab3A1HQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 02:16:41 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:65256 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab3A1HQh (ORCPT
+	id S1753276Ab3A1HTX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 02:19:23 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6062 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab3A1HTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 02:16:37 -0500
+	Mon, 28 Jan 2013 02:19:20 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sun, 27 Jan 2013 23:18:59 -0800
+Date: Mon, 28 Jan 2013 09:18:55 +0200
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [v3 2/2] ARM: tegra: Skip scu_enable(scu_base) if not Cortex A9
+Message-ID: <20130128091855.9e89d6da79bf5a264449ea5e@nvidia.com>
+In-Reply-To: <CAOesGMgtaCkiv285TU_vbAokN5M2MrANQ9piDcyXu5YMmbQq3A@mail.gmail.com>
+References: <1358833924-24535-1-git-send-email-hdoyu@nvidia.com>
+	<1358833924-24535-2-git-send-email-hdoyu@nvidia.com>
+	<50FE2CA8.20100@ti.com>
+	<50FEC503.2080602@wwwdotorg.org>
+	<CAOesGMgtaCkiv285TU_vbAokN5M2MrANQ9piDcyXu5YMmbQq3A@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <1359333506-13599-1-git-send-email-minchan@kernel.org>
-References: <1359333506-13599-1-git-send-email-minchan@kernel.org>
-Date: Mon, 28 Jan 2013 09:16:35 +0200
-X-Google-Sender-Auth: Wl_CXGdu2xbhi-WqwU8nZusvD7M
-Message-ID: <CAOJsxLFg_5uhZsvPmVVC0nnsZLGpkJ0W6mHa=aavmguLGuTTnA@mail.gmail.com>
-Subject: Re: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial write
-From: Pekka Enberg <penberg@kernel.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, stable@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 2:38 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Now zram allocates new page with GFP_KERNEL in zram I/O path
-> if IO is partial. Unfortunately, It may cuase deadlock with
+Hi Russell,
 
-s/cuase/cause/g
+On Tue, 22 Jan 2013 18:04:46 +0100
+Olof Johansson <olof@lixom.net> wrote:
 
-> reclaim path so this patch solves the problem.
+> Since Russell had comments on it earlier, I'd like him to give a nod
+> that he's happy with it too.
 
-It'd be nice to know about the problem in more detail. I'm also
-curious on why you decided on GFP_ATOMIC for the read path and
-GFP_NOIO in the write path.
+Is this ok for you?
 
->
-> Cc: stable@vger.kernel.org
-> Cc: Jerome Marchand <jmarchan@redhat.com>
-> Acked-by: Nitin Gupta <ngupta@vflare.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zram/zram_drv.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 61fb8f1..b285b3a 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -220,7 +220,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
->         user_mem = kmap_atomic(page);
->         if (is_partial_io(bvec))
->                 /* Use  a temporary buffer to decompress the page */
-> -               uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> +               uncmem = kmalloc(PAGE_SIZE, GFP_ATOMIC);
->         else
->                 uncmem = user_mem;
->
-> @@ -268,7 +268,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                  * This is a partial IO. We need to read the full page
->                  * before to write the changes.
->                  */
-> -               uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> +               uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
->                 if (!uncmem) {
->                         pr_info("Error allocating temp memory!\n");
->                         ret = -ENOMEM;
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+The original patch is:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-January/143552.html
