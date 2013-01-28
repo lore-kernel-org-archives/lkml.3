@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab3A1Dro (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 22:47:44 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58420 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368Ab3A1Drl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 22:47:41 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-41-5105f4dcca8f
-Date: Mon, 28 Jan 2013 12:47:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] staging: zsmalloc: various cleanups/improvments
-Message-ID: <20130128034740.GE3321@blaptop>
-References: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1754712Ab3A1DsE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 22:48:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753810Ab3A1Dqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Jan 2013 22:46:53 -0500
+From: Richard Guy Briggs <rbriggs@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>,
+        Richard Guy Briggs <rbriggs@redhat.com>
+Subject: [PATCH 3/6] audit: move kaudit thread start from auditd registration to kaudit init
+Date: Sun, 27 Jan 2013 22:45:15 -0500
+Message-Id: <1359344718-3953-4-git-send-email-rbriggs@redhat.com>
+In-Reply-To: <1359344718-3953-1-git-send-email-rbriggs@redhat.com>
+References: <1359344718-3953-1-git-send-email-rbriggs@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
+From: Richard Guy Briggs <rgb@redhat.com>
 
-On Fri, Jan 25, 2013 at 11:46:14AM -0600, Seth Jennings wrote:
-> These patches are the first 4 patches of the zswap patchset I
-> sent out previously.  Some recent commits to zsmalloc and
-> zcache in staging-next forced a rebase. While I was at it, Nitin
-> (zsmalloc maintainer) requested I break these 4 patches out from
-> the zswap patchset, since they stand on their own.
+The kauditd_thread() task was started only after the auditd userspace daemon
+registers itself with kaudit.  This was fine when only auditd consumed messages
+from the kaudit netlink unicast socket.  With the addition of a multicast group
+to that socket it is more convenient to have the thread start on init of the
+kaudit kernel subsystem.
 
-[2/4] and [4/4] is okay to merge current zsmalloc in staging but
-[1/4] and [3/4] is dependent on zswap so it should be part of
-zswap patchset.
+Signed-off-by: Richard Guy Briggs <rbriggs@redhat.com>
+---
 
-> 
-> All are already Acked-by Nitin.
-> 
-> Based on staging-next as of today.
-> 
-> Seth Jennings (4):
->   staging: zsmalloc: add gfp flags to zs_create_pool
->   staging: zsmalloc: remove unused pool name
->   staging: zsmalloc: add page alloc/free callbacks
->   staging: zsmalloc: make CLASS_DELTA relative to PAGE_SIZE
-> 
->  drivers/staging/zram/zram_drv.c          |    4 +-
->  drivers/staging/zsmalloc/zsmalloc-main.c |   60 ++++++++++++++++++------------
->  drivers/staging/zsmalloc/zsmalloc.h      |   10 ++++-
->  3 files changed, 47 insertions(+), 27 deletions(-)
-> 
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+This is a code clean up in preparation to add a multicast netlink socket to
+kaudit for read-only userspace clients such as systemd, in addition to the
+bidirectional audit userspace client.
 
+ kernel/audit.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 1531efb..02a5d9e 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -676,16 +676,6 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	if (err)
+ 		return err;
+ 
+-	/* As soon as there's any sign of userspace auditd,
+-	 * start kauditd to talk to it */
+-	if (!kauditd_task)
+-		kauditd_task = kthread_run(kauditd_thread, NULL, "kauditd");
+-	if (IS_ERR(kauditd_task)) {
+-		err = PTR_ERR(kauditd_task);
+-		kauditd_task = NULL;
+-		return err;
+-	}
+-
+ 	loginuid = audit_get_loginuid(current);
+ 	sessionid = audit_get_sessionid(current);
+ 	security_task_getsecid(current, &sid);
+@@ -974,6 +964,10 @@ static int __init audit_init(void)
+ 	else
+ 		audit_sock->sk_sndtimeo = MAX_SCHEDULE_TIMEOUT;
+ 
++	kauditd_task = kthread_run(kauditd_thread, NULL, "kauditd");
++	if (IS_ERR(kauditd_task))
++		return PTR_ERR(kauditd_task);
++
+ 	skb_queue_head_init(&audit_skb_queue);
+ 	skb_queue_head_init(&audit_skb_hold_queue);
+ 	audit_initialized = AUDIT_INITIALIZED;
 -- 
-Kind regards,
-Minchan Kim
+1.8.0.2
+
