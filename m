@@ -1,125 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab3A1LjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:39:10 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:61476 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441Ab3A1LjG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:39:06 -0500
+	id S1757314Ab3A1Ljg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:39:36 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:35442 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756674Ab3A1LbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:31:05 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 08/30] mfd: omap-usb-host: Remove PHY reset handling code
+Date: Mon, 28 Jan 2013 13:30:09 +0200
+Message-ID: <1359372631-8180-9-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <510539C5.8000208@antcom.de>
-References: <1358856404-8975-1-git-send-email-stigge@antcom.de>
-	<1358856404-8975-6-git-send-email-stigge@antcom.de>
-	<CAOY=C6E-+uKQGbRDjNh5ZP9Wrmd+PNbt7djkBTzwe29=qA1_PA@mail.gmail.com>
-	<510539C5.8000208@antcom.de>
-Date: Mon, 28 Jan 2013 12:39:05 +0100
-Message-ID: <CAOY=C6HTRFY=rXOAhTwuR3NvtaRFbfbkkpn7FeyK+eqG7sVcKg@mail.gmail.com>
-Subject: Re: [PATCH 5/6 v14] gpio: Add device tree support to block GPIO API
-From: Stijn Devriendt <highguy@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, sr@denx.de, wg@grandegger.com, mark.rutland@arm.com,
-        nicolas.ferre@atmel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 27, 2013 at 3:29 PM, Roland Stigge <stigge@antcom.de> wrote:
-> On 27/01/13 14:07, Stijn Devriendt wrote:
->>> +Example:
->>> +
->>> +        blockgpio {
->>> +                compatible = "linux,gpio-block";
->>> +
->>> +                block0 {
->>> +                        gpios = <&gpio 3 0 0>,
->>> +                                <&gpio 3 1 0>;
->>> +                };
->>> +                block1 {
->>> +                        gpios = <&gpio 4 1 0>,
->>> +                                <&gpio 4 3 0>,
->>> +                                <&gpio 4 2 0>,
->>> +                                <&gpio 4 4 0>,
->>> +                                <&gpio 4 5 0>,
->>> +                                <&gpio 4 6 0>,
->>> +                                <&gpio 4 7 0>,
->>> +                                <&gpio 4 8 0>,
->>> +                                <&gpio 4 9 0>,
->>> +                                <&gpio 4 10 0>,
->>> +                                <&gpio 4 19 0>;
->>> +                };
->>> +        };
->>
->> How do you see bindings for other kinds of drivers?
->>
->> In my patchset, it's possible for other drivers to use gpio-blocks.
->> One example we have is a power sequencer with 2 pins attached
->> to GPIO pins. These 2 pins form a 2bit word to select power margining.
->> These 2 pins need to be set synchronously (as otherwise when going
->> from profile 0 to profile 3 you pass either profile 1 or profile 2 which
->> could be bad for hardware)
->>
->> In the device-tree this is specified as:
->>
->> powr@0x20 {
->>    // other properties
->>
->>   gpios = <&gpio 4 0
->>                &gpio 5 0>;
->> };
->>
->> Is this kind of integration also possible?
->
-> You can reference the gpio block via a phandle, e.g.:
->
->         blockgpio {
->                 compatible = "linux,gpio-block";
->
->                 selector1 {
->                         gpios = <&gpio 4 0>,
->                                 <&gpio 5 0>;
->                 };
->         };
->
->         powr@0x20 {
->                 // ...
->
->                 gpios = <&selector1>;
->         };
->
->
-> In the driver, you can get the gpio block like this:
->
-> block = gpio_block_find_by_name(of_parse_phandle(powr, "gpios", 0)->name);
->
-> (Simplified by removed error/NULL handling!)
->
-> If this turns out to be a common pattern, I can add a convenience "get"
-> function for this.
+PHY reset GPIO handling will be done in the PHY driver
 
-Given the pick-up of device-tree in ARM and MIPS, I think this stands
-a good chance
-of becoming a common pattern. Do mind the "gpios" name; it's already used by the
-normal GPIO request functions...
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+---
+ drivers/mfd/omap-usb-host.c |   47 -------------------------------------------
+ 1 files changed, 0 insertions(+), 47 deletions(-)
 
-This is one of the things I liked about my patch, there's little
-difference between
-using a group of GPIOs versus multiple separate GPIOs. The device-tree
-description
-is the same, only the driver handles them differently.
-You could ask the question whether the device-tree should make a
-difference between
-1 GPIO, 2 separate GPIOs or 3 GPIOs in a block. For a H/W description
-language it's
-all the same. It is an implementation detail of the OS/drivers whether
-they handle them
-as a block or as separate GPIOs.
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 0874352..502a779 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -430,24 +430,10 @@ static unsigned omap_usbhs_rev2_hostconfig(struct usbhs_hcd_omap *omap,
+ static void omap_usbhs_init(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data	*pdata = omap->pdata;
+ 	unsigned			reg;
+ 
+ 	dev_dbg(dev, "starting TI HSUSB Controller\n");
+ 
+-	if (pdata->phy_reset) {
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_request_one(pdata->reset_gpio_port[0],
+-					 GPIOF_OUT_INIT_LOW, "USB1 PHY reset");
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_request_one(pdata->reset_gpio_port[1],
+-					 GPIOF_OUT_INIT_LOW, "USB2 PHY reset");
+-
+-		/* Hold the PHY in RESET for enough time till DIR is high */
+-		udelay(10);
+-	}
+-
+ 	pm_runtime_get_sync(dev);
+ 
+ 	reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+@@ -476,37 +462,8 @@ static void omap_usbhs_init(struct device *dev)
+ 	dev_dbg(dev, "UHH setup done, uhh_hostconfig=%x\n", reg);
+ 
+ 	pm_runtime_put_sync(dev);
+-	if (pdata->phy_reset) {
+-		/* Hold the PHY in RESET for enough time till
+-		 * PHY is settled and ready
+-		 */
+-		udelay(10);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_set_value_cansleep
+-				(pdata->reset_gpio_port[0], 1);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_set_value_cansleep
+-				(pdata->reset_gpio_port[1], 1);
+-	}
+-}
+-
+-static void omap_usbhs_deinit(struct device *dev)
+-{
+-	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data	*pdata = omap->pdata;
+-
+-	if (pdata->phy_reset) {
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_free(pdata->reset_gpio_port[0]);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_free(pdata->reset_gpio_port[1]);
+-	}
+ }
+ 
+-
+ /**
+  * usbhs_omap_probe - initialize TI-based HCDs
+  *
+@@ -710,8 +667,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_alloc:
+-	omap_usbhs_deinit(&pdev->dev);
+-
+ 	for (i = 0; i < omap->nports; i++) {
+ 		if (!IS_ERR(omap->utmi_clk[i]))
+ 			clk_put(omap->utmi_clk[i]);
+@@ -756,8 +711,6 @@ static int usbhs_omap_remove(struct platform_device *pdev)
+ 	struct usbhs_hcd_omap *omap = platform_get_drvdata(pdev);
+ 	int i;
+ 
+-	omap_usbhs_deinit(&pdev->dev);
+-
+ 	for (i = 0; i < omap->nports; i++) {
+ 		if (!IS_ERR(omap->utmi_clk[i]))
+ 			clk_put(omap->utmi_clk[i]);
+-- 
+1.7.4.1
 
-Regards,
-Stijn
