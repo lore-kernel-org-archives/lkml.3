@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab3A1Rho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:37:44 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:54617 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180Ab3A1Rhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:37:40 -0500
-Date: Mon, 28 Jan 2013 18:37:36 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	id S1757547Ab3A1Rlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:41:37 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33344 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756576Ab3A1Rle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 12:41:34 -0500
+Message-ID: <5106B83E.2030804@linux.vnet.ibm.com>
+Date: Mon, 28 Jan 2013 11:41:18 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 04/12] perf, x86: Support the TSX intx/intx_cp qualifiers v2
-Message-ID: <20130128173736.GT30577@one.firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org> <1359151245-13179-5-git-send-email-andi@firstfloor.org> <CABPqkBQ5cn4SQ8MH3vrPHcyy=pGbsVbxYPjETCCo=oRsx_nEdg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQ5cn4SQ8MH3vrPHcyy=pGbsVbxYPjETCCo=oRsx_nEdg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv2 6/9] zsmalloc: promote to lib/
+References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-7-git-send-email-sjenning@linux.vnet.ibm.com> <20130128040116.GF3321@blaptop> <20130128043257.GH3321@blaptop>
+In-Reply-To: <20130128043257.GH3321@blaptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012817-7182-0000-0000-000004C16B97
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This silently drops intx=1 for unhalted_ref_cycles. This event
-> only works on fixed counter. So I am wondering what I am measuring
-> here. In general, I don't like when settings are silently dropped because
-> the user will be misled into thinking the modifier was applied when in
-> fact it was not.
+On 01/27/2013 10:32 PM, Minchan Kim wrote:
+> On Mon, Jan 28, 2013 at 01:01:16PM +0900, Minchan Kim wrote:
+>> On Mon, Jan 07, 2013 at 02:24:37PM -0600, Seth Jennings wrote:
+>>> This patch promotes the slab-based zsmalloc memory allocator
+>>> from the staging tree to lib/
+>>>
+>>> zswap depends on this allocator for storing compressed RAM pages
+>>> in an efficient way under system wide memory pressure where
+>>> high-order (greater than 0) page allocation are very likely to
+>>> fail.
+>>>
+>>> For more information on zsmalloc and its internals, read the
+>>> documentation at the top of the zsmalloc.c file.
+>>>
+>>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>>
+>> Seth, zsmalloc has a bug[1], I sent a patch totay. If it want't known,
+>> it mighte be no problem to promote but it's known bug so let's fix it
+>> before promoting.
+>>
+>> Another question. Why do you promote zsmalloc in this patchset?
+>> It might make you hard to merge even zswap into staging.
+> 
+> When I look at [8/9], I realized you are trying to merge this patch
+> into mm/, NOT staging. I don't know history why zsmalloc/zram/zscache was
+> in staging at the beginning but personally, I don't ojbect zswap into /mm
+> directly because I got realized staging is very deep hole to get out,
+> expecially related to mm stuff. ;-)
 
-Ok. I can look at it later, but I don't think it's a show stopper.
+Correct.
 
-Error handling in general was never a strength of perf.
+As I understand the purpose of the staging tree, it is meant for
+drivers whose code doesn't adhere to the kernel coding
+standards/guidelines and might have questionable stability.  The point
+is to have a TODO, get the code to conform to the kernel standards,
+fix known instabilities, then promote into the appropriate place in
+the driver tree.
 
--Andi
+However, with the work on memory compression, it's really become a
+prototyping area, which I don't think Greg likes all that much.
+
+Seth
+
