@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab3A1NhA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 08:37:00 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:41946 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab3A1Ng6 (ORCPT
+	id S1756756Ab3A1Nib (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 08:38:31 -0500
+Received: from asix.com.tw ([210.243.224.51]:51892 "EHLO asix.com.tw"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab3A1Ni3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 08:36:58 -0500
+	Mon, 28 Jan 2013 08:38:29 -0500
+From: "Freddy" <freddy@asix.com.tw>
+To: "=?utf-8?Q?'Bj=C3=B8rn_Mork'?=" <bjorn@mork.no>,
+        "'Michael Leun'" <lkml20130126@newton.leun.net>
+Cc: <netdev@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <louis@asix.com.tw>,
+        <davem@davemloft.net>, <Support@asix.com.tw>
+References: <1358908337-13841-1-git-send-email-freddy@asix.com.tw>	<20130127001347.584711b2@xenia> <87zjztptez.fsf@nemi.mork.no>
+In-Reply-To: <87zjztptez.fsf@nemi.mork.no>
+Subject: RE: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0 to gigabit ethernet adapter driver
+Date: Mon, 28 Jan 2013 21:36:20 +0800
+Message-ID: <010f01cdfd5c$768d4240$63a7c6c0$@asix.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <20130128114554.GE28698@arwen.pp.htv.fi>
-References: <1359373348-18320-1-git-send-email-gautam.vivek@samsung.com>
-	<1359373348-18320-3-git-send-email-gautam.vivek@samsung.com>
-	<20130128114554.GE28698@arwen.pp.htv.fi>
-Date: Mon, 28 Jan 2013 19:06:56 +0530
-Message-ID: <CAFp+6iFcZwu3=2u5ig_F14UKxTXwb2Czrv3JjCqR6QGLPHzFqg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] USB: dwc3: Adjust runtime pm the dwc3 driver to allow
- runtime suspend
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com,
-        dianders@chromium.org, sylvester.nawrocki@gmail.com,
-        tomasz.figa@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQGuKq1VNb33SwaGuGVDTqE7QWFmhAIUoUH/AUeehKCYg3QwwA==
+Content-Language: zh-tw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+> I would vote to not accept that driver for mainline as long as this 
+> issues are not fixed.
 
 
-On Mon, Jan 28, 2013 at 5:15 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Mon, Jan 28, 2013 at 05:12:26PM +0530, Vivek Gautam wrote:
->> The current code in the dwc3 probe effectively disables runtime pm
->> from ever working because it calls a get() that was never put() until
->> device removal.  Change the runtime pm code to match the standard
->> formula and allow runtime pm to function.
->>
->> Note that this doesn't enable full runtime pm on the DWC3 device in
->> that the port isn't put into a lower power mode when not used.
->> However it does allow users of dwc3 (like dwc3-exynos) to do some
->> amount of runtime power management.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  drivers/usb/dwc3/core.c |    4 +++-
->>  1 files changed, 3 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
->> index 3a4004a..59c2494 100644
->> --- a/drivers/usb/dwc3/core.c
->> +++ b/drivers/usb/dwc3/core.c
->> @@ -453,6 +453,7 @@ static int dwc3_probe(struct platform_device *pdev)
->>       if (of_get_property(node, "tx-fifo-resize", NULL))
->>               dwc->needs_fifo_resize = true;
->>
->> +     pm_runtime_set_active(dev);
->
-> this usage of pm_runtime_set_active() actually makes me a bit scared. At
-> least OMAP starts with the device switched off, so this will probably
-> break OMAP at least.
-
-I am fine with dropping pm_runtime_set_active(), actually thought
-to put device in active state so that as and when system finds it idle,
-force into suspend state.
-
-I fact should i drop  pm_runtime_set_active() calls from other places too
-(xhci-plat, dwc3-exynos, and samsung-usb3 phy) and call get_sync() alongwith
-enable() ?
-
-> OTOH, calling ->runtime_resume() during probe()
-> might not make that much sense after all, but the way OMAP is
-> implemented, we won't get clocks turned on if this ->runtime_resume()
-> method isn't called.
->
-> /me starts to wonder whether OMAP implementation is flakey and what
-> should be done here...
->
+Michael, could you give me more information about how do you test this driver? 
+I have tried to reproduce the issue by using "ifconfig ethX mtu 1500", but I didn't confront the same issue.
+Thank you in advance for your help.
 
 
+> The vendor should not be able to claim "hooray, hooray, great device, 
+> we even have an driver in linux main line" when it is actually such an 
+> useless crap.
 
--- 
-Thanks & Regards
-Vivek
+> Well, that is fortunately not how these things work. The main goal is getting the devices supported in the kernel. Bugs can be fixed.  If a vendor can get any positive gain out of having a driver in mainline, then that is good for everyone, isn't it?  Of course, we can all agree that the > > > effect of a *working* driver is more positive than a non-working driver...
+
+
+> For now, the main focus should be fixing the issues which has been noted during review.  Your testing feedback is of course very useful, but you probably need to back them up with actual code change proposals if they are going to be dealt with at this stage.
+
+> Of course I'm offering to help with any information or testing, but 
+> unfortunately I do not have the knowhow to fix anything myself.
+
+> I believe this is where you are totally wrong.  You obviuously have the ability to create a few simple test cases for yourself and see if the driver behaves as you expect.  That is very useful.
+
+> And you have a device.  That is also useful.
+
+> Now, the driver source code is available.  And there is another Asix driver in the kernel which already has been cleaned up and can be used as an example. And maybe even partly used for the new devices as well, if the code is duplicated?  I have not looked at this in detail, but I     > suspect that much of the problem with the ax88179_178a driver is that it has completely ignored all the work that has gone into the asix driver after it was mainlined.  I find it unlikely that there is no reusable code in the asix_devices.c, asix_common.c and ax88172a.c files.  Trying to > rewrite ax88179_178a to share as much code as possible seems like the best way to clean it up and fix bugs.
+
+Bjørn, I am trying to reproduce the issue mentioned by Michael and I have a question about submitting this driver.
+Should I merge this driver into asix_devices.c and asix_common.c even through the usb command, tx_fixup, and rx_fixup functions are totally different?
+Thank you in advance for your reply.
+
+Freddy
+
+
