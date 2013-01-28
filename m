@@ -1,290 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab3A1CM3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 21:12:29 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:37817 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3A1CM2 (ORCPT
+	id S1751305Ab3A1COJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 21:14:09 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:33274 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab3A1COH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 21:12:28 -0500
-Message-ID: <1359339147.6763.25.camel@kernel>
-Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Sun, 27 Jan 2013 20:12:27 -0600
-In-Reply-To: <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
-	 <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 27 Jan 2013 21:14:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <0023b092-6149-418f-8adc-dd7f5631006c@email.android.com>
+References: <510579C1.3000800@zytor.com>
+	<1359313804.10797.74.camel@shinybook.infradead.org>
+	<51057DA7.7040907@zytor.com>
+	<CAE9FiQUFZwmiBgYwsoLZ4O+f_w-V01Eb8_6L4ZrHeA4DfLJd8A@mail.gmail.com>
+	<0023b092-6149-418f-8adc-dd7f5631006c@email.android.com>
+Date: Sun, 27 Jan 2013 18:14:05 -0800
+X-Google-Sender-Auth: KpTLLU78rcPieszJvzHHqbZff9w
+Message-ID: <CAE9FiQWnxQXQgjmEs+Jv=uoYHK-GuP34D1B_5NyJp6Nf6s2sYw@mail.gmail.com>
+Subject: Re: bzImage 2.12
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>
+Content-Type: multipart/mixed; boundary=e89a8f3b9dbbde889d04d44fd4fb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 18:01 -0800, Hugh Dickins wrote:
-> Switching merge_across_nodes after running KSM is liable to oops on stale
-> nodes still left over from the previous stable tree.  It's not something
+--e89a8f3b9dbbde889d04d44fd4fb
+Content-Type: text/plain; charset=ISO-8859-1
 
-Since this patch solve the problem, so the description of
-merge_across_nodes(Value can be changed only when there is no ksm shared
-pages in system) should be changed in this patch.
+On Sun, Jan 27, 2013 at 11:39 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> I'm planning to sort it out... I'll let you know if I run out of bandwidth.
+>
+> Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>>On Sun, Jan 27, 2013 at 11:19 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>>
+>>> I think we can probably do that, since it doesn't affect anything
+>>non-broken
+>>> at this point.  I'm sorting out what can be done for 3.8 vs 3.9 at
+>>this
+>>> point.
+>>>
+>>> Anyway, as you can tell I'm spending this weekend working for a
+>>reason.
+>>>
+>>> It turns out the patch I sent out doesn't actually build.  Here is an
+>>> updated patch.  Can I get your ack for this so I can do the
+>>appropriate
+>>> hacks to your and Yinghai's patchsets?
+>>
+>>Acked-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>>Do you want to me to update my patchset on top it and resend?
+>>
+>>or you are going to sort it out by you self?
+>>
 
-> that people will often want to do, but it would be lame to demand a reboot
-> when they're trying to determine which merge_across_nodes setting is best.
-> 
-> How can this happen?  We only permit switching merge_across_nodes when
-> pages_shared is 0, and usually set run 2 to force that beforehand, which
-> ought to unmerge everything: yet oopses still occur when you then run 1.
-> 
-> Three causes:
-> 
-> 1. The old stable tree (built according to the inverse merge_across_nodes)
-> has not been fully torn down.  A stable node lingers until get_ksm_page()
-> notices that the page it references no longer references it: but the page
-> is not necessarily freed as soon as expected, particularly when swapcache.
-> 
-> Fix this with a pass through the old stable tree, applying get_ksm_page()
-> to each of the remaining nodes (most found stale and removed immediately),
-> with forced removal of any left over.  Unless the page is still mapped:
-> I've not seen that case, it shouldn't occur, but better to WARN_ON_ONCE
-> and EBUSY than BUG.
-> 
-> 2. __ksm_enter() has a nice little optimization, to insert the new mm
-> just behind ksmd's cursor, so there's a full pass for it to stabilize
-> (or be removed) before ksmd addresses it.  Nice when ksmd is running,
-> but not so nice when we're trying to unmerge all mms: we were missing
-> those mms forked and inserted behind the unmerge cursor.  Easily fixed
-> by inserting at the end when KSM_RUN_UNMERGE.
-> 
-> 3. It is possible for a KSM page to be faulted back from swapcache into
-> an mm, just after unmerge_and_remove_all_rmap_items() scanned past it.
-> Fix this by copying on fault when KSM_RUN_UNMERGE: but that is private
-> to ksm.c, so dissolve the distinction between ksm_might_need_to_copy()
-> and ksm_does_need_to_copy(), doing it all in the one call into ksm.c.
-> 
-> A long outstanding, unrelated bugfix sneaks in with that third fix:
-> ksm_does_need_to_copy() would copy from a !PageUptodate page (implying
-> I/O error when read in from swap) to a page which it then marks Uptodate.
-> Fix this case by not copying, letting do_swap_page() discover the error.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->  include/linux/ksm.h |   18 ++-------
->  mm/ksm.c            |   83 +++++++++++++++++++++++++++++++++++++++---
->  mm/memory.c         |   19 ++++-----
->  3 files changed, 92 insertions(+), 28 deletions(-)
-> 
-> --- mmotm.orig/include/linux/ksm.h	2013-01-25 14:27:58.220193250 -0800
-> +++ mmotm/include/linux/ksm.h	2013-01-25 14:37:00.764206145 -0800
-> @@ -16,9 +16,6 @@
->  struct stable_node;
->  struct mem_cgroup;
->  
-> -struct page *ksm_does_need_to_copy(struct page *page,
-> -			struct vm_area_struct *vma, unsigned long address);
-> -
->  #ifdef CONFIG_KSM
->  int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
->  		unsigned long end, int advice, unsigned long *vm_flags);
-> @@ -73,15 +70,8 @@ static inline void set_page_stable_node(
->   * We'd like to make this conditional on vma->vm_flags & VM_MERGEABLE,
->   * but what if the vma was unmerged while the page was swapped out?
->   */
-> -static inline int ksm_might_need_to_copy(struct page *page,
-> -			struct vm_area_struct *vma, unsigned long address)
-> -{
-> -	struct anon_vma *anon_vma = page_anon_vma(page);
-> -
-> -	return anon_vma &&
-> -		(anon_vma->root != vma->anon_vma->root ||
-> -		 page->index != linear_page_index(vma, address));
-> -}
-> +struct page *ksm_might_need_to_copy(struct page *page,
-> +			struct vm_area_struct *vma, unsigned long address);
->  
->  int page_referenced_ksm(struct page *page,
->  			struct mem_cgroup *memcg, unsigned long *vm_flags);
-> @@ -113,10 +103,10 @@ static inline int ksm_madvise(struct vm_
->  	return 0;
->  }
->  
-> -static inline int ksm_might_need_to_copy(struct page *page,
-> +static inline struct page *ksm_might_need_to_copy(struct page *page,
->  			struct vm_area_struct *vma, unsigned long address)
->  {
-> -	return 0;
-> +	return page;
->  }
->  
->  static inline int page_referenced_ksm(struct page *page,
-> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
-> +++ mmotm/mm/ksm.c	2013-01-25 14:37:00.768206145 -0800
-> @@ -644,6 +644,57 @@ static int unmerge_ksm_pages(struct vm_a
->  /*
->   * Only called through the sysfs control interface:
->   */
-> +static int remove_stable_node(struct stable_node *stable_node)
-> +{
-> +	struct page *page;
-> +	int err;
-> +
-> +	page = get_ksm_page(stable_node, true);
-> +	if (!page) {
-> +		/*
-> +		 * get_ksm_page did remove_node_from_stable_tree itself.
-> +		 */
-> +		return 0;
-> +	}
-> +
-> +	if (WARN_ON_ONCE(page_mapped(page)))
-> +		err = -EBUSY;
-> +	else {
-> +		/*
-> +		 * This page might be in a pagevec waiting to be freed,
-> +		 * or it might be PageSwapCache (perhaps under writeback),
-> +		 * or it might have been removed from swapcache a moment ago.
-> +		 */
-> +		set_page_stable_node(page, NULL);
-> +		remove_node_from_stable_tree(stable_node);
-> +		err = 0;
-> +	}
-> +
-> +	unlock_page(page);
-> +	put_page(page);
-> +	return err;
-> +}
-> +
-> +static int remove_all_stable_nodes(void)
-> +{
-> +	struct stable_node *stable_node;
-> +	int nid;
-> +	int err = 0;
-> +
-> +	for (nid = 0; nid < nr_node_ids; nid++) {
-> +		while (root_stable_tree[nid].rb_node) {
-> +			stable_node = rb_entry(root_stable_tree[nid].rb_node,
-> +						struct stable_node, node);
-> +			if (remove_stable_node(stable_node)) {
-> +				err = -EBUSY;
-> +				break;	/* proceed to next nid */
-> +			}
-> +			cond_resched();
-> +		}
-> +	}
-> +	return err;
-> +}
-> +
->  static int unmerge_and_remove_all_rmap_items(void)
->  {
->  	struct mm_slot *mm_slot;
-> @@ -691,6 +742,8 @@ static int unmerge_and_remove_all_rmap_i
->  		}
->  	}
->  
-> +	/* Clean up stable nodes, but don't worry if some are still busy */
-> +	remove_all_stable_nodes();
->  	ksm_scan.seqnr = 0;
->  	return 0;
->  
-> @@ -1586,11 +1639,19 @@ int __ksm_enter(struct mm_struct *mm)
->  	spin_lock(&ksm_mmlist_lock);
->  	insert_to_mm_slots_hash(mm, mm_slot);
->  	/*
-> -	 * Insert just behind the scanning cursor, to let the area settle
-> +	 * When KSM_RUN_MERGE (or KSM_RUN_STOP),
-> +	 * insert just behind the scanning cursor, to let the area settle
->  	 * down a little; when fork is followed by immediate exec, we don't
->  	 * want ksmd to waste time setting up and tearing down an rmap_list.
-> +	 *
-> +	 * But when KSM_RUN_UNMERGE, it's important to insert ahead of its
-> +	 * scanning cursor, otherwise KSM pages in newly forked mms will be
-> +	 * missed: then we might as well insert at the end of the list.
->  	 */
-> -	list_add_tail(&mm_slot->mm_list, &ksm_scan.mm_slot->mm_list);
-> +	if (ksm_run & KSM_RUN_UNMERGE)
-> +		list_add_tail(&mm_slot->mm_list, &ksm_mm_head.mm_list);
-> +	else
-> +		list_add_tail(&mm_slot->mm_list, &ksm_scan.mm_slot->mm_list);
->  	spin_unlock(&ksm_mmlist_lock);
->  
->  	set_bit(MMF_VM_MERGEABLE, &mm->flags);
-> @@ -1640,11 +1701,25 @@ void __ksm_exit(struct mm_struct *mm)
->  	}
->  }
->  
-> -struct page *ksm_does_need_to_copy(struct page *page,
-> +struct page *ksm_might_need_to_copy(struct page *page,
->  			struct vm_area_struct *vma, unsigned long address)
->  {
-> +	struct anon_vma *anon_vma = page_anon_vma(page);
->  	struct page *new_page;
->  
-> +	if (PageKsm(page)) {
-> +		if (page_stable_node(page) &&
-> +		    !(ksm_run & KSM_RUN_UNMERGE))
-> +			return page;	/* no need to copy it */
-> +	} else if (!anon_vma) {
-> +		return page;		/* no need to copy it */
-> +	} else if (anon_vma->root == vma->anon_vma->root &&
-> +		 page->index == linear_page_index(vma, address)) {
-> +		return page;		/* still no need to copy it */
-> +	}
-> +	if (!PageUptodate(page))
-> +		return page;		/* let do_swap_page report the error */
-> +
->  	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
->  	if (new_page) {
->  		copy_user_highpage(new_page, page, address, vma);
-> @@ -2024,7 +2099,7 @@ static ssize_t merge_across_nodes_store(
->  
->  	mutex_lock(&ksm_thread_mutex);
->  	if (ksm_merge_across_nodes != knob) {
-> -		if (ksm_pages_shared)
-> +		if (ksm_pages_shared || remove_all_stable_nodes())
->  			err = -EBUSY;
->  		else
->  			ksm_merge_across_nodes = knob;
-> --- mmotm.orig/mm/memory.c	2013-01-25 14:27:58.220193250 -0800
-> +++ mmotm/mm/memory.c	2013-01-25 14:37:00.768206145 -0800
-> @@ -2994,17 +2994,16 @@ static int do_swap_page(struct mm_struct
->  	if (unlikely(!PageSwapCache(page) || page_private(page) != entry.val))
->  		goto out_page;
->  
-> -	if (ksm_might_need_to_copy(page, vma, address)) {
-> -		swapcache = page;
-> -		page = ksm_does_need_to_copy(page, vma, address);
-> -
-> -		if (unlikely(!page)) {
-> -			ret = VM_FAULT_OOM;
-> -			page = swapcache;
-> -			swapcache = NULL;
-> -			goto out_page;
-> -		}
-> +	swapcache = page;
-> +	page = ksm_might_need_to_copy(page, vma, address);
-> +	if (unlikely(!page)) {
-> +		ret = VM_FAULT_OOM;
-> +		page = swapcache;
-> +		swapcache = NULL;
-> +		goto out_page;
->  	}
-> +	if (page == swapcache)
-> +		swapcache = NULL;
->  
->  	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr)) {
->  		ret = VM_FAULT_OOM;
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+To save your some time, please check attached patch.
 
+It would take position of
 
+https://patchwork.kernel.org/patch/2035731/
+
+[25/35] x86, boot: Add fields to support load bzImage and ramdisk above 4G
+
+Thanks
+
+Yinghai
+
+--e89a8f3b9dbbde889d04d44fd4fb
+Content-Type: application/octet-stream; 
+	name="ext_ramdisk_image_on_top_of_hpa.patch"
+Content-Disposition: attachment; 
+	filename="ext_ramdisk_image_on_top_of_hpa.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hcgzdc9b0
+
+U3ViamVjdDogW1BBVENIIHY1IDEwLzExXSB4ODYsIGJvb3Q6IGVuYWJsZSBzdXBwb3J0IGxvYWQg
+YnpJbWFnZSBhbmQgcmFtZGlzayBhYm92ZSA0RwoKeGxvYWRmbGFncyBiaXQxIGlzIHNldCBpZiBr
+ZXJuZWwgaXMgcmVsb2NhdGFibGUgYW5kIDY0Yml0LgoKYm9vdGxvYWRlciB3aWxsIGNoZWNrIGlm
+IHhsb2FkZmxhZ3MgYml0MSBpcyBzZXQgdG8gZGVjaWNkZSBpZgppdCBjb3VsZCBsb2FkIHJhbWRp
+c2sgYW5kIGtlcm5lbCBoaWdoIGFib3ZlIDRHLgoKYm9vdGxvYWRlciB3aWxsIGZpbGwgdmFsdWUg
+dG8gZXh0X3JhbWRpc2tfaW1hZ2Uvc2l6ZSBmb3IgaGlnaCAzMmJpdHMKd2hlbiBpdCBsb2FkIHJh
+bWRpc2sgYWJvdmUgNEcuCmtlcm5lbCB1c2UgZ2V0X3JhbWRpc2tfaW1hZ2Uvc2l6ZSB0byB1c2Ug
+ZXh0X3JhbWRpc2tfaW1hZ2Uvc2l6ZSB0byBnZXQKcmlnaHQgcG9zaXRvbiBmb3IgcmFtZGlzay4K
+CnNlbnRpbmVsIGlzIHVzZWQgc28ga2VybmVsIGNvdWxkIGZpbmQgb3V0IGlmIGV4dF8qIGFuZCBv
+dGhlciBmaWVsZHMgaGF2ZQp2YWxpZCB2YWx1ZXMgc2V0IGluIGJvb3RfcGFyYW1zIGZyb20gYm9v
+dGxvYWRlci4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4K
+Q2M6IFJvYiBMYW5kbGV5IDxyb2JAbGFuZGxleS5uZXQ+CkNjOiBNYXR0IEZsZW1pbmcgPG1hdHQu
+ZmxlbWluZ0BpbnRlbC5jb20+CkNjOiBHb2t1bCBDYXVzaGlrIDxjYXVzaGlrMUBnbWFpbC5jb20+
+CkNjOiBKb3NoIFRyaXBsZXR0IDxqb3NoQGpvc2h0cmlwbGV0dC5vcmc+CkNjOiBKb2UgTWlsbGVu
+YmFjaCA8am1pbGxlbmJhY2hAZ21haWwuY29tPgoKLS0tCiBhcmNoL3g4Ni9ib290L2NvbXByZXNz
+ZWQvY21kbGluZS5jIHwgICAgMiArKwogYXJjaC94ODYvYm9vdC9jb21wcmVzc2VkL21pc2MuYyAg
+ICB8ICAgMTkgKysrKysrKysrKysrKysrKysrKwogYXJjaC94ODYvYm9vdC9oZWFkZXIuUyAgICAg
+ICAgICAgICB8ICAgMTAgKysrKysrKysrLQogYXJjaC94ODYva2VybmVsL2hlYWQ2NC5jICAgICAg
+ICAgICB8ICAgIDIgKysKIGFyY2gveDg2L2tlcm5lbC9zZXR1cC5jICAgICAgICAgICAgfCAgICA0
+ICsrKysKIDUgZmlsZXMgY2hhbmdlZCwgMzYgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQoK
+SW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9ib290L2hlYWRlci5TCj09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxp
+bnV4LTIuNi5vcmlnL2FyY2gveDg2L2Jvb3QvaGVhZGVyLlMKKysrIGxpbnV4LTIuNi9hcmNoL3g4
+Ni9ib290L2hlYWRlci5TCkBAIC0zNzQsNiArMzc0LDE0IEBAIHhsb2FkZmxhZ3M6CiAjZWxzZQog
+IyBkZWZpbmUgWExGMCAwCiAjZW5kaWYKKworI2lmIGRlZmluZWQoQ09ORklHX1JFTE9DQVRBQkxF
+KSAmJiBkZWZpbmVkKENPTkZJR19YODZfNjQpCisgICAvKiBrZXJuZWwvYm9vdF9wYXJhbS9yYW1k
+aXNrIGNvdWxkIGJlIGxvYWRlZCBhYm92ZSA0ZyAqLworIyBkZWZpbmUgWExGMSBYTEZfQ0FOX0JF
+X0xPQURFRF9BQk9WRV80RworI2Vsc2UKKyMgZGVmaW5lIFhMRjEgMAorI2VuZGlmCisKICNpZmRl
+ZiBDT05GSUdfRUZJX1NUVUIKICMgaWZkZWYgQ09ORklHX1g4Nl82NAogIyAgZGVmaW5lIFhMRjIz
+IFhMRl9FRklfSEFORE9WRVJfNjQJCS8qIDY0LWJpdCBFRkkgaGFuZG92ZXIgb2sgKi8KQEAgLTM4
+Myw3ICszOTEsNyBAQCB4bG9hZGZsYWdzOgogI2Vsc2UKICMgZGVmaW5lIFhMRjIzIDAKICNlbmRp
+ZgotCQkJLndvcmQgWExGMCB8IFhMRjIzCisJCQkud29yZCBYTEYwIHwgWExGMSB8IFhMRjIzCiAK
+IGNtZGxpbmVfc2l6ZTogICAubG9uZyAgIENPTU1BTkRfTElORV9TSVpFLTEgICAgICNsZW5ndGgg
+b2YgdGhlIGNvbW1hbmQgbGluZSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICNhZGRlZCB3aXRoIGJvb3QgcHJvdG9jb2wKSW5kZXg6IGxpbnV4LTIuNi9h
+cmNoL3g4Ni9rZXJuZWwvc2V0dXAuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNo
+L3g4Ni9rZXJuZWwvc2V0dXAuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9zZXR1cC5j
+CkBAIC0yOTgsMTIgKzI5OCwxNiBAQCBzdGF0aWMgdTY0IF9faW5pdCBnZXRfcmFtZGlza19pbWFn
+ZSh2b2lkCiB7CiAJdTY0IHJhbWRpc2tfaW1hZ2UgPSBib290X3BhcmFtcy5oZHIucmFtZGlza19p
+bWFnZTsKIAorCXJhbWRpc2tfaW1hZ2UgfD0gKHU2NClib290X3BhcmFtcy5leHRfcmFtZGlza19p
+bWFnZSA8PCAzMjsKKwogCXJldHVybiByYW1kaXNrX2ltYWdlOwogfQogc3RhdGljIHU2NCBfX2lu
+aXQgZ2V0X3JhbWRpc2tfc2l6ZSh2b2lkKQogewogCXU2NCByYW1kaXNrX3NpemUgPSBib290X3Bh
+cmFtcy5oZHIucmFtZGlza19zaXplOwogCisJcmFtZGlza19zaXplIHw9ICh1NjQpYm9vdF9wYXJh
+bXMuZXh0X3JhbWRpc2tfc2l6ZSA8PCAzMjsKKwogCXJldHVybiByYW1kaXNrX3NpemU7CiB9CiAK
+SW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9ib290L2NvbXByZXNzZWQvY21kbGluZS5jCj09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2Jvb3QvY29tcHJlc3NlZC9jbWRsaW5l
+LmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9ib290L2NvbXByZXNzZWQvY21kbGluZS5jCkBAIC0x
+Nyw2ICsxNyw4IEBAIHN0YXRpYyB1bnNpZ25lZCBsb25nIGdldF9jbWRfbGluZV9wdHIodm8KIHsK
+IAl1bnNpZ25lZCBsb25nIGNtZF9saW5lX3B0ciA9IHJlYWxfbW9kZS0+aGRyLmNtZF9saW5lX3B0
+cjsKIAorCWNtZF9saW5lX3B0ciB8PSAodTY0KXJlYWxfbW9kZS0+ZXh0X2NtZF9saW5lX3B0ciA8
+PCAzMjsKKwogCXJldHVybiBjbWRfbGluZV9wdHI7CiB9CiBpbnQgY21kbGluZV9maW5kX29wdGlv
+bihjb25zdCBjaGFyICpvcHRpb24sIGNoYXIgKmJ1ZmZlciwgaW50IGJ1ZnNpemUpCkluZGV4OiBs
+aW51eC0yLjYvYXJjaC94ODYva2VybmVsL2hlYWQ2NC5jCj09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIu
+Ni5vcmlnL2FyY2gveDg2L2tlcm5lbC9oZWFkNjQuYworKysgbGludXgtMi42L2FyY2gveDg2L2tl
+cm5lbC9oZWFkNjQuYwpAQCAtMTE1LDYgKzExNSw4IEBAIHN0YXRpYyB1bnNpZ25lZCBsb25nIGdl
+dF9jbWRfbGluZV9wdHIodm8KIHsKIAl1bnNpZ25lZCBsb25nIGNtZF9saW5lX3B0ciA9IGJvb3Rf
+cGFyYW1zLmhkci5jbWRfbGluZV9wdHI7CiAKKwljbWRfbGluZV9wdHIgfD0gKHU2NClib290X3Bh
+cmFtcy5leHRfY21kX2xpbmVfcHRyIDw8IDMyOworCiAJcmV0dXJuIGNtZF9saW5lX3B0cjsKIH0K
+IApJbmRleDogbGludXgtMi42L2FyY2gveDg2L2Jvb3QvY29tcHJlc3NlZC9taXNjLmMKPT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvYm9vdC9jb21wcmVzc2VkL21pc2MuYwor
+KysgbGludXgtMi42L2FyY2gveDg2L2Jvb3QvY29tcHJlc3NlZC9taXNjLmMKQEAgLTMxOCw2ICsz
+MTgsMjMgQEAgc3RhdGljIHZvaWQgcGFyc2VfZWxmKHZvaWQgKm91dHB1dCkKIAlmcmVlKHBoZHJz
+KTsKIH0KIAorc3RhdGljIHZvaWQgc2FuaXRpemVfcmVhbF9tb2RlKHN0cnVjdCBib290X3BhcmFt
+cyAqcmVhbF9tb2RlKQoreworCWlmIChyZWFsX21vZGUtPnNlbnRpbmVsKSB7CisJCS8qZmllbGRz
+IGluIGJvb3RfcGFyYW1zIGFyZSBub3QgdmFsaWQsIGNsZWFyIHRoZW0gKi8KKwkJbWVtc2V0KCZy
+ZWFsX21vZGUtPm9scGNfb2Z3X2hlYWRlciwgMCwKKwkJICAgICAgIChjaGFyICopJnJlYWxfbW9k
+ZS0+YWx0X21lbV9rIC0KKwkJCShjaGFyICopJnJlYWxfbW9kZS0+b2xwY19vZndfaGVhZGVyKTsK
+KwkJbWVtc2V0KCZyZWFsX21vZGUtPl9wYWQ3WzBdLCAwLAorCQkgICAgICAgKGNoYXIgKikmcmVh
+bF9tb2RlLT5lZGRfbWJyX3NpZ19idWZmZXJbMF0gLQorCQkJKGNoYXIgKikmcmVhbF9tb2RlLT5f
+cGFkN1swXSk7CisJCW1lbXNldCgmcmVhbF9tb2RlLT5fcGFkOFswXSwgMCwKKwkJICAgICAgIChj
+aGFyICopJnJlYWxfbW9kZS0+ZWRkYnVmWzBdIC0KKwkJCShjaGFyICopJnJlYWxfbW9kZS0+X3Bh
+ZDhbMF0pOworCQltZW1zZXQoJnJlYWxfbW9kZS0+X3BhZDlbMF0sIDAsIHNpemVvZihyZWFsX21v
+ZGUtPl9wYWQ5KSk7CisJfQorfQorCiBhc21saW5rYWdlIHZvaWQgZGVjb21wcmVzc19rZXJuZWwo
+dm9pZCAqcm1vZGUsIG1lbXB0ciBoZWFwLAogCQkJCSAgdW5zaWduZWQgY2hhciAqaW5wdXRfZGF0
+YSwKIAkJCQkgIHVuc2lnbmVkIGxvbmcgaW5wdXRfbGVuLApAQCAtMzI1LDYgKzM0Miw4IEBAIGFz
+bWxpbmthZ2Ugdm9pZCBkZWNvbXByZXNzX2tlcm5lbCh2b2lkICoKIHsKIAlyZWFsX21vZGUgPSBy
+bW9kZTsKIAorCXNhbml0aXplX3JlYWxfbW9kZShyZWFsX21vZGUpOworCiAJaWYgKHJlYWxfbW9k
+ZS0+c2NyZWVuX2luZm8ub3JpZ192aWRlb19tb2RlID09IDcpIHsKIAkJdmlkbWVtID0gKGNoYXIg
+KikgMHhiMDAwMDsKIAkJdmlkcG9ydCA9IDB4M2I0Owo=
+--e89a8f3b9dbbde889d04d44fd4fb--
