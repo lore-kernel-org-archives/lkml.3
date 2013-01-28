@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab3A1N0d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 08:26:33 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:49027 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756342Ab3A1N02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 08:26:28 -0500
+	id S1756449Ab3A1NaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 08:30:06 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:15521 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755982Ab3A1NaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 08:30:03 -0500
+Message-ID: <51067CF2.6020200@imgtec.com>
+Date: Mon, 28 Jan 2013 13:28:18 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <51065FD4.6090200@redhat.com>
-References: <1359333506-13599-1-git-send-email-minchan@kernel.org>
-	<CAOJsxLFg_5uhZsvPmVVC0nnsZLGpkJ0W6mHa=aavmguLGuTTnA@mail.gmail.com>
-	<51065FD4.6090200@redhat.com>
-Date: Mon, 28 Jan 2013 15:26:26 +0200
-X-Google-Sender-Auth: ObL2enardKNEuJNEaq6xGimSyXk
-Message-ID: <CAOJsxLG=3sWdFkvb++f2ywhs288ozoMXZd_g2WOAgxTqxayY_Q@mail.gmail.com>
-Subject: Re: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial write
-From: Pekka Enberg <penberg@kernel.org>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: James Hogan <james.hogan@imgtec.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH v3 44/44] fs: imgdafs: Add IMG DAFS filesystem for metag
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <1357831872-29451-45-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1357831872-29451-45-git-send-email-james.hogan@imgtec.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_28_13_29_40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 1:24 PM, Jerome Marchand <jmarchan@redhat.com> wrote:
-> On 01/28/2013 08:16 AM, Pekka Enberg wrote:
->> On Mon, Jan 28, 2013 at 2:38 AM, Minchan Kim <minchan@kernel.org> wrote:
->>> Now zram allocates new page with GFP_KERNEL in zram I/O path
->>> if IO is partial. Unfortunately, It may cuase deadlock with
->>
->> s/cuase/cause/g
->>
->>> reclaim path so this patch solves the problem.
->>
->> It'd be nice to know about the problem in more detail. I'm also
->> curious on why you decided on GFP_ATOMIC for the read path and
->> GFP_NOIO in the write path.
->
-> This is because we're holding a kmap_atomic page in the read path.
+Hi Al,
 
-Okay, so that's about partial *reads* and not even mentioned in the
-changelog, no?
+On 10/01/13 15:31, James Hogan wrote:
+> Add the IMG Debug Adapter File System (DAFS) for metag, which uses
+> SWITCH operations to communicate with a file server on a host computer
+> via a JTAG debug adapter.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Cesar Eduardo Barros <cesarb@cesarb.net>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: linux-fsdevel@vger.kernel.org
 
-AFAICT, you could rearrange the code in zram_bvec_read() as follows:
+If this looks okay please could you Ack it. If it's okay with you I'll
+include it in the Meta patchset for v3.9.
 
-        if (is_partial_io(bvec))
-                /* Use  a temporary buffer to decompress the page */
-                uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-        else {
-                uncmem = user_mem = kmap_atomic(page);
-        }
+Thanks
+James
 
-and avoid the GFP_ATOMIC allocation.
