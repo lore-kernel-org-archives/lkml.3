@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab3A1Egu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 23:36:50 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49891 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab3A1Egs (ORCPT
+	id S1754742Ab3A1EhQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 23:37:16 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:35337 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547Ab3A1EhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 23:36:48 -0500
-Date: Mon, 28 Jan 2013 05:36:42 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Seth Heasley <seth.heasley@intel.com>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>
-Subject: Re: [PATCH 3/3] i2c-i801: SMBus patch for Intel Avoton DeviceIDs
-Message-ID: <20130128043642.GA30953@pengutronix.de>
-References: <1359144661-3528-1-git-send-email-seth.heasley@intel.com>
+	Sun, 27 Jan 2013 23:37:11 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
-Content-Disposition: inline
-In-Reply-To: <1359144661-3528-1-git-send-email-seth.heasley@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1358677470-17394-5-git-send-email-bp@alien8.de>
+References: <1358677470-17394-1-git-send-email-bp@alien8.de>
+	<1358677470-17394-5-git-send-email-bp@alien8.de>
+Date: Mon, 28 Jan 2013 10:07:10 +0530
+X-Google-Sender-Auth: yJYuWunrWWZ1_uSXByn8ibX6EUI
+Message-ID: <CAOh2x==qf057z2vmADd6+thaXXVxEh1GZO-sKHRDyosqTfMdng@mail.gmail.com>
+Subject: Re: [PATCH 4/6] cpufreq: Add a get_current_driver helper
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        =?ISO-8859-1?Q?Andr=E9_Przywara?= <andre@andrep.de>,
+        Leonid Isaev <lisaev@umail.iu.edu>, Tom Gundersen <teg@jklm.no>,
+        cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 20, 2013 at 3:54 PM, Borislav Petkov <bp@alien8.de> wrote:
+> From: Borislav Petkov <bp@suse.de>
+>
+> Add a helper function to return cpufreq_driver->name.
+>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  drivers/cpufreq/cpufreq.c | 14 ++++++++++++++
+>  include/linux/cpufreq.h   |  1 +
+>  2 files changed, 15 insertions(+)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 1f93dbd72355..6ed3c1377caf 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1386,6 +1386,20 @@ static struct syscore_ops cpufreq_syscore_ops = {
+>         .resume         = cpufreq_bp_resume,
+>  };
+>
+> +/**
+> + *     cpufreq_get_current_driver - return current driver's name
+> + *
+> + *     Return the name string of the currently loaded cpufreq driver
+> + *     or NULL, if none.
+> + */
+> +const char *cpufreq_get_current_driver(void)
+> +{
+> +       if (cpufreq_driver)
+> +               return cpufreq_driver->name;
+> +
+> +       return NULL;
+> +}
+> +EXPORT_SYMBOL_GPL(cpufreq_get_current_driver);
+>
+>  /*********************************************************************
+>   *                     NOTIFIER LISTS INTERFACE                      *
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index a55b88eaf96a..a018da2d2a7c 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -407,4 +407,5 @@ void cpufreq_frequency_table_get_attr(struct cpufreq_frequency_table *table,
+>                                       unsigned int cpu);
+>
+>  void cpufreq_frequency_table_put_attr(unsigned int cpu);
+> +extern const char *cpufreq_get_current_driver(void);
 
---EeQfGwPcQSOJBaQU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Two minor things here:
+- You placed the routine at bad place. This place is meant for
+freq_table helpers.
+- And you really don't need extern for function prototypes.
 
+And after fixing these, feel free to add
 
-> @@ -166,6 +167,7 @@
->  #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
->  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
->  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
-> +#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
-
-This seems to be sorted, please stick to that.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---EeQfGwPcQSOJBaQU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlEGAFoACgkQD27XaX1/VRsYhQCgtOqoxm+RS5rCMegU9ytv7dfE
-GfoAoIhnFLkWTVR2B7uqWSE/c3PDGaag
-=SEiG
------END PGP SIGNATURE-----
-
---EeQfGwPcQSOJBaQU--
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
