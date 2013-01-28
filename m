@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab3A1Uqr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 15:46:47 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:35658 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab3A1Uqo (ORCPT
+	id S1754124Ab3A1Uww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 15:52:52 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:49298 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab3A1Uwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 15:46:44 -0500
-Date: Mon, 28 Jan 2013 12:46:39 -0800
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Holger Hoffstaette <holger.hoffstaette@googlemail.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, sarah.a.sharp@linux.intel.com
-Subject: [regression] external HDD in USB3 enclosure cannot be dynamically
- removed (Re: Linux 3.7.5)
-Message-ID: <20130128204639.GB7759@google.com>
-References: <20130128045658.GA3488@kroah.com>
- <pan.2013.01.28.11.42.16.556318@googlemail.com>
- <20130128143907.GA2940@kroah.com>
- <pan.2013.01.28.20.33.44.918987@googlemail.com>
+	Mon, 28 Jan 2013 15:52:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <pan.2013.01.28.20.33.44.918987@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359230650-10415-2-git-send-email-jolsa@redhat.com>
+References: <1359230650-10415-1-git-send-email-jolsa@redhat.com>
+	<1359230650-10415-2-git-send-email-jolsa@redhat.com>
+Date: Mon, 28 Jan 2013 21:52:49 +0100
+Message-ID: <CABPqkBSH=67hG8VRwHPU3byEancpVqsyetHkSjb4nOScPvcnFA@mail.gmail.com>
+Subject: Re: [PATCH 1/8] perf tools: Add '.' as part of the event 'name' token
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Holger,
+Jiri,
 
-Holger Hoffstaette wrote:
->> On Mon, Jan 28, 2013 at 12:42:16PM +0100, Holger Hoffstaette wrote:
+I don't see part 0/8 of this series. Did you send it to me too?
 
->>> Apologies for being late but I'm afraid I just found at least one
->>> regression in this release.
->>>
->>> I have an external HDD in an USB3 enclosure for the occasional backup. I
->>> turn it on, it gets registered as sdX, I mount it/use it/unmount it and
->>> turn it off, which worked fine with kernels including 3.7.4. With 3.7.5
->
-> FWIW it didn't really work with 3.7.4 either - just didn't notice before.
->
->>> the kernel seems no longer notified of the changed device power status;
->>> nothing in dmesg and the device stays in the list of SCSI devices as
->>> e.g. shown by lsscsi. This is repeatable. Turning the device back
->>> on/using it works fine, it's just that I cannot dynamically remove it
->>> any longer.
-[...]
-> No, current 3.8-rc5 did not work either. I first found 3.7.2 OK and 3.7.3
-> bad. Bisecting found:
->
-> --snip--
-> f7965c0846d74b270e246c1470ca955d5078eb07 is the first bad commit
-> commit f7965c0846d74b270e246c1470ca955d5078eb07
-> Author: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> Date:   Wed Nov 14 17:58:04 2012 -0800
->
->     USB: Handle warm reset failure on empty port.
->
->     commit 65bdac5effd15d6af619b3b7218627ef4d84ed6a upstream.
-[...]
-> Reverting this from 3.7.3 all the way to 3.8-rc5 makes USB 3.0
-> disconnection/power-off device removal work again. Verified both on the
-> bisection box and by now also the original machine.
+I have some comments about it. I don't see why create something from scratch
+when I have been developing a library (libpfm4) that takes care of that and that
+is already used by many tool developers. That library can be linked with perf
+and provide full symbolic events + all the modifiers. The library is portable
+and supports all existing archs. It can also be used by self-monitoring apps.
 
-Thanks for tracking this down.  Forwarding to relevant people.
 
-Hope that helps,
-Jonathan
+You're introducing yet another event table to maintain. And believe me this is
+a lot of work to maintain this.
+
+I don't understand why not use this existing library.
+
+
+On Sat, Jan 26, 2013 at 9:04 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> Adding '.' to be recognized as valid part of the event 'name'
+> token. Upcoming non architectural events use '.' as part
+> of the name.
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/util/parse-events.l | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+> index 32a9000..4220093 100644
+> --- a/tools/perf/util/parse-events.l
+> +++ b/tools/perf/util/parse-events.l
+> @@ -80,8 +80,8 @@ event         [^,{}/]+
+>  num_dec                [0-9]+
+>  num_hex                0x[a-fA-F0-9]+
+>  num_raw_hex    [a-fA-F0-9]+
+> -name           [a-zA-Z_*?][a-zA-Z0-9_*?]*
+> -name_minus     [a-zA-Z_*?][a-zA-Z0-9\-_*?]*
+> +name           [a-zA-Z_*?][a-zA-Z0-9_*?\.]*
+> +name_minus     [a-zA-Z_*?][a-zA-Z0-9\-_*?\.]*
+>  modifier_event [ukhpGH]+
+>  modifier_bp    [rwx]{1,3}
+>
+> --
+> 1.7.11.7
+>
