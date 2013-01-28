@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab3A1Xiu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 18:38:50 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58340 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab3A1Xis (ORCPT
+	id S1755548Ab3A1Xkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 18:40:37 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:35937 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab3A1Xke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 18:38:48 -0500
-X-AuditID: 9c930179-b7d01ae000004006-b9-51070c06fa60
-Date: Tue, 29 Jan 2013 08:38:46 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] staging: zsmalloc: add gfp flags to zs_create_pool
-Message-ID: <20130128233846.GB4752@blaptop>
-References: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1359135978-15119-2-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130128033944.GB3321@blaptop>
- <5106AEE8.4060003@linux.vnet.ibm.com>
+	Mon, 28 Jan 2013 18:40:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5106AEE8.4060003@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20130118114225.6698.42016.stgit@zurg>
+References: <20130118113019.6698.25941.stgit@zurg> <20130118114225.6698.42016.stgit@zurg>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 28 Jan 2013 16:40:13 -0700
+Message-ID: <CAErSpo4Z-qz18T0WQ3M8MHTGz_S1SAtK9KeTMBDvM2X4Ohs-tA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] PCI: don't touch enable_cnt in pci_device_shutdown()
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-pci@vger.kernel.org, Khalid Aziz <khalid.aziz@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 11:01:28AM -0600, Seth Jennings wrote:
-> On 01/27/2013 09:39 PM, Minchan Kim wrote:
-> > Hi Seth,
-> > 
-> > On Fri, Jan 25, 2013 at 11:46:15AM -0600, Seth Jennings wrote:
-> >> zs_create_pool() currently takes a gfp flags argument
-> >> that is used when growing the memory pool.  However
-> >> it is not used in allocating the metadata for the pool
-> >> itself.  That is currently hardcoded to GFP_KERNEL.
-> >>
-> >> zswap calls zs_create_pool() at swapon time which is done
-> >> in atomic context, resulting in a "might sleep" warning.
-> >>
-> >> This patch changes the meaning of the flags argument in
-> >> zs_create_pool() to mean the flags for the metadata allocation,
-> >> and adds a flags argument to zs_malloc that will be used for
-> >> memory pool growth if required.
-> > 
-> > As I mentioned, I'm not strongly against with this patch but it
-> > should be last resort in case of not being able to address
-> > frontswap's init routine's dependency with swap_lock.
-> > 
-> > I sent a patch and am waiting reply of Konrand or Dan.
-> > If we can fix frontswap, it would be better rather than
-> > changing zsmalloc.
-> 
-> I agree that moving the call to frontswap_init() out of the swap_lock
-> would be a good thing.  However, it doesn't mean that we still
-> shouldn't allow the users to control the gfp mask for the allocation
-> done by zs_create_pool(). While moving the frontswap_init() outside
-> the lock removes the _need_ for this patch, I think that is it good
-> API design to allow the user to specify the gfp mask.
+On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+> comment in commit b566a22c23327f18ce941ffad0ca907e50a53d41
+> ("PCI: disable Bus Master on PCI device shutdown") says:
+>
+> | Disable Bus Master bit on the device in pci_device_shutdown() to ensure PCI
+> | devices do not continue to DMA data after shutdown.  This can cause memory
+> | corruption in case of a kexec where the current kernel shuts down and
+> | transfers control to a new kernel while a PCI device continues to DMA to
+> | memory that does not belong to it any more in the new kernel.
+>
+> Seems like pci_clear_master() must be used here instead of pci_disable_device(),
+> because it disables Bus Muster unconditionally and doesn't changes enable_cnt.
+>
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: linux-pci@vger.kernel.org
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Khalid Aziz <khalid.aziz@hp.com>
+> ---
+>  drivers/pci/pci-driver.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 030dbf0..853d605 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -392,7 +392,7 @@ static void pci_device_shutdown(struct device *dev)
+>          * Turn off Bus Master bit on the device to tell it to not
+>          * continue to do DMA
+>          */
+> -       pci_disable_device(pci_dev);
+> +       pci_clear_master(pci_dev);
 
-I agree but we can do it when we have needs.
-If we can remove swap_lock dependency of frontswap, your needs would go away
-so we could add gfp argument next time if someone give us their needs.
+We currently only call pci_enable_device() and pci_disable_device()
+from drivers, and I think that's a nice division that's worth keeping.
+ It keeps the core's mitts off device operation and helps preserve the
+enable_cnt integrity.  So I like this change from that perspective.
 
-> 
-> Seth
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Any objections to this, Khalid?
 
--- 
-Kind regards,
-Minchan Kim
+>  }
+>
+>  #ifdef CONFIG_PM
+>
