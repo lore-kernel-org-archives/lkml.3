@@ -1,199 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab3A1Svv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:51:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49524 "EHLO mx2.suse.de"
+	id S1751752Ab3A1Swu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:52:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15996 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448Ab3A1Svs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:51:48 -0500
-Date: Tue, 29 Jan 2013 05:51:22 +1100
-From: NeilBrown <neilb@suse.de>
-To: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [RFC PATCH] Input: gpio_keys: Fix suspend/resume press event
- lost
-Message-ID: <20130129055122.2dcb9dd9@notabene.brown>
-In-Reply-To: <5106A39A.5010402@ti.com>
-References: <1358774114-8281-1-git-send-email-ivan.khoronzhuk@ti.com>
-	<20130121235718.GB16638@core.coreip.homeip.net>
-	<20130122162434.5bcf3e14@notabene.brown>
-	<5106A39A.5010402@ti.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/J+fqbui_bGCMIXqx1+9Icrl"; protocol="application/pgp-signature"
+	id S1751019Ab3A1Sws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:52:48 -0500
+Date: Mon, 28 Jan 2013 13:52:42 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, dhowells@redhat.com,
+        jmorris@namei.org, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
+ keys
+Message-ID: <20130128185242.GB5868@redhat.com>
+References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
+ <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
+ <1358895228.2408.14.camel@falcor1>
+ <CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
+ <20130125210157.GA13152@redhat.com>
+ <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
+ <20130128151527.GA5868@redhat.com>
+ <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/J+fqbui_bGCMIXqx1+9Icrl
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
 
-On Mon, 28 Jan 2013 18:13:14 +0200 "ivan.khoronzhuk" <ivan.khoronzhuk@ti.co=
-m>
-wrote:
+[..]
+> > Ok. I am hoping that it will be more than the kernel command line we
+> > support. In the sense that for digital signatures one needs to parse
+> > the signature, look at what hash algorithm has been used  and then
+> > collect the hash accordingly. It is little different then IMA requirement
+> > of calculating one pre-determine hash for all files.
+> 
+> Yes... It is obvious. It's coming.
+> But in general, signer should be aware of requirements and limitation
+> of the platform.
+> It is not really a problem...
 
-> On 01/22/2013 07:24 AM, NeilBrown wrote:
-> > On Mon, 21 Jan 2013 15:57:18 -0800 Dmitry Torokhov
-> > <dmitry.torokhov@gmail.com> wrote:
-> >
-> >> Hi Ivan,
-> >>
-> >> On Mon, Jan 21, 2013 at 03:15:14PM +0200, Ivan Khoronzhuk wrote:
-> >>> Rebased on linux_omap/master.
-> >>>
-> >>> During suspend/resume the key press can be lost if time of resume
-> >>> sequence is significant.
-> >>>
-> >>> If press event cannot be remembered then the driver can read the
-> >>> current button state only in time of interrupt handling. But in some
-> >>> cases when time between IRQ and IRQ handler is significant we can
-> >>> read incorrect state. As a particular case, when device is in suspend
-> >>> we press wakupable key and up it back in a jiffy, the interrupt
-> >>> handler read the state of up but the interrupt source is press indeed.
-> >>> As a result, in a OS like android, we resume then suspend right away
-> >>> because the key state is not changed.
-> >>>
-> >>> This patch add to gpio_keys framework opportunity to recover lost of
-> >>> press key event at resuming. The variable "key_pressed" from
-> >>> gpio_button_data structure is not used for gpio keys, it is only used
-> >>> for gpio irq keys, so it is logically used to remember press lost
-> >>> while resuming.
-> >> The same could happen if you delay processing of interrupt long enough
-> >> during normal operation. If key is released by the time you get around
-> >> to reading it you will not see a key press.
-> >>
-> >> To me this sounds like you need to speed up your resume process so that
-> >> you can start serving interrupts quicker.
-> >>
-> > Agreed.  When I was looking at this I found that any genuine button pre=
-ss
-> > would have at least 70msec between press and release, while the device =
-could
-> > wake up to the point of being able to handle interrupts in about 14msec.
-> > That is enough of a gap to make it pointless to try to 'fix' the code.
-> >
-> > With enough verbose debugging enabled that 14msec can easily grow to
-> > hundreds, but then if  you have debugging enabled to can discipline you=
-rself
-> > to hold the button for longer.
-> >
-> > Ivan: What sort of delay are you seeing between the button press and the
-> > interrupt routine running?  And can you measure how long the button is
-> > typically down for?
-> >
-> > NeilBrown
->=20
-> In my case I have the delay between the button press and the ISR
-> about 145ms. If the button down for 120ms the IRQ press event is
-> lost and if 160ms event is captured. I cannot speed up resume
-> process enough to guarantee correct work, so I wrote this fix.
->=20
+Ok, I have another question. I was looking at your slide deck here.
 
+http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
 
-145ms does sound like a long time.
-You should be able to get precise timings by putting a printk in various
-parts of the code and ensuring the kernel logs are getting precise timestam=
-ps.
+Slide 12 mentions that keys are loaded into the kernel from initramfs. If
+"root" can load any key, what are we protecting against.
 
-Then you could see if the delay is between resume starting and the ISR
-running, or between the ISR and the gpio_work_func getting scheduled.
+IOW, what good ima_appraise_tcb policy, which tries to appraise any root
+owned file.  A root can sign all the files using its own key and load its
+public key in IMA keyring and then integrity check should pass on all
+root files.
 
-I assume that you don't have ->debounce_interval set....
+So what's the idea behind digital signature appraisal? By allowing root to
+unconditionally load the keys in IMA keyring, it seems to circumvent the
+appraisal mechanism.
 
-If the ISR is running soon enough, it might be possible to read the GPIO fr=
-om
-the ISR - I think that would be a cleaner solution.
-
-If not, then you will need something that interpolates an extra key press.
-In that case I would suggest my original patch - it seems simpler than yours
-and doesn't make a special case out of suspend.  As Dmitry said, any delay
-could cause a problem.=20
-My patch simply ensures that there is at least one button event for each
-interrupt by generating an extra event for the inverse of the current button
-position.  If that state had already been noticed, the input subsystem will
-filter the extra event out so it won't be visible elsewhere.
-
-For reference, my original patch is below.
-
-NeilBrown
-
-[PATCH] Input: gpio_keys - ensure we don't miss key-presses during resume.
-
-If the latency of resume means we don't poll the key status until
-after it has been released, we can lose the keypress which woke the
-device.
-
-So on each interrupt, record that a press is pending, and in that
-case, report both the up and down event, ordered such that the second
-event is that one that reflects the current state.
-
-One event will normally be swallowed by the input layer if there was
-no change, but the result will be that every interrupt will produce at
-least one event.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/input/keyboard/gpio_keys.c
-b/drivers/input/keyboard/gpio_keys.c index 62bfce4..961e5e1 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -40,6 +40,7 @@ struct gpio_button_data {
- 	spinlock_t lock;
- 	bool disabled;
- 	bool key_pressed;
-+	bool pending;
- };
-=20
- struct gpio_keys_drvdata {
-@@ -335,6 +336,14 @@ static void gpio_keys_gpio_report_event(struct gpio_bu=
-tton_data *bdata) if (state)
- 			input_event(input, type, button->code, button->value); } else {
-+		if (type =3D=3D EV_KEY && bdata->pending) {
-+			/* Before reporting the observed state, report the
-+			 * alternate to be sure that a change is seen.
-+			 */
-+			bdata->pending =3D 0;
-+			input_event(input, type, button->code, !state);
-+			input_sync(input);
-+		}
- 		input_event(input, type, button->code, !!state);
- 	}
- 	input_sync(input);
-@@ -361,6 +370,7 @@ static irqreturn_t gpio_keys_gpio_isr(int irq, void *de=
-v_id)=20
- 	BUG_ON(irq !=3D bdata->irq);
-=20
-+	bdata->pending =3D true;
- 	if (bdata->timer_debounce)
- 		mod_timer(&bdata->timer,
- 			jiffies + msecs_to_jiffies(bdata->timer_debounce));
-
---Sig_/J+fqbui_bGCMIXqx1+9Icrl
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUQbIqjnsnt1WYoG5AQJiUw//SwbQ/JpiYRnal1mJmNPwokH/fNxiY//Z
-rxevfXM1vY3//H4VGXaQb1sr/uHali8251yqVgn6u0asNE+Wsr7psThjDlfasOXb
-vdjx73pK4Lk9YC+XD929YbfrY3kCTZAhgyB2MO0yKvb2xyP0zmIilMXtaPWVTVRc
-kAguSZloaIRKGgiWeQRhNyradnZzQjvWUUzSMRphneNebLJ4m4CVJtxx7XVafOnT
-DoL57mewd5CTWqQRPhYg9IV1RnS9R9H57SaFrVl/Scjr2N2bIyf+/sT6r0yY74jj
-H8xEDmLu1WhqSHgWjvLhWPsNnLxBqTXyk4DlMvazXkb6d+V9JTnH1Uy305SMbA5v
-hGJhjLIz4yZMEigBowMQJCOWDoqfaeAz1ZEqJbZxYQ/rDdfZjptUpzchNf7aO17C
-/+mmI7vb1sUOynFEiiJm5OhKTOjo2m6EhzKqB+fWcP6CyGn4RUthCHfVAJ04mdM8
-Xj9Od1Gyv4ISMpwb6pu4d6Yjy6lFU677zh5PK9kkKyHNgP1TZ59xn4nYXGLjNkDZ
-yRk4LZHXM71saP5+e6okHTRDnoMt4NDX3WK/mfXNKrXTgr+pRblPExFe0BoIgrkr
-xP1d+95qZWbdUKp2Ud1+gEVPdrJbG57l9YwE0LrJa7Sc2Civ3tsw5j7zeYCwh4S5
-ws+Xp3CHRIw=
-=PVlz
------END PGP SIGNATURE-----
-
---Sig_/J+fqbui_bGCMIXqx1+9Icrl--
+Thanks
+Vivek
