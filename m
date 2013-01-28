@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab3A1Rlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:41:37 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33344 "EHLO e9.ny.us.ibm.com"
+	id S1757450Ab3A1Ro2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:44:28 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:40591 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756576Ab3A1Rle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:41:34 -0500
-Message-ID: <5106B83E.2030804@linux.vnet.ibm.com>
-Date: Mon, 28 Jan 2013 11:41:18 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756576Ab3A1RoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 12:44:25 -0500
+X-IronPort-AV: E=Sophos;i="4.84,553,1355097600"; 
+   d="scan'208";a="5348031"
+Date: Mon, 28 Jan 2013 17:44:22 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: KY Srinivasan <kys@microsoft.com>
+CC: Olaf Hering <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Jan Beulich (JBeulich@suse.com)" <JBeulich@suse.com>
+Subject: RE: [PATCH] x86: Hyper-V: register clocksource only if its
+ advertised
+In-Reply-To: <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com>
+Message-ID: <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com>
+References: <1359121036-16309-1-git-send-email-olaf@aepfle.de> <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com> <20130125165443.GA15833@aepfle.de> <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
+ <20130125171923.GA19306@aepfle.de> <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv2 6/9] zsmalloc: promote to lib/
-References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-7-git-send-email-sjenning@linux.vnet.ibm.com> <20130128040116.GF3321@blaptop> <20130128043257.GH3321@blaptop>
-In-Reply-To: <20130128043257.GH3321@blaptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012817-7182-0000-0000-000004C16B97
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2013 10:32 PM, Minchan Kim wrote:
-> On Mon, Jan 28, 2013 at 01:01:16PM +0900, Minchan Kim wrote:
->> On Mon, Jan 07, 2013 at 02:24:37PM -0600, Seth Jennings wrote:
->>> This patch promotes the slab-based zsmalloc memory allocator
->>> from the staging tree to lib/
->>>
->>> zswap depends on this allocator for storing compressed RAM pages
->>> in an efficient way under system wide memory pressure where
->>> high-order (greater than 0) page allocation are very likely to
->>> fail.
->>>
->>> For more information on zsmalloc and its internals, read the
->>> documentation at the top of the zsmalloc.c file.
->>>
->>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>
->> Seth, zsmalloc has a bug[1], I sent a patch totay. If it want't known,
->> it mighte be no problem to promote but it's known bug so let's fix it
->> before promoting.
->>
->> Another question. Why do you promote zsmalloc in this patchset?
->> It might make you hard to merge even zswap into staging.
+On Fri, 25 Jan 2013, KY Srinivasan wrote:
+> > -----Original Message-----
+> > From: Olaf Hering [mailto:olaf@aepfle.de]
+> > Sent: Friday, January 25, 2013 12:19 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; Greg KH; Jan Beulich (JBeulich@suse.com)
+> > Subject: Re: [PATCH] x86: Hyper-V: register clocksource only if its advertised
+> > 
+> > On Fri, Jan 25, KY Srinivasan wrote:
+> > 
+> > > My fear is that there is no guarantee that Xen would not emulate this
+> > > feature in the spirit of making Hyper-V emulation "more" complete.
+> > > Since all this problem is because Xen thinks it is running a viridian
+> > > domain (when in fact it is running Linux), I felt we should explore
+> > > why the viridian tag got set for a Linux VM. If we can fix that we
+> > > would have a solution that does not depend upon assuming that Xen
+> > > would not emulate a particular Hyper-V feature.
+> > 
+> > In my opinion this logic is backwards. A host provides a set of
+> > functionality/features to a given guest, no matter what runs inside the
+> > guest. And the guest can query the feature list and configure itself
+> > accordingly. In this specific case the guest finds feature A (the cpuid
+> > result) and expects that feature B (a clock source) is present as well,
+> > even if feature B has its very own availability flag.
 > 
-> When I look at [8/9], I realized you are trying to merge this patch
-> into mm/, NOT staging. I don't know history why zsmalloc/zram/zscache was
-> in staging at the beginning but personally, I don't ojbect zswap into /mm
-> directly because I got realized staging is very deep hole to get out,
-> expecially related to mm stuff. ;-)
+> I would agree with you in the abstract but not in this specific case. First,
+> the current Hyper-V code in Linux verifies that the underlying hypervisor is
+> Hyper-V and proceeds to setup state that is needed to run Linux on Hyper-V.
+> If Xen were not emulating Hyper-V, we would not have any issue here. However,
+> Xen does emulate Hyper-V and it is emulating Hyper-V not to run Linux, but to run
+> enlightened Windows (making Windows think it is running on Hyper-V). We have a 
+> mechanism in place for controlling this Hyper-V emulation in Xen - the viridian flag.
+> In my view, ensuring that this flag is not set for a non -Windows guest is the only safe
+> approach to dealing with this issue. Your current approach of using the "Partition Reference
+> Counter" feature bit is very fragile. Let us assume that future Windows guests depend on this
+> feature; Xen would certainly emulate this to have a "good" emulation of Hyper-V and we are
+> back to square one.
 
-Correct.
+I think that Olaf made his point very clear: a feature A should only be
+enabled if the corresponding flag A is set.
+In fact it seems to me that this patch is correct on its own merits,
+regardless of Xen does or does not.
 
-As I understand the purpose of the staging tree, it is meant for
-drivers whose code doesn't adhere to the kernel coding
-standards/guidelines and might have questionable stability.  The point
-is to have a TODO, get the code to conform to the kernel standards,
-fix known instabilities, then promote into the appropriate place in
-the driver tree.
+The Xen tools might or might not know whether a guest is going to be
+Linux, Windows, FreeBSD or whatever else people use nowadays.  Setting
+viridian=1 is the safe choice, given that it shouldn't create any
+issues: after all guests are supposed to check for feature flags before
+using them.
 
-However, with the work on memory compression, it's really become a
-prototyping area, which I don't think Greg likes all that much.
-
-Seth
-
+If Xen is going to implement "Partition Reference Counter", it is also
+going to set the corresponding flag, so the guest OS (Windows, Linux,
+my pet OS) can check whether the feature is available and decide whether
+it wants to use it.
