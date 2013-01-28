@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab3A1PcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:32:04 -0500
-Received: from host-176-100-244-43.masterbit.su ([176.100.244.43]:50485 "EHLO
-	tservice.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755395Ab3A1PcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:32:01 -0500
-Date: Mon, 28 Jan 2013 19:31:56 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: gregkh@linuxfoundation.org, panto@antoniou-consulting.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] w1-gpio: fix section mismatch
-Message-ID: <20130128153156.GB9089@ioremap.net>
-References: <1359317277-29161-1-git-send-email-hauke@hauke-m.de>
+	id S1755507Ab3A1Pdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:33:43 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34717 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751306Ab3A1Pdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:33:42 -0500
+Message-ID: <51069A3A.8090404@ti.com>
+Date: Mon, 28 Jan 2013 21:03:14 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359317277-29161-1-git-send-email-hauke@hauke-m.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: LAK <linux-arm-kernel@lists.infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, Heiko Schocher <hs@denx.de>
+Subject: Re: [PATCH] ARM: davinci: da850: add interrupt-parent property in
+ soc node
+References: <1359112724-1217-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1359112724-1217-1-git-send-email-prabhakar.lad@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Sun, Jan 27, 2013 at 09:07:57PM +0100, Hauke Mehrtens (hauke@hauke-m.de) wrote:
-> This fixes the following section mismatch:
+On 1/25/2013 4:48 PM, Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
 > 
-> WARNING: drivers/w1/masters/w1-gpio.o(.data+0x188): Section mismatch in
-> reference from the variable w1_gpio_driver to the function
-> .init.text:w1_gpio_probe()
-> The variable w1_gpio_driver references
-> the function __init w1_gpio_probe()
-> If the reference is valid then annotate the
-> variable with __init* or __refdata (see linux/init.h) or name the variable:
-> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+> This patch adds 'interrupt-parent' property in soc node, so that
+> the child inherits this property, this avoids adding 'interrupt-parent'
+> to each node.
 > 
-> Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: Heiko Schocher <hs@denx.de>
+> ---
 
-Looks good to me
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Looks good to me. Queuing for v3.9. BTW, we are moving the interrupt
+parent property to soc node rather than adding it. So, I think a better
+headline is "move interrupt-parent property to soc node". I change the
+headline while committing.
 
--- 
-	Evgeniy Polyakov
+Thanks,
+Sekhar
