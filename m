@@ -1,113 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3A1KVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:21:00 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:55777 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab3A1KU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:20:56 -0500
-Date: Mon, 28 Jan 2013 11:20:51 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Milton Miller <miltonm@bga.com>, Wang YanQing <udknight@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        mina86@mina86.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH]smp: Fix send func call IPI to empty cpu mask
-Message-ID: <20130128102051.GA20263@gmail.com>
-References: <20130126075357.GA3205@udknight>
- <CA+55aFyJ0tsvJeujyRwX=q5KPKjeejmvQOMTCJxDcaEmYprpvg@mail.gmail.com>
- <20130127155043.GA6214@gmail.com>
- <5106523302000078000B9F0B@nat28.tlf.novell.com>
+	id S1756031Ab3A1KV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:21:59 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:53058 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754144Ab3A1KVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 05:21:55 -0500
+Message-ID: <5106513E.4010205@imgtec.com>
+Date: Mon, 28 Jan 2013 10:21:50 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5106523302000078000B9F0B@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v3 32/71] ARC: [DeviceTree] Basic support
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-15-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1359024639-21915-15-git-send-email-vgupta@synopsys.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_28_10_21_52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Vineet,
 
-* Jan Beulich <JBeulich@suse.com> wrote:
+On 24/01/13 10:50, Vineet Gupta wrote:
+> diff --git a/arch/arc/Makefile b/arch/arc/Makefile
+> index 4d52a3b..90570f9 100644
+> --- a/arch/arc/Makefile
+> +++ b/arch/arc/Makefile
+> @@ -83,6 +83,9 @@ head-y		:= arch/arc/kernel/head.o
+>  # See arch/arc/Kbuild for content of core part of the kernel
+>  core-y		+= arch/arc/
+>  
+> +# w/o this dtb won't embed into kernel binary
+> +core-y		+= arch/arc/boot/dts/
+> +
+>  # w/o this ifneq, make ARCH=arc clean was crapping out
+>  ifneq ($(platform-y),)
+>  core-y		+= arch/arc/plat-$(PLATFORM)/
+> @@ -101,6 +104,12 @@ bootpImage: vmlinux
+>  uImage: vmlinux
+>  	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+>  
+> +%.dtb %.dtb.S %.dtb.o:
+> +	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
 
-> >>> On 27.01.13 at 16:50, Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > 
-> >> On Fri, Jan 25, 2013 at 11:53 PM, Wang YanQing <udknight@gmail.com> wrote:
-> >> > I get below warning every day with 3.7,
-> >> > one or two times per day.
-> >> >
-> >> > [ 2235.186027] WARNING: at 
-> > /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 
-> > default_send_IPI_mask_logical+0x2f/0xb8()
-> >> > [ 2235.186030] Hardware name: Aspire 4741
-> >> > [ 2235.186032] empty IPI mask
-> >> > [ 2235.186079]  [<c1015cbc>] native_send_call_func_ipi+0x4f/0x57
-> >> > [ 2235.186087]  [<c1053453>] smp_call_function_many+0x191/0x1a9
-> >> > [ 2235.186097]  [<c101e074>] native_flush_tlb_others+0x21/0x24
-> >> > [ 2235.186101]  [<c101e0da>] flush_tlb_page+0x63/0x89
-> >> > [ 2235.186105]  [<c101d360>] ptep_set_access_flags+0x20/0x26
-> >> > [ 2235.186111]  [<c108fadd>] do_wp_page+0x234/0x502
-> >> > [ 2235.186121]  [<c1090825>] handle_pte_fault+0x50d/0x54c
-> >> > [ 2235.186148]  [<c1090934>] handle_mm_fault+0xd0/0xe2
-> >> > [ 2235.186153]  [<c12dd143>] __do_page_fault+0x411/0x42d
-> >> > [ 2235.186166]  [<c12dd167>] do_page_fault+0x8/0xa
-> >> > [ 2235.186170]  [<c12db31a>] error_code+0x5a/0x60
-> >> >
-> >> > This patch fix it.
-> >> >
-> >> > This patch also fix some system hang problem:
-> >> > If the data->cpumask been cleared after pass
-> >> >
-> >> >         if (WARN_ONCE(!mask, "empty IPI mask"))
-> >> >                 return;
-> >> > then the problem 83d349f3 fix will happen again.
-> >> 
-> >> Hmm. We have very consciously tried to avoid the extra copy, although
-> >> I'm not entirely sure why (it might possibly hurt on the MAXSMP
-> >> configuration).
-> >> 
-> >> See for example commit 723aae25d5cd ("smp_call_function_many: handle
-> >> concurrent clearing of mask") which fixed another version of this
-> >> problem.
-> >> 
-> >> But I do agree that it looks like the copy is required, simply because
-> >> - as you say - once we've done the "list_add_rcu()" to add it to the
-> >> queue, we can have (another) IPI to the target CPU that can now see it
-> >> and clear the mask.
-> >> 
-> >> So by the time we get to actually send the IPI, the mask might have
-> >> been cleared by another IPI. So I do agree that your patch seems
-> >> correct, but I really really want to run it by other people.
-> >> 
-> >> Guys? Original patch on lkml. The other possible fix might be 
-> >> to take the &call_function.lock earlier in 
-> >> generic_smp_call_function_interrupt(), so that we can never 
-> >> clear the bit while somebody is adding entries to the list... 
-> >> But I think it very much tries to avoid that on purpose right 
-> >> now, with only the last CPU responding to that IPI taking the 
-> >> lock.
-> >> 
-> >> So copying the IPI mask seems to be the reasonable approach. 
-> >> Comments?
-> > 
-> > Agreed, looks correct to me as well - I've queued the fix up in 
-> > tip:x86/urgent.
-> 
-> But the patch is obviously incomplete for the CPUMASK_OFFSTACK 
-> case, as the newly added cpumask_ipi member never gets its bit 
-> array allocated.
+arm64 also depends on scripts here, presumably for a reason. I've copied
+this in metag too.
 
-Yes, indeed - I'll amend it with the fix.
+> +
+> +dtbs:
+> +	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
 
-Thanks,
+arm64 does this like below which I think is slightly nicer than how
+metag did it:
 
-	Ingo
+dtbs: scripts
+	$(Q)$(MAKE) $(build)=$(boot)/dts dtbs
+
+> +
+>  archclean:
+>  	$(Q)$(MAKE) $(clean)=$(boot)
+>  
+> diff --git a/arch/arc/boot/dts/Makefile b/arch/arc/boot/dts/Makefile
+> new file mode 100644
+> index 0000000..4a972a3
+> --- /dev/null
+> +++ b/arch/arc/boot/dts/Makefile
+> @@ -0,0 +1,14 @@
+> +ifeq ($(CONFIG_OF),y)
+> +
+> +# Built-in dtb
+> +builtindtb-y		:= skeleton
+> +
+> +ifneq ($(CONFIG_ARC_BUILTIN_DTB_NAME),"")
+> +	builtindtb-y	:= $(CONFIG_ARC_BUILTIN_DTB_NAME)
+> +endif
+> +
+> +obj-y	+= $(patsubst "%",%,$(builtindtb-y)).dtb.o
+> +
+> +clean-files := *.dtb
+
+You don't seem to have a rule for dtbs, but still redirect it in the
+main Makefile. I suppose dtbs may want adding to your archhelp if you
+use it.
+
+arm64 also adds dtbs and $(dtb-y) to targets (at least in linux-next). I
+think this makes sure that they don't get rebuilt unless they've
+actually changed. I've also copied this for metag.
+
+
+> --- a/arch/arc/kernel/Makefile
+> +++ b/arch/arc/kernel/Makefile
+> @@ -8,6 +8,8 @@
+>  obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o
+>  obj-y	+= signal.o traps.o sys.o troubleshoot.o stacktrace.o clk.o
+>  
+> +obj-$(CONFIG_OF)			+= devtree.o
+> +
+
+You always select CONFIG_OF, so this could be obj-y. I'm not sure this
+particularly matters though.
+
+Cheers
+James
+
