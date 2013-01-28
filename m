@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab3A1Kdy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:33:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754414Ab3A1Kdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:33:53 -0500
-Date: Mon, 28 Jan 2013 12:38:02 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: [PATCHv2] tun: fix carrier on/off status
-Message-ID: <20130128103801.GA6648@redhat.com>
-References: <5103B01D.5070303@gmx.de>
- <3592886.xagLc7Uij9@jason-thinkpad-t430s>
- <20130128101111.GB5337@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130128101111.GB5337@redhat.com>
+	id S1753611Ab3A1Kfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:35:45 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:49967 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab3A1Kfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 05:35:43 -0500
+Date: Mon, 28 Jan 2013 21:35:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: linux-next: manual merge of the usb tree with the driver-core tree
+Message-Id: <20130128213535.15bb937175de3ec3b4a09daa@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_Jan_2013_21_35_35_+1100_n=F=3=Um+vwV6ciP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c8d68e6be1c3b242f1c598595830890b65cea64a removed carrier off call
-from tun_detach since it's now called on queue disable and not only on
-tun close.  This confuses userspace which used this flag to detect a
-free tun. To fix, put this back but under if (clean).
+--Signature=_Mon__28_Jan_2013_21_35_35_+1100_n=F=3=Um+vwV6ciP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Hi Greg,
 
----
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/phy/omap-usb2.c between commit 148e11349b0c ("usb: Convert to
+devm_ioremap_resource()") from the  tree and commit ca784be36cc7 ("usb:
+start using the control module driver") from the usb tree.
 
-Changes from v1:
-	Don't set carrier off unless all queues are closed.
+I fixed it up (I wasn't sure how, so I effectively dropped the former
+change) and can carry the fix as necessary (no action is required).
 
-Note: didn't test in MQ mode - Jason, care checking this does the
-right thing there?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index af372d0..06b2723 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -434,10 +434,13 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
- 	}
- 
- 	if (clean) {
--		if (tun && tun->numqueues == 0 && tun->numdisabled == 0 &&
--		    !(tun->flags & TUN_PERSIST))
--			if (tun->dev->reg_state == NETREG_REGISTERED)
-+		if (tun && tun->numqueues == 0 && tun->numdisabled == 0) {
-+			netif_carrier_off(tun->dev);
-+
-+			if (!(tun->flags & TUN_PERSIST) &&
-+			    tun->dev->reg_state == NETREG_REGISTERED)
- 				unregister_netdevice(tun->dev);
-+		}
- 
- 		BUG_ON(!test_bit(SOCK_EXTERNALLY_ALLOCATED,
- 				 &tfile->socket.flags));
-@@ -1644,10 +1647,10 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
- 		    device_create_file(&tun->dev->dev, &dev_attr_group))
- 			pr_err("Failed to create tun sysfs files\n");
--
--		netif_carrier_on(tun->dev);
- 	}
- 
-+	netif_carrier_on(tun->dev);
-+
- 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
- 
- 	if (ifr->ifr_flags & IFF_NO_PI)
+--Signature=_Mon__28_Jan_2013_21_35_35_+1100_n=F=3=Um+vwV6ciP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRBlR3AAoJEECxmPOUX5FEvqMP/3DI618Lxhin4Uu84HB0lfso
+0xwyESwmfWMjE2kcnhejpnbKn/68cjXP+phycrItKxNHOZDlg0IfPvdpsML0yqKP
+hJ8guD3KIKVmqBnNg3A1kqGK3TSrHQRkSEEBja5u0Dq3a9ZX5aplb12FOBqxaqfq
+mDLOGDY8IT828B3MrsYedRf3pLUeDI1yHjjEtayvno89w34vCxrsAX7JnrbjA1uz
+brdQjH+rIeWDO7SwZA6PKdx3LnLCO/Jw4DcS7yIEw2nXYCToZH7IqDdHrYUgLqRB
+b++1+yUR++raPB0KWq7laAJkJHQttjmnZFy9/b8qIo4K/vfW4wzJwB89HLLudk+I
+3VZJqrne0w1WcVstjQbx080cPpLHOk2KJx4HltCcB/ZNCj4xEtYzcCVCC7QFmiNG
+37XUJ+f93HdE1wCNJURUBgHt2ySWLB9XrvuR84MDkDoUyvolGtYHirQdgZUQjD2O
+FmkYzQDkgeiegsLPt23QIs5+dyzjygwecmdDFPraXzeNNtAUmYScdMQJiaZyzIsb
+gzkMS224mjvQ2clg2sVmFzAJf6H9IridxVr/Jnk2jirt9aOKPvYjAz/i8mLu3U7d
+WhaWcqf/IQ0bEFYFq62wEEtHUqS/Da5tPB0sUjCCYotY2OkItVqAJUwTAr04O2+V
+USLouuGNqotO5KZAqWB+
+=rgeS
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Jan_2013_21_35_35_+1100_n=F=3=Um+vwV6ciP--
