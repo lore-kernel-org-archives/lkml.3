@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab3A1IcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 03:32:06 -0500
-Received: from re04.intra2net.com ([82.165.46.26]:39694 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251Ab3A1IcC (ORCPT
+	id S1755068Ab3A1IcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 03:32:25 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:62127 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab3A1IcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 03:32:02 -0500
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [perf PATCH 3/3] Fix double fclose() on do_write(fd, xxx) failure
-Date: Mon, 28 Jan 2013 09:31:58 +0100
-Message-ID: <2218467.S7Jon2S4Bp@storm>
-Organization: Intra2net AG
-User-Agent: KMail/4.9.5 (Linux/3.6.11-5.fc17.x86_64; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130125160151.GA31242@ghostprotocols.net>
-References: <2684910.12iLzy42t4@storm> <20130125160151.GA31242@ghostprotocols.net>
+	Mon, 28 Jan 2013 03:32:22 -0500
+Message-ID: <51063791.9090606@atmel.com>
+Date: Mon, 28 Jan 2013 09:32:17 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
+        "Fabio Porcedda" <fabio.porcedda@gmail.com>
+Subject: Re: [PATCH 10/19] watchdog: at91sam9: at91_wdt_dt_ids cannot be __init
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359153858-31992-1-git-send-email-arnd@arndb.de> <1359153858-31992-11-git-send-email-arnd@arndb.de>
+In-Reply-To: <1359153858-31992-11-git-send-email-arnd@arndb.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, 25. January 2013 13:01:51 you wrote:
-> Em Fri, Jan 25, 2013 at 11:22:17AM +0100, Thomas Jarosch escreveu:
-> > cppcheck reported:
-> > [util/header.c:983]: (error) Used file that is not opened.
-> > 
-> > Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-> > ---
-> > 
-> >  tools/perf/util/header.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> > index 7b24cf3..30745c2 100644
-> > --- a/tools/perf/util/header.c
-> > +++ b/tools/perf/util/header.c
-> > @@ -955,6 +955,7 @@ static int write_topo_node(int fd, int node)
-> > 
-> >  	}
-> >  	
-> >  	fclose(fp);
-> > 
-> > +	fp = NULL;
+On 01/25/2013 11:44 PM, Arnd Bergmann :
+> The device IDs are referenced by the driver and potentially
+> used beyond the init time, as kbuild correctly warns
+> about. Remove the __initconst annotation.
 > 
-> Ok, but what is the behaviour of fclose(NULL)? Is it defined?
+> Without this patch, building at91_dt_defconfig results in:
 > 
-> - Arnaldo
+> WARNING: drivers/watchdog/built-in.o(.data+0x28): Section mismatch in reference from the variable at91wdt_driver to the (unknown reference) .init.rodata:(unknown)
+> The variable at91wdt_driver references
+> the (unknown reference) __initconst (unknown)
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
+> Cc: linux-watchdog@vger.kernel.org
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Grrr, this is undefined behavior. Sorry. I always thought this
-is defined like free(NULL) but apparently it is not.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-I'll send another version of the patch and also write to the
-man page maintainer to add a small hint to the fclose() man page.
+Thanks,
 
-Thomas
+> Cc: Fabio Porcedda <fabio.porcedda@gmail.com>
+> ---
+>  drivers/watchdog/at91sam9_wdt.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+> index dc42e44..6dad954 100644
+> --- a/drivers/watchdog/at91sam9_wdt.c
+> +++ b/drivers/watchdog/at91sam9_wdt.c
+> @@ -304,7 +304,7 @@ static int __exit at91wdt_remove(struct platform_device *pdev)
+>  }
+>  
+>  #if defined(CONFIG_OF)
+> -static const struct of_device_id at91_wdt_dt_ids[] __initconst = {
+> +static const struct of_device_id at91_wdt_dt_ids[] = {
+>  	{ .compatible = "atmel,at91sam9260-wdt" },
+>  	{ /* sentinel */ }
+>  };
+> 
 
+
+-- 
+Nicolas Ferre
