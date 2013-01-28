@@ -1,74 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757765Ab3A1SSt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:18:49 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:45724 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757565Ab3A1SSq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:18:46 -0500
-Date: Mon, 28 Jan 2013 10:18:39 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        srivatsa.bhat@linux.vnet.ibm.com, Christoph Lameter <cl@linux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
-Message-ID: <20130128181839.GB22465@mtj.dyndns.org>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
- <1356573611-18590-26-git-send-email-koverstreet@google.com>
- <20130125005136.GE2373@mtj.dyndns.org>
- <20130125011345.GT26407@google.com>
- <20130125020340.GG2373@mtj.dyndns.org>
- <20130125020943.GH2373@mtj.dyndns.org>
- <20130128174858.GW26407@google.com>
+	id S1757798Ab3A1SS5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:18:57 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:59862 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757658Ab3A1SSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:18:53 -0500
+X-IronPort-AV: E=Sophos;i="4.84,553,1355097600"; 
+   d="scan'208";a="5353616"
+Date: Mon, 28 Jan 2013 18:18:50 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Rik van Riel <riel@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "aquini@redhat.com" <aquini@redhat.com>,
+        "walken@google.com" <walken@google.com>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "knoel@redhat.com" <knoel@redhat.com>,
+        "chegu_vinod@hp.com" <chegu_vinod@hp.com>,
+        "raghavendra.kt@linux.vnet.ibm.com" 
+	<raghavendra.kt@linux.vnet.ibm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xensource.com>, Jan Beulich <JBeulich@novell.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH -v4 5/5] x86,smp: limit spinlock delay on virtual
+ machines
+In-Reply-To: <20130125141917.6d5960a8@annuminas.surriel.com>
+Message-ID: <alpine.DEB.2.02.1301281749460.10432@kaball.uk.xensource.com>
+References: <20130125140553.060b8ced@annuminas.surriel.com> <20130125141917.6d5960a8@annuminas.surriel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130128174858.GW26407@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kent.
-
-On Mon, Jan 28, 2013 at 09:48:58AM -0800, Kent Overstreet wrote:
-> > Ooh, I forgot one thing.  We might not gain much by replacing file
-> > refcnt w/ this.  You can't really get cheaper than fget_light().
+On Fri, 25 Jan 2013, Rik van Riel wrote:
+> Modern Intel and AMD CPUs will trap to the host when the guest
+> is spinning on a spinlock, allowing the host to schedule in
+> something else.
 > 
-> I've seen fget() show up when profiling the aio code - it's not high
-> enough to be a big concern when not doing stupid stuff, but high enough
-> that making it percpu would be worth it if it was easy. Which it's not,
-> for plenty of reasons.
-
-Yeah, aio wouldn't be able to use fget_light().
-
-> > So, I'm now back to "do we need dynamic allocation".  What else do we
-> > have to convert?
+> This effectively means the host is taking care of spinlock
+> backoff for virtual machines. It also means that doing the
+> spinlock backoff in the guest anyway can lead to totally
+> unpredictable results, extremely large backoffs, and
+> performance regressions.
 > 
-> I dunno. There's a lot of random refcounts scattered around, though.
+> To prevent those problems, we limit the spinlock backoff
+> delay, when running in a virtual machine, to a small value.
 > 
-> The way I see it, if it's always percpu when joe random dev needs a
-> refcount, he's going to weigh whether the overhead of a percpu refcount
-> is worth it.
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  arch/x86/include/asm/processor.h |    2 ++
+>  arch/x86/kernel/setup.c          |    2 ++
+>  arch/x86/kernel/smp.c            |   30 ++++++++++++++++++++++++------
+>  3 files changed, 28 insertions(+), 6 deletions(-)
 > 
-> With dynamic allocation, it's 16 bytes if you don't need it to be
-> percpu, vs. 4 for an atomic_t - so you never need to think about it, you
-> can just always use this for your refcounts and never have to think
-> about if it's going to be a fast path thing or not.
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 888184b..a365f97 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -997,6 +997,8 @@ extern bool cpu_has_amd_erratum(const int *);
+>  extern unsigned long arch_align_stack(unsigned long sp);
+>  extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+>  
+> +extern void init_spinlock_delay(void);
+> +
+>  void default_idle(void);
+>  bool set_pm_idle_to_default(void);
+>  
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 23ddd55..b834eae 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -1048,6 +1048,8 @@ void __init setup_arch(char **cmdline_p)
+>  
+>  	arch_init_ideal_nops();
+>  
+> +	init_spinlock_delay();
+> +
+>  	register_refined_jiffies(CLOCK_TICK_RATE);
+>  
+>  #ifdef CONFIG_EFI
+> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+> index 1877890..b1a65f0 100644
+> --- a/arch/x86/kernel/smp.c
+> +++ b/arch/x86/kernel/smp.c
+> @@ -31,6 +31,7 @@
+>  #include <asm/proto.h>
+>  #include <asm/apic.h>
+>  #include <asm/nmi.h>
+> +#include <asm/hypervisor.h>
+>  /*
+>   *	Some notes on x86 processor bugs affecting SMP operation:
+>   *
+> @@ -114,6 +115,27 @@ static atomic_t stopping_cpu = ATOMIC_INIT(-1);
+>  static bool smp_no_nmi_ipi = false;
+>  
+>  /*
+> + * Modern Intel and AMD CPUs tell the hypervisor when a guest is
+> + * spinning excessively on a spinlock.
 
-Yes, that is an appealing thought and it would actually improve
-something unlike kref silliness.  One concern is that when not
-converted to percpu, there will be overhead for extra bookkeeping.  It
-probably can be offset by flipping to percpu mode earlier.  Anyways,
-it would be great if both the percpu and non-percpu fast paths light.
+I take that you are talking about PAUSE-loop exiting?
 
-Thanks.
 
--- 
-tejun
+> The hypervisor will then
+> + * schedule something else, effectively taking care of the backoff
+> + * for us. Doing our own backoff on top of the hypervisor's pause
+> + * loop exit handling can lead to excessively long delays, and
+> + * performance degradations. Limit the spinlock delay in virtual
+> + * machines to a smaller value.
+> + */
+> +#define DELAY_SHIFT 8
+> +#define DELAY_FIXED_1 (1<<DELAY_SHIFT)
+> +#define MIN_SPINLOCK_DELAY (1 * DELAY_FIXED_1)
+> +#define MAX_SPINLOCK_DELAY_NATIVE (16000 * DELAY_FIXED_1)
+> +#define MAX_SPINLOCK_DELAY_GUEST (16 * DELAY_FIXED_1)
+> +static int __read_mostly max_spinlock_delay = MAX_SPINLOCK_DELAY_NATIVE;
+> +void __init init_spinlock_delay(void)
+> +{
+> +	if (x86_hyper)
+> +		max_spinlock_delay = MAX_SPINLOCK_DELAY_GUEST;
+> +}
+
+Before reducing max_spinlock_delay, shouldn't we check that PAUSE-loop
+exiting is available? What if we are running on an older x86 machine
+that doesn't support it?
+
+It is probably worth mentioning in the comment that Xen PV guests cannot
+take advantage of PAUSE-loop exiting (they don't run inside a VMX
+environment), but that's OK because Xen PV guests don't set x86_hyper.
+
+On the other hand Xen PV on HVM guests can take advantage of it (they
+run in a VMX environment), and in fact they set x86_hyper to
+x86_hyper_xen_hvm.
