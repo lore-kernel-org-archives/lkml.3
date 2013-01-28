@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab3A1Hkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 02:40:49 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:40710 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458Ab3A1Hko (ORCPT
+	id S1753809Ab3A1HnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 02:43:14 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:58545 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418Ab3A1HnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 02:40:44 -0500
-Message-ID: <51062B6D.8020805@synopsys.com>
-Date: Mon, 28 Jan 2013 13:10:29 +0530
+	Mon, 28 Jan 2013 02:43:12 -0500
+Message-ID: <51062C01.6010502@synopsys.com>
+Date: Mon, 28 Jan 2013 13:12:57 +0530
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Newsgroups: gmane.linux.drivers.devicetree,gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: Rob Herring <rob.herring@calxeda.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 32/71] ARC: [DeviceTree] Basic support
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-15-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1359024639-21915-15-git-send-email-vgupta@synopsys.com>
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>
+Subject: Re: [PATCH v3 22/71] ARC: [Review] Prevent incorrect syscall restarts
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-11-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1359024639-21915-11-git-send-email-vgupta@synopsys.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.12.197.164]
@@ -26,360 +26,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+Hi Al,
 
 On Thursday 24 January 2013 04:20 PM, Vineet Gupta wrote:
-> This is minimal infrastructure needed for devicetree work.
-> It uses an a sample "skeleton" devicetree - embedded in kernel image -
-> to print the board, manufacturer by parsing the top-level "compatible"
-> string.
+> Per Al Viro's "signals for dummies" https://lkml.org/lkml/2012/12/6/366
+> there are 3 golden rules for (not) restarting syscalls:
 > 
-> As of now we don't need any additional "board" specific "machine_desc".
+> "	What we need to guarantee is
+> * restarts do not happen on signals caught in interrupts or exceptions
+> * restarts do not happen on signals caught in sigreturn()
+> * restart should happen only once, even if we get through do_signal()
+>   many times."
 > 
-> TODO: support interpreting the command line as boot-loader passed dtb
+> ARC Port already handled #1, this patch fixes #2 and #3.
 > 
-> Signed-off-by: Vineet Gupta <vgupta-HKixBCOQz3hWk0Htik3J/w@public.gmane.org>
-> Cc: Arnd Bergmann <arnd-r2nGTMty4D4@public.gmane.org>
-> Cc: Grant Likely <grant.likely-s3s/WqlpOiPyB63q8FvJNQ@public.gmane.org>
-> Cc: devicetree-discuss-uLR06cmDAlY/bJ5BZ2RsiQ@public.gmane.org
-> Cc: Rob Herring <rob.herring-bsGFqQB8/DxBDgjK7y7TUQ@public.gmane.org>
+> We use the additional state in pt_regs->orig_r8 to ckh if restarting
+> has already been done once.
+> 
+> Thanks to Al Viro for spotting this.
+> 
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Al Viro <viro@ZenIV.linux.org.uk>
 > ---
->  arch/arc/Kconfig                |    9 +++++
->  arch/arc/Makefile               |    9 +++++
->  arch/arc/boot/dts/Makefile      |   14 ++++++++
->  arch/arc/boot/dts/skeleton.dts  |   10 ++++++
->  arch/arc/boot/dts/skeleton.dtsi |   21 ++++++++++++
->  arch/arc/include/asm/prom.h     |   15 ++++++++
->  arch/arc/include/asm/sections.h |    1 +
->  arch/arc/kernel/Makefile        |    2 +
->  arch/arc/kernel/devtree.c       |   69 +++++++++++++++++++++++++++++++++++++++
->  arch/arc/kernel/setup.c         |    9 +++++
->  arch/arc/mm/init.c              |   13 +++++++
->  11 files changed, 172 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arc/boot/dts/Makefile
->  create mode 100644 arch/arc/boot/dts/skeleton.dts
->  create mode 100644 arch/arc/boot/dts/skeleton.dtsi
->  create mode 100644 arch/arc/include/asm/prom.h
->  create mode 100644 arch/arc/kernel/devtree.c
+>  arch/arc/include/asm/ptrace.h |    3 +++
+>  arch/arc/kernel/signal.c      |   12 ++++++++----
+>  2 files changed, 11 insertions(+), 4 deletions(-)
 > 
-> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-> index a353849..7666857 100644
-> --- a/arch/arc/Kconfig
-> +++ b/arch/arc/Kconfig
-> @@ -24,8 +24,11 @@ config ARC
->  	select GENERIC_SMP_IDLE_THREAD
->  	select HAVE_GENERIC_HARDIRQS
->  	select HAVE_MEMBLOCK
-> +	select IRQ_DOMAIN
->  	select MODULES_USE_ELF_RELA
->  	select NO_BOOTMEM
-> +	select OF
-> +	select OF_EARLY_FLATTREE
+> diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
+> index 1711d56..8bf7ff4 100644
+> --- a/arch/arc/include/asm/ptrace.h
+> +++ b/arch/arc/include/asm/ptrace.h
+> @@ -135,6 +135,9 @@ struct user_regs_struct {
+>  #define in_syscall(regs)    (regs->event & orig_r8_IS_SCALL)
+>  #define in_brkpt_trap(regs) (regs->event & orig_r8_IS_BRKPT)
 >  
->  config SCHED_OMIT_FRAME_POINTER
->  	def_bool y
-> @@ -320,6 +323,12 @@ config CMDLINE_UBOOT
->  	  to it. kernel startup code will copy the string into cmdline buffer
->  	  and also append CONFIG_CMDLINE.
+> +#define syscall_wont_restart(regs) (regs->event |= orig_r8_IS_SCALL_RESTARTED)
+> +#define syscall_restartable(regs) !(regs->event &  orig_r8_IS_SCALL_RESTARTED)
+> +
+>  #define current_pt_regs()					\
+>  ({								\
+>  	/* open-coded current_thread_info() */			\
+> diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
+> index 887a383..9a1ea2b 100644
+> --- a/arch/arc/kernel/signal.c
+> +++ b/arch/arc/kernel/signal.c
+> @@ -131,6 +131,9 @@ SYSCALL_DEFINE0(rt_sigreturn)
+>  		if (restore_altstack(&sf->uc.uc_stack))
+>  			goto badframe;
 >  
-> +config ARC_BUILTIN_DTB_NAME
-> +	string "Built in DTB"
-> +	help
-> +	  Set the name of the DTB to embed in the vmlinux binary
-> +	  Leaving it blank selects the minimal "skeleton" dtb
+> +	/* Don't restart from sigreturn */
+> +	syscall_wont_restart(regs);
 > +
->  source "kernel/Kconfig.preempt"
+>  	return regs->r0;
 >  
->  endmenu	 # "ARC Architecture Configuration"
-> diff --git a/arch/arc/Makefile b/arch/arc/Makefile
-> index 4d52a3b..90570f9 100644
-> --- a/arch/arc/Makefile
-> +++ b/arch/arc/Makefile
-> @@ -83,6 +83,9 @@ head-y		:= arch/arc/kernel/head.o
->  # See arch/arc/Kbuild for content of core part of the kernel
->  core-y		+= arch/arc/
+>  badframe:
+> @@ -321,13 +324,13 @@ void do_signal(struct pt_regs *regs)
 >  
-> +# w/o this dtb won't embed into kernel binary
-> +core-y		+= arch/arc/boot/dts/
-> +
->  # w/o this ifneq, make ARCH=arc clean was crapping out
->  ifneq ($(platform-y),)
->  core-y		+= arch/arc/plat-$(PLATFORM)/
-> @@ -101,6 +104,12 @@ bootpImage: vmlinux
->  uImage: vmlinux
->  	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+>  	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
 >  
-> +%.dtb %.dtb.S %.dtb.o:
-> +	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
-> +
-> +dtbs:
-> +	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
-> +
->  archclean:
->  	$(Q)$(MAKE) $(clean)=$(boot)
+> -	/* Are we from a system call? */
+> -	restart_scall = in_syscall(regs);
+> +	restart_scall = in_syscall(regs) && syscall_restartable(regs);
 >  
-> diff --git a/arch/arc/boot/dts/Makefile b/arch/arc/boot/dts/Makefile
-> new file mode 100644
-> index 0000000..4a972a3
-> --- /dev/null
-> +++ b/arch/arc/boot/dts/Makefile
-> @@ -0,0 +1,14 @@
-> +ifeq ($(CONFIG_OF),y)
-> +
-> +# Built-in dtb
-> +builtindtb-y		:= skeleton
-> +
-> +ifneq ($(CONFIG_ARC_BUILTIN_DTB_NAME),"")
-> +	builtindtb-y	:= $(CONFIG_ARC_BUILTIN_DTB_NAME)
-> +endif
-> +
-> +obj-y	+= $(patsubst "%",%,$(builtindtb-y)).dtb.o
-> +
-> +clean-files := *.dtb
-> +
-> +endif
-> diff --git a/arch/arc/boot/dts/skeleton.dts b/arch/arc/boot/dts/skeleton.dts
-> new file mode 100644
-> index 0000000..25a84fb
-> --- /dev/null
-> +++ b/arch/arc/boot/dts/skeleton.dts
-> @@ -0,0 +1,10 @@
-> +/*
-> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +/dts-v1/;
-> +
-> +/include/ "skeleton.dtsi"
-> diff --git a/arch/arc/boot/dts/skeleton.dtsi b/arch/arc/boot/dts/skeleton.dtsi
-> new file mode 100644
-> index 0000000..9b357d8
-> --- /dev/null
-> +++ b/arch/arc/boot/dts/skeleton.dtsi
-> @@ -0,0 +1,21 @@
-> +/*
-> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +/*
-> + * Skeleton device tree; the bare minimum needed to boot; just include and
-> + * add a compatible value.
-> + */
-> +
-> +/ {
-> +	compatible = "snps,arc";
-> +	#address-cells = <1>;
-> +	#size-cells = <1>;
-> +	chosen { };
-> +	aliases { };
-> +	memory { device_type = "memory"; reg = <0 0>; };
-> +};
-> diff --git a/arch/arc/include/asm/prom.h b/arch/arc/include/asm/prom.h
-> new file mode 100644
-> index 0000000..f54489b
-> --- /dev/null
-> +++ b/arch/arc/include/asm/prom.h
-> @@ -0,0 +1,15 @@
-> +/*
-> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef _ASM_ARC_PROM_H_
-> +#define _ASM_ARC_PROM_H_
-> +
-> +#define HAVE_ARCH_DEVTREE_FIXUPS
-> +extern int __init setup_machine_fdt(void *dt);
-> +
-> +#endif
-> diff --git a/arch/arc/include/asm/sections.h b/arch/arc/include/asm/sections.h
-> index fc15f2e..6fc1159 100644
-> --- a/arch/arc/include/asm/sections.h
-> +++ b/arch/arc/include/asm/sections.h
-> @@ -13,5 +13,6 @@
+>  	if (signr > 0) {
+> -		if (restart_scall)
+> +		if (restart_scall) {
+>  			arc_restart_syscall(&ka, regs);
+> -
+> +			syscall_wont_restart(regs);	/* No more restarts */
+> +		}
+>  		handle_signal(signr, &ka, &info, regs);
+>  		return;
+>  	}
+> @@ -342,6 +345,7 @@ void do_signal(struct pt_regs *regs)
+>  			regs->r8 = __NR_restart_syscall;
+>  			regs->ret -= 4;
+>  		}
+> +		syscall_wont_restart(regs);	/* No more restarts */
+>  	}
 >  
->  extern char _int_vec_base_lds[];
->  extern char __arc_dccm_base[];
-> +extern char __dtb_start[];
->  
->  #endif
-> diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-> index 6d83431..8a55e99 100644
-> --- a/arch/arc/kernel/Makefile
-> +++ b/arch/arc/kernel/Makefile
-> @@ -8,6 +8,8 @@
->  obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o
->  obj-y	+= signal.o traps.o sys.o troubleshoot.o stacktrace.o clk.o
->  
-> +obj-$(CONFIG_OF)			+= devtree.o
-> +
->  obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
->  CFLAGS_fpu.o   += -mdpfp
->  
-> diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
-> new file mode 100644
-> index 0000000..229f78e
-> --- /dev/null
-> +++ b/arch/arc/kernel/devtree.c
-> @@ -0,0 +1,69 @@
-> +/*
-> + * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
-> + *
-> + * Based on highly stipped down version of METAG
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +
-> +#include <linux/init.h>
-> +#include <linux/export.h>
-> +#include <linux/errno.h>
-> +#include <linux/types.h>
-> +#include <linux/reboot.h>
-> +#include <linux/memblock.h>
-> +#include <linux/of.h>
-> +#include <linux/of_fdt.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_platform.h>
-> +#include <asm/prom.h>
-> +
-> +/* called from unflatten_device_tree() to bootstrap devicetree itself */
-> +void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-> +{
-> +	return __va(memblock_alloc(size, align));
-> +}
-> +
-> +/**
-> + * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
-> + * @dt:		virtual address pointer to dt blob
-> + *
-> + * If a dtb was passed to the kernel, then use it to choose the correct
-> + * machine_desc and to setup the system.
-> + */
-> +int __init setup_machine_fdt(void *dt)
-> +{
-> +	struct boot_param_header *devtree = dt;
-> +	unsigned long dt_root;
-> +	char *model, *compat;
-> +	char manufacturer[16];
-> +
-> +	/* check device tree validity */
-> +	if (be32_to_cpu(devtree->magic) != OF_DT_HEADER)
-> +		return 1;
-> +
-> +	/* Search the mdescs for the 'best' compatible value match */
-> +	initial_boot_params = devtree;
-> +	dt_root = of_get_flat_dt_root();
-> +
-> +	/* compat = "<manufacturer>,<model>" */
-> +	compat = of_get_flat_dt_prop(dt_root, "compatible", NULL);
-> +	if (!compat)
-> +		compat = "<unknown>";
-> +
-> +	model = strchr(compat, ',');
-> +	if (model)
-> +		model++;
-> +
-> +	strlcpy(manufacturer, compat, model ? model - compat : strlen(compat));
-> +
-> +	pr_info("Board \"%s\" from %s (Manufacturer)\n", model, manufacturer);
-> +
-> +	/* Retrieve various information from the /chosen node */
-> +	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
-> +
-> +	return 0;
-> +}
-> diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
-> index 82ac206..27aebd6 100644
-> --- a/arch/arc/kernel/setup.c
-> +++ b/arch/arc/kernel/setup.c
-> @@ -13,6 +13,8 @@
->  #include <linux/console.h>
->  #include <linux/module.h>
->  #include <linux/cpu.h>
-> +#include <linux/of_fdt.h>
-> +#include <asm/sections.h>
->  #include <asm/arcregs.h>
->  #include <asm/tlb.h>
->  #include <asm/cache.h>
-> @@ -20,6 +22,7 @@
->  #include <asm/page.h>
->  #include <asm/irq.h>
->  #include <asm/arcregs.h>
-> +#include <asm/prom.h>
->  
->  #define FIX_PTR(x)  __asm__ __volatile__(";" : "+r"(x))
->  
-> @@ -57,6 +60,8 @@ void __init __attribute__((weak)) arc_platform_early_init(void)
->  
->  void __init setup_arch(char **cmdline_p)
->  {
-> +	int rc;
-> +
->  #ifdef CONFIG_CMDLINE_UBOOT
->  	/* Make sure that a whitespace is inserted before */
->  	strlcat(command_line, " ", sizeof(command_line));
-> @@ -71,6 +76,8 @@ void __init setup_arch(char **cmdline_p)
->  	strlcpy(boot_command_line, command_line, COMMAND_LINE_SIZE);
->  	*cmdline_p = command_line;
->  
-> +	rc = setup_machine_fdt(__dtb_start);
-> +
->  	/* To force early parsing of things like mem=xxx */
->  	parse_early_param();
->  
-> @@ -81,6 +88,8 @@ void __init setup_arch(char **cmdline_p)
->  
->  	setup_arch_memory();
->  
-> +	unflatten_device_tree();
-> +
->  	/* Can be issue if someone passes cmd line arg "ro"
->  	 * But that is unlikely so keeping it as it is
->  	 */
-> diff --git a/arch/arc/mm/init.c b/arch/arc/mm/init.c
-> index 63da347..682cf57 100644
-> --- a/arch/arc/mm/init.c
-> +++ b/arch/arc/mm/init.c
-> @@ -39,6 +39,11 @@ static int __init setup_mem_sz(char *str)
->  }
->  early_param("mem", setup_mem_sz);
->  
-> +void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-> +{
-> +	pr_err("%s(%llx, %llx)\n", __func__, base, size);
-> +}
-> +
->  /*
->   * First memory setup routine called from setup_arch()
->   * 1. setup swapper's mm @init_mm
-> @@ -169,3 +174,11 @@ void __init free_initrd_mem(unsigned long start, unsigned long end)
->  	free_init_pages("initrd memory", start, end);
->  }
->  #endif
-> +
-> +#ifdef CONFIG_OF_FLATTREE
-> +void __init early_init_dt_setup_initrd_arch(unsigned long start,
-> +					    unsigned long end)
-> +{
-> +	pr_err("%s(%lx, %lx)\n", __func__, start, end);
-> +}
-> +#endif /* CONFIG_OF_FLATTREE */
+>  	/* If there's no signal to deliver, restore the saved sigmask back */
 > 
 
-Does the reworked patch look OK to you ? If so, can I get your ACK please.
+If this looks OK, can I get your ACK on this.
 
 Thx,
 -Vineet
