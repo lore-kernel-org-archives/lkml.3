@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3A1LXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:23:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54069 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754009Ab3A1LXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756314Ab3A1LXZ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 28 Jan 2013 06:23:25 -0500
-Date: Mon, 28 Jan 2013 19:23:11 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the char-misc tree with the
- sound-asoc tree
-Message-ID: <20130128112309.GA8301@opensource.wolfsonmicro.com>
-References: <20130128215444.98524bf94e5fcd2035833055@canb.auug.org.au>
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:51408 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab3A1LXX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:23:23 -0500
+Message-ID: <51065FA6.4070208@googlemail.com>
+Date: Mon, 28 Jan 2013 11:23:18 +0000
+From: Chris Clayton <chris2553@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130108 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
-Content-Disposition: inline
-In-Reply-To: <20130128215444.98524bf94e5fcd2035833055@canb.auug.org.au>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yijing Wang <wangyijing@huawei.com>
+CC: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
+        Yijing Wang <wangyijing0307@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
+Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
+References: <51016937.1020202@googlemail.com> <510189B1.606@fold.natur.cuni.cz> <5104427D.2050002@googlemail.com> <510494D6.1010000@gmail.com> <51050D43.2050703@googlemail.com> <51051B1B.3080105@gmail.com> <51052DB2.4090702@googlemail.com> <51053917.6060400@fold.natur.cuni.cz> <5105491E.9050907@googlemail.com> <510558CE.9000600@fold.natur.cuni.cz> <5105AFDB.9000200@googlemail.com> <5105E51D.2020606@huawei.com> <51064F1A.1020909@googlemail.com>
+In-Reply-To: <51064F1A.1020909@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+[snip]
 
-On Mon, Jan 28, 2013 at 09:54:44PM +1100, Stephen Rothwell wrote:
+> [chris:~]$ cat /proc/cmdline
+> root=/dev/sda5 pciehp_ports=native ro resume=/dev/sda6
+                      ^^
+                   **typo**
+I've run the test again with pcie_ports=native and the directories now 
+get populated. Even better though, is that when I plug in the card, 
+hotplug **works** and the card's drivers are loaded.
 
-> Today's linux-next merge of the char-misc tree got a conflict in
-> include/linux/mfd/arizona/pdata.h between commit c94aa30edac4 ("ASoC:
-> arizona: Allow number of channels clocked to be restricted") from the
-> sound-asoc tree and commit 92a49871b378 ("extcon: arizona: Support use of
-> GPIO5 as an input to jack detection") from the char-misc tree.
+Excellent! Thank you so much for your help (and patience) Martin and Yijing.
 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+Now to solving why running scandvb doesn't find any TV channels.
 
-Thanks.
+Chris
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRBl+XAAoJELSic+t+oim9nXwP/3QfIW5jHPA/gI8i2DVflUA1
-1ETsF53Q2aN/eEhOJHM0jnR/uBtSb0s1O8/YpCsF1bzS3PCypeCwT62Bv/nx8uSi
-MaIPyZ300ffjGSgzAF1fElHED751c1n5LPEJj0wAqdu9mKv7Y6TvITXomg5LXxKh
-2qThTmzAIZ8SUR1w2tCkJREEQUcr8sUWq6fGUAPg0Q/vfAiGDsrjkvRX9eo5Pkvr
-Cf+NqGkX66mcqxQxbBMV3aZ+l3wGux4RDGZazpvC6dK1gGlD6pHHLC6+NfPo8T6c
-6RTVAhEHgfY1ueURwqVOOGVsy7Sz3czS06782PP/v7LDl8HwEbQ/ueqTDjSTCa1A
-r9NowjI2wvmCP8WzEyfUPzQQIa8mLRFPAl8I6waguN0yReWNly5AZGkINLVH/GBw
-tlqfiAqnmpI29f3PFTbMD1LPhgQQkfFIzOQS7kQJ5DQL167UPd+d6jgVOieS6sP6
-cGcT5U1e1C2sS5GPwPjvUzzFnEkVvUptfM40nw2Z2wb5zmSsKtNz1cB6j4duO5ka
-DShtCwyld/4H2WniADbt6HEgfAg9jbj2QMF2WWM6Zs5aKMkRt78NZGQPbtC2bmMx
-9gxP2BO5wLGPwifBFV7ySR6O7j18X1LJVqtH9MHNylyS2WVnAfiDW2wwAFjJPvbb
-/qPzuQFLO3oLCMQoSU+D
-=10QC
------END PGP SIGNATURE-----
-
---a8Wt8u1KmwUX3Y2C--
+[snip]
