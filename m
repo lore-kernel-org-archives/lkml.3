@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab3A1PUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:20:40 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56770 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab3A1PUh (ORCPT
+	id S1754268Ab3A1PYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:24:25 -0500
+Received: from host171.canaca.com ([67.55.55.225]:50597 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab3A1PYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:20:37 -0500
-Date: Mon, 28 Jan 2013 15:20:10 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Roger Quadros <rogerq@ti.com>, tony@atomide.com, sameo@linux.intel.com,
-        balbi@ti.com, gregkh@linuxfoundation.org, eballetbo@gmail.com,
-        javier@dowhile0.org, sshtylyov@mvista.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/30] USB: ehci-omap: Use devm_request_and_ioremap()
-Message-ID: <20130128152010.GN23505@n2100.arm.linux.org.uk>
-References: <1359372631-8180-10-git-send-email-rogerq@ti.com> <Pine.LNX.4.44L0.1301281013010.1997-100000@iolanthe.rowland.org>
+	Mon, 28 Jan 2013 10:24:22 -0500
+Message-ID: <6b10e63f6686b4b0d05ec7ccd896f39e.squirrel@mungewell.org>
+In-Reply-To: <alpine.LNX.2.00.1301281601370.23853@pobox.suse.cz>
+References: <1359095687-13398-1-git-send-email-simon@mungewell.org>
+    <1359095687-13398-4-git-send-email-simon@mungewell.org>
+    <alpine.LNX.2.00.1301281601370.23853@pobox.suse.cz>
+Date: Mon, 28 Jan 2013 10:24:19 -0500
+Subject: Re: [PATCH 4/4] USB: HID: SRW-S1 Add support controlling all LEDs
+ simultaneously
+From: simon@mungewell.org
+To: "Jiri Kosina" <jkosina@suse.cz>
+Cc: "Simon Wood" <simon@mungewell.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rosegardener@freeode.co.uk
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1301281013010.1997-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 10:17:33AM -0500, Alan Stern wrote:
-> On Mon, 28 Jan 2013, Roger Quadros wrote:
-> 
-> > Make use of devm_request_and_ioremap() and correct comment.
-> 
-> Didn't a big patch come through recently converting all usages of 
-> devm_request_and_ioremap() to another function (I forget the name) that 
-> does its own error reporting and returns an ERR_PTR value?
-> 
-> (Checks the mailing list archive...)  Ah, here it is:
-> 
-> 	http://marc.info/?l=linux-usb&m=135876311801537&w=2
-> 
-> And the new function is devm_ioremap_resource().  We should avoid 
-> adding new usages of an old interface.
+> On Thu, 24 Jan 2013, Simon Wood wrote:
+>
+>> From: simon <simon@simon-virtual-machine.(none)>
+>>
+>> This patch to the SRW-S1 driver adds the ability to control all
+>> LEDs simultaneously as testing showed that it was slow (noticably!!)
+>> when seting or clearing all the LEDs in turn.
+>>
+>> It adds a 'RPMALL' LED, whose behavoir is asserted to all the LEDs in
+>> the bar graph, individual LEDs can subsequently be turned on/off
+>> individually.
+>>
+>> Signed-off-by: Simon Wood <simon@mungewell.org>
+>> tested-by: John Murphy <rosegardener@freeode.co.uk>
+> [ ... snip ... ]
+>
+>> @@ -219,13 +255,34 @@ static int srws1_probe(struct hid_device *hdev,
+>>
+>>  	/* register led subsystem */
+>>  	drv_data->led_state = 0;
+>> -	for (i = 0; i < SRWS1_NUMBER_LEDS; i++)
+>> +	for (i = 0; i < SRWS1_NUMBER_LEDS + 1; i++)
+>>  		drv_data->led[i] = NULL;
+>>
+>>  	srws1_set_leds(hdev, 0);
+>>
+>> -	name_sz = strlen(hdev->uniq) + 15;
+>> +	name_sz = strlen(hdev->uniq) + 16;
+>> +
+>> +	/* 'ALL', for setting all LEDs simultaneously */
+>> +	led = kzalloc(sizeof(struct led_classdev)+name_sz, GFP_KERNEL);
+>
+> Is this memory ever freed?
 
-Maybe... if devm_ioremap_resource() was already in the kernel.  The
-problem at the moment is it isn't, and it'll probably be rather
-horrid for everyone to deal with especially when it comes to testing.
+Yes. The pointer to it is stored at the end of the drv_data leds[] array
+(line 280), and will be free'd on probe fail (line 314) or when device is
+removed (line 341).
+
+Simon
+
