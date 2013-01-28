@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab3A1LJW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:09:22 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:48045 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447Ab3A1LJT convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 28 Jan 2013 06:09:19 -0500
-Message-Id: <51066A6B02000078000BA034@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Mon, 28 Jan 2013 11:09:15 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
-        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/3] xen/blkback: Don't trust the
- handle from the frontend.
-References: <1359135152-30688-1-git-send-email-konrad.wilk@oracle.com>
- <1359135152-30688-2-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1359135152-30688-2-git-send-email-konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756403Ab3A1LOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:14:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754384Ab3A1LOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:14:03 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH V7 0/3] handle polling errors in vhost/vhost_net
+Date: Mon, 28 Jan 2013 19:05:16 +0800
+Message-Id: <1359371119-10208-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 25.01.13 at 18:32, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> The 'handle' is the device that the request is from. For the life-time
-> of the ring we copy it from a request to a response so that the frontend
-> is not surprised by it. But we do not need it - when we start processing
-> I/Os we have our own 'struct phys_req' which has only most essential
-> information about the request. In fact the 'vbd_translate' ends up
-> over-writing the preq.dev with a value from the backend.
-> 
-> This assignment of preq.dev with the 'handle' value is superfluous
-> so lets not do it.
-> 
-> Cc: stable@vger.kernel.org 
+This is an update version of last version to fix the handling of polling errors
+in vhost/vhost_net.
 
-Is this really stable material? It fixes nothing but the (wrong)
-impression that the driver might be using frontend provided data
-without checking.
+Currently, vhost and vhost_net ignore polling errors which can lead kernel
+crashing when it tries to remove itself from waitqueue after the polling
+failure. Fix this by:
 
-Jan
+- examing the POLLERR when setting backend and report erros to userspace
+- let tun always add to waitqueue in .poll() after the queue is created even if
+  it was detached.
 
-> Acked-by: Jan Beulich <jbeulich@suse.com>
-> Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/block/xen-blkback/blkback.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/block/xen-blkback/blkback.c 
-> b/drivers/block/xen-blkback/blkback.c
-> index 742871d..2de3da9 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -890,7 +890,6 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
->  		goto fail_response;
->  	}
->  
-> -	preq.dev           = req->u.rw.handle;
->  	preq.sector_number = req->u.rw.sector_number;
->  	preq.nr_sects      = 0;
->  
-> -- 
-> 1.8.0.2
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org 
-> http://lists.xen.org/xen-devel 
+Changes from V6:
+- don't use RCU to protect the tfile->detached.
 
+Changes from V5:
+- use rcu_dereference() instead of the wrong rtnl_dereference() in data path
+- test with CONFIG_PROVE_RCU
 
+Changes from V4:
+- check the detached state by tfile->detached and protect it by RCU
+
+Changes from V3:
+- make a smaller patch that doesn't touch the whole polling state and only check
+the polliner errors in backend setting.
+- add a patch that allows tuntap to do polling/reading/writing when detached
+which could simplify the work of its user.
+
+Changes from v2:
+- check poll->wqh instead of the wrong assumption about POLLERR and waitqueue
+- drop the whole tx polling state check since it was replaced by the wqh
+checking
+- drop the buggy tuntap patch
+
+Changes from v1:
+- restore the state before the ioctl when vhost_init_used() fails
+- log the error when meet polling errors in the data path
+- don't put into waitqueue when tun_chr_poll() return POLLERR
+
+Jason Wang (3):
+  vhost_net: correct error handling in vhost_net_set_backend()
+  vhost_net: handle polling errors when setting backend
+  tuntap: allow polling/writing/reading when detached
+
+ drivers/net/tun.c     |   25 ++++++++++++++++---------
+ drivers/vhost/net.c   |   41 ++++++++++++++++++++++++++++-------------
+ drivers/vhost/vhost.c |   18 +++++++++++++++---
+ drivers/vhost/vhost.h |    2 +-
+ 4 files changed, 60 insertions(+), 26 deletions(-)
 
