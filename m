@@ -1,45 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab3A1S0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:26:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61604 "EHLO mx1.redhat.com"
+	id S1753002Ab3A1S03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:26:29 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45517 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624Ab3A1S0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:26:23 -0500
-Date: Mon, 28 Jan 2013 19:24:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] uprobes: kill uprobe_trace_consumer and other cleanups
-Message-ID: <20130128182423.GA18273@redhat.com>
+	id S1751483Ab3A1S0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:26:19 -0500
+From: Nishanth Menon <nm@ti.com>
+To: linux-pm <linux-pm@vger.kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Rafael <rjw@sisk.pl>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH 1/2] PM / OPP: switch exported symbols to GPL variant
+Date: Mon, 28 Jan 2013 12:26:15 -0600
+Message-ID: <1359397576-26131-2-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359397576-26131-1-git-send-email-nm@ti.com>
+References: <1359397576-26131-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+We are GPLV2 library, so be clear in the symbols exported as well.
 
-On top of
-"[PATCH 0/4] uprobes: Teach debug/tracing/uprobe_events to do the filtering"
-I sent yesterday.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/base/power/opp.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-I tried to test that series, seems to work...
-
-This one tries to cleanup the code. No functional changes. Almost untested
-so far, but please review.
-
-Since I had to look at this code, I simply can't resist. uprobe_trace_consumer
-complicates the code for no reason and imho should die.
-
-Oleg.
-
- kernel/trace/trace_uprobe.c |  146 ++++++++++++++++++-------------------------
- 1 files changed, 62 insertions(+), 84 deletions(-)
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index 50b2831..0dbe270 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -162,7 +162,7 @@ unsigned long opp_get_voltage(struct opp *opp)
+ 
+ 	return v;
+ }
+-EXPORT_SYMBOL(opp_get_voltage);
++EXPORT_SYMBOL_GPL(opp_get_voltage);
+ 
+ /**
+  * opp_get_freq() - Gets the frequency corresponding to an available opp
+@@ -192,7 +192,7 @@ unsigned long opp_get_freq(struct opp *opp)
+ 
+ 	return f;
+ }
+-EXPORT_SYMBOL(opp_get_freq);
++EXPORT_SYMBOL_GPL(opp_get_freq);
+ 
+ /**
+  * opp_get_opp_count() - Get number of opps available in the opp list
+@@ -225,7 +225,7 @@ int opp_get_opp_count(struct device *dev)
+ 
+ 	return count;
+ }
+-EXPORT_SYMBOL(opp_get_opp_count);
++EXPORT_SYMBOL_GPL(opp_get_opp_count);
+ 
+ /**
+  * opp_find_freq_exact() - search for an exact frequency
+@@ -276,7 +276,7 @@ struct opp *opp_find_freq_exact(struct device *dev, unsigned long freq,
+ 
+ 	return opp;
+ }
+-EXPORT_SYMBOL(opp_find_freq_exact);
++EXPORT_SYMBOL_GPL(opp_find_freq_exact);
+ 
+ /**
+  * opp_find_freq_ceil() - Search for an rounded ceil freq
+@@ -323,7 +323,7 @@ struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq)
+ 
+ 	return opp;
+ }
+-EXPORT_SYMBOL(opp_find_freq_ceil);
++EXPORT_SYMBOL_GPL(opp_find_freq_ceil);
+ 
+ /**
+  * opp_find_freq_floor() - Search for a rounded floor freq
+@@ -374,7 +374,7 @@ struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq)
+ 
+ 	return opp;
+ }
+-EXPORT_SYMBOL(opp_find_freq_floor);
++EXPORT_SYMBOL_GPL(opp_find_freq_floor);
+ 
+ /**
+  * opp_add()  - Add an OPP table from a table definitions
+@@ -568,7 +568,7 @@ int opp_enable(struct device *dev, unsigned long freq)
+ {
+ 	return opp_set_availability(dev, freq, true);
+ }
+-EXPORT_SYMBOL(opp_enable);
++EXPORT_SYMBOL_GPL(opp_enable);
+ 
+ /**
+  * opp_disable() - Disable a specific OPP
+@@ -590,7 +590,7 @@ int opp_disable(struct device *dev, unsigned long freq)
+ {
+ 	return opp_set_availability(dev, freq, false);
+ }
+-EXPORT_SYMBOL(opp_disable);
++EXPORT_SYMBOL_GPL(opp_disable);
+ 
+ #ifdef CONFIG_CPU_FREQ
+ /**
+-- 
+1.7.9.5
 
