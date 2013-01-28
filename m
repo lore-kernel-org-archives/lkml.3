@@ -1,192 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab3A1R1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:27:12 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60073 "EHLO e8.ny.us.ibm.com"
+	id S1757572Ab3A1R1c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:27:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56721 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756247Ab3A1R1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:27:09 -0500
-Message-ID: <5106B4D3.4000509@linux.vnet.ibm.com>
-Date: Mon, 28 Jan 2013 11:26:43 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755879Ab3A1R1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 12:27:30 -0500
+Date: Mon, 28 Jan 2013 19:31:44 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V7 3/3] tuntap: allow polling/writing/reading when
+ detached
+Message-ID: <20130128173144.GB31009@redhat.com>
+References: <1359371119-10208-1-git-send-email-jasowang@redhat.com>
+ <1359371119-10208-4-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv2 7/9] mm: break up swap_writepage() for frontswap backends
-References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-8-git-send-email-sjenning@linux.vnet.ibm.com> <20130128042202.GG3321@blaptop>
-In-Reply-To: <20130128042202.GG3321@blaptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012817-9360-0000-0000-00000FCEF5FC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359371119-10208-4-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2013 10:22 PM, Minchan Kim wrote:
-> On Mon, Jan 07, 2013 at 02:24:38PM -0600, Seth Jennings wrote:
->> swap_writepage() is currently where frontswap hooks into the swap
->> write path to capture pages with the frontswap_store() function.
->> However, if a frontswap backend wants to "resume" the writeback of
->> a page to the swap device, it can't call swap_writepage() as
->> the page will simply reenter the backend.
->>
->> This patch separates swap_writepage() into a top and bottom half, the
->> bottom half named __swap_writepage() to allow a frontswap backend,
->> like zswap, to resume writeback beyond the frontswap_store() hook and
->> by notified when the writeback completes.
->>
->> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+On Mon, Jan 28, 2013 at 07:05:19PM +0800, Jason Wang wrote:
+> We forbid polling, writing and reading when the file were detached, this may
+> complex the user in several cases:
 > 
-> Looks good to me except few nitpicks.
+> - when guest pass some buffers to vhost/qemu and then disable some queues,
+>   host/qemu needs to do its own cleanup on those buffers which is complex
+>   sometimes. We can do this simply by allowing a user can still write to an
+>   disabled queue. Write to an disabled queue will cause the packet pass to the
+>   kernel and read will get nothing.
+> - align the polling behavior with macvtap which never fails when the queue is
+>   created. This can simplify the polling errors handling of its user (e.g vhost)
+> 
+> We can simply achieve this by don't assign NULL to tfile->tun when detached.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-I broke these changes out from the main zswap patch (patch 8/9) in
-response to a request for Dan.  You are right in that there are
-changes here unrelated to the commit message.
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-The other changes are related to allowing zswap to do accounting on
-the number of outstanding flushes to the swap device.
-
-If I'm going to break those out though the two resulting patches would be:
-1. breakup __swap_writepage() and un-static __add_to_swap_cache() to
-allow resuming of swap page writeback
-2. change __swap_writepage() signature to include end_write_func and
-un-static end_swap_bio_write() for accounting of outstanding flushes
-
-Is that what you'd like to see?
-
-Seth
-
+> ---
+>  drivers/net/tun.c |   25 ++++++++++++++++---------
+>  1 files changed, 16 insertions(+), 9 deletions(-)
 > 
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> 
->> ---
->>  include/linux/swap.h |    4 ++++
->>  mm/page_io.c         |   22 +++++++++++++++++-----
->>  mm/swap_state.c      |    2 +-
->>  3 files changed, 22 insertions(+), 6 deletions(-)
->>
->> diff --git a/include/linux/swap.h b/include/linux/swap.h
->> index 8c66486..a3da829 100644
->> --- a/include/linux/swap.h
->> +++ b/include/linux/swap.h
->> @@ -321,6 +321,9 @@ static inline void mem_cgroup_uncharge_swap(swp_entry_t ent)
->>  /* linux/mm/page_io.c */
->>  extern int swap_readpage(struct page *);
->>  extern int swap_writepage(struct page *page, struct writeback_control *wbc);
->> +extern void end_swap_bio_write(struct bio *bio, int err);
->> +extern int __swap_writepage(struct page *page, struct writeback_control *wbc,
->> +	void (*end_write_func)(struct bio *, int));
->>  extern int swap_set_page_dirty(struct page *page);
->>  extern void end_swap_bio_read(struct bio *bio, int err);
->>  
->> @@ -335,6 +338,7 @@ extern struct address_space swapper_space;
->>  extern void show_swap_cache_info(void);
->>  extern int add_to_swap(struct page *);
->>  extern int add_to_swap_cache(struct page *, swp_entry_t, gfp_t);
->> +extern int __add_to_swap_cache(struct page *page, swp_entry_t entry);
-> 
-> What's related __add_to_swap_cache with this patch?
-> 
->>  extern void __delete_from_swap_cache(struct page *);
->>  extern void delete_from_swap_cache(struct page *);
->>  extern void free_page_and_swap_cache(struct page *);
->> diff --git a/mm/page_io.c b/mm/page_io.c
->> index c535d39..806085e 100644
->> --- a/mm/page_io.c
->> +++ b/mm/page_io.c
->> @@ -43,7 +43,7 @@ static struct bio *get_swap_bio(gfp_t gfp_flags,
->>  	return bio;
->>  }
->>  
->> -static void end_swap_bio_write(struct bio *bio, int err)
->> +void end_swap_bio_write(struct bio *bio, int err)
-> 
-> Why do you remove static in this patch? It's not related to the patch.
-> 
->>  {
->>  	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
->>  	struct page *page = bio->bi_io_vec[0].bv_page;
->> @@ -180,15 +180,16 @@ bad_bmap:
->>  	goto out;
->>  }
->>  
->> +int __swap_writepage(struct page *page, struct writeback_control *wbc,
->> +	void (*end_write_func)(struct bio *, int));
->> +
->>  /*
->>   * We may have stale swap cache pages in memory: notice
->>   * them here and get rid of the unnecessary final write.
->>   */
->>  int swap_writepage(struct page *page, struct writeback_control *wbc)
->>  {
->> -	struct bio *bio;
->> -	int ret = 0, rw = WRITE;
->> -	struct swap_info_struct *sis = page_swap_info(page);
->> +	int ret = 0;
->>  
->>  	if (try_to_free_swap(page)) {
->>  		unlock_page(page);
->> @@ -200,6 +201,17 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
->>  		end_page_writeback(page);
->>  		goto out;
->>  	}
->> +	ret = __swap_writepage(page, wbc, end_swap_bio_write);
->> +out:
->> +	return ret;
->> +}
->> +
->> +int __swap_writepage(struct page *page, struct writeback_control *wbc,
->> +	void (*end_write_func)(struct bio *, int))
->> +{
->> +	struct bio *bio;
->> +	int ret = 0, rw = WRITE;
->> +	struct swap_info_struct *sis = page_swap_info(page);
->>  
->>  	if (sis->flags & SWP_FILE) {
->>  		struct kiocb kiocb;
->> @@ -227,7 +239,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
->>  		return ret;
->>  	}
->>  
->> -	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
->> +	bio = get_swap_bio(GFP_NOIO, page, end_write_func);
->>  	if (bio == NULL) {
->>  		set_page_dirty(page);
->>  		unlock_page(page);
->> diff --git a/mm/swap_state.c b/mm/swap_state.c
->> index 0cb36fb..7eded9c 100644
->> --- a/mm/swap_state.c
->> +++ b/mm/swap_state.c
->> @@ -67,7 +67,7 @@ void show_swap_cache_info(void)
->>   * __add_to_swap_cache resembles add_to_page_cache_locked on swapper_space,
->>   * but sets SwapCache flag and private instead of mapping and index.
->>   */
->> -static int __add_to_swap_cache(struct page *page, swp_entry_t entry)
->> +int __add_to_swap_cache(struct page *page, swp_entry_t entry)
-> 
-> Ditto
-> 
->>  {
->>  	int error;
->>  
->> -- 
->> 1.7.9.5
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 30a7d0e..2fb19da 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -298,11 +298,12 @@ static void tun_flow_cleanup(unsigned long data)
+>  }
+>  
+>  static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
+> -			    u16 queue_index)
+> +			    struct tun_file *tfile)
+>  {
+>  	struct hlist_head *head;
+>  	struct tun_flow_entry *e;
+>  	unsigned long delay = tun->ageing_time;
+> +	u16 queue_index = tfile->queue_index;
+>  
+>  	if (!rxhash)
+>  		return;
+> @@ -311,7 +312,9 @@ static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
+>  
+>  	rcu_read_lock();
+>  
+> -	if (tun->numqueues == 1)
+> +	/* We may get a very small possibility of OOO during switching, not
+> +	 * worth to optimize.*/
+> +	if (tun->numqueues == 1 || tfile->detached)
+>  		goto unlock;
+>  
+>  	e = tun_flow_find(head, rxhash);
+> @@ -411,21 +414,21 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+>  
+>  	tun = rtnl_dereference(tfile->tun);
+>  
+> -	if (tun) {
+> +	if (tun && !tfile->detached) {
+>  		u16 index = tfile->queue_index;
+>  		BUG_ON(index >= tun->numqueues);
+>  		dev = tun->dev;
+>  
+>  		rcu_assign_pointer(tun->tfiles[index],
+>  				   tun->tfiles[tun->numqueues - 1]);
+> -		rcu_assign_pointer(tfile->tun, NULL);
+>  		ntfile = rtnl_dereference(tun->tfiles[index]);
+>  		ntfile->queue_index = index;
+>  
+>  		--tun->numqueues;
+> -		if (clean)
+> +		if (clean) {
+> +			rcu_assign_pointer(tfile->tun, NULL);
+>  			sock_put(&tfile->sk);
+> -		else
+> +		} else
+>  			tun_disable_queue(tun, tfile);
+>  
+>  		synchronize_net();
+> @@ -473,6 +476,10 @@ static void tun_detach_all(struct net_device *dev)
+>  		rcu_assign_pointer(tfile->tun, NULL);
+>  		--tun->numqueues;
+>  	}
+> +	list_for_each_entry(tfile, &tun->disabled, next) {
+> +		wake_up_all(&tfile->wq.wait);
+> +		rcu_assign_pointer(tfile->tun, NULL);
+> +	}
+>  	BUG_ON(tun->numqueues != 0);
+>  
+>  	synchronize_net();
+> @@ -503,7 +510,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+>  		goto out;
+>  
+>  	err = -EINVAL;
+> -	if (rtnl_dereference(tfile->tun))
+> +	if (rtnl_dereference(tfile->tun) && !tfile->detached)
+>  		goto out;
+>  
+>  	err = -EBUSY;
+> @@ -1202,7 +1209,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+>  	tun->dev->stats.rx_packets++;
+>  	tun->dev->stats.rx_bytes += len;
+>  
+> -	tun_flow_update(tun, rxhash, tfile->queue_index);
+> +	tun_flow_update(tun, rxhash, tfile);
+>  	return total_len;
+>  }
+>  
+> @@ -1816,7 +1823,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
+>  		ret = tun_attach(tun, file);
+>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
+>  		tun = rtnl_dereference(tfile->tun);
+> -		if (!tun || !(tun->flags & TUN_TAP_MQ))
+> +		if (!tun || !(tun->flags & TUN_TAP_MQ) || tfile->detached)
+>  			ret = -EINVAL;
+>  		else
+>  			__tun_detach(tfile, false);
+> -- 
+> 1.7.1
