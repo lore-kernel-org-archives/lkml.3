@@ -1,164 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab3A1JUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:20:34 -0500
-Received: from mga01.intel.com ([192.55.52.88]:27548 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754060Ab3A1JUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:20:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,550,1355126400"; 
-   d="scan'208";a="279162445"
-Date: Mon, 28 Jan 2013 17:21:21 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v7 3/4] block: implement runtime pm strategy
-Message-ID: <20130128092121.GB2568@aaronlu.sh.intel.com>
-References: <50FA3C38.5030308@intel.com>
- <Pine.LNX.4.44L0.1301191259040.13032-100000@netrider.rowland.org>
+	id S1755302Ab3A1JUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:20:43 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48006 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab3A1JUi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 04:20:38 -0500
+From: Afzal Mohammed <afzal@ti.com>
+To: <linux-fbdev@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v5 00/12] video: da8xx-fb: am335x DT support
+Date: Mon, 28 Jan 2013 14:50:22 +0530
+Message-ID: <cover.1359356015.git.afzal@ti.com>
+X-Mailer: git-send-email 1.7.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1301191259040.13032-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 19, 2013 at 01:11:45PM -0500, Alan Stern wrote:
-> On Sat, 19 Jan 2013, Aaron Lu wrote:
-> > Considering ODD's use case, I was thinking of moving the
-> > blk_pm_runtime_init call to sd.c, as sr will not use request based auto
-> > suspend. Probably right before we decrease usage count for the device in
-> > sd_probe_async. What do you think?
-> 
-> That makes sense.  But then you should review the changes in scsi_pm.c 
-> to make sure they will work okay for devices that aren't using 
-> block-layer runtime PM.
+Hi,
 
-Now that we have two different runtime PM schemes for scsi device, and
-I think there are two ways to make them work:
+This series adds DT support to da8xx-fb driver (device found on
+DaVinci and AM335x SoC's). It does certain cleanup's in the process.
 
-1 Do it all in scsi_pm.c. In bus' runtime PM callback, check if this
-  device is using block layer runtime PM API, and act accordingly;
-2 Do it in indivisual drivers' runtime PM callback. Bus' runtime PM
-  callbacks just call pm_generic_runtime_xxx, and each driver's runtime
-  PM callback will need to do what is appropriate for them.
+This series as compared to previous version goes back to v2 way of
+configuring pixel clock rate. i.e. set divider if rate is within
+the range that is configurable with existing input clock rate, else
+change input clock rate as required instead of modeling CCF clock
+nodes in the driver (more details in 12/12)
 
-Personally I want to go with option 1, but I would like to hear your
-opinion :-)
+This makes use of Steffen Trumtrar's v17 of display timing DT support.
 
-And for option 1, the code would be like this:
+Testing has been done on AM335x SoC based boards like AM335x EVM. It
+has also been verified that display on DA850 EVM (non-DT boot) works
+as earlier.
 
-static int scsi_blk_runtime_suspend(struct device *dev)
-{
-	struct scsi_device *sdev = to_scsi_device(dev);
-	int err;
+This series is based on v3.8-rc3,
+ and is dependent on,
+1. Series v17 "of: add display helper" by,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+2. Patch "da8xx: Allow use by am33xx based devices" by,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+3. Series v3 "video: da8xx-fb: runtime timing configuration" by,
+        me (Afzal Mohammed <afzal@ti.com>)
 
-	err = blk_pre_runtime_suspend(sdev->request_queue);
-	if (err)
-		return err;
-	err = pm_generic_runtime_suspend(dev);
-	blk_post_runtime_suspend(sdev->request_queue, err);
+To test this series on AM335x based boards,
+1. Series "HWMOD fixes for AM33xx PWM submodules and device tree nodes" by,
+        Philip, Avinash <avinashphilip@ti.com>
+as well as following,
+2. Series v2 "ARM: dts: AM33XX: lcdc support",
+3. Patch v2 "ARM: OMAP2+: dpll: am335x - avoid freqsel",
+4. Patch v2 "ARM: OMAP2+: clock: DEFINE_STRUCT_CLK_FLAGS helper",
+5. Patch v2 "ARM: AM33XX: clock: SET_RATE_PARENT in lcd path" by,
+	me (Afzal Mohammed <afzal@ti.com>)
+would be needed.
 
-	return err;
-}
+All above dependencies along with those required for testing is available
+@ git://gitorious.org/x0148406-public/linux-kernel.git tags/da8xx-fb-dt-v5
 
-static int scsi_dev_runtime_suspend(struct device *dev)
-{
-	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-	int err;
+Regards
+Afzal
 
-	err = scsi_dev_type_suspend(dev, pm ? pm->runtime_suspend : NULL);
-	if (err == -EAGAIN)
-		pm_schedule_suspend(dev, jiffies_to_msecs(
-					round_jiffies_up_relative(HZ/10)));
+v5: use v2 method of configuring pixel clock rate instead of modeling
+    CCF clock nodes in driver, i.e. set divider if rate is within
+    the range that is configurable with existing input clock rate,
+    else change input clock rate as required.
+v4: use new registration for clock divider having minimum divider
+    requirement and have ifdef'ery in a better way
+v3: model CCF clock divider with parent propogation if CCF selected
+v2: 2 new patches - one to configure clock rate properly (12/12)and
+    other to make io operations safe (1/12)
 
-	return err;
-}
 
-static int scsi_runtime_suspend(struct device *dev)
-{
-	int err = 0;
 
-	dev_dbg(dev, "scsi_runtime_suspend\n");
-	if (scsi_is_sdev_device(dev)) {
-		struct scsi_device *sdev = to_scsi_device(dev);
-		if (sdev->request_queue->dev)
-			err = scsi_blk_runtime_suspend(dev);
-		else
-			err = scsi_dev_runtime_suspend(dev);
-	}
+Afzal Mohammed (11):
+  video: da8xx-fb: make io operations safe
+  video: da8xx-fb: enable sync lost intr for v2 ip
+  video: da8xx-fb: use devres
+  video: da8xx-fb: ensure non-null cfg in pdata
+  video: da8xx-fb: reorganize panel detection
+  video: da8xx-fb: minimal dt support
+  video: da8xx-fb: invoke platform callback safely
+  video: da8xx-fb: obtain fb_videomode info from dt
+  video: da8xx-fb: ensure pdata only for non-dt
+  video: da8xx-fb: setup struct lcd_ctrl_config for dt
+  video: da8xx-fb: set upstream clock rate (if reqd)
 
-	/* Insert hooks here for targets, hosts, and transport classes */
+Manjunathappa, Prakash (1):
+  video: da8xx-fb: fix 24bpp raster configuration
 
-	return err;
-}
+ .../devicetree/bindings/video/fb-da8xx.txt         |  37 ++++
+ drivers/video/da8xx-fb.c                           | 226 ++++++++++++++-------
+ 2 files changed, 194 insertions(+), 69 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/video/fb-da8xx.txt
 
-static int scsi_blk_runtime_resume(struct device *dev)
-{
-	struct scsi_device *sdev = to_scsi_device(dev);
-	int err;
-
-	blk_pre_runtime_resume(sdev->request_queue);
-	err = pm_generic_runtime_resume(dev);
-	blk_post_runtime_resume(sdev->request_queue, err);
-
-	return err;
-}
-
-static int scsi_dev_runtime_resume(struct device *dev)
-{
-	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-	return scsi_dev_type_resume(dev, pm ? pm->runtime_resume : NULL);
-}
-
-static int scsi_runtime_resume(struct device *dev)
-{
-	int err = 0;
-
-	dev_dbg(dev, "scsi_runtime_resume\n");
-	if (scsi_is_sdev_device(dev)) {
-		struct scsi_device *sdev = to_scsi_device(dev);
-		if (sdev->request_queue->dev)
-			err = scsi_blk_runtime_resume(dev);
-		else
-			err = scsi_dev_runtime_resume(dev);
-	}
-
-	/* Insert hooks here for targets, hosts, and transport classes */
-
-	return err;
-}
-
-static int scsi_runtime_idle(struct device *dev)
-{
-	int err;
-
-	dev_dbg(dev, "scsi_runtime_idle\n");
-
-	/* Insert hooks here for targets, hosts, and transport classes */
-
-	if (scsi_is_sdev_device(dev)) {
-		struct scsi_device *sdev = to_scsi_device(dev);
-		if (sdev->request_queue->dev) {
-			pm_runtime_mark_last_busy(dev);
-			err = pm_runtime_autosuspend(dev);
-		} else {
-			err = pm_schedule_suspend(dev, 100);
-		}
-	} else {
-		err = pm_runtime_suspend(dev);
-	}
-	return err;
-}
-
-Please feel free to suggest, thanks.
-
--Aaron
+-- 
+1.7.12
 
