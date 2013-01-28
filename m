@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab3A1UWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 15:22:21 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:46786 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab3A1UWS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 15:22:18 -0500
-Date: Mon, 28 Jan 2013 12:22:14 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic dynamic per cpu refcounting
-Message-ID: <20130128202214.GD26407@google.com>
-References: <20130124232024.GA584@google.com>
- <20130125180941.GA16896@redhat.com>
- <20130125191139.GA19247@redhat.com>
- <20130128181528.GA26407@google.com>
- <20130128182737.GC22465@mtj.dyndns.org>
- <20130128184933.GC26407@google.com>
- <20130128185552.GD22465@mtj.dyndns.org>
+	id S1753771Ab3A1UWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 15:22:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33153 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753243Ab3A1UWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 15:22:47 -0500
+Date: Mon, 28 Jan 2013 15:22:41 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, dhowells@redhat.com,
+        jmorris@namei.org, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
+ keys
+Message-ID: <20130128202241.GB14405@redhat.com>
+References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
+ <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
+ <1358895228.2408.14.camel@falcor1>
+ <CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
+ <20130125210157.GA13152@redhat.com>
+ <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
+ <20130128151527.GA5868@redhat.com>
+ <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
+ <20130128185625.GC5868@redhat.com>
+ <1359404149.3906.75.camel@falcor1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130128185552.GD22465@mtj.dyndns.org>
+In-Reply-To: <1359404149.3906.75.camel@falcor1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 10:55:52AM -0800, Tejun Heo wrote:
-> Hey, Kent.
-> 
-> On Mon, Jan 28, 2013 at 10:49:33AM -0800, Kent Overstreet wrote:
-> > Yeah. It'd be really nice if it was doable without synchronize_rcu(),
-> > but it'd definitely make get/put heavier.
+On Mon, Jan 28, 2013 at 03:15:49PM -0500, Mimi Zohar wrote:
+> On Mon, 2013-01-28 at 13:56 -0500, Vivek Goyal wrote:
+> > On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
 > > 
-> > Though, re. close() - considering we only need a synchronize_rcu() if
-> > the ref was in percpu mode, I wonder if that would be a dealbreaker. I
-> > have no clue myself.
+> > [..]
+> > > > Ok. I am hoping that it will be more than the kernel command line we
+> > > > support. In the sense that for digital signatures one needs to parse
+> > > > the signature, look at what hash algorithm has been used  and then
+> > > > collect the hash accordingly. It is little different then IMA requirement
+> > > > of calculating one pre-determine hash for all files.
+> > > 
+> > > Yes... It is obvious. It's coming.
+> > > But in general, signer should be aware of requirements and limitation
+> > > of the platform.
+> > > It is not really a problem...
+> > 
+> > One more question. I specified "ima_appraise_tcb" on kernel command line
+> > and I had an unbootable system. It refused to run "init" as it was not
+> > labeled/signed. Is there any policy/way where it appraises only signed
+> > files and does not refuse to open/execute unsigned ones.
 > 
-> The problem is that the performance drop (or latency increase) in
-> patheological cases would be catastrophic.  We're talking about
-> possibly quite a few millisecs of delay between each close().  When
-> done sequentially for large number of files, it gets ugly.  It becomes
-> a dangerous optimization to make.
+> The policy defines what needs to be measured/appraised, not the other
+> way around.  There's nothing preventing you from defining and loading a
+> different policy, one to your liking, before pivoting root.
 
-Yeah, I tend to agree.
+Hi Mimi,
 
-> > Getting rid of synchronize_rcu would basically require turning get and
-> > put into cmpxchg() loops - even in the percpu fastpath. However, percpu
-> > mode would still be getting rid of the shared cacheline contention, we'd
-> > just be adding another branch that can be safely marked unlikely() - and
-> > my current version has one of those already, so two branches instead of
-> > one in the fast path.
-> 
-> Or offer an asynchrnous interface so that high-frequency users don't
-> end up inserting synchronize_sched() between each call.  It makes the
-> interface more complex and further away from simple atomic_t
-> replacement tho.
+By policy you mean ima rules here? So I can either enable default rules
+(tcb default rules for appraisal and measurement) by using kernel command
+line options or dynamically configure my own rules using /sysfs interface?
 
-Could do that too, but then teardown gets really messy for the user - we
-need two synchronize_rcu()s:
+If yes, AFAIK, existing inputtable policies do not allow this selective
+mode where we do appraisal only on signed executable. That means I shall
+have to extend the way policies can be specified so that one specify
+that appraise only signed files?
 
-state := dying
+Also given the fact that we allow loading policy from initramfs, root
+can rebuild initramfs and change the policy which takes effect over next
+reboot. So in priciple this works only when we are trying to impose some
+policy on non-root users?
 
-synchronize_rcu()
-
-/* Now nothing's changing the per cpu counters */
-
-Add per cpu counters to atomic counter counter
-
-/* Atomic counter is now consistent */
-
-state := dead
-
-synchronize_rcu()
-
-/* Now percpu_ref_put will check for ref == 0 */
-
-/* Drop initial ref */
-
-percpu_ref_put()
-
-And note that the first synchronize_rcu() is only needed when we had
-allocated per cpu counters, my current code skips it otherwise.
-
-(which is a reason for keeping dynamic allocation I hadn't thought of -
-if we don't ever allocate percpu counters, teardown is faster)
+Thanks
+Vivek
