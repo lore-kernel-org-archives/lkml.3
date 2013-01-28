@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab3A1HQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 02:16:30 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57001 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751948Ab3A1HQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 02:16:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,550,1355126400"; 
-   d="scan'208";a="277338474"
-Message-ID: <510625FA.1060409@intel.com>
-Date: Mon, 28 Jan 2013 15:17:14 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1753439Ab3A1HQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 02:16:41 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:65256 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340Ab3A1HQh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 02:16:37 -0500
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>  <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>  <510493E4.8060602@intel.com> <20130127104039.GC8894@pd.tnic>  <51060A6D.4090208@intel.com> <1359355782.5783.59.camel@marge.simpson.net>
-In-Reply-To: <1359355782.5783.59.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1359333506-13599-1-git-send-email-minchan@kernel.org>
+References: <1359333506-13599-1-git-send-email-minchan@kernel.org>
+Date: Mon, 28 Jan 2013 09:16:35 +0200
+X-Google-Sender-Auth: Wl_CXGdu2xbhi-WqwU8nZusvD7M
+Message-ID: <CAOJsxLFg_5uhZsvPmVVC0nnsZLGpkJ0W6mHa=aavmguLGuTTnA@mail.gmail.com>
+Subject: Re: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial write
+From: Pekka Enberg <penberg@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, stable@vger.kernel.org,
+        Jerome Marchand <jmarchan@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 02:49 PM, Mike Galbraith wrote:
-> On Mon, 2013-01-28 at 13:19 +0800, Alex Shi wrote: 
->> On 01/27/2013 06:40 PM, Borislav Petkov wrote:
->>> On Sun, Jan 27, 2013 at 10:41:40AM +0800, Alex Shi wrote:
->>>> Just rerun some benchmarks: kbuild, specjbb2005, oltp, tbench, aim9,
->>>> hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
->>>> loopback netperf. on my core2, nhm, wsm, snb, platforms. no clear
->>>> performance change found.
->>>
->>> Ok, good, You could put that in one of the commit messages so that it is
->>> there and people know that this patchset doesn't cause perf regressions
->>> with the bunch of benchmarks.
->>>
->>>> I also tested balance policy/powersaving policy with above benchmark,
->>>> found, the specjbb2005 drop much 30~50% on both of policy whenever
->>>> with openjdk or jrockit. and hackbench drops a lots with powersaving
->>>> policy on snb 4 sockets platforms. others has no clear change.
->>>
->>> I guess this is expected because there has to be some performance hit
->>> when saving power...
->>>
->>
->> BTW, I had tested the v3 version based on sched numa -- on tip/master.
->> The specjbb just has about 5~7% dropping on balance/powersaving policy.
->> The power scheduling done after the numa scheduling logical.
-> 
-> That makes sense.  How the numa scheduling numbers compare to mainline?
-> Do you have all three available, mainline, and tip w. w/o powersaving
-> policy?
-> 
+On Mon, Jan 28, 2013 at 2:38 AM, Minchan Kim <minchan@kernel.org> wrote:
+> Now zram allocates new page with GFP_KERNEL in zram I/O path
+> if IO is partial. Unfortunately, It may cuase deadlock with
 
-I once caught 20~40% performance increasing on sched numa VS mainline
-3.7-rc5. but have no baseline to compare balance/powersaving performance
-since lower data are acceptable for balance/powersaving and
-tip/master changes too quickly to follow up at that time.
-:)
+s/cuase/cause/g
 
-> -Mike
-> 
-> 
+> reclaim path so this patch solves the problem.
 
+It'd be nice to know about the problem in more detail. I'm also
+curious on why you decided on GFP_ATOMIC for the read path and
+GFP_NOIO in the write path.
 
--- 
-Thanks Alex
+>
+> Cc: stable@vger.kernel.org
+> Cc: Jerome Marchand <jmarchan@redhat.com>
+> Acked-by: Nitin Gupta <ngupta@vflare.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram_drv.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 61fb8f1..b285b3a 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -220,7 +220,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>         user_mem = kmap_atomic(page);
+>         if (is_partial_io(bvec))
+>                 /* Use  a temporary buffer to decompress the page */
+> -               uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> +               uncmem = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+>         else
+>                 uncmem = user_mem;
+>
+> @@ -268,7 +268,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>                  * This is a partial IO. We need to read the full page
+>                  * before to write the changes.
+>                  */
+> -               uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> +               uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+>                 if (!uncmem) {
+>                         pr_info("Error allocating temp memory!\n");
+>                         ret = -ENOMEM;
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
