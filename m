@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab3A1Ac6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 19:32:58 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36849 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab3A1Ac4 (ORCPT
+	id S1757069Ab3A1AgO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 19:36:14 -0500
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:46299 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab3A1AgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 19:32:56 -0500
-Date: Sun, 27 Jan 2013 19:32:55 -0500 (EST)
-Message-Id: <20130127.193255.422316407262674573.davem@davemloft.net>
-To: vyasevich@gmail.com
-Cc: xufengzhang.main@gmail.com, nhorman@tuxdriver.com,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sctp: set association state to established in
- dupcook_a handler
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51014DC1.4070209@gmail.com>
-References: <1358995474-28369-1-git-send-email-xufengzhang.main@gmail.com>
-	<51014DC1.4070209@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Sun, 27 Jan 2013 19:36:12 -0500
+Message-ID: <1359333371.6763.12.camel@kernel>
+Subject: Re: [PATCH 5/11] ksm: get_ksm_page locked
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Sun, 27 Jan 2013 18:36:11 -0600
+In-Reply-To: <alpine.LNX.2.00.1301271355430.17144@eggly.anvils>
+References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
+	 <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
+	 <1359254187.4159.10.camel@kernel>
+	 <alpine.LNX.2.00.1301271355430.17144@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlad Yasevich <vyasevich@gmail.com>
-Date: Thu, 24 Jan 2013 10:05:37 -0500
-
-> On 01/23/2013 09:44 PM, xufengzhang.main@gmail.com wrote:
->> From: Xufeng Zhang <xufeng.zhang@windriver.com>
->>
->> While sctp handling a duplicate COOKIE-ECHO and the action is
->> 'Association restart', sctp_sf_do_dupcook_a() will processing
->> the unexpected COOKIE-ECHO for peer restart, but it does not set
->> the association state to SCTP_STATE_ESTABLISHED, so the association
->> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
->> This violates the sctp specification:
->>    RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
->>    Action
->>    A) In this case, the peer may have restarted. .....
->>       After this, the endpoint shall enter the ESTABLISHED state.
->>
->> To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
->> command list before SCTP_CMD_REPLY cmd, this will set the restart
->> association to SCTP_STATE_ESTABLISHED state properly and also avoid
->> I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
->> with DATA chunks.
->>
->> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+On Sun, 2013-01-27 at 14:08 -0800, Hugh Dickins wrote:
+> On Sat, 26 Jan 2013, Simon Jeons wrote:
+> > On Fri, 2013-01-25 at 18:00 -0800, Hugh Dickins wrote:
+> > > In some places where get_ksm_page() is used, we need the page to be locked.
+> > > 
+> > 
+> > In function get_ksm_page, why check page->mapping =>
+> > get_page_unless_zero => check page->mapping instead of
+> > get_page_unless_zero => check page->mapping, because
+> > get_page_unless_zero is expensive?
 > 
-> Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+> Yes, it's more expensive.
+> 
+> > 
+> > > When KSM migration is fully enabled, we shall want that to make sure that
+> > > the page just acquired cannot be migrated beneath us (raised page count is
+> > > only effective when there is serialization to make sure migration notices).
+> > > Whereas when navigating through the stable tree, we certainly do not want
+> > 
+> > What's the meaning of "navigating through the stable tree"?
+> 
+> Finding the right place in the stable tree,
+> as stable_tree_search() and stable_tree_insert() do.
+> 
+> > 
+> > > to lock each node (raised page count is enough to guarantee the memcmps,
+> > > even if page is migrated to another node).
+> > > 
+> > > Since we're about to add another use case, add the locked argument to
+> > > get_ksm_page() now.
+> > 
+> > Why the parameter lock passed from stable_tree_search/insert is true,
+> > but remove_rmap_item_from_tree is false?
+> 
+> The other way round?  remove_rmap_item_from_tree needs the page locked,
+> because it's about to modify the list: that's secured (e.g. against
+> concurrent KSM page reclaim) by the page lock.
 
-Applied, thanks everyone.
+How can KSM page reclaim path call remove_rmap_item_from_tree? I have
+already track every callsites but can't find it. BTW, I'm curious about
+KSM page reclaim, it seems that there're no special handle in vmscan.c
+for KSM page reclaim, is it will be reclaimed similiar with normal
+page? 
+
+> 
+> stable_tree_search and stable_tree_insert do not need intermediate nodes
+> to be locked: get_page is enough to secure the page contents for memcmp,
+> and we don't want a pointless wait for exclusive page lock on every
+> intermediate node.
+
+
