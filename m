@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab3A1TQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 14:16:38 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34209 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab3A1TQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 14:16:35 -0500
-Message-ID: <5106CE88.2030005@linux.vnet.ibm.com>
-Date: Mon, 28 Jan 2013 11:16:24 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753272Ab3A1TSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 14:18:04 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:57555 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751144Ab3A1TSC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 14:18:02 -0500
+Date: Mon, 28 Jan 2013 19:18:00 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [GIT PULL] cputime: Full dynticks task/cputime accounting v7
+In-Reply-To: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+Message-ID: <0000013c82983b45-daa2c9db-a8e8-4cc1-a3b8-73613689b144-000000@email.amazonses.com>
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] x86, numa: Use __pa_nodebug instead
-References: <1359245901-8512-1-git-send-email-bp@alien8.de>
-In-Reply-To: <1359245901-8512-1-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012819-7182-0000-0000-000004C1FB61
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2013 04:18 PM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> ... and fix the following warning:
-> 
-> arch/x86/mm/numa.c: In function ‘setup_node_data’:
-> arch/x86/mm/numa.c:222:3: warning: passing argument 1 of ‘__phys_addr_nodebug’ makes integer from pointer without a cast [enabled by default]
-> In file included from /home/boris/w/kernel/linux-2.6/arch/x86/include/asm/page.h:11:0,
->                  from /home/boris/w/kernel/linux-2.6/arch/x86/include/asm/thread_info.h:11,
->                  from include/linux/thread_info.h:54,
->                  from include/linux/preempt.h:9,
->                  from include/linux/spinlock.h:50,
->                  from include/linux/mmzone.h:7,
->                  from include/linux/gfp.h:4,
->                  from include/linux/mm.h:8,
->                  from arch/x86/mm/numa.c:3:
-> /home/boris/w/kernel/linux-2.6/arch/x86/include/asm/page_64.h:12:29: note: expected ‘long unsigned int’ but argument is of type ‘void *’
-> 
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+On Mon, 28 Jan 2013, Frederic Weisbecker wrote:
 
-I was just about to send out a patch for it and came up with the same fix.
+> My last concern is the dependency on CONFIG_64BIT. We rely on cputime_t
+> being u64 for reasonable nanosec granularity implementation. And therefore
+> we need a single instruction fetch to read kernel cpustat for atomicity
+> requirement against concurrent incrementation, which only 64 bit archs
+> can provide.
 
-Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Most x86 cpus support cmpxchg8b on 32bit which can be abused for
+64 bit reads (see cmpxchg64 in cmpxchg_32.h). Simply do a cmpxchg with
+zero and use whatever it returns.
 
+A percpu version that uses the instruction is called
+this_cpu_cmpxchg_double().
+
+> There is just no emergency though as this new option depends on the context
+> tracking subsystem that only x86-64 (and soon ppc64) implements yet. And
+> this set is complex enough already. I think we can deal with that later.
+
+Ok then this may not be that useful.
 
