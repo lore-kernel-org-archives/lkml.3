@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab3A1Ib6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 03:31:58 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:51195 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162Ab3A1Ib4 (ORCPT
+	id S1754943Ab3A1IcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 03:32:06 -0500
+Received: from re04.intra2net.com ([82.165.46.26]:39694 "EHLO
+	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251Ab3A1IcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 03:31:56 -0500
+	Mon, 28 Jan 2013 03:32:02 -0500
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [perf PATCH 3/3] Fix double fclose() on do_write(fd, xxx) failure
+Date: Mon, 28 Jan 2013 09:31:58 +0100
+Message-ID: <2218467.S7Jon2S4Bp@storm>
+Organization: Intra2net AG
+User-Agent: KMail/4.9.5 (Linux/3.6.11-5.fc17.x86_64; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130125160151.GA31242@ghostprotocols.net>
+References: <2684910.12iLzy42t4@storm> <20130125160151.GA31242@ghostprotocols.net>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <1359340583.2249.14.camel@rzhang1-mobl4>
-References: <1359300060-2967-1-git-send-email-rui.zhang@intel.com>
-	<1359300060-2967-3-git-send-email-rui.zhang@intel.com>
-	<CAKMK7uF4u-3XFogzdQQCBqA2Q61D1s3PhVF7BOT90d88TkqT0g@mail.gmail.com>
-	<1359340583.2249.14.camel@rzhang1-mobl4>
-Date: Mon, 28 Jan 2013 09:31:54 +0100
-X-Google-Sender-Auth: 4X8D_5ry7cUApGRKpuS8FvH2I_c
-Message-ID: <CAKMK7uFWqtcnvkExz2_+0Vm+6pSREhRJ1szpHi2_CEmmHL6Nzg@mail.gmail.com>
-Subject: Re: [Intel-gfx] [RFC PATCH 3/3] i915: ignore lid open event when resuming
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        rjw@sisk.pl, lenb@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 3:36 AM, Zhang Rui <rui.zhang@intel.com> wrote:
->> Given that this essentially requires users to manually set this module
->> option to make stuff work I don't like this.
->>
-> sorry, I do not understand.
-> this patch just disables modeset_on_lid during suspend.
+On Friday, 25. January 2013 13:01:51 you wrote:
+> Em Fri, Jan 25, 2013 at 11:22:17AM +0100, Thomas Jarosch escreveu:
+> > cppcheck reported:
+> > [util/header.c:983]: (error) Used file that is not opened.
+> > 
+> > Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+> > ---
+> > 
+> >  tools/perf/util/header.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> > index 7b24cf3..30745c2 100644
+> > --- a/tools/perf/util/header.c
+> > +++ b/tools/perf/util/header.c
+> > @@ -955,6 +955,7 @@ static int write_topo_node(int fd, int node)
+> > 
+> >  	}
+> >  	
+> >  	fclose(fp);
+> > 
+> > +	fp = NULL;
+> 
+> Ok, but what is the behaviour of fclose(NULL)? Is it defined?
+> 
+> - Arnaldo
 
-Pardon me, the misunderstanding is on my side - I've mixed up
-dev_priv->modeset_on_lid with the corresponding module option.
+Grrr, this is undefined behavior. Sorry. I always thought this
+is defined like free(NULL) but apparently it is not.
 
-Is my understanding correct that only with the new SCI pm state this
-can happen, since that still allows acpi events to be processed (and
-so our lid_notifier being called?
+I'll send another version of the patch and also write to the
+man page maintainer to add a small hint to the fclose() man page.
 
->> I see a few possible options:
->> - plug the races between all the different parts - I've never really
->> understood why acpi sends us events before the resume code has
->> completed ... If that's indeed intentional, we could delay the
->> handling a bit until at least the i915 resume code completed.
->
-> IMO, the real question is that, during a suspend/resume cycle, if we
-> need to take care of the lid open event or not.
-> To me, the answer is no, because when resuming from STR, i915 is not
-> aware of such an event, and the i915 resume code works well, right?
-> so I do not think it is a problem to ignore the lid event for another
-> lightweight suspend state, which is introduced in Patch 1/3 in this
-> series.
->
->> - Judging from the diff context you're not on the latest 3.8-rc
->> codebase - we've applied a few fixes to this lid hack recently. Please
->> retest on a kernel with
->>
-> the patch is based on 3.8.0-rc3, which already includes the commit
-> below.
-> And yes, the problem still exists.
+Thomas
 
-Ok, I think I see the issue now. But I suspect that we need some
-additional locking to make this solid, since currently
-dev_priv->modeset_on_lid updates can race with our lid notifier
-handler. Let me think about this a bit more.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
