@@ -1,124 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab3A1Vzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:55:43 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54617 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab3A1Vzl (ORCPT
+	id S1754966Ab3A1Vzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:55:55 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:50665 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754748Ab3A1Vzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:55:41 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv3 1/6] debugfs: add get/set for atomic types
-Date: Mon, 28 Jan 2013 15:49:22 -0600
-Message-Id: <1359409767-30092-2-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012821-3620-0000-0000-00000104B466
+	Mon, 28 Jan 2013 16:55:47 -0500
+MIME-Version: 1.0
+From: Richard Hartmann <richih.mailinglist@gmail.com>
+Date: Mon, 28 Jan 2013 22:55:25 +0100
+Message-ID: <CAD77+gT-sLRfVK2-WJxSXg-JveRGiRqkzs00Js2vH5w=gh92Ow@mail.gmail.com>
+Subject: drivers/net/wireless/iwlwifi/dvm/tx.c: Kernel trace when roaming
+ between different Access Points with the same ESSID
+To: Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs currently lack the ability to create attributes
-that set/get atomic_t values.
+Hi all,
 
-This patch adds support for this through a new
-debugfs_create_atomic_t() function.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/debugfs/file.c       |   42 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/debugfs.h |    2 ++
- 2 files changed, 44 insertions(+)
+I can somewhat reproduce this trace. It will happen when roaming from
+one AP to another AP, both having the same ESSID.
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index c5ca6ae..fa26d5b 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -21,6 +21,7 @@
- #include <linux/debugfs.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/atomic.h>
- 
- static ssize_t default_read_file(struct file *file, char __user *buf,
- 				 size_t count, loff_t *ppos)
-@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- }
- EXPORT_SYMBOL_GPL(debugfs_create_size_t);
- 
-+static int debugfs_atomic_t_set(void *data, u64 val)
-+{
-+	atomic_set((atomic_t *)data, val);
-+	return 0;
-+}
-+static int debugfs_atomic_t_get(void *data, u64 *val)
-+{
-+	*val = atomic_read((atomic_t *)data);
-+	return 0;
-+}
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
-+			debugfs_atomic_t_set, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
-+
-+/**
-+ * debugfs_create_atomic_t - create a debugfs file that is used to read and
-+ * write an atomic_t value
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @value: a pointer to the variable that the file should read to and write
-+ *         from.
-+ */
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				 struct dentry *parent, atomic_t *value)
-+{
-+	/* if there are no write bits set, make read only */
-+	if (!(mode & S_IWUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_ro);
-+	/* if there are no read bits set, make write only */
-+	if (!(mode & S_IRUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_wo);
-+
-+	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
-+}
-+EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
- 
- static ssize_t read_file_bool(struct file *file, char __user *user_buf,
- 			      size_t count, loff_t *ppos)
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index 66c434f..51fea70 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
- 				  struct dentry *parent, u64 *value);
- struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- 				     struct dentry *parent, size_t *value);
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				     struct dentry *parent, atomic_t *value);
- struct dentry *debugfs_create_bool(const char *name, umode_t mode,
- 				  struct dentry *parent, u32 *value);
- 
--- 
-1.7.9.5
+Once this happens, wireless stops working. This can be fixed by running
 
+  rmmod iwldvm iwlwifi mac80211 cfg80211; sleep 10; modprobe iwlwifi
+
+
+Trace:
+
+[ 8920.123776] ------------[ cut here ]------------
+[ 8920.123797] WARNING: at
+/build/buildd-linux_3.7.1-1~experimental.1-i386-Au6THQ/linux-3.7.1/drivers/net/wireless/iwlwifi/dvm/tx.c:1189
+iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]()
+[ 8920.123800] Hardware name: 4286CTO
+[ 8920.123802] Modules linked in: parport_pc ppdev lp parport bnep
+rfcomm cpufreq_userspace cpufreq_stats cpufreq_powersave
+cpufreq_conservative uinput nfsd auth_rpcgss nfs_acl nfs lockd
+dns_resolver fscache sunrpc ext4 jbd2 mbcache loop fuse
+snd_hda_codec_hdmi snd_hda_codec_conexant arc4 coretemp i915
+snd_hda_intel iwldvm mac80211 joydev drm_kms_helper drm snd_hda_codec
+snd_hwdep snd_pcm i2c_algo_bit kvm_intel btusb kvm thinkpad_acpi
+snd_page_alloc nvram bluetooth i2c_i801 iwlwifi crc32c_intel crc16
+snd_seq snd_seq_device snd_timer iTCO_wdt acpi_cpufreq mperf
+aesni_intel iTCO_vendor_support i2c_core psmouse pcspkr snd aes_i586
+xts lrw ac soundcore battery lpc_ich evdev mei tpm_tis gf128mul
+ablk_helper video serio_raw mfd_core button cfg80211 rfkill tpm cryptd
+tpm_bios processor wmi xfs sg sd_mod crc_t10dif mmc_block microcode
+ahci libahci xhci_hcd libata sdhci_pci sdhci mmc_core scsi_mod
+ehci_hcd e1000e usbcore usb_common thermal thermal_sys
+[ 8920.123891] Pid: 0, comm: swapper/0 Not tainted 3.7-trunk-686-pae
+#1 Debian 3.7.1-1~experimental.1
+[ 8920.123893] Call Trace:
+[ 8920.123902]  [<c10310c5>] ? warn_slowpath_common+0x68/0x79
+[ 8920.123912]  [<f86961e2>] ? iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]
+[ 8920.123916]  [<c10310e3>] ? warn_slowpath_null+0xd/0x10
+[ 8920.123924]  [<f86961e2>] ? iwlagn_rx_reply_tx+0x288/0x6e2 [iwldvm]
+[ 8920.123929]  [<c10574b0>] ? load_balance+0x33c/0x520
+[ 8920.123940]  [<f869b344>] ? iwl_rx_dispatch+0x57/0x63 [iwldvm]
+[ 8920.123948]  [<f85b0d14>] ? iwl_irq_tasklet+0x39c/0x698 [iwlwifi]
+[ 8920.123953]  [<c1037457>] ? tasklet_action+0x62/0xa5
+[ 8920.123957]  [<c103711b>] ? __do_softirq+0x90/0x192
+[ 8920.123961]  [<c103708b>] ? perf_trace_irq_handler_entry+0xd7/0xd7
+[ 8920.123962]  <IRQ>  [<c10372cb>] ? irq_exit+0x32/0x7d
+[ 8920.123971]  [<c100d070>] ? do_IRQ+0x65/0x76
+[ 8920.123976]  [<c12ed2f3>] ? common_interrupt+0x33/0x38
+[ 8920.123980]  [<c10300d8>] ? copy_process.part.33+0x8a8/0xf0c
+[ 8920.123985]  [<c11b1c03>] ? intel_idle+0xc4/0xec
+[ 8920.123990]  [<c122ea2e>] ? cpuidle_enter+0xb/0xe
+[ 8920.123994]  [<c122edb9>] ? cpuidle_enter_state+0x9/0x33
+[ 8920.123998]  [<c122ee8e>] ? cpuidle_idle_call+0xab/0x146
+[ 8920.124002]  [<c10114d7>] ? cpu_idle+0x88/0xac
+[ 8920.124006]  [<c1464966>] ? start_kernel+0x334/0x339
+[ 8920.124009] ---[ end trace fc6895e52f152baf ]---
+
+
+lspci:
+
+00:00.0 Host bridge: Intel Corporation 2nd Generation Core Processor
+Family DRAM Controller (rev 09)
+00:02.0 VGA compatible controller: Intel Corporation 2nd Generation
+Core Processor Family Integrated Graphics Controller (rev 09)
+00:16.0 Communication controller: Intel Corporation 6 Series/C200
+Series Chipset Family MEI Controller #1 (rev 04)
+00:16.3 Serial controller: Intel Corporation 6 Series/C200 Series
+Chipset Family KT Controller (rev 04)
+00:19.0 Ethernet controller: Intel Corporation 82579LM Gigabit Network
+Connection (rev 04)
+00:1a.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset
+Family USB Enhanced Host Controller #2 (rev 04)
+00:1b.0 Audio device: Intel Corporation 6 Series/C200 Series Chipset
+Family High Definition Audio Controller (rev 04)
+00:1c.0 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
+Family PCI Express Root Port 1 (rev b4)
+00:1c.1 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
+Family PCI Express Root Port 2 (rev b4)
+00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
+Family PCI Express Root Port 4 (rev b4)
+00:1c.4 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
+Family PCI Express Root Port 5 (rev b4)
+00:1c.6 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
+Family PCI Express Root Port 7 (rev b4)
+00:1d.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset
+Family USB Enhanced Host Controller #1 (rev 04)
+00:1f.0 ISA bridge: Intel Corporation QM67 Express Chipset Family LPC
+Controller (rev 04)
+00:1f.2 SATA controller: Intel Corporation 6 Series/C200 Series
+Chipset Family 6 port SATA AHCI Controller (rev 04)
+00:1f.3 SMBus: Intel Corporation 6 Series/C200 Series Chipset Family
+SMBus Controller (rev 04)
+03:00.0 Network controller: Intel Corporation Centrino Ultimate-N 6300 (rev 35)
+0d:00.0 System peripheral: Ricoh Co Ltd PCIe SDXC/MMC Host Controller (rev 07)
+0e:00.0 USB controller: NEC Corporation uPD720200 USB 3.0 Host
+Controller (rev 04)
+
+
+If you need any more info, please let me know; I am not subscribed on
+all lists so please keep me CC'ed.
+
+
+
+Thanks,
+Richard
