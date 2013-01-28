@@ -1,122 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab3A1Vzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:55:50 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:36113 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab3A1Vzp (ORCPT
+	id S1754790Ab3A1WAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 17:00:50 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:37455 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab3A1WAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:55:45 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+	Mon, 28 Jan 2013 17:00:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo7WbbzZ8cKfLvuE331ofWir2vswUnYaxVLBBYGFowedXQ@mail.gmail.com>
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
+	<1358525267-14268-5-git-send-email-jiang.liu@huawei.com>
+	<3500982.MUDp6kKU3R@vostro.rjw.lan>
+	<CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com>
+	<CAE9FiQVM4+Wirpb3_D0Zxi4r1p9SAMi4ZrNYr=-eas-C6pKJYA@mail.gmail.com>
+	<CAErSpo7WbbzZ8cKfLvuE331ofWir2vswUnYaxVLBBYGFowedXQ@mail.gmail.com>
+Date: Mon, 28 Jan 2013 14:00:46 -0800
+X-Google-Sender-Auth: 2u2cpS4uXC7E_AZRHTqTSbrTHLA
+Message-ID: <CAE9FiQXkrYubkgbbOXmrEXvGZBZXMZ6sh8kGTpF1_=tD3OMPJw@mail.gmail.com>
+Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv3 4/6] mm: allow for outstanding swap writeback accounting
-Date: Mon, 28 Jan 2013 15:49:25 -0600
-Message-Id: <1359409767-30092-5-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012821-5518-0000-0000-00000B14C3C7
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To prevent flooding the swap device with writebacks, frontswap
-backends need to count and limit the number of outstanding
-writebacks.  The incrementing of the counter can be done before
-the call to __swap_writepage().  However, the caller must receive
-a notification when the writeback completes in order to decrement
-the counter.
+On Mon, Jan 28, 2013 at 1:52 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Jan 28, 2013 at 2:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+...
+>> If bios have messed up slot name or idx, we will get strange 1-1....
+>> other crazy name.
+>>
+>> if you really need to put it as built-in, may need to some command
+>> line that user could switch it off.
+>
+> It would save us all a lot of time if you gave an example and worked
+> through the scenario where this is a problem.
+>
+> We already have the choice of having pci_slot built-in, so if there's
+> a bug in that config, we already have the bug.  This patch merely
+> removes a config where the bug might be covered up.
 
-To achieve this functionality, this patch modifies
-__swap_writepage() to take the bio completion callback function
-as an argument.
 
-end_swap_bio_write(), the normal bio completion function, is also
-made non-static so that code doing the accounting can call it
-after the accounting is done.
+for distribution, current it is with module, so user could blacklist
+in module.conf
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- include/linux/swap.h |    4 +++-
- mm/page_io.c         |   12 +++++++-----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+Now with built-in or not, distribution will have it built-in, and user
+have no chance to
+disable it.
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index fc8920d..98981f0 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -321,7 +321,9 @@ static inline void mem_cgroup_uncharge_swap(swp_entry_t ent)
- /* linux/mm/page_io.c */
- extern int swap_readpage(struct page *);
- extern int swap_writepage(struct page *page, struct writeback_control *wbc);
--extern int __swap_writepage(struct page *page, struct writeback_control *wbc);
-+extern void end_swap_bio_write(struct bio *bio, int err);
-+extern int __swap_writepage(struct page *page, struct writeback_control *wbc,
-+	void (*end_write_func)(struct bio *, int));
- extern int swap_set_page_dirty(struct page *page);
- extern void end_swap_bio_read(struct bio *bio, int err);
- 
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 1cb382d..56276fe 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -42,7 +42,7 @@ static struct bio *get_swap_bio(gfp_t gfp_flags,
- 	return bio;
- }
- 
--static void end_swap_bio_write(struct bio *bio, int err)
-+void end_swap_bio_write(struct bio *bio, int err)
- {
- 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
- 	struct page *page = bio->bi_io_vec[0].bv_page;
-@@ -179,7 +179,8 @@ bad_bmap:
- 	goto out;
- }
- 
--int __swap_writepage(struct page *page, struct writeback_control *wbc);
-+int __swap_writepage(struct page *page, struct writeback_control *wbc,
-+	void (*end_write_func)(struct bio *, int));
- 
- /*
-  * We may have stale swap cache pages in memory: notice
-@@ -199,12 +200,13 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
- 		end_page_writeback(page);
- 		goto out;
- 	}
--	ret = __swap_writepage(page, wbc);
-+	ret = __swap_writepage(page, wbc, end_swap_bio_write);
- out:
- 	return ret;
- }
- 
--int __swap_writepage(struct page *page, struct writeback_control *wbc)
-+int __swap_writepage(struct page *page, struct writeback_control *wbc,
-+	void (*end_write_func)(struct bio *, int))
- {
- 	struct bio *bio;
- 	int ret = 0, rw = WRITE;
-@@ -236,7 +238,7 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc)
- 		return ret;
- 	}
- 
--	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
-+	bio = get_swap_bio(GFP_NOIO, page, end_write_func);
- 	if (bio == NULL) {
- 		set_page_dirty(page);
- 		unlock_page(page);
--- 
-1.7.9.5
+> I don't know why "adding a command line switch" appeals to you as the
+> solution to every problem.  As far as I'm concerned that's not a
+> solution to ANY problem.  It might be a band-aid to enable users to
+> limp along while we figure out a correct solution, but it's certainly
+> not a resolution.
 
+Looks like you want to remove command line support, right ?
+
+Yinghai
