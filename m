@@ -1,122 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab3A1Gvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 01:51:51 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57251 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab3A1Gvu (ORCPT
+	id S1753266Ab3A1G5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 01:57:40 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:62334 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab3A1G5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 01:51:50 -0500
-Message-ID: <51061F69.8060405@linux.vnet.ibm.com>
-Date: Mon, 28 Jan 2013 12:19:13 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Mon, 28 Jan 2013 01:57:36 -0500
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
-        eric.dumazet@gmail.com, lwoodman@redhat.com, knoel@redhat.com,
-        chegu_vinod@hp.com, mingo@redhat.com
-Subject: Re: [PATCH -v4 0/5] x86,smp: make ticket spinlock proportional backoff
- w/ auto tuning
-References: <20130125140553.060b8ced@annuminas.surriel.com>
-In-Reply-To: <20130125140553.060b8ced@annuminas.surriel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012806-3864-0000-0000-00000697FDD6
+In-Reply-To: <FE3E8B88161FFE48B03E3B93408433EC671016E2@G9W0754.americas.hpqcorp.net>
+References: <1358214636-4801-1-git-send-email-song-bo.wang@hp.com>
+	<FE3E8B88161FFE48B03E3B93408433EC671016E2@G9W0754.americas.hpqcorp.net>
+Date: Sun, 27 Jan 2013 22:57:35 -0800
+X-Google-Sender-Auth: VQmLQfKJEIc0XbwfY31VAN95tlc
+Message-ID: <CAE9FiQW75eP_exufb1gd7jQuu98WnkyGX23EBXktUCSyZX9Jvg@mail.gmail.com>
+Subject: Re: [PATCH] x86/apic: check FADT settings after enable x2apic
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
+        "Pearson, Greg" <greg.pearson@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>
+Content-Type: multipart/mixed; boundary=20cf303ddba6baf5fc04d453ca01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2013 12:35 AM, Rik van Riel wrote:
-> Many spinlocks are embedded in data structures; having many CPUs
-> pounce on the cache line the lock is in will slow down the lock
-> holder, and can cause system performance to fall off a cliff.
->
-> The paper "Non-scalable locks are dangerous" is a good reference:
->
-> 	http://pdos.csail.mit.edu/papers/linux:lock.pdf
->
-> In the Linux kernel, spinlocks are optimized for the case of
-> there not being contention. After all, if there is contention,
-> the data structure can be improved to reduce or eliminate
-> lock contention.
->
-> Likewise, the spinlock API should remain simple, and the
-> common case of the lock not being contended should remain
-> as fast as ever.
->
-> However, since spinlock contention should be fairly uncommon,
-> we can add functionality into the spinlock slow path that keeps
-> system performance from falling off a cliff when there is lock
-> contention.
->
-> Proportional delay in ticket locks is delaying the time between
-> checking the ticket based on a delay factor, and the number of
-> CPUs ahead of us in the queue for this lock. Checking the lock
-> less often allows the lock holder to continue running, resulting
-> in better throughput and preventing performance from dropping
-> off a cliff.
->
-> The test case has a number of threads locking and unlocking a
-> semaphore. With just one thread, everything sits in the CPU
-> cache and throughput is around 2.6 million operations per
-> second, with a 5-10% variation.
->
-> Once a second thread gets involved, data structures bounce
-> from CPU to CPU, and performance deteriorates to about 1.25
-> million operations per second, with a 5-10% variation.
->
-> However, as more and more threads get added to the mix,
-> performance with the vanilla kernel continues to deteriorate.
-> Once I hit 24 threads, on a 24 CPU, 4 node test system,
-> performance is down to about 290k operations/second.
->
-> With a proportional backoff delay added to the spinlock
-> code, performance with 24 threads goes up to about 400k
-> operations/second with a 50x delay, and about 900k operations/second
-> with a 250x delay. However, with a 250x delay, performance with
-> 2-5 threads is worse than with a 50x delay.
->
-> Making the code auto-tune the delay factor results in a system
-> that performs well with both light and heavy lock contention,
-> and should also protect against the (likely) case of the fixed
-> delay factor being wrong for other hardware.
->
-> The attached graph shows the performance of the multi threaded
-> semaphore lock/unlock test case, with 1-24 threads, on the
-> vanilla kernel, with 10x, 50x, and 250x proportional delay,
-> as well as the v1 patch series with autotuning for 2x and 2.7x
-> spinning before the lock is obtained, and with the v2 series.
->
-> The v2 series integrates several ideas from Michel Lespinasse
-> and Eric Dumazet, which should result in better throughput and
-> nicer behaviour in situations with contention on multiple locks.
->
-> For the v3 series, I tried out all the ideas suggested by
-> Michel. They made perfect sense, but in the end it turned
-> out they did not work as well as the simple, aggressive
-> "try to make the delay longer" policy I have now. Several
-> small bug fixes and cleanups have been integrated.
->
-> For the v4 series, I added code to keep the maximum spinlock
-> delay to a small value when running in a virtual machine. That
-> should solve the performance regression seen in virtual machines.
->
-> The performance issue observed with AIM7 is still a mystery.
->
-> Performance is within the margin of error of v2, so the graph
-> has not been update.
->
-> Please let me know if you manage to break this code in any way,
-> so I can fix it...
->
+--20cf303ddba6baf5fc04d453ca01
+Content-Type: text/plain; charset=ISO-8859-1
 
-After the introduction of patch 5 which limits the delay loops to 16,
-I am no more seeing the degradation in virtual guests as reported
-earlier, but improvements.
+On Sun, Jan 27, 2013 at 9:05 PM, Wang, Song-Bo (Stoney)
+<song-bo.wang@hp.com> wrote:
+> Hi Yinghai, hpa and others,
+>
+> Would you please review the patch on detecting x2apic FADT settings?
+>
+> We meet a BIOS system which works on x2apic physical mode by setting the bit ACPI_FADT_APIC_PHYSICAL in FADT table.
+> And for those systems with all cpuid < 255, the spec requires BIOS's default mode in xapic.
+> The kernel detects the default mode and do some initializations and will call enable_IR_x2apic and change the mode to x2apic successfully.
 
-For the whole series:
-Reviewed-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Hi, Peter and Ingo,
 
+I checked the patch, and looks right.
+
+I updated the changelog and simplify the code a little bit.
+
+Please check if you can put it into tip:x86/apic
+
+Thanks
+
+Yinghai
+
+--20cf303ddba6baf5fc04d453ca01
+Content-Type: application/octet-stream; name="wang_hp_x2apic.patch"
+Content-Disposition: attachment; filename="wang_hp_x2apic.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hch9k4yg0
+
+RnJvbToJU3RvbmV5IFdhbmcgPHNvbmctYm8ud2FuZ0BocC5jb20+ClN1YmplY3Q6IFtQQVRDSF0g
+eDg2LCBhcGljOiBDaGVjayBmYWR0IHgyYXBpYyBwaHlzIGluIHgyYXBpY19waHlzX3Byb2JlKCkK
+CkhQIGhhcyBzeXN0ZW1zIHRoYXQgd29yayB3aXRoIHgyYXBpYyBwaHlzIG1vZGUgYW5kIEJJT1Mg
+c2V0CkFDUElfRkFEVF9BUElDX1BIWVNJQ0FMIGluIEZBRFQgdGFibGUsIGFuZCBhbGwgY3B1aWQg
+PCAyNTUsIHRoZSBzcGVjCnJlcXVpcmVzIEJJT1Mgb25seSBwdXQgc3lzdGVtIG9uIHhhcGljIG1v
+ZGUuCktlcm5lbCB3aWxsIHNldCB0byB4MmFwaWMgbG9naWNhbCBtb2RlIGluc3RlYWQgb2YgeDJh
+cGljIHBoeXMgbW9kZS4KCkN1cnJlbnQgY29kZSBoYW5kbGUgeDJhcGljIGFzOgoxLiBCSU9TIHNl
+dCB4MmFwaWMgbW9kZToKV2hlbiB1c2VyIHNwZWNpZnkgeDJhcGljX3BoeXMsIG9yIEZBRFQgaW5k
+aWNhdGVzIFBIWVNJQ0FMLgpEdXJpbmcgbWFkdCBvZW0gY2hlY2ssIGFwaWMgZHJpdmVyIHdpbGwg
+c2V0IGNvcnJlY3RseSB0byB4MmFwaWMgcGh5cyBkcml2ZXIuCgoyLiBCSU9TIGRvZXMgTk9UIHNl
+dCB4MmFwaWMgbW9kZToKV2hlbiB1c2VyIHNwZWNpZnkgeDJhcGljX3BoeXMsIG9yIEZBRFQgaW5k
+aWNhdGVzIFBIWVNJQ0FMLgpEdXJpbmcgbWFkdCBvZW0gY2hlY2ssIGFwaWMgZHJpdmVyIHdpbGwg
+Z2V0IHNldCB3aXRoIHhhcGljIGxvZ2ljYWwgb3IKeGFwaWMgcGh5cyBkcml2ZXIgYXQgZmlyc3Qu
+CkxhdGVyIGVuYWJsZV9JUl94MmFwaWMoKSB3aWxsIGVuYWJsZSB4MmFwaWNfbW9kZS4KQWZ0ZXIg
+dGhhdCwgeDJhcGljX3BoeXNfcHJvYmUoKSBnZXQgY2FsbGVkLgpUaGF0IHdpbGwgaW5zdGFsbCBy
+aWdodCB4MmFwaWMgcGh5c2ljYWwgZHJpdmVyIHdoZW4gdXNlciBzcGVjaWZ5IHgyYXBpY19waHlz
+LApidXQgd2lsbCBpbnN0YWxsIHdyb25nIGFwaWMgZHJpdmVyICh4MmFwaWMgbG9naWNhbCkgd2hl
+biBGQURUIGluZGljYXRlcwpQSFlTSUNBTCwgYmVjYXVzZSB0aGF0IHByb2JlIGRvZXMgbm90IGNo
+ZWNrIEZBRFQgUEhZU0lDQUwuCgpGaXggdGhhdCBieSBhZGRpbmcgY2hlY2sgeDJhcGljX2ZhZHRf
+cGh5cyBpbiB4MmFwaWNfcGh5c19wcm9iZSgpLgoKWyBjaGFuZ2Vsb2csIGFuZCBzaW1wbGlmeSBj
+b2RlIC0gWWluZ2hhaSBMdSBdClNpZ25lZC1vZmYtYnk6IFN0b25leSBXYW5nIDxzb25nLWJvLndh
+bmdAaHAuY29tPgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+
+CgotLS0KIGFyY2gveDg2L2tlcm5lbC9hcGljL3gyYXBpY19waHlzLmMgfCAgIDE5ICsrKysrKysr
+KystLS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAxMCBpbnNlcnRpb25zKCspLCA5IGRlbGV0aW9u
+cygtKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvYXBpYy94MmFwaWNfcGh5cy5j
+Cj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9hcGljL3gyYXBp
+Y19waHlzLmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvYXBpYy94MmFwaWNfcGh5cy5j
+CkBAIC0yMCwxOCArMjAsMTkgQEAgc3RhdGljIGludCBzZXRfeDJhcGljX3BoeXNfbW9kZShjaGFy
+ICphcgogfQogZWFybHlfcGFyYW0oIngyYXBpY19waHlzIiwgc2V0X3gyYXBpY19waHlzX21vZGUp
+OwogCi1zdGF0aWMgaW50IHgyYXBpY19hY3BpX21hZHRfb2VtX2NoZWNrKGNoYXIgKm9lbV9pZCwg
+Y2hhciAqb2VtX3RhYmxlX2lkKQorc3RhdGljIGludCB4MmFwaWNfZmFkdF9waHlzKHZvaWQpCiB7
+Ci0JaWYgKHgyYXBpY19waHlzKQotCQlyZXR1cm4geDJhcGljX2VuYWJsZWQoKTsKLQllbHNlIGlm
+ICgoYWNwaV9nYmxfRkFEVC5oZWFkZXIucmV2aXNpb24gPj0gRkFEVDJfUkVWSVNJT05fSUQpICYm
+Ci0JCShhY3BpX2dibF9GQURULmZsYWdzICYgQUNQSV9GQURUX0FQSUNfUEhZU0lDQUwpICYmCi0J
+CXgyYXBpY19lbmFibGVkKCkpIHsKKwlpZiAoKGFjcGlfZ2JsX0ZBRFQuaGVhZGVyLnJldmlzaW9u
+ID49IEZBRFQyX1JFVklTSU9OX0lEKSAmJgorCQkoYWNwaV9nYmxfRkFEVC5mbGFncyAmIEFDUElf
+RkFEVF9BUElDX1BIWVNJQ0FMKSkgewogCQlwcmludGsoS0VSTl9ERUJVRyAiU3lzdGVtIHJlcXVp
+cmVzIHgyYXBpYyBwaHlzaWNhbCBtb2RlXG4iKTsKIAkJcmV0dXJuIDE7CiAJfQotCWVsc2UKLQkJ
+cmV0dXJuIDA7CisJcmV0dXJuIDA7Cit9CisKK3N0YXRpYyBpbnQgeDJhcGljX2FjcGlfbWFkdF9v
+ZW1fY2hlY2soY2hhciAqb2VtX2lkLCBjaGFyICpvZW1fdGFibGVfaWQpCit7CisJcmV0dXJuIHgy
+YXBpY19lbmFibGVkKCkgJiYgKHgyYXBpY19waHlzIHx8IHgyYXBpY19mYWR0X3BoeXMoKSk7CiB9
+CiAKIHN0YXRpYyB2b2lkCkBAIC04Miw3ICs4Myw3IEBAIHN0YXRpYyB2b2lkIGluaXRfeDJhcGlj
+X2xkcih2b2lkKQogCiBzdGF0aWMgaW50IHgyYXBpY19waHlzX3Byb2JlKHZvaWQpCiB7Ci0JaWYg
+KHgyYXBpY19tb2RlICYmIHgyYXBpY19waHlzKQorCWlmICh4MmFwaWNfbW9kZSAmJiAoeDJhcGlj
+X3BoeXMgfHwgeDJhcGljX2ZhZHRfcGh5cygpKSkKIAkJcmV0dXJuIDE7CiAKIAlyZXR1cm4gYXBp
+YyA9PSAmYXBpY194MmFwaWNfcGh5czsK
+--20cf303ddba6baf5fc04d453ca01--
