@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab3A1RS7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:18:59 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:34397 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757007Ab3A1RS4 (ORCPT
+	id S1757457Ab3A1RUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 12:20:44 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:62027 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3A1RUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:18:56 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Lord Glauber Costa of Sealand <glommer@parallels.com>
-Cc: <linux-fsdevel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Michael Kerrisk <mtk@lwn.net>
-References: <87ehh8it9s.fsf@xmission.com> <87txq4hedl.fsf@xmission.com>
-	<51062AB5.9060203@parallels.com> <51062DA8.1060804@parallels.com>
-	<87k3qxu3kp.fsf@xmission.com> <51063558.1010402@parallels.com>
-	<87k3qxs2ko.fsf@xmission.com> <5106A941.6060403@parallels.com>
-Date: Mon, 28 Jan 2013 09:18:42 -0800
-In-Reply-To: <5106A941.6060403@parallels.com> (Lord Glauber Costa of Sealand's
-	message of "Mon, 28 Jan 2013 20:37:21 +0400")
-Message-ID: <874ni1ql8t.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 28 Jan 2013 12:20:42 -0500
+Date: Mon, 28 Jan 2013 18:20:26 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH 07/33] dma: Convert to devm_ioremap_resource()
+Message-ID: <20130128172026.GA16202@avionic-0098.mockup.avionic-design.de>
+References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
+ <1358762966-20791-8-git-send-email-thierry.reding@avionic-design.de>
+ <20130128160020.GY26562@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+HJobrlZqbYqhYKFsWEOc+gN+CUbwb96k=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0043]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Lord Glauber Costa of Sealand <glommer@parallels.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH review 3/6] userns: Recommend use of memory control groups.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IJpNTDwzlM2Ie8A6"
+Content-Disposition: inline
+In-Reply-To: <20130128160020.GY26562@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:tjDouOVPFcL1uQpgmlkpoRk2L1UApxOyvaxu6WtMNky
+ F96c3waBPfGFVV4QsL0zA5aJOjX06GZFM8mycGJyeVODq1Wu1g
+ Oi/PEcgbu6AKF9G7id2yHixAC3qlpJ2h6ZP9GBTexN0EjJs7Es
+ ++WywBmf1D2TkRT8WFomOcnCMZ4mNt35f3tMVEqY9OkqnavjA7
+ zdaThRMMG5XCOwZf1j3Uj0FQn+2+PoSAsHS1wIZgxWg+rVPLcW
+ f2GHlosGo6mjqBDKL2ovmLKlgEQHISDl/A1MxaXgjx9t1Q003I
+ QqbRY420QON/jZS9Xm6eoQbOg6H2RyyIxJzXR+ojVhLClRVr3E
+ B3uX3MCrBB5Y6v+GneZeKjdQC+24XaIxvKyfpW2mhHmfqvKurI
+ 2EXnhzfeuFG9BOJfDvuk339UHspYGjbMaDiqcrwocIiSpfLDDQ
+ Re58y
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lord Glauber Costa of Sealand <glommer@parallels.com> writes:
 
->> For two pieces of software that were designed to complement each other
->> I find it a bit surprising how many people (including myself) need the
->> connection made that memory control groups and user namespaces should go
->> together.
->
-> Well, I've manifested many times in here that I am less than satisfied
-> about the fact that the connection between namespaces and cgroups are so
-> loose. There are many situations, like virtualizing the proc files and
-> friends where I believe we could benefit from having the information
-> about whether or not cgroups and namespaces are used at the same time.
+--IJpNTDwzlM2Ie8A6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Certainly there are issues where there are not good ways for
-applications to discover how much memory or how many cpus are available
-for the application to run on.  And applications resort to looking at
-how much memory or how many cpus are in the box.
+On Mon, Jan 28, 2013 at 08:00:20AM -0800, Vinod Koul wrote:
+> On Mon, Jan 21, 2013 at 11:09:00AM +0100, Thierry Reding wrote:
+> > Convert all uses of devm_request_and_ioremap() to the newly introduced
+> > devm_ioremap_resource() which provides more consistent error handling.
+> >=20
+> > devm_ioremap_resource() provides its own error messages so all explicit
+> > error messages can be removed from the failure code paths.
+> Where is this symbol, applying this results in build failures for me?
 
-The only way I can think of to make things better is to provide good
-alternatives that people can look at and make limiting applications
-common enough that the bugs start getting fixed.  And possibly doing the
-work to fix a common library or two.
+I was introduced in the first patch of this series, which I failed to
+send to everyone concerned. Greg agreed to take this series through the
+driver-core tree given the dependency on the first patch. AFAICT he's
+already applied this patch to the driver-core-next branch.
 
-Eric
+Thierry
 
+--IJpNTDwzlM2Ie8A6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRBrNaAAoJEN0jrNd/PrOhzEMP/3D+cw8bpNWbAV9vq5XkGFdE
+EmrysXAc7KvyiHWqni8QDfyJCUryglgM1Dy6dxxaiJovAYmqjD/arhfDbS194dDe
+sDi2sgLZqi3yDZEayl8dL8NaI5YQJ18xLwTQGlmPJy76jxQA5eu3aOwnv1N7XTbU
+3SHbITVCymyodp6LXolJ+gf/BK+kTM81AKti6g8rxK093Eyw/G1uR3u67KKZHL7U
+5fSXptl7KKcZUJsNkIdcPVJ69d/0hDiyDoYQzfdzW9clYZbjs4oMRETk+8ymJZbj
+2WfecOWIvxft7x8hBqANl4HWweFUDGzQWXRLvbQ2uFDNwyYrYeRvSDnMwTEae3KV
+9LDM2wYRRUAlWRU9xDVfsivYDOsL81sIERHICaYfuxiiwAEmWLkmvEYH0E7fMHrP
+ZU5uqwPk/ytIWIbVLqkLi3u54nK3rYTYUsSQQ/AsDOzslrMrxfnF03LZEPXwlgrE
+rVhI7+8H0S501UhbIogl3Bl2V46Q5cCO4YMRezkkTncXEW8E/4vAtOhhhEOblqJR
+/RFGAWvgNNOdxRTcGMOxhii2l8EKB1KswgtW1XLkAMgkmC6eLf1eaT7bodh3uzRQ
+kqgEtbbRC5buF1zzMiMY4Kx3Od4Hf7Chtre5MJZGplrBCkkvbjR7ss+lHAhjb71e
+wDZLZ6iqZHUQgMkyTCoj
+=57Cr
+-----END PGP SIGNATURE-----
+
+--IJpNTDwzlM2Ie8A6--
