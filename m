@@ -1,235 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab3A1NPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 08:15:45 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:51248 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab3A1NPm (ORCPT
+	id S1755766Ab3A1NQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 08:16:44 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:59554 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091Ab3A1NQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 08:15:42 -0500
+	Mon, 28 Jan 2013 08:16:40 -0500
+Date: Mon, 28 Jan 2013 14:16:23 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Florian Vaussard <florian.vaussard@epfl.ch>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] pwm: Add pwm_cansleep() as exported API to users
+Message-ID: <20130128131622.GA1783@avionic-0098.mockup.avionic-design.de>
+References: <1359121471-21457-1-git-send-email-florian.vaussard@epfl.ch>
+ <1359121471-21457-2-git-send-email-florian.vaussard@epfl.ch>
+ <20130126054024.GB29243@avionic-0098.adnet.avionic-design.de>
+ <51063AB5.2060108@ti.com>
+ <51064687.5090605@epfl.ch>
+ <20130128095754.GA23134@avionic-0098.adnet.avionic-design.de>
+ <510659A3.7070906@epfl.ch>
 MIME-Version: 1.0
-In-Reply-To: <1359151245-13179-2-git-send-email-andi@firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
-	<1359151245-13179-2-git-send-email-andi@firstfloor.org>
-Date: Mon, 28 Jan 2013 14:15:39 +0100
-Message-ID: <CABPqkBQFPX5iBoBy5eTanaLXOatXfF8NzHWffuN4ovbW0LmH1Q@mail.gmail.com>
-Subject: Re: [PATCH 01/12] perf, x86: Add PEBSv2 record support
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
+Content-Disposition: inline
+In-Reply-To: <510659A3.7070906@epfl.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:YGripHckq90BQMnsIeDlynUDorYztPf7B3Jq9WSEO+r
+ VVQt1Wi5zKegE4B6e8aPFTnX6ILUDl9VoHnAX/X9gwXBlVFbTE
+ /Srjx3GODTVTGO90CuoCadNGASM+eTIbrVRF3bRfaC9dErjOc4
+ nyITzAu2TDWDID9w7XX2JebOsErB5oWWZ0LUJAtPhpLHDb56sU
+ hCBKASYlul1xXMEBm+ufn/Wyzin811bQRj0rWuJa3wFGqhVjP/
+ /krI7NgwLa8SSh9l9suZvtz/61nO2mbeQH04X1op5O28P0suvE
+ hkkHF6VzP90eI0B8Js8OI7XHofaLSR1E8MDFgJ0RDVFH5M3Ce0
+ YVJgHgFfRGYeu7qpdrjd2r7kKG059fzln+oygmafRwIUsLqzyz
+ OL0M0Yf6bZTu+2iOuEcUjI988wrIrcp9vA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Add support for the v2 PEBS format. It has a superset of the v1 PEBS
-> fields, but has a longer record so we need to adjust the code paths.
->
-> The main advantage is the new "EventingRip" support which directly
-> gives the instruction, not off-by-one instruction. So with precise == 2
-> we use that directly and don't try to use LBRs and walking basic blocks.
-> This lowers the overhead significantly.
->
-> Some other features are added in later patches.
->
-I think you should call this: PEBS v3 and not v2.
-We already have 2 existing formats: core and nhm.
-You're adding the hsw format.
 
-So either you add it as struct pebs_record_hsw or you
-cleanup the naming of all the structs and call them:
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-struct pebs_record_v1 /* core */
-struct pebs_record_v2 /* nhm, snb, ivb */
-struct pebs_record_v3 /* hsw */
+On Mon, Jan 28, 2013 at 11:57:39AM +0100, Florian Vaussard wrote:
+> Le 28/01/2013 10:57, Thierry Reding a =C3=A9crit :
+> >On Mon, Jan 28, 2013 at 10:36:07AM +0100, Florian Vaussard wrote:
+> >>Hello,
+> >>
+> >>Le 28/01/2013 09:45, Peter Ujfalusi a =C3=A9crit :
+> >>>hi Thierry,
+> >>>
+> >>>On 01/26/2013 06:40 AM, Thierry Reding wrote:
+> >[...]
+> >>>>>+{
+> >>>>>+	return pwm->chip->can_sleep;
+> >>>>>+}
+> >>>>>+EXPORT_SYMBOL_GPL(pwm_cansleep);
+> >>>>
+> >>>>Would it make sense to check for NULL pointers here? I guess that
+> >>>>passing NULL into the function could be considered a programming error
+> >>>>and an oops would be okay, but in that case there's no point in making
+> >>>>the function return an int. Also see my next comment.
+> >>>
+> >>>While it is unlikely to happen it is better to be safe, something like=
+ this
+> >>>will do:
+> >>>
+> >>>return pwm ? pwm->chip->can_sleep : 0;
+> >>>
+> >>
+> >>Ok. And what about:
+> >>
+> >>BUG_ON(pwm =3D=3D NULL);
+> >>return pwm->chip->can_sleep;
+> >
+> >I don't think we need that. In case pwm =3D=3D NULL, dereferencing it wi=
+ll
+> >oops anyway. So either we make it safe and return an error code, or we
+> >let it oops without explicit BUG_ON().
+> >
+>=20
+> Calling this function with a NULL pointer is a programming error, so there
+> is no error codes for such errors.
 
-That would seem more consistent to me.
+You could return -EINVAL if pwm =3D=3D NULL.
 
-As for using precise=2 for eventingrip, I am fine with this.
+> I propose to return bool, and let it oops if such case happens.
 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c          |    2 +-
->  arch/x86/kernel/cpu/perf_event_intel_ds.c |  101 ++++++++++++++++++++++-------
->  2 files changed, 79 insertions(+), 24 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 6774c17..c95290a 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -397,7 +397,7 @@ int x86_pmu_hw_config(struct perf_event *event)
->                  * check that PEBS LBR correction does not conflict with
->                  * whatever the user is asking with attr->branch_sample_type
->                  */
-> -               if (event->attr.precise_ip > 1) {
-> +               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
->                         u64 *br_type = &event->attr.branch_sample_type;
->
->                         if (has_branch_stack(event)) {
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index 826054a..9d0dae0 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -41,6 +41,12 @@ struct pebs_record_nhm {
->         u64 status, dla, dse, lat;
->  };
->
-> +struct pebs_record_v2 {
-> +       struct pebs_record_nhm nhm;
-> +       u64 eventingrip;
-> +       u64 tsx_tuning;
-> +};
-> +
->  void init_debug_store_on_cpu(int cpu)
->  {
->         struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-> @@ -559,8 +565,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->  {
->         /*
->          * We cast to pebs_record_core since that is a subset of
-> -        * both formats and we don't use the other fields in this
-> -        * routine.
-> +        * both formats.
->          */
->         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
->         struct pebs_record_core *pebs = __pebs;
-> @@ -588,7 +593,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->         regs.bp = pebs->bp;
->         regs.sp = pebs->sp;
->
-> -       if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
-> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
-> +               regs.ip = ((struct pebs_record_v2 *)pebs)->eventingrip;
-> +               regs.flags |= PERF_EFLAGS_EXACT;
-> +       } else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
->                 regs.flags |= PERF_EFLAGS_EXACT;
->         else
->                 regs.flags &= ~PERF_EFLAGS_EXACT;
-> @@ -641,35 +649,21 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
->         __intel_pmu_pebs_event(event, iregs, at);
->  }
->
-> -static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-> +static void intel_pmu_drain_pebs_common(struct pt_regs *iregs, void *at,
-> +                                       void *top)
->  {
->         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
->         struct debug_store *ds = cpuc->ds;
-> -       struct pebs_record_nhm *at, *top;
->         struct perf_event *event = NULL;
->         u64 status = 0;
-> -       int bit, n;
-> -
-> -       if (!x86_pmu.pebs_active)
-> -               return;
-> -
-> -       at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
-> -       top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-> +       int bit;
->
->         ds->pebs_index = ds->pebs_buffer_base;
->
-> -       n = top - at;
-> -       if (n <= 0)
-> -               return;
-> +       for ( ; at < top; at += x86_pmu.pebs_record_size) {
-> +               struct pebs_record_nhm *p = at;
->
-> -       /*
-> -        * Should not happen, we program the threshold at 1 and do not
-> -        * set a reset value.
-> -        */
-> -       WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
-> -
-> -       for ( ; at < top; at++) {
-> -               for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
-> +               for_each_set_bit(bit, (unsigned long *)&p->status, x86_pmu.max_pebs_events) {
->                         event = cpuc->events[bit];
->                         if (!test_bit(bit, cpuc->active_mask))
->                                 continue;
-> @@ -692,6 +686,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
->         }
->  }
->
-> +static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-> +{
-> +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> +       struct debug_store *ds = cpuc->ds;
-> +       struct pebs_record_nhm *at, *top;
-> +       int n;
-> +
-> +       if (!x86_pmu.pebs_active)
-> +               return;
-> +
-> +       at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
-> +       top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-> +
-> +       ds->pebs_index = ds->pebs_buffer_base;
-> +
-> +       n = top - at;
-> +       if (n <= 0)
-> +               return;
-> +
-> +       /*
-> +        * Should not happen, we program the threshold at 1 and do not
-> +        * set a reset value.
-> +        */
-> +       WARN_ONCE(n > x86_pmu.max_pebs_events,
-> +                 "Unexpected number of pebs records %d\n", n);
-> +
-> +       return intel_pmu_drain_pebs_common(iregs, at, top);
-> +}
-> +
-> +static void intel_pmu_drain_pebs_v2(struct pt_regs *iregs)
-> +{
-> +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> +       struct debug_store *ds = cpuc->ds;
-> +       struct pebs_record_v2 *at, *top;
-> +       int n;
-> +
-> +       if (!x86_pmu.pebs_active)
-> +               return;
-> +
-> +       at  = (struct pebs_record_v2 *)(unsigned long)ds->pebs_buffer_base;
-> +       top = (struct pebs_record_v2 *)(unsigned long)ds->pebs_index;
-> +
-> +       n = top - at;
-> +       if (n <= 0)
-> +               return;
-> +       /*
-> +        * Should not happen, we program the threshold at 1 and do not
-> +        * set a reset value.
-> +        */
-> +       WARN_ONCE(n > x86_pmu.max_pebs_events,
-> +                 "Unexpected number of pebs records %d\n", n);
-> +
-> +       return intel_pmu_drain_pebs_common(iregs, at, top);
-> +}
-> +
->  /*
->   * BTS, PEBS probe and setup
->   */
-> @@ -723,6 +772,12 @@ void intel_ds_init(void)
->                         x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
->                         break;
->
-> +               case 2:
-> +                       printk(KERN_CONT "PEBS fmt2%c, ", pebs_type);
-> +                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_v2);
-> +                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_v2;
-> +                       break;
-> +
->                 default:
->                         printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
->                         x86_pmu.pebs = 0;
-> --
-> 1.7.7.6
->
+My point was that it will oops even if you don't use BUG_ON() so there
+isn't so much point in using it explicitly.
+
+Thierry
+
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRBnomAAoJEN0jrNd/PrOhjSwP/3mkZ2hcCdvoWIsotAFpKheD
+GiC9vhXwgfcNKefZvbE9x8k55iRGnfeJwW5/vf3wJvuvVsb8EJeBBj5yj5UiBl0K
+KO5KuloAuQ3qfKoVyRkTstsK1tg7SJml0EL/SFCS/k4R997z9llU8dN4ZUgS/R4/
+/2Hc0ja+HCbQBF3CXl4ILqGymg2cbXjmnsbyRzm8tGZEg2QKvb0xzOvnAD5yysXc
+luJMWJJYBoG5HI+qSvVrRWrhmPiJNaEjfAONu3E9HiyJXSxHOmy5BIi6jPmDi5Td
+dxNeX77qhCmRm6X966cCnG0DO7iywPPgp8xYAI+p4jeRvSv7b+GUd859Lhh8hbhL
+EfGelGQmzFoelZYf1XQ1V3EOpPMjGvp4/hY/Pv3d6e4K+r94xiNcIdB2FndhEsQ/
+YkD5zYdLS4rhiIkOC+wt/PVbMWTgzkkdNWahHs+z4VhqMyhnu1YPLZd2aOKoZ7he
+5cB7aCWC7HoMxS1tJqxJz3vqPcB4JaZdRZN98hvLid48z/THfW3xUyLvPqU5SMgy
+ooXrp8rOixu2DC980fbw3p0ltr0A+hNU6nVh5HSrbFhLr3JBhGrK/KwmIRyAwzYM
+ayVDI8CKVlqbjcnpA4wX8AazWGhKaQpnGZ8eJbzA0sJSTuxmF/OYbYI3U5s+yof2
+zgcU9OhTW4V7iEIl/cmT
+=t3/6
+-----END PGP SIGNATURE-----
+
+--ew6BAiZeqk4r7MaW--
