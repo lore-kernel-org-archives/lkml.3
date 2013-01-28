@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab3A1R7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 12:59:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34891 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753853Ab3A1R7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 12:59:53 -0500
-Date: Mon, 28 Jan 2013 14:59:38 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH v6 2/2] perf stat: add interval printing
-Message-ID: <20130128175938.GA15351@infradead.org>
-References: <1358860732-4435-1-git-send-email-eranian@google.com>
- <1358860732-4435-3-git-send-email-eranian@google.com>
- <20130125025247.GA16249@infradead.org>
- <CABPqkBT-JuR=3q4X2o7Et9idd3T5Ut_GSnhpQKbqfr5SC4eDWA@mail.gmail.com>
+	id S1757707Ab3A1SAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:00:06 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:63007 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757680Ab3A1R76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 12:59:58 -0500
+Date: Mon, 28 Jan 2013 09:59:51 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
+        bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
+        viro@zeniv.linux.org.uk, tytso@mit.edu,
+        Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
+        Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-ID: <20130128175951.GA22465@mtj.dyndns.org>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+ <1356573611-18590-26-git-send-email-koverstreet@google.com>
+ <20130125005136.GE2373@mtj.dyndns.org>
+ <87libhpz4h.fsf@rustcorp.com.au>
+ <20130128175304.GX26407@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBT-JuR=3q4X2o7Et9idd3T5Ut_GSnhpQKbqfr5SC4eDWA@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130128175304.GX26407@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jan 25, 2013 at 04:21:11PM +0100, Stephane Eranian escreveu:
-> On Fri, Jan 25, 2013 at 3:52 AM, Arnaldo Carvalho de Melo
-> <acme@redhat.com> wrote:
-> > Em Tue, Jan 22, 2013 at 02:18:52PM +0100, Stephane Eranian escreveu:
-> >> This patch adds a new printing mode for perf stat.
-> >> It allows internval printing. That means perf stat
-> >> can now print event deltas at regular time interval.
-> >> This is useful to detect phases in programs.
-> >
-> > This patch is not applying to my perf/core branch, does it depend on
-> > some other outstanding patchset from you?
-> >
-> > Tomorrow probably all I had in this area will be in Ingo's tree, but
-> > can you please take a look at my perf/core branch at:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux
-> >
-> My patches are always relative to:
-> git://git.kernel.org/pub/scm/linux/kernel/git/tip.tip.git
+Hello, Kent.
+
+On Mon, Jan 28, 2013 at 09:53:04AM -0800, Kent Overstreet wrote:
+> > Like Tejun, I'd prefer to see it always alloc up-front, because it
+> > avoids the _noalloc variant (which is backwards: please hand gfp_t, so
+> > you don't hide the alloc) and heuristics.
 > 
-> Do you still need to rebase against your tree?
+> Problem with gfp_t is alloc_percpu() doesn't take it. I don't know why,
+> but this all goes away with Tejun's idea for allocating from a pool
+> refilled by workqueue.
 
-Well, userspace code normally is developed on my tree and eventually
-goes to the one you mentioned. If you make sure that now, that both are
-synched after some weeks, then probably it'll work with my tree.
+It goes down to how we allocate page tables.  percpu depends on
+vmalloc space allocation which in turn depends on page table
+allocation which unfortunately assumes GFP_KERNEL and is spread all
+across different architectures.  Adding @gfp to it came up a couple
+times but the cases weren't strong enough to push it all the way
+through.  There are some aspects that I like about forcing GFP_KERNEL
+on all percpu allocations but if there are strong enough cases and
+someone is willing enough to push it through, maybe.
 
-- Arnaldo
+Thanks.
+
+-- 
+tejun
