@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab3A1MOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 07:14:10 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:14097 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756961Ab3A1MOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 07:14:08 -0500
-X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Jan 2013 07:14:08 EST
-Message-ID: <510669BF.9090706@bfs.de>
-Date: Mon, 28 Jan 2013 13:06:23 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1757328Ab3A1MV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 07:21:26 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58350 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab3A1MVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 07:21:22 -0500
+Date: Mon, 28 Jan 2013 17:49:43 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Anton Arapov <anton@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Josh Stone <jistone@redhat.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [GIT PULL] uprobes: pre-filtering
+Message-ID: <20130128121943.GD29865@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20130113185916.GA25831@redhat.com>
+ <20130124121720.GA3104@gmail.com>
+ <20130124154018.GA8580@redhat.com>
+ <20130124154159.GB32071@gmail.com>
+ <20130124170612.GA14823@redhat.com>
+ <20130125064629.GD23723@linux.vnet.ibm.com>
+ <20130125075437.GB21036@gmail.com>
+ <20130125161728.GA11630@redhat.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] TTY: synclink, small cleanup in dtr_rts()
-References: <20130127194039.GA18787@elgon.mountain>	 <1359317078.14406.12.camel@joe-AO722> <20130127201947.GO16282@mwanda> <1359320401.14406.16.camel@joe-AO722>
-In-Reply-To: <1359320401.14406.16.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20130125161728.GA11630@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012812-8256-0000-0000-00000600EA12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Oleg Nesterov <oleg@redhat.com> [2013-01-25 17:17:28]:
 
-
-Am 27.01.2013 22:00, schrieb Joe Perches:
-> On Sun, 2013-01-27 at 23:19 +0300, Dan Carpenter wrote:
->> On Sun, Jan 27, 2013 at 12:04:38PM -0800, Joe Perches wrote:
->>> Wouldn't it be clearer still to use | instead of +
->> Yeah.  I think it would be, but adding bitflags together instead of
->> doing bitwise ORs is very common as well.
+> On 01/25, Ingo Molnar wrote:
+> >
+> > * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+> >
+> > > The other alternative is to extend the current abi and pass
+> > > the prefilter option. Should we extend the abi for userspace
+> > > tracing is obviously debatable.
+> >
+> > That's the obvious path to go - why add something to the kernel
+> > if user-space cannot make use of it?
 > 
-> Fortunately, less and less so.
+> This is what I am going to (try to) do, but I am not sure if this makes
+> sense...
 > 
-> Another option might be to add another #define
-> to include/uapi/linux/synclink.h
+> For the start, can't we teach 'uprobe_events' file to accept, say,
 > 
-> #define SerialSignal_DTR_RTS	(SerialSignal_DTR | SerialSignal_RTS)
+> 	'p file:0x1234 pid=1 other-opts'
 
 
-Do you really want every possible combination ready as define ?
-please stay with: (SerialSignal_DTR | SerialSignal_RTS)
-Everyone using serial should know about DTR and RTS
+I think this would be a very good start
 
-re,
- wh
+
+The only downside, I see is we would have add and remove to change the
+filter. Something like perf record will not be able to dynamically
+change the filter parameter.
+
+
+> 
+> for the start? This looks simple enough, and I after looked into tools/perf
+> it seems that perf can be changed too.
+> 
+> What do you think?
+> 
+> Then we can extend 'pid=' option to accept the list of pids, perhaps.
+> 
+> In the long term we probably need uprobes/pid_filter or something like this,
+> it should allow to add/del pid dynamically. I really do not know.
+
+Yes, I think having a file like uprobes/pid_filter would be able to
+dynamically change the filter.  Probably when we code this up should we
+make this something more generic otherwise, we might end up with
+uid_filter, sid_filter ..
+
+Steven, 
+Are you still pursuing multiple ftrace buffers that you proposed at LPC 2012?
+
+In which case, this new filter should also be per buffer.
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
+
