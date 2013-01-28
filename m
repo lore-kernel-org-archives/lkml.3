@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab3A1O7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 09:59:40 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:44610
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754915Ab3A1O7e convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 09:59:34 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dI9371Id6eah542I1432I4015Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1155h)
-X-WSS-ID: 0MHCCB1-01-394-02
-X-M-MSG: 
-From: "Kinney, Steven" <Steven.Kinney@amd.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Myron Stowe <myron.stowe@redhat.com>, Hiroshi DOYU <hdoyu@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Jiri Kosina <jkosina@suse.cz>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Renninger <trenn@suse.de>, Andi Kleen <ak@linux.intel.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: RE: [PATCH 1/3] AMD x86 quirks: Quirk for enabling IOMMUv2 PC
- feature
-Thread-Topic: [PATCH 1/3] AMD x86 quirks: Quirk for enabling IOMMUv2 PC
- feature
-Thread-Index: AQHN+BTdjn95QA9wrkuUYh1WbqV225hfPC0A//+ifvA=
-Date: Mon, 28 Jan 2013 14:59:25 +0000
-Message-ID: <57D41218901B4442B4AFF404D21591163C2D4E@sausexdag02.amd.com>
-References: <1358799658-6236-1-git-send-email-steven.kinney@amd.com>
- <1358799658-6236-2-git-send-email-steven.kinney@amd.com>
- <20130128142928.GZ25591@8bytes.org>
-In-Reply-To: <20130128142928.GZ25591@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.236.70.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753147Ab3A1PBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:01:38 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56729 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3A1PBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:01:36 -0500
+Date: Mon, 28 Jan 2013 15:01:14 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Bryan Wu <cooloney@gmail.com>, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] pwm: Add pwm_cansleep() as exported API to users
+Message-ID: <20130128150113.GL23505@n2100.arm.linux.org.uk>
+References: <1359121471-21457-1-git-send-email-florian.vaussard@epfl.ch> <1359121471-21457-2-git-send-email-florian.vaussard@epfl.ch> <20130126054024.GB29243@avionic-0098.adnet.avionic-design.de> <51063AB5.2060108@ti.com> <51064687.5090605@epfl.ch>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51064687.5090605@epfl.ch>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+On Mon, Jan 28, 2013 at 10:36:07AM +0100, Florian Vaussard wrote:
+> Hello,
+>
+> Le 28/01/2013 09:45, Peter Ujfalusi a écrit :
+>> hi Thierry,
+>>
+>> On 01/26/2013 06:40 AM, Thierry Reding wrote:
+>>>> +{
+>>>> +	return pwm->chip->can_sleep;
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(pwm_cansleep);
+>>>
+>>> Would it make sense to check for NULL pointers here? I guess that
+>>> passing NULL into the function could be considered a programming error
+>>> and an oops would be okay, but in that case there's no point in making
+>>> the function return an int. Also see my next comment.
+>>
+>> While it is unlikely to happen it is better to be safe, something like this
+>> will do:
+>>
+>> return pwm ? pwm->chip->can_sleep : 0;
+>>
+>
+> Ok. And what about:
+>
+> BUG_ON(pwm == NULL);
+> return pwm->chip->can_sleep;
 
-                       It was disabled for a reason that does not pertain to IOMMUv2 PC static counts (reading from the ICounter associated with the selected bank/counter).  Testing with perf shows expected results.
+Let's get something straight.
 
-Thanks,
+1. Don't use BUG_ON() as some kind of willy nilly assert() replacement.
+   Linus refused to have assert() in the kernel because assert() gets not
+   only over-used, but also gets inappropriately used too.
 
-Steve
+   _Only_ _ever_ use BUG_ON() if continuing is going to cause user
+   noticable data loss which is not reportable to userspace.  In other
+   words, block device queue corruption or the like - where bringing the
+   system down is going to _save_ the system from itself.
 
------Original Message-----
-From: Joerg Roedel [mailto:joro@8bytes.org] 
-Sent: Monday, January 28, 2013 8:29 AM
-To: Kinney, Steven
-Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org; Bjorn Helgaas; Greg Kroah-Hartman; Sebastian Andrzej Siewior; Myron Stowe; Hiroshi DOYU; Stephen Warren; Jiri Kosina; Kukjin Kim; linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org; Peter Zijlstra; Paul Mackerras; Arnaldo Carvalho de Melo; Thomas Renninger; Andi Kleen; Cyrill Gorcunov
-Subject: Re: [PATCH 1/3] AMD x86 quirks: Quirk for enabling IOMMUv2 PC feature
+   Otherwise, return an error and/or use WARN_ON().
 
-On Mon, Jan 21, 2013 at 02:20:56PM -0600, Steven L. Kinney wrote:
-> From: "Steven L. Kinney" <steven.kinney@amd.com>
-> 
-> Original code base by Andreas Herrmann at AMD with minor changes.
+2. If you want a slow kernel, then by all means check your arguments to
+   your functions.  While you're at it, why not check that strings which
+   are passed contain only the characters you expect them to?  And, if
+   you're bothering to check against a NULL pointer, what about NULL+1
+   pointers which are also invalid?  Why not invent some function to
+   ensure that the pointer is a valid kernel pointer.  Maybe you'll have
+   to interate the vmalloc lists too - yay, more code to be executed!
+   That must be good!
 
-Why is it safe to enable this feature when it was disabled by BIOS? Was it disabled for no reason?
+In your example, if you're going to check that pwm is non-NULL, what
+if pwm->chip is non-NULL?  How far do you take this?
 
+Or... just like most of the core kernel does, it does _not_ verify on
+function entry that the pointer is "correct" unless it is explicitly
+defined that the function may take a NULL pointer (like kfree()).
+Everything else just goes right on and does the dereference - and if
+the pointer was wrong, we hope that the MMU faults and we get a kernel
+oops.
 
-	Joerg
+Have a read through the code in fs/ or kernel/ and see how many functions
+you can spot in there which validate their pointers which aren't dealing
+with data from userland.
 
+You'll find almost no function checking that an inode pointer is not NULL.
+Or a struct file pointer.  Or a struct path pointer... etc.
 
+Yet, you come to ARM code, and it seems "popular" that pointer arguments
+need to be verified on every single function call.  Why is this?
 
+I don't know if Andrew would like to inject something here (I've added
+him) on this subject...
