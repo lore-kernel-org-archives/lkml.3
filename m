@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3A1W5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 17:57:22 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44986 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab3A1W5U (ORCPT
+	id S1755370Ab3A1W6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 17:58:20 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:54813 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab3A1W6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 17:57:20 -0500
-Date: Mon, 28 Jan 2013 23:56:57 +0100
-From: Mathieu Chouquet-Stringer <mathieu@csetco.com>
-To: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: ilw@linux.intel.com, johannes.berg@intel.com, wey-yi.w.guy@intel.com
-Subject: iwlwifi/iwldvm soft lockup with 3.8.0-rc5 (was: almost unusable on
- 3.8.0-rc5)
-Message-ID: <20130128225657.GA17533@kashmir>
-Mail-Followup-To: Mathieu Chouquet-Stringer <mathieu@csetco.com>,
-	linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-	ilw@linux.intel.com, johannes.berg@intel.com,
-	wey-yi.w.guy@intel.com
+	Mon, 28 Jan 2013 17:58:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Face: %JOeya=Dg!}[/#Go&*&cQ+)){p1c8}u\Fg2Q3&)kothIq|JnWoVzJtCFo~4X<uJ\9cHK'.w
- 3:{EoxBR
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo7vHXdh=ogvfZnxx9gqgiifWGa=XzS+ZKjXFFOPue4TTw@mail.gmail.com>
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
+	<1358525267-14268-5-git-send-email-jiang.liu@huawei.com>
+	<3500982.MUDp6kKU3R@vostro.rjw.lan>
+	<CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com>
+	<CAE9FiQVM4+Wirpb3_D0Zxi4r1p9SAMi4ZrNYr=-eas-C6pKJYA@mail.gmail.com>
+	<CAErSpo7WbbzZ8cKfLvuE331ofWir2vswUnYaxVLBBYGFowedXQ@mail.gmail.com>
+	<CAE9FiQXkrYubkgbbOXmrEXvGZBZXMZ6sh8kGTpF1_=tD3OMPJw@mail.gmail.com>
+	<CAErSpo7vHXdh=ogvfZnxx9gqgiifWGa=XzS+ZKjXFFOPue4TTw@mail.gmail.com>
+Date: Mon, 28 Jan 2013 14:58:15 -0800
+X-Google-Sender-Auth: 7rV_6GQKXLD1NugUy1g2pQEVwE0
+Message-ID: <CAE9FiQU84OSQrQJEGAQTDzVv8kGCi+fmgM8+ycoMXMUfHsNe-g@mail.gmail.com>
+Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hello all,
+On Mon, Jan 28, 2013 at 2:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> CONFIG_ACPI_PCI_SLOT=y in RHEL6, so evidently they have this problem.
 
-Oh the irony, I was just starting an email saying wifi is almost
-unusable for me with 3.8 and my machine (a thinkpad t530) completely
-froze while typing it...
+oh, I only checked opensuse that has that set to m.
 
-I was going to say I'm getting a lot of:
-iwlwifi 0000:03:00.0: fail to flush all tx fifo queues
+>
+> Asking users to edit module.conf by hand is not a solution, just like
+> asking users to boot with a command line option is not a solution.
+> That sort of stuff is fine for a hobbyist OS intended only for techie
+> geeks.  It's not fine for Linux.
 
-with this device:
-03:00.0 Network controller: Intel Corporation Centrino Ultimate-N 6300 (rev 3e)
-        Subsystem: Intel Corporation Centrino Ultimate-N 6300 3x3 AGN
-        Kernel driver in use: iwlwifi
+not sure. add something in command line or conf files.
+but recompile kernel is another story.
 
-But now I will be able to give you links to the actual soft lockup:
-http://mathieu.csetco.com/iwlwifi/iwlwifi-oops1.jpeg
-http://mathieu.csetco.com/iwlwifi/iwlwifi-oops2.jpeg
-http://mathieu.csetco.com/iwlwifi/iwlwifi-oops3.jpeg
+>
+> If you would give a concrete example of the ACPI namespace info and
+> device config, hotplug sequence, etc., required to show the problem,
+> we could have a useful discussion about ways to fix it.  But if all
+> you have is FUD about "this might break and users won't have the
+> ability to edit modules.conf," that doesn't help me see why this patch
+> is a bad idea.
 
-The same machine works perfectly fine with a vanilla 3.7.  On 3.8,
-before the machine froze I could see my download speed going up and down
-like crazy (that's what prompted the "almost unusable" comment, it's so
-painful loading a web page feels like being on dialup).
+Never mind, We should save your bandwidth to more patches.
 
-A rough text version is a follow:
-BUG: soft lockup - CPU#1 stuck for 23s!
-[...]
-Call Trace:
-iwl_trans_pcie_stop_device+0x15c/0x1c0 [iwlwifi]
-iwl_down+0x1fd/0x300 [iwldvm]
-iwlagn_prepare_restart+0x4f/0xd0 [iwldvm]
-? idle_balance+0x110/0x2f0
-iwl_bg_restart+0x52/0xe0 [iwldvm]
-process_one_work+0x147/0x490
-? iwl_op_mode_dvm_start+0xa50/0xa50 [iwldvm]
-[...]
-
-After that I the whole thing was frozen: keyboard/mouse would still work
-but no IO would go whatsoever (even disk)...
-
-The "fail to flush all tx fifo queues" are easy to reproduce: I get that
-by copying file around / downloading and browsing the web.
-
-Let me know if I can help in any way (like decoding addresses).
-
-Cheers,
--- 
-Mathieu Chouquet-Stringer                         mathieu@csetco.com
-            The sun itself sees not till heaven clears.
-	             -- William Shakespeare --
+Yinghai
