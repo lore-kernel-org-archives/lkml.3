@@ -1,37 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab3A1ANq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 19:13:46 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36694 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab3A1ANn (ORCPT
+	id S1756955Ab3A1AWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 19:22:09 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:38213 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab3A1AWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 19:13:43 -0500
-Date: Sun, 27 Jan 2013 19:13:41 -0500 (EST)
-Message-Id: <20130127.191341.444561143405489074.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com
-Subject: Re: [PATCH] gro: Fix kcalloc argument order
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1359228259.2079.30.camel@joe-AO722>
-References: <1359228259.2079.30.camel@joe-AO722>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 27 Jan 2013 19:22:07 -0500
+Date: Mon, 28 Jan 2013 09:21:58 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 01/19] ARM: shmobile: fix defconfig warning on CONFIG_USB
+Message-ID: <20130128002156.GB3423@verge.net.au>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+ <1359153858-31992-1-git-send-email-arnd@arndb.de>
+ <1359153858-31992-2-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359153858-31992-2-git-send-email-arnd@arndb.de>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sat, 26 Jan 2013 11:24:19 -0800
-
-> First number, then size.
+On Fri, Jan 25, 2013 at 10:44:00PM +0000, Arnd Bergmann wrote:
+> A recent update to the marzen_defconfig introduced a
+> duplicate CONFIG_USB=y line. This removes one of the
+> two.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> arch/arm/configs/marzen_defconfig:86:warning: override: reassigning to symbol USB
 
-Good catch, since this bug doesn't cause any real functional problem
-I've applied the patch to net-next.
 
-Thanks.
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
