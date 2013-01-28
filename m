@@ -1,14 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3A1DkK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Jan 2013 22:40:10 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64307 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458Ab3A1DkI (ORCPT
+	id S1753872Ab3A1Dmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Jan 2013 22:42:32 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:49609 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab3A1Dma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Jan 2013 22:40:08 -0500
-X-AuditID: 9c930179-b7d01ae000004006-94-5105f316c372
-Date: Mon, 28 Jan 2013 12:40:07 +0900
+	Sun, 27 Jan 2013 22:42:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <1359135978-15119-4-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1359135978-15119-4-git-send-email-sjenning@linux.vnet.ibm.com>
+Date: Mon, 28 Jan 2013 12:42:29 +0900
+X-Google-Sender-Auth: iOCMIC_5ITKyhKTubcUtYI2bhNA
+Message-ID: <CAEwNFnDHLgcBt81ZWZqrNSn2ctu86N6Y3JbgqoKVNuq85zU1nw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] staging: zsmalloc: add page alloc/free callbacks
 From: Minchan Kim <minchan@kernel.org>
 To: Seth Jennings <sjenning@linux.vnet.ibm.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -18,28 +24,23 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Nitin Gupta <ngupta@vflare.org>,
         Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] staging: zsmalloc: remove unused pool name
-Message-ID: <20130128034007.GC3321@blaptop>
-References: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1359135978-15119-3-git-send-email-sjenning@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359135978-15119-3-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:46:16AM -0600, Seth Jennings wrote:
-> zs_create_pool() currently takes a name argument which is
-> never used in any useful way.
-> 
-> This patch removes it.
-> 
+On Sat, Jan 26, 2013 at 2:46 AM, Seth Jennings
+<sjenning@linux.vnet.ibm.com> wrote:
+> This patch allows users of zsmalloc to register the
+> allocation and free routines used by zsmalloc to obtain
+> more pages for the memory pool.  This allows the user
+> more control over zsmalloc pool policy and behavior.
+>
+> If the user does not wish to control this, alloc_page() and
+> __free_page() are used by default.
+>
 > Acked-by: Nitin Gupta <ngupta@vflare.org>
-> Signed-off-by: Seth Jennnings <sjenning@linux.vnet.ibm.com>
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 Acked-by: Minchan Kim <minchan@kernel.org>
 
 -- 
