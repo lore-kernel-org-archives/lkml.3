@@ -1,102 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3A1KGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:06:47 -0500
-Received: from mga09.intel.com ([134.134.136.24]:19202 "EHLO mga09.intel.com"
+	id S1755579Ab3A1KHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:07:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62402 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751577Ab3A1KGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:06:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,550,1355126400"; 
-   d="scan'208";a="277407129"
-Message-ID: <1359367598.2089.18.camel@rzhang1-mobl4>
-Subject: Re: [Intel-gfx] [RFC PATCH 3/3] i915: ignore lid open event when
- resuming
-From: Zhang Rui <rui.zhang@intel.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        rjw@sisk.pl, lenb@kernel.org
-Date: Mon, 28 Jan 2013 18:06:38 +0800
-In-Reply-To: <CAKMK7uFWqtcnvkExz2_+0Vm+6pSREhRJ1szpHi2_CEmmHL6Nzg@mail.gmail.com>
-References: <1359300060-2967-1-git-send-email-rui.zhang@intel.com>
-	 <1359300060-2967-3-git-send-email-rui.zhang@intel.com>
-	 <CAKMK7uF4u-3XFogzdQQCBqA2Q61D1s3PhVF7BOT90d88TkqT0g@mail.gmail.com>
-	 <1359340583.2249.14.camel@rzhang1-mobl4>
-	 <CAKMK7uFWqtcnvkExz2_+0Vm+6pSREhRJ1szpHi2_CEmmHL6Nzg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754205Ab3A1KHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 05:07:05 -0500
+Date: Mon, 28 Jan 2013 12:11:11 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH] tun: fix carrier on/off status
+Message-ID: <20130128101111.GB5337@redhat.com>
+References: <5103B01D.5070303@gmx.de>
+ <3592886.xagLc7Uij9@jason-thinkpad-t430s>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3592886.xagLc7Uij9@jason-thinkpad-t430s>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 09:31 +0100, Daniel Vetter wrote:
-> On Mon, Jan 28, 2013 at 3:36 AM, Zhang Rui <rui.zhang@intel.com> wrote:
-> >> Given that this essentially requires users to manually set this module
-> >> option to make stuff work I don't like this.
-> >>
-> > sorry, I do not understand.
-> > this patch just disables modeset_on_lid during suspend.
+Commit c8d68e6be1c3b242f1c598595830890b65cea64a removed carrier off call
+from tun_detach since it's now called on queue disable and not only on
+tun close.  This confuses userspace which used this flag to detect a
+free tun. To fix, move on/off calls to setiff/close respectively.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+---
+
+On Mon, Jan 28, 2013 at 05:38:24PM +0800, Jason Wang wrote:
+> On Saturday, January 26, 2013 11:29:49 AM Toralf Förster wrote:
+> > Re: How to find an unused TAP device with kernel 3.8 ?
+> > With kernel 3.8. I just realized that all pre-defined TAP devices are
+> > RUNNING even if no virtual linux system is using it. Now I'm wondering
+> > whether this is a new feature of the upcoming kernel, a bug of the old -
+> > and how I can avoid that.
+> > 
+> > Background : When I start a user mode linux instance, I currently grep
+> > for the next free tap device in this way :
+> > 
+> > Code:
+> > for t in $(ifconfig | grep "^tap" | cut -f1 -d:)
+> > do
+> >    ethtool $t | grep -q 'Link detected: no'
+> >    if [[ $? -eq 0 ]]; then
+> >       NET="tuntap,$t"
+> >       break
+> >    fi
+> > done
+> > 
+> > but this doesn't work now anymore.
+> > 
+> > Here is the diff in dmesg
+> > 
+> > $ diff 3.7.1 3.8.0-rc1+ | grep UP
+> > 
+> > < br0: flags=4355<UP,BROADCAST,PROMISC,MULTICAST>  mtu 1500
+> > 
+> > > br0: flags=4419<UP,BROADCAST,RUNNING,PROMISC,MULTICAST>  mtu 1500
+> > 
+> > < tap0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+> > 
+> > > tap0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+> > 
+> > more details : http://forums.gentoo.org/viewtopic-p-7211498.html#7211498
 > 
-> Pardon me, the misunderstanding is on my side - I've mixed up
-> dev_priv->modeset_on_lid with the corresponding module option.
+> Looks like something wrong with the carrier detection of tap.
 > 
-> Is my understanding correct that only with the new SCI pm state this
-> can happen, since that still allows acpi events to be processed (and
-> so our lid_notifier being called?
+> Please try the following patch to see if it helps.
 > 
-yep.
-
-> >> I see a few possible options:
-> >> - plug the races between all the different parts - I've never really
-> >> understood why acpi sends us events before the resume code has
-> >> completed ... If that's indeed intentional, we could delay the
-> >> handling a bit until at least the i915 resume code completed.
-> >
-> > IMO, the real question is that, during a suspend/resume cycle, if we
-> > need to take care of the lid open event or not.
-> > To me, the answer is no, because when resuming from STR, i915 is not
-> > aware of such an event, and the i915 resume code works well, right?
-> > so I do not think it is a problem to ignore the lid event for another
-> > lightweight suspend state, which is introduced in Patch 1/3 in this
-> > series.
-> >
-> >> - Judging from the diff context you're not on the latest 3.8-rc
-> >> codebase - we've applied a few fixes to this lid hack recently. Please
-> >> retest on a kernel with
-> >>
-> > the patch is based on 3.8.0-rc3, which already includes the commit
-> > below.
-> > And yes, the problem still exists.
+> Thanks.
 > 
-> Ok, I think I see the issue now. But I suspect that we need some
-> additional locking to make this solid, since currently
-> dev_priv->modeset_on_lid updates can race with our lid notifier
-> handler. Let me think about this a bit more.
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c                                                                                                                        
+> index cc09b67..d8a53c3 100644                                                                                                                                             
+> --- a/drivers/net/tun.c                                                                                                                                                   
+> +++ b/drivers/net/tun.c                                                                                                                                                   
+> @@ -438,6 +438,9 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+>                 sock_put(&tfile->sk);                                                                                                                                     
+>         }                                                                                                                                                                 
+>                                                                                                                                                                           
+> +       if (tun && tun->numqueues == 0)                                                                                                                                   
+> +               netif_carrier_off(tun->dev);                                                                                                                              
+> +                                                                                                                                                                         
+>         if (clean) {                                                                                                                                                      
+>                 if (tun && tun->numqueues == 0 && tun->numdisabled == 0 &&                                                                                                
+>                     !(tun->flags & TUN_PERSIST))                                                                                                                          
+> @@ -473,6 +476,7 @@ static void tun_detach_all(struct net_device *dev)
+>         BUG_ON(tun->numqueues != 0);                                                                                                                                      
+>                                                                                                                                                                           
+>         synchronize_net();                                                                                                                                                
+> +       netif_carrier_off(dev);                                                                                                                                           
+>         for (i = 0; i < n; i++) {                                                                                                                                         
+>                 tfile = rtnl_dereference(tun->tfiles[i]);                                                                                                                 
+>                 /* Drop read queue */                                                                                                                                     
+> @@ -531,6 +535,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+>                 sock_hold(&tfile->sk);                                                                                                                                    
+>                                                                                                                                                                           
+>         tun_set_real_num_queues(tun);                                                                                                                                     
+> +       netif_carrier_on(tun->dev);                                                                                                                                       
+>                                                                                                                                                                           
+>         /* device is allowed to go away first, so no need to hold extra                                                                                                   
+>          * refcnt.                                                                                                                                                        
+This will set carrier off if all queues are disabled, which I think is a
+problem as it would confuse the script. How about the following instead:
 
-hmm,
-with this patch, intel_lid_notify() will return immediately if
-modeset_on_lid is set to -1. So the only problem in my mind is that we
-got a lid open event during i915_suspend().
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index af372d0..00dfdad 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1644,10 +1644,10 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
+ 		    device_create_file(&tun->dev->dev, &dev_attr_group))
+ 			pr_err("Failed to create tun sysfs files\n");
+-
+-		netif_carrier_on(tun->dev);
+ 	}
+ 
++	netif_carrier_on(tun->dev);
++
+ 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
+ 
+ 	if (ifr->ifr_flags & IFF_NO_PI)
+@@ -2124,6 +2124,8 @@ static int tun_chr_close(struct inode *inode, struct file *file)
+ 	struct tun_file *tfile = file->private_data;
+ 	struct net *net = tfile->net;
+ 
++	netif_carrier_off(tun->dev);
++
+ 	tun_detach(tfile, true);
+ 	put_net(net);
+ 
 
-Say,
-lid is opened -> i915_lid_notify() is invoked (modeset_on_lid is 1 at
-this time) -> i915_suspend() set modeset_on_lid to -1, just before
-intel_modeset_setup_hw_state() being invoked in i915_lid_notify() ->
-intel_modeset_setup_hw_state() breaks the system.
 
-but my first question would be is this (lid open on suspend) possible in
-real world?
-If the answer is yes, then my second question is that, this problem
-exists for STR as well because SCI is still valid at this time when
-suspending to memory, have we seen such issues for STR before?
-
-Anyway, if the current code does not break STR, this patch should be
-enough for the new suspend state.
-what do you think?
-
-thanks,
-rui
-
+-- 
+MST
