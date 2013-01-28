@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab3A1Kfp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:35:45 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49967 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab3A1Kfn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:35:43 -0500
-Date: Mon, 28 Jan 2013 21:35:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: linux-next: manual merge of the usb tree with the driver-core tree
-Message-Id: <20130128213535.15bb937175de3ec3b4a09daa@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Jan_2013_21_35_35_+1100_n=F=3=Um+vwV6ciP"
+	id S1754224Ab3A1Kka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:40:30 -0500
+Received: from smtp1.goneo.de ([212.90.139.80]:46866 "EHLO smtp1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751638Ab3A1Kk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 05:40:27 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -1.418
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH RFC] misc/at24: distinguish between eeprom and fram chips
+Date: Mon, 28 Jan 2013 11:40:15 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+References: <201212041758.38600.poeschel@lemonage.de> <201212071114.29034.poeschel@lemonage.de> <20130124072701.GG8364@nekote.pengutronix.de>
+In-Reply-To: <20130124072701.GG8364@nekote.pengutronix.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301281140.15289.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Jan_2013_21_35_35_+1100_n=F=3=Um+vwV6ciP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thursday 24 January 2013 at 08:27:01, Wolfram Sang wrote:
+> > > > > > I wanted to use a fm24c04 i2c fram chip with linux. I grepped
+> > > > > > the source and found nothing. I later found that my chip can be
+> > > > > > handled by at24 eeprom driver. It creates a sysfs file called
+> > > > > > eeprom to read from and write to the chip. Userspace has no
+> > > > > > chance to distinguish if it is writing an eeprom or a fram
+> > > > > > chip.
+> > > > > 
+> > > > > Why should it?
+> > > > 
+> > > > Because writes are much faster and it doesn't have to take care on
+> > > > erase cycles. It could use other write strategies on such devices
+> > > > and update informations that have to survive power downs more
+> > > > often.
+> > > 
+> > > I agree. I think that a seperate attribute named e.g. 'page_size'
+> > > would be more helpful than renaming the binary file to fram?
+> > 
+> > Yes, this is a much better solution! Adding a seperate sysfs file
+> > page_size and a file for the type of device which would read eeprom,
+> > fram, etc then. If you also think this is the way to go, I would spent
+> > one of my next free timeslots to this.
+> 
+> Oops, this mail seems to have dropped off :(
 
-Hi Greg,
+Luckily I did not have a free timeslot to invest yet. ;)
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/phy/omap-usb2.c between commit 148e11349b0c ("usb: Convert to
-devm_ioremap_resource()") from the  tree and commit ca784be36cc7 ("usb:
-start using the control module driver") from the usb tree.
+> I am all for the 'page_size' attribute, but still not convinced what
+> gain the 'type' attribute would allow. For FRAM, the page size will be
+> large. Isn't this enough information?
 
-I fixed it up (I wasn't sure how, so I effectively dropped the former
-change) and can carry the fix as necessary (no action is required).
+Yes, this would be enough information and I think this is the way we should 
+go.
+I set this on my todo list. Although the change will be quite simple, I think 
+I will not find the time to hit the upcoming merge window.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__28_Jan_2013_21_35_35_+1100_n=F=3=Um+vwV6ciP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRBlR3AAoJEECxmPOUX5FEvqMP/3DI618Lxhin4Uu84HB0lfso
-0xwyESwmfWMjE2kcnhejpnbKn/68cjXP+phycrItKxNHOZDlg0IfPvdpsML0yqKP
-hJ8guD3KIKVmqBnNg3A1kqGK3TSrHQRkSEEBja5u0Dq3a9ZX5aplb12FOBqxaqfq
-mDLOGDY8IT828B3MrsYedRf3pLUeDI1yHjjEtayvno89w34vCxrsAX7JnrbjA1uz
-brdQjH+rIeWDO7SwZA6PKdx3LnLCO/Jw4DcS7yIEw2nXYCToZH7IqDdHrYUgLqRB
-b++1+yUR++raPB0KWq7laAJkJHQttjmnZFy9/b8qIo4K/vfW4wzJwB89HLLudk+I
-3VZJqrne0w1WcVstjQbx080cPpLHOk2KJx4HltCcB/ZNCj4xEtYzcCVCC7QFmiNG
-37XUJ+f93HdE1wCNJURUBgHt2ySWLB9XrvuR84MDkDoUyvolGtYHirQdgZUQjD2O
-FmkYzQDkgeiegsLPt23QIs5+dyzjygwecmdDFPraXzeNNtAUmYScdMQJiaZyzIsb
-gzkMS224mjvQ2clg2sVmFzAJf6H9IridxVr/Jnk2jirt9aOKPvYjAz/i8mLu3U7d
-WhaWcqf/IQ0bEFYFq62wEEtHUqS/Da5tPB0sUjCCYotY2OkItVqAJUwTAr04O2+V
-USLouuGNqotO5KZAqWB+
-=rgeS
------END PGP SIGNATURE-----
-
---Signature=_Mon__28_Jan_2013_21_35_35_+1100_n=F=3=Um+vwV6ciP--
+Lars
