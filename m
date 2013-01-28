@@ -1,324 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757665Ab3A1SS2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:18:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48643 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab3A1SS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:18:27 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] mm: clean up soft_offline_page() (Re: [PATCH v2] mm: clean up soft_offline_page())
-Date: Mon, 28 Jan 2013 13:18:10 -0500
-Message-Id: <1359397090-9644-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130127014811.GL30577@one.firstfloor.org>
+	id S1757765Ab3A1SSt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:18:49 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:45724 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757565Ab3A1SSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:18:46 -0500
+Date: Mon, 28 Jan 2013 10:18:39 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu, Oleg Nesterov <oleg@redhat.com>,
+        srivatsa.bhat@linux.vnet.ibm.com, Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-ID: <20130128181839.GB22465@mtj.dyndns.org>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+ <1356573611-18590-26-git-send-email-koverstreet@google.com>
+ <20130125005136.GE2373@mtj.dyndns.org>
+ <20130125011345.GT26407@google.com>
+ <20130125020340.GG2373@mtj.dyndns.org>
+ <20130125020943.GH2373@mtj.dyndns.org>
+ <20130128174858.GW26407@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130128174858.GW26407@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 27, 2013 at 02:48:11AM +0100, Andi Kleen wrote:
-> On Sat, Jan 26, 2013 at 12:02:11AM -0500, Naoya Horiguchi wrote:
-> > Currently soft_offline_page() is hard to maintain because it has many
-> > return points and goto statements. All of this mess come from get_any_page().
-> > This function should only get page refcount as the name implies, but it does
-> > some page isolating actions like SetPageHWPoison() and dequeuing hugepage.
-> > This patch corrects it and introduces some internal subroutines to make
-> > soft offlining code more readable and maintainable.
-> > 
-> > ChangeLog v2:
-> >   - receive returned value from __soft_offline_page and soft_offline_huge_page
-> >   - place __soft_offline_page after soft_offline_page to reduce the diff
-> >   - rebased onto mmotm-2013-01-23-17-04
-> >   - add comment on double checks of PageHWpoison
+Hello, Kent.
+
+On Mon, Jan 28, 2013 at 09:48:58AM -0800, Kent Overstreet wrote:
+> > Ooh, I forgot one thing.  We might not gain much by replacing file
+> > refcnt w/ this.  You can't really get cheaper than fget_light().
 > 
-> Ok for me if it passes mce-test
+> I've seen fget() show up when profiling the aio code - it's not high
+> enough to be a big concern when not doing stupid stuff, but high enough
+> that making it percpu would be worth it if it was easy. Which it's not,
+> for plenty of reasons.
+
+Yeah, aio wouldn't be able to use fget_light().
+
+> > So, I'm now back to "do we need dynamic allocation".  What else do we
+> > have to convert?
 > 
-> Reviewed-by: Andi Kleen <andi@firstfloor.org>
+> I dunno. There's a lot of random refcounts scattered around, though.
+> 
+> The way I see it, if it's always percpu when joe random dev needs a
+> refcount, he's going to weigh whether the overhead of a percpu refcount
+> is worth it.
+> 
+> With dynamic allocation, it's 16 bytes if you don't need it to be
+> percpu, vs. 4 for an atomic_t - so you never need to think about it, you
+> can just always use this for your refcounts and never have to think
+> about if it's going to be a fast path thing or not.
 
-As Xishi pointed out, the patch was broken. Mce-test did catch it, but the
-related testcase HWPOISON-SOFT showed PASS falsely, so I overlooked it.
-Now I confirm that tsoft.c and tsoftinj.c in mce-test surely passes (returns
-with success exitcode) with the fixed one (attached).
+Yes, that is an appealing thought and it would actually improve
+something unlike kref silliness.  One concern is that when not
+converted to percpu, there will be overhead for extra bookkeeping.  It
+probably can be offset by flipping to percpu mode earlier.  Anyways,
+it would be great if both the percpu and non-percpu fast paths light.
 
-Thanks,
-Naoya
----
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Mon, 28 Jan 2013 11:00:02 -0500
-Subject: [PATCH v3] mm: clean up soft_offline_page()
+Thanks.
 
-Currently soft_offline_page() is hard to maintain because it has many
-return points and goto statements. All of this mess come from get_any_page().
-This function should only get page refcount as the name implies, but it does
-some page isolating actions like SetPageHWPoison() and dequeuing hugepage.
-This patch corrects it and introduces some internal subroutines to make
-soft offlining code more readable and maintainable.
-
-ChangeLog v3:
-  - fixed soft_offline_huge_page for in-use hugepage case (thanks to Xishi Qiu)
-
-ChangeLog v2:
-  - receive returned value from __soft_offline_page and soft_offline_huge_page
-  - place __soft_offline_page after soft_offline_page to reduce the diff
-  - rebased onto mmotm-2013-01-23-17-04
-  - add comment on double checks of PageHWpoison
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Andi Kleen <andi@firstfloor.org>
----
- mm/memory-failure.c | 156 +++++++++++++++++++++++++++++-----------------------
- 1 file changed, 87 insertions(+), 69 deletions(-)
-
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index c95e19a..9cab165 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1368,7 +1368,7 @@ static struct page *new_page(struct page *p, unsigned long private, int **x)
-  * that is not free, and 1 for any other page type.
-  * For 1 the page is returned with increased page count, otherwise not.
-  */
--static int get_any_page(struct page *p, unsigned long pfn, int flags)
-+static int __get_any_page(struct page *p, unsigned long pfn, int flags)
- {
- 	int ret;
- 
-@@ -1393,11 +1393,9 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	if (!get_page_unless_zero(compound_head(p))) {
- 		if (PageHuge(p)) {
- 			pr_info("%s: %#lx free huge page\n", __func__, pfn);
--			ret = dequeue_hwpoisoned_huge_page(compound_head(p));
-+			ret = 0;
- 		} else if (is_free_buddy_page(p)) {
- 			pr_info("%s: %#lx free buddy page\n", __func__, pfn);
--			/* Set hwpoison bit while page is still isolated */
--			SetPageHWPoison(p);
- 			ret = 0;
- 		} else {
- 			pr_info("%s: %#lx: unknown zero refcount page type %lx\n",
-@@ -1413,23 +1411,48 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	return ret;
- }
- 
-+static int get_any_page(struct page *page, unsigned long pfn, int flags)
-+{
-+	int ret = __get_any_page(page, pfn, flags);
-+
-+	if (ret == 1 && !PageHuge(page) && !PageLRU(page)) {
-+		/*
-+		 * Try to free it.
-+		 */
-+		put_page(page);
-+		shake_page(page, 1);
-+
-+		/*
-+		 * Did it turn free?
-+		 */
-+		ret = __get_any_page(page, pfn, 0);
-+		if (!PageLRU(page)) {
-+			pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
-+				pfn, page->flags);
-+			return -EIO;
-+		}
-+	}
-+	return ret;
-+}
-+
- static int soft_offline_huge_page(struct page *page, int flags)
- {
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
- 	struct page *hpage = compound_head(page);
- 
-+	/*
-+	 * This double-check of PageHWPoison is to avoid the race with
-+	 * memory_failure(). See also comment in __soft_offline_page().
-+	 */
-+	lock_page(hpage);
- 	if (PageHWPoison(hpage)) {
-+		unlock_page(hpage);
-+		put_page(hpage);
- 		pr_info("soft offline: %#lx hugepage already poisoned\n", pfn);
--		ret = -EBUSY;
--		goto out;
-+		return -EBUSY;
- 	}
--
--	ret = get_any_page(page, pfn, flags);
--	if (ret < 0)
--		goto out;
--	if (ret == 0)
--		goto done;
-+	unlock_page(hpage);
- 
- 	/* Keep page count to indicate a given hugepage is isolated. */
- 	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
-@@ -1438,17 +1461,18 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	if (ret) {
- 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
- 			pfn, ret, page->flags);
--		goto out;
-+	} else {
-+		set_page_hwpoison_huge_page(hpage);
-+		dequeue_hwpoisoned_huge_page(hpage);
-+		atomic_long_add(1 << compound_trans_order(hpage),
-+				&num_poisoned_pages);
- 	}
--done:
- 	/* keep elevated page count for bad page */
--	atomic_long_add(1 << compound_trans_order(hpage), &num_poisoned_pages);
--	set_page_hwpoison_huge_page(hpage);
--	dequeue_hwpoisoned_huge_page(hpage);
--out:
- 	return ret;
- }
- 
-+static int __soft_offline_page(struct page *page, int flags);
-+
- /**
-  * soft_offline_page - Soft offline a page.
-  * @page: page to offline
-@@ -1477,62 +1501,60 @@ int soft_offline_page(struct page *page, int flags)
- 	unsigned long pfn = page_to_pfn(page);
- 	struct page *hpage = compound_trans_head(page);
- 
--	if (PageHuge(page)) {
--		ret = soft_offline_huge_page(page, flags);
--		goto out;
-+	if (PageHWPoison(page)) {
-+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-+		return -EBUSY;
- 	}
--	if (PageTransHuge(hpage)) {
-+	if (!PageHuge(page) && PageTransHuge(hpage)) {
- 		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
- 			pr_info("soft offline: %#lx: failed to split THP\n",
- 				pfn);
--			ret = -EBUSY;
--			goto out;
-+			return -EBUSY;
- 		}
- 	}
- 
--	if (PageHWPoison(page)) {
--		pr_info("soft offline: %#lx page already poisoned\n", pfn);
--		ret = -EBUSY;
--		goto out;
--	}
--
- 	ret = get_any_page(page, pfn, flags);
- 	if (ret < 0)
--		goto out;
--	if (ret == 0)
--		goto done;
--
--	/*
--	 * Page cache page we can handle?
--	 */
--	if (!PageLRU(page)) {
--		/*
--		 * Try to free it.
--		 */
--		put_page(page);
--		shake_page(page, 1);
--
--		/*
--		 * Did it turn free?
--		 */
--		ret = get_any_page(page, pfn, 0);
--		if (ret < 0)
--			goto out;
--		if (ret == 0)
--			goto done;
--	}
--	if (!PageLRU(page)) {
--		pr_info("soft_offline: %#lx: unknown non LRU page type %lx\n",
--			pfn, page->flags);
--		ret = -EIO;
--		goto out;
-+		return ret;
-+	if (ret) { /* for in-use pages */
-+		if (PageHuge(page))
-+			ret = soft_offline_huge_page(page, flags);
-+		else
-+			ret = __soft_offline_page(page, flags);
-+	} else { /* for free pages */
-+		if (PageHuge(page)) {
-+			set_page_hwpoison_huge_page(hpage);
-+			dequeue_hwpoisoned_huge_page(hpage);
-+			atomic_long_add(1 << compound_trans_order(hpage),
-+					&num_poisoned_pages);
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&num_poisoned_pages);
-+		}
- 	}
-+	/* keep elevated page count for bad page */
-+	return ret;
-+}
-+
-+static int __soft_offline_page(struct page *page, int flags)
-+{
-+	int ret;
-+	unsigned long pfn = page_to_pfn(page);
- 
- 	/*
--	 * Synchronized using the page lock with memory_failure()
-+	 * Check PageHWPoison again inside page lock because PageHWPoison
-+	 * is set by memory_failure() outside page lock. Note that
-+	 * memory_failure() also double-checks PageHWPoison inside page lock,
-+	 * so there's no race between soft_offline_page() and memory_failure().
- 	 */
- 	lock_page(page);
- 	wait_on_page_writeback(page);
-+	if (PageHWPoison(page)) {
-+		unlock_page(page);
-+		put_page(page);
-+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-+		return -EBUSY;
-+	}
- 	/*
- 	 * Try to invalidate first. This should work for
- 	 * non dirty unmapped page cache pages.
-@@ -1545,9 +1567,10 @@ int soft_offline_page(struct page *page, int flags)
- 	 */
- 	if (ret == 1) {
- 		put_page(page);
--		ret = 0;
- 		pr_info("soft_offline: %#lx: invalidated\n", pfn);
--		goto done;
-+		SetPageHWPoison(page);
-+		atomic_long_inc(&num_poisoned_pages);
-+		return 0;
- 	}
- 
- 	/*
-@@ -1575,18 +1598,13 @@ int soft_offline_page(struct page *page, int flags)
- 				pfn, ret, page->flags);
- 			if (ret > 0)
- 				ret = -EIO;
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&num_poisoned_pages);
- 		}
- 	} else {
- 		pr_info("soft offline: %#lx: isolation failed: %d, page count %d, type %lx\n",
- 			pfn, ret, page_count(page), page->flags);
- 	}
--	if (ret)
--		goto out;
--
--done:
--	/* keep elevated page count for bad page */
--	atomic_long_inc(&num_poisoned_pages);
--	SetPageHWPoison(page);
--out:
- 	return ret;
- }
 -- 
-1.7.11.7
-
+tejun
