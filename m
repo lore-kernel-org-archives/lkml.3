@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3A1TuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 14:50:00 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:39894 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab3A1Tt5 (ORCPT
+	id S1753443Ab3A1TuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 14:50:16 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:51811 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab3A1TuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 14:49:57 -0500
-Date: Mon, 28 Jan 2013 11:49:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 10/25] kprobes: fix wait_for_kprobe_optimizer()
-Message-ID: <20130128194949.GJ22465@mtj.dyndns.org>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-11-git-send-email-tj@kernel.org>
- <50D922C9.3020706@hitachi.com>
+	Mon, 28 Jan 2013 14:50:12 -0500
+Date: Mon, 28 Jan 2013 20:49:58 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Mugunthan V N <mugunthanvnm@ti.com>, Matt Porter <mporter@ti.com>,
+        Chase Maupin <chase.maupin@ti.com>, Jason Kridner <jdk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
+Message-ID: <20130128194958.GA6129@netboy.at.omicron.at>
+References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com>
+ <20130128182451.GC2445@netboy.at.omicron.at>
+ <4E26978C-0B09-4E06-8373-49F1850C08C4@antoniou-consulting.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50D922C9.3020706@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E26978C-0B09-4E06-8373-49F1850C08C4@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 25, 2012 at 12:51:37PM +0900, Masami Hiramatsu wrote:
-> (2012/12/22 10:57), Tejun Heo wrote:
-> > wait_for_kprobe_optimizer() seems largely broken.  It uses
-> > optimizer_comp which is never re-initialized, so
-> > wait_for_kprobe_optimizer() will never wait for anything once
-> > kprobe_optimizer() finishes all pending jobs for the first time.
+On Mon, Jan 28, 2013 at 08:40:25PM +0200, Pantelis Antoniou wrote:
+> Hi Richard,
 > 
-> Thank you for fixing that!
-> I must misunderstand that the DECLARE_COMPLETION() macro.
-> 
-> > Also, aside from completion, delayed_work_pending() is %false once
-> > kprobe_optimizer() starts execution and wait_for_kprobe_optimizer()
-> > won't wait for it.
-> >
-> > Reimplement it so that it flushes optimizing_work until
-> > [un]optimizing_lists are empty.  Note that this also makes
-> > optimizing_work execute immediately if someone's waiting for it, which
-> > is the nicer behavior.
-> 
-> I think your enhancement is reasonable and GOOD for me.
-> 
-> Thanks again!
-> 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Yes, I guess this was more of a drive-by patch dump - but people need this
+> to get PG2.0 silicon to work on am33xx.
 
-Can I take it through workqueue branch w/ other patches?
+And what is PG2.0?
 
-Thanks!
+> And no, I don't think having a non-NAPI code path is backwards, especially
+> when trying to debug hardware problems; the non-NAPI driver is much easier
+> to understand and follow, especially when there is a convoluted method
+> you have to follow to have the h/w acknowledge the interrupt.
 
--- 
-tejun
+Special debug modes are fine to have, but not in mainline code. 
+I suggest taking a look at the recent netdev discussion on this.
+Someone wanted to make napi/non-napi a DT option, and it got
+nixed.
+
+> Not every device can be conveniently be made to shut up so that NAPI processing 
+> can take place at a later time.
+
+So, are you saying that the cpsw cannot work as a napi device?
+ 
+> The NAPI case is still broken in this driver, which OOPs under load.
+
+And does your patch fix it, or not?
+
+It would be nice to know what the problem is, and how to reproduce
+it. I haven't seen any OOPs on the beaglebone, but maybe I am not
+trying hard enough.
+
+Thanks,
+Richard
