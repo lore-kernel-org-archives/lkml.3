@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab3A1QBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 11:01:50 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:33329 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab3A1QBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 11:01:49 -0500
+	id S1756317Ab3A1QCk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 11:02:40 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:36618 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753221Ab3A1QCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 11:02:37 -0500
+Message-ID: <5106A105.6030004@ti.com>
+Date: Mon, 28 Jan 2013 21:32:13 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130128151010.GA3470@polaris.bitmath.org>
-References: <1359120190-18281-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1359120190-18281-7-git-send-email-benjamin.tissoires@gmail.com>
-	<20130128151010.GA3470@polaris.bitmath.org>
-Date: Mon, 28 Jan 2013 17:01:47 +0100
-Message-ID: <CAN+gG=HBv6iLJGMg8cAAV4RJ+=4eHV-q0zrny71fCXDO6cBE4A@mail.gmail.com>
-Subject: Re: [PATCH 06/25] HID: multitouch: optimize FlatFrog panels
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mrugesh Katepallewar <mrugesh.mk@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <hs@denx.de>
+Subject: Re: [PATCH V2] ARM: davinci: da850: add RTC DT entries
+References: <1359359268-9781-1-git-send-email-mrugesh.mk@ti.com>
+In-Reply-To: <1359359268-9781-1-git-send-email-mrugesh.mk@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 4:10 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
->> Relying on ALWAYS_VALID enhance a little the processing time of
->> the events.
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
->> ---
->>  drivers/hid/hid-multitouch.c | 5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> Is there a measurement backing up this claim? I suspect
-> micro-optimizations of this kind drowns completely along the rather
-> long way from device, via malloc and loops, to the input core.
+Hi Mrugesh,
 
-No, the measure I made for this are roughly the same. It's purely
-micro-optimization, and yes, mallocs must kill the processing time.
-However, the purpose of this patch and the others entitled 'optimize
-XXX' is to show that I did not invented the new default class. My true
-objective is to remove all the quirks related to the 'valid'
-information in order to have a driver as universal as possible and to
-be able to clean it up.
+On 1/28/2013 1:17 PM, Mrugesh Katepallewar wrote:
+> Add RTC DT entries in da850 dts file.
+> 
+> Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
+> ---
+> Applies on top of v3.8-rc4 of linus tree.
+> 
+> This patch is depending on 
+> "ARM: davinci: da850: add interrupt-parent property in soc node"
+> https://patchwork.kernel.org/patch/2044101/
 
-> Considering the must-be-tested-for-regression risk on top of that,
-> this patch falls far below what is worth doing, IMHO.
+> Tested on da850-evm device.
+> 
+> Test Procedure:
+> date 2013.01.28-10:00:00 (usage: date[YYYY.]MM.DD-hh:mm[:ss])
+> hwclock -w
+> reset board and check system time.
 
-It _has_ been tested. I got the HID traces from FlatFrog and either
-they use different firmwares with different processing in their
-devices, the kernel processing is good.
+Queuing this for v3.9. The testing information above is useful and
+should be part of the changelog. I moved it there while committing.
 
-Cheers,
-Benjamin
+It will be nice to check the alarm functionality as well. Can you check
+that and let me know that works as well?
 
->
->> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
->> index 5a886bd..7dfe891 100644
->> --- a/drivers/hid/hid-multitouch.c
->> +++ b/drivers/hid/hid-multitouch.c
->> @@ -229,8 +229,9 @@ static struct mt_class mt_classes[] = {
->>       },
->>
->>       { .name = MT_CLS_FLATFROG,
->> -             .quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
->> -                     MT_QUIRK_NO_AREA,
->> +             .quirks = MT_QUIRK_ALWAYS_VALID |
->> +                     MT_QUIRK_NO_AREA |
->> +                     MT_QUIRK_CONTACT_CNT_ACCURATE,
->>               .sn_move = 2048,
->>               .maxcontacts = 40,
->>       },
->> --
->> 1.8.1
->>
->
-> Thanks.
-> Henrik
+Thanks,
+Sekhar
