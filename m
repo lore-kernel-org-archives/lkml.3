@@ -1,71 +1,445 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab3A1FzR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 00:55:17 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:17501
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751751Ab3A1FzO (ORCPT
+	id S1751755Ab3A1GDH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 01:03:07 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:39407 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab3A1GDE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 00:55:14 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V3 0/3] mtd: use the full-id as the keyword
-Date: Mon, 28 Jan 2013 12:57:16 +0800
-Message-ID: <1359349039-11510-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Mon, 28 Jan 2013 01:03:04 -0500
+Date: Mon, 28 Jan 2013 01:03:01 -0500 (EST)
+Message-Id: <20130128.010301.1903162087500078263.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Shijie <b32955@freescale.com>
 
-I ever submitted a patch to use the full-id as the keyword for
-some unparsable nand chips. This is the second tries.
+Much more accumulated than I would have liked due to an
+unexpected bout with a nasty flu.
 
-As time goes on, we begin to meet the situation that we can not
-get enough information from some nand chips's id data.
-Take some Toshiba's nand chips for example.
-I have 4 Toshiba's nand chips in my hand:
-	TC58NVG2S0F, TC58NVG3S0F, TC58NVG5D2, TC58NVG6D2
+1) AH and ESP input don't set ECN field correctly because the transport
+   head of the SKB isn't set correctly, fix from Li RongQing.
 
-When we read these chips' datasheets, we will get the geometry of these chips:
-	TC58NVG2S0F : 4096 + 224
-	TC58NVG3S0F : 4096 + 232
-	TC58NVG5D2  : 8192 + 640
-	TC58NVG6D2  : 8192 + 640
+2) If netfilter conntrack zones are disabled, we can return an uninitialized
+   variable instead of the proper error code.  Fix from Borislav Petkov.
 
-But we can not parse out the correct oob size for these chips from the id data.
-So it is time to add some new fields to the nand_flash_dev{},
-and update the detection mechanisms.
+3) Fix double SKB free in ath9k driver beacon handling, from Felix Feitkau.
 
-v2 --> v3:
-	[1] remove the duplicated header.
-	[2] remove the field "ecc_len" in nand_flash_dev{}.
-	[3] fix some coding style warnings.
-	[4] add more comments
+4) Remove bogus assumption about netns cleanup ordering in nf_conntrack,
+   from Pablo Neira Ayuso.
 
-Huang Shijie (3):
-  mtd: add new fields to nand_flash_dev{}
-  mtd: add a new table for the unparsable nand chips
-  mtd: add the new detection method for the unparsable nand chips
+5) Remove a bogus BUG_ON in the new TCP fastopen code, from Eric
+   Dumazet.  It uses spin_is_locked() in it's test and is therefore
+   unsuitable for UP.
 
- drivers/mtd/devices/doc2000.c     |    2 +-
- drivers/mtd/devices/doc2001.c     |    2 +-
- drivers/mtd/devices/doc2001plus.c |    2 +-
- drivers/mtd/nand/nand_base.c      |   35 ++++++-
- drivers/mtd/nand/nand_ids.c       |  217 +++++++++++++++++++++----------------
- drivers/mtd/nand/nandsim.c        |    2 +-
- drivers/mtd/nand/pxa3xx_nand.c    |    2 +-
- drivers/mtd/nand/sm_common.c      |   61 +++++------
- include/linux/mtd/nand.h          |    9 ++-
- 9 files changed, 201 insertions(+), 131 deletions(-)
+6) Fix SELINUX labelling regressions added by the tuntap multiqueue
+   changes, from Paul Moore.
+
+7) Fix CRC errors with jumbo frame receive in tg3 driver, from Nithin
+   Nayak Sujir.
+
+8) CXGB4 driver sets interrupt coalescing parameters only on first
+   queue, rather than all of them.  Fix from Thadeu Lima de Souza
+   Cascardo.
+
+9) Fix regression in the dispatch of read/write registers in dm9601
+   driver, from Tushar Behera.
+
+10) ipv6_append_data miscalculates header length, from Romain KUNTZ.
+
+11) Fix PMTU handling regressions on ipv4 routes, from Steffen
+    Klassert, Timo Teräs, and Julian Anastasov.
+
+12) In 3c574_cs driver, add necessary parenthesis to "x << y & z"
+    expression.  From Nickolai Zeldovich.
+
+13) macvlan_get_size() causes underallocation netlink message space,
+    fix from Eric Dumazet.
+
+14) Avoid division by zero in xfrm_replay_advance_bmp(), from Nickolai
+    Zeldovich.  Amusingly the zero check was already there, we were
+    just performing it after the modulus :-)
+
+15) Some more splice bug fixes from Eric Dumazet, which fix things mostly
+    eminating from how we now more aggressively use high-order pages in
+    SKBs.
+
+16) Fix size calculation bug when freeing hash tables in the IPSEC xfrm
+    code, from Michal Kubecek.
+
+17) Fix PMTU event propagation into socket cached routes, from Steffen
+    Klassert.
+
+18) Fix off by one in TX buffer release in netxen driver, from Eric
+    Dumazet.
+
+19) Fix rediculous memory allocation requirements introduced by the
+    tuntap multiqueue changes, from Jason Wang.
+
+20) Remove bogus AMD platform workaround in r8169 driver that causes major
+    problems in normal operation, from Timo Teräs.
+
+21) virtio-net set affinity and select queue don't handle discontiguous
+    cpu numbers properly, fix from Wanlong Gao.
+
+22) Fix a route refcounting issue in loopback driver, from Eric Dumazet.
+    There's a similar fix coming that we might add to the macvlan driver
+    as well.
+
+23) Fix SKB leaks in batman-adv's distributed arp table code, from
+    Matthias Schiffer.
+
+24) r8169 driver gives descriptor ownership back the hardware before we're
+    done reading the VLAN tag out of it, fix from Francois Romieu.
+
+25) Checksums not calculated properly in GRE tunnel driver fix from
+    Pravin B Shelar.
+
+26) Fix SCTP memory leak on namespace exit.
+
+Please pull, thanks a lot!
+
+The following changes since commit 3152ba0f86428cebe8a9f8462d5be0a9aefa6289:
+
+  Merge tag 'dt-fixes-for-3.8' of git://sources.calxeda.com/kernel/linux (2013-01-14 13:19:08 -0800)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 6642f91c92da07369cf1e582503ea3ccb4a7f1a9:
+
+  dm9601: support dm9620 variant (2013-01-28 00:18:04 -0500)
+
+----------------------------------------------------------------
+AceLan Kao (3):
+      Bluetooth: Add support for IMC Networks [13d3:3393]
+      Bluetooth: Add support for Foxconn / Hon Hai [0489:e04e]
+      Bluetooth: Add support for Foxconn / Hon Hai [0489:e056]
+
+Amitkumar Karwar (2):
+      mwifiex: update config_bands during infra association
+      mwifiex: correct config_bands handling for ibss network
+
+Anderson Lizardo (1):
+      Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
+
+Avinash Patil (1):
+      mwifiex: fix typo in PCIe adapter NULL check
+
+Bjørn Mork (7):
+      net: qmi_wwan: add TP-LINK HSUPA Modem MA180
+      net: qmi_wwan: add ONDA MT8205 4G LTE
+      net: cdc_ncm: workaround for missing CDC Union
+      net: cdc_mbim: send ZLP after max sized NTBs
+      net: cdc_ncm: fix error path for single interface probing
+      net: cdc_mbim: send ZLP only for the specific buggy device
+      net: cdc_ncm: use IAD provided by the USB core
+
+Bob Copeland (2):
+      mac80211: set NEED_TXPROCESSING for PERR frames
+      mac80211: add encrypt headroom to PERR frames
+
+Dan Carpenter (1):
+      ip6mr: limit IPv6 MRT_TABLE identifiers
+
+Daniel Schaal (1):
+      Bluetooth: Add support for GC-WB300D PCIe [04ca:3006] to ath3k.
+
+Daniel Wagner (1):
+      net: net_cls: fd passed in SCM_RIGHTS datagram not set correctly
+
+David S. Miller (6):
+      Merge branch 'master' of git://1984.lsi.us.es/nf
+      Merge branch 'wireless'
+      Merge branch 'usb_cdc_fixes'
+      Merge branch 'master' of git://git.kernel.org/.../klassert/ipsec
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
+
+Emmanuel Grumbach (1):
+      iwlwifi: audit single frames from AGG queue in RS
+
+Eric Dumazet (7):
+      tcp: fix a panic on UP machines in reqsk_fastopen_remove
+      macvlan: fix macvlan_get_size()
+      tcp: fix incorrect LOCKDROPPEDICMPS counter
+      net: splice: avoid high order page splitting
+      net: splice: fix __splice_segment()
+      netxen: fix off by one bug in netxen_release_tx_buffer()
+      net: loopback: fix a dst refcounting issue
+
+Felix Fietkau (11):
+      ath9k: do not link receive buffers during flush
+      ath9k: fix double-free bug on beacon generate failure
+      ath9k: remove the WARN_ON that triggers if generating a beacon fails
+      ath9k: add a better fix for the rx tasklet vs rx flush race
+      ath9k: fix rx flush handling
+      ath9k: remove sc->rx.rxbuflock to fix a deadlock
+      ath9k: disable the tasklet before taking the PCU lock
+      mac80211: fix monitor mode injection
+      ath9k_hw: fix calibration issues on chainmask that don't include chain 0
+      ath9k_hw: fix chain swap setting when setting rx chainmask to 5
+      ath9k: allow setting arbitrary antenna masks on AR9003+
+
+Giuseppe CAVALLARO (1):
+      net: phy: icplus: fix broken INTR pin settings
+
+Gustavo Padovan (1):
+      Bluetooth: Check if the hci connection exists in SCO shutdown
+
+Jacob Keller (2):
+      ixgbe: only compile ixgbe_debugfs.o when enabled
+      ixgbe: Fix overwriting of rx_mtrl in ixgbe_ptp_hwtstamp_ioctl
+
+Jaganath Kanakkassery (1):
+      Bluetooth: Fix authentication if acl data comes before remote feature evt
+
+Jan Engelhardt (1):
+      netfilter: x_tables: print correct hook names for ARP
+
+Jason Wang (2):
+      tuntap: reduce memory using of queues
+      tuntap: limit the number of flow caches
+
+Jianjun Kong (1):
+      net/hyperv: fix wrong length of mac address
+
+Johannes Berg (1):
+      mac80211: fix FT roaming
+
+John W. Linville (4):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Larry Finger (1):
+      rtlwifi: Fix build warning introduced by commit a290593
+
+Li RongQing (2):
+      ah4/esp4: set transport header correctly for IPsec tunnel mode.
+      ah6/esp6: set transport header correctly for IPsec tunnel mode.
+
+Matthias Schiffer (3):
+      batman-adv: fix skb leak in batadv_dat_snoop_incoming_arp_reply()
+      batman-adv: check for more types of invalid IP addresses in DAT
+      batman-adv: filter ARP packets with invalid MAC addresses in DAT
+
+Michal Kubecek (1):
+      xfrm: fix freed block size calculation in xfrm_policy_fini()
+
+Neil Horman (1):
+      sctp: refactor sctp_outq_teardown to insure proper re-initalization
+
+Nickolai Zeldovich (2):
+      3c574_cs: fix operator precedence between << and &
+      net/xfrm/xfrm_replay: avoid division by zero
+
+Nithin Nayak Sujir (2):
+      tg3: Avoid null pointer dereference in tg3_interrupt in netconsole mode
+      tg3: Fix crc errors on jumbo frame receive
+
+Olivier Sobrie (3):
+      can: c_can: fix invalid error codes
+      can: ti_hecc: fix invalid error codes
+      can: pch_can: fix invalid error codes
+
+Or Gerlitz (1):
+      net/mlx4_core: Set number of msix vectors under SRIOV mode to firmware defaults
+
+Pablo Neira Ayuso (2):
+      netfilter: xt_CT: fix unset return value if conntrack zone are disabled
+      netfilter: nf_conntrack: fix BUG_ON while removing nf_conntrack with netns
+
+Paul Moore (2):
+      selinux: add the "attach_queue" permission to the "tun_socket" class
+      tun: fix LSM/SELinux labeling of tun/tap devices
+
+Peter Korsgaard (1):
+      dm9601: support dm9620 variant
+
+Piotr Haber (1):
+      brcmsmac: increase timer reference count for new timers only
+
+Pravin B Shelar (1):
+      IP_GRE: Fix kernel panic in IP_GRE with GRE csum.
+
+Rob Herring (1):
+      net: calxedaxgmac: throw away overrun frames
+
+Romain KUNTZ (1):
+      ipv6: fix header length calculation in ip6_append_data()
+
+Sergio Cambra (1):
+      Bluetooth device 04ca:3008 should use ath3k
+
+Stanislaw Gruszka (2):
+      mac80211: synchronize scan off/on-channel and PS states
+      iwlegacy: fix IBSS cleanup
+
+Stef van Os (1):
+      phy/marvell: remove fiber/copper autoselect on 88e1111
+
+Steffen Klassert (7):
+      ipv4: Remove output route check in ipv4_mtu
+      ipv4: Don't update the pmtu on mtu locked routes
+      ipv6: Add an error handler for icmp6
+      xfrm4: Invalidate all ipv4 routes on IPsec pmtu events
+      ipv4: Invalidate the socket cached route on pmtu events if possible
+      ipv4: Add a socket release callback for datagram sockets
+      ipv4: Fix route refcount on pmtu discovery
+
+Stephen Hemminger (1):
+      MAINTAINERS: Stephen Hemminger email change
+
+Stuart Menefy (1):
+      net: phy: icplus: Use the RGMII interface mode to configure clock delays
+
+Sujith Manoharan (1):
+      ath9k_htc: Fix memory leak
+
+Szymon Janc (1):
+      Bluetooth: Fix sending HCI commands after reset
+
+Thadeu Lima de Souza Cascardo (1):
+      cxgb4: set coalesce parameters on all queues
+
+Tilman Schmidt (1):
+      isdn/gigaset: fix zero size border case in debug dump
+
+Timo Teräs (1):
+      r8169: remove the obsolete and incorrect AMD workaround
+
+Tushar Behera (1):
+      usbnet: dm9601: Fix incorrect command
+
+Vlad Yasevich (1):
+      SCTP: Free the per-net sysctl table on net exit. v2
+
+Wanlong Gao (3):
+      virtio-net: fix the set affinity bug when CPU IDs are not consecutive
+      virtio-net: split out clean affinity function
+      virtio-net: reset virtqueue affinity when doing cpu hotplug
+
+Wei Shuai (2):
+      usbnet: add new flag FLAG_NOARP for usb net devices
+      cdc_ncm: add support FLAG_NOARP for Infineon modem platform
+
+Xufeng Zhang (1):
+      sctp: set association state to established in dupcook_a handler
+
+Yan Burman (1):
+      net/mlx4_en: Fix bridged vSwitch configuration for non SRIOV mode
+
+françois romieu (1):
+      r8169: fix vlan tag read ordering.
+
+ MAINTAINERS                                           |   6 +--
+ drivers/bluetooth/ath3k.c                             |  10 +++++
+ drivers/bluetooth/btusb.c                             |   5 +++
+ drivers/isdn/gigaset/capi.c                           |   2 +
+ drivers/net/can/c_can/c_can.c                         |   4 +-
+ drivers/net/can/pch_can.c                             |   2 +-
+ drivers/net/can/ti_hecc.c                             |   4 +-
+ drivers/net/ethernet/3com/3c574_cs.c                  |   2 +-
+ drivers/net/ethernet/broadcom/tg3.c                   |  62 ++++++++++++++++++-----------
+ drivers/net/ethernet/calxeda/xgmac.c                  |   4 ++
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c       |  17 ++++++--
+ drivers/net/ethernet/intel/ixgbe/Makefile             |   3 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_debugfs.c      |   5 ---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ptp.c          |   4 +-
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c            |  13 ++++--
+ drivers/net/ethernet/mellanox/mlx4/main.c             |  11 +-----
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c  |   2 +-
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c  |   2 +
+ drivers/net/ethernet/realtek/r8169.c                  |  21 +++-------
+ drivers/net/hyperv/hyperv_net.h                       |   2 +-
+ drivers/net/hyperv/netvsc_drv.c                       |   2 +-
+ drivers/net/loopback.c                                |   5 +++
+ drivers/net/macvlan.c                                 |   5 ++-
+ drivers/net/phy/icplus.c                              |  29 +++++++++-----
+ drivers/net/phy/marvell.c                             |   9 -----
+ drivers/net/tun.c                                     |  45 +++++++++++++++------
+ drivers/net/usb/cdc_mbim.c                            |  19 +++++++++
+ drivers/net/usb/cdc_ncm.c                             |  31 ++++++++++++++-
+ drivers/net/usb/dm9601.c                              |  52 ++++++++++++++++--------
+ drivers/net/usb/qmi_wwan.c                            |   2 +
+ drivers/net/usb/usbnet.c                              |   4 ++
+ drivers/net/virtio_net.c                              | 118 +++++++++++++++++++++++++++++++++++++++++++++----------
+ drivers/net/wireless/ath/ath9k/ar9003_calib.c         |   2 +
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c           |  27 ++++---------
+ drivers/net/wireless/ath/ath9k/ath9k.h                |   3 --
+ drivers/net/wireless/ath/ath9k/beacon.c               |   2 +-
+ drivers/net/wireless/ath/ath9k/debug.c                |   1 -
+ drivers/net/wireless/ath/ath9k/debug.h                |   2 -
+ drivers/net/wireless/ath/ath9k/htc_hst.c              |   2 +
+ drivers/net/wireless/ath/ath9k/hw.h                   |   1 +
+ drivers/net/wireless/ath/ath9k/main.c                 |  22 +++++------
+ drivers/net/wireless/ath/ath9k/recv.c                 |  54 +++++++------------------
+ drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c |   7 ++--
+ drivers/net/wireless/iwlegacy/common.c                |  35 +++++++----------
+ drivers/net/wireless/iwlwifi/dvm/tx.c                 |   2 +
+ drivers/net/wireless/mwifiex/cfg80211.c               |  17 +-------
+ drivers/net/wireless/mwifiex/pcie.c                   |   2 +-
+ drivers/net/wireless/mwifiex/sta_ioctl.c              |  14 +++++++
+ drivers/net/wireless/rtlwifi/Kconfig                  |   4 +-
+ include/linux/security.h                              |  59 ++++++++++++++++++++++------
+ include/linux/usb/usbnet.h                            |   1 +
+ include/net/ip.h                                      |   2 +
+ include/net/netfilter/nf_conntrack_core.h             |   2 +
+ net/batman-adv/distributed-arp-table.c                |  19 ++++++++-
+ net/bluetooth/hci_core.c                              |   8 ----
+ net/bluetooth/hci_event.c                             |   2 +-
+ net/bluetooth/hidp/core.c                             |   2 +-
+ net/bluetooth/l2cap_core.c                            |  11 ++++++
+ net/bluetooth/sco.c                                   |   2 +-
+ net/core/request_sock.c                               |   2 -
+ net/core/scm.c                                        |   5 ++-
+ net/core/skbuff.c                                     |  44 ++++++---------------
+ net/ipv4/ah4.c                                        |  18 +++++++--
+ net/ipv4/datagram.c                                   |  25 ++++++++++++
+ net/ipv4/esp4.c                                       |  12 ++++--
+ net/ipv4/ip_gre.c                                     |   6 ++-
+ net/ipv4/ipcomp.c                                     |   7 +++-
+ net/ipv4/ping.c                                       |   1 +
+ net/ipv4/raw.c                                        |   1 +
+ net/ipv4/route.c                                      |  54 ++++++++++++++++++++++++-
+ net/ipv4/tcp_ipv4.c                                   |   9 ++---
+ net/ipv4/udp.c                                        |   1 +
+ net/ipv6/ah6.c                                        |  11 +++++-
+ net/ipv6/esp6.c                                       |   5 ++-
+ net/ipv6/icmp.c                                       |  12 ++++++
+ net/ipv6/ip6_output.c                                 |   4 +-
+ net/ipv6/ip6mr.c                                      |   3 ++
+ net/mac80211/cfg.c                                    |  12 +++++-
+ net/mac80211/ieee80211_i.h                            |   6 +--
+ net/mac80211/mesh_hwmp.c                              |   5 ++-
+ net/mac80211/offchannel.c                             |  19 ++++-----
+ net/mac80211/scan.c                                   |  15 +++----
+ net/mac80211/tx.c                                     |   9 +++--
+ net/netfilter/nf_conntrack_core.c                     |   9 +++--
+ net/netfilter/nf_conntrack_standalone.c               |   1 +
+ net/netfilter/x_tables.c                              |  28 +++++++++----
+ net/netfilter/xt_CT.c                                 |   4 +-
+ net/sctp/outqueue.c                                   |  12 ++++--
+ net/sctp/sm_statefuns.c                               |   4 +-
+ net/sctp/sysctl.c                                     |   4 ++
+ net/xfrm/xfrm_policy.c                                |   2 +-
+ net/xfrm/xfrm_replay.c                                |   4 +-
+ security/capability.c                                 |  24 +++++++++--
+ security/security.c                                   |  28 ++++++++++---
+ security/selinux/hooks.c                              |  50 +++++++++++++++++------
+ security/selinux/include/classmap.h                   |   2 +-
+ security/selinux/include/objsec.h                     |   4 ++
+ 97 files changed, 851 insertions(+), 418 deletions(-)
