@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847Ab3A1Fu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 00:50:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59317 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab3A1Fu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 00:50:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,550,1355126400"; 
-   d="scan'208";a="277318567"
-Message-ID: <510611D2.1020007@intel.com>
-Date: Mon, 28 Jan 2013 13:51:14 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1752130Ab3A1FzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 00:55:20 -0500
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:7528 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751790Ab3A1FzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 00:55:16 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH V3 2/3] mtd: add a new table for the unparsable nand chips
+Date: Mon, 28 Jan 2013 12:57:18 +0800
+Message-ID: <1359349039-11510-3-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1359349039-11510-1-git-send-email-b32955@freescale.com>
+References: <1359349039-11510-1-git-send-email-b32955@freescale.com>
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>  <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>  <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net>  <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>  <1359301903.5805.11.camel@marge.simpson.net> <1359350266.5783.39.camel@marge.simpson.net>
-In-Reply-To: <1359350266.5783.39.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 01:17 PM, Mike Galbraith wrote:
-> On Sun, 2013-01-27 at 16:51 +0100, Mike Galbraith wrote: 
->> On Sun, 2013-01-27 at 21:25 +0800, Alex Shi wrote: 
->>> On 01/27/2013 06:35 PM, Borislav Petkov wrote:
->>>> On Sun, Jan 27, 2013 at 05:36:25AM +0100, Mike Galbraith wrote:
->>>>> With aim7 compute on 4 node 40 core box, I see stable throughput
->>>>> improvement at tasks = nr_cores and below w. balance and powersaving. 
->> ... 
->>>> Ok, this is sick. How is balance and powersaving better than perf? Both
->>>> have much more jobs per minute than perf; is that because we do pack
->>>> much more tasks per cpu with balance and powersaving?
->>>
->>> Maybe it is due to the lazy balancing on balance/powersaving. You can
->>> check the CS times in /proc/pid/status.
->>
->> Well, it's not wakeup path, limiting entry frequency per waker did zip
->> squat nada to any policy throughput.
-> 
-> monteverdi:/abuild/mike/:[0]# echo powersaving > /sys/devices/system/cpu/sched_policy/current_sched_policy
-> monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-> 043321  00058616
-> 043313  00058616
-> 043318  00058968
-> 043317  00058968
-> 043316  00059184
-> 043319  00059192
-> 043320  00059048
-> 043314  00059048
-> 043312  00058176
-> 043315  00058184
-> monteverdi:/abuild/mike/:[0]# echo balance > /sys/devices/system/cpu/sched_policy/current_sched_policy
-> monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-> 043337  00053448
-> 043333  00053456
-> 043338  00052992
-> 043331  00053448
-> 043332  00053488
-> 043335  00053496
-> 043334  00053480
-> 043329  00053288
-> 043336  00053464
-> 043330  00053496
-> monteverdi:/abuild/mike/:[0]# echo performance > /sys/devices/system/cpu/sched_policy/current_sched_policy
-> monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-> 043348  00052488
-> 043344  00052488
-> 043349  00052744
-> 043343  00052504
-> 043347  00052504
-> 043352  00052888
-> 043345  00052504
-> 043351  00052496
-> 043346  00052496
-> 043350  00052304
-> monteverdi:/abuild/mike/:[0]#
+We have 4 Toshiba nand chips which can not be parsed out by the
+id data.  Add a new table for the unparsable nand chips.
 
-similar with aim7 results. Thanks, Mike!
+It makes mess if we add these entries to the nand_flash_ids table.
+The entries in the nand_flash_ids stands for a class of nand chips.
+But the unparsable nand chips are just some singular chips.
 
-Wold you like to collect vmstat info in background?
-> 
-> Zzzt.  Wish I could turn turbo thingy off.
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/mtd/nand/nand_ids.c |   21 +++++++++++++++++++++
+ include/linux/mtd/nand.h    |    1 +
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
-Do you mean the turbo mode of cpu frequency? I remember some of machine
-can disable it in BIOS.
-> 
-> -Mike
-> 
-
-
+diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
+index 99949f6..4147c78 100644
+--- a/drivers/mtd/nand/nand_ids.c
++++ b/drivers/mtd/nand/nand_ids.c
+@@ -12,6 +12,27 @@
+ #include <linux/mtd/nand.h>
+ #include <linux/sizes.h>
+ 
++/* This table uses the full ID data as the keyword. */
++struct nand_flash_dev nand_flash_full_ids[] = {
++	/* TOSHIBA */
++	{"TC58NVG2S0F 4G 3.3V 8-bit ",
++		{0x98, 0xdc, 0x90, 0x26, 0x76, 0x15, 0x01, 0x08},
++			SZ_4K, SZ_512, SZ_256K, 0, 8, 224},
++	{"TC58NVG3S0F 8G 3.3V 8-bit ",
++		{0x98, 0xd3, 0x90, 0x26, 0x76, 0x15, 0x02, 0x08},
++			SZ_4K, SZ_1K, SZ_256K, 0, 8, 232},
++	{"TC58NVG5D2 32G 3.3V 8-bit ",
++		{0x98, 0xd7, 0x94, 0x32, 0x76, 0x56, 0x09, 0x00},
++			SZ_8K, SZ_4K, SZ_1M, 0, 8, 640},
++	{"TC58NVG6D2 64G 3.3V 8-bit ",
++		{0x98, 0xde, 0x94, 0x82, 0x76, 0x56, 0x04, 0x20},
++			SZ_8K, SZ_8K, SZ_2M, 0, 8, 640},
++
++	/* end here */
++	{NULL,}
++};
++
++
+ /*
+ *	Chip ID list
+ *
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index d8fd638..119c8e0 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -618,6 +618,7 @@ struct nand_manufacturers {
+ };
+ 
+ extern struct nand_flash_dev nand_flash_ids[];
++extern struct nand_flash_dev nand_flash_full_ids[];
+ extern struct nand_manufacturers nand_manuf_ids[];
+ 
+ extern int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd);
 -- 
-Thanks Alex
+1.7.0.4
+
+
