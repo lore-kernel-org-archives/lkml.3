@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab3A1Llt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:41:49 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:35409 "EHLO bear.ext.ti.com"
+	id S1756890Ab3A1Law (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:30:52 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49588 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756915Ab3A1Lay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:30:54 -0500
+	id S1756662Ab3A1Lau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:30:50 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
@@ -13,9 +13,9 @@ CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
         <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 01/30] USB: EHCI: split ehci-omap out to a separate driver
-Date: Mon, 28 Jan 2013 13:30:02 +0200
-Message-ID: <1359372631-8180-2-git-send-email-rogerq@ti.com>
+Subject: [PATCH 02/30] usb: phy: nop: use devm_kzalloc()
+Date: Mon, 28 Jan 2013 13:30:03 +0200
+Message-ID: <1359372631-8180-3-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
 References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
@@ -25,196 +25,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Stern <stern@rowland.harvard.edu>
+Use resource managed kzalloc.
 
-This patch (as1645) converts ehci-omap over to the new "ehci-hcd is a
-library" approach, so that it can coexist peacefully with other EHCI
-platform drivers and can make use of the private area allocated at
-the end of struct ehci_hcd.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/usb/host/Kconfig     |    2 +-
- drivers/usb/host/Makefile    |    1 +
- drivers/usb/host/ehci-hcd.c  |    6 +---
- drivers/usb/host/ehci-omap.c |   76 +++++++++++++++++++-----------------------
- 4 files changed, 37 insertions(+), 48 deletions(-)
+ drivers/usb/otg/nop-usb-xceiv.c |   16 ++++------------
+ 1 files changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 3a21c5d..11e102e 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -155,7 +155,7 @@ config USB_EHCI_MXC
- 	  Variation of ARC USB block used in some Freescale chips.
+diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
+index a3ce24b..7ffb0c8 100644
+--- a/drivers/usb/otg/nop-usb-xceiv.c
++++ b/drivers/usb/otg/nop-usb-xceiv.c
+@@ -100,15 +100,13 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 	enum usb_phy_type	type = USB_PHY_TYPE_USB2;
+ 	int err;
  
- config USB_EHCI_HCD_OMAP
--	bool "EHCI support for OMAP3 and later chips"
-+	tristate "EHCI support for OMAP3 and later chips"
- 	depends on USB_EHCI_HCD && ARCH_OMAP
- 	default y
- 	---help---
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 001fbff..56de410 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -27,6 +27,7 @@ obj-$(CONFIG_USB_EHCI_HCD)	+= ehci-hcd.o
- obj-$(CONFIG_USB_EHCI_PCI)	+= ehci-pci.o
- obj-$(CONFIG_USB_EHCI_HCD_PLATFORM)	+= ehci-platform.o
- obj-$(CONFIG_USB_EHCI_MXC)	+= ehci-mxc.o
-+obj-$(CONFIG_USB_EHCI_HCD_OMAP)	+= ehci-omap.o
+-	nop = kzalloc(sizeof *nop, GFP_KERNEL);
++	nop = devm_kzalloc(&pdev->dev, sizeof *nop, GFP_KERNEL);
+ 	if (!nop)
+ 		return -ENOMEM;
  
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 09537b2..5a35246 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1251,11 +1251,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_hcd_sh_driver
- #endif
+-	nop->phy.otg = kzalloc(sizeof *nop->phy.otg, GFP_KERNEL);
+-	if (!nop->phy.otg) {
+-		kfree(nop);
++	nop->phy.otg = devm_kzalloc(&pdev->dev, sizeof *nop->phy.otg, GFP_KERNEL);
++	if (!nop->phy.otg)
+ 		return -ENOMEM;
+-	}
  
--#ifdef CONFIG_USB_EHCI_HCD_OMAP
--#include "ehci-omap.c"
--#define        PLATFORM_DRIVER         ehci_hcd_omap_driver
--#endif
--
- #ifdef CONFIG_PPC_PS3
- #include "ehci-ps3.c"
- #define	PS3_SYSTEM_BUS_DRIVER	ps3_ehci_driver
-@@ -1345,6 +1340,7 @@ MODULE_LICENSE ("GPL");
- 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_PLATFORM) && \
- 	!IS_ENABLED(CONFIG_USB_CHIPIDEA_HOST) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_MXC) && \
-+	!IS_ENABLED(CONFIG_USB_EHCI_HCD_OMAP) && \
- 	!defined(PLATFORM_DRIVER) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
-diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-index b96a4bf..30fc482 100644
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -36,6 +36,9 @@
-  *	- convert to use hwmod and runtime PM
-  */
- 
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/usb/ulpi.h>
-@@ -43,6 +46,10 @@
- #include <linux/pm_runtime.h>
- #include <linux/gpio.h>
- #include <linux/clk.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+
-+#include "ehci.h"
- 
- #include <linux/platform_data/usb-omap.h>
- 
-@@ -57,9 +64,11 @@
- #define	EHCI_INSNREG05_ULPI_EXTREGADD_SHIFT		8
- #define	EHCI_INSNREG05_ULPI_WRDATA_SHIFT		0
- 
--/*-------------------------------------------------------------------------*/
-+#define DRIVER_DESC "OMAP-EHCI Host Controller driver"
- 
--static const struct hc_driver ehci_omap_hc_driver;
-+static const char hcd_name[] = "ehci-omap";
-+
-+/*-------------------------------------------------------------------------*/
- 
- 
- static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
-@@ -166,6 +175,12 @@ static void disable_put_regulator(
- /* configure so an HC device and id are always provided */
- /* always called with process context; sleeping is OK */
- 
-+static struct hc_driver __read_mostly ehci_omap_hc_driver;
-+
-+static const struct ehci_driver_overrides ehci_omap_overrides __initdata = {
-+	.reset =		omap_ehci_init,
-+};
-+
- /**
-  * ehci_hcd_omap_probe - initialize TI-based HCDs
-  *
-@@ -315,56 +330,33 @@ static struct platform_driver ehci_hcd_omap_driver = {
- 	/*.suspend		= ehci_hcd_omap_suspend, */
- 	/*.resume		= ehci_hcd_omap_resume, */
- 	.driver = {
--		.name		= "ehci-omap",
-+		.name		= hcd_name,
+ 	if (pdata)
+ 		type = pdata->type;
+@@ -127,7 +125,7 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 	if (err) {
+ 		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
+ 			err);
+-		goto exit;
++		return err;
  	}
- };
  
- /*-------------------------------------------------------------------------*/
+ 	platform_set_drvdata(pdev, nop);
+@@ -135,10 +133,6 @@ static int nop_usb_xceiv_probe(struct platform_device *pdev)
+ 	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
  
--static const struct hc_driver ehci_omap_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "OMAP-EHCI Host Controller",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq			= ehci_irq,
--	.flags			= HCD_MEMORY | HCD_USB2,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset			= omap_ehci_init,
--	.start			= ehci_run,
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
-+static int __init ehci_omap_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
+ 	return 0;
+-exit:
+-	kfree(nop->phy.otg);
+-	kfree(nop);
+-	return err;
+ }
  
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number	= ehci_get_frame,
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
+ static int nop_usb_xceiv_remove(struct platform_device *pdev)
+@@ -148,8 +142,6 @@ static int nop_usb_xceiv_remove(struct platform_device *pdev)
+ 	usb_remove_phy(&nop->phy);
  
--	/*
--	 * root hub support
--	 */
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--	.bus_suspend		= ehci_bus_suspend,
--	.bus_resume		= ehci_bus_resume,
-+	ehci_init_driver(&ehci_omap_hc_driver, &ehci_omap_overrides);
-+	return platform_driver_register(&ehci_hcd_omap_driver);
-+}
-+module_init(ehci_omap_init);
+ 	platform_set_drvdata(pdev, NULL);
+-	kfree(nop->phy.otg);
+-	kfree(nop);
  
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--};
-+static void __exit ehci_omap_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_hcd_omap_driver);
-+}
-+module_exit(ehci_omap_cleanup);
- 
- MODULE_ALIAS("platform:omap-ehci");
- MODULE_AUTHOR("Texas Instruments, Inc.");
- MODULE_AUTHOR("Felipe Balbi <felipe.balbi@nokia.com>");
- 
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_LICENSE("GPL");
+ 	return 0;
+ }
 -- 
 1.7.4.1
 
