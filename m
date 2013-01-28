@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab3A1VM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:12:26 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:32898 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752418Ab3A1VMY (ORCPT
+	id S1754199Ab3A1VOp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:14:45 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:53305 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3A1VOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:12:24 -0500
-Date: Mon, 28 Jan 2013 22:12:22 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: linux-watchdog@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 3/4] watchdog: add support for ux500_wdt watchdog
-Message-ID: <20130128211222.GA3338@spo001.leaseweb.com>
-References: <1358509214-22407-1-git-send-email-fabio.baltieri@linaro.org> <1358509214-22407-4-git-send-email-fabio.baltieri@linaro.org>
-Mime-Version: 1.0
+	Mon, 28 Jan 2013 16:14:42 -0500
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Mugunthan V N <mugunthanvnm@ti.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Matt Porter <mporter@ti.com>, Chase Maupin <chase.maupin@ti.com>,
+        Jason Kridner <jdk@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
+References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com>
+Date: Mon, 28 Jan 2013 22:14:36 +0100
+In-Reply-To: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com>
+	(Pantelis Antoniou's message of "Mon, 28 Jan 2013 15:11:08 +0200")
+Message-ID: <87wquxdn7n.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358509214-22407-4-git-send-email-fabio.baltieri@linaro.org>
-User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
+>>>>> "Pantelis" == Pantelis Antoniou <panto@antoniou-consulting.com> writes:
 
-> This patch adds support for the ux500_wdt watchdog that is found in
-> ST-Ericsson Ux500 platform.  The driver is based on PRCMU APIs.
-> 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+'among other things' is not a very descriptive commit message.
 
-> +static int timeout = WATCHDOG_TIMEOUT;
-> +module_param(timeout, int, 0);
-> +MODULE_PARM_DESC(timeout,
-> +	"Watchdog timeout in seconds. default="
-> +				__MODULE_STRING(WATCHDOG_TIMEOUT) ".");
+ Pantelis> Fix interrupt storm on bone A4 cause by non-by-the-book
+ Pantelis> interrupt handling.  While at it, added a non-NAPI mode
+ Pantelis> (which is easier to debug), plus some general fixes.
 
-We should go for unsigned int timeout values...
+'bone A4' is also not very descriptive. There also was an A4 revision of
+the "old" beaglebone. I guess you're instead referring to a new die
+revision?
 
-> +static int nowayout = WATCHDOG_NOWAYOUT;
-> +module_param(nowayout, int, 0);
-> +MODULE_PARM_DESC(nowayout,
-> +	"Watchdog cannot be stopped once started (default="
-> +				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+What is the impact of this change on earlier devices?
 
-nowayout is a boolean value so please change this to
-static bool nowayout = WATCHDOG_NOWAYOUT;
+ Pantelis> +++ b/Documentation/devicetree/bindings/net/cpsw.txt
+ Pantelis> @@ -20,6 +20,7 @@ Required properties:
+ Pantelis>  - cpts_clock_shift	: Denominator to convert input clock ticks into nanoseconds
+ Pantelis>  - phy_id		: Specifies slave phy id
+ Pantelis>  - mac-address		: Specifies slave MAC address
+ Pantelis> +- disable-napi		: Disables driver NAPI
 
-The rest is OK by me. So if bowayout get's fixed then you have my acked-by.
+napi is not a hardware feature, so it doesn't belong here (if anything,
+it should be linux,disable-napi).
 
-Kind regards,
-Wim.
-
+-- 
+Bye, Peter Korsgaard
