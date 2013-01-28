@@ -1,254 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab3A1OyO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 09:54:14 -0500
-Received: from mga07.intel.com ([143.182.124.22]:46795 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751626Ab3A1OyJ (ORCPT
+	id S1754169Ab3A1O4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 09:56:19 -0500
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:53014 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab3A1O4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 09:54:09 -0500
+	Mon, 28 Jan 2013 09:56:17 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtdHAEGQBlFV5qjOPGdsb2JhbABEin6zWhcDAQEBATg0gh4BAQQBJxMcIwULCAMhJQ8FDRgKGhMbh2QDCQq2BA2JVRWLe4Q0YQOUN4FVhXuFPIgKgWUk
+X-IronPort-AV: E=Sophos;i="4.84,552,1355094000"; 
+   d="scan'208";a="268254665"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 28 Jan 2013 16:01:29 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/25] HID: multitouch: add support for Nexio 42" panel
+Message-ID: <20130128150129.GA3460@polaris.bitmath.org>
+References: <1359120190-18281-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1359120190-18281-3-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130125210157.GA13152@redhat.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-	<53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
-	<1358895228.2408.14.camel@falcor1>
-	<CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
-	<20130125210157.GA13152@redhat.com>
-Date: Mon, 28 Jan 2013 16:54:06 +0200
-Message-ID: <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
-Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric keys
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, dhowells@redhat.com,
-        jmorris@namei.org, linux-security-module@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359120190-18281-3-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:01 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> Hi,
->
-> I am trying to read and understand IMA code. How does digital signature
-> mechanism work.
->
-> IIUC, evmctl will install a file's signature in security.ima. And later
-> process_measurement() will do following.
->
-> Calculate digest of file in ima_collect_measurement() and then
-> ima_appraise_measurement() actually compares signatuer against the
-> digest.
->
-> If yes, ima_collect_measurement() always calculates digest either using
-> md5/sha1 but signatures might have used sha256 or something else. So
-> how does it work. What am I missing.
+Hi Benjamin,
 
-Hi,
+> This device is the worst device I saw. It keeps TipSwitch and InRange
+> at 1 for fingers that are not touching the panel.
+> The solution is to rely on the field ContactCount, which is accurate
+> as the correct information are packed at the begining of the frame.
+> 
+> Unfortunately, CountactCount is most of the time at the end of the report.
+> The solution is to pick it when we have the whole report in raw_event.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/hid-ids.h        |  3 ++
+>  drivers/hid/hid-multitouch.c | 91 ++++++++++++++++++++++++++++++++++++--------
+>  2 files changed, 78 insertions(+), 16 deletions(-)
 
-Yes, currently it is possible to use only single configured algorithm, which is
-in generally enough. Consider it like a policy.
-Soon it will be a patch which allows to use any hash algorithms, supported by
-asymmetric key verification API.
+I think it would make more sense to introduce a method where the
+driver sees all report values at once. We have had reasonable cause to
+add it in the past, but never did.
 
-- Dmitry
+> 
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index dad56aa..0935012 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -597,6 +597,9 @@
+>  #define USB_VENDOR_ID_NEC		0x073e
+>  #define USB_DEVICE_ID_NEC_USB_GAME_PAD	0x0301
+>  
+> +#define USB_VENDOR_ID_NEXIO		0x1870
+> +#define USB_DEVICE_ID_NEXIO_MULTITOUCH_420	0x010d
+> +
+>  #define USB_VENDOR_ID_NEXTWINDOW	0x1926
+>  #define USB_DEVICE_ID_NEXTWINDOW_TOUCHSCREEN	0x0003
+>  
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 46d8136..c4acdd0 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -32,6 +32,8 @@
+>  #include <linux/slab.h>
+>  #include <linux/usb.h>
+>  #include <linux/input/mt.h>
+> +#include <asm/unaligned.h>
+> +#include <asm/byteorder.h>
+>  #include "usbhid/usbhid.h"
+>  
+>  
+> @@ -54,6 +56,7 @@ MODULE_LICENSE("GPL");
+>  #define MT_QUIRK_NO_AREA		(1 << 9)
+>  #define MT_QUIRK_IGNORE_DUPLICATES	(1 << 10)
+>  #define MT_QUIRK_HOVERING		(1 << 11)
+> +#define MT_QUIRK_CONTACT_CNT_ACCURATE	(1 << 12)
+>  
+>  struct mt_slot {
+>  	__s32 x, y, cx, cy, p, w, h;
+> @@ -83,6 +86,10 @@ struct mt_device {
+>  	struct mt_class mtclass;	/* our mt device class */
+>  	struct mt_fields *fields;	/* temporary placeholder for storing the
+>  					   multitouch fields */
+> +	struct hid_field *contactcount;	/* the hid_field contact count that
+> +					   will be picked in mt_raw_event */
+> +	__s8 contactcount_index;	/* the index of the usage contact count
+> +					   in its hid_field. */
+>  	unsigned last_field_index;	/* last field index of the report */
+>  	unsigned last_slot_field;	/* the last field of a slot */
+>  	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
+> @@ -111,6 +118,7 @@ struct mt_device {
+>  #define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	0x0007
+>  #define MT_CLS_DUAL_NSMU_CONTACTID		0x0008
+>  #define MT_CLS_INRANGE_CONTACTNUMBER		0x0009
+> +#define MT_CLS_ALWAYS_TRUE			0x000a
+>  
+>  /* vendor specific classes */
+>  #define MT_CLS_3M				0x0101
+> @@ -170,6 +178,9 @@ static struct mt_class mt_classes[] = {
+>  	{ .name = MT_CLS_INRANGE_CONTACTNUMBER,
+>  		.quirks = MT_QUIRK_VALID_IS_INRANGE |
+>  			MT_QUIRK_SLOT_IS_CONTACTNUMBER },
+> +	{ .name = MT_CLS_ALWAYS_TRUE,
+> +		.quirks = MT_QUIRK_ALWAYS_VALID |
+> +			MT_QUIRK_CONTACT_CNT_ACCURATE },
+>  
+>  	/*
+>  	 * vendor specific classes
+> @@ -250,6 +261,9 @@ static ssize_t mt_set_quirks(struct device *dev,
+>  
+>  	td->mtclass.quirks = val;
+>  
+> +	if (!td->contactcount)
+> +		td->mtclass.quirks &= ~MT_QUIRK_CONTACT_CNT_ACCURATE;
+> +
+>  	return count;
+>  }
+>  
+> @@ -264,24 +278,26 @@ static struct attribute_group mt_attribute_group = {
+>  	.attrs = sysfs_attrs
+>  };
+>  
+> +static int mt_find_usage_index(struct hid_field *field, struct hid_usage *usage)
+> +{
+> +	int i;
+> +	for (i = 0; i < field->maxusage; i++) {
+> +		if (field->usage[i].hid == usage->hid)
+> +			return i;
+> +	}
+> +	return -1;
+> +}
+> +
+>  static void mt_feature_mapping(struct hid_device *hdev,
+>  		struct hid_field *field, struct hid_usage *usage)
+>  {
+>  	struct mt_device *td = hid_get_drvdata(hdev);
+> -	int i;
+>  
+>  	switch (usage->hid) {
+>  	case HID_DG_INPUTMODE:
+>  		td->inputmode = field->report->id;
+> -		td->inputmode_index = 0; /* has to be updated below */
+> -
+> -		for (i=0; i < field->maxusage; i++) {
+> -			if (field->usage[i].hid == usage->hid) {
+> -				td->inputmode_index = i;
+> -				break;
+> -			}
+> -		}
+> -
+> +		td->inputmode_index = mt_find_usage_index(field, usage);
+> +		/* inputmode_index can't be set at -1 */
+>  		break;
+>  	case HID_DG_CONTACTMAX:
+>  		td->maxcontact_report_id = field->report->id;
+> @@ -459,6 +475,10 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_CONTACTCOUNT:
+> +			td->contactcount = field;
+> +			td->contactcount_index = mt_find_usage_index(field,
+> +									usage);
+> +			/* contactcount_index can't be set at -1 */
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_CONTACTMAX:
+> @@ -523,6 +543,10 @@ static int mt_compute_slot(struct mt_device *td, struct input_dev *input)
+>   */
+>  static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+>  {
+> +	if ((td->mtclass.quirks & MT_QUIRK_CONTACT_CNT_ACCURATE) &&
+> +	    td->num_received >= td->num_expected)
+> +		return;
+> +
+>  	if (td->curvalid || (td->mtclass.quirks & MT_QUIRK_ALWAYS_VALID)) {
+>  		int slotnum = mt_compute_slot(td, input);
+>  		struct mt_slot *s = &td->curdata;
+> @@ -623,12 +647,6 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+>  			td->curdata.h = value;
+>  			break;
+>  		case HID_DG_CONTACTCOUNT:
+> -			/*
+> -			 * Includes multi-packet support where subsequent
+> -			 * packets are sent with zero contactcount.
+> -			 */
+> -			if (value)
+> -				td->num_expected = value;
+>  			break;
+>  		case HID_DG_TOUCH:
+>  			/* do nothing */
+> @@ -658,6 +676,37 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+>  	return 1;
+>  }
+>  
+> +static int mt_raw_event(struct hid_device *hid, struct hid_report *report,
+> +			u8 *data, int size)
+> +{
+> +	struct mt_device *td = hid_get_drvdata(hid);
+> +	struct hid_field *field = td->contactcount;
+> +	s32 *value;
+> +
+> +	if (field && report->id == field->report->id) {
+> +		/*
+> +		 * Pick in advance the field HID_DG_CONTACTCOUNT as it is
+> +		 * often placed at the end of the report.
+> +		 */
+> +		if (report->id)
+> +			data++;
+> +
+> +		value = hid_extract_field(hid, field, data);
+> +		if (!value)
+> +			return 0;
+> +
+> +		/*
+> +		 * Includes multi-packet support where subsequent
+> +		 * packets are sent with zero contactcount.
+> +		 */
+> +		if (value[td->contactcount_index])
+> +			td->num_expected = value[td->contactcount_index];
+> +
+> +		kfree(value);
+> +	}
+> +	return 0;
+> +}
 
+This is a lot of cycles for something that is already available in the core.
 
->
-> Thanks
-> Vivek
->
-> On Wed, Jan 23, 2013 at 11:03:39AM +0200, Kasatkin, Dmitry wrote:
->> On Wed, Jan 23, 2013 at 12:53 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> > On Tue, 2013-01-15 at 12:34 +0200, Dmitry Kasatkin wrote:
->> >> Asymmetric keys were introduced in linux-3.7 to verify the signature on
->> >> signed kernel modules.  The asymmetric keys infrastructure abstracts the
->> >> signature verification from the crypto details.  This patch adds IMA/EVM
->> >> signature verification using asymmetric keys.  Support for additional
->> >> signature verification methods can now be delegated to the asymmetric
->> >> key infrastructure.
->> >>
->> >> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
->> >> ---
->> >>  security/integrity/Kconfig  |   12 +++++
->> >>  security/integrity/digsig.c |  103 ++++++++++++++++++++++++++++++++++++++++++-
->> >>  2 files changed, 114 insertions(+), 1 deletion(-)
->> >>
->> >> diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
->> >> index 5bd1cc1..19c4187 100644
->> >> --- a/security/integrity/Kconfig
->> >> +++ b/security/integrity/Kconfig
->> >> @@ -17,5 +17,17 @@ config INTEGRITY_SIGNATURE
->> >>         This is useful for evm and module keyrings, when keys are
->> >>         usually only added from initramfs.
->> >>
->> >> +config INTEGRITY_ASYMMETRIC_KEYS
->> >> +     boolean "Digital signature verification using asymmetric keys"
->> >> +     depends on INTEGRITY_SIGNATURE
->> >> +     default n
->> >> +        select ASYMMETRIC_KEY_TYPE
->> >> +        select ASYMMETRIC_PUBLIC_KEY_SUBTYPE
->> >> +        select PUBLIC_KEY_ALGO_RSA
->> >> +        select X509_CERTIFICATE_PARSER
->> >> +     help
->> >> +       This option enables digital signature verification support
->> >> +       using asymmetric keys.
->> >> +
->> >>  source security/integrity/ima/Kconfig
->> >>  source security/integrity/evm/Kconfig
->> >> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
->> >> index 2dc167d..1896537 100644
->> >> --- a/security/integrity/digsig.c
->> >> +++ b/security/integrity/digsig.c
->> >> @@ -15,10 +15,22 @@
->> >>  #include <linux/err.h>
->> >>  #include <linux/rbtree.h>
->> >>  #include <linux/key-type.h>
->> >> +#include <crypto/public_key.h>
->> >> +#include <keys/asymmetric-type.h>
->> >>  #include <linux/digsig.h>
->> >>
->> >>  #include "integrity.h"
->> >>
->> >> +/*
->> >> + * signature format v2 - for using with asymmetric keys
->> >> + */
->> >> +struct signature_v2_hdr {
->> >> +     uint8_t version;        /* signature format version */
->> >> +     uint8_t hash_algo;      /* Digest algorithm [enum pkey_hash_algo] */
->> >> +     uint8_t keyid[8];       /* IMA key identifier - not X509/PGP specific*/
->> >> +     uint8_t payload[0];     /* signature payload */
->> >> +} __packed;
->> >> +
->> >>  static struct key *keyring[INTEGRITY_KEYRING_MAX];
->> >>
->> >>  static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
->> >> @@ -27,6 +39,91 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
->> >>       "_ima",
->> >>  };
->> >>
->> >> +#ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
->> >> +
->> >> +/*
->> >> + * Request an asymmetric key.
->> >> + */
->> >> +static struct key *request_asymmetric_key(struct key *keyring, uint8_t *keyid)
->> >> +{
->> >> +     struct key *key;
->> >> +     char name[20];
->> >> +
->> >> +     sprintf(name, "%llX", __be64_to_cpup((uint64_t *)keyid));
->> >> +
->> >> +     pr_debug("key search: \"%s\"\n", name);
->> >> +
->> >> +     if (keyring) {
->> >> +             /* search in specific keyring */
->> >> +             key_ref_t kref;
->> >> +             kref = keyring_search(make_key_ref(keyring, 1),
->> >> +                                   &key_type_asymmetric, name);
->> >> +             if (IS_ERR(kref))
->> >> +                     key = ERR_CAST(kref);
->> >> +             else
->> >> +                     key = key_ref_to_ptr(kref);
->> >> +     } else {
->> >> +             key = request_key(&key_type_asymmetric, name, NULL);
->> >> +     }
->> >> +
->> >> +     if (IS_ERR(key)) {
->> >> +             pr_warn("Request for unknown key '%s' err %ld\n",
->> >> +                     name, PTR_ERR(key));
->> >> +             switch (PTR_ERR(key)) {
->> >> +                     /* Hide some search errors */
->> >> +             case -EACCES:
->> >> +             case -ENOTDIR:
->> >> +             case -EAGAIN:
->> >> +                     return ERR_PTR(-ENOKEY);
->> >> +             default:
->> >> +                     return key;
->> >> +             }
->> >> +     }
->> >> +
->> >> +     pr_debug("%s() = 0 [%x]\n", __func__, key_serial(key));
->> >> +
->> >> +     return key;
->> >> +}
->> >> +
->> >> +static int asymmetric_verify(struct key *keyring, const char *sig,
->> >> +                          size_t siglen, const char *data, int datalen)
->> >> +{
->> >> +     struct public_key_signature pks;
->> >> +     struct signature_v2_hdr *hdr = (struct signature_v2_hdr *)sig;
->> >> +     struct key *key;
->> >> +     int ret = -ENOMEM;
->> >> +
->> >> +     if (siglen <= sizeof(*hdr))
->> >> +             return -EBADMSG;
->> >> +
->> >> +     siglen -= sizeof(*hdr);
->> >> +
->> >> +     if (hdr->hash_algo >= PKEY_HASH__LAST)
->> >> +             return -ENOPKG;
->> >> +
->> >> +     key = request_asymmetric_key(keyring, hdr->keyid);
->> >> +     if (IS_ERR(key))
->> >> +             return PTR_ERR(key);
->> >> +
->> >> +     memset(&pks, 0, sizeof(pks));
->> >> +
->> >> +     pks.pkey_hash_algo = hdr->hash_algo;
->> >> +     pks.digest = (u8 *)data;
->> >> +     pks.digest_size = datalen;
->> >> +     pks.nr_mpi = 1;
->> >> +     pks.rsa.s = mpi_read_from_buffer(hdr->payload, &siglen);
->> >> +
->> >> +     if (pks.rsa.s)
->> >> +             ret = verify_signature(key, &pks);
->> >> +
->> >> +     mpi_free(pks.rsa.s);
->> >> +     key_put(key);
->> >> +     pr_debug("%s() = %d\n", __func__, ret);
->> >> +     return ret;
->> >> +}
->> >> +
->> >> +#endif /* CONFIG_INTEGRITY_ASYMMETRIC_KEYS */
->> >> +
->> >>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->> >>                                       const char *digest, int digestlen)
->> >>  {
->> >> @@ -43,6 +140,10 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->> >>                       return err;
->> >>               }
->> >>       }
->> >> -
->> >> +#ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
->> >> +     if (sig[0] == 2)
->> >> +             return asymmetric_verify(keyring[id], sig, siglen,
->> >> +                                      digest, digestlen);
->> >> +#endif
->> >>       return digsig_verify(keyring[id], sig, siglen, digest, digestlen);
->> >>  }
->> >
->> > Thanks Dmitry for the patch!  According to
->> > Documentation/SubmittingPatches: section 2.2, #ifdefs are ugly.  I
->> > realize this is a really small '.c' file, and doesn't really hurt
->> > readability, but could you remove the ifdefs anyway?
->> >
->>
->> Will do it.
->>
->> - Dmitry
->>
->> > thanks,
->> >
->> > Mimi
->> >
->> >
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +
+>  static void mt_set_input_mode(struct hid_device *hdev)
+>  {
+>  	struct mt_device *td = hid_get_drvdata(hdev);
+> @@ -719,11 +768,15 @@ static void mt_post_parse_default_settings(struct mt_device *td)
+>  static void mt_post_parse(struct mt_device *td)
+>  {
+>  	struct mt_fields *f = td->fields;
+> +	struct mt_class *cls = &td->mtclass;
+>  
+>  	if (td->touches_by_report > 0) {
+>  		int field_count_per_touch = f->length / td->touches_by_report;
+>  		td->last_slot_field = f->usages[field_count_per_touch - 1];
+>  	}
+> +
+> +	if (!td->contactcount)
+> +		cls->quirks &= ~MT_QUIRK_CONTACT_CNT_ACCURATE;
+>  }
+>  
+>  static void mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
+> @@ -1056,6 +1109,11 @@ static const struct hid_device_id mt_devices[] = {
+>  		MT_USB_DEVICE(USB_VENDOR_ID_TURBOX,
+>  			USB_DEVICE_ID_TURBOX_TOUCHSCREEN_MOSART) },
+>  
+> +	/* Nexio panels */
+> +	{ .driver_data = MT_CLS_ALWAYS_TRUE,
+> +		MT_USB_DEVICE(USB_VENDOR_ID_NEXIO,
+> +			USB_DEVICE_ID_NEXIO_MULTITOUCH_420)},
+> +
+>  	/* Panasonic panels */
+>  	{ .driver_data = MT_CLS_PANASONIC,
+>  		MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
+> @@ -1193,6 +1251,7 @@ static struct hid_driver mt_driver = {
+>  	.feature_mapping = mt_feature_mapping,
+>  	.usage_table = mt_grabbed_usages,
+>  	.event = mt_event,
+> +	.raw_event = mt_raw_event,
+
+Rather a new and simpler event method here, in other words.
+
+>  #ifdef CONFIG_PM
+>  	.reset_resume = mt_reset_resume,
+>  	.resume = mt_resume,
+> -- 
+> 1.8.1
+> 
+
+Thanks,
+Henrik
