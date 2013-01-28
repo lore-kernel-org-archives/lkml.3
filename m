@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab3A1LCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:02:05 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:42309 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab3A1LCB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 06:02:01 -0500
-Message-ID: <51065AA4.6000700@googlemail.com>
-Date: Mon, 28 Jan 2013 11:01:56 +0000
-From: Chris Clayton <chris2553@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130108 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-CC: Yijing Wang <wangyijing@huawei.com>,
-        Yijing Wang <wangyijing0307@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
-Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
-References: <51016937.1020202@googlemail.com> <510189B1.606@fold.natur.cuni.cz> <5104427D.2050002@googlemail.com> <510494D6.1010000@gmail.com> <51050D43.2050703@googlemail.com> <51051B1B.3080105@gmail.com> <51052DB2.4090702@googlemail.com> <51053917.6060400@fold.natur.cuni.cz> <5105491E.9050907@googlemail.com> <510558CE.9000600@fold.natur.cuni.cz> <5105AFDB.9000200@googlemail.com> <5105E51D.2020606@huawei.com> <51064F1A.1020909@googlemail.com> <51065965.9010806@fold.natur.cuni.cz>
-In-Reply-To: <51065965.9010806@fold.natur.cuni.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755982Ab3A1LEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 06:04:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:17366 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751773Ab3A1LEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:04:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,550,1355126400"; 
+   d="scan'208";a="253522226"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] dw_dmac: adjust slave_id accordingly to request line base
+Date: Mon, 28 Jan 2013 13:04:20 +0200
+Message-Id: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[no one screamed, so linux-media ml dropped]
+On some hardware configurations we have got the request line with the offset.
+The patch introduces convert_slave_id() helper for that cases. The request line
+base is got from the platform device resources provided by the IORESOURCE_DMA
+type.
 
-Hi Martin,
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw_dmac.c      |   13 +++++++++++++
+ drivers/dma/dw_dmac_regs.h |    1 +
+ 2 files changed, 14 insertions(+)
 
-On 01/28/13 10:56, Martin Mokrejs wrote:
->
->
-> Chris Clayton wrote:
->> Hi Yijing,
->>
->> On 01/28/13 02:40, Yijing Wang wrote:
->>> Hi Chris,
->>>      Sorry for the delay reply. It seems like my reply last night was missed.
->>>
->>>   From the sysinfo you provide, there are no pcie port devices under /sys/bus/pci_express/devices.
->>> Maybe because there are some problems with _OSC in your laptop, so pcie port driver won't create pcie port device
->>> for hotplug, aer and so on.
->>>
->>> Maybe you can add boot parameter "pcie_ports=native" and reboot your laptop.
->>> Then use #modprobe pciehp pciehp_force=1 pciehp_debug=1 to load pciehp modules.
->>> After above actions, enter /sys/bus/pci_express/devices/ directory and /sys/bus/pci/slots/
->>> Some slots and pcie port devices should be there now.
->>>
->> Sorry, I've tried your suggestion, but the two directories are still empty.
->>
->> I verified the test environment as follows:
->>
->> [chris:~]$ uname -a
->> Linux laptop 3.7.4 #15 SMP PREEMPT Mon Jan 28 09:43:57 GMT 2013 i686 GNU/Linux
->> [chris:~]$ grep acpiphp /boot/System.map-3.7.4
->> [chris:~]$ modinfo acpiphp
->> modinfo: ERROR: Module acpiphp not found.
->> [chris:~]$ modinfo pciehp
->> filename:       /lib/modules/3.7.4/kernel/drivers/pci/hotplug/pciehp.ko
->> license:        GPL
->> description:    PCI Express Hot Plug Controller Driver
->> author:         Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>
->> depends:
->> intree:         Y
->> vermagic:       3.7.4 SMP preempt mod_unload CORE2
->> parm:           pciehp_detect_mode:Slot detection mode: pcie, acpi, auto
->>    pcie          - Use PCIe based slot detection
->>    acpi          - Use ACPI for slot detection
->>    auto(default) - Auto select mode. Use acpi option if duplicate
->>                    slot ids are found. Otherwise, use pcie option
->>   (charp)
->> parm:           pciehp_debug:Debugging mode enabled or not (bool)
->> parm:           pciehp_poll_mode:Using polling mechanism for hot-plug events or not (bool)
->> parm:           pciehp_poll_time:Polling mechanism frequency, in seconds (int)
->> parm:           pciehp_force:Force pciehp, even if OSHP is missing (bool)
->> [chris:~]$ cat /proc/cmdline
->> root=/dev/sda5 pciehp_ports=native ro resume=/dev/sda6
->> [chris:~]$ sudo modprobe pciehp pciehp_force=1 pciehp_debug=1
->> [chris:~]$ lsmod
->> Module                  Size  Used by
->> pciehp                 19907  0
->> [...]
->>
->> You will notice that the kernel I have used is 3.7.4. I hope that's a suitable kernel for your tests. I've moved away from the 3.8 development kernel onto one that's stable and on which Martin has identified a solution. I see Greg KH released 3.7.5 yesterday and it includes a pciehp change. I'll upgrade to that, run the tests again and report back.
->>
->> One question - should I include the (acpi) pci_slot driver in the kernel build or does pciehp populate the directories without pci_slot?
->
-> Hi Chris,
->    I am not a kernel developer but from the other threads at linux-pci I gathered there are in some
-> scenarios problems with improper loading of the hotplug modules. Therefore, the patches floating
-> now around are to disable hotplug module availability. Therefore, I suggested you to try only
-> only static kernel support for hotplug. That way you don't hit the issue. That is for sure not
-> addressed in 3.7.5, seems that it is probably in -next.
-> Martin
->
-In a few minutes I'll be sending out another reply to Yijing's 
-suggestions because I noticed a typo in the parameter I added to the 
-kernel command line. I'm now going back through email to remember why we 
-were trying to get those /sys/bus/pci... directories populated.
-
-Watch this space! :-)
-Chris
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 3155c11..8484ca1 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -995,6 +995,13 @@ static inline void convert_burst(u32 *maxburst)
+ 		*maxburst = 0;
+ }
+ 
++static inline void convert_slave_id(struct dw_dma_chan *dwc)
++{
++	struct dw_dma *dw = to_dw_dma(dwc->chan.device);
++
++	dwc->dma_sconfig.slave_id -= dw->request_line_base;
++}
++
+ static int
+ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ {
+@@ -1009,6 +1016,7 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ 
+ 	convert_burst(&dwc->dma_sconfig.src_maxburst);
+ 	convert_burst(&dwc->dma_sconfig.dst_maxburst);
++	convert_slave_id(dwc);
+ 
+ 	return 0;
+ }
+@@ -1717,6 +1725,11 @@ static int dw_probe(struct platform_device *pdev)
+ 		memcpy(dw->data_width, pdata->data_width, 4);
+ 	}
+ 
++	/* Get the base request line if set */
++	io = platform_get_resource(pdev, IORESOURCE_DMA, 0);
++	if (io)
++		dw->request_line_base = (unsigned int)io->start;
++
+ 	/* Calculate all channel mask before DMA setup */
+ 	dw->all_chan_mask = (1 << nr_channels) - 1;
+ 
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index 88dd8eb..3eeb766 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -248,6 +248,7 @@ struct dw_dma {
+ 	/* hardware configuration */
+ 	unsigned char		nr_masters;
+ 	unsigned char		data_width[4];
++	unsigned int		request_line_base;
+ 
+ 	struct dw_dma_chan	chan[0];
+ };
+-- 
+1.7.10.4
 
