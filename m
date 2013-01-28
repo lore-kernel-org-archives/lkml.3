@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab3A1PU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:20:27 -0500
-Received: from mga07.intel.com ([143.182.124.22]:40159 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751720Ab3A1PUX (ORCPT
+	id S1755123Ab3A1PUk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:20:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56770 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab3A1PUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:20:23 -0500
+	Mon, 28 Jan 2013 10:20:37 -0500
+Date: Mon, 28 Jan 2013 15:20:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Roger Quadros <rogerq@ti.com>, tony@atomide.com, sameo@linux.intel.com,
+        balbi@ti.com, gregkh@linuxfoundation.org, eballetbo@gmail.com,
+        javier@dowhile0.org, sshtylyov@mvista.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 09/30] USB: ehci-omap: Use devm_request_and_ioremap()
+Message-ID: <20130128152010.GN23505@n2100.arm.linux.org.uk>
+References: <1359372631-8180-10-git-send-email-rogerq@ti.com> <Pine.LNX.4.44L0.1301281013010.1997-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20130128151527.GA5868@redhat.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-	<53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
-	<1358895228.2408.14.camel@falcor1>
-	<CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
-	<20130125210157.GA13152@redhat.com>
-	<CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
-	<20130128151527.GA5868@redhat.com>
-Date: Mon, 28 Jan 2013 17:20:20 +0200
-Message-ID: <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
-Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric keys
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, dhowells@redhat.com,
-        jmorris@namei.org, linux-security-module@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1301281013010.1997-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 5:15 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Mon, Jan 28, 2013 at 04:54:06PM +0200, Kasatkin, Dmitry wrote:
->> On Fri, Jan 25, 2013 at 11:01 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > Hi,
->> >
->> > I am trying to read and understand IMA code. How does digital signature
->> > mechanism work.
->> >
->> > IIUC, evmctl will install a file's signature in security.ima. And later
->> > process_measurement() will do following.
->> >
->> > Calculate digest of file in ima_collect_measurement() and then
->> > ima_appraise_measurement() actually compares signatuer against the
->> > digest.
->> >
->> > If yes, ima_collect_measurement() always calculates digest either using
->> > md5/sha1 but signatures might have used sha256 or something else. So
->> > how does it work. What am I missing.
->>
->> Hi,
->>
->> Yes, currently it is possible to use only single configured algorithm, which is
->> in generally enough. Consider it like a policy.
->> Soon it will be a patch which allows to use any hash algorithms, supported by
->> asymmetric key verification API.
->
-> Ok. I am hoping that it will be more than the kernel command line we
-> support. In the sense that for digital signatures one needs to parse
-> the signature, look at what hash algorithm has been used  and then
-> collect the hash accordingly. It is little different then IMA requirement
-> of calculating one pre-determine hash for all files.
+On Mon, Jan 28, 2013 at 10:17:33AM -0500, Alan Stern wrote:
+> On Mon, 28 Jan 2013, Roger Quadros wrote:
+> 
+> > Make use of devm_request_and_ioremap() and correct comment.
+> 
+> Didn't a big patch come through recently converting all usages of 
+> devm_request_and_ioremap() to another function (I forget the name) that 
+> does its own error reporting and returns an ERR_PTR value?
+> 
+> (Checks the mailing list archive...)  Ah, here it is:
+> 
+> 	http://marc.info/?l=linux-usb&m=135876311801537&w=2
+> 
+> And the new function is devm_ioremap_resource().  We should avoid 
+> adding new usages of an old interface.
 
-Yes... It is obvious. It's coming.
-But in general, signer should be aware of requirements and limitation
-of the platform.
-It is not really a problem...
-
-- Dmitry
-
->
-> Thanks
-> Vivek
+Maybe... if devm_ioremap_resource() was already in the kernel.  The
+problem at the moment is it isn't, and it'll probably be rather
+horrid for everyone to deal with especially when it comes to testing.
