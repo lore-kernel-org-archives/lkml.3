@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab3A1S4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 13:56:03 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:40212 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab3A1S4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 13:56:01 -0500
-Date: Mon, 28 Jan 2013 10:55:52 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic dynamic per cpu refcounting
-Message-ID: <20130128185552.GD22465@mtj.dyndns.org>
-References: <20130124232024.GA584@google.com>
- <20130125180941.GA16896@redhat.com>
- <20130125191139.GA19247@redhat.com>
- <20130128181528.GA26407@google.com>
- <20130128182737.GC22465@mtj.dyndns.org>
- <20130128184933.GC26407@google.com>
+	id S1752455Ab3A1S4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 13:56:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751709Ab3A1S43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 13:56:29 -0500
+Date: Mon, 28 Jan 2013 13:56:25 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, dhowells@redhat.com,
+        jmorris@namei.org, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
+ keys
+Message-ID: <20130128185625.GC5868@redhat.com>
+References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
+ <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
+ <1358895228.2408.14.camel@falcor1>
+ <CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
+ <20130125210157.GA13152@redhat.com>
+ <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
+ <20130128151527.GA5868@redhat.com>
+ <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130128184933.GC26407@google.com>
+In-Reply-To: <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Kent.
+On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
 
-On Mon, Jan 28, 2013 at 10:49:33AM -0800, Kent Overstreet wrote:
-> Yeah. It'd be really nice if it was doable without synchronize_rcu(),
-> but it'd definitely make get/put heavier.
+[..]
+> > Ok. I am hoping that it will be more than the kernel command line we
+> > support. In the sense that for digital signatures one needs to parse
+> > the signature, look at what hash algorithm has been used  and then
+> > collect the hash accordingly. It is little different then IMA requirement
+> > of calculating one pre-determine hash for all files.
 > 
-> Though, re. close() - considering we only need a synchronize_rcu() if
-> the ref was in percpu mode, I wonder if that would be a dealbreaker. I
-> have no clue myself.
+> Yes... It is obvious. It's coming.
+> But in general, signer should be aware of requirements and limitation
+> of the platform.
+> It is not really a problem...
 
-The problem is that the performance drop (or latency increase) in
-patheological cases would be catastrophic.  We're talking about
-possibly quite a few millisecs of delay between each close().  When
-done sequentially for large number of files, it gets ugly.  It becomes
-a dangerous optimization to make.
+One more question. I specified "ima_appraise_tcb" on kernel command line
+and I had an unbootable system. It refused to run "init" as it was not
+labeled/signed. Is there any policy/way where it appraises only signed
+files and does not refuse to open/execute unsigned ones.
 
-> Getting rid of synchronize_rcu would basically require turning get and
-> put into cmpxchg() loops - even in the percpu fastpath. However, percpu
-> mode would still be getting rid of the shared cacheline contention, we'd
-> just be adding another branch that can be safely marked unlikely() - and
-> my current version has one of those already, so two branches instead of
-> one in the fast path.
-
-Or offer an asynchrnous interface so that high-frequency users don't
-end up inserting synchronize_sched() between each call.  It makes the
-interface more complex and further away from simple atomic_t
-replacement tho.
-
-Thanks.
-
--- 
-tejun
+Thanks
+Vivek
