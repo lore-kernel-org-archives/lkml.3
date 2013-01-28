@@ -1,289 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab3A1Ggn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 01:36:43 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:36721 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab3A1Ggm (ORCPT
+	id S1752124Ab3A1Giq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 01:38:46 -0500
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:38671 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab3A1Gio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 01:36:42 -0500
-Message-ID: <1359355000.17885.1.camel@kernel>
-Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Mon, 28 Jan 2013 00:36:40 -0600
-In-Reply-To: <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
-	 <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Jan 2013 01:38:44 -0500
+MIME-Version: 1.0
+Date: Mon, 28 Jan 2013 01:38:43 -0500
+Message-ID: <CAHFgRy_DfbyP47W95ikd8Jw4UxncV0KdaRD8M=4+ibp55M73vA@mail.gmail.com>
+Subject: Linus GIT 3.8.0-rc5: INFO: possible circular locking dependency
+ detected -- ((fb_notifier_list).rwsem){.+.+.+}, at: [<ffffffff81052611>] __blocking_notifier_call_chain+0x49/0x80
+From: Miles Lane <miles.lane@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-25 at 18:01 -0800, Hugh Dickins wrote:
-> Switching merge_across_nodes after running KSM is liable to oops on stale
-> nodes still left over from the previous stable tree.  It's not something
-> that people will often want to do, but it would be lame to demand a reboot
-> when they're trying to determine which merge_across_nodes setting is best.
-> 
-> How can this happen?  We only permit switching merge_across_nodes when
-> pages_shared is 0, and usually set run 2 to force that beforehand, which
-> ought to unmerge everything: yet oopses still occur when you then run 1.
-> 
-> Three causes:
-> 
-> 1. The old stable tree (built according to the inverse merge_across_nodes)
-> has not been fully torn down.  A stable node lingers until get_ksm_page()
-> notices that the page it references no longer references it: but the page
-> is not necessarily freed as soon as expected, particularly when swapcache.
-> 
-> Fix this with a pass through the old stable tree, applying get_ksm_page()
-> to each of the remaining nodes (most found stale and removed immediately),
-> with forced removal of any left over.  Unless the page is still mapped:
-> I've not seen that case, it shouldn't occur, but better to WARN_ON_ONCE
-> and EBUSY than BUG.
-> 
-> 2. __ksm_enter() has a nice little optimization, to insert the new mm
-> just behind ksmd's cursor, so there's a full pass for it to stabilize
-> (or be removed) before ksmd addresses it.  Nice when ksmd is running,
-> but not so nice when we're trying to unmerge all mms: we were missing
-> those mms forked and inserted behind the unmerge cursor.  Easily fixed
-> by inserting at the end when KSM_RUN_UNMERGE.
-> 
-> 3. It is possible for a KSM page to be faulted back from swapcache into
-> an mm, just after unmerge_and_remove_all_rmap_items() scanned past it.
-> Fix this by copying on fault when KSM_RUN_UNMERGE: but that is private
-> to ksm.c, so dissolve the distinction between ksm_might_need_to_copy()
-> and ksm_does_need_to_copy(), doing it all in the one call into ksm.c.
-> 
-> A long outstanding, unrelated bugfix sneaks in with that third fix:
-> ksm_does_need_to_copy() would copy from a !PageUptodate page (implying
-> I/O error when read in from swap) to a page which it then marks Uptodate.
-> Fix this case by not copying, letting do_swap_page() discover the error.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->  include/linux/ksm.h |   18 ++-------
->  mm/ksm.c            |   83 +++++++++++++++++++++++++++++++++++++++---
->  mm/memory.c         |   19 ++++-----
->  3 files changed, 92 insertions(+), 28 deletions(-)
-> 
-> --- mmotm.orig/include/linux/ksm.h	2013-01-25 14:27:58.220193250 -0800
-> +++ mmotm/include/linux/ksm.h	2013-01-25 14:37:00.764206145 -0800
-> @@ -16,9 +16,6 @@
->  struct stable_node;
->  struct mem_cgroup;
->  
-> -struct page *ksm_does_need_to_copy(struct page *page,
-> -			struct vm_area_struct *vma, unsigned long address);
-> -
->  #ifdef CONFIG_KSM
->  int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
->  		unsigned long end, int advice, unsigned long *vm_flags);
-> @@ -73,15 +70,8 @@ static inline void set_page_stable_node(
->   * We'd like to make this conditional on vma->vm_flags & VM_MERGEABLE,
->   * but what if the vma was unmerged while the page was swapped out?
->   */
-> -static inline int ksm_might_need_to_copy(struct page *page,
-> -			struct vm_area_struct *vma, unsigned long address)
-> -{
-> -	struct anon_vma *anon_vma = page_anon_vma(page);
-> -
-> -	return anon_vma &&
-> -		(anon_vma->root != vma->anon_vma->root ||
-> -		 page->index != linear_page_index(vma, address));
-> -}
-> +struct page *ksm_might_need_to_copy(struct page *page,
-> +			struct vm_area_struct *vma, unsigned long address);
->  
->  int page_referenced_ksm(struct page *page,
->  			struct mem_cgroup *memcg, unsigned long *vm_flags);
-> @@ -113,10 +103,10 @@ static inline int ksm_madvise(struct vm_
->  	return 0;
->  }
->  
-> -static inline int ksm_might_need_to_copy(struct page *page,
-> +static inline struct page *ksm_might_need_to_copy(struct page *page,
->  			struct vm_area_struct *vma, unsigned long address)
->  {
-> -	return 0;
-> +	return page;
->  }
->  
->  static inline int page_referenced_ksm(struct page *page,
-> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
-> +++ mmotm/mm/ksm.c	2013-01-25 14:37:00.768206145 -0800
-> @@ -644,6 +644,57 @@ static int unmerge_ksm_pages(struct vm_a
->  /*
->   * Only called through the sysfs control interface:
->   */
-> +static int remove_stable_node(struct stable_node *stable_node)
-> +{
-> +	struct page *page;
-> +	int err;
-> +
-> +	page = get_ksm_page(stable_node, true);
-> +	if (!page) {
-> +		/*
-> +		 * get_ksm_page did remove_node_from_stable_tree itself.
-> +		 */
-> +		return 0;
-> +	}
-> +
-> +	if (WARN_ON_ONCE(page_mapped(page)))
-> +		err = -EBUSY;
-> +	else {
-> +		/*
-> +		 * This page might be in a pagevec waiting to be freed,
-> +		 * or it might be PageSwapCache (perhaps under writeback),
-> +		 * or it might have been removed from swapcache a moment ago.
-> +		 */
-> +		set_page_stable_node(page, NULL);
-> +		remove_node_from_stable_tree(stable_node);
-> +		err = 0;
-> +	}
-> +
-> +	unlock_page(page);
-> +	put_page(page);
-> +	return err;
-> +}
-> +
-> +static int remove_all_stable_nodes(void)
-> +{
-> +	struct stable_node *stable_node;
-> +	int nid;
-> +	int err = 0;
-> +
-> +	for (nid = 0; nid < nr_node_ids; nid++) {
-> +		while (root_stable_tree[nid].rb_node) {
-> +			stable_node = rb_entry(root_stable_tree[nid].rb_node,
-> +						struct stable_node, node);
-> +			if (remove_stable_node(stable_node)) {
-> +				err = -EBUSY;
-> +				break;	/* proceed to next nid */
+Hi Daniel,
+At the bottom of this message you will find dmesg output showing this
+problem from the current Linus GIT tree.
+Here is the test of the message you wrote about this
+(http://marc.info/?l=dri-devel&m=135905755124554&w=2):
+--------------------------
+Patches for the know issues around console_lock vs fbdev_notifier are in -mm:
 
-Why proceed to next nid if meet unstale stable node in stable tree? Then
-still can't fully cleanup stale stable nodes.
+http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover.patch
+http://ozlabs.org/~akpm/mmots/broken-out/fb-yet-another-band-aid-for-fixing-lockdep-mess.patch
 
-> +			}
-> +			cond_resched();
-> +		}
-> +	}
-> +	return err;
-> +}
-> +
->  static int unmerge_and_remove_all_rmap_items(void)
->  {
->  	struct mm_slot *mm_slot;
-> @@ -691,6 +742,8 @@ static int unmerge_and_remove_all_rmap_i
->  		}
->  	}
->  
-> +	/* Clean up stable nodes, but don't worry if some are still busy */
-> +	remove_all_stable_nodes();
->  	ksm_scan.seqnr = 0;
->  	return 0;
->  
-> @@ -1586,11 +1639,19 @@ int __ksm_enter(struct mm_struct *mm)
->  	spin_lock(&ksm_mmlist_lock);
->  	insert_to_mm_slots_hash(mm, mm_slot);
->  	/*
-> -	 * Insert just behind the scanning cursor, to let the area settle
-> +	 * When KSM_RUN_MERGE (or KSM_RUN_STOP),
-> +	 * insert just behind the scanning cursor, to let the area settle
->  	 * down a little; when fork is followed by immediate exec, we don't
->  	 * want ksmd to waste time setting up and tearing down an rmap_list.
-> +	 *
-> +	 * But when KSM_RUN_UNMERGE, it's important to insert ahead of its
-> +	 * scanning cursor, otherwise KSM pages in newly forked mms will be
-> +	 * missed: then we might as well insert at the end of the list.
->  	 */
-> -	list_add_tail(&mm_slot->mm_list, &ksm_scan.mm_slot->mm_list);
-> +	if (ksm_run & KSM_RUN_UNMERGE)
-> +		list_add_tail(&mm_slot->mm_list, &ksm_mm_head.mm_list);
-> +	else
-> +		list_add_tail(&mm_slot->mm_list, &ksm_scan.mm_slot->mm_list);
->  	spin_unlock(&ksm_mmlist_lock);
->  
->  	set_bit(MMF_VM_MERGEABLE, &mm->flags);
-> @@ -1640,11 +1701,25 @@ void __ksm_exit(struct mm_struct *mm)
->  	}
->  }
->  
-> -struct page *ksm_does_need_to_copy(struct page *page,
-> +struct page *ksm_might_need_to_copy(struct page *page,
->  			struct vm_area_struct *vma, unsigned long address)
->  {
-> +	struct anon_vma *anon_vma = page_anon_vma(page);
->  	struct page *new_page;
->  
-> +	if (PageKsm(page)) {
-> +		if (page_stable_node(page) &&
-> +		    !(ksm_run & KSM_RUN_UNMERGE))
-> +			return page;	/* no need to copy it */
-> +	} else if (!anon_vma) {
-> +		return page;		/* no need to copy it */
-> +	} else if (anon_vma->root == vma->anon_vma->root &&
-> +		 page->index == linear_page_index(vma, address)) {
-> +		return page;		/* still no need to copy it */
-> +	}
-> +	if (!PageUptodate(page))
-> +		return page;		/* let do_swap_page report the error */
-> +
->  	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
->  	if (new_page) {
->  		copy_user_highpage(new_page, page, address, vma);
-> @@ -2024,7 +2099,7 @@ static ssize_t merge_across_nodes_store(
->  
->  	mutex_lock(&ksm_thread_mutex);
->  	if (ksm_merge_across_nodes != knob) {
-> -		if (ksm_pages_shared)
-> +		if (ksm_pages_shared || remove_all_stable_nodes())
->  			err = -EBUSY;
->  		else
->  			ksm_merge_across_nodes = knob;
-> --- mmotm.orig/mm/memory.c	2013-01-25 14:27:58.220193250 -0800
-> +++ mmotm/mm/memory.c	2013-01-25 14:37:00.768206145 -0800
-> @@ -2994,17 +2994,16 @@ static int do_swap_page(struct mm_struct
->  	if (unlikely(!PageSwapCache(page) || page_private(page) != entry.val))
->  		goto out_page;
->  
-> -	if (ksm_might_need_to_copy(page, vma, address)) {
-> -		swapcache = page;
-> -		page = ksm_does_need_to_copy(page, vma, address);
-> -
-> -		if (unlikely(!page)) {
-> -			ret = VM_FAULT_OOM;
-> -			page = swapcache;
-> -			swapcache = NULL;
-> -			goto out_page;
-> -		}
-> +	swapcache = page;
-> +	page = ksm_might_need_to_copy(page, vma, address);
-> +	if (unlikely(!page)) {
-> +		ret = VM_FAULT_OOM;
-> +		page = swapcache;
-> +		swapcache = NULL;
-> +		goto out_page;
->  	}
-> +	if (page == swapcache)
-> +		swapcache = NULL;
->  
->  	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr)) {
->  		ret = VM_FAULT_OOM;
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Unfortunately the patches seem to be stuck there for now despite quite
+a few reports about this (including seemingly relevant background
+noise about hangs in distro bugzillas).
+-Daniel
+----------------------------------
 
-
+[  489.832113] [ INFO: possible circular locking dependency detected ]
+[  489.832115] 3.8.0-rc5 #99 Not tainted
+[  489.832116] -------------------------------------------------------
+[  489.832117] 99video/4306 is trying to acquire lock:
+[  489.832129]  ((fb_notifier_list).rwsem){.+.+.+}, at:
+[<ffffffff81052611>] __blocking_notifier_call_chain+0x49/0x80
+[  489.832130]
+[  489.832130] but task is already holding lock:
+[  489.832136]  (console_lock){+.+.+.}, at: [<ffffffff8125d25e>]
+store_fbstate+0x43/0x71
+[  489.832137]
+[  489.832137] which lock already depends on the new lock.
+[  489.832137]
+[  489.832138]
+[  489.832138] the existing dependency chain (in reverse order) is:
+[  489.832141]
+[  489.832141] -> #1 (console_lock){+.+.+.}:
+[  489.832146]        [<ffffffff81079aa8>] lock_acquire+0xfe/0x14d
+[  489.832150]        [<ffffffff8102f680>] console_lock+0x64/0x66
+[  489.832154]        [<ffffffff812b06ef>] register_con_driver+0x33/0x123
+[  489.832158]        [<ffffffff812b0f13>] take_over_console+0x21/0x266
+[  489.832161]        [<ffffffff812617e0>] fbcon_takeover+0x56/0x98
+[  489.832165]        [<ffffffff812652f4>] fbcon_event_notify+0x3b6/0x6e4
+[  489.832169]        [<ffffffff8147584a>] notifier_call_chain+0x8c/0xc0
+[  489.832173]        [<ffffffff81052627>]
+__blocking_notifier_call_chain+0x5f/0x80
+[  489.832176]        [<ffffffff81052657>] blocking_notifier_call_chain+0xf/0x11
+[  489.832181]        [<ffffffff812582f2>] fb_notifier_call_chain+0x16/0x18
+[  489.832184]        [<ffffffff812595de>] register_framebuffer+0x216/0x27a
+[  489.832189]        [<ffffffff81ac6e48>] vesafb_probe+0x6df/0x75f
+[  489.832193]        [<ffffffff81333d70>] platform_drv_probe+0x34/0x5e
+[  489.832196]        [<ffffffff8133254b>] driver_probe_device+0x90/0x19b
+[  489.832199]        [<ffffffff813326a4>] __driver_attach+0x4e/0x6f
+[  489.832202]        [<ffffffff81330d02>] bus_for_each_dev+0x52/0x85
+[  489.832205]        [<ffffffff8133208a>] driver_attach+0x19/0x1b
+[  489.832208]        [<ffffffff81331d49>] bus_add_driver+0xf7/0x21a
+[  489.832211]        [<ffffffff81332bf3>] driver_register+0x8c/0x110
+[  489.832214]        [<ffffffff81333805>] platform_driver_register+0x41/0x43
+[  489.832217]        [<ffffffff8133381f>] platform_driver_probe+0x18/0x8a
+[  489.832220]        [<ffffffff81ac6726>] vesafb_init+0x215/0x258
+[  489.832224]        [<ffffffff81000232>] do_one_initcall+0x7a/0x130
+[  489.832228]        [<ffffffff81aa4bfb>] kernel_init_freeable+0x109/0x191
+[  489.832233]        [<ffffffff8145d421>] kernel_init+0x9/0xd1
+[  489.832236]        [<ffffffff814786ec>] ret_from_fork+0x7c/0xb0
+[  489.832240]
+[  489.832240] -> #0 ((fb_notifier_list).rwsem){.+.+.+}:
+[  489.832242]        [<ffffffff8107925d>] __lock_acquire+0xacc/0xe0c
+[  489.832245]        [<ffffffff81079aa8>] lock_acquire+0xfe/0x14d
+[  489.832249]        [<ffffffff81470d7a>] down_read+0x3f/0x4b
+[  489.832253]        [<ffffffff81052611>]
+__blocking_notifier_call_chain+0x49/0x80
+[  489.832257]        [<ffffffff81052657>] blocking_notifier_call_chain+0xf/0x11
+[  489.832260]        [<ffffffff812582f2>] fb_notifier_call_chain+0x16/0x18
+[  489.832263]        [<ffffffff812586d9>] fb_set_suspend+0x22/0x4b
+[  489.832266]        [<ffffffff8125d269>] store_fbstate+0x4e/0x71
+[  489.832270]        [<ffffffff8132e98f>] dev_attr_store+0x13/0x1f
+[  489.832274]        [<ffffffff81163064>] sysfs_write_file+0xe9/0x121
+[  489.832278]        [<ffffffff81106546>] vfs_write+0x91/0xd0
+[  489.832281]        [<ffffffff81106738>] sys_write+0x5a/0x8b
+[  489.832284]        [<ffffffff81478792>] system_call_fastpath+0x16/0x1b
+[  489.832285]
+[  489.832285] other info that might help us debug this:
+[  489.832285]
+[  489.832286]  Possible unsafe locking scenario:
+[  489.832286]
+[  489.832287]        CPU0                    CPU1
+[  489.832288]        ----                    ----
+[  489.832290]   lock(console_lock);
+[  489.832292]                                lock((fb_notifier_list).rwsem);
+[  489.832294]                                lock(console_lock);
+[  489.832296]   lock((fb_notifier_list).rwsem);
+[  489.832297]
+[  489.832297]  *** DEADLOCK ***
+[  489.832297]
+[  489.832298] 4 locks held by 99video/4306:
+[  489.832304]  #0:  (&buffer->mutex){+.+.+.}, at:
+[<ffffffff81162fb2>] sysfs_write_file+0x37/0x121
+[  489.832310]  #1:  (s_active#204){.+.+.+}, at: [<ffffffff8116304c>]
+sysfs_write_file+0xd1/0x121
+[  489.832315]  #2:  (&fb_info->lock){+.+.+.}, at:
+[<ffffffff81258698>] lock_fb_info+0x18/0x37
+[  489.832321]  #3:  (console_lock){+.+.+.}, at: [<ffffffff8125d25e>]
+store_fbstate+0x43/0x71
+[  489.832321]
+[  489.832321] stack backtrace:
+[  489.832324] Pid: 4306, comm: 99video Not tainted 3.8.0-rc5 #99
+[  489.832325] Call Trace:
+[  489.832330]  [<ffffffff8146aca7>] print_circular_bug+0x1f6/0x204
+[  489.832333]  [<ffffffff8107925d>] __lock_acquire+0xacc/0xe0c
+[  489.832337]  [<ffffffff81079aa8>] lock_acquire+0xfe/0x14d
+[  489.832341]  [<ffffffff81052611>] ? __blocking_notifier_call_chain+0x49/0x80
+[  489.832345]  [<ffffffff81470d7a>] down_read+0x3f/0x4b
+[  489.832348]  [<ffffffff81052611>] ? __blocking_notifier_call_chain+0x49/0x80
+[  489.832352]  [<ffffffff81052611>] __blocking_notifier_call_chain+0x49/0x80
+[  489.832356]  [<ffffffff81052657>] blocking_notifier_call_chain+0xf/0x11
+[  489.832359]  [<ffffffff812582f2>] fb_notifier_call_chain+0x16/0x18
+[  489.832362]  [<ffffffff812586d9>] fb_set_suspend+0x22/0x4b
+[  489.832365]  [<ffffffff8102f680>] ? console_lock+0x64/0x66
+[  489.832368]  [<ffffffff8125d269>] store_fbstate+0x4e/0x71
+[  489.832372]  [<ffffffff8132e98f>] dev_attr_store+0x13/0x1f
+[  489.832375]  [<ffffffff81163064>] sysfs_write_file+0xe9/0x121
+[  489.832378]  [<ffffffff81106546>] vfs_write+0x91/0xd0
+[  489.832381]  [<ffffffff81106738>] sys_write+0x5a/0x8b
+[  489.832385]  [<ffffffff81478792>] system_call_fastpath+0x16/0x1b
+[  490.115770] PM: Syncing filesystems ... done.
