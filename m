@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3A1V4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:56:18 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53700 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754987Ab3A1V4P (ORCPT
+	id S1755228Ab3A1V4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:56:35 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50342 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754953Ab3A1V4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:56:15 -0500
+	Mon, 28 Jan 2013 16:56:31 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
@@ -21,108 +21,111 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: =?UTF-8?q?=5BPATCHv3=206/6=5D=20zswap=3A=20add=20documentation?=
-Date: Mon, 28 Jan 2013 15:49:27 -0600
-Message-Id: <1359409767-30092-7-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCHv3 3/6] mm: break up swap_writepage() for frontswap backends
+Date: Mon, 28 Jan 2013 15:49:24 -0600
+Message-Id: <1359409767-30092-4-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
 References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012821-2876-0000-0000-000004A151D9
+x-cbid: 13012821-7408-0000-0000-00000C4D045F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the documentation file for the zswap functionality
+swap_writepage() is currently where frontswap hooks into the swap
+write path to capture pages with the frontswap_store() function.
+However, if a frontswap backend wants to "resume" the writeback of
+a page to the swap device, it can't call swap_writepage() as
+the page will simply reenter the backend.
+
+This patch separates swap_writepage() into a top and bottom half, the
+bottom half named __swap_writepage() to allow a frontswap backend,
+like zswap, to resume writeback beyond the frontswap_store() hook.
+
+__add_to_swap_cache() is also made non-static so that the page for
+which writeback is to be resumed can be added to the swap cache.
 
 Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
- Documentation/vm/zswap.txt |   73 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
- create mode 100644 Documentation/vm/zswap.txt
+ include/linux/swap.h |    2 ++
+ mm/page_io.c         |   16 +++++++++++++---
+ mm/swap_state.c      |    2 +-
+ 3 files changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/vm/zswap.txt b/Documentation/vm/zswap.txt
-new file mode 100644
-index 0000000..5d00ce9
---- /dev/null
-+++ b/Documentation/vm/zswap.txt
-@@ -0,0 +1,73 @@
-+Overview:
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 68df9c1..fc8920d 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -321,6 +321,7 @@ static inline void mem_cgroup_uncharge_swap(swp_entry_t ent)
+ /* linux/mm/page_io.c */
+ extern int swap_readpage(struct page *);
+ extern int swap_writepage(struct page *page, struct writeback_control *wbc);
++extern int __swap_writepage(struct page *page, struct writeback_control *wbc);
+ extern int swap_set_page_dirty(struct page *page);
+ extern void end_swap_bio_read(struct bio *bio, int err);
+ 
+@@ -335,6 +336,7 @@ extern struct address_space swapper_space;
+ extern void show_swap_cache_info(void);
+ extern int add_to_swap(struct page *);
+ extern int add_to_swap_cache(struct page *, swp_entry_t, gfp_t);
++extern int __add_to_swap_cache(struct page *page, swp_entry_t entry);
+ extern void __delete_from_swap_cache(struct page *);
+ extern void delete_from_swap_cache(struct page *);
+ extern void free_page_and_swap_cache(struct page *);
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 78eee32..1cb382d 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -179,15 +179,15 @@ bad_bmap:
+ 	goto out;
+ }
+ 
++int __swap_writepage(struct page *page, struct writeback_control *wbc);
 +
-+Zswap is a lightweight compressed cache for swap pages. It takes
-+pages that are in the process of being swapped out and attempts to
-+compress them into a dynamically allocated RAM-based memory pool.
-+If this process is successful, the writeback to the swap device is
-+deferred and, in many cases, avoided completely.  This results in
-+a significant I/O reduction and performance gains for systems that
-+are swapping.
+ /*
+  * We may have stale swap cache pages in memory: notice
+  * them here and get rid of the unnecessary final write.
+  */
+ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ {
+-	struct bio *bio;
+-	int ret = 0, rw = WRITE;
+-	struct swap_info_struct *sis = page_swap_info(page);
++	int ret = 0;
+ 
+ 	if (try_to_free_swap(page)) {
+ 		unlock_page(page);
+@@ -199,6 +199,16 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ 		end_page_writeback(page);
+ 		goto out;
+ 	}
++	ret = __swap_writepage(page, wbc);
++out:
++	return ret;
++}
 +
-+Zswap provides compressed swap caching that basically trades CPU cycles
-+for reduced swap I/O.  This trade-off can result in a significant
-+performance improvement as reads to/writes from to the compressed
-+cache almost always faster that reading from a swap device
-+which incurs the latency of an asynchronous block I/O read.
-+
-+Some potential benefits:
-+* Desktop/laptop users with limited RAM capacities can mitigate the
-+    performance impact of swapping.
-+* Overcommitted guests that share a common I/O resource can
-+    dramatically reduce their swap I/O pressure, avoiding heavy
-+    handed I/O throttling by the hypervisor.  This allows more work
-+    to get done with less impact to the guest workload and guests
-+    sharing the I/O subsystem
-+* Users with SSDs as swap devices can extend the life of the device by
-+    drastically reducing life-shortening writes.
-+
-+Zswap evicts pages from compressed cache on an LRU basis to the backing
-+swap device when the compress pool reaches it size limit or the pool is
-+unable to obtain additional pages from the buddy allocator.  This
-+requirement had been identified in prior community discussions.
-+
-+To enabled zswap, the "enabled" attribute must be set to 1 at boot time.
-+e.g. zswap.enabled=1
-+
-+Design:
-+
-+Zswap receives pages for compression through the Frontswap API and
-+is able to evict pages from its own compressed pool on an LRU basis
-+and write them back to the backing swap device in the case that the
-+compressed pool is full or unable to secure additional pages from
-+the buddy allocator.
-+
-+Zswap makes use of zsmalloc for the managing the compressed memory
-+pool.  This is because zsmalloc is specifically designed to minimize
-+fragmentation on large (> PAGE_SIZE/2) allocation sizes.  Each
-+allocation in zsmalloc is not directly accessible by address.
-+Rather, a handle is return by the allocation routine and that handle
-+must be mapped before being accessed.  The compressed memory pool grows
-+on demand and shrinks as compressed pages are freed.  The pool is
-+not preallocated.
-+
-+When a swap page is passed from frontswap to zswap, zswap maintains
-+a mapping of the swap entry, a combination of the swap type and swap
-+offset, to the zsmalloc handle that references that compressed swap
-+page.  This mapping is achieved with a red-black tree per swap type.
-+The swap offset is the search key for the tree nodes.
-+
-+Zswap seeks to be simple in its policies.  Sysfs attributes allow for
-+two user controlled policies:
-+* max_compression_ratio - Maximum compression ratio, as as percentage,
-+    for an acceptable compressed page. Any page that does not compress
-+    by at least this ratio will be rejected.
-+* max_pool_percent - The maximum percentage of memory that the compressed
-+    pool can occupy.
-+
-+Zswap allows the compressor to be selected at kernel boot time by
-+setting the “compressor” attribute.  The default compressor is lzo.
-+e.g. zswap.compressor=deflate
-+
-+A debugfs interface is provided for various statistic about pool size,
-+number of pages stored, and various counters for the reasons pages
-+are rejected.
++int __swap_writepage(struct page *page, struct writeback_control *wbc)
++{
++	struct bio *bio;
++	int ret = 0, rw = WRITE;
++	struct swap_info_struct *sis = page_swap_info(page);
+ 
+ 	if (sis->flags & SWP_FILE) {
+ 		struct kiocb kiocb;
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index 0cb36fb..7eded9c 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -67,7 +67,7 @@ void show_swap_cache_info(void)
+  * __add_to_swap_cache resembles add_to_page_cache_locked on swapper_space,
+  * but sets SwapCache flag and private instead of mapping and index.
+  */
+-static int __add_to_swap_cache(struct page *page, swp_entry_t entry)
++int __add_to_swap_cache(struct page *page, swp_entry_t entry)
+ {
+ 	int error;
+ 
 -- 
 1.7.9.5
 
