@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab3A1KTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 05:19:30 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:49788 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab3A1KTY (ORCPT
+	id S1754625Ab3A1KVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 05:21:00 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:55777 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab3A1KU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 05:19:24 -0500
+	Mon, 28 Jan 2013 05:20:56 -0500
+Date: Mon, 28 Jan 2013 11:20:51 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Milton Miller <miltonm@bga.com>, Wang YanQing <udknight@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        mina86@mina86.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH]smp: Fix send func call IPI to empty cpu mask
+Message-ID: <20130128102051.GA20263@gmail.com>
+References: <20130126075357.GA3205@udknight>
+ <CA+55aFyJ0tsvJeujyRwX=q5KPKjeejmvQOMTCJxDcaEmYprpvg@mail.gmail.com>
+ <20130127155043.GA6214@gmail.com>
+ <5106523302000078000B9F0B@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <51063791.9090606@atmel.com>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
- <1359153858-31992-1-git-send-email-arnd@arndb.de> <1359153858-31992-11-git-send-email-arnd@arndb.de>
- <51063791.9090606@atmel.com>
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-Date: Mon, 28 Jan 2013 11:19:03 +0100
-Message-ID: <CAHkwnC-emr-mx_s7ka3_M1dy-u8RaA37XzxD2rTNarYMXG4y5Q@mail.gmail.com>
-Subject: Re: [PATCH 10/19] watchdog: at91sam9: at91_wdt_dt_ids cannot be __init
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5106523302000078000B9F0B@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 9:32 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> On 01/25/2013 11:44 PM, Arnd Bergmann :
->> The device IDs are referenced by the driver and potentially
->> used beyond the init time, as kbuild correctly warns
->> about. Remove the __initconst annotation.
->>
->> Without this patch, building at91_dt_defconfig results in:
->>
->> WARNING: drivers/watchdog/built-in.o(.data+0x28): Section mismatch in reference from the variable at91wdt_driver to the (unknown reference) .init.rodata:(unknown)
->> The variable at91wdt_driver references
->> the (unknown reference) __initconst (unknown)
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> Cc: Wim Van Sebroeck <wim@iguana.be>
->> Cc: linux-watchdog@vger.kernel.org
->> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
->
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->
-> Thanks,
->
->> Cc: Fabio Porcedda <fabio.porcedda@gmail.com>
 
-Tested-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+* Jan Beulich <JBeulich@suse.com> wrote:
 
-Thanks.
+> >>> On 27.01.13 at 16:50, Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > 
+> >> On Fri, Jan 25, 2013 at 11:53 PM, Wang YanQing <udknight@gmail.com> wrote:
+> >> > I get below warning every day with 3.7,
+> >> > one or two times per day.
+> >> >
+> >> > [ 2235.186027] WARNING: at 
+> > /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 
+> > default_send_IPI_mask_logical+0x2f/0xb8()
+> >> > [ 2235.186030] Hardware name: Aspire 4741
+> >> > [ 2235.186032] empty IPI mask
+> >> > [ 2235.186079]  [<c1015cbc>] native_send_call_func_ipi+0x4f/0x57
+> >> > [ 2235.186087]  [<c1053453>] smp_call_function_many+0x191/0x1a9
+> >> > [ 2235.186097]  [<c101e074>] native_flush_tlb_others+0x21/0x24
+> >> > [ 2235.186101]  [<c101e0da>] flush_tlb_page+0x63/0x89
+> >> > [ 2235.186105]  [<c101d360>] ptep_set_access_flags+0x20/0x26
+> >> > [ 2235.186111]  [<c108fadd>] do_wp_page+0x234/0x502
+> >> > [ 2235.186121]  [<c1090825>] handle_pte_fault+0x50d/0x54c
+> >> > [ 2235.186148]  [<c1090934>] handle_mm_fault+0xd0/0xe2
+> >> > [ 2235.186153]  [<c12dd143>] __do_page_fault+0x411/0x42d
+> >> > [ 2235.186166]  [<c12dd167>] do_page_fault+0x8/0xa
+> >> > [ 2235.186170]  [<c12db31a>] error_code+0x5a/0x60
+> >> >
+> >> > This patch fix it.
+> >> >
+> >> > This patch also fix some system hang problem:
+> >> > If the data->cpumask been cleared after pass
+> >> >
+> >> >         if (WARN_ONCE(!mask, "empty IPI mask"))
+> >> >                 return;
+> >> > then the problem 83d349f3 fix will happen again.
+> >> 
+> >> Hmm. We have very consciously tried to avoid the extra copy, although
+> >> I'm not entirely sure why (it might possibly hurt on the MAXSMP
+> >> configuration).
+> >> 
+> >> See for example commit 723aae25d5cd ("smp_call_function_many: handle
+> >> concurrent clearing of mask") which fixed another version of this
+> >> problem.
+> >> 
+> >> But I do agree that it looks like the copy is required, simply because
+> >> - as you say - once we've done the "list_add_rcu()" to add it to the
+> >> queue, we can have (another) IPI to the target CPU that can now see it
+> >> and clear the mask.
+> >> 
+> >> So by the time we get to actually send the IPI, the mask might have
+> >> been cleared by another IPI. So I do agree that your patch seems
+> >> correct, but I really really want to run it by other people.
+> >> 
+> >> Guys? Original patch on lkml. The other possible fix might be 
+> >> to take the &call_function.lock earlier in 
+> >> generic_smp_call_function_interrupt(), so that we can never 
+> >> clear the bit while somebody is adding entries to the list... 
+> >> But I think it very much tries to avoid that on purpose right 
+> >> now, with only the last CPU responding to that IPI taking the 
+> >> lock.
+> >> 
+> >> So copying the IPI mask seems to be the reasonable approach. 
+> >> Comments?
+> > 
+> > Agreed, looks correct to me as well - I've queued the fix up in 
+> > tip:x86/urgent.
+> 
+> But the patch is obviously incomplete for the CPUMASK_OFFSTACK 
+> case, as the newly added cpumask_ipi member never gets its bit 
+> array allocated.
 
->> ---
->>  drivers/watchdog/at91sam9_wdt.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
->> index dc42e44..6dad954 100644
->> --- a/drivers/watchdog/at91sam9_wdt.c
->> +++ b/drivers/watchdog/at91sam9_wdt.c
->> @@ -304,7 +304,7 @@ static int __exit at91wdt_remove(struct platform_device *pdev)
->>  }
->>
->>  #if defined(CONFIG_OF)
->> -static const struct of_device_id at91_wdt_dt_ids[] __initconst = {
->> +static const struct of_device_id at91_wdt_dt_ids[] = {
->>       { .compatible = "atmel,at91sam9260-wdt" },
->>       { /* sentinel */ }
->>  };
->>
->
->
-> --
-> Nicolas Ferre
+Yes, indeed - I'll amend it with the fix.
 
+Thanks,
 
-
---
-Fabio Porcedda
+	Ingo
