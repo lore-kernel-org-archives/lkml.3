@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab3A1JII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:08:08 -0500
-Received: from canardo.mork.no ([148.122.252.1]:46982 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab3A1JIF convert rfc822-to-8bit (ORCPT
+	id S1754692Ab3A1JIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:08:42 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:53512 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab3A1JIi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:08:05 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Michael Leun <lkml20130126@newton.leun.net>
-Cc: Freddy Xin <freddy@asix.com.tw>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        louis@asix.com.tw, davem@davemloft.net, Support@asix.com.tw
-Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0 to gigabit ethernet adapter driver
-Organization: m
-References: <1358908337-13841-1-git-send-email-freddy@asix.com.tw>
-	<20130127001347.584711b2@xenia>
-Date: Mon, 28 Jan 2013 10:07:32 +0100
-In-Reply-To: <20130127001347.584711b2@xenia> (Michael Leun's message of "Sun,
-	27 Jan 2013 00:13:47 +0100")
-Message-ID: <87zjztptez.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Mon, 28 Jan 2013 04:08:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <1359282808-31398-3-git-send-email-geert@linux-m68k.org>
+References: <1359282808-31398-1-git-send-email-geert@linux-m68k.org>
+	<1359282808-31398-3-git-send-email-geert@linux-m68k.org>
+Date: Mon, 28 Jan 2013 17:08:37 +0800
+Message-ID: <CAA_GA1dN1PGqaKVG5OkNAAd_Og3NqQQJT2TtdJTmdQwZ0zmSRQ@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] [PATCH v2 2/9] blackfin: Provide
+ dma_mmap_coherent() and dma_get_sgtable()
+From: Bob Liu <lliubbo@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-arch@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michael,
-
-Michael Leun <lkml20130126@newton.leun.net> writes:
-
-> I would vote to not accept that driver for mainline as long as this
-> issues are not fixed. 
+On Sun, Jan 27, 2013 at 6:33 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> blackfin/allmodconfig:
 >
-> The vendor should not be able to claim "hooray, hooray, great device,
-> we even have an driver in linux main line" when it is actually such an
-> useless crap.
+> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
+> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
+> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
+> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
+>
+> For architectures using dma_map_ops, dma_mmap_coherent() and
+> dma_get_sgtable() are provided in <asm-generic/dma-mapping-common.h>.
+>
+> Blackfin does not use dma_map_ops, hence it should implement them as inline
+> stubs using dma_common_mmap() and dma_common_get_sgtable().
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: uclinux-dist-devel@blackfin.uclinux.org
+> Acked-by: Scott Jiang <scott.jiang.linux@gmail.com>
 
-Well, that is fortunately not how these things work. The main goal is
-getting the devices supported in the kernel. Bugs can be fixed.  If a
-vendor can get any positive gain out of having a driver in mainline,
-then that is good for everyone, isn't it?  Of course, we can all agree
-that the effect of a *working* driver is more positive than a
-non-working driver...
+Thanks,
+Will be applied to my blackfin arch tree.
 
-For now, the main focus should be fixing the issues which has been noted
-during review.  Your testing feedback is of course very useful, but you
-probably need to back them up with actual code change proposals if they
-are going to be dealt with at this stage.
+> ---
+> v2: No changes
+> ---
+>  arch/blackfin/include/asm/dma-mapping.h |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/blackfin/include/asm/dma-mapping.h b/arch/blackfin/include/asm/dma-mapping.h
+> index bbf4610..054d9ec 100644
+> --- a/arch/blackfin/include/asm/dma-mapping.h
+> +++ b/arch/blackfin/include/asm/dma-mapping.h
+> @@ -154,4 +154,14 @@ dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+>         _dma_sync((dma_addr_t)vaddr, size, dir);
+>  }
+>
+> +/* drivers/base/dma-mapping.c */
+> +extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+> +                          void *cpu_addr, dma_addr_t dma_addr, size_t size);
+> +extern int dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
+> +                                 void *cpu_addr, dma_addr_t dma_addr,
+> +                                 size_t size);
+> +
+> +#define dma_mmap_coherent(d, v, c, h, s) dma_common_mmap(d, v, c, h, s)
+> +#define dma_get_sgtable(d, t, v, h, s) dma_common_get_sgtable(d, t, v, h, s)
+> +
+>  #endif                         /* _BLACKFIN_DMA_MAPPING_H */
+> --
+> 1.7.0.4
+>
 
-> Of course I'm offering to help with any information or testing, but
-> unfortunately I do not have the knowhow to fix anything myself. 
-
-I believe this is where you are totally wrong.  You obviuously have the
-ability to create a few simple test cases for yourself and see if the
-driver behaves as you expect.  That is very useful.
-
-And you have a device.  That is also useful.
-
-Now, the driver source code is available.  And there is another Asix
-driver in the kernel which already has been cleaned up and can be used
-as an example. And maybe even partly used for the new devices as well,
-if the code is duplicated?  I have not looked at this in detail, but I
-suspect that much of the problem with the ax88179_178a driver is that it
-has completely ignored all the work that has gone into the asix driver
-after it was mainlined.  I find it unlikely that there is no reusable
-code in the asix_devices.c, asix_common.c and ax88172a.c files.  Trying
-to rewrite ax88179_178a to share as much code as possible seems like the
-best way to clean it up and fix bugs.
-
-You have documents like
-http://www.kernel.org/doc/Documentation/SubmittingPatches helping a lot
-with cleanup jobs like this, because it is mostly about just following
-that recipe.  If you do, then the code will be reviewable by the
-community because the size will be reduced and the style readable.  And
-the driver might even work, as the cleanup will quite possibly reveal a
-number of bugs...
-
-Please consider this option.  Reading and fixing up C code is not very
-difficult. Getting this driver into the kernel in a good shape is mostly
-just monkey work.  But some monkey has to do it :-)
-
-
-Bjørn
+-- 
+Regards,
+--Bob
