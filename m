@@ -1,101 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3A1TGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 14:06:02 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:35885 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab3A1TES (ORCPT
+	id S1753370Ab3A1TG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 14:06:29 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:49742 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab3A1TG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 14:04:18 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/8] cputime: Move default nsecs_to_cputime() to jiffies based cputime file
-Date: Mon, 28 Jan 2013 20:04:00 +0100
-Message-Id: <1359399845-10568-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
-References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+	Mon, 28 Jan 2013 14:06:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAA_GA1fSLNKSDTGSzHoA+j-mur85BvoSRkARq+DMfORuwrrX4Q@mail.gmail.com>
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
+	<20130122074123.13822.39102.stgit@srivatsabhat.in.ibm.com>
+	<CAA_GA1fSLNKSDTGSzHoA+j-mur85BvoSRkARq+DMfORuwrrX4Q@mail.gmail.com>
+Date: Mon, 28 Jan 2013 11:06:25 -0800
+X-Google-Sender-Auth: Xc3o9V1WrZR6NZbP9qPWwpg2Xrk
+Message-ID: <CAOS58YN_r-ahRvPekOo_84bM7z3YcFw1EA7DcTf0NVyEhv7ssA@mail.gmail.com>
+Subject: Re: [PATCH v5 31/45] blackfin/smp: Use get/put_online_cpus_atomic()
+ to prevent CPU offline
+From: Tejun Heo <tj@kernel.org>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de,
+        peterz@infradead.org, oleg@redhat.com, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the architecture doesn't provide an implementation of
-nsecs_to_cputime(), the cputime accounting core uses a
-default one that converts the nanoseconds to jiffies. However
-this only makes sense if we use the jiffies based cputime.
+Hello, Bob.
 
-For now it doesn't matter much because this API is only
-called on code that uses jiffies based cputime accounting.
+On Mon, Jan 28, 2013 at 1:09 AM, Bob Liu <lliubbo@gmail.com> wrote:
+> Thanks, will be applied to my blackfin arch tree.
 
-But the code may evolve and this API may be used more
-broadly in the future. Keeping this default implementation
-around is very error prone as it may introduce a bug and
-hide it on architectures that don't override this API.
+I think we still have some work ahead of us to have this patchset
+ready for inclusion and even then it probably would be best to route
+these patches together, so probably not a very good idea to apply this
+to blackfin right now.
 
-Fix this by moving this definition to the jiffies based
-cputime headers as it is the only place where it belongs to.
+Thanks.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- include/asm-generic/cputime_jiffies.h |   10 ++++++++--
- kernel/sched/cputime.c                |    4 ----
- 2 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/include/asm-generic/cputime_jiffies.h b/include/asm-generic/cputime_jiffies.h
-index b747f1f..272ecba 100644
---- a/include/asm-generic/cputime_jiffies.h
-+++ b/include/asm-generic/cputime_jiffies.h
-@@ -13,8 +13,14 @@ typedef u64 __nocast cputime64_t;
- #define cputime64_to_jiffies64(__ct)	(__force u64)(__ct)
- #define jiffies64_to_cputime64(__jif)	(__force cputime64_t)(__jif)
- 
--#define nsecs_to_cputime64(__ct)	\
--	jiffies64_to_cputime64(nsecs_to_jiffies64(__ct))
-+
-+/*
-+ * Convert nanoseconds to cputime
-+ */
-+#define nsecs_to_cputime64(__nsec)	\
-+	jiffies64_to_cputime64(nsecs_to_jiffies64(__nsec))
-+#define nsecs_to_cputime(__nsec)	\
-+	jiffies_to_cputime(nsecs_to_jiffies(__nsec))
- 
- 
- /*
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 293b202..5849448b 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -505,10 +505,6 @@ EXPORT_SYMBOL_GPL(vtime_account);
- 
- #else
- 
--#ifndef nsecs_to_cputime
--# define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
--#endif
--
- static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
- {
- 	u64 temp = (__force u64) rtime;
 -- 
-1.7.5.4
-
+tejun
