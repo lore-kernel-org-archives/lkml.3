@@ -1,77 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab3A1JSS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:18:18 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37189 "EHLO arroyo.ext.ti.com"
+	id S1754935Ab3A1JUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:20:34 -0500
+Received: from mga01.intel.com ([192.55.52.88]:27548 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753763Ab3A1JSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:18:17 -0500
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>
-Subject: RE: RE: RE: [PATCH v2 1/2] clk: divider: prepare for minimum divider
-Thread-Topic: RE: RE: [PATCH v2 1/2] clk: divider: prepare for minimum
- divider
-Thread-Index: AQHN+V5a5bjFaLjo3UCX0TyVDxkD+ZhXFbKAgAE2ShCAAA9iAIABh5HwgABmqACABCQvYA==
-Date: Mon, 28 Jan 2013 09:18:08 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA943FA@DBDE01.ent.ti.com>
-References: <6dc1c48cac5b2646a55da3079afb72f88e40c3bc.1358937138.git.afzal@ti.com>
- <20130123214053.9205.49804@quantum>
- <C8443D0743D26F4388EA172BF4E2A7A93EA92ABC@DBDE01.ent.ti.com>
- <20130124170630.10623.78749@quantum>
- <C8443D0743D26F4388EA172BF4E2A7A93EA93851@DBDE01.ent.ti.com>
- <20130125223524.10623.29375@quantum>
-In-Reply-To: <20130125223524.10623.29375@quantum>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
+	id S1754060Ab3A1JUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 04:20:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,550,1355126400"; 
+   d="scan'208";a="279162445"
+Date: Mon, 28 Jan 2013 17:21:21 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v7 3/4] block: implement runtime pm strategy
+Message-ID: <20130128092121.GB2568@aaronlu.sh.intel.com>
+References: <50FA3C38.5030308@intel.com>
+ <Pine.LNX.4.44L0.1301191259040.13032-100000@netrider.rowland.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1301191259040.13032-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0S9IKfW000409
 
-Hi Mike,
-
-On Sat, Jan 26, 2013 at 04:05:24, Mike Turquette wrote:
-
-> Thank you for the information.  In short, the way you program your clock
-> depend on the configuration of your lcdc device.
+On Sat, Jan 19, 2013 at 01:11:45PM -0500, Alan Stern wrote:
+> On Sat, 19 Jan 2013, Aaron Lu wrote:
+> > Considering ODD's use case, I was thinking of moving the
+> > blk_pm_runtime_init call to sd.c, as sr will not use request based auto
+> > suspend. Probably right before we decrease usage count for the device in
+> > sd_probe_async. What do you think?
 > 
-> As such I am not sure the basic divider is the right choice for you.
-> You might be better off creating a clock for your IP which takes into
-> account these details.  Luckily it is possible to inherit from the basic
-> clock types and create a new type.
-> 
-> An example of this is the MXS divider.  It uses the basic divider as a
-> "parent class" and adds a busy bit.  This is a better approach than
-> putting every feature into the basic divider type.  You can see how it
-> was done in drivers/clk/mxs/clk-div.c
-> 
-> Let me know what you think.
+> That makes sense.  But then you should review the changes in scsi_pm.c 
+> to make sure they will work okay for devices that aren't using 
+> block-layer runtime PM.
 
-Yes, a derived divider is better.
+Now that we have two different runtime PM schemes for scsi device, and
+I think there are two ways to make them work:
 
-As mentioned in other thread, the modeling of clock nodes (derived plus
-gates) would bring in considerable (relative to complete driver) code, the
-advantage being higher pixel clock resolution. Current use cases work
-as per existing divider setting in driver. Hence now it seems a better
-decision now is to proceed with logic as in v2 (not using clock nodes).
-And later depending on the use case requirement, clock tree modeling can
-be implemented.
+1 Do it all in scsi_pm.c. In bus' runtime PM callback, check if this
+  device is using block layer runtime PM API, and act accordingly;
+2 Do it in indivisual drivers' runtime PM callback. Bus' runtime PM
+  callbacks just call pm_generic_runtime_xxx, and each driver's runtime
+  PM callback will need to do what is appropriate for them.
 
-Thanks for your input.
+Personally I want to go with option 1, but I would like to hear your
+opinion :-)
 
-Regards
-Afzal
+And for option 1, the code would be like this:
 
+static int scsi_blk_runtime_suspend(struct device *dev)
+{
+	struct scsi_device *sdev = to_scsi_device(dev);
+	int err;
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	err = blk_pre_runtime_suspend(sdev->request_queue);
+	if (err)
+		return err;
+	err = pm_generic_runtime_suspend(dev);
+	blk_post_runtime_suspend(sdev->request_queue, err);
+
+	return err;
+}
+
+static int scsi_dev_runtime_suspend(struct device *dev)
+{
+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+	int err;
+
+	err = scsi_dev_type_suspend(dev, pm ? pm->runtime_suspend : NULL);
+	if (err == -EAGAIN)
+		pm_schedule_suspend(dev, jiffies_to_msecs(
+					round_jiffies_up_relative(HZ/10)));
+
+	return err;
+}
+
+static int scsi_runtime_suspend(struct device *dev)
+{
+	int err = 0;
+
+	dev_dbg(dev, "scsi_runtime_suspend\n");
+	if (scsi_is_sdev_device(dev)) {
+		struct scsi_device *sdev = to_scsi_device(dev);
+		if (sdev->request_queue->dev)
+			err = scsi_blk_runtime_suspend(dev);
+		else
+			err = scsi_dev_runtime_suspend(dev);
+	}
+
+	/* Insert hooks here for targets, hosts, and transport classes */
+
+	return err;
+}
+
+static int scsi_blk_runtime_resume(struct device *dev)
+{
+	struct scsi_device *sdev = to_scsi_device(dev);
+	int err;
+
+	blk_pre_runtime_resume(sdev->request_queue);
+	err = pm_generic_runtime_resume(dev);
+	blk_post_runtime_resume(sdev->request_queue, err);
+
+	return err;
+}
+
+static int scsi_dev_runtime_resume(struct device *dev)
+{
+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+	return scsi_dev_type_resume(dev, pm ? pm->runtime_resume : NULL);
+}
+
+static int scsi_runtime_resume(struct device *dev)
+{
+	int err = 0;
+
+	dev_dbg(dev, "scsi_runtime_resume\n");
+	if (scsi_is_sdev_device(dev)) {
+		struct scsi_device *sdev = to_scsi_device(dev);
+		if (sdev->request_queue->dev)
+			err = scsi_blk_runtime_resume(dev);
+		else
+			err = scsi_dev_runtime_resume(dev);
+	}
+
+	/* Insert hooks here for targets, hosts, and transport classes */
+
+	return err;
+}
+
+static int scsi_runtime_idle(struct device *dev)
+{
+	int err;
+
+	dev_dbg(dev, "scsi_runtime_idle\n");
+
+	/* Insert hooks here for targets, hosts, and transport classes */
+
+	if (scsi_is_sdev_device(dev)) {
+		struct scsi_device *sdev = to_scsi_device(dev);
+		if (sdev->request_queue->dev) {
+			pm_runtime_mark_last_busy(dev);
+			err = pm_runtime_autosuspend(dev);
+		} else {
+			err = pm_schedule_suspend(dev, 100);
+		}
+	} else {
+		err = pm_runtime_suspend(dev);
+	}
+	return err;
+}
+
+Please feel free to suggest, thanks.
+
+-Aaron
+
