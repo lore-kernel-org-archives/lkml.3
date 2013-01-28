@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab3A1Lbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 06:31:46 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49681 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932141Ab3A1Lbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932147Ab3A1Lbn (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 28 Jan 2013 06:31:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42784 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757180Ab3A1Lbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 06:31:39 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>
 CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
@@ -13,9 +13,9 @@ CC: <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
         <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 21/30] ARM: OMAP3: cm-t3517: Adapt to ehci-omap changes
-Date: Mon, 28 Jan 2013 13:30:22 +0200
-Message-ID: <1359372631-8180-22-git-send-email-rogerq@ti.com>
+Subject: [PATCH 20/30] ARM: OMAP3: cm-t35: Adapt to ehci-omap changes
+Date: Mon, 28 Jan 2013 13:30:21 +0200
+Message-ID: <1359372631-8180-21-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
 References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
@@ -34,26 +34,24 @@ link them to the 2 PHYs we just created.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/board-cm-t3517.c |   97 ++++++++++++++++++++++++++++++++--
- 1 files changed, 92 insertions(+), 5 deletions(-)
+ arch/arm/mach-omap2/board-cm-t35.c |   95 ++++++++++++++++++++++++++++++++++--
+ 1 files changed, 90 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-cm-t3517.c b/arch/arm/mach-omap2/board-cm-t3517.c
-index cfa9098..2ba97c5 100644
---- a/arch/arm/mach-omap2/board-cm-t3517.c
-+++ b/arch/arm/mach-omap2/board-cm-t3517.c
-@@ -33,6 +33,9 @@
- #include <linux/mtd/nand.h>
- #include <linux/mtd/partitions.h>
- #include <linux/can/platform/ti_hecc.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/fixed.h>
+diff --git a/arch/arm/mach-omap2/board-cm-t35.c b/arch/arm/mach-omap2/board-cm-t35.c
+index cdf1d6e..71a7eb4 100644
+--- a/arch/arm/mach-omap2/board-cm-t35.c
++++ b/arch/arm/mach-omap2/board-cm-t35.c
+@@ -29,6 +29,7 @@
+ #include <linux/i2c/twl.h>
+ #include <linux/regulator/fixed.h>
+ #include <linux/regulator/machine.h>
 +#include <linux/usb/phy.h>
+ #include <linux/mmc/host.h>
  
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -166,15 +169,92 @@ static inline void cm_t3517_init_rtc(void) {}
- #define HSUSB2_RESET_GPIO	(147)
- #define USB_HUB_RESET_GPIO	(152)
+ #include <linux/spi/spi.h>
+@@ -418,15 +419,92 @@ static struct omap2_hsmmc_info mmc[] = {
+ 	{}	/* Terminator */
+ };
  
 +/* PHY device on HS USB Port 1 i.e. nop_usb_xceiv.1 */
 +static struct platform_device hsusb1_phy_device = {
@@ -78,7 +76,7 @@ index cfa9098..2ba97c5 100644
 +static struct fixed_voltage_config hsusb1_reset_config = {
 +	.supply_name = "hsusb1_reset",
 +	.microvolts = 3300000,
-+	.gpio = HSUSB1_RESET_GPIO,
++	.gpio = OMAP_MAX_GPIO_LINES + 6,
 +	.startup_delay = 70000, /* 70msec */
 +	.enable_high = 1,
 +	.enabled_at_boot = 0,   /* keep in RESET */
@@ -116,7 +114,7 @@ index cfa9098..2ba97c5 100644
 +static struct fixed_voltage_config hsusb2_reset_config = {
 +	.supply_name = "hsusb2_reset",
 +	.microvolts = 3300000,
-+	.gpio = HSUSB2_RESET_GPIO,
++	.gpio = OMAP_MAX_GPIO_LINES + 7,
 +	.startup_delay = 70000, /* 70msec */
 +	.enable_high = 1,
 +	.enabled_at_boot = 0,   /* keep in RESET */
@@ -131,16 +129,16 @@ index cfa9098..2ba97c5 100644
 +	},
 +};
 +
- static struct usbhs_omap_platform_data cm_t3517_ehci_pdata __initdata = {
+ static struct usbhs_omap_platform_data usbhs_bdata __initdata = {
  	.port_mode[0] = OMAP_EHCI_PORT_MODE_PHY,
  	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
 -	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
 +};
  
 -	.phy_reset  = true,
--	.reset_gpio_port[0]  = HSUSB1_RESET_GPIO,
--	.reset_gpio_port[1]  = HSUSB2_RESET_GPIO,
--	.reset_gpio_port[2]  = -EINVAL,
+-	.reset_gpio_port[0]  = OMAP_MAX_GPIO_LINES + 6,
+-	.reset_gpio_port[1]  = OMAP_MAX_GPIO_LINES + 7,
+-	.reset_gpio_port[2]  = -EINVAL
 +static struct platform_device *usbhs_devices[] = {
 +	&hsusb1_phy_device,
 +	&hsusb1_reset_device,
@@ -148,8 +146,8 @@ index cfa9098..2ba97c5 100644
 +	&hsusb2_reset_device,
  };
  
- static int __init cm_t3517_init_usbh(void)
-@@ -191,6 +271,13 @@ static int __init cm_t3517_init_usbh(void)
+ static void  __init cm_t35_init_usbh(void)
+@@ -443,6 +521,13 @@ static void  __init cm_t35_init_usbh(void)
  		msleep(1);
  	}
  
@@ -160,9 +158,9 @@ index cfa9098..2ba97c5 100644
 +	/* PHY on HSUSB Port 2 i.e. index 1 */
 +	usb_bind_phy("ehci-omap.0", 1, "nop_usb_xceiv.2");
 +
- 	usbhs_init(&cm_t3517_ehci_pdata);
+ 	usbhs_init(&usbhs_bdata);
+ }
  
- 	return 0;
 -- 
 1.7.4.1
 
