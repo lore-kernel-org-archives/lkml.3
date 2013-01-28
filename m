@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab3A1Nw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 08:52:27 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:50776 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754517Ab3A1NwZ (ORCPT
+	id S1756999Ab3A1Nwj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 08:52:39 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:35069 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756741Ab3A1Nwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 08:52:25 -0500
+	Mon, 28 Jan 2013 08:52:37 -0500
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
         Patrice Chotard <patrice.chotard@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/5] pinctrl/abx500: add AB8505 sub-driver
-Date: Mon, 28 Jan 2013 14:52:08 +0100
-Message-ID: <1359381128-28021-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 4/5] pinctrl/abx500: add AB8540 sub-driver
+Date: Mon, 28 Jan 2013 14:52:24 +0100
+Message-ID: <1359381144-28090-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,7 +24,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Patrice Chotard <patrice.chotard@stericsson.com>
 
-Add AB8505 sub driver to the ABx5x family.
+Add AB8540 sub driver to the ABx500 family, pins, pin groups and
+gpio range.
 
 As the pin controller (also the ABx500 controllers) is an
 inherent part of the SoC and will prevent boot if not
@@ -38,57 +39,57 @@ Request an ACK from the ARM SoC maintainers for this patch.
  arch/arm/mach-ux500/Kconfig      |   1 +
  drivers/pinctrl/Kconfig          |   4 +
  drivers/pinctrl/Makefile         |   1 +
- drivers/pinctrl/pinctrl-ab8505.c | 380 +++++++++++++++++++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-ab8540.c | 406 +++++++++++++++++++++++++++++++++++++++
  drivers/pinctrl/pinctrl-abx500.c |   3 +
  drivers/pinctrl/pinctrl-abx500.h |  13 ++
- 6 files changed, 402 insertions(+)
- create mode 100644 drivers/pinctrl/pinctrl-ab8505.c
+ 6 files changed, 428 insertions(+)
+ create mode 100644 drivers/pinctrl/pinctrl-ab8540.c
 
 diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index 31f1b5a..5279459 100644
+index 9434063..5a12a7a 100644
 --- a/arch/arm/mach-ux500/Kconfig
 +++ b/arch/arm/mach-ux500/Kconfig
-@@ -20,6 +20,7 @@ config UX500_SOC_DB8500
- 	select MFD_DB8500_PRCMU
- 	select PINCTRL_DB8500
+@@ -22,6 +22,7 @@ config UX500_SOC_DB8500
  	select PINCTRL_AB8500
-+	select PINCTRL_AB8505
+ 	select PINCTRL_AB8505
+ 	select PINCTRL_AB9540
++	select PINCTRL_AB8540
  	select REGULATOR
  	select REGULATOR_DB8500_PRCMU
  
 diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index 367556f..e7db9fa 100644
+index aea4ceb..0ef92cc 100644
 --- a/drivers/pinctrl/Kconfig
 +++ b/drivers/pinctrl/Kconfig
 @@ -37,6 +37,10 @@ config PINCTRL_AB8500
  	bool "AB8500 pin controller driver"
  	depends on PINCTRL_ABX500 && ARCH_U8500
  
-+config PINCTRL_AB8505
-+	bool "AB8505 pin controller driver"
++config PINCTRL_AB8540
++	bool "AB8540 pin controller driver"
 +	depends on PINCTRL_ABX500 && ARCH_U8500
 +
- config PINCTRL_AT91
- 	bool "AT91 pinctrl driver"
- 	depends on OF
+ config PINCTRL_AB9540
+ 	bool "AB9540 pin controller driver"
+ 	depends on PINCTRL_ABX500 && ARCH_U8500
 diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index aad5c93..2cc0115 100644
+index e866b79..e1ff3a5 100644
 --- a/drivers/pinctrl/Makefile
 +++ b/drivers/pinctrl/Makefile
 @@ -11,6 +11,7 @@ endif
  obj-$(CONFIG_GENERIC_PINCONF)	+= pinconf-generic.o
  obj-$(CONFIG_PINCTRL_ABX500)	+= pinctrl-abx500.o
  obj-$(CONFIG_PINCTRL_AB8500)	+= pinctrl-ab8500.o
-+obj-$(CONFIG_PINCTRL_AB8505)	+= pinctrl-ab8505.o
++obj-$(CONFIG_PINCTRL_AB8540)	+= pinctrl-ab8540.o
+ obj-$(CONFIG_PINCTRL_AB9540)	+= pinctrl-ab9540.o
+ obj-$(CONFIG_PINCTRL_AB8505)	+= pinctrl-ab8505.o
  obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
- obj-$(CONFIG_PINCTRL_BCM2835)	+= pinctrl-bcm2835.o
- obj-$(CONFIG_PINCTRL_IMX)	+= pinctrl-imx.o
-diff --git a/drivers/pinctrl/pinctrl-ab8505.c b/drivers/pinctrl/pinctrl-ab8505.c
+diff --git a/drivers/pinctrl/pinctrl-ab8540.c b/drivers/pinctrl/pinctrl-ab8540.c
 new file mode 100644
-index 0000000..56acd16
+index 0000000..5d4eac4
 --- /dev/null
-+++ b/drivers/pinctrl/pinctrl-ab8505.c
-@@ -0,0 +1,380 @@
++++ b/drivers/pinctrl/pinctrl-ab8540.c
+@@ -0,0 +1,406 @@
 +/*
 + * Copyright (C) ST-Ericsson SA 2012
 + *
@@ -106,35 +107,45 @@ index 0000000..56acd16
 +#include "pinctrl-abx500.h"
 +
 +/* All the pins that can be used for GPIO and some other functions */
-+#define ABX500_GPIO(offset)	(offset)
++#define ABX500_GPIO(offset)		(offset)
 +
-+#define AB8505_PIN_N4		ABX500_GPIO(1)
-+#define AB8505_PIN_R5		ABX500_GPIO(2)
-+#define AB8505_PIN_P5		ABX500_GPIO(3)
++#define AB8540_PIN_J16		ABX500_GPIO(1)
++#define AB8540_PIN_D17		ABX500_GPIO(2)
++#define AB8540_PIN_C12		ABX500_GPIO(3)
++#define AB8540_PIN_G12		ABX500_GPIO(4)
 +/* hole */
-+#define AB8505_PIN_B16		ABX500_GPIO(10)
-+#define AB8505_PIN_B17		ABX500_GPIO(11)
++#define AB8540_PIN_D16		ABX500_GPIO(14)
++#define AB8540_PIN_F15		ABX500_GPIO(15)
++#define AB8540_PIN_J8		ABX500_GPIO(16)
++#define AB8540_PIN_K16		ABX500_GPIO(17)
++#define AB8540_PIN_G15		ABX500_GPIO(18)
++#define AB8540_PIN_F17		ABX500_GPIO(19)
++#define AB8540_PIN_E17		ABX500_GPIO(20)
 +/* hole */
-+#define AB8505_PIN_D17		ABX500_GPIO(13)
-+#define AB8505_PIN_C16		ABX500_GPIO(14)
++#define AB8540_PIN_AA16		ABX500_GPIO(27)
++#define AB8540_PIN_W18		ABX500_GPIO(28)
++#define AB8540_PIN_Y15		ABX500_GPIO(29)
++#define AB8540_PIN_W16		ABX500_GPIO(30)
++#define AB8540_PIN_V15		ABX500_GPIO(31)
++#define AB8540_PIN_W17		ABX500_GPIO(32)
 +/* hole */
-+#define AB8505_PIN_P2		ABX500_GPIO(17)
-+#define AB8505_PIN_N3		ABX500_GPIO(18)
-+#define AB8505_PIN_T1		ABX500_GPIO(19)
-+#define AB8505_PIN_P3		ABX500_GPIO(20)
++#define AB8540_PIN_D12		ABX500_GPIO(42)
++#define AB8540_PIN_P4		ABX500_GPIO(43)
++#define AB8540_PIN_AB1		ABX500_GPIO(44)
++#define AB8540_PIN_K7		ABX500_GPIO(45)
++#define AB8540_PIN_L7		ABX500_GPIO(46)
++#define AB8540_PIN_G10		ABX500_GPIO(47)
++#define AB8540_PIN_K12		ABX500_GPIO(48)
 +/* hole */
-+#define AB8505_PIN_H14		ABX500_GPIO(34)
-+/* hole */
-+#define AB8505_PIN_J15		ABX500_GPIO(40)
-+#define AB8505_PIN_J14		ABX500_GPIO(41)
-+/* hole */
-+#define AB8505_PIN_L4		ABX500_GPIO(50)
-+/* hole */
-+#define AB8505_PIN_D16		ABX500_GPIO(52)
-+#define AB8505_PIN_D15		ABX500_GPIO(53)
++#define AB8540_PIN_N8		ABX500_GPIO(51)
++#define AB8540_PIN_P12		ABX500_GPIO(52)
++#define AB8540_PIN_K8		ABX500_GPIO(53)
++#define AB8540_PIN_J11		ABX500_GPIO(54)
++#define AB8540_PIN_AC2		ABX500_GPIO(55)
++#define AB8540_PIN_AB2		ABX500_GPIO(56)
 +
-+/* indicates the higher GPIO number */
-+#define AB8505_GPIO_MAX_NUMBER	53
++/* indicates the highest GPIO number */
++#define AB8540_GPIO_MAX_NUMBER	56
 +
 +/*
 + * The names of the pins are denoted by GPIO number and ball name, even
@@ -142,46 +153,52 @@ index 0000000..56acd16
 + * column in the table of the data sheet and often used on schematics and
 + * such.
 + */
-+static const struct pinctrl_pin_desc ab8505_pins[] = {
-+	PINCTRL_PIN(AB8505_PIN_N4, "GPIO1_N4"),
-+	PINCTRL_PIN(AB8505_PIN_R5, "GPIO2_R5"),
-+	PINCTRL_PIN(AB8505_PIN_P5, "GPIO3_P5"),
-+/* hole */
-+	PINCTRL_PIN(AB8505_PIN_B16, "GPIO10_B16"),
-+	PINCTRL_PIN(AB8505_PIN_B17, "GPIO11_B17"),
-+/* hole */
-+	PINCTRL_PIN(AB8505_PIN_D17, "GPIO13_D17"),
-+	PINCTRL_PIN(AB8505_PIN_C16, "GPIO14_C16"),
-+/* hole */
-+	PINCTRL_PIN(AB8505_PIN_P2, "GPIO17_P2"),
-+	PINCTRL_PIN(AB8505_PIN_N3, "GPIO18_N3"),
-+	PINCTRL_PIN(AB8505_PIN_T1, "GPIO19_T1"),
-+	PINCTRL_PIN(AB8505_PIN_P3, "GPIO20_P3"),
-+/* hole */
-+	PINCTRL_PIN(AB8505_PIN_H14, "GPIO34_H14"),
-+/* hole */
-+	PINCTRL_PIN(AB8505_PIN_J15, "GPIO40_J15"),
-+	PINCTRL_PIN(AB8505_PIN_J14, "GPIO41_J14"),
-+/* hole */
-+	PINCTRL_PIN(AB8505_PIN_L4, "GPIO50_L4"),
-+/* hole */
-+	PINCTRL_PIN(AB8505_PIN_D16, "GPIO52_D16"),
-+	PINCTRL_PIN(AB8505_PIN_D15, "GPIO53_D15"),
++static const struct pinctrl_pin_desc ab8540_pins[] = {
++	PINCTRL_PIN(AB8540_PIN_J16, "GPIO1_J16"),
++	PINCTRL_PIN(AB8540_PIN_D17, "GPIO2_D17"),
++	PINCTRL_PIN(AB8540_PIN_C12, "GPIO3_C12"),
++	PINCTRL_PIN(AB8540_PIN_G12, "GPIO4_G12"),
++	/* hole */
++	PINCTRL_PIN(AB8540_PIN_D16, "GPIO14_D16"),
++	PINCTRL_PIN(AB8540_PIN_F15, "GPIO15_F15"),
++	PINCTRL_PIN(AB8540_PIN_J8, "GPIO16_J8"),
++	PINCTRL_PIN(AB8540_PIN_K16, "GPIO17_K16"),
++	PINCTRL_PIN(AB8540_PIN_G15, "GPIO18_G15"),
++	PINCTRL_PIN(AB8540_PIN_F17, "GPIO19_F17"),
++	PINCTRL_PIN(AB8540_PIN_E17, "GPIO20_E17"),
++	/* hole */
++	PINCTRL_PIN(AB8540_PIN_AA16, "GPIO27_AA16"),
++	PINCTRL_PIN(AB8540_PIN_W18, "GPIO28_W18"),
++	PINCTRL_PIN(AB8540_PIN_Y15, "GPIO29_Y15"),
++	PINCTRL_PIN(AB8540_PIN_W16, "GPIO30_W16"),
++	PINCTRL_PIN(AB8540_PIN_V15, "GPIO31_V15"),
++	PINCTRL_PIN(AB8540_PIN_W17, "GPIO32_W17"),
++	/* hole */
++	PINCTRL_PIN(AB8540_PIN_D12, "GPIO42_D12"),
++	PINCTRL_PIN(AB8540_PIN_P4, "GPIO43_P4"),
++	PINCTRL_PIN(AB8540_PIN_AB1, "GPIO44_AB1"),
++	PINCTRL_PIN(AB8540_PIN_K7, "GPIO45_K7"),
++	PINCTRL_PIN(AB8540_PIN_L7, "GPIO46_L7"),
++	PINCTRL_PIN(AB8540_PIN_G10, "GPIO47_G10"),
++	PINCTRL_PIN(AB8540_PIN_K12, "GPIO48_K12"),
++	/* hole */
++	PINCTRL_PIN(AB8540_PIN_N8, "GPIO51_N8"),
++	PINCTRL_PIN(AB8540_PIN_P12, "GPIO52_P12"),
++	PINCTRL_PIN(AB8540_PIN_K8, "GPIO53_K8"),
++	PINCTRL_PIN(AB8540_PIN_J11, "GPIO54_J11"),
++	PINCTRL_PIN(AB8540_PIN_AC2, "GPIO55_AC2"),
++	PINCTRL_PIN(AB8540_PIN_AB2, "GPIO56_AB2"),
 +};
 +
 +/*
 + * Maps local GPIO offsets to local pin numbers
 + */
-+static const struct abx500_pinrange ab8505_pinranges[] = {
-+	ABX500_PINRANGE(1, 3, ABX500_ALT_A),
-+	ABX500_PINRANGE(10, 2, ABX500_DEFAULT),
-+	ABX500_PINRANGE(13, 1, ABX500_DEFAULT),
-+	ABX500_PINRANGE(14, 1, ABX500_ALT_A),
-+	ABX500_PINRANGE(17, 4, ABX500_ALT_A),
-+	ABX500_PINRANGE(34, 1, ABX500_ALT_A),
-+	ABX500_PINRANGE(40, 2, ABX500_ALT_A),
-+	ABX500_PINRANGE(50, 1, ABX500_DEFAULT),
-+	ABX500_PINRANGE(52, 2, ABX500_ALT_A),
++static const struct abx500_pinrange ab8540_pinranges[] = {
++	ABX500_PINRANGE(1, 4, ABX500_ALT_A),
++	ABX500_PINRANGE(14, 7, ABX500_ALT_A),
++	ABX500_PINRANGE(27, 6, ABX500_ALT_A),
++	ABX500_PINRANGE(42, 7, ABX500_ALT_A),
++	ABX500_PINRANGE(51, 6, ABX500_ALT_A),
 +};
 +
 +/*
@@ -195,113 +212,153 @@ index 0000000..56acd16
 + */
 +
 +/* default column */
-+static const unsigned sysclkreq2_d_1_pins[] = { AB8505_PIN_N4 };
-+static const unsigned sysclkreq3_d_1_pins[] = { AB8505_PIN_R5 };
-+static const unsigned sysclkreq4_d_1_pins[] = { AB8505_PIN_P5 };
-+static const unsigned gpio10_d_1_pins[] = { AB8505_PIN_B16 };
-+static const unsigned gpio11_d_1_pins[] = { AB8505_PIN_B17 };
-+static const unsigned gpio13_d_1_pins[] = { AB8505_PIN_D17 };
-+static const unsigned pwmout1_d_1_pins[] = { AB8505_PIN_C16 };
-+/* audio data interface 2*/
-+static const unsigned adi2_d_1_pins[] = { AB8505_PIN_P2, AB8505_PIN_N3,
-+					AB8505_PIN_T1, AB8505_PIN_P3 };
-+static const unsigned extcpena_d_1_pins[] = { AB8505_PIN_H14 };
-+/* modem SDA/SCL */
-+static const unsigned modsclsda_d_1_pins[] = { AB8505_PIN_J15, AB8505_PIN_J14 };
-+static const unsigned gpio50_d_1_pins[] = { AB8505_PIN_L4 };
-+static const unsigned resethw_d_1_pins[] = { AB8505_PIN_D16 };
-+static const unsigned service_d_1_pins[] = { AB8505_PIN_D15 };
++static const unsigned sysclkreq2_d_1_pins[] = { AB8540_PIN_J16 };
++static const unsigned sysclkreq3_d_1_pins[] = { AB8540_PIN_D17 };
++static const unsigned sysclkreq4_d_1_pins[] = { AB8540_PIN_C12 };
++static const unsigned sysclkreq6_d_1_pins[] = { AB8540_PIN_G12 };
++static const unsigned pwmout1_d_1_pins[] = { AB8540_PIN_D16 };
++static const unsigned pwmout2_d_1_pins[] = { AB8540_PIN_F15 };
++static const unsigned pwmout3_d_1_pins[] = { AB8540_PIN_J8 };
++
++/* audio data interface 1*/
++static const unsigned adi1_d_1_pins[] = { AB8540_PIN_K16, AB8540_PIN_G15,
++					AB8540_PIN_F17, AB8540_PIN_E17 };
++/* Digital microphone 1 and 2 */
++static const unsigned dmic12_d_1_pins[] = { AB8540_PIN_AA16, AB8540_PIN_W18 };
++/* Digital microphone 3 and 4 */
++static const unsigned dmic34_d_1_pins[] = { AB8540_PIN_Y15, AB8540_PIN_W16 };
++/* Digital microphone 5 and 6 */
++static const unsigned dmic56_d_1_pins[] = { AB8540_PIN_V15, AB8540_PIN_W17 };
++static const unsigned sysclkreq5_d_1_pins[] = { AB8540_PIN_D12 };
++static const unsigned batremn_d_1_pins[] = { AB8540_PIN_P4 };
++static const unsigned service_d_1_pins[] = { AB8540_PIN_AB1 };
++static const unsigned pwrctrl0_d_1_pins[] = { AB8540_PIN_K7 };
++static const unsigned pwrctrl1_d_1_pins[] = { AB8540_PIN_L7 };
++static const unsigned pwmextvibra1_d_1_pins[] = { AB8540_PIN_G10 };
++static const unsigned pwmextvibra2_d_1_pins[] = { AB8540_PIN_K12 };
++static const unsigned gpio1_vbat_d_1_pins[] = { AB8540_PIN_N8 };
++static const unsigned gpio2_vbat_d_1_pins[] = { AB8540_PIN_P12 };
++static const unsigned gpio3_vbat_d_1_pins[] = { AB8540_PIN_K8 };
++static const unsigned gpio4_vbat_d_1_pins[] = { AB8540_PIN_J11 };
++static const unsigned pdmclkdat_d_1_pins[] = { AB8540_PIN_AC2, AB8540_PIN_AB2 };
 +
 +/* Altfunction A column */
-+static const unsigned gpio1_a_1_pins[] = { AB8505_PIN_N4 };
-+static const unsigned gpio2_a_1_pins[] = { AB8505_PIN_R5 };
-+static const unsigned gpio3_a_1_pins[] = { AB8505_PIN_P5 };
-+static const unsigned hiqclkena_a_1_pins[] = { AB8505_PIN_B16 };
-+static const unsigned pdmclk_a_1_pins[] = { AB8505_PIN_B17 };
-+static const unsigned uarttxdata_a_1_pins[] = { AB8505_PIN_D17 };
-+static const unsigned gpio14_a_1_pins[] = { AB8505_PIN_C16 };
-+static const unsigned gpio17_a_1_pins[] = { AB8505_PIN_P2 };
-+static const unsigned gpio18_a_1_pins[] = { AB8505_PIN_N3 };
-+static const unsigned gpio19_a_1_pins[] = { AB8505_PIN_T1 };
-+static const unsigned gpio20_a_1_pins[] = { AB8505_PIN_P3 };
-+static const unsigned gpio34_a_1_pins[] = { AB8505_PIN_H14 };
-+static const unsigned gpio40_a_1_pins[] = { AB8505_PIN_J15 };
-+static const unsigned gpio41_a_1_pins[] = { AB8505_PIN_J14 };
-+static const unsigned uartrxdata_a_1_pins[] = { AB8505_PIN_J14 };
-+static const unsigned gpio50_a_1_pins[] = { AB8505_PIN_L4 };
-+static const unsigned gpio52_a_1_pins[] = { AB8505_PIN_D16 };
-+static const unsigned gpio53_a_1_pins[] = { AB8505_PIN_D15 };
++static const unsigned gpio1_a_1_pins[] = { AB8540_PIN_J16 };
++static const unsigned gpio2_a_1_pins[] = { AB8540_PIN_D17 };
++static const unsigned gpio3_a_1_pins[] = { AB8540_PIN_C12 };
++static const unsigned gpio4_a_1_pins[] = { AB8540_PIN_G12 };
++static const unsigned gpio14_a_1_pins[] = { AB8540_PIN_D16 };
++static const unsigned gpio15_a_1_pins[] = { AB8540_PIN_F15 };
++static const unsigned gpio16_a_1_pins[] = { AB8540_PIN_J8 };
++static const unsigned gpio17_a_1_pins[] = { AB8540_PIN_K16 };
++static const unsigned gpio18_a_1_pins[] = { AB8540_PIN_G15 };
++static const unsigned gpio19_a_1_pins[] = { AB8540_PIN_F17 };
++static const unsigned gpio20_a_1_pins[] = { AB8540_PIN_E17 };
++static const unsigned gpio27_a_1_pins[] = { AB8540_PIN_AA16 };
++static const unsigned gpio28_a_1_pins[] = { AB8540_PIN_W18 };
++static const unsigned gpio29_a_1_pins[] = { AB8540_PIN_Y15 };
++static const unsigned gpio30_a_1_pins[] = { AB8540_PIN_W16 };
++static const unsigned gpio31_a_1_pins[] = { AB8540_PIN_V15 };
++static const unsigned gpio32_a_1_pins[] = { AB8540_PIN_W17 };
++static const unsigned gpio42_a_1_pins[] = { AB8540_PIN_D12 };
++static const unsigned gpio43_a_1_pins[] = { AB8540_PIN_P4 };
++static const unsigned gpio44_a_1_pins[] = { AB8540_PIN_AB1 };
++static const unsigned gpio45_a_1_pins[] = { AB8540_PIN_K7 };
++static const unsigned gpio46_a_1_pins[] = { AB8540_PIN_L7 };
++static const unsigned gpio47_a_1_pins[] = { AB8540_PIN_G10 };
++static const unsigned gpio48_a_1_pins[] = { AB8540_PIN_K12 };
++static const unsigned gpio51_a_1_pins[] = { AB8540_PIN_N8 };
++static const unsigned gpio52_a_1_pins[] = { AB8540_PIN_P12 };
++static const unsigned gpio53_a_1_pins[] = { AB8540_PIN_K8 };
++static const unsigned gpio54_a_1_pins[] = { AB8540_PIN_J11 };
++static const unsigned gpio55_a_1_pins[] = { AB8540_PIN_AC2 };
++static const unsigned gpio56_a_1_pins[] = { AB8540_PIN_AB2 };
 +
-+/* Altfunction B colum */
-+static const unsigned pdmdata_b_1_pins[] = { AB8505_PIN_B16 };
-+static const unsigned extvibrapwm1_b_1_pins[] = { AB8505_PIN_D17 };
-+static const unsigned extvibrapwm2_b_1_pins[] = { AB8505_PIN_L4 };
-+
-+/* Altfunction C column */
-+static const unsigned usbvdat_c_1_pins[] = { AB8505_PIN_D17 };
-+
-+#define AB8505_PIN_GROUP(a, b) { .name = #a, .pins = a##_pins,		\
++#define AB8540_PIN_GROUP(a, b) { .name = #a, .pins = a##_pins,		\
 +			.npins = ARRAY_SIZE(a##_pins), .altsetting = b }
 +
-+static const struct abx500_pingroup ab8505_groups[] = {
-+	AB8505_PIN_GROUP(sysclkreq2_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(sysclkreq3_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(sysclkreq4_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(gpio10_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(gpio11_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(gpio13_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(pwmout1_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(adi2_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(extcpena_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(modsclsda_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(gpio50_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(resethw_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(service_d_1, ABX500_DEFAULT),
-+	AB8505_PIN_GROUP(gpio1_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio2_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio3_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(hiqclkena_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(pdmclk_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(uarttxdata_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio14_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio17_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio18_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio19_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio20_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio34_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio40_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio41_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(uartrxdata_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio52_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(gpio53_a_1, ABX500_ALT_A),
-+	AB8505_PIN_GROUP(pdmdata_b_1, ABX500_ALT_B),
-+	AB8505_PIN_GROUP(extvibrapwm1_b_1, ABX500_ALT_B),
-+	AB8505_PIN_GROUP(extvibrapwm2_b_1, ABX500_ALT_B),
-+	AB8505_PIN_GROUP(usbvdat_c_1, ABX500_ALT_C),
++static const struct abx500_pingroup ab8540_groups[] = {
++	/* default column */
++	AB8540_PIN_GROUP(sysclkreq2_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(sysclkreq3_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(sysclkreq4_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(sysclkreq6_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(pwmout1_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(pwmout2_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(pwmout3_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(adi1_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(dmic12_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(dmic34_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(dmic56_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(sysclkreq5_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(batremn_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(service_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(pwrctrl0_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(pwrctrl1_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(pwmextvibra1_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(pwmextvibra2_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(gpio1_vbat_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(gpio2_vbat_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(gpio3_vbat_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(gpio4_vbat_d_1, ABX500_DEFAULT),
++	AB8540_PIN_GROUP(pdmclkdat_d_1, ABX500_DEFAULT),
++	/* Altfunction A column */
++	AB8540_PIN_GROUP(gpio1_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio2_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio3_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio4_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio14_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio15_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio16_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio17_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio18_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio19_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio20_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio27_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio28_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio29_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio30_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio31_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio32_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio42_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio43_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio44_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio45_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio46_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio47_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio48_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio51_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio52_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio53_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio54_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio55_a_1, ABX500_ALT_A),
++	AB8540_PIN_GROUP(gpio56_a_1, ABX500_ALT_A),
 +};
 +
 +/* We use this macro to define the groups applicable to a function */
-+#define AB8505_FUNC_GROUPS(a, b...)	   \
++#define AB8540_FUNC_GROUPS(a, b...)	   \
 +static const char * const a##_groups[] = { b };
 +
-+AB8505_FUNC_GROUPS(sysclkreq, "sysclkreq2_d_1", "sysclkreq3_d_1",
-+		"sysclkreq4_d_1");
-+AB8505_FUNC_GROUPS(gpio, "gpio1_a_1", "gpio2_a_1", "gpio3_a_1",
-+		"gpio10_d_1", "gpio11_d_1", "gpio13_d_1", "gpio14_a_1",
-+		"gpio17_a_1", "gpio18_a_1", "gpio19_a_1", "gpio20_a_1",
-+		"gpio34_a_1", "gpio40_a_1", "gpio41_a_1", "gpio50_d_1",
-+		"gpio52_a_1", "gpio53_a_1");
-+AB8505_FUNC_GROUPS(pwmout, "pwmout1_d_1");
-+AB8505_FUNC_GROUPS(adi2, "adi2_d_1");
-+AB8505_FUNC_GROUPS(extcpena, "extcpena_d_1");
-+AB8505_FUNC_GROUPS(modsclsda, "modsclsda_d_1");
-+AB8505_FUNC_GROUPS(resethw, "resethw_d_1");
-+AB8505_FUNC_GROUPS(service, "service_d_1");
-+AB8505_FUNC_GROUPS(hiqclkena, "hiqclkena_a_1");
-+AB8505_FUNC_GROUPS(pdm, "pdmclk_a_1", "pdmdata_b_1");
-+AB8505_FUNC_GROUPS(uartdata, "uarttxdata_a_1", "uartrxdata_a_1");
-+AB8505_FUNC_GROUPS(extvibra, "extvibrapwm1_b_1", "extvibrapwm2_b_1");
-+AB8505_FUNC_GROUPS(usbvdat, "usbvdat_c_1");
++AB8540_FUNC_GROUPS(sysclkreq, "sysclkreq2_d_1", "sysclkreq3_d_1",
++		"sysclkreq4_d_1", "sysclkreq5_d_1", "sysclkreq6_d_1");
++AB8540_FUNC_GROUPS(gpio, "gpio1_a_1", "gpio2_a_1", "gpio3_a_1", "gpio4_a_1",
++		"gpio14_a_1", "gpio15_a_1", "gpio16_a_1", "gpio17_a_1",
++		"gpio18_a_1", "gpio19_a_1", "gpio20_a_1", "gpio27_a_1",
++		"gpio28_a_1", "gpio29_a_1", "gpio30_a_1", "gpio31_a_1",
++		"gpio32_a_1", "gpio42_a_1", "gpio43_a_1", "gpio44_a_1",
++		"gpio45_a_1", "gpio46_a_1", "gpio47_a_1", "gpio48_a_1",
++		"gpio51_a_1", "gpio52_a_1", "gpio53_a_1", "gpio54_a_1",
++		"gpio55_a_1", "gpio56_a_1");
++AB8540_FUNC_GROUPS(pwmout, "pwmout1_d_1", "pwmout2_d_1", "pwmout3_d_1");
++AB8540_FUNC_GROUPS(adi1, "adi1_d_1");
++AB8540_FUNC_GROUPS(dmic, "dmic12_d_1", "dmic34_d_1", "dmic56_d_1");
++AB8540_FUNC_GROUPS(batremn, "batremn_d_1");
++AB8540_FUNC_GROUPS(service, "service_d_1");
++AB8540_FUNC_GROUPS(pwrctrl, "pwrctrl0_d_1", "pwrctrl1_d_1");
++AB8540_FUNC_GROUPS(pwmextvibra, "pwmextvibra1_d_1", "pwmextvibra2_d_1");
++AB8540_FUNC_GROUPS(gpio_vbat, "gpio1_vbat_d_1", "gpio2_vbat_d_1",
++		"gpio3_vbat_d_1", "gpio4_vbat_d_1");
++AB8540_FUNC_GROUPS(pdm, "pdmclkdat_d_1");
 +
 +#define FUNCTION(fname)					\
 +	{						\
@@ -310,201 +367,173 @@ index 0000000..56acd16
 +		.ngroups = ARRAY_SIZE(fname##_groups),	\
 +	}
 +
-+static const struct abx500_function ab8505_functions[] = {
++static const struct abx500_function ab8540_functions[] = {
 +	FUNCTION(sysclkreq),
 +	FUNCTION(gpio),
 +	FUNCTION(pwmout),
-+	FUNCTION(adi2),
-+	FUNCTION(extcpena),
-+	FUNCTION(modsclsda),
-+	FUNCTION(resethw),
++	FUNCTION(adi1),
++	FUNCTION(dmic),
++	FUNCTION(batremn),
 +	FUNCTION(service),
-+	FUNCTION(hiqclkena),
++	FUNCTION(pwrctrl),
++	FUNCTION(pwmextvibra),
++	FUNCTION(gpio_vbat),
 +	FUNCTION(pdm),
-+	FUNCTION(uartdata),
-+	FUNCTION(extvibra),
-+	FUNCTION(extvibra),
-+	FUNCTION(usbvdat),
 +};
 +
 +/*
-+ * this table translates what's is in the AB8505 specification regarding the
++ * this table translates what's is in the AB8540 specification regarding the
 + * balls alternate functions (as for DB, default, ALT_A, ALT_B and ALT_C).
 + * ALTERNATE_FUNCTIONS(GPIO_NUMBER, GPIOSEL bit, ALTERNATFUNC bit1,
 + * ALTERNATEFUNC bit2, ALTA val, ALTB val, ALTC val),
++ * AB8540 only supports DEFAULT and ALTA functions, so ALTERNATFUNC
++ * registers is not used
 + *
-+ * example :
-+ *
-+ *	ALTERNATE_FUNCTIONS(13,     4,      3,      4, 1, 0, 2),
-+ *	means that pin AB8505_PIN_D18 (pin 13) supports 4 mux (default/ALT_A,
-+ *	ALT_B and ALT_C), so GPIOSEL and ALTERNATFUNC registers are used to
-+ *	select the mux. ALTA, ALTB and ALTC val indicates values to write in
-+ *	ALTERNATFUNC register. We need to specifies these values as SOC
-+ *	designers didn't apply the same logic on how to select mux in the
-+ *	ABx500 family.
-+ *
-+ *	As this pins supports at least ALT_B mux, default mux is
-+ *	selected by writing 1 in GPIOSEL bit :
-+ *
-+ *		| GPIOSEL bit=4 | alternatfunc bit2=4 | alternatfunc bit1=3
-+ *	default	|       1       |          0          |          0
-+ *	alt_A	|       0       |          0          |          1
-+ *	alt_B	|       0       |          0          |          0
-+ *	alt_C	|       0       |          1          |          0
-+ *
-+ *	ALTERNATE_FUNCTIONS(1,      0, UNUSED, UNUSED),
-+ *	means that pin AB9540_PIN_R4 (pin 1) supports 2 mux, so only GPIOSEL
-+ *	register is used to select the mux. As this pins doesn't support at
-+ *	least ALT_B mux, default mux is by writing 0 in GPIOSEL bit :
-+ *
-+ *		| GPIOSEL bit=0 | alternatfunc bit2=  | alternatfunc bit1=
-+ *	default	|       0       |          0          |          0
-+ *	alt_A	|       1       |          0          |          0
 + */
 +
-+struct alternate_functions ab8505_alternate_functions[AB8505_GPIO_MAX_NUMBER + 1] = {
++struct alternate_functions ab8540_alternate_functions[AB8540_GPIO_MAX_NUMBER + 1] = {
++	/* GPIOSEL1 - bit 4-7 reserved */
 +	ALTERNATE_FUNCTIONS(0, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO0 */
-+	ALTERNATE_FUNCTIONS(1,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO1, altA controlled by bit 0 */
++	ALTERNATE_FUNCTIONS(1,	    0, UNUSED, UNUSED, 0, 0, 0), /* GPIO1, altA controlled by bit 0 */
 +	ALTERNATE_FUNCTIONS(2,      1, UNUSED, UNUSED, 0, 0, 0), /* GPIO2, altA controlled by bit 1 */
 +	ALTERNATE_FUNCTIONS(3,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO3, altA controlled by bit 2*/
-+	ALTERNATE_FUNCTIONS(4, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO4, bit 3 reserved */
-+	ALTERNATE_FUNCTIONS(5, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO5, bit 4 reserved */
-+	ALTERNATE_FUNCTIONS(6, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO6, bit 5 reserved */
-+	ALTERNATE_FUNCTIONS(7, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO7, bit 6 reserved */
-+	ALTERNATE_FUNCTIONS(8, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO8, bit 7 reserved */
-+
-+	ALTERNATE_FUNCTIONS(9, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO9, bit 0 reserved */
-+	ALTERNATE_FUNCTIONS(10,      1,      0, UNUSED, 1, 0, 0), /* GPIO10, altA and altB controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(11,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO11, altA controlled by bit 2 */
-+	ALTERNATE_FUNCTIONS(12, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO12, bit3 reseved */
-+	ALTERNATE_FUNCTIONS(13,      4,      3,      4, 1, 0, 2), /* GPIO13, altA altB and altC controlled by bit 3 and 4 */
++	ALTERNATE_FUNCTIONS(4,      3, UNUSED, UNUSED, 0, 0, 0), /* GPIO4, altA controlled by bit 3*/
++	ALTERNATE_FUNCTIONS(5, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO5 */
++	ALTERNATE_FUNCTIONS(6, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO6 */
++	ALTERNATE_FUNCTIONS(7, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO7 */
++	ALTERNATE_FUNCTIONS(8, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO8 */
++	/* GPIOSEL2 - bit 0-4 reserved */
++	ALTERNATE_FUNCTIONS(9,  UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO9 */
++	ALTERNATE_FUNCTIONS(10, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO10 */
++	ALTERNATE_FUNCTIONS(11, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO11 */
++	ALTERNATE_FUNCTIONS(12, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO12 */
++	ALTERNATE_FUNCTIONS(13, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO13 */
 +	ALTERNATE_FUNCTIONS(14,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO14, altA controlled by bit 5 */
-+	ALTERNATE_FUNCTIONS(15, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO15, bit 6 reserved */
-+	ALTERNATE_FUNCTIONS(16, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO15, bit 7 reserved  */
-+	/*
-+	 * pins 17 to 20 are special case, only bit 0 is used to select
-+	 * alternate function for these 4 pins.
-+	 * bits 1 to 3 are reserved
-+	 */
++	ALTERNATE_FUNCTIONS(15,      6, UNUSED, UNUSED, 0, 0, 0), /* GPIO15, altA controlled by bit 6 */
++	ALTERNATE_FUNCTIONS(16,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO16, altA controlled by bit 7 */
++	/* GPIOSEL3 - bit 4-7 reserved */
 +	ALTERNATE_FUNCTIONS(17,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO17, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(18,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO18, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(19,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO19, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(20,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO20, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(21, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO21, bit 4 reserved */
-+	ALTERNATE_FUNCTIONS(22, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO22, bit 5 reserved */
-+	ALTERNATE_FUNCTIONS(23, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO23, bit 6 reserved */
-+	ALTERNATE_FUNCTIONS(24, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO24, bit 7 reserved */
++	ALTERNATE_FUNCTIONS(18,      1, UNUSED, UNUSED, 0, 0, 0), /* GPIO18, altA controlled by bit 1 */
++	ALTERNATE_FUNCTIONS(19,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO19, altA controlled by bit 2 */
++	ALTERNATE_FUNCTIONS(20,      3, UNUSED, UNUSED, 0, 0, 0), /* GPIO20, altA controlled by bit 3 */
++	ALTERNATE_FUNCTIONS(21, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO21 */
++	ALTERNATE_FUNCTIONS(22, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO22 */
++	ALTERNATE_FUNCTIONS(23, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO23 */
++	ALTERNATE_FUNCTIONS(24, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO24 */
++	/* GPIOSEL4 - bit 0-1 reserved */
++	ALTERNATE_FUNCTIONS(25, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO25 */
++	ALTERNATE_FUNCTIONS(26, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO26 */
++	ALTERNATE_FUNCTIONS(27,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO27, altA controlled by bit 2 */
++	ALTERNATE_FUNCTIONS(28,      3, UNUSED, UNUSED, 0, 0, 0), /* GPIO28, altA controlled by bit 3 */
++	ALTERNATE_FUNCTIONS(29,      4, UNUSED, UNUSED, 0, 0, 0), /* GPIO29, altA controlled by bit 4 */
++	ALTERNATE_FUNCTIONS(30,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO30, altA controlled by bit 5 */
++	ALTERNATE_FUNCTIONS(31,      6, UNUSED, UNUSED, 0, 0, 0), /* GPIO31, altA controlled by bit 6 */
++	ALTERNATE_FUNCTIONS(32,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO32, altA controlled by bit 7 */
++	/* GPIOSEL5 - bit 0-7 reserved */
++	ALTERNATE_FUNCTIONS(33, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO33 */
++	ALTERNATE_FUNCTIONS(34, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO34 */
++	ALTERNATE_FUNCTIONS(35, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO35 */
++	ALTERNATE_FUNCTIONS(36, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO36 */
++	ALTERNATE_FUNCTIONS(37, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO37 */
++	ALTERNATE_FUNCTIONS(38, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO38 */
++	ALTERNATE_FUNCTIONS(39, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO39 */
++	ALTERNATE_FUNCTIONS(40, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO40 */
++	/* GPIOSEL6 - bit 0 reserved */
++	ALTERNATE_FUNCTIONS(41, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO41 */
++	ALTERNATE_FUNCTIONS(42,      1, UNUSED, UNUSED, 0, 0, 0), /* GPIO42, altA controlled by bit 1 */
++	ALTERNATE_FUNCTIONS(43,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO43, altA controlled by bit 2 */
++	ALTERNATE_FUNCTIONS(44,      3, UNUSED, UNUSED, 0, 0, 0), /* GPIO44, altA controlled by bit 3 */
++	ALTERNATE_FUNCTIONS(45,      4, UNUSED, UNUSED, 0, 0, 0), /* GPIO45, altA controlled by bit 4 */
++	ALTERNATE_FUNCTIONS(46,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO46, altA controlled by bit 5 */
++	ALTERNATE_FUNCTIONS(47,      6, UNUSED, UNUSED, 0, 0, 0), /* GPIO47, altA controlled by bit 6 */
++	ALTERNATE_FUNCTIONS(48,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO48, altA controlled by bit 7 */
++	/* GPIOSEL7 - bit 0-1 reserved */
++	ALTERNATE_FUNCTIONS(49, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO49 */
++	ALTERNATE_FUNCTIONS(50, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO50 */
++	ALTERNATE_FUNCTIONS(51,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO51, altA controlled by bit 2 */
++	ALTERNATE_FUNCTIONS(52,      3, UNUSED, UNUSED, 0, 0, 0), /* GPIO52, altA controlled by bit 3 */
++	ALTERNATE_FUNCTIONS(53,      4, UNUSED, UNUSED, 0, 0, 0), /* GPIO53, altA controlled by bit 4 */
++	ALTERNATE_FUNCTIONS(54,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO54, altA controlled by bit 5 */
++	ALTERNATE_FUNCTIONS(55,      6, UNUSED, UNUSED, 0, 0, 0), /* GPIO55, altA controlled by bit 6 */
++	ALTERNATE_FUNCTIONS(56,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO56, altA controlled by bit 7 */
++};
 +
-+	ALTERNATE_FUNCTIONS(25, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO25, bit 0 reserved */
-+	ALTERNATE_FUNCTIONS(26, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO26, bit 1 reserved */
-+	ALTERNATE_FUNCTIONS(27, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO27, bit 2 reserved */
-+	ALTERNATE_FUNCTIONS(28, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO28, bit 3 reserved */
-+	ALTERNATE_FUNCTIONS(29, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO29, bit 4 reserved */
-+	ALTERNATE_FUNCTIONS(30, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO30, bit 5 reserved */
-+	ALTERNATE_FUNCTIONS(31, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO31, bit 6 reserved */
-+	ALTERNATE_FUNCTIONS(32, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO32, bit 7 reserved */
-+
-+	ALTERNATE_FUNCTIONS(33, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO33, bit 0 reserved */
-+	ALTERNATE_FUNCTIONS(34,      1, UNUSED, UNUSED, 0, 0, 0), /* GPIO34, altA controlled by bit 1 */
-+	ALTERNATE_FUNCTIONS(35, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO35, bit 2 reserved */
-+	ALTERNATE_FUNCTIONS(36, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO36, bit 2 reserved */
-+	ALTERNATE_FUNCTIONS(37, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO37, bit 2 reserved */
-+	ALTERNATE_FUNCTIONS(38, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO38, bit 2 reserved */
-+	ALTERNATE_FUNCTIONS(39, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO39, bit 2 reserved */
-+	ALTERNATE_FUNCTIONS(40,      7, UNUSED, UNUSED, 0, 0, 0), /* GPIO40, altA controlled by bit 7*/
-+
-+	ALTERNATE_FUNCTIONS(41,      0, UNUSED, UNUSED, 0, 0, 0), /* GPIO41, altA controlled by bit 0 */
-+	ALTERNATE_FUNCTIONS(42, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO42, bit 1 reserved */
-+	ALTERNATE_FUNCTIONS(43, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO43, bit 2 reserved */
-+	ALTERNATE_FUNCTIONS(44, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO44, bit 3 reserved */
-+	ALTERNATE_FUNCTIONS(45, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO45, bit 4 reserved */
-+	ALTERNATE_FUNCTIONS(46, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO46, bit 5 reserved */
-+	ALTERNATE_FUNCTIONS(47, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO47, bit 6 reserved */
-+	ALTERNATE_FUNCTIONS(48, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO48, bit 7 reserved */
-+
-+	ALTERNATE_FUNCTIONS(49, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO49, bit 0 reserved */
-+	ALTERNATE_FUNCTIONS(50,	     1,      2, UNUSED, 1, 0, 0), /* GPIO50, altA controlled by bit 1 */
-+	ALTERNATE_FUNCTIONS(51, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO49, bit 0 reserved */
-+	ALTERNATE_FUNCTIONS(52,	     3, UNUSED, UNUSED, 0, 0, 0), /* GPIO52, altA controlled by bit 3 */
-+	ALTERNATE_FUNCTIONS(53,	     4, UNUSED, UNUSED, 0, 0, 0), /* GPIO53, altA controlled by bit 4 */
++static struct pullud ab8540_pullud = {
++	.first_pin = 51,	/* GPIO1_VBAT */
++	.last_pin = 54,		/* GPIO4_VBAT */
 +};
 +
 +/*
-+ * For AB8505 Only some GPIOs are interrupt capable, and they are
-+ * organized in discontiguous clusters:
-+ *
-+ *	GPIO10 to GPIO11
-+ *	GPIO13
-+ *	GPIO40 and GPIO41
-+ *	GPIO50
-+ *	GPIO52 to GPIO53
++ * For AB8540 Only some GPIOs are interrupt capable:
++ *	GPIO43 to GPIO44
++ *	GPIO51 to GPIO54
 + */
-+struct abx500_gpio_irq_cluster ab8505_gpio_irq_cluster[] = {
-+	GPIO_IRQ_CLUSTER(9, 10, 0), /* GPIO numbers start from 1 */
-+	GPIO_IRQ_CLUSTER(12, 12, 0),
-+	GPIO_IRQ_CLUSTER(39, 40, 0),
-+	GPIO_IRQ_CLUSTER(49, 49, 0),
-+	GPIO_IRQ_CLUSTER(51, 52, 0),
++struct abx500_gpio_irq_cluster ab8540_gpio_irq_cluster[] = {
++	GPIO_IRQ_CLUSTER(42, 43, 2), /* GPIO numbers start from 1 */
++	GPIO_IRQ_CLUSTER(50, 53, 0),
 +};
 +
-+static struct abx500_pinctrl_soc_data ab8505_soc = {
-+	.gpio_ranges = ab8505_pinranges,
-+	.gpio_num_ranges = ARRAY_SIZE(ab8505_pinranges),
-+	.pins = ab8505_pins,
-+	.npins = ARRAY_SIZE(ab8505_pins),
-+	.functions = ab8505_functions,
-+	.nfunctions = ARRAY_SIZE(ab8505_functions),
-+	.groups = ab8505_groups,
-+	.ngroups = ARRAY_SIZE(ab8505_groups),
-+	.alternate_functions = ab8505_alternate_functions,
-+	.gpio_irq_cluster = ab8505_gpio_irq_cluster,
-+	.ngpio_irq_cluster = ARRAY_SIZE(ab8505_gpio_irq_cluster),
-+	.irq_gpio_rising_offset = AB8500_INT_GPIO6R,
-+	.irq_gpio_falling_offset = AB8500_INT_GPIO6F,
-+	.irq_gpio_factor = 1,
++static struct abx500_pinctrl_soc_data ab8540_soc = {
++	.gpio_ranges = ab8540_pinranges,
++	.gpio_num_ranges = ARRAY_SIZE(ab8540_pinranges),
++	.pins = ab8540_pins,
++	.npins = ARRAY_SIZE(ab8540_pins),
++	.functions = ab8540_functions,
++	.nfunctions = ARRAY_SIZE(ab8540_functions),
++	.groups = ab8540_groups,
++	.ngroups = ARRAY_SIZE(ab8540_groups),
++	.alternate_functions = ab8540_alternate_functions,
++	.pullud = &ab8540_pullud,
++	.gpio_irq_cluster = ab8540_gpio_irq_cluster,
++	.ngpio_irq_cluster = ARRAY_SIZE(ab8540_gpio_irq_cluster),
++	.irq_gpio_rising_offset = AB8540_INT_GPIO43R,
++	.irq_gpio_falling_offset = AB8540_INT_GPIO43F,
++	.irq_gpio_factor = 2,
 +};
 +
 +void __devinit
-+abx500_pinctrl_ab8505_init(struct abx500_pinctrl_soc_data **soc)
++abx500_pinctrl_ab8540_init(struct abx500_pinctrl_soc_data **soc)
 +{
-+	*soc = &ab8505_soc;
++	*soc = &ab8540_soc;
 +}
 diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
-index 215dbb4..94f9381 100644
+index 39020ac..7046aef 100644
 --- a/drivers/pinctrl/pinctrl-abx500.c
 +++ b/drivers/pinctrl/pinctrl-abx500.c
 @@ -1119,6 +1119,9 @@ static int abx500_gpio_probe(struct platform_device *pdev)
  	case PINCTRL_AB8500:
  		abx500_pinctrl_ab8500_init(&pct->soc);
  		break;
-+	case PINCTRL_AB8505:
-+		abx500_pinctrl_ab8505_init(&pct->soc);
++	case PINCTRL_AB8540:
++		abx500_pinctrl_ab8540_init(&pct->soc);
 +		break;
- 	default:
- 		dev_err(&pdev->dev, "Unsupported pinctrl sub driver (%d)\n",
- 				(int) platid->driver_data);
+ 	case PINCTRL_AB9540:
+ 		abx500_pinctrl_ab9540_init(&pct->soc);
+ 		break;
 diff --git a/drivers/pinctrl/pinctrl-abx500.h b/drivers/pinctrl/pinctrl-abx500.h
-index a6c9332..5c5ac75 100644
+index fe1ccb7..df8e0ff 100644
 --- a/drivers/pinctrl/pinctrl-abx500.h
 +++ b/drivers/pinctrl/pinctrl-abx500.h
-@@ -190,4 +190,17 @@ abx500_pinctrl_ab8500_init(struct abx500_pinctrl_soc_data **soc)
+@@ -190,6 +190,19 @@ abx500_pinctrl_ab8500_init(struct abx500_pinctrl_soc_data **soc)
  
  #endif
  
-+#ifdef CONFIG_PINCTRL_AB8505
++#ifdef CONFIG_PINCTRL_AB8540
 +
-+void abx500_pinctrl_ab8505_init(struct abx500_pinctrl_soc_data **soc);
++void abx500_pinctrl_ab8540_init(struct abx500_pinctrl_soc_data **soc);
 +
 +#else
 +
 +static inline void
-+abx500_pinctrl_ab8505_init(struct abx500_pinctrl_soc_data **soc)
++abx500_pinctrl_ab8540_init(struct abx500_pinctrl_soc_data **soc)
 +{
 +}
 +
 +#endif
 +
- #endif /* PINCTRL_PINCTRL_ABx500_H */
+ #ifdef CONFIG_PINCTRL_AB9540
+ 
+ void abx500_pinctrl_ab9540_init(struct abx500_pinctrl_soc_data **soc);
 -- 
 1.7.11.3
 
