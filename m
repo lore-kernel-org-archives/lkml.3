@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3A1VrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 16:47:05 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:56187 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab3A1VrC (ORCPT
+	id S1754652Ab3A1Vs3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 16:48:29 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:39128 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab3A1Vs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 16:47:02 -0500
+	Mon, 28 Jan 2013 16:48:26 -0500
+Date: Mon, 28 Jan 2013 13:48:23 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] generic dynamic per cpu refcounting
+Message-ID: <20130128214823.GH26407@google.com>
+References: <20130128182737.GC22465@mtj.dyndns.org>
+ <20130128184933.GC26407@google.com>
+ <20130128185552.GD22465@mtj.dyndns.org>
+ <20130128202214.GD26407@google.com>
+ <CAOS58YOQNs9RcNAXHKfkwaxMeDeSzOczNC=-WS5uvsas168T+A@mail.gmail.com>
+ <20130128205540.GE26407@google.com>
+ <20130128211832.GK22465@mtj.dyndns.org>
+ <20130128212407.GF26407@google.com>
+ <20130128212814.GL22465@mtj.dyndns.org>
+ <20130128213622.GM22465@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1359151245-13179-6-git-send-email-andi@firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
-	<1359151245-13179-6-git-send-email-andi@firstfloor.org>
-Date: Mon, 28 Jan 2013 22:47:01 +0100
-Message-ID: <CABPqkBR=vZ-S0PTZDFk03f3vXah+Ozi8KHmDGH8Q01ROO+LYFg@mail.gmail.com>
-Subject: Re: [PATCH 05/12] perf, x86: Support Haswell v4 LBR format
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130128213622.GM22465@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Haswell has two additional LBR from flags for TSX: intx and abort, implemented
-> as a new v4 version of the LBR format.
->
-> Handle those in and adjust the sign extension code to still correctly extend.
-> The flags are exported similarly in the LBR record to the existing misprediction
-> flag
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
->  include/linux/perf_event.h                 |    7 ++++++-
->  2 files changed, 21 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> index da02e9c..2af6695b 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> @@ -12,6 +12,7 @@ enum {
->         LBR_FORMAT_LIP          = 0x01,
->         LBR_FORMAT_EIP          = 0x02,
->         LBR_FORMAT_EIP_FLAGS    = 0x03,
-> +       LBR_FORMAT_EIP_FLAGS2   = 0x04,
->  };
->
->  /*
-> @@ -56,6 +57,8 @@ enum {
->          LBR_FAR)
->
->  #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
-> +#define LBR_FROM_FLAG_INTX     (1ULL << 62)
-> +#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
->
->  #define for_each_branch_sample_type(x) \
->         for ((x) = PERF_SAMPLE_BRANCH_USER; \
-> @@ -270,21 +273,30 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
->
->         for (i = 0; i < x86_pmu.lbr_nr; i++) {
->                 unsigned long lbr_idx = (tos - i) & mask;
-> -               u64 from, to, mis = 0, pred = 0;
-> +               u64 from, to, mis = 0, pred = 0, intx = 0, abort = 0;
->
->                 rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
->                 rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
->
-> -               if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
-> +               if (lbr_format == LBR_FORMAT_EIP_FLAGS ||
-> +                   lbr_format == LBR_FORMAT_EIP_FLAGS2) {
->                         mis = !!(from & LBR_FROM_FLAG_MISPRED);
->                         pred = !mis;
-> -                       from = (u64)((((s64)from) << 1) >> 1);
-> +                       if (lbr_format == LBR_FORMAT_EIP_FLAGS)
-> +                               from = (u64)((((s64)from) << 1) >> 1);
-> +                       else if (lbr_format == LBR_FORMAT_EIP_FLAGS2) {
-> +                               intx = !!(from & LBR_FROM_FLAG_INTX);
-> +                               abort = !!(from & LBR_FROM_FLAG_ABORT);
-> +                               from = (u64)((((s64)from) << 3) >> 3);
-> +                       }
->                 }
->
-Wouldn't all that be more readable with a switch-case, especially given
-that lbr_format could be extended.
+On Mon, Jan 28, 2013 at 01:36:22PM -0800, Tejun Heo wrote:
+> On Mon, Jan 28, 2013 at 01:28:14PM -0800, Tejun Heo wrote:
+> > But at that point, the operation is already global, so there gotta be
+> > a lighter way to synchronize stuff than going through full grace
+> > period.  ie. You can add a bias value before marking dead so that the
+> > counter never reaches zero before all percpu counters are collected
+> > and then unbias it right before putting the base ref, that way the
+> > only way you can hit zero ref is all refs are actually zero.
+> 
+> Note that I'm saying that there's no need to distinguish between dying
+> and dead.
 
+Yeah I got that, I _think_ that makes me like the idea.
 
->                 cpuc->lbr_entries[i].from       = from;
->                 cpuc->lbr_entries[i].to         = to;
->                 cpuc->lbr_entries[i].mispred    = mis;
->                 cpuc->lbr_entries[i].predicted  = pred;
-> +               cpuc->lbr_entries[i].intx       = intx;
-> +               cpuc->lbr_entries[i].abort      = abort;
->                 cpuc->lbr_entries[i].reserved   = 0;
->         }
->         cpuc->lbr_stack.nr = i;
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 6bfb2faa..91052e1 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -74,13 +74,18 @@ struct perf_raw_record {
->   *
->   * support for mispred, predicted is optional. In case it
->   * is not supported mispred = predicted = 0.
-> + *
-> + *     intx: running in a hardware transaction
-> + *     abort: aborting a hardware transaction
->   */
->  struct perf_branch_entry {
->         __u64   from;
->         __u64   to;
->         __u64   mispred:1,  /* target mispredicted */
->                 predicted:1,/* target predicted */
-> -               reserved:62;
-> +               intx:1,     /* in transaction */
-> +               abort:1,    /* transaction abort */
-> +               reserved:60;
->  };
->
->  /*
-> --
-> 1.7.7.6
->
+> The only thing percpu part should care about it whether
+> percpu is on or off.  We need a full grace period to turn off percpu
+> operations of any type but that should be the only case where full
+> grace period is necessary.  The rest should be synchronizable via the
+> usual global synchronization.  We probably can just test percpu
+> variable against NULL and forget about the encoded state numbers.
+
+Can't quite do that because initially, we use that variable for a
+timestamp and when we're shutting down we don't want percpu_ref_get()
+allocating percpu counters again.
+
+You'll probably use that as an argument against dynamic allocation :P
