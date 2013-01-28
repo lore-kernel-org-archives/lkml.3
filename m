@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab3A1OZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 09:25:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44671 "EHLO mx1.redhat.com"
+	id S1757360Ab3A1O0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 09:26:41 -0500
+Received: from 8bytes.org ([85.214.48.195]:52803 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756756Ab3A1OZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 09:25:53 -0500
-Date: Mon, 28 Jan 2013 09:25:50 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH v2] userns: improve uid/gid map collision detection
-Message-ID: <20130128142550.GT17632@redhat.com>
-References: <20130123160221.GG17632@redhat.com>
- <20130124044438.GA13354@mail.hallyn.com>
- <20130124152859.GP17632@redhat.com>
- <20130124164612.af6de6f3.akpm@linux-foundation.org>
- <20130125140317.GS17632@redhat.com>
- <871ud8hdyu.fsf@xmission.com>
+	id S1756756Ab3A1O0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 09:26:39 -0500
+Date: Mon, 28 Jan 2013 15:26:37 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: suravee.suthikulpanit@amd.com
+Cc: iommu@lists.linux-foundation.org, bp@alien8.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4] IOMMU, AMD Family15h Model10-1Fh erratum 746
+ Workaround
+Message-ID: <20130128142637.GY25591@8bytes.org>
+References: <1359055073-29732-1-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <871ud8hdyu.fsf@xmission.com>
+In-Reply-To: <1359055073-29732-1-git-send-email-suravee.suthikulpanit@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jan 28 15:26:38 2013
+X-DSPAM-Confidence: 0.9992
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51068a9e22971644417130
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 06:31:37PM -0800, Eric W. Biederman wrote:
-> Aritsteu after looking at both my version and yours I am going with
+On Thu, Jan 24, 2013 at 01:17:53PM -0600, Suthikulpanit, Suravee wrote:
+> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 
-one extra t.
-
-> mine.  While my code is a little wordier I have half the number of
-> comparisons your code does, and I took the time to kill the variable
-> introducing a function to test for range collisions makes unnecessary.
-> On Andrews size metric my version seems noticably smaller as well.
+> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> ---
+> Changelog:
+> v4:
+>       * Fix style and spacing
 > 
->  size $PWD-build/kernel/user_namespace.o
->    text	   data	    bss	    dec	    hex	filename
->    4376	    144	      0	   4520	   11a8	/home/eric/projects/linux/linux-userns-devel-build/kernel/user_namespace.o
+> v3:
+>       * Add proper commit message
+>       * Change logic to avoid unnecessary indentaion
 > 
+> v2:
+>       * Fix logic that check the processor model.
+>       * Clear write enable bit after apply workaround
+>       * Change function name
 > 
-> Short of something unexpected I plan to push all my code to linux-next
-> sometime tomorrow.
+>  drivers/iommu/amd_iommu_init.c |   34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
 
-sure, no problem
-Thanks Eric
+Applied to iommu/fixes, thanks guys.
 
--- 
-Aristeu
 
