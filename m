@@ -1,144 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab3A1PeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 10:34:24 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:44709 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab3A1PeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 10:34:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359151245-13179-3-git-send-email-andi@firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
-	<1359151245-13179-3-git-send-email-andi@firstfloor.org>
-Date: Mon, 28 Jan 2013 16:34:21 +0100
-Message-ID: <CABPqkBTwqYOiKDreq394Nq=ds8b0qg2igTdBoJ8JpB0Dd2RbRg@mail.gmail.com>
-Subject: Re: [PATCH 02/12] perf, x86: Basic Haswell PMU support v2
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753715Ab3A1PhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 10:37:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2966 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874Ab3A1PhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 10:37:01 -0500
+Message-ID: <1359387416.11144.177.camel@bling.home>
+Subject: Re: [PATCH 0/2] kvm: IOMMU read-only mapping support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 28 Jan 2013 08:36:56 -0700
+In-Reply-To: <20130128212543.274a94d8021cfdabc3efc0e1@gmail.com>
+References: <20130124220027.11061.76400.stgit@bling.home>
+	 <20130125101704.b76b049d.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	 <5101FBE8.9000206@linux.vnet.ibm.com> <20130128105903.GA22871@redhat.com>
+	 <20130128212543.274a94d8021cfdabc3efc0e1@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Add basic Haswell PMU support.
->
-> Similar to SandyBridge, but has a few new events. Further
-> differences are handled in followon patches.
->
-> There are some new counter flags that need to be prevented
-> from being set on fixed counters.
->
-> Contains fixes from Stephane Eranian
->
-> v2: Folded TSX bits into standard FIXED_EVENT_CONSTRAINTS
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/perf_event.h      |    3 +++
->  arch/x86/kernel/cpu/perf_event.h       |    5 ++++-
->  arch/x86/kernel/cpu/perf_event_intel.c |   29 +++++++++++++++++++++++++++++
->  3 files changed, 36 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-> index 4fabcdf..4003bb6 100644
-> --- a/arch/x86/include/asm/perf_event.h
-> +++ b/arch/x86/include/asm/perf_event.h
-> @@ -29,6 +29,9 @@
->  #define ARCH_PERFMON_EVENTSEL_INV                      (1ULL << 23)
->  #define ARCH_PERFMON_EVENTSEL_CMASK                    0xFF000000ULL
->
-> +#define HSW_INTX                                       (1ULL << 32)
-> +#define HSW_INTX_CHECKPOINTED                          (1ULL << 33)
-> +
->  #define AMD_PERFMON_EVENTSEL_GUESTONLY                 (1ULL << 40)
->  #define AMD_PERFMON_EVENTSEL_HOSTONLY                  (1ULL << 41)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index 115c1ea..8941899 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -219,11 +219,14 @@ struct cpu_hw_events {
->   *  - inv
->   *  - edge
->   *  - cnt-mask
-> + *  - intx
-> + *  - intx_cp
->   *  The other filters are supported by fixed counters.
->   *  The any-thread option is supported starting with v3.
->   */
-> +#define FIXED_EVENT_FLAGS (X86_RAW_EVENT_MASK|HSW_INTX|HSW_INTX_CHECKPOINTED)
->  #define FIXED_EVENT_CONSTRAINT(c, n)   \
-> -       EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
-> +       EVENT_CONSTRAINT(c, (1ULL << (32+n)), FIXED_EVENT_FLAGS)
->
->  /*
->   * Constraint on the Event code + UMask
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 93b9e11..3a08534 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -133,6 +133,17 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
->         EVENT_EXTRA_END
->  };
->
-> +static struct event_constraint intel_hsw_event_constraints[] =
-> +{
-> +       FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-> +       FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-> +       FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
-> +       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+On Mon, 2013-01-28 at 21:25 +0900, Takuya Yoshikawa wrote:
+> On Mon, 28 Jan 2013 12:59:03 +0200
+> Gleb Natapov <gleb@redhat.com> wrote:
+> 
+> > > It sets spte based on the old value that means the readonly flag check
+> > > is missed. We need to call kvm_arch_flush_shadow_all under this case.
+> > Why not just disallow changing memory region KVM_MEM_READONLY flag
+> > without deleting the region?
+> 
+> Sounds good.
+> 
+> If you prefer, I can fold the required change into my patch.
 
-You're covering the entire event here, so comment should be: L1D_PEND_MISS.*
+That would seem to make my patch 1/2 unnecessary.  Thanks,
 
-> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
-> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-> +       EVENT_CONSTRAINT_END
+Alex
 
-You are missing constraint on the following public events:
-- CYCLE_ACTIVITY (0xa3)
-
-> +};
-> +
->  static u64 intel_pmu_event_map(int hw_event)
->  {
->         return intel_perfmon_event_map[hw_event];
-> @@ -2107,6 +2118,24 @@ __init int intel_pmu_init(void)
->                 break;
->
->
-> +       case 60: /* Haswell Client */
-> +       case 70:
-> +       case 71:
-> +               memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
-> +                      sizeof(hw_cache_event_ids));
-> +
-> +               intel_pmu_lbr_init_nhm();
-> +
-I suspect this one should be intel_pmu_lbr_init_snb(), otherwise
-you inherit the broken filter workarounds.
-
-> +               x86_pmu.event_constraints = intel_hsw_event_constraints;
-> +
-> +               x86_pmu.extra_regs = intel_snb_extra_regs;
-> +               /* all extra regs are per-cpu when HT is on */
-> +               x86_pmu.er_flags |= ERF_HAS_RSP_1;
-> +               x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-> +
-> +               pr_cont("Haswell events, ");
-> +               break;
-> +
->         default:
->                 switch (x86_pmu.version) {
->                 case 1:
-> --
-> 1.7.7.6
->
