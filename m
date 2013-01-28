@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477Ab3A1FcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 00:32:09 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11868 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab3A1FcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 00:32:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sun, 27 Jan 2013 21:29:57 -0800
-Message-ID: <51060CDA.2020803@nvidia.com>
-Date: Mon, 28 Jan 2013 11:00:02 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Subject: Re: [PATCH 0/4] mfd: palma: add RTC and GPIO support
-References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com> <20130127002821.GF1174@sortiz-mobl> <5104E937.1090008@nvidia.com> <20130127212836.GK1174@sortiz-mobl>
-In-Reply-To: <20130127212836.GK1174@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1751640Ab3A1Fe7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 00:34:59 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12695 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab3A1Fe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 00:34:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,548,1355126400"; 
+   d="scan'208";a="277315685"
+Subject: [PATCH] perf: Add the rcu_read_lock to protect the
+ list_for_each_entry_rcu.
+From: Jun Chen <jun.d.chen@intel.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jun Chen <jun.d.chen@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Jan 2013 08:36:28 -0500
+Message-ID: <1359380188.8410.11.camel@chenjun-workstation>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 January 2013 02:58 AM, Samuel Ortiz wrote:
-> Hi Laxman,
->
-> On Sun, Jan 27, 2013 at 02:15:43PM +0530, Laxman Dewangan wrote:
->> On Sunday 27 January 2013 05:58 AM, Samuel Ortiz wrote:
->>> Hi Laxman,
->>>
->>> On Thu, Jan 03, 2013 at 04:16:56PM +0530, Laxman Dewangan wrote:
->>>> This series add the RTC and gpio driver for the TI Palma series PMIC.
->>>> The changes are splitted so that easy to apply in different sub systems.
->>>>
->>>> Laxman Dewangan (4):
->>>>    mfd: palmas: add rtc irq number as irq resource for palmas-rtc
->>>>    mfd: palmas: add apis to access the Palmas' registers
->>>>    gpio: palmas: Add support for Palams GPIO
->>>>    rtc: palmas: add RTC driver Palmas series PMIC
->>> All 4 patches applied to my for-next branch, thanks.
->> Hi Samuel,
->>
->> Thanks for taking care. But it seems 2/4 of this series is missed
->> which is very important for 3/4 and 4/4 to be compile.
->>
->> Can you please apply the 2/4 before 3/4 and 4/4?
-> Patch #2 is applied, see:
->
-> http://git.kernel.org/?p=linux/kernel/git/sameo/mfd-2.6.git;a=commit;h=2c3a09ab5da9ef4438af445d8f051e92bac85616
->
 
-Yes, it is there, Thank you very much. All patches are applied properly.
+The list_for_each_entry_rcu should be guarded by rcu_read_lock().This patch add
+rcu_read_lock to protect the list_for_each_entry_rcu.
+
+Signed-off-by: Chen Jun <jun.d.chen@intel.com>
+---
+ kernel/events/core.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 301079d..e2f2fa5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2442,6 +2442,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
+ 
+ 	raw_spin_lock(&ctx->lock);
+ 	perf_pmu_disable(ctx->pmu);
++	rcu_read_lock();
+ 
+ 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+ 		if (event->state != PERF_EVENT_STATE_ACTIVE)
+@@ -2483,6 +2484,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
+ 		event->pmu->start(event, delta > 0 ? PERF_EF_RELOAD : 0);
+ 	}
+ 
++	rcu_read_unlock();
+ 	perf_pmu_enable(ctx->pmu);
+ 	raw_spin_unlock(&ctx->lock);
+ }
+-- 
+1.7.4.1
 
 
-Thanks,
-Laxman
 
