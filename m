@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab3A1JJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 04:09:37 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:55757 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3A1JJf (ORCPT
+	id S1753853Ab3A1JQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 04:16:48 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51394 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab3A1JQq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 04:09:35 -0500
+	Mon, 28 Jan 2013 04:16:46 -0500
+X-IronPort-AV: E=Sophos;i="4.84,551,1355068800"; 
+   d="scan'208";a="6654563"
+Message-ID: <510641CC.9040707@cn.fujitsu.com>
+Date: Mon, 28 Jan 2013 17:15:56 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130122074123.13822.39102.stgit@srivatsabhat.in.ibm.com>
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
-	<20130122074123.13822.39102.stgit@srivatsabhat.in.ibm.com>
-Date: Mon, 28 Jan 2013 17:09:34 +0800
-Message-ID: <CAA_GA1fSLNKSDTGSzHoA+j-mur85BvoSRkARq+DMfORuwrrX4Q@mail.gmail.com>
-Subject: Re: [PATCH v5 31/45] blackfin/smp: Use get/put_online_cpus_atomic()
- to prevent CPU offline
-From: Bob Liu <lliubbo@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
+ from SRAT.
+References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com> <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com> <20130125171230.34c5a273.akpm@linux-foundation.org>
+In-Reply-To: <20130125171230.34c5a273.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/28 17:15:38,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/28 17:15:40
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 3:41 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Once stop_machine() is gone from the CPU offline path, we won't be able to
-> depend on preempt_disable() or local_irq_disable() to prevent CPUs from
-> going offline from under us.
+On 01/26/2013 09:12 AM, Andrew Morton wrote:
+> On Fri, 25 Jan 2013 17:42:09 +0800
+> Tang Chen<tangchen@cn.fujitsu.com>  wrote:
 >
-> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
-> while invoking from atomic context.
+>> NOTE: Using this way will cause NUMA performance down because the whole node
+>>        will be set as ZONE_MOVABLE, and kernel cannot use memory on it.
+>>        If users don't want to lose NUMA performance, just don't use it.
 >
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Bob Liu <lliubbo@gmail.com>
-> Cc: Steven Miao <realmz6@gmail.com>
-> Cc: uclinux-dist-devel@blackfin.uclinux.org
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> I agree with this, but it means that nobody will test any of your new code.
+>
+> To get improved testing coverage, can you think of any temporary
+> testing-only patch which will cause testers to exercise the
+> memory-hotplug changes?
 
-Thanks, will be applied to my blackfin arch tree.
+Hi Andrew,
 
-> ---
->
->  arch/blackfin/mach-common/smp.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/blackfin/mach-common/smp.c b/arch/blackfin/mach-common/smp.c
-> index bb61ae4..6cc6d7a 100644
-> --- a/arch/blackfin/mach-common/smp.c
-> +++ b/arch/blackfin/mach-common/smp.c
-> @@ -194,6 +194,7 @@ void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg)
->         struct ipi_data *bfin_ipi_data;
->         unsigned long flags;
->
-> +       get_online_cpus_atomic();
->         local_irq_save(flags);
->         smp_mb();
->         for_each_cpu(cpu, cpumask) {
-> @@ -205,6 +206,7 @@ void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg)
->         }
->
->         local_irq_restore(flags);
-> +       put_online_cpus_atomic();
->  }
->
->  void arch_send_call_function_single_ipi(int cpu)
-> @@ -238,13 +240,13 @@ void smp_send_stop(void)
->  {
->         cpumask_t callmap;
->
-> -       preempt_disable();
-> +       get_online_cpus_atomic();
->         cpumask_copy(&callmap, cpu_online_mask);
->         cpumask_clear_cpu(smp_processor_id(), &callmap);
->         if (!cpumask_empty(&callmap))
->                 send_ipi(&callmap, BFIN_IPI_CPU_STOP);
->
-> -       preempt_enable();
-> +       put_online_cpus_atomic();
->
->         return;
->  }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+OK，I‘ll think about it and post the testing patch. But I think a shell 
+script
+may be easier because the boot option is specified by user and the code 
+only runs
+when system is booting. So we need to reboot the system all the time.
 
--- 
-Regards,
---Bob
+Thanks. :)
