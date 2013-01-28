@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3A1Hq4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 02:46:56 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33272 "EHLO arroyo.ext.ti.com"
+	id S1753606Ab3A1HuD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 02:50:03 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:53175 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab3A1Hqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 02:46:55 -0500
-From: Mrugesh Katepallewar <mrugesh.mk@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <nsekhar@ti.com>, <hs@denx.de>
-Subject: [PATCH V2] ARM: davinci: da850: add RTC DT entries
-Date: Mon, 28 Jan 2013 13:17:48 +0530
-Message-ID: <1359359268-9781-1-git-send-email-mrugesh.mk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752609Ab3A1Ht6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 02:49:58 -0500
+Message-ID: <51062DA8.1060804@parallels.com>
+Date: Mon, 28 Jan 2013 11:50:00 +0400
+From: Lord Glauber Costa of Sealand <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: <linux-fsdevel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH review 3/6] userns: Recommend use of memory control groups.
+References: <87ehh8it9s.fsf@xmission.com> <87txq4hedl.fsf@xmission.com> <51062AB5.9060203@parallels.com>
+In-Reply-To: <51062AB5.9060203@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add RTC DT entries in da850 dts file.
+On 01/28/2013 11:37 AM, Lord Glauber Costa of Sealand wrote:
+> On 01/26/2013 06:22 AM, Eric W. Biederman wrote:
+>>
+>> In the help text describing user namespaces recommend use of memory
+>> control groups.  In many cases memory control groups are the only
+>> mechanism there is to limit how much memory a user who can create
+>> user namespaces can use.
+>>
+>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>> ---
+>>  Documentation/namespaces/resource-control.txt |   10 ++++++++++
+>>  init/Kconfig                                  |    7 +++++++
+>>  2 files changed, 17 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/namespaces/resource-control.txt
+>>
+>> diff --git a/Documentation/namespaces/resource-control.txt b/Documentation/namespaces/resource-control.txt
+>> new file mode 100644
+>> index 0000000..3d8178a
+>> --- /dev/null
+>> +++ b/Documentation/namespaces/resource-control.txt
+>> @@ -0,0 +1,10 @@
+>> +There are a lot of kinds of objects in the kernel that don't have
+>> +individual limits or that have limits that are ineffective when a set
+>> +of processes is allowed to switch user ids.  With user namespaces
+>> +enabled in a kernel for people who don't trust their users or their
+>> +users programs to play nice this problems becomes more acute.
+>> +
+>> +Therefore it is recommended that memory control groups be enabled in
+>> +kernels that enable user namespaces, and it is further recommended
+>> +that userspace configure memory control groups to limit how much
+>> +memory users they don't trust to play nice can use.
+>> diff --git a/init/Kconfig b/init/Kconfig
+>> index 7d30240..c8c58bd 100644
+>> --- a/init/Kconfig
+>> +++ b/init/Kconfig
+>> @@ -1035,6 +1035,13 @@ config USER_NS
+>>  	help
+>>  	  This allows containers, i.e. vservers, to use user namespaces
+>>  	  to provide different user info for different servers.
+>> +
+>> +	  When user namespaces are enabled in the kernel it is
+>> +	  recommended that the MEMCG and MEMCG_KMEM options also be
+>> +	  enabled and that user-space use the memory control groups to
+>> +	  limit the amount of memory a memory unprivileged users can
+>> +	  use.
+>> +
+>>  	  If unsure, say N.
+> 
+> Since this becomes an official recommendation that people will likely
+> follow, are we really that much concerned about the types of abuses the
+> MEMCG_KMEM will prevent? Those are mostly metadata-based abuses users
+> could do in their own local disks without mounting anything extra (and
+> things that look like that)
+> 
+> Unless there is a specific concern here, shouldn't we say "... that the
+> MEMCG (and possibly MEMCG_KMEM) options..." ?
+> 
+> 
+I just saw in a later patch of yours that your concern here seems not
+limited to backed ram by tmpfs, but with things like the internal
+structures for userns , to avoid patterns in the form: 'for (;;)
+unshare(...)'
 
-Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
----
-Applies on top of v3.8-rc4 of linus tree.
+Humm, it does seem sensible. The kernel memory controller aims to
+prevent exactly things like that. But they all exist already before
+userns: there are destructive patterns like that with sockets, dentries,
+processes, and pretty much every other resource in the kernel. So
+Although the recommendation per-se makes sense, I am wondering if it is
+worth it to mention anything in the user_ns config?
 
-This patch is depending on 
-"ARM: davinci: da850: add interrupt-parent property in soc node"
-https://patchwork.kernel.org/patch/2044101/
 
-Tested on da850-evm device.
 
-Test Procedure:
-date 2013.01.28-10:00:00 (usage: date[YYYY.]MM.DD-hh:mm[:ss])
-hwclock -w
-reset board and check system time.
-
-Changes Since V1:
-Remove interrupt-parent property from RTC node.
-Change RTC node name in dts and dtsi file.
-
-:100644 100644 37dc5a3... af4b7cc... M	arch/arm/boot/dts/da850-evm.dts
-:100644 100644 640ab75... 90be701... M	arch/arm/boot/dts/da850.dtsi
- arch/arm/boot/dts/da850-evm.dts |    3 +++
- arch/arm/boot/dts/da850.dtsi    |    7 +++++++
- 2 files changed, 10 insertions(+)
-
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index 37dc5a3..af4b7cc 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -24,5 +24,8 @@
- 		serial2: serial@1d0d000 {
- 			status = "okay";
- 		};
-+		rtc0: rtc@1c23000 {
-+			status = "okay";
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-index 640ab75..90be701 100644
---- a/arch/arm/boot/dts/da850.dtsi
-+++ b/arch/arm/boot/dts/da850.dtsi
-@@ -56,5 +56,12 @@
- 			interrupt-parent = <&intc>;
- 			status = "disabled";
- 		};
-+		rtc0: rtc@1c23000 {
-+			compatible = "ti,da830-rtc";
-+			reg = <0x23000 0x1000>;
-+			interrupts = <19
-+				      19>;
-+			status = "disabled";
-+		};
- 	};
- };
--- 
-1.7.9.5
 
