@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab3A2Q1B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:27:01 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35427 "EHLO
+	id S1754270Ab3A2Q1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:27:47 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35397 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab3A2QYg (ORCPT
+	with ESMTP id S1753371Ab3A2QYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:24:36 -0500
+	Tue, 29 Jan 2013 11:24:34 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Dave Kleikamp <dave.kleikamp@oracle.com>,
-        fuse-devel@lists.sourceforge.net
-Subject: [PATCH V6 04/30] fuse: convert fuse to use iov_iter_copy_[to|from]_user
-Date: Tue, 29 Jan 2013 10:23:17 -0600
-Message-Id: <1359476623-10544-5-git-send-email-dave.kleikamp@oracle.com>
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org
+Subject: [PATCH V6 30/30] ubifs: convert file ops from aio_read/write to read/write_iter
+Date: Tue, 29 Jan 2013 10:23:43 -0600
+Message-Id: <1359476623-10544-31-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A future patch hides the internals of struct iov_iter, so fuse should
-be using the supported interface.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: fuse-devel@lists.sourceforge.net
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: linux-mtd@lists.infradead.org
 ---
- fs/fuse/file.c | 29 ++++++++---------------------
- 1 file changed, 8 insertions(+), 21 deletions(-)
+ fs/ubifs/file.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index f3ab824..27d10ca 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1631,30 +1631,17 @@ static int fuse_ioctl_copy_user(struct page **pages, struct iovec *iov,
- 	while (iov_iter_count(&ii)) {
- 		struct page *page = pages[page_idx++];
- 		size_t todo = min_t(size_t, PAGE_SIZE, iov_iter_count(&ii));
--		void *kaddr;
-+		size_t left;
- 
--		kaddr = kmap(page);
--
--		while (todo) {
--			char __user *uaddr = ii.iov->iov_base + ii.iov_offset;
--			size_t iov_len = ii.iov->iov_len - ii.iov_offset;
--			size_t copy = min(todo, iov_len);
--			size_t left;
--
--			if (!to_user)
--				left = copy_from_user(kaddr, uaddr, copy);
--			else
--				left = copy_to_user(uaddr, kaddr, copy);
--
--			if (unlikely(left))
--				return -EFAULT;
-+		if (!to_user)
-+			left = iov_iter_copy_from_user(page, &ii, 0, todo);
-+		else
-+			left = iov_iter_copy_to_user(page, &ii, 0, todo);
- 
--			iov_iter_advance(&ii, copy);
--			todo -= copy;
--			kaddr += copy;
--		}
-+		if (unlikely(left))
-+			return -EFAULT;
- 
--		kunmap(page);
-+		iov_iter_advance(&ii, todo);
- 	}
- 
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 5bc7781..cfe6210 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -44,7 +44,7 @@
+  * 'ubifs_writepage()' we are only guaranteed that the page is locked.
+  *
+  * Similarly, @i_mutex is not always locked in 'ubifs_readpage()', e.g., the
+- * read-ahead path does not lock it ("sys_read -> generic_file_aio_read ->
++ * read-ahead path does not lock it ("sys_read -> generic_file_read_iter ->
+  * ondemand_readahead -> readpage"). In case of readahead, @I_SYNC flag is not
+  * set as well. However, UBIFS disables readahead.
+  */
+@@ -1394,8 +1394,8 @@ static int update_mctime(struct ubifs_info *c, struct inode *inode)
  	return 0;
+ }
+ 
+-static ssize_t ubifs_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-			       unsigned long nr_segs, loff_t pos)
++static ssize_t ubifs_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++				loff_t pos)
+ {
+ 	int err;
+ 	struct inode *inode = iocb->ki_filp->f_mapping->host;
+@@ -1405,7 +1405,7 @@ static ssize_t ubifs_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	if (err)
+ 		return err;
+ 
+-	return generic_file_aio_write(iocb, iov, nr_segs, pos);
++	return generic_file_write_iter(iocb, iter, pos);
+ }
+ 
+ static int ubifs_set_page_dirty(struct page *page)
+@@ -1580,8 +1580,8 @@ const struct file_operations ubifs_file_operations = {
+ 	.llseek         = generic_file_llseek,
+ 	.read           = do_sync_read,
+ 	.write          = do_sync_write,
+-	.aio_read       = generic_file_aio_read,
+-	.aio_write      = ubifs_aio_write,
++	.read_iter       = generic_file_read_iter,
++	.write_iter      = ubifs_write_iter,
+ 	.mmap           = ubifs_file_mmap,
+ 	.fsync          = ubifs_fsync,
+ 	.unlocked_ioctl = ubifs_ioctl,
 -- 
 1.8.1.1
 
