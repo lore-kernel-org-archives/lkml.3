@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575Ab3A2KUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 05:20:47 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:63929 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750913Ab3A2KUo (ORCPT
+	id S1754094Ab3A2KV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 05:21:27 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46413 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3A2KVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 05:20:44 -0500
-Message-ID: <1359454842.1345.40.camel@x61.thuisdomein>
-Subject: Re: [PATCH] [SCSI] advansys: change buildtime warning into runtime
- error
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 29 Jan 2013 11:20:42 +0100
-In-Reply-To: <1352113082.1434.31.camel@x61.thuisdomein>
-References: <1352113082.1434.31.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Jan 2013 10:20:42.0415 (UTC) FILETIME=[4AF28BF0:01CDFE0A]
-X-RcptDomain: vger.kernel.org
+	Tue, 29 Jan 2013 05:21:22 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-f4-5107a29f250e
+From: Namhyung Kim <namhyung@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 07/45] CPU hotplug: Provide APIs to prevent CPU offline from atomic context
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
+	<20130122073446.13822.39253.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 29 Jan 2013 19:21:19 +0900
+In-Reply-To: <20130122073446.13822.39253.stgit@srivatsabhat.in.ibm.com>
+	(Srivatsa S. Bhat's message of "Tue, 22 Jan 2013 13:04:54 +0530")
+Message-ID: <87mwvsuw68.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-05 at 11:58 +0100, Paul Bolle wrote:
-> Building advansys.o triggers this warning:
->     drivers/scsi/advansys.c:71:2: warning: #warning this driver is still not properly converted to the DMA API [-Wcpp]
-> 
-> This warning can be traced back to a patch called "advansys: add warning
-> and convert #includes" which was included in v2.6.10. That patch also
-> marked the driver as BROKEN.
-> 
-> Commit 4661e3eace2c7b8433476b5bf0ee437ab3c7dfd4 ("[SCSI] advansys
-> driver: limp along on x86") enabled this driver for x86-32. And commit
-> 9d511a4b29de6764931343d03e493f2e04df0271 ("[SCSI] advansys: Changes to
-> work on parisc") enabled this driver for all architectures. But the
-> commit explanation stated:
->     I haven't removed the #warning yet because virt_to_bus/bus_to_virt are
->     only eliminated for narrow boards.  Wide boards need more work.
-> 
-> Five years have passed and, apparently, those wide boards still need
-> more work. So let's change the buildtime warning into a runtime error,
-> only printed for those wide boards. Perhaps that might push the people
-> using those wide boards to convert this driver. And for all others
-> there's now one less buildtime warning to ignore.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Compile tested only. I don't have any AdvanSys SCSI boards (neither
-> narrow nor wide).
+Hi Srivatsa,
 
-The date of this message suggests I submitted this patch for a warning
-seen while building v3.7-rc4. An identical warning can be seen while
-building v3.8-rc5. What's the status of my patch? Did anyone find some
-time to have a look at it?
+On Tue, 22 Jan 2013 13:04:54 +0530, Srivatsa S. Bhat wrote:
+> @@ -246,15 +291,21 @@ struct take_cpu_down_param {
+>  static int __ref take_cpu_down(void *_param)
+>  {
+>  	struct take_cpu_down_param *param = _param;
+> -	int err;
+> +	unsigned long flags;
+> +	int err = 0;
 
+It seems no need to set 'err' to 0.
 
-Paul Bolle
+Thanks,
+Namhyung
 
+> +
+> +	percpu_write_lock_irqsave(&hotplug_pcpu_rwlock, &flags);
+>  
+>  	/* Ensure this CPU doesn't handle any more interrupts. */
+>  	err = __cpu_disable();
+>  	if (err < 0)
+> -		return err;
+> +		goto out;
+>  
+>  	cpu_notify(CPU_DYING | param->mod, param->hcpu);
+> -	return 0;
+> +
+> +out:
+> +	percpu_write_unlock_irqrestore(&hotplug_pcpu_rwlock, &flags);
+> +	return err;
+>  }
+>  
+>  /* Requires cpu_add_remove_lock to be held */
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
