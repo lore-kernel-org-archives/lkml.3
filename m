@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab3A2TIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:08:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2100 "EHLO mx1.redhat.com"
+	id S1754909Ab3A2TJN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:09:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754157Ab3A2TIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:08:04 -0500
-Message-Id: <20130129190759.857103871@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 29 Jan 2013 14:08:03 -0500
-From: aris@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v3 4/9] devcg: expand may_access() logic
-References: <20130129190759.117458287@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=split_may_access_logic.patch
+	id S1754038Ab3A2TJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 14:09:10 -0500
+Date: Tue, 29 Jan 2013 20:07:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Lingzhu Xiang <lxiang@redhat.com>, Roman Rakus <rrakus@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] tty: set_termios/set_termiox should not return -EINTR
+Message-ID: <20130129190741.GA28004@redhat.com>
+References: <20130129190720.GA28000@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130129190720.GA28000@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to make the next patch more clear, expand may_access() logic.
+See https://bugzilla.redhat.com/show_bug.cgi?id=904907
+read command causes bash to abort with double free or corruption (out).
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+A simple test-case from Roman:
 
+	// Compile the reproducer and send sigchld ti that process.
+	// EINTR occurs even if SA_RESTART flag is set.
+
+	void handler(int sig)
+	{
+	}
+
+	main()
+	{
+	  struct sigaction act;
+	  act.sa_handler = handler;
+	  act.sa_flags = SA_RESTART;
+	  sigaction (SIGCHLD, &act, 0);
+	  struct termio ttp;
+	  ioctl(0, TCGETA, &ttp);
+	  while(1)
+	  {
+	    if (ioctl(0, TCSETAW, ttp) < 0)
+	      {
+		if (errno == EINTR)
+		{
+		  fprintf(stderr, "BUG!"); return(1);
+		}
+	      }
+	  }
+	}
+
+Change set_termios/set_termiox to return -ERESTARTSYS to fix this
+particular problem.
+
+I didn't dare to change other EINTR's in drivers/tty/, but they look
+equally wrong.
+
+Reported-by: Roman Rakus <rrakus@redhat.com>
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: stable@kernel.org
 ---
- security/device_cgroup.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- github.orig/security/device_cgroup.c	2013-01-29 11:49:15.244665037 -0500
-+++ github/security/device_cgroup.c	2013-01-29 11:49:15.514669057 -0500
-@@ -382,15 +382,18 @@ 		if (ex->minor != ~0 && ex->minor != re
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -617,7 +617,7 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
+ 	if (opt & TERMIOS_WAIT) {
+ 		tty_wait_until_sent(tty, 0);
+ 		if (signal_pending(current))
+-			return -EINTR;
++			return -ERESTARTSYS;
+ 	}
  
- 	/*
- 	 * In two cases we'll consider this new exception valid:
--	 * - the dev cgroup has its default policy to allow + exception list:
--	 *   the new exception should *not* match any of the exceptions
--	 *   (behavior == DEVCG_DEFAULT_ALLOW, !match)
- 	 * - the dev cgroup has its default policy to deny + exception list:
- 	 *   the new exception *should* match the exceptions
--	 *   (behavior == DEVCG_DEFAULT_DENY, match)
-+	 * - the dev cgroup has its default policy to allow + exception list:
-+	 *   the new exception should *not* match any of the exceptions
- 	 */
--	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
--		return 1;
-+	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
-+		if (match)
-+			return 1;
-+	} else {
-+		if (!match)
-+			return 1;
-+	}
- 	return 0;
- }
+ 	tty_set_termios(tty, &tmp_termios);
+@@ -684,7 +684,7 @@ static int set_termiox(struct tty_struct *tty, void __user *arg, int opt)
+ 	if (opt & TERMIOS_WAIT) {
+ 		tty_wait_until_sent(tty, 0);
+ 		if (signal_pending(current))
+-			return -EINTR;
++			return -ERESTARTSYS;
+ 	}
  
+ 	mutex_lock(&tty->termios_mutex);
 
