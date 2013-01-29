@@ -1,150 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3A2AOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 19:14:44 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:36176 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab3A2AOm (ORCPT
+	id S1753380Ab3A2AO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 19:14:59 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16000 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753214Ab3A2AOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 19:14:42 -0500
-Message-ID: <1359418442.3906.188.camel@falcor1>
-Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
- keys
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, dhowells@redhat.com,
-        jmorris@namei.org, linux-security-module@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Jan 2013 19:14:02 -0500
-In-Reply-To: <20130128201316.GA14405@redhat.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-	 <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
-	 <1358895228.2408.14.camel@falcor1>
-	 <CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
-	 <20130125210157.GA13152@redhat.com>
-	 <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
-	 <20130128151527.GA5868@redhat.com>
-	 <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
-	 <20130128185242.GB5868@redhat.com> <1359402694.3906.53.camel@falcor1>
-	 <20130128201316.GA14405@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012900-5518-0000-0000-00000B1568CB
+	Mon, 28 Jan 2013 19:14:53 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Ui0MU6hDufDA73TPE+PmYzeihuAY6MVI=
+Date: Mon, 28 Jan 2013 19:13:54 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Soeren Moch <smoch@web.de>, gennarone@gmail.com, mchehab@redhat.com
+Cc: Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
+ dma_alloc_coherent() calls
+Message-ID: <20130129001354.GN1758@titan.lakedaemon.net>
+References: <50F800EB.6040104@web.de>
+ <201301172026.45514.arnd@arndb.de>
+ <50FABBED.1020905@web.de>
+ <20130119185907.GA20719@lunn.ch>
+ <5100022D.9050106@web.de>
+ <20130123162515.GK13482@lunn.ch>
+ <510018B4.9040903@web.de>
+ <51001BEE.9020201@web.de>
+ <20130123181029.GE20719@lunn.ch>
+ <5106E6A6.7010207@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5106E6A6.7010207@web.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 15:13 -0500, Vivek Goyal wrote:
-> On Mon, Jan 28, 2013 at 02:51:34PM -0500, Mimi Zohar wrote:
-> > On Mon, 2013-01-28 at 13:52 -0500, Vivek Goyal wrote:
-> > > On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
-> > > 
-> > > [..]
-> > > > > Ok. I am hoping that it will be more than the kernel command line we
-> > > > > support. In the sense that for digital signatures one needs to parse
-> > > > > the signature, look at what hash algorithm has been used  and then
-> > > > > collect the hash accordingly. It is little different then IMA requirement
-> > > > > of calculating one pre-determine hash for all files.
-> > > > 
-> > > > Yes... It is obvious. It's coming.
-> > > > But in general, signer should be aware of requirements and limitation
-> > > > of the platform.
-> > > > It is not really a problem...
-> > > 
-> > > Ok, I have another question. I was looking at your slide deck here.
-> > > 
-> > > http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
-> > > 
-> > > Slide 12 mentions that keys are loaded into the kernel from initramfs. If
-> > > "root" can load any key, what are we protecting against.
-> > > 
-> > > IOW, what good ima_appraise_tcb policy, which tries to appraise any root
-> > > owned file.  A root can sign all the files using its own key and load its
-> > > public key in IMA keyring and then integrity check should pass on all
-> > > root files.
-> > 
-> > > So what's the idea behind digital signature appraisal? By allowing root to
-> > > unconditionally load the keys in IMA keyring, it seems to circumvent the
-> > > appraisal mechanism.
-> > 
-> > Vivek, you're asking obvious questions, without understanding that what
-> > you want to do is only now possible because of the work that has gone
-> > into upstreaming the different components of the linux-integrity
-> > subsystem (eg. IMA, trusted/encrypted keys, EVM, (MPI library), and now
-> > IMA-appraisal).  In case you weren't aware, Dmitry made the necessary
-> > changes so that the MPI library could be upstreamed for
-> > EVM/IMA-appraisal digital signature support.
+On Mon, Jan 28, 2013 at 09:59:18PM +0100, Soeren Moch wrote:
+> On 23.01.2013 19:10, Andrew Lunn wrote:
+> >>>>
+> >>>
+> >>>Now (in the last hour) stable, occasionally lower numbers:
+> >>>3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
+> >>>3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
+> >>>3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
+> >>>3396 3396 3396 3396 3396 3396 3396 3396 3396 3365 3396 3394 3396 3396
+> >>>3396 3396 3373 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
+> >>>3396 3353 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
+> >>>3394 3396 3396 3396 3396 3396 3396 3396
+> >>>
+> >>>Before the last pool exhaustion going down:
+> >>>3395 3395 3389 3379 3379 3374 3367 3360 3352 3343 3343 3343 3342 3336
+> >>>3332 3324 3318 3314 3310 3307 3305 3299 3290 3283 3279 3272 3266 3265
+> >>>3247 3247 3247 3242 3236 3236
+> >>>
+> >>Here I stopped vdr (and so closed all dvb_demux devices), the number
+> >>was remaining the same 3236, even after restart of vdr (and restart
+> >>of streaming).
+> >
+> >So it does suggest a leak. Probably somewhere on an error path,
+> >e.g. its lost video sync.
+> >
 > 
-> Hi Mimi,
+> Now I activated the debug messages in em28xx. From the messages I
+> see no correlation of the pool exhaustion and lost sync. Also I
+> cannot see any error messages from the em28xx driver.
+> I see a lot of init_isoc/stop_urbs (maybe EPG scan?) without
+> draining the coherent pool (checked with 'cat
+> /debug/dma-api/num_free_entries', which gave stable numbers), but
+> after half an hour there are only init_isoc messages without
+> corresponding stop_urbs messages and num_free_entries decreased
+> until coherent pool exhaustion.
 > 
-> Sure. I am just trying to understand that where are we and how can I 
-> help improve things so that I can achieve my objectives.
+> Any idea where the memory leak is? What is allocating coherent
+> buffers for orion-ehci?
 
-The slides from the LSS 2012 linux-integrity subsystem status update,
-are a bit dated, but at least shows where we're headed.
+Keeping in mind that I am completely unfamiliar with usb dvb, my best
+guess is that the problem is in em28xx-core.c:1131
 
-> The problem I am running into is that I can't find a single good 
-> documentation here which explains how to use things. There is no
-> single .txt file in Documentation/ directory which explains current
-> state of affiars or which explains how to use any of the IMA/EVM
-> functionality. 
+According to your log messages, it is in mode 2, which is
+EM28XX_DIGITAL_MODE.
 
-Sorry, I've been lax in updating the linux-ima sourceforge website.
-Usage questions should be posted on the linux-ima-user mailing list.
+There seem to be good hints in
 
-> So I have no way left but to read code and ask obivious questions
-> on mailing list to figure out what components are working, what
-> components are work in progress or what's the intent of components
-> and how they are supposed to be used.
+86d38d1e [media] em28xx: pre-allocate DVB isoc transfer buffers
 
-> So are we saying that all the appraisal and digital signature stuff
-> is not useful till we figure a way out to lock down IMA keyring. Or
-> it is useful only when root can load the keyring but we are trying
-> to appraise only non-root files.
+I added the relevant parties to the To:...
 
-The IMA-appraisal hash was originally protected by EVM and the hmac key,
-which was loaded once at boot time, from a TPM based trusted key or
-initrd entered passphrase.  With IMA-appraisal digital signature
-support, a new keyring for the IMA public keys was added, but without
-the needed protection.  David Howell's new 'trusted' keyring would be an
-excellent solution to control adding public keys.  (Using the term
-'trusted' for both a key type and asymmetric keyring is confusing.)
+For Gianluca and Mauro, the whole thread may be found at:
 
-> > I'm pretty sure that keyrings can be locked, preventing additional keys
-> > from being added.  (If it isn't currently supported, it needs to be.)
-> > The _evm and _ima keyrings should definitely be locked.  When/how this
-> > is done, is yet to be defined.  I'm pretty sure there are a number of
-> > people thinking about this, including David Howells, Dmitry Kataskin,
-> > David Safford and myself.
-> > 
-> > As I previously said, the next steps are to integrate the
-> > EVM/IMA-appraisal public keys in a safe and trusted manner, without
-> > breaking the secure boot signature chain.
+http://markmail.org/message/wm4wlgzoudixd4so#query:+page:1+mid:o7phz7cosmwpcsrz+state:results
+
+thx,
+
+Jason.
+
 > 
-> In a private conversation David howells mentioned that IMA keyring
-> should allow loading only if new key is trusted by an already loaded
-> key. He has already posted some patches for marking a keyring trusted
-> and loading keys only if it is signed by a trusted key.
-
-Please feel free to post patches for IMA-appraisal to use the new
-'trusted' keyring.
-
-> We were wondring that what use case is served by allowing the root
-> to load keys unconditionally. By understanding the use case, atleast
-> one can try not to break it.
-
-At some point, there was a discussion on adding a new integrity
-capability, with making the package installer a guard process.  With the
-new 'trusted' keyring type, this probably isn't necessary.  
-
-The 'trusted' keyring is a solution for installing only distro or third
-party signed packages.  How would a developer, for instance, create,
-sign, and install his own package and add his public key safely?
-
-thanks,
-
-Mimi
-
+>   Soeren
+> 
+> 
+> Jan 28 20:46:03 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers
+> each with 64 x 940 bytes
+> Jan 28 20:46:03 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx:
+> called em28xx_init_isoc in mode 2
+> Jan 28 20:46:03 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers
+> each with 64 x 940 bytes
+> Jan 28 20:46:03 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx:
+> called em28xx_init_isoc in mode 2
+> Jan 28 20:46:23 guruvdr kernel: em28xx #0 em28xx_stop_urbs :em28xx:
+> called em28xx_stop_urbs
+> Jan 28 20:46:23 guruvdr kernel: em28xx #1 em28xx_stop_urbs :em28xx:
+> called em28xx_stop_urbs
+> Jan 28 20:46:24 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers
+> each with 64 x 940 bytes
+> Jan 28 20:46:24 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx:
+> called em28xx_init_isoc in mode 2
+> Jan 28 20:46:24 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers
+> each with 64 x 940 bytes
+> Jan 28 20:46:24 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx:
+> called em28xx_init_isoc in mode 2
+> Jan 28 20:46:44 guruvdr kernel: em28xx #1 em28xx_stop_urbs :em28xx:
+> called em28xx_stop_urbs
+> Jan 28 20:46:44 guruvdr kernel: em28xx #0 em28xx_stop_urbs :em28xx:
+> called em28xx_stop_urbs
+> Jan 28 20:46:45 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers
+> each with 64 x 940 bytes
+> Jan 28 20:46:45 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx:
+> called em28xx_init_isoc in mode 2
+> Jan 28 20:46:45 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers
+> each with 64 x 940 bytes
+> Jan 28 20:46:45 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx:
+> called em28xx_init_isoc in mode 2
+> Jan 28 20:54:33 guruvdr kernel: ERROR: 1024 KiB atomic DMA coherent
+> pool is too small!
+> Jan 28 20:54:33 guruvdr kernel: Please increase it with
+> coherent_pool= kernel parameter!
+> 
