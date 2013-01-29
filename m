@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab3A2BtD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 20:49:03 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42509 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580Ab3A2BtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 20:49:00 -0500
-Message-ID: <1359424135.3906.247.camel@falcor1>
-Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
- keys
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, dhowells@redhat.com,
-        jmorris@namei.org, linux-security-module@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Jan 2013 20:48:55 -0500
-In-Reply-To: <20130128202241.GB14405@redhat.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-	 <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
-	 <1358895228.2408.14.camel@falcor1>
-	 <CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
-	 <20130125210157.GA13152@redhat.com>
-	 <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
-	 <20130128151527.GA5868@redhat.com>
-	 <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
-	 <20130128185625.GC5868@redhat.com> <1359404149.3906.75.camel@falcor1>
-	 <20130128202241.GB14405@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012901-5806-0000-0000-00001EDE9733
+	id S1754912Ab3A2By0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 20:54:26 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49733 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752181Ab3A2ByY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 20:54:24 -0500
+Date: Tue, 29 Jan 2013 09:54:15 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] regmap: spi: Support asynchronous I/O for SPI
+Message-ID: <20130129015411.GD4748@opensource.wolfsonmicro.com>
+References: <1359295954-5209-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1359295954-5209-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <5106D3CA.4030203@codeaurora.org>
+ <20130129013858.GA4748@opensource.wolfsonmicro.com>
+ <51072A38.6090505@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J5MfuwkIyy7RmF4Q"
+Content-Disposition: inline
+In-Reply-To: <51072A38.6090505@codeaurora.org>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 15:22 -0500, Vivek Goyal wrote:
-> On Mon, Jan 28, 2013 at 03:15:49PM -0500, Mimi Zohar wrote:
-> > On Mon, 2013-01-28 at 13:56 -0500, Vivek Goyal wrote:
-> > > On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
-> > > 
-> > > [..]
-> > > > > Ok. I am hoping that it will be more than the kernel command line we
-> > > > > support. In the sense that for digital signatures one needs to parse
-> > > > > the signature, look at what hash algorithm has been used  and then
-> > > > > collect the hash accordingly. It is little different then IMA requirement
-> > > > > of calculating one pre-determine hash for all files.
-> > > > 
-> > > > Yes... It is obvious. It's coming.
-> > > > But in general, signer should be aware of requirements and limitation
-> > > > of the platform.
-> > > > It is not really a problem...
-> > > 
-> > > One more question. I specified "ima_appraise_tcb" on kernel command line
-> > > and I had an unbootable system. It refused to run "init" as it was not
-> > > labeled/signed. Is there any policy/way where it appraises only signed
-> > > files and does not refuse to open/execute unsigned ones.
-> > 
-> > The policy defines what needs to be measured/appraised, not the other
-> > way around.  There's nothing preventing you from defining and loading a
-> > different policy, one to your liking, before pivoting root.
-> 
-> Hi Mimi,
-> 
-> By policy you mean ima rules here? So I can either enable default rules
-> (tcb default rules for appraisal and measurement) by using kernel command
-> line options or dynamically configure my own rules using /sysfs interface?
-> 
-> If yes, AFAIK, existing inputtable policies do not allow this selective
-> mode where we do appraisal only on signed executable. That means I shall
-> have to extend the way policies can be specified so that one specify
-> that appraise only signed files?
 
-We've just added the ability of defining the method for appraising a
-file and defining rules in terms of the filesystem UUID.  Extending the
-IMA policy shouldn't be a problem, but I'm not sure how you would go
-about adding support for only appraising files with digital signatures.
+--J5MfuwkIyy7RmF4Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Also given the fact that we allow loading policy from initramfs, root
-> can rebuild initramfs and change the policy which takes effect over next
-> reboot. So in priciple this works only when we are trying to impose some
-> policy on non-root users?
+On Mon, Jan 28, 2013 at 05:47:36PM -0800, Stephen Boyd wrote:
+> On 01/28/13 17:39, Mark Brown wrote:
 
-The assumption has always been that the initramfs would be measured, for
-trusted boot, and appraised, for secure boot, before being executed.
+> > We could but I tend not to if the interface strictly requires that the
+> > pointers be type punnable.
 
-Mimi
+> What is the interface requiring strict type punning here? async_write?
 
+Yes, the async data must always be the first member of the bus specific
+struct.  This is to avoid having to do an additional allocation for the
+bus specific private data.
+
+> I just hope we don't move the fields around in the regmap_async_spi
+> struct and then this code silently breaks. I hope the compiler is smart
+> enough to skip doing any math if we used container_of() with the current
+> struct layout.
+
+It would break anyway, like I say the interface relies on it currently.
+The other option is to do a callback into the bus code and return the
+contained structure but it seemed more involved and this is fairly
+idiomatic.
+
+--J5MfuwkIyy7RmF4Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRByu4AAoJELSic+t+oim9A8oQAJUbl3wsv02mvo+fjUDTVDGs
+PSCNEUDRrdOStdrfuevvedD+KdMrEMPsuXjFg92OgF8lJ3CpfqmKe2KYI3LYBj05
+jBHG7G79umEGBuPFQXae35z1/tQM2NW/OVNo9JJr00UrGdTZrhkKF5oWKJBzXaRk
+2OkDXrbzYlz3dANe+nAqcNe/LYuDaHsLFaLJLrHVOWqFnZyZzhqBhShItOwDVPRt
+oZueEsLqz5bLGQlvxD5ew+F6mrKC4rNLxWrLAX7NenSiaushfqFWHfU7RBhNqyp8
+YBDTfc6b11lLlpIFcERbf0La+PDVLxXdt6CRCULpOr6fGJvDuq2xbeFWiQclKm/r
+9CenF8lcEfG2niUEw+2NJ3+7kMTKeTnUxgE76Pig7krRHpUHOP7eEdjYOjq/gR5B
+Frhu0vCbMowwleWt69G+3Mhz0WDoQANpNRhSp0ihfN6YWjoaucKbPA0KMmQKKZ6a
+8KpaCKR2l3EkcdAxCPi19l3uBqbN6FQa0qvSqfzTO72t76ZMhQWlWq38XztmDyob
+KMxI5r3p6zTkRKYXO15cD+a5yAQHKVPdloD5MzQ3GA11OlNhmNwAx2OULvtE2hWc
+49qcD9RwT6YVB/YEPk/gdDB/BFw7ANi23OH3wMhdMIeb4YXL/qRik686gOcHuP6x
+Y8uamZwrD9yXlTQovf+f
+=hglR
+-----END PGP SIGNATURE-----
+
+--J5MfuwkIyy7RmF4Q--
