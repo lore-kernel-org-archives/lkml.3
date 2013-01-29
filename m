@@ -1,91 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab3A2TJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:09:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12103 "EHLO mx1.redhat.com"
+	id S1754517Ab3A2TIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:08:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57894 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab3A2TJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:09:10 -0500
-Date: Tue, 29 Jan 2013 20:07:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Lingzhu Xiang <lxiang@redhat.com>, Roman Rakus <rrakus@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] tty: set_termios/set_termiox should not return -EINTR
-Message-ID: <20130129190741.GA28004@redhat.com>
-References: <20130129190720.GA28000@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130129190720.GA28000@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754086Ab3A2TID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 14:08:03 -0500
+Message-Id: <20130129190759.713469698@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 29 Jan 2013 14:08:02 -0500
+From: aris@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: [PATCH v3 3/9] device_cgroup: keep track of local group settings
+References: <20130129190759.117458287@napanee.usersys.redhat.com>
+Content-Disposition: inline; filename=hierarchy.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-See https://bugzilla.redhat.com/show_bug.cgi?id=904907
-read command causes bash to abort with double free or corruption (out).
+In preparation for better hierarchy support, it's needed to retain the local
+settings in order to try to reapply them after a propagated change if they're
+still valid.
 
-A simple test-case from Roman:
+v2: split this patch in two, one to just move dev_exception_rm() before
+    dev_exception_add() while keeping functional changes in this patch as
+    requested by Tejun.
 
-	// Compile the reproducer and send sigchld ti that process.
-	// EINTR occurs even if SA_RESTART flag is set.
-
-	void handler(int sig)
-	{
-	}
-
-	main()
-	{
-	  struct sigaction act;
-	  act.sa_handler = handler;
-	  act.sa_flags = SA_RESTART;
-	  sigaction (SIGCHLD, &act, 0);
-	  struct termio ttp;
-	  ioctl(0, TCGETA, &ttp);
-	  while(1)
-	  {
-	    if (ioctl(0, TCSETAW, ttp) < 0)
-	      {
-		if (errno == EINTR)
-		{
-		  fprintf(stderr, "BUG!"); return(1);
-		}
-	      }
-	  }
-	}
-
-Change set_termios/set_termiox to return -ERESTARTSYS to fix this
-particular problem.
-
-I didn't dare to change other EINTR's in drivers/tty/, but they look
-equally wrong.
-
-Reported-by: Roman Rakus <rrakus@redhat.com>
-Reported-by: Lingzhu Xiang <lxiang@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: stable@kernel.org
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+ 
 ---
+ security/device_cgroup.c |   83 +++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 67 insertions(+), 16 deletions(-)
 
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -617,7 +617,7 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
- 	if (opt & TERMIOS_WAIT) {
- 		tty_wait_until_sent(tty, 0);
- 		if (signal_pending(current))
--			return -EINTR;
-+			return -ERESTARTSYS;
- 	}
+--- github.orig/security/device_cgroup.c	2013-01-29 11:49:14.987661210 -0500
++++ github/security/device_cgroup.c	2013-01-29 11:49:15.244665037 -0500
+@@ -39,13 +39,27 @@ struct dev_exception_item {
+ 	struct rcu_head rcu;
+ };
  
- 	tty_set_termios(tty, &tmp_termios);
-@@ -684,7 +684,7 @@ static int set_termiox(struct tty_struct *tty, void __user *arg, int opt)
- 	if (opt & TERMIOS_WAIT) {
- 		tty_wait_until_sent(tty, 0);
- 		if (signal_pending(current))
--			return -EINTR;
-+			return -ERESTARTSYS;
- 	}
++enum devcg_behavior {
++	DEVCG_DEFAULT_NONE,
++	DEVCG_DEFAULT_ALLOW,
++	DEVCG_DEFAULT_DENY,
++};
++
+ struct dev_cgroup {
+ 	struct cgroup_subsys_state css;
++
++	/* result of merging the parent's rules with local ones */
+ 	struct list_head exceptions;
+-	enum {
+-		DEVCG_DEFAULT_ALLOW,
+-		DEVCG_DEFAULT_DENY,
+-	} behavior;
++	enum devcg_behavior behavior;
++
++	/*
++	 * local set rules, saved so when a parent propagates new rules, the
++	 * local preferences can be preserved
++	 */
++	struct {
++		struct list_head exceptions;
++		enum devcg_behavior behavior;
++	} local;
+ };
  
- 	mutex_lock(&tty->termios_mutex);
+ static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
+@@ -104,8 +118,8 @@ free_and_exit:
+ /*
+  * called under devcgroup_mutex
+  */
+-static void dev_exception_rm(struct list_head *exceptions,
+-			     struct dev_exception_item *ex)
++static void __dev_exception_rm(struct list_head *exceptions,
++			       struct dev_exception_item *ex)
+ {
+ 	struct dev_exception_item *walk, *tmp;
+ 
+@@ -127,11 +141,18 @@ static void dev_exception_rm(struct list
+ 	}
+ }
+ 
++static void dev_exception_rm(struct dev_cgroup *devcgroup,
++			     struct dev_exception_item *ex)
++{
++	__dev_exception_rm(&devcgroup->local.exceptions, ex);
++	__dev_exception_rm(&devcgroup->exceptions, ex);
++}
++
+ /*
+  * called under devcgroup_mutex
+  */
+-static int dev_exception_add(struct list_head *exceptions,
+-			     struct dev_exception_item *ex)
++static int __dev_exception_add(struct list_head *exceptions,
++			       struct dev_exception_item *ex)
+ {
+ 	struct dev_exception_item *excopy, *walk;
+ 
+@@ -159,6 +180,28 @@ static int dev_exception_add(struct list
+ 	return 0;
+ }
+ 
++static int dev_exception_add(struct dev_cgroup *devcgroup,
++			     struct dev_exception_item *ex)
++{
++	int rc;
++
++	lockdep_assert_held(&devcgroup_mutex);
++
++	/*
++	 * we add to the local list so we can preserve local preferences if
++	 * the parent propagates down new rules
++	 */
++	rc = __dev_exception_add(&devcgroup->local.exceptions, ex);
++	if (rc)
++		return rc;
++
++	rc = __dev_exception_add(&devcgroup->exceptions, ex);
++	if (rc)
++		__dev_exception_rm(&devcgroup->local.exceptions, ex);
++
++	return rc;
++}
++
+ static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
+ {
+ 	struct dev_exception_item *ex, *tmp;
+@@ -167,6 +210,11 @@ static void __dev_exception_clean(struct
+ 		list_del_rcu(&ex->list);
+ 		kfree_rcu(ex, rcu);
+ 	}
++	list_for_each_entry_safe(ex, tmp, &dev_cgroup->local.exceptions,
++				 list) {
++		list_del_rcu(&ex->list);
++		kfree_rcu(ex, rcu);
++	}
+ }
+ 
+ /**
+@@ -195,6 +243,8 @@ static struct cgroup_subsys_state *devcg
+ 	if (!dev_cgroup)
+ 		return ERR_PTR(-ENOMEM);
+ 	INIT_LIST_HEAD(&dev_cgroup->exceptions);
++	INIT_LIST_HEAD(&dev_cgroup->local.exceptions);
++	dev_cgroup->local.behavior = DEVCG_DEFAULT_NONE;
+ 	parent_cgroup = cgroup->parent;
+ 
+ 	if (parent_cgroup == NULL)
+@@ -413,18 +463,19 @@ 	memset(&ex, 0, sizeof(ex));
+ 			if (!may_allow_all(parent))
+ 				return -EPERM;
+ 			dev_exception_clean(devcgroup);
++			if (parent)
++				rc = dev_exceptions_copy(&devcgroup->exceptions,
++							 &parent->exceptions);
+ 			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
+-			if (!parent)
+-				break;
++			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
+ 
+-			rc = dev_exceptions_copy(&devcgroup->exceptions,
+-						 &parent->exceptions);
+ 			if (rc)
+ 				return rc;
+ 			break;
+ 		case DEVCG_DENY:
+ 			dev_exception_clean(devcgroup);
+ 			devcgroup->behavior = DEVCG_DEFAULT_DENY;
++			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
+ 			break;
+ 		default:
+ 			return -EINVAL;
+@@ -514,10 +565,10 @@ 		case '\0':
+ 		 * don't want to break compatibility
+ 		 */
+ 		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+-			dev_exception_rm(&devcgroup->exceptions, &ex);
++			dev_exception_rm(devcgroup, &ex);
+ 			return 0;
+ 		}
+-		return dev_exception_add(&devcgroup->exceptions, &ex);
++		return dev_exception_add(devcgroup, &ex);
+ 	case DEVCG_DENY:
+ 		/*
+ 		 * If the default policy is to deny by default, try to remove
+@@ -525,10 +576,10 @@ 			return 0;
+ 		 * don't want to break compatibility
+ 		 */
+ 		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
+-			dev_exception_rm(&devcgroup->exceptions, &ex);
++			dev_exception_rm(devcgroup, &ex);
+ 			return 0;
+ 		}
+-		return dev_exception_add(&devcgroup->exceptions, &ex);
++		return dev_exception_add(devcgroup, &ex);
+ 	default:
+ 		return -EINVAL;
+ 	}
 
