@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3A2XjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 18:39:11 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57865 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695Ab3A2Xiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 18:38:51 -0500
-Date: Tue, 29 Jan 2013 17:38:42 -0600
-From: Nishanth Menon <nm@ti.com>
-To: Ruslan Bilovol <ruslan.bilovol@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <eduardo.valentin@ti.com>
-Subject: Re: [RFC PATCH 0/2] ARM: update cpuinfo to print CPU model name
-Message-ID: <20130129233842.GA8024@kahuna>
-References: <1359474865-15408-1-git-send-email-ruslan.bilovol@ti.com>
- <20130129160243.GA3389@kahuna>
- <CAB=otbSV6CH4WOrr577bHXFcjEVRGjZxatgy4CJ3cr0M0h4vfw@mail.gmail.com>
+	id S1752077Ab3A2Xod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 18:44:33 -0500
+Received: from mail-vb0-f73.google.com ([209.85.212.73]:51298 "EHLO
+	mail-vb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab3A2Xob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 18:44:31 -0500
+Subject: [PATCH] Driver core: treat unregistered bus_types as having no devices
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Joonsoo Kim <js1304@gmail.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 29 Jan 2013 16:44:27 -0700
+Message-ID: <20130129234427.23748.83270.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAB=otbSV6CH4WOrr577bHXFcjEVRGjZxatgy4CJ3cr0M0h4vfw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01:08-20130130, Ruslan Bilovol wrote:
-> Hi,
-> 
-> On Tue, Jan 29, 2013 at 6:02 PM, Nishanth Menon <nm@ti.com> wrote:
-> >
-> > On 17:54-20130129, Ruslan Bilovol wrote:
-> > > Hi,
-> > >
-> > > The following patches update cpuinfo to print CPU
-> > > model name for ARM. First patch exactly makes needed
-> > > changes for ARM architecture.
-> > > Second patch adds this ability to OMAP4 SoCs.
-> > >
-> > > This adds a common approach to show SoC name.
-> > >
-> > > Looks like there were few attempts to do similar
-> > > changes to cpuinfo without any luck.
-> > >
-> > > So - comments are welcome
-> > >
-> > > Ruslan Bilovol (2):
-> > >   ARM: kernel: update cpuinfo to print CPU model name
-> > >   ARM: OMAP4: setup CPU model name during ID initialisation
-> >
-> > We had an discussion on similar lines but a generic suggestion:
-> > https://patchwork.kernel.org/patch/98720/
-> > SoCinfo framework which was supposed to introduce this
-> >
-> > Would'nt that be a better approach to take than an OMAP only solution?
-> 
-> My goal is only to say what is the SoC model name in the /proc/cpuinfo
-> (And it is not an OMAP-only solution - it is common. Support for OMAP
-> is added in second patch)
-> This is the only type of information that we can apply for any SoC.
-> My point is - any SoC-specific information should go through some other
-> way - like SoCinfo framework mentioned by you.
-> And additional point - in cpuinfo we already have CPU name and Machine name.
-> The SoC name (that is something between these two things) looks also relevant
-Looking at the sample output in patch #1/2
-OMAP4470 ES1.0 HS
+A bus_type has a list of devices (klist_devices), but the list and the
+subsys_private structure that contains it are not initialized until the
+bus_type is registered with bus_register().
 
-OMAP4470 is SoC name
-ES1.0 is SoC revision
-HS is SoC type
+The panic/reboot path has fixups that look up devices in pci_bus_type.  If
+we panic before registering pci_bus_type, the bus_type exists but the list
+does not, so mach_reboot_fixups() trips over a null pointer and panics
+again:
 
-We even have SoC features (e.g. at boot NEON etc..)
+    mach_reboot_fixups
+      pci_get_device
+        ..
+          bus_find_device(&pci_bus_type, ...)
+            bus->p is NULL
 
-Is the intent to put all this inside /proc/cpuinfo?? I bet every SoC has
-it's own interesting data it'd like to have (like some of the info
-populated by DT even). I am hardpressed to think this fits inside
-/proc/cpuinfo. I might even suspect that the list of interesting
-information might even vary per SoC.
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/base/bus.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-having machine name is something ARM specific? dumping it on my linux
-machines (x86[1] and sparc[2]) dont seem to show that.
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 24eb078..6856303 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -290,7 +290,7 @@ int bus_for_each_dev(struct bus_type *bus, struct device *start,
+ 	struct device *dev;
+ 	int error = 0;
+ 
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return -EINVAL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
+@@ -324,7 +324,7 @@ struct device *bus_find_device(struct bus_type *bus,
+ 	struct klist_iter i;
+ 	struct device *dev;
+ 
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return NULL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
 
-but in the interest of not breaking existing interfaces, new interfaces
-should potentially belong elsewhere.. my 2 cents.
-
-[1] http://pastebin.com/CF8HPDAC (Xubuntu 12.04 3.2.0-36)
-[2] http://pastebin.com/qNwWHwiu (Debian 3.2.35-2)
--- 
-Regards,
-Nishanth Menon
