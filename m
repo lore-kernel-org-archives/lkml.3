@@ -1,212 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab3A2MnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:43:09 -0500
-Received: from david.siemens.de ([192.35.17.14]:29280 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753452Ab3A2Mih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:38:37 -0500
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@alien8.de>
-Subject: [PATCH v5 05/20] scripts/gdb: Add lx-symbols command
-Date: Tue, 29 Jan 2013 13:37:48 +0100
-Message-Id: <9fd8d68344bdc125a0345f04d2f7484f262459a8.1359463075.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
-References: <cover.1359463075.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
-References: <cover.1359463075.git.jan.kiszka@siemens.com>
+	id S1756636Ab3A2Mod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:44:33 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:55828 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab3A2Mob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:44:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130129000149.5fa5b0c3@stein>
+References: <1359410988-3740-1-git-send-email-mark.einon@gmail.com> <20130129000149.5fa5b0c3@stein>
+From: Mark Einon <mark.einon@gmail.com>
+Date: Tue, 29 Jan 2013 12:44:15 +0000
+Message-ID: <CANK3SE0w08n1RSzqy5dV4eAymAfmnb-a+T9UfVSxw-+3fP-PVA@mail.gmail.com>
+Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is probably the most useful helper when debugging kernel modules:
-lx-symbols will first reload vmlinux. Then it searches recursively for
-*.ko files in the specified paths and the current directory. Finally it
-walks the kernel's module list, issuing the necessary add-symbol-file
-command for each loaded module so that gdb know which module symbol
-correspond to which address.
+On 28 January 2013 23:01, Stefan Richter <stefanr@s5r6.in-berlin.de> wrote:
+> On Jan 28 Mark Einon wrote:
+>> This patch fixes the kernel warning generated when putting an MSI MS-1727
+>> GT740 laptop into suspend mode. The call sequence in this case calls
+>> free_irq() twice, once in pci_remove() and once then in pci_suspend().
+>
+> You mean /first/ in pci_suspend() and /then/ in pci_remove() on the
+> already suspended devices, right?
 
-In addition, the command installs a silent breakpoint in the load_module
-function at the point where the module was loaded but not yet
-initialized. The breakpoint handler will try to load symbols from the
-module files found during lx-symbols execution. This way, breakpoints
-can be set to module initialization functions, and there is usually no
-need to explicitly call lx-symbols after (re-)loading a module.
+Yes, I did. The call sequence is suspend then resume. My bad.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/symbols.py     |  147 ++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |    1 +
- 2 files changed, 148 insertions(+), 0 deletions(-)
- create mode 100644 scripts/gdb/symbols.py
+>
+> Because the other way around, first pci_remove(), then pci_suspend(),
+> surely must not appen.  And if it does, the bug is elsewhere but not in
+> firewire-ohci.
+>
+> On that note, is pci_suspend() -> pci_remove() actually a legal state
+> transition that must be handled by drivers?
 
-diff --git a/scripts/gdb/symbols.py b/scripts/gdb/symbols.py
-new file mode 100644
-index 0000000..8b672e2
---- /dev/null
-+++ b/scripts/gdb/symbols.py
-@@ -0,0 +1,147 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  load kernel and module symbols
-+#
-+# Copyright (c) Siemens AG, 2011-2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+import os
-+import re
-+import string
-+
-+from module import for_each_module
-+from utils import *
-+
-+class LinuxSymbols(gdb.Command):
-+	__doc__ = "(Re-)load symbols of Linux kernel and currently loaded modules.\n" \
-+		  "\n" \
-+		  "The kernel (vmlinux) is taken from the current working directly. Modules (.ko)\n" \
-+		  "are scanned recursively, starting in the same directory. Optionally, the module\n" \
-+		  "search path can be extended by a space separated list of paths passed to the\n" \
-+		  "lx-symbols command."
-+
-+	module_files = []
-+	breakpoint = None
-+
-+	def __init__(self):
-+		super(LinuxSymbols, self).__init__("lx-symbols",
-+						   gdb.COMMAND_FILES,
-+						   gdb.COMPLETE_FILENAME)
-+
-+	def _load_module_symbols(self, module, arg = None):
-+		module_name = module['name'].string()
-+		module_addr = str(module['module_core']).split()[0]
-+		module_pattern = ".*/" + \
-+			string.replace(module_name, "_", r"[_\-]") + r"\.ko$"
-+		module_path = ""
-+		for name in self.module_files:
-+			if re.match(module_pattern, name):
-+				module_path = name
-+				break
-+
-+		if module_path:
-+			print "loading @" + module_addr + ": " + module_path
-+			if gdb.VERSION >= "7.2":
-+				gdb.execute("add-symbol-file " + \
-+					    module_path + " " + module_addr,
-+					    to_string = True)
-+			else:
-+				gdb.execute("add-symbol-file " + \
-+					    module_path + " " + module_addr)
-+		else:
-+			print "no module object found for '" + \
-+			      module_name + "'"
-+
-+	if gdb_version >= "7.3":
-+		class _LoadModuleBreakpoint(gdb.Breakpoint):
-+			def __init__(self, spec, gdb_command):
-+				super(LinuxSymbols._LoadModuleBreakpoint,
-+				      self).__init__(spec, internal = True)
-+				self.silent = True
-+				self.gdb_command = gdb_command
-+
-+			def stop(self):
-+				module = gdb.parse_and_eval("mod")
-+				self.gdb_command._load_module_symbols(module)
-+				return False
-+
-+		def _find_breakpoint_location(self):
-+			breakpoint_match = "^[0-9]*[\t]*err = parse_args\(.*"
-+
-+			src = gdb.execute("list kernel/module.c:load_module",
-+					  to_string = True)
-+			done = False
-+			lineno = None
-+			while not done:
-+				src = gdb.execute("list", to_string = True)
-+				for line in src.splitlines():
-+					if re.match(breakpoint_match, line):
-+						done = True
-+						lineno = line.split()[0]
-+						break
-+					elif re.match("^[0-9]*\t}$", line):
-+						done = True
-+						break
-+			return lineno
-+
-+	def _load_all_module_symbols(self, arg):
-+		if gdb.parse_and_eval("modules.next == &modules"):
-+			print "no modules found"
-+			return
-+
-+		self.module_files = []
-+		paths = arg.split()
-+		paths.append(os.getcwd())
-+		for path in paths:
-+			print "scanning for modules in " + path
-+			for root, dirs, files in os.walk(path):
-+				for name in files:
-+					if re.match(r".*\.ko$", name):
-+						self.module_files.append(
-+							root + "/" + name)
-+
-+		for_each_module(self._load_module_symbols)
-+
-+	def invoke(self, arg, from_tty):
-+		print "loading vmlinux"
-+
-+		saved_states = []
-+		if (gdb.breakpoints() != None):
-+			for breakpoint in gdb.breakpoints():
-+				saved_states.append({
-+					'breakpoint': breakpoint,
-+					'enabled': breakpoint.enabled })
-+
-+		# drop all current symbols and reload vmlinux
-+		gdb.execute("symbol-file", to_string = True)
-+		gdb.execute("symbol-file vmlinux")
-+
-+		self._load_all_module_symbols(arg)
-+
-+		for saved_state in saved_states:
-+			saved_state['breakpoint'].enabled = \
-+				saved_state['enabled']
-+
-+		if gdb_version < "7.3":
-+			print "Note: symbol update on module loading not " \
-+			      "supported with this gdb version"
-+		else:
-+			if self.breakpoint != None:
-+				self.breakpoint.delete()
-+				self.breakpoint = None
-+			lineno = self._find_breakpoint_location()
-+			if lineno != None:
-+				self.breakpoint = self._LoadModuleBreakpoint(
-+					lineno, self)
-+			else:
-+				print "unable to detect breakpoint location " \
-+				      "of load module completion"
-+
-+LinuxSymbols()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 8ef76c9..3553b7d 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -22,3 +22,4 @@ if gdb_version < "7.1":
- 	      "to work."
- else:
- 	import utils
-+	import symbols
--- 
-1.7.3.4
+It's happening on the Ubuntu 12.10 distro which performs the suspend
+then remove sequence. I assumed that was normal.
 
+>
+> Another comment below.
+<snip>
+>
+> firewire-ohci's pci_resume() calls request_irq() a little bit before that,
+> in ohci_enable().  Is the sequence pci_probe/request_irq() ->
+> pci_suspend/disable_irq() -> pci_resume/request_irq() ->
+> pci_resume/enable_irq() legal?
+
+I missed the call to request_irq(). Perhaps the simplest way to handle
+the fix would be to use a flag that holds the irq state? I'm open to
+suggestions.
+
+Cheers,
+
+Mark
