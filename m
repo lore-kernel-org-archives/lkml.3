@@ -1,311 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3A2Ejk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 23:39:40 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:61387 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab3A2Eji (ORCPT
+	id S1756677Ab3A2EkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 23:40:09 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:47578 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab3A2EkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 23:39:38 -0500
-Date: Mon, 28 Jan 2013 20:39:35 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: Rename page struct field helpers
-In-Reply-To: <20130124105544.GO13304@suse.de>
-Message-ID: <alpine.LNX.2.00.1301282014560.27042@eggly.anvils>
-References: <1358874762-19717-1-git-send-email-mgorman@suse.de> <1358874762-19717-6-git-send-email-mgorman@suse.de> <20130122144659.d512e05c.akpm@linux-foundation.org> <20130123142507.GI13304@suse.de> <20130123135612.4b383fa7.akpm@linux-foundation.org>
- <20130124105544.GO13304@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 28 Jan 2013 23:40:06 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, inderpal.singh@linaro.org
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/2] cpufreq: Set policy->related_cpus to atleast policy->cpus
+Date: Tue, 29 Jan 2013 10:09:59 +0530
+Message-Id: <d6827976a56d429848ab8ababa2779a21c68d65f.1359434113.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 29 Jan 2013 04:40:03.0347 (UTC) FILETIME=[B4504630:01CDFDDA]
+X-MC-Unique: 113012904400400701
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r0T4e97A006039
 
-On Thu, 24 Jan 2013, Mel Gorman wrote:
+With the addition of following patch, related_cpus is required to be set by
+cpufreq platform drivers:
 
-> The function names page_xchg_last_nid(), page_last_nid() and
-> reset_page_last_nid() were judged to be inconsistent so rename them
-> to a struct_field_op style pattern. As it looked jarring to have
-> reset_page_mapcount() and page_nid_reset_last() beside each other in
-> memmap_init_zone(), this patch also renames reset_page_mapcount() to
-> page_mapcount_reset(). There are others like init_page_count() but as it
-> is used throughout the arch code a rename would likely cause more conflicts
-> than it is worth.
-> 
-> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+commit c1070fd743533efb54e98142252283583f379190
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Mon Jan 14 13:23:04 2013 +0000
 
-Sorry for not piping up in that earlier thread, but I don't understand
-Andrew's reasoning on this: it looks to me like unhelpful churn rather
-than improvement (and I suspect your heart is not in it either, Mel).
+    cpufreq: Simplify cpufreq_add_dev()
 
-It's true that sometimes we name things object_verb() and sometimes we
-name things verb_object(), but we're always going to be inconsistent on
-that, and this patch does not change the fact: page_mapcount_reset()
-but set_page_private() (named by one akpm, I believe)?
+Because this change is required by all platform drivers, why not do this in the
+core itself. Hence, this patch is an attempt towards fixing all broken drivers.
 
-Being English, I really prefer verb_object(); but there are often
-subsystems or cfiles where object_verb() narrows the namespace more
-nicely.
+>From now on, platforms don't really need to set related_cpus from their init()
+routines, as the same work is done by core too.
 
-xchg_page_last_nid() instead of page_xchg_last_nid(), to match
-reset_page_last_nid(): I think that would be a fine change.
+If platform driver needs to set the related_cpus mask with some additional cpus,
+other than cpus present in policy->cpus, they are free to do it as we aren't
+overriding anything.
 
-page_nid_xchg_last() to exchange page->_last_nid?  You jest, sir!
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Inderpal,
 
-Hugh
+Can you please add your tested-by for this patch? And this will require you to
+drop your patch for exynos-cpufreq.c :)
 
-> ---
->  drivers/staging/ramster/zbud.c           |    2 +-
->  drivers/staging/zsmalloc/zsmalloc-main.c |    2 +-
->  include/linux/mm.h                       |   20 ++++++++++----------
->  mm/huge_memory.c                         |    2 +-
->  mm/mempolicy.c                           |    2 +-
->  mm/migrate.c                             |    4 ++--
->  mm/mmzone.c                              |    4 ++--
->  mm/page_alloc.c                          |   10 +++++-----
->  mm/slob.c                                |    2 +-
->  mm/slub.c                                |    2 +-
->  10 files changed, 25 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/staging/ramster/zbud.c b/drivers/staging/ramster/zbud.c
-> index a7c4361..cc2deff 100644
-> --- a/drivers/staging/ramster/zbud.c
-> +++ b/drivers/staging/ramster/zbud.c
-> @@ -401,7 +401,7 @@ static inline struct page *zbud_unuse_zbudpage(struct zbudpage *zbudpage,
->  	else
->  		zbud_pers_pageframes--;
->  	zbudpage_spin_unlock(zbudpage);
-> -	reset_page_mapcount(page);
-> +	page_mapcount_reset(page);
->  	init_page_count(page);
->  	page->index = 0;
->  	return page;
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 09a9d35..c7785f2 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -475,7 +475,7 @@ static void reset_page(struct page *page)
->  	set_page_private(page, 0);
->  	page->mapping = NULL;
->  	page->freelist = NULL;
-> -	reset_page_mapcount(page);
-> +	page_mapcount_reset(page);
->  }
->  
->  static void free_zspage(struct page *first_page)
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 6e4468f..0aa0944 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -366,7 +366,7 @@ static inline struct page *compound_head(struct page *page)
->   * both from it and to it can be tracked, using atomic_inc_and_test
->   * and atomic_add_negative(-1).
->   */
-> -static inline void reset_page_mapcount(struct page *page)
-> +static inline void page_mapcount_reset(struct page *page)
->  {
->  	atomic_set(&(page)->_mapcount, -1);
->  }
-> @@ -657,28 +657,28 @@ static inline int page_to_nid(const struct page *page)
->  
->  #ifdef CONFIG_NUMA_BALANCING
->  #ifdef LAST_NID_NOT_IN_PAGE_FLAGS
-> -static inline int page_xchg_last_nid(struct page *page, int nid)
-> +static inline int page_nid_xchg_last(struct page *page, int nid)
->  {
->  	return xchg(&page->_last_nid, nid);
->  }
->  
-> -static inline int page_last_nid(struct page *page)
-> +static inline int page_nid_last(struct page *page)
->  {
->  	return page->_last_nid;
->  }
-> -static inline void reset_page_last_nid(struct page *page)
-> +static inline void page_nid_reset_last(struct page *page)
->  {
->  	page->_last_nid = -1;
->  }
->  #else
-> -static inline int page_last_nid(struct page *page)
-> +static inline int page_nid_last(struct page *page)
->  {
->  	return (page->flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
->  }
->  
-> -extern int page_xchg_last_nid(struct page *page, int nid);
-> +extern int page_nid_xchg_last(struct page *page, int nid);
->  
-> -static inline void reset_page_last_nid(struct page *page)
-> +static inline void page_nid_reset_last(struct page *page)
->  {
->  	int nid = (1 << LAST_NID_SHIFT) - 1;
->  
-> @@ -687,17 +687,17 @@ static inline void reset_page_last_nid(struct page *page)
->  }
->  #endif /* LAST_NID_NOT_IN_PAGE_FLAGS */
->  #else
-> -static inline int page_xchg_last_nid(struct page *page, int nid)
-> +static inline int page_nid_xchg_last(struct page *page, int nid)
->  {
->  	return page_to_nid(page);
->  }
->  
-> -static inline int page_last_nid(struct page *page)
-> +static inline int page_nid_last(struct page *page)
->  {
->  	return page_to_nid(page);
->  }
->  
-> -static inline void reset_page_last_nid(struct page *page)
-> +static inline void page_nid_reset_last(struct page *page)
->  {
->  }
->  #endif
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 648c102..c52311a 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1642,7 +1642,7 @@ static void __split_huge_page_refcount(struct page *page)
->  		page_tail->mapping = page->mapping;
->  
->  		page_tail->index = page->index + i;
-> -		page_xchg_last_nid(page_tail, page_last_nid(page));
-> +		page_nid_xchg_last(page_tail, page_nid_last(page));
->  
->  		BUG_ON(!PageAnon(page_tail));
->  		BUG_ON(!PageUptodate(page_tail));
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index e2df1c1..db6fc14 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -2308,7 +2308,7 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
->  		 * it less likely we act on an unlikely task<->page
->  		 * relation.
->  		 */
-> -		last_nid = page_xchg_last_nid(page, polnid);
-> +		last_nid = page_nid_xchg_last(page, polnid);
->  		if (last_nid != polnid)
->  			goto out;
->  	}
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 8ef1cbf..88422a1 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -1495,7 +1495,7 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
->  					  __GFP_NOWARN) &
->  					 ~GFP_IOFS, 0);
->  	if (newpage)
-> -		page_xchg_last_nid(newpage, page_last_nid(page));
-> +		page_nid_xchg_last(newpage, page_nid_last(page));
->  
->  	return newpage;
->  }
-> @@ -1679,7 +1679,7 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
->  	if (!new_page)
->  		goto out_fail;
->  
-> -	page_xchg_last_nid(new_page, page_last_nid(page));
-> +	page_nid_xchg_last(new_page, page_nid_last(page));
->  
->  	isolated = numamigrate_isolate_page(pgdat, page);
->  	if (!isolated) {
-> diff --git a/mm/mmzone.c b/mm/mmzone.c
-> index bce796e..2ac0afb 100644
-> --- a/mm/mmzone.c
-> +++ b/mm/mmzone.c
-> @@ -98,14 +98,14 @@ void lruvec_init(struct lruvec *lruvec)
->  }
->  
->  #if defined(CONFIG_NUMA_BALANCING) && !defined(LAST_NID_NOT_IN_PAGE_FLAGS)
-> -int page_xchg_last_nid(struct page *page, int nid)
-> +int page_nid_xchg_last(struct page *page, int nid)
->  {
->  	unsigned long old_flags, flags;
->  	int last_nid;
->  
->  	do {
->  		old_flags = flags = page->flags;
-> -		last_nid = page_last_nid(page);
-> +		last_nid = page_nid_last(page);
->  
->  		flags &= ~(LAST_NID_MASK << LAST_NID_PGSHIFT);
->  		flags |= (nid & LAST_NID_MASK) << LAST_NID_PGSHIFT;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index df2022f..2d525c8 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -287,7 +287,7 @@ static void bad_page(struct page *page)
->  
->  	/* Don't complain about poisoned pages */
->  	if (PageHWPoison(page)) {
-> -		reset_page_mapcount(page); /* remove PageBuddy */
-> +		page_mapcount_reset(page); /* remove PageBuddy */
->  		return;
->  	}
->  
-> @@ -319,7 +319,7 @@ static void bad_page(struct page *page)
->  	dump_stack();
->  out:
->  	/* Leave bad fields for debug, except PageBuddy could make trouble */
-> -	reset_page_mapcount(page); /* remove PageBuddy */
-> +	page_mapcount_reset(page); /* remove PageBuddy */
->  	add_taint(TAINT_BAD_PAGE);
->  }
->  
-> @@ -605,7 +605,7 @@ static inline int free_pages_check(struct page *page)
->  		bad_page(page);
->  		return 1;
->  	}
-> -	reset_page_last_nid(page);
-> +	page_nid_reset_last(page);
->  	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
->  		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
->  	return 0;
-> @@ -3871,8 +3871,8 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
->  		set_page_links(page, zone, nid, pfn);
->  		mminit_verify_page_links(page, zone, nid, pfn);
->  		init_page_count(page);
-> -		reset_page_mapcount(page);
-> -		reset_page_last_nid(page);
-> +		page_mapcount_reset(page);
-> +		page_nid_reset_last(page);
->  		SetPageReserved(page);
->  		/*
->  		 * Mark the block movable so that blocks are reserved for
-> diff --git a/mm/slob.c b/mm/slob.c
-> index a99fdf7..eeed4a0 100644
-> --- a/mm/slob.c
-> +++ b/mm/slob.c
-> @@ -360,7 +360,7 @@ static void slob_free(void *block, int size)
->  			clear_slob_page_free(sp);
->  		spin_unlock_irqrestore(&slob_lock, flags);
->  		__ClearPageSlab(sp);
-> -		reset_page_mapcount(sp);
-> +		page_mapcount_reset(sp);
->  		slob_free_pages(b, 0);
->  		return;
->  	}
-> diff --git a/mm/slub.c b/mm/slub.c
-> index ba2ca53..ebcc44e 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1408,7 +1408,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
->  	__ClearPageSlab(page);
->  
->  	memcg_release_pages(s, order);
-> -	reset_page_mapcount(page);
-> +	page_mapcount_reset(page);
->  	if (current->reclaim_state)
->  		current->reclaim_state->reclaimed_slab += pages;
->  	__free_memcg_kmem_pages(page, order);
-> 
+ drivers/cpufreq/cpufreq.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index f5dc02b..db81382 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -554,8 +554,6 @@ static ssize_t show_cpus(const struct cpumask *mask, char *buf)
+  */
+ static ssize_t show_related_cpus(struct cpufreq_policy *policy, char *buf)
+ {
+-	if (cpumask_empty(policy->related_cpus))
+-		return show_cpus(policy->cpus, buf);
+ 	return show_cpus(policy->related_cpus, buf);
+ }
+ 
+@@ -945,6 +943,9 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+ 		goto err_unlock_policy;
+ 	}
+ 
++	/* related cpus should atleast have policy->cpus */
++	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
++
+ 	/*
+ 	 * affected cpus must always be the one, which are online. We aren't
+ 	 * managing offline cpus here.
+-- 
+1.7.12.rc2.18.g61b472e
+
+
