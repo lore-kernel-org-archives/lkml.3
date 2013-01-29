@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3A2VAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:00:14 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:59341 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3A2VAL (ORCPT
+	id S1753357Ab3A2VAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:00:23 -0500
+Received: from zmc.proxad.net ([212.27.53.206]:56062 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753040Ab3A2VAT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:00:11 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dove: convert serial DT nodes to clocks property
-Date: Tue, 29 Jan 2013 21:59:46 +0100
-Message-Id: <1359493186-25589-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 29 Jan 2013 16:00:19 -0500
+From: Florian Fainelli <ffainelli@freebox.fr>
+To: Huang Shijie <b32955@freescale.com>
+Subject: Re: [PATCH v2] mtd: fix the wrong timeo for panic_nand_wait()
+Date: Tue, 29 Jan 2013 22:00:14 +0100
+User-Agent: KMail/1.13.7 (Linux/3.7-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: dwmw2@infradead.org, dedekind1@gmail.com, matthieu.castet@parrot.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <CAMiH66HWn5PtjX20=WT7GMMV=J72rg3jx64iACSBiExjoD+X7A@mail.gmail.com> <1358818230-27037-1-git-send-email-b32955@freescale.com>
+In-Reply-To: <1358818230-27037-1-git-send-email-b32955@freescale.com>
+Organization: Freebox
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201301292200.14622.ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_serial now has support for using clocks property and we have
-a DT clock provider. This patch replaces the hard coded clock-frequency
-property with a clocks phandle to tclk.
+Hello Huang,
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/boot/dts/dove.dtsi |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Le mardi 22 janvier 2013 02:30:30, Huang Shijie a écrit :
+> In nand_wait(), the timeo for panic_nand_wait() is assigned with
+> wrong value(jiffies + some delay). The timeo should be set like the
+> panic_nand_write() does.
+> 
+> This patch fixes it, and also uses the msecs_to_jiffies() to make the
+> code more readable.
 
-diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-index 42eac1f..7b52463 100644
---- a/arch/arm/boot/dts/dove.dtsi
-+++ b/arch/arm/boot/dts/dove.dtsi
-@@ -55,7 +55,7 @@
- 			reg = <0x12000 0x100>;
- 			reg-shift = <2>;
- 			interrupts = <7>;
--			clock-frequency = <166666667>;
-+			clocks = <&core_clk 0>;
- 			status = "disabled";
- 		};
- 
-@@ -64,7 +64,7 @@
- 			reg = <0x12100 0x100>;
- 			reg-shift = <2>;
- 			interrupts = <8>;
--			clock-frequency = <166666667>;
-+			clocks = <&core_clk 0>;
- 			status = "disabled";
- 		};
- 
-@@ -73,7 +73,7 @@
- 			reg = <0x12000 0x100>;
- 			reg-shift = <2>;
- 			interrupts = <9>;
--			clock-frequency = <166666667>;
-+			clocks = <&core_clk 0>;
- 			status = "disabled";
- 		};
- 
-@@ -82,7 +82,7 @@
- 			reg = <0x12100 0x100>;
- 			reg-shift = <2>;
- 			interrupts = <10>;
--			clock-frequency = <166666667>;
-+			clocks = <&core_clk 0>;
- 			status = "disabled";
- 		};
- 
+You are not exactly explaining what is the issue with the current code, and 
+how you are fixing it. If someone needs to backport this patch for whatever 
+reason, it must be clear as to what it fixes.
+
+> 
+> Signed-off-by: Huang Shijie <b32955@freescale.com>
+> ---
+> fix the compiler error in version 1, and add some commits.
+> 
+> ---
+>  drivers/mtd/nand/nand_base.c |    8 ++------
+>  1 files changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+> index 8323ac9..a8c1fb4 100644
+> --- a/drivers/mtd/nand/nand_base.c
+> +++ b/drivers/mtd/nand/nand_base.c
+> @@ -825,13 +825,8 @@ static void panic_nand_wait(struct mtd_info *mtd,
+> struct nand_chip *chip, static int nand_wait(struct mtd_info *mtd, struct
+> nand_chip *chip) {
+> 
+> -	unsigned long timeo = jiffies;
+>  	int status, state = chip->state;
+> -
+> -	if (state == FL_ERASING)
+> -		timeo += (HZ * 400) / 1000;
+> -	else
+> -		timeo += (HZ * 20) / 1000;
+> +	unsigned long timeo = (state == FL_ERASING ? 400 : 20);
+> 
+>  	led_trigger_event(nand_led_trigger, LED_FULL);
+> 
+> @@ -849,6 +844,7 @@ static int nand_wait(struct mtd_info *mtd, struct
+> nand_chip *chip) if (in_interrupt() || oops_in_progress)
+>  		panic_nand_wait(mtd, chip, timeo);
+>  	else {
+> +		timeo = jiffies + msecs_to_jiffies(timeo);
+>  		while (time_before(jiffies, timeo)) {
+>  			if (chip->dev_ready) {
+>  				if (chip->dev_ready(mtd))
+
 -- 
-1.7.10.4
-
+Florian
