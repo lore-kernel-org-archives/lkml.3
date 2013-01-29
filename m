@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3A2Q2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:28:36 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:49473 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab3A2Q1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753577Ab3A2Q1n (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 29 Jan 2013 11:27:43 -0500
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-Date: Tue, 29 Jan 2013 16:27:34 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-1-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        Vineet.Gupta1@synopsys.com
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-In-Reply-To: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301291627.34913.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:s5PKj2C/NRmcD1zs54rIlzQKNoquPo42O+/2yA8OouI
- 7HP0t+J/+qN3fkumUQYyuDpWoV7PRUXl2jLEYsuHGaz+jbKJ8q
- P7N+PQJmUwYRUy0khZphGiF6FXWJPnEI8RHGYrA7SVBbxzy5MZ
- fouifjV0tKjscDqzsMYuFVfPIB4YF4qbKICJFUskM0S0iUTH15
- VbjgMbXPrA2zJbheAzsPKqm9xyoxSysbTvrPkFXqewi4zJQEYQ
- sbHv/SdmXA2/0GY3LJ91xav/BHLOH6TEQsJraydzF66hSUWRzT
- xA/pVN9ptu62Kxs3Wg3v319geRtTXZ5Hg0d7XATvWouatoyBj3
- 9ArnTOmIxenttbvj1hR/7/2hO79E+tHHjd3Spst2N
+Received: from userp1040.oracle.com ([156.151.31.81]:19511 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab3A2QYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 11:24:35 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Tyler Hicks <tyhicks@canonical.com>,
+        Dustin Kirkland <dustin.kirkland@gazzang.com>,
+        ecryptfs@vger.kernel.org
+Subject: [PATCH V6 29/30] ecrpytfs: Convert aio_read/write ops to read/write_iter
+Date: Tue, 29 Jan 2013 10:23:42 -0600
+Message-Id: <1359476623-10544-30-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 29 January 2013, Alexey Brodkin wrote:
-> in(out)_8/in(out)_be16/in(out)_le16 are very powerpc/microblaze
-> specific. To enable use of Xilinx System ACE driver build for other
-> architectures (for example it's possible to use it on Xilinx ml-509
-> board with ARC700 in FPGA) we need to use generic implementation of
-> accessors.
-> 
-> Current implementation was successfully built with Sourcery G++ Lite
-> 2011.03-39 for Power EABI (ppc44x_defconfig).
-> 
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Tyler Hicks <tyhicks@canonical.com>
+Cc: Dustin Kirkland <dustin.kirkland@gazzang.com>
+Cc: ecryptfs@vger.kernel.org
+---
+ fs/ecryptfs/file.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-Is this driver used on powerpc64 as well, or just on microblaze
-and/or 32 bit powerpc?
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index d45ba45..5aaa180 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -36,22 +36,21 @@
+ /**
+  * ecryptfs_read_update_atime
+  *
+- * generic_file_read updates the atime of upper layer inode.  But, it
++ * generic_file_read_iter updates the atime of upper layer inode.  But, it
+  * doesn't give us a chance to update the atime of the lower layer
+- * inode.  This function is a wrapper to generic_file_read.  It
+- * updates the atime of the lower level inode if generic_file_read
++ * inode.  This function is a wrapper to generic_file_read_iter.  It
++ * updates the atime of the lower level inode if generic_file_read_iter
+  * returns without any errors. This is to be used only for file reads.
+  * The function to be used for directory reads is ecryptfs_read.
+  */
+ static ssize_t ecryptfs_read_update_atime(struct kiocb *iocb,
+-				const struct iovec *iov,
+-				unsigned long nr_segs, loff_t pos)
++				struct iov_iter *iter, loff_t pos)
+ {
+ 	ssize_t rc;
+ 	struct path lower;
+ 	struct file *file = iocb->ki_filp;
+ 
+-	rc = generic_file_aio_read(iocb, iov, nr_segs, pos);
++	rc = generic_file_read_iter(iocb, iter, pos);
+ 	/*
+ 	 * Even though this is a async interface, we need to wait
+ 	 * for IO to finish to update atime
+@@ -357,9 +356,9 @@ const struct file_operations ecryptfs_dir_fops = {
+ const struct file_operations ecryptfs_main_fops = {
+ 	.llseek = generic_file_llseek,
+ 	.read = do_sync_read,
+-	.aio_read = ecryptfs_read_update_atime,
++	.read_iter = ecryptfs_read_update_atime,
+ 	.write = do_sync_write,
+-	.aio_write = generic_file_aio_write,
++	.write_iter = generic_file_write_iter,
+ 	.readdir = ecryptfs_readdir,
+ 	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
+ #ifdef CONFIG_COMPAT
+-- 
+1.8.1.1
 
-On 64 bit powerpc, ioread involves extra overhead because it
-goes through the PCI error handling implementation, so we should
-keep using in_le() there.	
-
-	Arnd
