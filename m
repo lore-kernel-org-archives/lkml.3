@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab3A2LCy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 06:02:54 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:39872 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106Ab3A2LCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 06:02:50 -0500
-Date: Tue, 29 Jan 2013 12:02:28 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Soeren Moch <smoch@web.de>
-Cc: Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-ID: <20130129110228.GA20242@lunn.ch>
-References: <50F800EB.6040104@web.de>
- <201301172026.45514.arnd@arndb.de>
- <50FABBED.1020905@web.de>
- <20130119185907.GA20719@lunn.ch>
- <5100022D.9050106@web.de>
- <20130123162515.GK13482@lunn.ch>
- <510018B4.9040903@web.de>
- <51001BEE.9020201@web.de>
- <20130123181029.GE20719@lunn.ch>
- <5106E6A6.7010207@web.de>
+	id S1755453Ab3A2LD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 06:03:26 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:55417 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753993Ab3A2LDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 06:03:24 -0500
+Date: Tue, 29 Jan 2013 11:03:12 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "leiwen@marvell.com" <leiwen@marvell.com>
+Subject: Re: [PATCH v3 15/31] arm64: SMP support
+Message-ID: <20130129110311.GD25983@arm.com>
+References: <CALZhoSTsmmsBgT2CtpC1uN9DQM5NTftA024FsyRitCFhPa7LpQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5106E6A6.7010207@web.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALZhoSTsmmsBgT2CtpC1uN9DQM5NTftA024FsyRitCFhPa7LpQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Now I activated the debug messages in em28xx. From the messages I
-> see no correlation of the pool exhaustion and lost sync. Also I
-> cannot see any error messages from the em28xx driver.
-> I see a lot of init_isoc/stop_urbs (maybe EPG scan?) without
-> draining the coherent pool (checked with 'cat
-> /debug/dma-api/num_free_entries', which gave stable numbers), but
-> after half an hour there are only init_isoc messages without
-> corresponding stop_urbs messages and num_free_entries decreased
-> until coherent pool exhaustion.
+On Mon, Jan 28, 2013 at 02:46:53AM +0000, Lei Wen wrote:
+> On Sat, Sep 8, 2012 at 12:26 AM, Catalin Marinas <catalin.marinas@arm.com<mailto:catalin.marinas@arm.com>> wrote:
+> > This patch adds SMP initialisation and spinlocks implementation for
+> > AArch64. The spinlock support uses the new load-acquire/store-release
+> > instructions to avoid explicit barriers. The architecture also specifies
+> > that an event is automatically generated when clearing the exclusive
+> > monitor state to wake up processors in WFE, so there is no need for an
+> > explicit DSB/SEV instruction sequence. The SEVL instruction is used to
+> > set the exclusive monitor locally as there is no conditional WFE and a
+> > branch is more expensive.
+> > 
+> > For the SMP booting protocol, see Documentation/arm64/booting.txt.
+> > 
+> > Signed-off-by: Will Deacon <will.deacon@arm.com<mailto:will.deacon@arm.com>>
+> > Signed-off-by: Marc Zyngier <marc.zyngier@arm.com<mailto:marc.zyngier@arm.com>>
+> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com<mailto:catalin.marinas@arm.com>>
+> > Acked-by: Arnd Bergmann <arnd@arndb.de<mailto:arnd@arndb.de>>
+> > Acked-by: Tony Lindgren <tony@atomide.com<mailto:tony@atomide.com>>
+> > ---
+> >  arch/arm64/include/asm/hardirq.h        |    5 +
+> >  arch/arm64/include/asm/smp.h            |   69 +++++
+> >  arch/arm64/include/asm/spinlock.h       |  202 +++++++++++++
+> >  arch/arm64/include/asm/spinlock_types.h |   38 +++
+> >  arch/arm64/kernel/smp.c                 |  469 +++++++++++++++++++++++++++++++
+> >  5 files changed, 783 insertions(+), 0 deletions(-)
+> >  create mode 100644 arch/arm64/include/asm/smp.h
+> >  create mode 100644 arch/arm64/include/asm/spinlock.h
+> >  create mode 100644 arch/arm64/include/asm/spinlock_types.h
+> >  create mode 100644 arch/arm64/kernel/smp.c
+> > 
+> [snip...]
+> > +static inline void arch_spin_lock(arch_spinlock_t *lock)
+> > +{
+> > +       unsigned int tmp;
+> > +
+> > +       asm volatile(
+> > +       "       sevl\n"
+> > +       "1:     wfe\n"
+> > +       "2:     ldaxr   %w0, [%1]\n"
+> > +       "       cbnz    %w0, 1b\n"
+> > +       "       stxr    %w0, %w2, [%1]\n"
+> > +       "       cbnz    %w0, 2b\n"
+> > +       : "=&r" (tmp)
+> > +       : "r" (&lock->lock), "r" (1)
+> > +       : "memory");
+> 
+> Why just put "memory" attribute here is enough for keep lock variable
+> being updated around multi-cores? I check the original spinlock we use
+> in bit32 machine: arch/arm/include/asm/spinlock.h It actually use
+> smp_mb after successfully acquire that lock, so we don't need it for
+> arm64? Or if it is true that we don't need it in arm64, could we also
+> eliminate the smp_mb usage in arm32?
 
-Hi Soeren
+We need the smp_mb (which is a dmb instruction) on AArch32 (ARMv6/v7
+instruction set). For AArch64 we have load-acquire and store-release
+instructions (lda*, stl*) which act as half-barriers. In the
+arch_spin_lock function above we have a ldaxr which prevents any memory
+accesses inside the locked region to be observed before this
+instruction. The unlock is done with a stlr instructions which prevents
+any memory accesses inside the locked region to be observed after this
+instruction.
 
-em28xx_stop_urbs() is only called by em28xx_stop_streaming().
-
-em28xx_stop_streaming() is only called by em28xx_stop_feed()
-when 0 == dvb->nfeeds.
-
-em28xx_stop_feed()and em28xx_start_feed() look O.K, dvb->nfeeds is
-protected by a mutex etc.
-
-Now, em28xx_init_isoc() is also called by buffer_prepare(). This uses
-em28xx_alloc_isoc() to do the actual allocation, and that function
-sets up the urb such that on completion the function
-em28xx_irq_callback() is called.
-
-It looks like there might be issues here:
-
-Once the data has been copied out, it resubmits the urb:
-
-       urb->status = usb_submit_urb(urb, GFP_ATOMIC);
-        if (urb->status) {
-                em28xx_isocdbg("urb resubmit failed (error=%i)\n",
-                               urb->status);
-        }
-  
-However, if the ubs_submit_urb fails, it looks like the urb is lost.
-
-If you look at other code submitting urbs you have this pattern:
-
-               rc = usb_submit_urb(isoc_bufs->urb[i], GFP_ATOMIC);
-                if (rc) {
-                        em28xx_err("submit of urb %i failed (error=%i)\n", i,
-                                   rc);
-                        em28xx_uninit_isoc(dev, mode);
-                        return rc;
-                }
- 
-Do you have your build such that you would see "urb resubmit failed"
-in your logs? Are there any?
-
-     Andrew
+-- 
+Catalin
