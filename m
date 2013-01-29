@@ -1,34 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab3A2TIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:08:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50363 "EHLO mx1.redhat.com"
+	id S1754622Ab3A2TIO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:08:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2100 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754295Ab3A2TIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:08:50 -0500
-Date: Tue, 29 Jan 2013 20:07:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Lingzhu Xiang <lxiang@redhat.com>, Roman Rakus <rrakus@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] tty: set_termios/set_termiox should not return -EINTR
-Message-ID: <20130129190720.GA28000@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754157Ab3A2TIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 14:08:04 -0500
+Message-Id: <20130129190759.857103871@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 29 Jan 2013 14:08:03 -0500
+From: aris@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: [PATCH v3 4/9] devcg: expand may_access() logic
+References: <20130129190759.117458287@napanee.usersys.redhat.com>
+Content-Disposition: inline; filename=split_may_access_logic.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+In order to make the next patch more clear, expand may_access() logic.
 
-The patch looks really trivial and I even cc'ed -stable.
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-But it needs the review from someone who understands the drivers/tty
-code, perhaps there is a reason why we should not restart TCGETA/etc.
-I do not even know what set_termios() actually does ;)
+---
+ security/device_cgroup.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-Oleg.
+--- github.orig/security/device_cgroup.c	2013-01-29 11:49:15.244665037 -0500
++++ github/security/device_cgroup.c	2013-01-29 11:49:15.514669057 -0500
+@@ -382,15 +382,18 @@ 		if (ex->minor != ~0 && ex->minor != re
+ 
+ 	/*
+ 	 * In two cases we'll consider this new exception valid:
+-	 * - the dev cgroup has its default policy to allow + exception list:
+-	 *   the new exception should *not* match any of the exceptions
+-	 *   (behavior == DEVCG_DEFAULT_ALLOW, !match)
+ 	 * - the dev cgroup has its default policy to deny + exception list:
+ 	 *   the new exception *should* match the exceptions
+-	 *   (behavior == DEVCG_DEFAULT_DENY, match)
++	 * - the dev cgroup has its default policy to allow + exception list:
++	 *   the new exception should *not* match any of the exceptions
+ 	 */
+-	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
+-		return 1;
++	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
++		if (match)
++			return 1;
++	} else {
++		if (!match)
++			return 1;
++	}
+ 	return 0;
+ }
+ 
 
