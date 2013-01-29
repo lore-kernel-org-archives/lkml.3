@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab3A2MjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:39:11 -0500
-Received: from david.siemens.de ([192.35.17.14]:29524 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756738Ab3A2MjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:39:06 -0500
+	id S1756881Ab3A2MlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:41:16 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:18465 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756680Ab3A2MjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:39:10 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@alien8.de>
-Subject: [PATCH v5 17/20] scripts/gdb: Add lx_current convenience function
-Date: Tue, 29 Jan 2013 13:38:00 +0100
-Message-Id: <d33aed5e89cfb715115c08b4677d567e6eadee22.1359463075.git.jan.kiszka@siemens.com>
+Subject: [PATCH v5 04/20] scripts/gdb: Add module iteration helper
+Date: Tue, 29 Jan 2013 13:37:47 +0100
+Message-Id: <25e00ee43b65bb23478c0e4922eecedf8fde112a.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
 References: <cover.1359463075.git.jan.kiszka@siemens.com>
@@ -24,38 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a shorthand for *$lx_per_cpu("current_task"), i.e. a convenience
-function to retrieve the currently running task of the active context.
+Will soon be used for loading symbols, printing global variables or
+listing modules.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/percpu.py |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+ scripts/gdb/module.py |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/gdb/module.py
 
-diff --git a/scripts/gdb/percpu.py b/scripts/gdb/percpu.py
-index 864962c..4dab8d3 100644
---- a/scripts/gdb/percpu.py
-+++ b/scripts/gdb/percpu.py
-@@ -59,3 +59,19 @@ class PerCpu(gdb.Function):
- 		return per_cpu(var_ptr, cpu)
- 
- PerCpu()
+diff --git a/scripts/gdb/module.py b/scripts/gdb/module.py
+new file mode 100644
+index 0000000..01b23df
+--- /dev/null
++++ b/scripts/gdb/module.py
+@@ -0,0 +1,28 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  module tools
++#
++# Copyright (c) Siemens AG, 2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
 +
++import gdb
 +
-+class LxCurrentFunc(gdb.Function):
-+	__doc__ = "Return current task.\n" \
-+		  "\n" \
-+		  "$lx_current([CPU]): Return the per-cpu task variable for the given CPU\n" \
-+		  "number. If CPU is omitted, the CPU of the current context is used."
++from utils import *
 +
-+	def __init__(self):
-+		super(LxCurrentFunc, self).__init__("lx_current")
++module_type = CachedType("struct module")
 +
-+	def invoke(self, cpu = -1):
-+		var_ptr = gdb.parse_and_eval("&current_task")
-+		return per_cpu(var_ptr, cpu).dereference()
-+
-+LxCurrentFunc()
++def for_each_module(func, arg = None):
++	global module_type
++	module_ptr_type = module_type.get_type().pointer()
++	modules = gdb.parse_and_eval("modules")
++	entry = modules['next']
++	while entry != modules.address:
++		module = container_of(entry, module_ptr_type, "list")
++		func(module, arg)
++		entry = entry['next']
 -- 
 1.7.3.4
 
