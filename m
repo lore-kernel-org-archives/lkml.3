@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab3A2KGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 05:06:37 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:17601 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab3A2KGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 05:06:35 -0500
-Message-ID: <51079F27.1040905@imgtec.com>
-Date: Tue, 29 Jan 2013 10:06:31 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v3 32/71] ARC: [DeviceTree] Basic support
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-15-git-send-email-vgupta@synopsys.com> <5106513E.4010205@imgtec.com> <51079C05.7040308@synopsys.com>
-In-Reply-To: <51079C05.7040308@synopsys.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_01_29_10_06_33
+	id S1753393Ab3A2KHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 05:07:10 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55915 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab3A2KHG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 05:07:06 -0500
+From: Jan Luebbe <jlu@pengutronix.de>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Jan Luebbe <jlu@pengutronix.de>
+Subject: [PATCH] rtc-isl1208: call rtc_update_irq from the alarm irq handler
+Date: Tue, 29 Jan 2013 11:07:02 +0100
+Message-Id: <1359454022-7339-1-git-send-email-jlu@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:219:99ff:fe56:8d7
+X-SA-Exim-Mail-From: jlu@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vineet,
+Previously the alarm event was not propagated into the RTC subsystem.
+By adding a call to rtc_update_irq, this fixes a timeout problem with
+the hwclock utility.
 
->> arm64 also adds dtbs and $(dtb-y) to targets (at least in linux-next). I
->> think this makes sure that they don't get rebuilt unless they've
->> actually changed. I've also copied this for metag.
-> 
-> Did you verify that it makes a difference - at least at my end it's not - the
-> default dtb is getting rebuilt everytime. I need to debug this some more.
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+---
+ drivers/rtc/rtc-isl1208.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Yeh, for me it prevents the following build lines appearing every time:
-DTC     arch/metag/boot/dts/tz1090_01sp.dtb
-
-but it still does these every time:
-DTB    arch/metag/boot/dts/tz1090_01sp.dtb.S
-AS      arch/metag/boot/dts/tz1090_01sp.dtb.o
-
-Adding dtbs o targets actually didn't seem to be necessary with $(dtb-y)
-added.
-
-Cheers
-James
+diff --git a/drivers/rtc/rtc-isl1208.c b/drivers/rtc/rtc-isl1208.c
+index afb7cfa..c016ad8 100644
+--- a/drivers/rtc/rtc-isl1208.c
++++ b/drivers/rtc/rtc-isl1208.c
+@@ -506,6 +506,7 @@ isl1208_rtc_interrupt(int irq, void *data)
+ {
+ 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
+ 	struct i2c_client *client = data;
++	struct rtc_device *rtc = i2c_get_clientdata(client);
+ 	int handled = 0, sr, err;
+ 
+ 	/*
+@@ -528,6 +529,8 @@ isl1208_rtc_interrupt(int irq, void *data)
+ 	if (sr & ISL1208_REG_SR_ALM) {
+ 		dev_dbg(&client->dev, "alarm!\n");
+ 
++		rtc_update_irq(rtc, 1, RTC_IRQF | RTC_AF);
++
+ 		/* Clear the alarm */
+ 		sr &= ~ISL1208_REG_SR_ALM;
+ 		sr = i2c_smbus_write_byte_data(client, ISL1208_REG_SR, sr);
+-- 
+1.7.10.4
 
