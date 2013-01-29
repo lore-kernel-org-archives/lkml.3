@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab3A2Hbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:31:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:5804 "EHLO mga09.intel.com"
+	id S1753985Ab3A2Hf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:35:28 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41254 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717Ab3A2Hbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:31:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,557,1355126400"; 
-   d="scan'208";a="254011951"
-Date: Tue, 29 Jan 2013 09:35:32 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] ACPI / platform: Use struct acpi_scan_handler for
- creating devices
-Message-ID: <20130129073532.GI2239@intel.com>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan>
- <4311642.nDd2RCVeDc@vostro.rjw.lan>
- <1540645.4oLGJ3spZ3@vostro.rjw.lan>
+	id S1752717Ab3A2Hf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 02:35:26 -0500
+From: "Katepallewar, Mrugesh" <mrugesh.mk@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>, "hs@denx.de" <hs@denx.de>
+Subject: RE: [PATCH V2] ARM: davinci: da850: add RTC DT entries
+Thread-Topic: [PATCH V2] ARM: davinci: da850: add RTC DT entries
+Thread-Index: AQHN/SuhxnvZ8uKp9EiTJKKlLT2PuZheiyGAgAFdn1A=
+Date: Tue, 29 Jan 2013 07:35:07 +0000
+Message-ID: <4232EB8829679242B82E712C3DB3149D42355C@DBDE01.ent.ti.com>
+References: <1359359268-9781-1-git-send-email-mrugesh.mk@ti.com>
+ <5106A105.6030004@ti.com>
+In-Reply-To: <5106A105.6030004@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1540645.4oLGJ3spZ3@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0T7ZU7N006598
 
-On Mon, Jan 28, 2013 at 02:01:14PM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, Jan 28, 2013 at 21:32:13, Nori, Sekhar wrote:
+> Hi Mrugesh,
 > 
-> Currently, the ACPI namespace scanning code creates platform device
-> objects for ACPI device nodes whose IDs match the contents of the
-> acpi_platform_device_ids[] table.  However, this adds a superfluous
-> special case into acpi_bus_device_attach() and makes it more
-> difficult to follow than it has to be.  It also will make it more
-> difficult to implement removal code for those platform device objects
-> in the future.
+> On 1/28/2013 1:17 PM, Mrugesh Katepallewar wrote:
+> > Add RTC DT entries in da850 dts file.
+> > 
+> > Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
+> > ---
+> > Applies on top of v3.8-rc4 of linus tree.
+> > 
+> > This patch is depending on
+> > "ARM: davinci: da850: add interrupt-parent property in soc node"
+> > https://patchwork.kernel.org/patch/2044101/
 > 
-> For the above reasons, introduce a struct acpi_scan_handler object
-> for creating platform devices and move the code related to that from
-> acpi_bus_device_attach() to the .attach() callback of that object.
-> Also move the acpi_platform_device_ids[] table to acpi_platform.c.
+> > Tested on da850-evm device.
+> > 
+> > Test Procedure:
+> > date 2013.01.28-10:00:00 (usage: date[YYYY.]MM.DD-hh:mm[:ss]) hwclock 
+> > -w reset board and check system time.
 > 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Queuing this for v3.9. The testing information above is useful and should be part of the changelog. I moved it there while committing.
+> 
+> It will be nice to check the alarm functionality as well. Can you check that and let me know that works as well?
 
-I've tested this with Haswell machine and once you fix the problem pointed
-out by Yasuaki Ishimat (returning always when ACPI_PLATFORM_CLK is set) the
-platform device creation works well. This is a nice cleanup and localizes
-the hard coded platform device table in one file making maintenance bit
-easier.
+I tried to test RTC alarm using "rtcwake" command, however it is not working and returning following error 
+"rtcwake: /dev/rtc0 not enabled for wakeup events"
+This is coming because we have not registered RTC device as a wakeup source yet. 
 
-Feel free to add:
+For checking RTC alarm interrupt, I developed one simple program which opens RTC device, set alarm and exits.
+Then by entering "cat /proc/interrupts" checked RTC interrupt count.
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Using above test it confirms that RTC alarm functionality is working fine. 
+
+> 
+> Thanks,
+> Sekhar
+> 
+
+
+Regards, 
+Mrugesh
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
