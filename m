@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab3A2Mjb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:39:31 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:18637 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934Ab3A2Mj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:39:27 -0500
+	id S932074Ab3A2Mjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:39:47 -0500
+Received: from david.siemens.de ([192.35.17.14]:29848 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756975Ab3A2Mjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:39:44 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH v5 14/20] scripts/gdb: Add internal helper and convenience function to retrieve thread_info
-Date: Tue, 29 Jan 2013 13:37:57 +0100
-Message-Id: <c4fb2b8d82932f2e86956bd0bd08caf15855b652.1359463075.git.jan.kiszka@siemens.com>
+        Borislav Petkov <bp@alien8.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
+        linux-doc@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Rob Landley <rob@landley.net>, sparclinux@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH v5 00/20] Add gdb python scripts as kernel debugging helpers
+Date: Tue, 29 Jan 2013 13:37:43 +0100
+Message-Id: <cover.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
-References: <cover.1359463075.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
-References: <cover.1359463075.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the internal helper get_thread_info that calculated the thread_info
-from a given task variable. Also export this service as a convenience
-function.
+Version 5 comes with the following changes:
+ - moved tutorial into Documentation/gdb-kernel-debugging.txt
+ - improved caching of gdb.Type objects, ensure they are in sync with
+   currently loaded symbols
+ - added new functions and commands
+    - lx_module -- Find module by name and return the module variable
+    - lx_modvar -- Return global variable of a module
+    - lx-lsmod -- List currently loaded modules
 
-Note: ia64 version is untested.
+See http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/01598.html for
+the original description and
 
-CC: Tony Luck <tony.luck@intel.com>
+    git://git.kiszka.org/linux.git queues/gdb-scripts
+
+for the latest version.
+
+Jan
+
+CC: "David S. Miller" <davem@davemloft.net>
 CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: Kay Sievers <kay@vrfy.org>
+CC: linux-doc@vger.kernel.org
 CC: linux-ia64@vger.kernel.org
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/task.py |   35 +++++++++++++++++++++++++++++++++++
- 1 files changed, 35 insertions(+), 0 deletions(-)
+CC: linux-kbuild@vger.kernel.org
+CC: Michal Marek <mmarek@suse.cz>
+CC: Rob Landley <rob@landley.net>
+CC: sparclinux@vger.kernel.org
+CC: Tony Luck <tony.luck@intel.com>
 
-diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
-index fe42eb0..8e96238 100644
---- a/scripts/gdb/task.py
-+++ b/scripts/gdb/task.py
-@@ -62,3 +62,38 @@ class LxTaskByPidFunc(gdb.Function):
- 			raise gdb.GdbError("No task of PID " + str(pid))
- 
- LxTaskByPidFunc()
-+
-+
-+thread_info_type = CachedType("struct thread_info")
-+
-+ia64_task_size = None
-+
-+def get_thread_info(task):
-+	global thread_info_type
-+	thread_info_ptr_type = thread_info_type.get_type().pointer()
-+	if is_target_arch("ia64"):
-+		global ia64_task_size
-+		if ia64_task_size == None:
-+			ia64_task_size = gdb.parse_and_eval(
-+						"sizeof(struct task_struct)")
-+		thread_info_addr = task.address + ia64_task_size
-+		thread_info = thread_info_addr.cast(thread_info_ptr_type)
-+	else:
-+		thread_info = task['stack'].cast(thread_info_ptr_type)
-+	return thread_info.dereference()
-+
-+
-+class LxThreadInfoFunc (gdb.Function):
-+	# Calculate Linux thread_info from task variable.
-+	__doc__ = "Calculate Linux thread_info from task variable.\n" \
-+		  "\n" \
-+		  "$lx_thread_info(TASK): Given TASK, return the corresponding thread_info\n" \
-+		  "variable."
-+
-+	def __init__(self):
-+		super(LxThreadInfoFunc, self).__init__("lx_thread_info")
-+
-+	def invoke(self, task):
-+		return get_thread_info(task)
-+
-+LxThreadInfoFunc()
+Jan Kiszka (20):
+  scripts/gdb: Add infrastructure
+  scripts/gdb: Add cache for type objects
+  scripts/gdb: Add container_of helper and convenience function
+  scripts/gdb: Add module iteration helper
+  scripts/gdb: Add lx-symbols command
+  scripts/gdb: Add internal helper and convenience function to look up
+    a module
+  scripts/gdb: Add lx_modvar convenience function
+  scripts/gdb: Add get_target_endianness helper
+  scripts/gdb: Add read_u16/32/64 helpers
+  scripts/gdb: Add lx-dmesg command
+  scripts/gdb: Add task iteration helper
+  scripts/gdb: Add helper and convenience function to look up tasks
+  scripts/gdb: Add is_target_arch helper
+  scripts/gdb: Add internal helper and convenience function to retrieve
+    thread_info
+  scripts/gdb: Add get_gdbserver_type helper
+  scripts/gdb: Add internal helper and convenience function for per-cpu
+    lookup
+  scripts/gdb: Add lx_current convenience function
+  scripts/gdb: Add helper to iterate over CPU masks
+  scripts/gdb: Add lx-lsmod command
+  scripts/gdb: Add basic documentation
+
+ Documentation/gdb-kernel-debugging.txt |  155 +++++++++++++++++++++++++++++++
+ Makefile                               |    5 +-
+ scripts/Makefile                       |    3 +-
+ scripts/gdb/Makefile                   |    9 ++
+ scripts/gdb/dmesg.py                   |   63 +++++++++++++
+ scripts/gdb/module.py                  |  149 ++++++++++++++++++++++++++++++
+ scripts/gdb/percpu.py                  |  110 ++++++++++++++++++++++
+ scripts/gdb/symbols.py                 |  147 +++++++++++++++++++++++++++++
+ scripts/gdb/task.py                    |   99 ++++++++++++++++++++
+ scripts/gdb/utils.py                   |  158 ++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py             |   29 ++++++
+ 11 files changed, 925 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/gdb-kernel-debugging.txt
+ create mode 100644 scripts/gdb/Makefile
+ create mode 100644 scripts/gdb/dmesg.py
+ create mode 100644 scripts/gdb/module.py
+ create mode 100644 scripts/gdb/percpu.py
+ create mode 100644 scripts/gdb/symbols.py
+ create mode 100644 scripts/gdb/task.py
+ create mode 100644 scripts/gdb/utils.py
+ create mode 100644 scripts/gdb/vmlinux-gdb.py
+
 -- 
 1.7.3.4
 
