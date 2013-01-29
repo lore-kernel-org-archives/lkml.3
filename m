@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab3A2Nly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 08:41:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56548 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331Ab3A2Nlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 08:41:50 -0500
-Date: Tue, 29 Jan 2013 14:41:39 +0100
-From: Jan Kara <jack@suse.cz>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, jack@suse.cz, tytso@mit.edu,
-        Valdis.Kletnieks@vt.edu, Hillf Danton <dhillf@gmail.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, zab@zabbo.net, linux-fsdevel@vger.kernel.org
-Subject: Re: next-20130117 - kernel BUG with aio
-Message-ID: <20130129134139.GD32246@quack.suse.cz>
-References: <3544.1358774694@turing-police.cc.vt.edu>
- <CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com>
- <2553.1358890098@turing-police.cc.vt.edu>
- <CAJd=RBCHRDzyjY_hOZCj6rHBXzb3f5wWxdqXYuLbQXLe2n4JeA@mail.gmail.com>
- <13450.1359048141@turing-police.cc.vt.edu>
- <20130124211850.GH26407@google.com>
- <20130124132759.c892fb4c.akpm@linux-foundation.org>
- <20130124221352.GK26407@google.com>
+	id S1756338Ab3A2Nps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 08:45:48 -0500
+Received: from hermes.synopsys.com ([198.182.44.81]:44396 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988Ab3A2Npn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 08:45:43 -0500
+Message-ID: <5107D263.4090606@synopsys.com>
+Date: Tue, 29 Jan 2013 19:15:07 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130124221352.GK26407@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>
+Subject: Re: [PATCH v3 02/71] ARC: Build system: Makefiles, Kconfig, Linker
+ script
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-3-git-send-email-vgupta@synopsys.com> <51061AD0.4020200@synopsys.com> <20130128184419.GA24853@merkur.ravnborg.org>
+In-Reply-To: <20130128184419.GA24853@merkur.ravnborg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.164]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-01-13 14:13:52, Kent Overstreet wrote:
-> On Thu, Jan 24, 2013 at 01:27:59PM -0800, Andrew Morton wrote:
-> > Please also take a look at Jan's recent
-> > http://www.spinics.net/lists/linux-fsdevel/msg61738.html and have a
-> > think about how this plays with your patchset.
-> 
-> I can't think of any possible interactions - none of my aio stuff messes
-> with the way the fput() happens; the aio code does call fput() when the
-> kiocb is freed and my patches do touch _that_ code but none of the
-> behaviour there changes.
-> 
-> Might be worth documenting this though, I can't think of any reason it'd
-> be obvious looking at the aio code that the fput() has to happen after
-> aio_complete(). As with the bugs I just sent you patches for it's not
-> terribly clear who owns what in the kiocb when.
-> 
-> Reading those patches though - the main change is to call
-> inode_dio_done() before calling aio_complete(). All inode_dio_done()
-> does though is issue a wakeup - to whatever called inode_dio_wait().
-  inode_dio_done() does a decrement and wakeup.
+On Tuesday 29 January 2013 12:14 AM, Sam Ravnborg wrote:
+> On Mon, Jan 28, 2013 at 11:59:36AM +0530, Vineet Gupta wrote:
+>> Hi Sam,
+>>
+>> On Thursday 24 January 2013 04:20 PM, Vineet Gupta wrote:
+>>> Arnd in his review pointed out that arch Kconfig organisation has several
+>>> deficiencies:
+>>>
+>>> * Build time entries for things which can be runtime extracted from DT
+>>>   (e.g. SDRAM size, core clk frequency..)
+>>> * Not multi-platform-image-build friendly (choice .. endchoice constructs)
+>>> * cpu variants support (750/770) is exclusive.
+>>>
+>>> The first 2 have been fixed in subsequent patches.
+>>> Due to the nature of the 750 and 770, it is not possible to build for
+>>> both together, w/o special runtime glue code which would hurt
+>>> performance.
+>>>
+>>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>>> Cc: Arnd Bergmann <arnd@arndb.de>
+>>> Cc: Sam Ravnborg <sam@ravnborg.org>
+> Looks good - all former comments addressed, and nothing were jumping
+> into my eyes now.
+> Many existing architectures looks worse from the build stuff perspective...
+>
+> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+>
+> 	Sam
 
-> That means whatever called inode_dio_wait() needs its own ref on the
-> inode, and from a cursory glance at the code it is _not_ at all clear to
-> me that's the case - if inode_dio_wait() is merely finishing things for
-> that specific IO that need to be done in process context, I can easily
-> imagine it not being the case.
-> 
-> Assuming whatever does call inode_dio_wait() does have its own ref,
-> there was only a real use after free when nothing was waiting on the
-> inode.
-  Well, but there doesn't have to be any waiter... If there is, it had
-better have it's own ref, that's for sure.
+Thx Sam. I have a following one liner change to the version you reviewed. Will it
+be OK to add your ACK despite that or do I need to send the updated patch for you
+to take a look again.
 
-> Similarly for the ext4 code to write unwritten extents - and having seen
-> and helped chase a bug in that code before, that code _definitely_ needs
-> auditing.
-  Agreed. That code is a mess. I'm cleaning up some of it but it's not
-easy.
+-Vineet
 
-								Honza
+------------------------->8-----------------------
+diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
+index 3fecd6f..b41e786 100644
+--- a/arch/arc/plat-arcfpga/Kconfig
++++ b/arch/arc/plat-arcfpga/Kconfig
+@@ -8,6 +8,7 @@
+ 
+ menuconfig ARC_PLAT_FPGA_LEGACY
+     bool "\"Legacy\" ARC FPGA dev Boards"
++    select ISS_SMP_EXTN if SMP
+     help
+       Support for ARC development boards, provided by Synopsys.
+       These are based on FPGA or ISS. e.g.
+@@ -19,7 +20,6 @@ if ARC_PLAT_FPGA_LEGACY
+ 
+ config ARC_BOARD_ANGEL4
+     bool "ARC Angel4"
+-    select ISS_SMP_EXTN if SMP
+     default y
+     help
+       ARC Angel4 FPGA Ref Platform (Xilinx Virtex Based)
+------------------------->8-----------------------
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
