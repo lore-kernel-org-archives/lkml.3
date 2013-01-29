@@ -1,123 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab3A2Vlb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:41:31 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49298 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab3A2Vl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:41:28 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv4 1/7] debugfs: add get/set for atomic types
-Date: Tue, 29 Jan 2013 15:40:21 -0600
-Message-Id: <1359495627-30285-2-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012921-7182-0000-0000-000004CA7270
+	id S1753262Ab3A2Vlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:41:53 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:65279 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab3A2Vlu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 16:41:50 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 2/2] ARM: dove: split legacy and DT setup
+Date: Tue, 29 Jan 2013 22:41:35 +0100
+Message-Id: <1359495695-29304-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20130129212623.GJ7717@titan.lakedaemon.net>
+References: <20130129212623.GJ7717@titan.lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs currently lack the ability to create attributes
-that set/get atomic_t values.
+In the beginning of DT for Dove it was reasonable to have it close to
+non-DT code. With improved DT support, it became more and more difficult
+to not break non-DT while changing DT code.
 
-This patch adds support for this through a new
-debugfs_create_atomic_t() function.
+This patch splits up DT board setup and introduces a DOVE_LEGACY config
+to allow to remove legacy code for DT-only kernels.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/debugfs.h |  2 ++
- 2 files changed, 44 insertions(+)
+Changelog:
+[v3]
+- also include new board-dt.c file that was missing in v2 of patch [2/2]
+  (patch [1/2] has not changed and is not resent)
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index c5ca6ae..fa26d5b 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -21,6 +21,7 @@
- #include <linux/debugfs.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/atomic.h>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/mach-dove/Kconfig    |    5 ++
+ arch/arm/mach-dove/Makefile   |    4 +-
+ arch/arm/mach-dove/board-dt.c |  103 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-dove/common.c   |   90 -----------------------------------
+ arch/arm/mach-dove/common.h   |    1 +
+ 5 files changed, 112 insertions(+), 91 deletions(-)
+ create mode 100644 arch/arm/mach-dove/board-dt.c
+
+diff --git a/arch/arm/mach-dove/Kconfig b/arch/arm/mach-dove/Kconfig
+index 603c5fd..aedd0ba 100644
+--- a/arch/arm/mach-dove/Kconfig
++++ b/arch/arm/mach-dove/Kconfig
+@@ -2,8 +2,12 @@ if ARCH_DOVE
  
- static ssize_t default_read_file(struct file *file, char __user *buf,
- 				 size_t count, loff_t *ppos)
-@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- }
- EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+ menu "Marvell Dove Implementations"
  
-+static int debugfs_atomic_t_set(void *data, u64 val)
-+{
-+	atomic_set((atomic_t *)data, val);
-+	return 0;
-+}
-+static int debugfs_atomic_t_get(void *data, u64 *val)
-+{
-+	*val = atomic_read((atomic_t *)data);
-+	return 0;
-+}
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
-+			debugfs_atomic_t_set, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
++config DOVE_LEGACY
++	bool
 +
-+/**
-+ * debugfs_create_atomic_t - create a debugfs file that is used to read and
-+ * write an atomic_t value
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @value: a pointer to the variable that the file should read to and write
-+ *         from.
+ config MACH_DOVE_DB
+ 	bool "Marvell DB-MV88AP510 Development Board"
++	select DOVE_LEGACY
+ 	select I2C_BOARDINFO
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+@@ -11,6 +15,7 @@ config MACH_DOVE_DB
+ 
+ config MACH_CM_A510
+ 	bool "CompuLab CM-A510 Board"
++	select DOVE_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  CompuLab CM-A510 Board.
+diff --git a/arch/arm/mach-dove/Makefile b/arch/arm/mach-dove/Makefile
+index 5e683ba..3f0a858 100644
+--- a/arch/arm/mach-dove/Makefile
++++ b/arch/arm/mach-dove/Makefile
+@@ -1,4 +1,6 @@
+-obj-y				+= common.o addr-map.o irq.o mpp.o
++obj-y				+= common.o addr-map.o irq.o
++obj-$(CONFIG_DOVE_LEGACY)	+= mpp.o
+ obj-$(CONFIG_PCI)		+= pcie.o
+ obj-$(CONFIG_MACH_DOVE_DB)	+= dove-db-setup.o
++obj-$(CONFIG_MACH_DOVE_DT)	+= board-dt.o
+ obj-$(CONFIG_MACH_CM_A510)	+= cm-a510.o
+diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-dove/board-dt.c
+new file mode 100644
+index 0000000..c9c274a
+--- /dev/null
++++ b/arch/arm/mach-dove/board-dt.c
+@@ -0,0 +1,103 @@
++/*
++ * arch/arm/mach-dove/board-dt.c
++ *
++ * Marvell Dove 88AP510 System On Chip FDT Board
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
 + */
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				 struct dentry *parent, atomic_t *value)
-+{
-+	/* if there are no write bits set, make read only */
-+	if (!(mode & S_IWUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_ro);
-+	/* if there are no read bits set, make write only */
-+	if (!(mode & S_IRUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_wo);
 +
-+	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
++#include <linux/init.h>
++#include <linux/clk-provider.h>
++#include <linux/clk/mvebu.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/platform_data/usb-ehci-orion.h>
++#include <asm/hardware/cache-tauros2.h>
++#include <asm/mach/arch.h>
++#include <mach/pm.h>
++#include <plat/common.h>
++#include <plat/irq.h>
++#include "common.h"
++
++/*
++ * There are still devices that doesn't even know about DT,
++ * get clock gates here and add a clock lookup.
++ */
++static void __init dove_legacy_clk_init(void)
++{
++	struct device_node *np = of_find_compatible_node(NULL, NULL,
++					 "marvell,dove-gating-clock");
++	struct of_phandle_args clkspec;
++
++	clkspec.np = np;
++	clkspec.args_count = 1;
++
++	clkspec.args[0] = CLOCK_GATING_BIT_USB0;
++	orion_clkdev_add(NULL, "orion-ehci.0",
++			 of_clk_get_from_provider(&clkspec));
++
++	clkspec.args[0] = CLOCK_GATING_BIT_USB1;
++	orion_clkdev_add(NULL, "orion-ehci.1",
++			 of_clk_get_from_provider(&clkspec));
++
++	clkspec.args[0] = CLOCK_GATING_BIT_GBE;
++	orion_clkdev_add(NULL, "mv643xx_eth_port.0",
++			 of_clk_get_from_provider(&clkspec));
++
++	clkspec.args[0] = CLOCK_GATING_BIT_PCIE0;
++	orion_clkdev_add("0", "pcie",
++			 of_clk_get_from_provider(&clkspec));
++
++	clkspec.args[0] = CLOCK_GATING_BIT_PCIE1;
++	orion_clkdev_add("1", "pcie",
++			 of_clk_get_from_provider(&clkspec));
 +}
-+EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
++
++static void __init dove_of_clk_init(void)
++{
++	mvebu_clocks_init();
++	dove_legacy_clk_init();
++}
++
++static struct mv643xx_eth_platform_data dove_dt_ge00_data = {
++	.phy_addr = MV643XX_ETH_PHY_ADDR_DEFAULT,
++};
++
++static void __init dove_dt_init(void)
++{
++	pr_info("Dove 88AP510 SoC\n");
++
++#ifdef CONFIG_CACHE_TAUROS2
++	tauros2_init(0);
++#endif
++	dove_setup_cpu_mbus();
++
++	/* Setup root of clk tree */
++	dove_of_clk_init();
++
++	/* Internal devices not ported to DT yet */
++	dove_rtc_init();
++	dove_ge00_init(&dove_dt_ge00_data);
++	dove_ehci0_init();
++	dove_ehci1_init();
++	dove_pcie_init(1, 1);
++
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++}
++
++static const char * const dove_dt_board_compat[] = {
++	"marvell,dove",
++	NULL
++};
++
++DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
++	.map_io		= dove_map_io,
++	.init_early	= dove_init_early,
++	.init_irq	= orion_dt_init_irq,
++	.timer		= &dove_timer,
++	.init_machine	= dove_dt_init,
++	.restart	= dove_restart,
++	.dt_compat	= dove_dt_board_compat,
++MACHINE_END
+diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
+index be887feea..aea14b4 100644
+--- a/arch/arm/mach-dove/common.c
++++ b/arch/arm/mach-dove/common.c
+@@ -9,22 +9,17 @@
+  */
  
- static ssize_t read_file_bool(struct file *file, char __user *user_buf,
- 			      size_t count, loff_t *ppos)
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index 66c434f..51fea70 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
- 				  struct dentry *parent, u64 *value);
- struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- 				     struct dentry *parent, size_t *value);
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				     struct dentry *parent, atomic_t *value);
- struct dentry *debugfs_create_bool(const char *name, umode_t mode,
- 				  struct dentry *parent, u32 *value);
+ #include <linux/clk-provider.h>
+-#include <linux/clk/mvebu.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/init.h>
+-#include <linux/of.h>
+-#include <linux/of_platform.h>
+ #include <linux/platform_data/dma-mv_xor.h>
+ #include <linux/platform_data/usb-ehci-orion.h>
+ #include <linux/platform_device.h>
+ #include <asm/hardware/cache-tauros2.h>
+-#include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/mach/time.h>
+ #include <mach/bridge-regs.h>
+ #include <mach/pm.h>
+ #include <plat/common.h>
+-#include <plat/irq.h>
+ #include <plat/time.h>
+ #include "common.h"
  
+@@ -364,88 +359,3 @@ void dove_restart(char mode, const char *cmd)
+ 	while (1)
+ 		;
+ }
+-
+-#if defined(CONFIG_MACH_DOVE_DT)
+-/*
+- * There are still devices that doesn't even know about DT,
+- * get clock gates here and add a clock lookup.
+- */
+-static void __init dove_legacy_clk_init(void)
+-{
+-	struct device_node *np = of_find_compatible_node(NULL, NULL,
+-					 "marvell,dove-gating-clock");
+-	struct of_phandle_args clkspec;
+-
+-	clkspec.np = np;
+-	clkspec.args_count = 1;
+-
+-	clkspec.args[0] = CLOCK_GATING_BIT_USB0;
+-	orion_clkdev_add(NULL, "orion-ehci.0",
+-			 of_clk_get_from_provider(&clkspec));
+-
+-	clkspec.args[0] = CLOCK_GATING_BIT_USB1;
+-	orion_clkdev_add(NULL, "orion-ehci.1",
+-			 of_clk_get_from_provider(&clkspec));
+-
+-	clkspec.args[0] = CLOCK_GATING_BIT_GBE;
+-	orion_clkdev_add(NULL, "mv643xx_eth_port.0",
+-			 of_clk_get_from_provider(&clkspec));
+-
+-	clkspec.args[0] = CLOCK_GATING_BIT_PCIE0;
+-	orion_clkdev_add("0", "pcie",
+-			 of_clk_get_from_provider(&clkspec));
+-
+-	clkspec.args[0] = CLOCK_GATING_BIT_PCIE1;
+-	orion_clkdev_add("1", "pcie",
+-			 of_clk_get_from_provider(&clkspec));
+-}
+-
+-static void __init dove_of_clk_init(void)
+-{
+-	mvebu_clocks_init();
+-	dove_legacy_clk_init();
+-}
+-
+-static struct mv643xx_eth_platform_data dove_dt_ge00_data = {
+-	.phy_addr = MV643XX_ETH_PHY_ADDR_DEFAULT,
+-};
+-
+-static void __init dove_dt_init(void)
+-{
+-	pr_info("Dove 88AP510 SoC, TCLK = %d MHz.\n",
+-		(dove_tclk + 499999) / 1000000);
+-
+-#ifdef CONFIG_CACHE_TAUROS2
+-	tauros2_init(0);
+-#endif
+-	dove_setup_cpu_mbus();
+-
+-	/* Setup root of clk tree */
+-	dove_of_clk_init();
+-
+-	/* Internal devices not ported to DT yet */
+-	dove_rtc_init();
+-
+-	dove_ge00_init(&dove_dt_ge00_data);
+-	dove_ehci0_init();
+-	dove_ehci1_init();
+-	dove_pcie_init(1, 1);
+-
+-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+-}
+-
+-static const char * const dove_dt_board_compat[] = {
+-	"marvell,dove",
+-	NULL
+-};
+-
+-DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
+-	.map_io		= dove_map_io,
+-	.init_early	= dove_init_early,
+-	.init_irq	= orion_dt_init_irq,
+-	.timer		= &dove_timer,
+-	.init_machine	= dove_dt_init,
+-	.restart	= dove_restart,
+-	.dt_compat	= dove_dt_board_compat,
+-MACHINE_END
+-#endif
+diff --git a/arch/arm/mach-dove/common.h b/arch/arm/mach-dove/common.h
+index 1a23340..d17f760 100644
+--- a/arch/arm/mach-dove/common.h
++++ b/arch/arm/mach-dove/common.h
+@@ -25,6 +25,7 @@ void dove_init_early(void);
+ void dove_init_irq(void);
+ void dove_setup_cpu_mbus(void);
+ void dove_ge00_init(struct mv643xx_eth_platform_data *eth_data);
++void dove_rtc_init(void);
+ void dove_sata_init(struct mv_sata_platform_data *sata_data);
+ #ifdef CONFIG_PCI
+ void dove_pcie_init(int init_port0, int init_port1);
 -- 
-1.8.1.1
+1.7.10.4
 
