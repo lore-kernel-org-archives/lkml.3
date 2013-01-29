@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab3A2Mj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:39:57 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:31709 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756605Ab3A2Mjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:39:54 -0500
+	id S1756870Ab3A2MjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:39:14 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:23415 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756832Ab3A2MjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:39:08 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org
-Subject: [PATCH v5 01/20] scripts/gdb: Add infrastructure
-Date: Tue, 29 Jan 2013 13:37:44 +0100
-Message-Id: <99da3a9930c678555d260206688158441d2bab05.1359463075.git.jan.kiszka@siemens.com>
+        Borislav Petkov <bp@alien8.de>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v5 20/20] scripts/gdb: Add basic documentation
+Date: Tue, 29 Jan 2013 13:38:03 +0100
+Message-Id: <adb8ca13259fed849a5cabc66303d495edea03f3.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
 References: <cover.1359463075.git.jan.kiszka@siemens.com>
@@ -26,139 +25,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the basic infrastructure to load kernel-specific python
-helper scripts when debugging the kernel in gdb.
-
-The loading mechanism is based on gdb loading for <objfile>-gdb.py when
-opening <objfile>. Therefore, this places a corresponding link to the
-main helper script into the output directory that contains vmlinux.
-
-The main scripts will pull in submodules containing Linux specific gdb
-commands and functions. To avoid polluting the source directory with
-compiled python modules, we link to them from the object directory.
-
-Due to gdb.parse_and_eval, we depend on gdb >= 7.1. We need to
-pre-process the version string returned by gdb as some distros tend to
-prefix it with their name.
-
-This feature depends on CONFIG_DEBUG_INFO.
-
-CC: Michal Marek <mmarek@suse.cz>
-CC: linux-kbuild@vger.kernel.org
+CC: Rob Landley <rob@landley.net>
+CC: linux-doc@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- Makefile                   |    5 ++++-
- scripts/Makefile           |    3 ++-
- scripts/gdb/Makefile       |    9 +++++++++
- scripts/gdb/utils.py       |   17 +++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |   22 ++++++++++++++++++++++
- 5 files changed, 54 insertions(+), 2 deletions(-)
- create mode 100644 scripts/gdb/Makefile
- create mode 100644 scripts/gdb/utils.py
- create mode 100644 scripts/gdb/vmlinux-gdb.py
+ Documentation/gdb-kernel-debugging.txt |  155 ++++++++++++++++++++++++++++++++
+ 1 files changed, 155 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/gdb-kernel-debugging.txt
 
-diff --git a/Makefile b/Makefile
-index 2d3c92c..f0d2b2d 100644
---- a/Makefile
-+++ b/Makefile
-@@ -774,6 +774,9 @@ endif
- ifdef CONFIG_BUILD_DOCSRC
- 	$(Q)$(MAKE) $(build)=Documentation
- endif
-+ifdef CONFIG_DEBUG_INFO
-+	$(Q)ln -fsn $(srctree)/scripts/gdb/vmlinux-gdb.py
-+endif
- 	+$(call if_changed,link-vmlinux)
- 
- # The actual objects are generated when descending, 
-@@ -1019,7 +1022,7 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
- 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
- 		  signing_key.priv signing_key.x509 x509.genkey		\
- 		  extra_certificates signing_key.x509.keyid		\
--		  signing_key.x509.signer
-+		  signing_key.x509.signer vmlinux-gdb.py
- 
- # clean - Delete most, but leave enough to build external modules
- #
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 01e7adb..3204b91 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -37,6 +37,7 @@ subdir-$(CONFIG_MODVERSIONS) += genksyms
- subdir-y                     += mod
- subdir-$(CONFIG_SECURITY_SELINUX) += selinux
- subdir-$(CONFIG_DTC)         += dtc
-+subdir-$(CONFIG_DEBUG_INFO)  += gdb
- 
- # Let clean descend into subdirs
--subdir-	+= basic kconfig package selinux
-+subdir-	+= basic kconfig package selinux gdb
-diff --git a/scripts/gdb/Makefile b/scripts/gdb/Makefile
+diff --git a/Documentation/gdb-kernel-debugging.txt b/Documentation/gdb-kernel-debugging.txt
 new file mode 100644
-index 0000000..34ccd06
+index 0000000..0ea46e1
 --- /dev/null
-+++ b/scripts/gdb/Makefile
-@@ -0,0 +1,9 @@
-+always := gdb-scripts
++++ b/Documentation/gdb-kernel-debugging.txt
+@@ -0,0 +1,155 @@
++Debugging kernel and modules via gdb
++====================================
 +
-+$(obj)/gdb-scripts:
-+ifneq ($(KBUILD_SRC),)
-+	$(Q)ln -fsn $(srctree)/$(obj)/*.py $(objtree)/$(obj)
-+endif
-+	@:
++The kernel debugger kgdb, hypervisors like QEMU or JTAG-based hardware
++interfaces allow to debug the Linux kernel and its modules during runtime
++using gdb. Gdb comes with a powerful scripting interface for python. The
++kernel provides a collection of helper scripts that can simplify typical
++kernel debugging steps. This is a short tutorial about how to enable and use
++them. It focuses on QEMU/KVM virtual machines as target, but the examples can
++be transferred to the other gdb stubs as well.
 +
-+clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-new file mode 100644
-index 0000000..f75eae6
---- /dev/null
-+++ b/scripts/gdb/utils.py
-@@ -0,0 +1,17 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  common utilities
-+#
-+# Copyright (c) Siemens AG, 2011-2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
 +
-+import gdb
-+import re
++Requirements
++------------
 +
-+gdb_version = re.sub("^[^0-9]*", "", gdb.VERSION)
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-new file mode 100644
-index 0000000..bcb45cc
---- /dev/null
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -0,0 +1,22 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  loader module
-+#
-+# Copyright (c) Siemens AG, 2012
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
++ o gdb 7.1+ (recommended: 7.3+) with python support enabled (typically true
++   for distributions)
 +
-+import os
 +
-+sys.path = [ os.path.dirname(__file__) + "/scripts/gdb" ] + sys.path
++Setup
++-----
 +
-+from utils import gdb_version
++ o Create a virtual Linux machine for QEMU/KVM (see www.linux-kvm.org and
++   www.qemu.org for more details)
 +
-+if gdb_version < "7.1":
-+	print "NOTE: gdb 7.1 or later required for Linux helper scripts " \
-+	      "to work."
++ o Build the kernel with CONFIG_DEBUG_INFO enabled, but leave
++   CONFIG_DEBUG_INFO_REDUCED off
++
++ o Install that kernel on the guest.
++
++   Alternatively, QEMU allows to boot the kernel directly using -kernel,
++   -append, -initrd command line switches. This is generally only useful if
++   you do not depend on modules. See QEMU documentation for more details on
++   this mode.
++
++ o Enable the gdb stub of QEMU/KVM, either
++    - at VM startup time by appending "-s" to the QEMU command line
++   or
++    - during runtime by issuing "gdbserver" from the QEMU monitor
++      console
++
++ o cd /path/to/linux-build
++
++ o Start gdb: gdb vmlinux
++
++   Note: Some distros may restrict auto-loading of gdb scripts to known safe
++   directories. In case gdb reports to refuse loading vmlinux-gdb.py, add
++
++    add-add-auto-load-safe-path /path/to/linux-build
++
++   to ~/.gdbinit. See gdb help for more details.
++
++ o Attach to the booted guest:
++    (gdb) target remote :1234
++
++
++Examples of using the Linux-provided gdb helpers
++------------------------------------------------
++
++ o Load module (and main kernel) symbols:
++    (gdb) lx-symbols
++    loading vmlinux
++    scanning for modules in /home/user/linux/build
++    loading @0xffffffffa0020000: /home/user/linux/build/net/netfilter/xt_tcpudp.ko
++    loading @0xffffffffa0016000: /home/user/linux/build/net/netfilter/xt_pkttype.ko
++    loading @0xffffffffa0002000: /home/user/linux/build/net/netfilter/xt_limit.ko
++    loading @0xffffffffa00ca000: /home/user/linux/build/net/packet/af_packet.ko
++    loading @0xffffffffa003c000: /home/user/linux/build/fs/fuse/fuse.ko
++    ...
++    loading @0xffffffffa0000000: /home/user/linux/build/drivers/ata/ata_generic.ko
++
++ o Set a breakpoint on some not yet loaded module function, e.g.:
++    (gdb) b btrfs_init_sysfs
++    Function "btrfs_init_sysfs" not defined.
++    Make breakpoint pending on future shared library load? (y or [n]) y
++    Breakpoint 1 (btrfs_init_sysfs) pending.
++
++ o Continue the target
++    (gdb) c
++
++ o Load the module on the target and watch the symbols being loaded as well as
++   the breakpoint hit:
++    loading @0xffffffffa0034000: /home/user/linux/build/lib/libcrc32c.ko
++    loading @0xffffffffa0050000: /home/user/linux/build/lib/lzo/lzo_compress.ko
++    loading @0xffffffffa006e000: /home/user/linux/build/lib/zlib_deflate/zlib_deflate.ko
++    loading @0xffffffffa01b1000: /home/user/linux/build/fs/btrfs/btrfs.ko
++
++    Breakpoint 1, btrfs_init_sysfs () at /home/user/linux/fs/btrfs/sysfs.c:36
++    36              btrfs_kset = kset_create_and_add("btrfs", NULL, fs_kobj);
++
++ o Dump the log buffer of the target kernel:
++    (gdb) lx-dmesg
++    [     0.000000] Initializing cgroup subsys cpuset
++    [     0.000000] Initializing cgroup subsys cpu
++    [     0.000000] Linux version 3.8.0-rc4-dbg+ (...
++    [     0.000000] Command line: root=/dev/sda2 resume=/dev/sda1 vga=0x314
++    [     0.000000] e820: BIOS-provided physical RAM map:
++    [     0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
++    [     0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
++    ....
++
++ o Examine fields of the current task struct:
++    (gdb) p $lx_current().pid
++    $1 = 4998
++    (gdb) p $lx_current().comm
++    $2 = "modprobe\000\000\000\000\000\000\000"
++
++ o Make use of the per-cpu helper for the current or a specified CPU:
++    (gdb) p $lx_per_cpu("runqueues").nr_running
++    $3 = 1
++    (gdb) p $lx_per_cpu("runqueues", 2).nr_running
++    $4 = 0
++
++ o Dig into hrtimers using the container_of helper:
++    (gdb) set $next = $lx_per_cpu("hrtimer_bases").clock_base[0].active.next
++    (gdb) p *$container_of($next, "struct hrtimer", "node")
++    $5 = {
++      node = {
++        node = {
++          __rb_parent_color = 18446612133355256072,
++          rb_right = 0x0 <irq_stack_union>,
++          rb_left = 0x0 <irq_stack_union>
++        },
++        expires = {
++          tv64 = 1835268000000
++        }
++      },
++      _softexpires = {
++        tv64 = 1835268000000
++      },
++      function = 0xffffffff81078232 <tick_sched_timer>,
++      base = 0xffff88003fd0d6f0,
++      state = 1,
++      start_pid = 0,
++      start_site = 0xffffffff81055c1f <hrtimer_start_range_ns+20>,
++      start_comm = "swapper/2\000\000\000\000\000\000"
++    }
++
++
++List of commands and helper
++---------------------------
++
++The number of commands and convenience helpers may evolve over the time, this
++is just a snapshot of the initial version:
++
++ (gdb) apropos lx
++ function lx_current -- Return current task
++ function lx_module -- Find module by name and return the module variable
++ function lx_modvar -- Return global variable of a module
++ function lx_per_cpu -- Return per-cpu variable
++ function lx_task_by_pid -- Find Linux task by PID and return the task_struct variable
++ function lx_thread_info -- Calculate Linux thread_info from task variable
++ lx-dmesg -- Print Linux kernel log buffer
++ lx-lsmod -- List currently loaded modules
++ lx-symbols -- (Re-)load symbols of Linux kernel and currently loaded modules
 -- 
 1.7.3.4
 
