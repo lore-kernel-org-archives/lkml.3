@@ -1,69 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab3A2GBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 01:01:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13193 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab3A2GBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 01:01:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,557,1355126400"; 
-   d="scan'208";a="283399190"
-Message-ID: <510765F6.9040203@intel.com>
-Date: Tue, 29 Jan 2013 14:02:30 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1753677Ab3A2GD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 01:03:58 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50259 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab3A2GD4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 01:03:56 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-1b-5107664a505f
+Date: Tue, 29 Jan 2013 15:03:57 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] x86, reboot: skip reboot_fixups in early boot phase
+Message-ID: <20130129060357.GA5131@lge.com>
+References: <1356702623-9430-1-git-send-email-js1304@gmail.com>
+ <CAErSpo5_dgH1Au3QChVrhqBY_Fm54+Aw_ZiwGf2JSsgQaR1dug@mail.gmail.com>
+ <20130125011303.GA3401@lge.com>
+ <20130125025901.GA26984@google.com>
+ <20130125041411.GB12562@kroah.com>
+ <CAErSpo43SoeFn1N5shnxsXmL-ZOmkDQM6yFwyaeBMTRhcy4=dA@mail.gmail.com>
+ <20130125045232.GA13070@kroah.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com> <510493E4.8060602@intel.com> <20130127104039.GC8894@pd.tnic> <51060A6D.4090208@intel.com>
-In-Reply-To: <51060A6D.4090208@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130125045232.GA13070@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 01:19 PM, Alex Shi wrote:
-> On 01/27/2013 06:40 PM, Borislav Petkov wrote:
->> On Sun, Jan 27, 2013 at 10:41:40AM +0800, Alex Shi wrote:
->>> Just rerun some benchmarks: kbuild, specjbb2005, oltp, tbench, aim9,
->>> hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
->>> loopback netperf. on my core2, nhm, wsm, snb, platforms. no clear
->>> performance change found.
->>
->> Ok, good, You could put that in one of the commit messages so that it is
->> there and people know that this patchset doesn't cause perf regressions
->> with the bunch of benchmarks.
->>
->>> I also tested balance policy/powersaving policy with above benchmark,
->>> found, the specjbb2005 drop much 30~50% on both of policy whenever
->>> with openjdk or jrockit. and hackbench drops a lots with powersaving
->>> policy on snb 4 sockets platforms. others has no clear change.
-
-Sorry, the testing configuration is unfair for this specjbb2005 results
-here. I set JVM hard pin and use hugepage for peak performance.
-
-When remove the hard pin and no hugepage, the balance/powersaving both
-drop about 5% VS performance policy, and performance policy result is
-similar with 3.8-rc5.
-
->>
->> I guess this is expected because there has to be some performance hit
->> when saving power...
->>
+On Thu, Jan 24, 2013 at 08:52:32PM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Jan 24, 2013 at 09:21:52PM -0700, Bjorn Helgaas wrote:
+> > On Thu, Jan 24, 2013 at 9:14 PM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
+> > > On Thu, Jan 24, 2013 at 07:59:01PM -0700, Bjorn Helgaas wrote:
+> > >> [+cc Greg for driver core]
+> > >>
+> > >> On Fri, Jan 25, 2013 at 10:13:03AM +0900, Joonsoo Kim wrote:
+> > >> > Hello, Bjorn.
+> > >> >
+> > >> > On Thu, Jan 24, 2013 at 10:45:13AM -0700, Bjorn Helgaas wrote:
+> > >> > > On Fri, Dec 28, 2012 at 6:50 AM, Joonsoo Kim <js1304@gmail.com> wrote:
+> > >> > > > During early boot phase, PCI bus subsystem is not yet initialized.
+> > >> > > > If panic is occured in early boot phase and panic_timeout is set,
+> > >> > > > code flow go into emergency_restart() and hit mach_reboot_fixups(), then
+> > >> > > > encounter another panic. When second panic, we can't hold a panic_lock, so
+> > >> > > > code flow go into panic_smp_self_stop() which prevent system to restart.
+> > >> > > >
+> > >> > > > For avoid second panic, skip reboot_fixups in early boot phase.
+> > >> > > > It makes panic_timeout works in early boot phase.
+> > >> > > >
+> > >> > > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > >> > > > Cc: Ingo Molnar <mingo@redhat.com>
+> > >> > > > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > >> > > > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> > >> > > >
+> > >> > > > diff --git a/arch/x86/kernel/reboot_fixups_32.c b/arch/x86/kernel/reboot_fixups_32.c
+> > >> > > > index c8e41e9..b9b8ec9 100644
+> > >> > > > --- a/arch/x86/kernel/reboot_fixups_32.c
+> > >> > > > +++ b/arch/x86/kernel/reboot_fixups_32.c
+> > >> > > > @@ -89,6 +89,10 @@ void mach_reboot_fixups(void)
+> > >> > > >         if (in_interrupt())
+> > >> > > >                 return;
+> > >> > > >
+> > >> > > > +       /* During early boot phase, PCI is not yet initialized */
+> > >> > > > +       if (system_state == SYSTEM_BOOTING)
+> > >> > > > +               return;
+> > >> > > > +
+> > >> > > >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
+> > >> > > >                 cur = &(fixups_table[i]);
+> > >> > > >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
+> > >> > >
+> > >> > > I guess you're saying that if we call pci_get_device() too early, it
+> > >> > > panics?  Did you figure out why that happens?
+> > >> > >
+> > >> > > If we call pci_get_device() before PCI has been initialized, it would
+> > >> > > be good if it just returned NULL, indicating that we didn't find any
+> > >> > > matching device.  I looked briefly, and I thought that's what would
+> > >> > > happen, but apparently I'm missing something.
+> > >> >
+> > >> > In bus_find_device(), klist_iter_init_node() is called with
+> > >> > @bus->p->klist_device. Before initialization, bus->p is NULL,
+> > >> > so panic is occured.
+> > >>
+> > >> I see.  pci_bus_type.p is initialized by __bus_register() in this path:
+> > >>
+> > >>   pci_driver_init        # postcore_initcall
+> > >>     bus_register(&pci_bus_type)
+> > >>       __bus_register
+> > >>         priv = kzalloc(sizeof(struct subsys_private))
+> > >>       bus->p = priv
+> > >>       klist_init(&priv->klist_devices, klist_devices_get, klist_devices_put)
+> > >>
+> > >> I was hoping we could statically initialize the klist, but that doesn't
+> > >> seem likely.
+> > >>
+> > >> But I wonder if we could do something like the following.  If we could,
+> > >> then callers wouldn't have to worry about whether or not the bus has been
+> > >> initialized.
+> > >
+> > > <snip>
+> > >
+> > > I have no objection to that patch, but really, someone wants to call
+> > > pci_find_device() before PCI is initialized?  Can't that be fixed
+> > > instead, as that is the root problem, not the driver core.
+> > >
+> > > But, to paper over your subsystem's bugs, I guess I can take it :)
+> > 
+> > The caller is in the native_machine_emergency_restart() path.
+> > Joonsoo's original patch does what I think you're suggesting:
+> > 
+> > >> > > > +       /* During early boot phase, PCI is not yet initialized */
+> > >> > > > +       if (system_state == SYSTEM_BOOTING)
+> > >> > > > +               return;
+> > >> > > > +
+> > >> > > >         for (i=0; i < ARRAY_SIZE(fixups_table); i++) {
+> > >> > > >                 cur = &(fixups_table[i]);
+> > >> > > >                 dev = pci_get_device(cur->vendor, cur->device, NULL);
+> > 
+> > I think it's sort of ugly to check system_state before using
+> > pci_get_device(), and there's not really an obvious connection between
+> > system_state and PCI initialization.
+> > 
+> > But if you prefer that, Joonsoo's original patch is fine with me.
 > 
-> BTW, I had tested the v3 version based on sched numa -- on tip/master.
-> The specjbb just has about 5~7% dropping on balance/powersaving policy.
-> The power scheduling done after the numa scheduling logical.
-> 
+> Both probably would be best, as there are probably other things that you
+> don't want to touch when you are still booting and trying to restart the
+> machine at the same time.
 
+I agree that my patch is ugly :)
+So I drop it and wait for your patch.
 
--- 
-Thanks Alex
+Thanks.
+
