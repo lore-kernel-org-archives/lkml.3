@@ -1,113 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab3A2JIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 04:08:34 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:54233 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207Ab3A2JIU (ORCPT
+	id S1755435Ab3A2JIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 04:08:54 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13911 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755238Ab3A2JHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 04:08:20 -0500
-Message-ID: <51079178.3070002@linux.vnet.ibm.com>
-Date: Tue, 29 Jan 2013 17:08:08 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 29 Jan 2013 04:07:55 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 29 Jan 2013 01:07:50 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 4/4] mfd: tps65090: remove suspend/resume callbacks
+Date: Tue, 29 Jan 2013 14:35:18 +0530
+Message-ID: <1359450318-24912-5-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1359450318-24912-1-git-send-email-ldewangan@nvidia.com>
+References: <1359450318-24912-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012909-5140-0000-0000-000002AFB536
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3 change log:
-	Fix small logical issues (Thanks to Mike Galbraith).
-	Change the way of handling WAKE.
+The tps65090 mfd driver implement the suspend/resume callbacks
+which just disable and enable irqs in suspend/resume respectively.
 
-This patch set is trying to simplify the select_task_rq_fair() with
-schedule balance map.
+This operation is already done in irq suspend and irq_resume and
+hence it is not require to implement the same in the driver.
 
-After get rid of the complex code and reorganize the logical, pgbench show
-the improvement, more the clients, bigger the improvement.
+Remove this non-require code.
 
-				Prev:		Post:
-
-	| db_size | clients |	|  tps  |	|  tps  |
-        +---------+---------+   +-------+       +-------+
-        | 22 MB   |       1 |   | 10788 |       | 10881 |
-        | 22 MB   |       2 |   | 21617 |       | 21837 |
-        | 22 MB   |       4 |   | 41597 |       | 42645 |
-        | 22 MB   |       8 |   | 54622 |       | 57808 |
-        | 22 MB   |      12 |   | 50753 |       | 54527 |
-        | 22 MB   |      16 |   | 50433 |       | 56368 |	+11.77%
-        | 22 MB   |      24 |   | 46725 |       | 54319 |	+16.25%
-        | 22 MB   |      32 |   | 43498 |       | 54650 |	+25.64%
-        | 7484 MB |       1 |   |  7894 |       |  8301 |
-        | 7484 MB |       2 |   | 19477 |       | 19622 |
-        | 7484 MB |       4 |   | 36458 |       | 38242 |
-        | 7484 MB |       8 |   | 48423 |       | 50796 |
-        | 7484 MB |      12 |   | 46042 |       | 49938 |
-        | 7484 MB |      16 |   | 46274 |       | 50507 |	+9.15%
-        | 7484 MB |      24 |   | 42583 |       | 49175 |	+15.48%
-        | 7484 MB |      32 |   | 36413 |       | 49148 |	+34.97%
-        | 15 GB   |       1 |   |  7742 |       |  7876 |
-        | 15 GB   |       2 |   | 19339 |       | 19531 |
-        | 15 GB   |       4 |   | 36072 |       | 37389 |
-        | 15 GB   |       8 |   | 48549 |       | 50570 |
-        | 15 GB   |      12 |   | 45716 |       | 49542 |
-        | 15 GB   |      16 |   | 46127 |       | 49647 |	+7.63%
-        | 15 GB   |      24 |   | 42539 |       | 48639 |	+14.34%
-        | 15 GB   |      32 |   | 36038 |       | 48560 |	+34.75%
-
-Please check the patch for more details about schedule balance map.
-
-Support the NUMA domain but not well tested.
-Support the rebuild of domain but not tested.
-
-Comments are very welcomed.
-
-Behind the v3:
-	Some changes has been applied to the way of handling WAKE.
-
-	And that's all around one question, whether we should do load balance
-	for WAKE or not?
-
-	In the old world, the only chance to do load balance for WAKE is when
-	prev cpu and curr cpu are not cache affine, but that doesn't make sense.
-
-	I suppose the real meaning behind that logical is, do balance only if
-	cache benefit nothing after changing cpu.
-
-	However, select_idle_sibling() is not only designed for the purpose to
-	take care of cache, it also benefit latency, and cost less than the
-	balance path.
-
-	Besides, it's impossible to estimate the benefit of doing load balance
-	at that point of time.
-
-	And that's come out the v3, no load balance for WAKE.
-
-Test with:
-	12 cpu X86 server and linux-next 3.8.0-rc3.
-
-Michael Wang (3):
-	[RFC PATCH v3 1/3] sched: schedule balance map foundation
-	[RFC PATCH v3 2/3] sched: build schedule balance map
-	[RFC PATCH v3 3/3] sched: simplify select_task_rq_fair() with schedule balance map
-
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- b/kernel/sched/core.c  |   44 +++++++++++++++
- b/kernel/sched/fair.c  |  135 ++++++++++++++++++++++++++-----------------------
- b/kernel/sched/sched.h |   14 +++++
- kernel/sched/core.c    |   67 ++++++++++++++++++++++++
- 4 files changed, 199 insertions(+), 61 deletions(-)
+Changes from V1: 
+- No change.
+
+ drivers/mfd/tps65090.c |   23 -----------------------
+ 1 files changed, 0 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+index 2ad0a15..98edb5b 100644
+--- a/drivers/mfd/tps65090.c
++++ b/drivers/mfd/tps65090.c
+@@ -230,28 +230,6 @@ static int tps65090_i2c_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM_SLEEP
+-static int tps65090_suspend(struct device *dev)
+-{
+-	struct i2c_client *client = to_i2c_client(dev);
+-	if (client->irq)
+-		disable_irq(client->irq);
+-	return 0;
+-}
+-
+-static int tps65090_resume(struct device *dev)
+-{
+-	struct i2c_client *client = to_i2c_client(dev);
+-	if (client->irq)
+-		enable_irq(client->irq);
+-	return 0;
+-}
+-#endif
+-
+-static const struct dev_pm_ops tps65090_pm_ops = {
+-	SET_SYSTEM_SLEEP_PM_OPS(tps65090_suspend, tps65090_resume)
+-};
+-
+ static const struct i2c_device_id tps65090_id_table[] = {
+ 	{ "tps65090", 0 },
+ 	{ },
+@@ -263,7 +241,6 @@ static struct i2c_driver tps65090_driver = {
+ 		.name	= "tps65090",
+ 		.owner	= THIS_MODULE,
+ 		.of_match_table = of_match_ptr(tps65090_of_match),
+-		.pm	= &tps65090_pm_ops,
+ 	},
+ 	.probe		= tps65090_i2c_probe,
+ 	.remove		= tps65090_i2c_remove,
+-- 
+1.7.1.1
 
