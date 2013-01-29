@@ -1,174 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab3A2Q3T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:29:19 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19437 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab3A2QYc (ORCPT
+	id S1753954Ab3A2Q3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:29:52 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:38041
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753069Ab3A2Q3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:24:32 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V6 13/30] aio: add aio support for iov_iter arguments
-Date: Tue, 29 Jan 2013 10:23:26 -0600
-Message-Id: <1359476623-10544-14-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 29 Jan 2013 11:29:49 -0500
+X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 11:29:49 EST
+X-IronPort-AV: E=Sophos;i="4.84,561,1355094000"; 
+   d="scan'208";a="391971"
+Date: Tue, 29 Jan 2013 17:19:43 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Joe Perches <joe@perches.com>
+cc: Valdis.Kletnieks@vt.edu, cocci@systeme.lip6.fr,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: coccinelle and bitmask arithmetic (was: Re: [patch] TTY: synclink,
+ small cleanup in dtr_rts())
+In-Reply-To: <1359475998.4196.26.camel@joe-AO722>
+Message-ID: <alpine.DEB.2.02.1301291717530.3339@hadrien>
+References: <20130127194039.GA18787@elgon.mountain>  <1359317078.14406.12.camel@joe-AO722> <20130127201947.GO16282@mwanda>  <9561.1359474916@turing-police.cc.vt.edu> <1359475998.4196.26.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
 
-This adds iocb cmds which specify that memory is held in iov_iter
-structures.  This lets kernel callers specify memory that can be
-expressed in an iov_iter, which includes pages in bio_vec arrays.
 
-Only kernel callers can provide an iov_iter so it doesn't make a lot of
-sense to expose the IOCB_CMD values for this as part of the user space
-ABI.
+On Tue, 29 Jan 2013, Joe Perches wrote:
 
-But kernel callers should also be able to perform the usual aio
-operations which suggests using the the existing operation namespace and
-support code.
+> On Tue, 2013-01-29 at 10:55 -0500, Valdis.Kletnieks@vt.edu wrote:
+> > On Sun, 27 Jan 2013 23:19:47 +0300, Dan Carpenter said:
+> >
+> > > Yeah.  I think it would be, but adding bitflags together instead of
+> > > doing bitwise ORs is very common as well.
+> >
+> > The fact it's common doesn't mean it's good programming practice,
+> > or even correct.  Consider:
+> >
+> > #define F_FOO 0x01
+> > #define F_BAR 0x02
+> > #define F_BAZ 0x04
+> >
+> > unsigned int flags = F_FOO;
+> > ...
+> >       flags |= F_BAR;
+> >
+> > Now some time later, another code path does this:
+> >
+> >       flags += F_FOO;
+> >
+> > If it was another |, it would be a no harm no foul class of bug.
+> > But how long is it going to take you to figure out who set F_BAZ?
+> >
+> > I wonder if there's a way to write a coccinelle patch to find places
+> > where we do arithmetic operations on bitmasks....
+>
+> Not so far as I know, but maybe someone on the
+> cocci lists does. (cc'd)
+>
+> I could imagine a test for variables that have
+> uses of both arithmetic and bit operations but
+> not a discriminator for when one type is
+> appropriate and the other is not.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
----
- fs/aio.c                     | 64 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/aio.h          |  3 +++
- include/uapi/linux/aio_abi.h |  2 ++
- 3 files changed, 69 insertions(+)
+If the definition of a bitmask is an identifier in all capital letters,
+that would be easy.  Another possibility is such an identifier that is
+defined to a value expressed beginning with 0x.  Another possibility is
+such an identifier that is sometimes used with & and | and sometimes used
+with an arithmetic operation.  I will give them a try.
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 9a1a6fc..2c03681 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1424,6 +1424,26 @@ static ssize_t aio_setup_single_vector(int type, struct file * file, struct kioc
- 	return 0;
- }
- 
-+static ssize_t aio_read_iter(struct kiocb *iocb)
-+{
-+	struct file *file = iocb->ki_filp;
-+	ssize_t ret = -EINVAL;
-+
-+	if (file->f_op->read_iter)
-+		ret = file->f_op->read_iter(iocb, iocb->ki_iter, iocb->ki_pos);
-+	return ret;
-+}
-+
-+static ssize_t aio_write_iter(struct kiocb *iocb)
-+{
-+	struct file *file = iocb->ki_filp;
-+	ssize_t ret = -EINVAL;
-+
-+	if (file->f_op->write_iter)
-+		ret = file->f_op->write_iter(iocb, iocb->ki_iter, iocb->ki_pos);
-+	return ret;
-+}
-+
- /*
-  * aio_setup_iocb:
-  *	Performs the initial checks and aio retry method
-@@ -1487,6 +1507,34 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		if (file->f_op->aio_write)
- 			kiocb->ki_retry = aio_rw_vect_retry;
- 		break;
-+	case IOCB_CMD_READ_ITER:
-+		ret = -EINVAL;
-+		if (unlikely(!is_kernel_kiocb(kiocb)))
-+			break;
-+		ret = -EBADF;
-+		if (unlikely(!(file->f_mode & FMODE_READ)))
-+			break;
-+		ret = security_file_permission(file, MAY_READ);
-+		if (unlikely(ret))
-+			break;
-+		ret = -EINVAL;
-+		if (file->f_op->read_iter)
-+			kiocb->ki_retry = aio_read_iter;
-+		break;
-+	case IOCB_CMD_WRITE_ITER:
-+		ret = -EINVAL;
-+		if (unlikely(!is_kernel_kiocb(kiocb)))
-+			break;
-+		ret = -EBADF;
-+		if (unlikely(!(file->f_mode & FMODE_WRITE)))
-+			break;
-+		ret = security_file_permission(file, MAY_WRITE);
-+		if (unlikely(ret))
-+			break;
-+		ret = -EINVAL;
-+		if (file->f_op->write_iter)
-+			kiocb->ki_retry = aio_write_iter;
-+		break;
- 	case IOCB_CMD_FDSYNC:
- 		ret = -EINVAL;
- 		if (file->f_op->aio_fsync)
-@@ -1553,6 +1601,22 @@ void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
- }
- EXPORT_SYMBOL_GPL(aio_kernel_init_rw);
- 
-+/*
-+ * The iter count must be set before calling here.  Some filesystems uses
-+ * iocb->ki_left as an indicator of the size of an IO.
-+ */
-+void aio_kernel_init_iter(struct kiocb *iocb, struct file *filp,
-+			  unsigned short op, struct iov_iter *iter, loff_t off)
-+{
-+	iocb->ki_filp = filp;
-+	iocb->ki_iter = iter;
-+	iocb->ki_opcode = op;
-+	iocb->ki_pos = off;
-+	iocb->ki_nbytes = iov_iter_count(iter);
-+	iocb->ki_left = iocb->ki_nbytes;
-+}
-+EXPORT_SYMBOL_GPL(aio_kernel_init_iter);
-+
- void aio_kernel_init_callback(struct kiocb *iocb,
- 			      void (*complete)(u64 user_data, long res),
- 			      u64 user_data)
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index f9e0292..2598e6c 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -126,6 +126,7 @@ struct kiocb {
- 	 * this is the underlying eventfd context to deliver events to.
- 	 */
- 	struct eventfd_ctx	*ki_eventfd;
-+	struct iov_iter		*ki_iter;
- };
- 
- static inline bool is_sync_kiocb(struct kiocb *kiocb)
-@@ -229,6 +230,8 @@ struct kiocb *aio_kernel_alloc(gfp_t gfp);
- void aio_kernel_free(struct kiocb *iocb);
- void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
- 			unsigned short op, void *ptr, size_t nr, loff_t off);
-+void aio_kernel_init_iter(struct kiocb *iocb, struct file *filp,
-+			  unsigned short op, struct iov_iter *iter, loff_t off);
- void aio_kernel_init_callback(struct kiocb *iocb,
- 			      void (*complete)(u64 user_data, long res),
- 			      u64 user_data);
-diff --git a/include/uapi/linux/aio_abi.h b/include/uapi/linux/aio_abi.h
-index 86fa7a7..bd39bb2 100644
---- a/include/uapi/linux/aio_abi.h
-+++ b/include/uapi/linux/aio_abi.h
-@@ -44,6 +44,8 @@ enum {
- 	IOCB_CMD_NOOP = 6,
- 	IOCB_CMD_PREADV = 7,
- 	IOCB_CMD_PWRITEV = 8,
-+	IOCB_CMD_READ_ITER = 9,
-+	IOCB_CMD_WRITE_ITER = 10,
- };
- 
- /*
--- 
-1.8.1.1
-
+julia
