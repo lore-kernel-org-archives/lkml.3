@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab3A2LqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 06:46:08 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50810 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752969Ab3A2LqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 06:46:02 -0500
-Message-ID: <5107B650.5090901@ti.com>
-Date: Tue, 29 Jan 2013 17:15:20 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: Richard Cochran <richardcochran@gmail.com>, Matt Porter <mporter@ti.com>,
-        Chase Maupin <chase.maupin@ti.com>, Jason Kridner <jdk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
-References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com>
-In-Reply-To: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756032Ab3A2LsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 06:48:11 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:43540 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab3A2LsI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 06:48:08 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v7 0/2] perf stat: add interval counter printing
+Date: Tue, 29 Jan 2013 12:47:42 +0100
+Message-Id: <1359460064-3060-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/28/2013 6:41 PM, Pantelis Antoniou wrote:
-> Fix interrupt storm on bone A4 cause by non-by-the-book interrupt handling.
-> While at it, added a non-NAPI mode (which is easier to debug), plus
-> some general fixes.
->
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> ---
->   Documentation/devicetree/bindings/net/cpsw.txt |   1 +
->   drivers/net/ethernet/ti/cpsw.c                 | 222 +++++++++++++++++++++----
->   drivers/net/ethernet/ti/davinci_cpdma.c        |   4 +-
->   drivers/net/ethernet/ti/davinci_cpdma.h        |   2 +-
->   include/linux/platform_data/cpsw.h             |   1 +
->   5 files changed, 194 insertions(+), 36 deletions(-)
-I have tested CPSW on AM335x EVM 1.5A with flood ping and i am not
-seeing any interrupt storm.
-Can you provide more details on how to reproduce the issue.
+This small patchset extends perf stat with the -I option.
 
-Regards
-Mugunthan V N
+The -I option enables interval printing. It expects
+an interval duration in milliseconds. Minimum is
+100ms. Once, activated perf stat prints events deltas
+since last printout. All modes are supported.
+
+$ perf stat -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+ #           time             counts events
+      1.000109853      2,388,560,546 cycles
+      2.000262846      2,393,332,358 cycles
+      3.000354131      2,393,176,537 cycles
+      4.000439503      2,393,203,790 cycles
+      5.000527075      2,393,167,675 cycles
+      6.000609052      2,393,203,670 cycles
+      7.000691082      2,393,175,678 cycles
+
+The output format makes it easy to feed into a plotting program
+such as gnuplot when the -I option is used in combination with the -x
+option:
+
+$ perf stat -x, -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000084113,2378775498,cycles
+2.000245798,2391056897,cycles
+3.000354445,2392089414,cycles
+4.000459115,2390936603,cycles
+5.000565341,2392108173,cycles
+
+The first patch adds the code to keep previous counts. The second
+is the actual extension of perf stat.
+
+In v2, we changed the option from -T to -I based on feedback
+from Andi Kleen (who is using -T in an upcoming patch).
+
+In v3, added compute_deltas() to evsel.c to factorize
+deltas computation based on Jiri's comments.
+
+In v4, we made sure that counts are printed in case
+the run is interrupted by CTRL-C based on Andi Kleen's
+feedback.
+
+In v5, we added the column headings printed every 25 lines.
+Cleaned up the code some more based on Namhyung's comments.
+
+In v6, we simplify print_stat() by dropping the useless
+check for interval as noted by Namhyung Kim. We also
+rebase to 3.8.0-rc4.
+
+In v7, we simply rebased to Arnaldo's perf/core tree.
+
+
+Stephane Eranian (2):
+  perf tools: add evsel prev_raw_count field
+  perf stat: add interval printing
+
+ tools/perf/Documentation/perf-stat.txt |    4 +
+ tools/perf/builtin-stat.c              |  157 +++++++++++++++++++++++++++++---
+ tools/perf/util/evsel.c                |   26 ++++++
+ tools/perf/util/evsel.h                |    1 +
+ 4 files changed, 173 insertions(+), 15 deletions(-)
+
+-- 
+1.7.10.4
+
