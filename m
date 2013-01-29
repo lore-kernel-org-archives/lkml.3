@@ -1,78 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3A2TDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:03:51 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:51070 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752361Ab3A2TDt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:03:49 -0500
-Message-ID: <1359486226.8282.97.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [GIT PULL] EFI fixes for v3.8
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-efi <linux-efi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Tue, 29 Jan 2013 19:03:46 +0000
-In-Reply-To: <1358504987.8203.425.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1358504987.8203.425.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754288Ab3A2TGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:06:01 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:37090 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913Ab3A2TF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 14:05:57 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Andrey Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH 3/3] signalfd: add ability to read siginfo-s without dequeuing signals (v2)
+Date: Tue, 29 Jan 2013 23:03:01 +0400
+Message-Id: <1359486181-29088-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1358849741-9611-4-git-send-email-avagin@openvz.org>
+References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+If signalfd is created with the flag SFD_PEEK, it reads siginfo-s
+without dequeuing signals.
 
-The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
+For reading not first siginfo pread(fd, buf, size, pos) can be used,
+where ppos / sizeof(signalfd_siginfo) is a sequence number of a signal
+in a queue.
 
-  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
+This functionality is required for checkpointing pending signals.
 
-are available in the git repository at:
+v2: * signals can be dumped only from one queue.
+    * treat pos as offset in bytes, not in elements, so pos should be
+      aligned to the size of signalfd_siginfo.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git 
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ fs/signalfd.c                 | 61 ++++++++++++++++++++++++++++++++++++++++---
+ include/uapi/linux/signalfd.h |  2 ++
+ 2 files changed, 60 insertions(+), 3 deletions(-)
 
-for you to fetch changes up to 739701888f5d98010a8960b2d974d74c77c830a2:
-
-  x86, efi: remove attribute check from setup_efi_pci (2013-01-29 17:52:06 +0000)
-
-----------------------------------------------------------------
-Various urgent EFI fixes and some warning cleanups for v3.8
-
-  * EFI boot stub fix for Macbook Pro's from Maarten Lankhorst
-  * Fix an oops in efivarfs from Lingzhu Xiang
-  * 32-bit warning cleanups from Jan Beulich
-  * Patch to Boot on >512GB RAM systems from Nathan Zimmer
-  * Set efi.runtime_version correctly
-  * efivarfs updates
-
-----------------------------------------------------------------
-Jan Beulich (1):
-      x86, efi: fix 32-bit warnings in setup_efi_pci()
-
-Lingzhu Xiang (1):
-      efivarfs: Drop link count of the right inode
-
-Maarten Lankhorst (1):
-      x86, efi: remove attribute check from setup_efi_pci
-
-Matt Fleming (3):
-      efivarfs: Never return ENOENT from firmware
-      efivarfs: Delete dentry from dcache in efivarfs_file_write()
-      x86, efi: Set runtime_version to the EFI spec revision
-
-Nathan Zimmer (1):
-      efi, x86: Pass a proper identity mapping in efi_call_phys_prelog
-
- arch/x86/boot/compressed/eboot.c | 11 ++++-------
- arch/x86/platform/efi/efi.c      |  2 +-
- arch/x86/platform/efi/efi_64.c   | 22 +++++++++++++++++-----
- drivers/firmware/efivars.c       |  5 +++--
- 4 files changed, 25 insertions(+), 15 deletions(-)
-
+diff --git a/fs/signalfd.c b/fs/signalfd.c
+index 8019ec9..0da6a30 100644
+--- a/fs/signalfd.c
++++ b/fs/signalfd.c
+@@ -51,6 +51,47 @@ struct signalfd_ctx {
+ 	sigset_t sigmask;
+ };
+ 
++static int peek_signal(struct sigpending *pending, sigset_t *mask,
++				siginfo_t *info, loff_t *pseq)
++{
++	struct sigqueue *q;
++	int ret = 0;
++
++	spin_lock_irq(&current->sighand->siglock);
++
++	list_for_each_entry(q, &pending->list, list) {
++		if (sigismember(mask, q->info.si_signo))
++			continue;
++
++		if ((*pseq)-- == 0) {
++			copy_siginfo(info, &q->info);
++			ret = info->si_signo;
++			break;
++		}
++	}
++
++	spin_unlock_irq(&current->sighand->siglock);
++
++	return ret;
++}
++
++static ssize_t signalfd_peek(struct signalfd_ctx *ctx,
++				siginfo_t *info, loff_t *ppos, int queue_mask)
++{
++	loff_t seq = *ppos / sizeof(struct signalfd_siginfo);
++	int signr = 0;
++
++	if (queue_mask & SIGQUEUE_PRIVATE)
++		signr = peek_signal(&current->pending,
++					&ctx->sigmask, info, &seq);
++	else if (queue_mask & SIGQUEUE_SHARED)
++		signr = peek_signal(&current->signal->shared_pending,
++					 &ctx->sigmask, info, &seq);
++	(*ppos) += sizeof(struct signalfd_siginfo);
++
++	return signr;
++}
++
+ static int signalfd_release(struct inode *inode, struct file *file)
+ {
+ 	kfree(file->private_data);
+@@ -257,9 +298,15 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
+ 	if (!count)
+ 		return -EINVAL;
+ 
++	if (*ppos % sizeof(struct signalfd_siginfo))
++		return -EINVAL;
++
+ 	siginfo = (struct signalfd_siginfo __user *) buf;
+ 	do {
+-		ret = signalfd_dequeue(ctx, &info, nonblock, qmask);
++		if (file->f_flags & SFD_PEEK)
++			ret = signalfd_peek(ctx, &info, ppos, qmask);
++		else
++			ret = signalfd_dequeue(ctx, &info, nonblock, qmask);
+ 
+ 		if (unlikely(ret <= 0))
+ 			break;
+@@ -315,7 +362,12 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+ 	BUILD_BUG_ON(SFD_CLOEXEC != O_CLOEXEC);
+ 	BUILD_BUG_ON(SFD_NONBLOCK != O_NONBLOCK);
+ 
+-	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW | SFD_QUEUES))
++	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK |
++			SFD_RAW | SFD_PEEK | SFD_QUEUES))
++		return -EINVAL;
++
++	/* SFD_PEEK can be used for one queue only */
++	if ((flags & SFD_PEEK) && ((flags & SFD_QUEUES) == SFD_QUEUES))
+ 		return -EINVAL;
+ 
+ 	if (sizemask != sizeof(sigset_t) ||
+@@ -352,7 +404,10 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+ 		}
+ 
+ 		file->f_flags |= (flags & SFD_QUEUES) ? : SFD_QUEUES;
+-		file->f_flags |= flags & SFD_RAW;
++		file->f_flags |= flags & (SFD_RAW | SFD_PEEK);
++
++		if (file->f_flags & SFD_PEEK)
++			file->f_mode |= FMODE_PREAD;
+ 
+ 		fd_install(ufd, file);
+ 	} else {
+diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
+index 481b658..24c5d2d 100644
+--- a/include/uapi/linux/signalfd.h
++++ b/include/uapi/linux/signalfd.h
+@@ -20,6 +20,8 @@
+ #define SFD_SHARED_QUEUE O_DIRECTORY
+ /* Read signals from a per-thread queue */
+ #define SFD_PER_THREAD_QUEUE O_EXCL
++/* Read signals without removing them from a queue */
++#define SFD_PEEK O_APPEND
+ 
+ struct signalfd_siginfo {
+ 	__u32 ssi_signo;
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.11.7
 
