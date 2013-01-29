@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab3A2CHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 21:07:47 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:1311 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab3A2CHn (ORCPT
+	id S1755901Ab3A2CKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 21:10:41 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:38334 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab3A2CKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 21:07:43 -0500
-Message-ID: <51072EDA.2000704@huawei.com>
-Date: Tue, 29 Jan 2013 10:07:22 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Mon, 28 Jan 2013 21:10:38 -0500
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jiang Liu <liuj97@gmail.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
-References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com> <1358525267-14268-5-git-send-email-jiang.liu@huawei.com> <3500982.MUDp6kKU3R@vostro.rjw.lan> <CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com> <CAE9FiQVM4+Wirpb3_D0Zxi4r1p9SAMi4ZrNYr=-eas-C6pKJYA@mail.gmail.com> <CAErSpo7WbbzZ8cKfLvuE331ofWir2vswUnYaxVLBBYGFowedXQ@mail.gmail.com> <CAE9FiQXkrYubkgbbOXmrEXvGZBZXMZ6sh8kGTpF1_=tD3OMPJw@mail.gmail.com> <CAErSpo7vHXdh=ogvfZnxx9gqgiifWGa=XzS+ZKjXFFOPue4TTw@mail.gmail.com> <CAE9FiQU84OSQrQJEGAQTDzVv8kGCi+fmgM8+ycoMXMUfHsNe-g@mail.gmail.com>
-In-Reply-To: <CAE9FiQU84OSQrQJEGAQTDzVv8kGCi+fmgM8+ycoMXMUfHsNe-g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+In-Reply-To: <510721C6.6080705@zytor.com>
+References: <1358868049-19884-1-git-send-email-trenn@suse.de>
+	<CAE9FiQWJqWQJhoJb2dBn=iAsKjxuf3MJro-jz+6k+WNZor8-xQ@mail.gmail.com>
+	<CAE9FiQWXcwagEb0jdFfdHvNcByNxtaLbvvoRC-jAppQmiGS22w@mail.gmail.com>
+	<6950516.1uefDuthAH@hammer82.arch.suse.de>
+	<510721C6.6080705@zytor.com>
+Date: Mon, 28 Jan 2013 18:10:38 -0800
+X-Google-Sender-Auth: R8275qA4XdeFNLXfWWvTNKhOhsE
+Message-ID: <CAE9FiQWDcFR+6L-GiR6rk60TC0zH=xewyH_h1Rx_QB+8PTiU3Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86 e820: Introduce memmap=resetusablemap for kdump usage
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Renninger <trenn@suse.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        vgoyal@redhat.com, horms@verge.net.au
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-1-29 6:58, Yinghai Lu wrote:
-> On Mon, Jan 28, 2013 at 2:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+On Mon, Jan 28, 2013 at 5:11 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> So I guess the final patch should be:
+>>    - Add a new e820 type:
+>>         E820_KDUMP_RESERVED /* Originally usable memory where the crashed
+>>                                                     kernel kernel resided in */
+>>   - Use Yinghai's last posted patch, but instead of:
+>> +                     e820_update_range(0, ULLONG_MAX, E820_RAM,
+>> +                                       E820_RESERVED);
+>> ...
+>> +                     e820_remove_range(start_at, mem_size, E820_RESERVED, 0);
+>> do:
+>> +                     e820_update_range(0, ULLONG_MAX, E820_RAM,
+>> +                                       E820_KDUMP_RESERVED);
+>> ...
+>> +                     e820_remove_range(start_at, mem_size, E820_KDUMP_RESERVED, 0);
 >>
->> CONFIG_ACPI_PCI_SLOT=y in RHEL6, so evidently they have this problem.
-> 
-> oh, I only checked opensuse that has that set to m.
-> 
+>>   - Come up with another memmap=kdump_reserve_ram memmap option name
+>>     or however it should get named...
 >>
->> Asking users to edit module.conf by hand is not a solution, just like
->> asking users to boot with a command line option is not a solution.
->> That sort of stuff is fine for a hobbyist OS intended only for techie
->> geeks.  It's not fine for Linux.
-> 
-> not sure. add something in command line or conf files.
-> but recompile kernel is another story.
-> 
+>> If this proposal gets accepted, I can send a tested patch...
 >>
->> If you would give a concrete example of the ACPI namespace info and
->> device config, hotplug sequence, etc., required to show the problem,
->> we could have a useful discussion about ways to fix it.  But if all
->> you have is FUD about "this might break and users won't have the
->> ability to edit modules.conf," that doesn't help me see why this patch
->> is a bad idea.
-> 
-> Never mind, We should save your bandwidth to more patches.
-Hi Yinghai,
-	Could we use quirk to auto-disable PCIe native hotplug for
-problematic platforms?
-Regards!
-Gerry
+>
+> Yes, this is much saner.  There really shouldn't need to be an option,
+> even; since the tools need to be modified anyway, just modify the actual
+> memory map data structure itself.
 
-> 
-> Yinghai
-> 
-> .
-> 
+yes,
 
+kexec-tools will change that to E820_KDUMP_RESERVED (or other good name).
 
+We only need to update kernel to get old max_pfn by
+checking E820_KDUMP_RESERVED.
+
+Yinghai
