@@ -1,115 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab3A2A2a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 19:28:30 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:58058 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab3A2A2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 19:28:25 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [RFC PATCH v5 0/8] introduce PCI bus notifier chain to get rid of the ACPI PCI subdriver interfaces
-Date: Tue, 29 Jan 2013 01:34:29 +0100
-Message-ID: <1598719.tGLtx5aHMZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo6M-c3diVEUpUESgL=2PenxHYkW1eb=OGBdxxWwkge-Bw@mail.gmail.com>
-References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com> <CAErSpo6M-c3diVEUpUESgL=2PenxHYkW1eb=OGBdxxWwkge-Bw@mail.gmail.com>
+	id S1752302Ab3A2AaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 19:30:23 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:58822 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab3A2AaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 19:30:21 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130128231659.GW30577@one.firstfloor.org>
+References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
+	<1359151245-13179-8-git-send-email-andi@firstfloor.org>
+	<CABPqkBTM8w_RVrQNiyhBprMBjL5a0Q7Y9KQsKP3Ld62EZPSufQ@mail.gmail.com>
+	<20130128231659.GW30577@one.firstfloor.org>
+Date: Tue, 29 Jan 2013 01:30:19 +0100
+Message-ID: <CABPqkBS=1gQCiWRQYJ8Y0QqFLvmkf0NiRivK-xpFmqwpXwyByA@mail.gmail.com>
+Subject: Re: [PATCH 07/12] perf, x86: Avoid checkpointed counters causing
+ excessive TSX aborts v3
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 28, 2013 01:56:33 PM Bjorn Helgaas wrote:
-> On Fri, Jan 18, 2013 at 9:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> > This is an RFC patchset to address review comments in thread at:
-> > https://patchwork.kernel.org/patch/1946851/. The patch just pasts
-> > compilation. If no objection to the new implementation, I will
-> > go on to modify acpiphp driver and conduct tests.
-> >
-> > The main changes from V4 to V5 includes:
-> > 1) introduce a dedicated notifier chain for PCI buses
-> > 2) change pci_slot as built-in driver
-> > 3) unify the way to create/destroy PCI slots
-> > 4) introduce a kernel option to disable PCIe native hotplug
-> >
-> > TODO:
-> > 1) change acpiphp as built-in and unify the way to create/destroy ACPI
-> >    based hotplug slots.
-> > 2) change other ACPI PCI subdriver in Yinghai's root bridge hotplug series
-> >    to use the PCI bus notifier chain.
-> > 3) Remove the ACPI PCI subdriver interface eventaully.
-> >
-> > Jiang Liu (8):
-> >   PCI: make PCI device create/destroy logic symmetric
-> >   PCI: split registration of PCI bus devices into two stages
-> >   PCI: add a blocking notifier chain for PCI bus addition/removal
-> >   ACPI, PCI: avoid building pci_slot as module
-> >   PCI, ACPI: hook PCI bus notifications to create/destroy PCI slots
-> >   pci_slot: replace printk(KERN_xxx) with pr_xxx()
-> >   PCI/PCIe: add "pci=nopciehp" to disable PCIe native hotplug
-> >   PCI/PCIe: only claim PME from firmware when CONFIG_PCIE_PME is
-> >     enabled
-> >
-> >  Documentation/kernel-parameters.txt |    2 +
-> >  drivers/acpi/Kconfig                |    5 +-
-> >  drivers/acpi/internal.h             |    5 +
-> >  drivers/acpi/pci_root.c             |    8 +-
-> >  drivers/acpi/pci_slot.c             |  217 ++++++++++-------------------------
-> >  drivers/acpi/scan.c                 |    1 +
-> >  drivers/pci/bus.c                   |   26 ++++-
-> >  drivers/pci/pci.c                   |    2 +
-> >  drivers/pci/pci.h                   |    1 +
-> >  drivers/pci/pcie/portdrv_core.c     |    7 +-
-> >  drivers/pci/pcie/portdrv_pci.c      |    3 +
-> >  drivers/pci/probe.c                 |    7 +-
-> >  drivers/pci/remove.c                |   15 +--
-> >  include/linux/pci.h                 |   21 ++++
-> >  14 files changed, 142 insertions(+), 178 deletions(-)
-> 
-> I think the problem we're trying to solve is that we don't initialize
-> hot-added devices, correctly, e.g., we don't set up AER, we don't
-> update acpi/pci_slot stuff, we probably don't set up PME etc.  We also
-> have similar issues like IOMMU init on powerpc.
-> 
-> Notifier chains seem like an unnecessarily complicated way to deal
-> with this.  They're great for communicating between modules that stay
-> at arm's length from each other.  But that's not the case here --
-> everything is PCI and is quite closely coupled.  I think AER, PME,
-> slot, etc., should  be initialized directly in pci_device_add() or
-> somewhere nearby.
+On Tue, Jan 29, 2013 at 12:16 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> I don't buy really this workaround. You are assuming you're always
+>> measuring INTC_CHECKPOINTED
+>> event by itself.
+>
+> There's no such assumption.
+>
+>> So what if you get into the handler because of an PMI
+>> due to an overflow
+>> of another counter which is active at the same time as counter2?
+>> You're going to artificially
+>> add an overflow to counter2. Unless you're enforcing only counter2 in use.
+>
+> All the code does it to always check the counter. There's no
+> "overflow added". For counting it may be set back and accumulated
+> a bit earlier than normal, but that's no problem. This will only
+> happen for a checkpointed counter 2, not for anything else.
+>
+Ok, you're right. I misunderstood the point of the check. Yes, it systematically
+adds INTX_CP to the list of events to check. That does not mean it will detect
+an overflow.
 
-I agree.
+>> The counter is reinstated to its state before the critical section but
+>> the PMI cannot be
+>> cancelled and there is no state left behind to tell what to do with it.
+>
+> The PMI is effectively spurious, but we use it to set back. Don't know
+> what you mean with "cancel". It already happened of course.
+>
+But when you do this, it seems you making INT_CP events unusable
+for sampling, because you're resetting their value under the cover.
+So what happens when you sample, especially with a fixed period?
 
-> This might sound a bit radical because it implies some fairly
-> far-reaching changes.  It means this code can't be a module (the only
-> one that can be built as a module today is pciehp, and I think
-> everybody agrees that we should make it static as soon as we can
-> figure out the acpiphp/pciehp issue).  I think it also means the
-> pcieportdrv concept is of dubious value, since all the services should
-> be known at build-time and we probably don't need a registration
-> interface for them.
+>
+>> static inline bool is_event_intx_cp(struct perf_event *event)
+>> {
+>>    return event && (event->hw.config & HSW_INTX_CHECKPOINTED);
+>> }
+>
+> They both look the same to me.
+>>
+I think you understand what I meant by this. You substitue all the
+long checks by the inline. It does not change anything to the code, it
+makes is easier to read and avoid long lines.
 
-It is of dubious value regardless.  It just adds complexity for no gain.
-Moreover, these things are in fact not mutually independent.
+>>
+>> >         for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+>> >                 struct perf_event *event = cpuc->events[bit];
+>> >
+>> > @@ -1615,6 +1635,20 @@ static int hsw_hw_config(struct perf_event *event)
+>> >              ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
+>> >               event->attr.precise_ip > 0))
+>> >                 return -EIO;
+>> > +       if (event->hw.config & HSW_INTX_CHECKPOINTED) {
+>> > +               /*
+>> > +                * Sampling of checkpointed events can cause situations where
+>> > +                * the CPU constantly aborts because of a overflow, which is
+>> > +                * then checkpointed back and ignored. Forbid checkpointing
+>> > +                * for sampling.
+>> > +                *
+>> > +                * But still allow a long sampling period, so that perf stat
+>> > +                * from KVM works.
+>> > +                */
+>>
+>> What has perf stat have to do with sample_period?
+>
+> It always uses a period to accumulate in a larger counter as you probably know.
+> Also with the other code we only allow checkpoint with stat.
+>
+Yes, I know.
 
-I've had a lot of headaches trying to work around that when I was working
-on PME support and later on _OSC for root bridges.  Let's just take that
-stuff away once and for good. :-)
+>
+>>
+>> > +               if (event->attr.sample_period > 0 &&
+>> > +                   event->attr.sample_period < 0x7fffffff)
+>> > +                       return -EIO;
+>> > +       }
+Explain the 0x7fffffff to me? Is that the max period set by default when you
+just count?
 
-Thanks,
-Rafael
 
+>> same comment about -EIO vs. EOPNOTSUPP. sample_period is u64
+>> so, it's always >= 0. Where does this 31-bit limit come from?
+>
+> That's what perf stat uses when running in the KVM guest.
+>
+>> Experimentation?
+>
+> The code does > 0, not >= 0
+>
+>> Could be written:
+>>       if (event->attr.sample_period && event->attr.sample_period < 0x7fffffff)
+>
+> That's 100% equivalent to what I wrote.
+>
+I know.
+Usually when I see x > 0, I interpret as to mean the field could be negative.
+That's what I was trying to say. However, here we know it cannot be. No
+big deal.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> I can change the error value.
+
+Ok.
