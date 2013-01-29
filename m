@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3A2BJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 20:09:23 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:58103 "EHLO hydra.sisk.pl"
+	id S1754307Ab3A2BKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 20:10:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48099 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342Ab3A2BJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 20:09:20 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        linux-pci@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend finalization
-Date: Tue, 29 Jan 2013 02:15:30 +0100
-Message-ID: <1821500.CRlxLgYU5r@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo4sEv-Qw1iztGn-SsPKZ=Y+st-tPAFOvsp17MUo6X=xrA@mail.gmail.com>
-References: <20130118113019.6698.25941.stgit@zurg> <20130118114222.6698.7103.stgit@zurg> <CAErSpo4sEv-Qw1iztGn-SsPKZ=Y+st-tPAFOvsp17MUo6X=xrA@mail.gmail.com>
+	id S1751342Ab3A2BKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 20:10:33 -0500
+Message-ID: <51072147.9090306@zytor.com>
+Date: Mon, 28 Jan 2013 17:09:27 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Thomas Renninger <trenn@suse.de>
+CC: yinghai@kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, vgoyal@redhat.com, horms@verge.net.au
+Subject: Re: [PATCH 1/2] x86 e820: Check for exactmap appearance when parsing
+ first memmap option
+References: <1358868049-19884-1-git-send-email-trenn@suse.de> <1358868049-19884-2-git-send-email-trenn@suse.de>
+In-Reply-To: <1358868049-19884-2-git-send-email-trenn@suse.de>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 28, 2013 04:17:42 PM Bjorn Helgaas wrote:
-> [+cc Rafael]
+On 01/22/2013 07:20 AM, Thomas Renninger wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
 > 
-> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
-> <khlebnikov@openvz.org> wrote:
-> > This patch effectively reverts commit 42eca2302146fed51335b95128e949ee6f54478f
-> > ("PCI: Don't touch card regs after runtime suspend D3")
-> >
-> > | This patch checks whether the pci state is saved and doesn't attempt to hit
-> > | any registers after that point if it is.
-> >
-> > This seems completely wrong. Yes, PCI configuration space has been saved by
-> > driver, but this doesn't means that all job is done and device has been
-> > suspended and ready for waking up in the future.
-> >
-> > For example driver e1000e for ethernet in my thinkpad x220 saves pci-state
-> > but device cannot wakeup after that, because it needs some ACPI callbacks
-> > which usually called from pci_finish_runtime_suspend().
-> >
-> > | Optimus (dual-gpu) laptops seem to have their own form of D3cold, but
-> > | unfortunately enter it on normal D3 transitions via the ACPI callback.
-> >
-> > Hardware which disappears from the bus unexpectedly is exception, so let's
-> > handle it as an exception. Its driver should set device state to D3cold and
-> > the rest code will handle it properly.
+> memmap=exactmap will throw away all original, but also until then
+> user defined (through other provided memmap= parameters) areas.
+> That means all memmap= boot parameters passed before a memmap=exactmap
+> parameter are not recognized.
+> Without this fix:
+> memmap=x@y memmap=exactmap memmap=i#k
+> only i#k would get recognized.
 > 
-> Functions in D3cold don't have power, so it's completely expected that
-> they would disappear from the bus and not respond to config accesses.
-> Maybe Dave was referring to D3hot, where functions *should* respond to
-> config accesses.  I dunno.
+> This is wrong, this fix will only throw away all original e820 areas once
+> when memmap=exactmap is found in the whole boot command line and before
+> any other memmap= option is parsed.
 > 
-> Just to be clear, it sounds like 42eca230 caused a regression on your
-> e1000e device?  If so, I guess we should revert it unless you and Dave
-> can figure out a better patch that fixes both your e1000e device and
-> the Optimus issue.
 
-Yes, if there's a regression, let's revert it, but I'd like the regression
-to be described clearly.
+I don't understand why this is wrong.  The kernel command line is always
+parsed from left to right, and I don't see anything inherently
+problematic with that with something like a big hammer like exactmap.
 
-Thanks,
-Rafael
+	-hpa
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
