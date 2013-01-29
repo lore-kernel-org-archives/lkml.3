@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab3A2S4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 13:56:25 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41228 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab3A2S4W (ORCPT
+	id S1754077Ab3A2TB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:01:29 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56796 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab3A2TB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 13:56:22 -0500
-Message-ID: <51081B3B.5080001@linux.vnet.ibm.com>
-Date: Tue, 29 Jan 2013 12:55:55 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv3 5/6] zswap: add to mm/
-References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359409767-30092-6-git-send-email-sjenning@linux.vnet.ibm.com> <20130129062756.GH4752@blaptop>
-In-Reply-To: <20130129062756.GH4752@blaptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012918-2398-0000-0000-00001088C6BF
+	Tue, 29 Jan 2013 14:01:26 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: Axel Lin <axel.lin@ingics.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        AnilKumar Ch <anilkumar@ti.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] regulator: clear state each invocation of of_regulator_match
+Date: Tue, 29 Jan 2013 12:01:13 -0700
+Message-Id: <1359486073-26504-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 12:27 AM, Minchan Kim wrote:
-<snip>
-> On Mon, Jan 28, 2013 at 03:49:26PM -0600, Seth Jennings wrote:
-<snip>
->> +/*********************************
->> +* tunables
->> +**********************************/
->> +/* Enable/disable zswap (enabled by default, fixed at boot for now) */
->> +static bool zswap_enabled;
->> +module_param_named(enabled, zswap_enabled, bool, 0);
-> 
-> It seems default is disable at the moment?
+From: Stephen Warren <swarren@nvidia.com>
 
-I completely missed what you were saying before.  The comment is
-incorrect :)  I'll fix it.
+of_regulator_match() saves some dynamcially allocated state into the
+match table that's passed to it. By implementation and not contract, for
+each match table entry, if non-NULL state is already present,
+of_regulator_match() will not overwrite it. of_regulator_match() is
+typically called each time a regulator is probe()d. This means it is
+called with the same match table over and over again if a regulator
+triggers deferred probe. This results in stale, kfree()d data being left
+in the match table from probe to probe, which causes a variety of crashes
+or use of invalid data.
 
-Seth
+Explicitly free all output state from of_regulator_match() before
+generating new results in order to avoid this.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/regulator/of_regulator.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+index 6f68491..66ca769 100644
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -120,6 +120,12 @@ int of_regulator_match(struct device *dev, struct device_node *node,
+ 	if (!dev || !node)
+ 		return -EINVAL;
+ 
++	for (i = 0; i < num_matches; i++) {
++		struct of_regulator_match *match = &matches[i];
++		match->init_data = NULL;
++		match->of_node = NULL;
++	}
++
+ 	for_each_child_of_node(node, child) {
+ 		name = of_get_property(child,
+ 					"regulator-compatible", NULL);
+-- 
+1.7.10.4
 
