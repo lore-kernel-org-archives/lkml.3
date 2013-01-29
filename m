@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab3A2WBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 17:01:23 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:61214 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3A2WBV (ORCPT
+	id S1752303Ab3A2WBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 17:01:41 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42822 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab3A2WBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 17:01:21 -0500
-Message-ID: <510846AB.8010900@suse.cz>
-Date: Tue, 29 Jan 2013 23:01:15 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	Tue, 29 Jan 2013 17:01:38 -0500
+Message-ID: <510846BE.5090704@wwwdotorg.org>
+Date: Tue, 29 Jan 2013 15:01:34 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lingzhu Xiang <lxiang@redhat.com>, Roman Rakus <rrakus@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tty: set_termios/set_termiox should not return -EINTR
-References: <20130129190720.GA28000@redhat.com> <20130129190741.GA28004@redhat.com> <51082470.2070601@suse.cz> <20130129194908.GA29480@redhat.com>
-In-Reply-To: <20130129194908.GA29480@redhat.com>
-X-Enigmail-Version: 1.5
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@nvidia.com>, Will Deacon <will.deacon@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: call disable_nonboot_cpus() from machine_shutdown()
+References: <1357160861-26282-1-git-send-email-swarren@wwwdotorg.org> <50E4C9C6.20609@codeaurora.org> <20130103120259.GB5193@mudshark.cambridge.arm.com> <20130103122100.GN2631@n2100.arm.linux.org.uk> <50E5E967.3020805@wwwdotorg.org> <20130106162200.GC11025@mudshark.cambridge.arm.com> <20130106164033.GA3222@n2100.arm.linux.org.uk> <87ehhxahd1.fsf@xmission.com> <20130107144812.GD3222@n2100.arm.linux.org.uk> <87d2xcfeew.fsf@xmission.com>
+In-Reply-To: <87d2xcfeew.fsf@xmission.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 08:49 PM, Oleg Nesterov wrote:
-> On 01/29, Jiri Slaby wrote:
->>
->> On 01/29/2013 08:07 PM, Oleg Nesterov wrote:
->>>
->>> Change set_termios/set_termiox to return -ERESTARTSYS to fix this
->>> particular problem.
->>
->> This looks reasonable. However given the link above says:
->>  You are not authorized to access bug #904907.
->> the description above is poor. What problem exactly does this fix?
+On 01/10/2013 10:59 PM, Eric W. Biederman wrote:
+...
+> disable_nonboot_cpus() should really be called
+> sometimes_dangerously_hotunplug_all_but_one_cpu().
 > 
-> A syscall must never return EINTR unless it can not be restarted
-> (or it should not be restarted by, say, historical reasons).
+> If that code is going to be something other than power management
+> specific it is not cool that disable_nonboot_cpus() is not always
+> enabled when SMP is enabled.  It means that architectures need to
+> implement two different ways of shutting down cpus.
 > 
-> In this case ioctl(TCSETAW) returns -EINTR even if it is interrupted
-> by the signal which has the SA_RESTART handler. This doesn't look right
-> no matter what.
+> One of the truly nasty things about cpu_hotplug is that it requires that
+> irqs be migrated away from a cpu with interrupts disabled, which at
+> least on x86 in some interrupt delivery modes is impossible to do
+> safely.  The only way to losslessly (and without wedging irq
+> controllers) in those interrupt delivery modes (needed for more than 8
+> cpus) is to migrate an irq in it's irq handler.  Which is fine for
+> setting /proc/irq/$N/smp_affinity but is useless for cpu hot-unplug,
+> where we need to guarantee that all irqs are going to stop hitting a
+> cpu.
 
-Yes, and more, it is against POSIX. I don't dispute the correctness of
-the patch at all.
+I'm a little confused about this; disable_nonboot_cpus() calls
+_cpu_down() to hot-unplug the CPU, and the regular CPU hotplug path is
+drivers/base/cpu.c:store_online() -> cpu_down() -> _cpu_down(), i.e. the
+same basic code.
 
->> Why this should go to stable at all?
-> 
-> OK, this is up to you.
-> 
-> But if this patch is correct, perhaps it should be backported. This
-> -EINTR breaks /bin/bash which doesn't expect it, this leads to
-> "*** glibc detected *** ./bash-4.1.2-14.el6/bin/bash: double free or corruption (out):"
-> 
-> Perhaps /bin/bash is buggy too, I do not know. Probably Roman and
-> Lingzhu can tell more.
+Given that, why is CPU hot unplug safe on x86 via sysfs (well, I'm just
+assuming it must be, since it's enabled in my regular distro kernel and
+appears to work fine), but not safe when it's done from
+disable_nonboot_cpus()?
 
-But I really want to hear more details here (the commit log deserves
-that). E.g. why it started causing problems right now. The code is there
-like forever.
+> Now sometimes_dangerously_hotunplug_all_but_one_cpu() on the reboot path 
+> was added just a few months ago in Oct 2012, and it appears to due to
+> weird ARM maintainership.  At least the x86 reboot_cpu_id option is
+> broken due to that addition.
 
--- 
-js
-suse labs
+I guess this is true because reboot_cpu_id() isn't honored unless that
+CPU is already offline, and disable_nonboot_cpus() probably took it
+offline on average.
+
+Perhaps x86's native_machine_shutdown() should explicitly bring that CPU
+online if it's in cpu_possible_mask? Or perhaps disable_nonboot_cpus()
+should be enhanced with x86's reboot_cpu_id logic, so it simply works
+the same way across all architectures; that way some chunk of x86's
+native_machine_shutdown() could be made common.
+
+...
+> We should remove disable_nonboot_cpus() from the reboot path.   It is
+> still a crazy unmaintained cpu hotplug mess.
+
+Even if we updated it to standardize the reboot_cpu_id logic across all
+architectures, and hence made it still suitable for x86?
