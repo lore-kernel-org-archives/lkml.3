@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab3A2QwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:52:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab3A2QwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:52:14 -0500
-Date: Tue, 29 Jan 2013 17:51:25 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Izik Eidus <izik.eidus@ravellosystems.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Petr Holasek <pholasek@redhat.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>, Anton Arapov <anton@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 0/11] ksm: NUMA trees and page migration
-Message-ID: <20130129165125.GA17671@redhat.com>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
- <20130128155452.16882a6e.akpm@linux-foundation.org>
- <51071CA0.801@ravellosystems.com>
- <51073345.4070605@ravellosystems.com>
+	id S1753983Ab3A2Qwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:52:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41453 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab3A2Qwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 11:52:34 -0500
+Message-ID: <5107FE48.7080402@canonical.com>
+Date: Tue, 29 Jan 2013 17:52:24 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51073345.4070605@ravellosystems.com>
+To: Matthew Garrett <mjg@redhat.com>, Matt Fleming <matt.fleming@intel.com>
+CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
+        x86@kernel.org
+Subject: [PATCH] x86, efi: remove attribute check from setup_efi_pci
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+It looks like the original commit that copied the rom contents from efi always copied
+the rom, and the fixup in setup_efi_pci from commit 886d751a2ea99a160
+("x86, efi: correct precedence of operators in setup_efi_pci") broke that.
 
-On Tue, Jan 29, 2013 at 04:26:13AM +0200, Izik Eidus wrote:
-> On 01/29/2013 02:49 AM, Izik Eidus wrote:
-> > On 01/29/2013 01:54 AM, Andrew Morton wrote:
-> >> On Fri, 25 Jan 2013 17:53:10 -0800 (PST)
-> >> Hugh Dickins <hughd@google.com> wrote:
-> >>
-> >>> Here's a KSM series
-> >> Sanity check: do you have a feeling for how useful KSM is?
-> >> Performance/space improvements for typical (or atypical) workloads?
-> >> Are people using it?  Successfully?
-> 
-> 
-> BTW, After thinking a bit about the word people, I wanted to see if 
-> normal users of linux
-> that just download and install Linux (without using special 
-> virtualization product) are able to use it.
-> So I google little bit for it, and found some nice results from users:
-> http://serverascode.com/2012/11/11/ksm-kvm.html
-> 
-> But I do agree that it provide justifying value only for virtualization 
-> users...
+This resulted in macbook pro's no longer finding the rom images, and thus not being able to use the radeon card any more.
 
-Mostly for virtualization users indeed, but I'm aware of a few non
-virtualization users too:
+The solution is to just remove the check for now, and always copy the rom if available.
 
-1) CERN has been one of the early adopters of KSM and initially they
-were using KSM standalone (probably because not all hypervisors they
-had to deal with were KVM/linux based, while all guests were linux and
-in turn KSM capable). More info in the KSM paper page 2:
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+---
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 18e329c..ce06324 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -302,9 +302,6 @@ static efi_status_t setup_efi_pci(struct boot_params *params)
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+ 
+-		if (!(attributes & EFI_PCI_IO_ATTRIBUTE_EMBEDDED_ROM))
+-			continue;
+-
+ 		if (!pci->romimage || !pci->romsize)
+ 			continue;
+ 
 
-http://www.kernel.org/doc/ols/2009/ols2009-pages-19-28.pdf
-
-However lately they're running KSM in combination with KVM too, and I'm
-not sure if they're still using it standalone. See the "KSM shared"
-blue area in slide 12 and the comparison with KSM on and off in slide
-14.
-
-https://indico.fnal.gov/getFile.py/access?contribId=18&sessionId=4&resId=0&materialId=slides&confId=4986
-
-2) all recent cyanogenmod in the performance menu in settings supports
-KSM out of the box. You can run it for a while and then shut it
-off.
-
-Not sure how good idea it is to leave it always on, but the only
-efficient cellphone/tablet powersaving design (i.e. the wakelocks +
-suspend to ram) still won't waste energy while the screen is off and
-the phone has suspended to ram, regardless of KSM on or off.
-
-KSM NUMA awareness however is not needed on the cellphone :).
