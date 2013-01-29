@@ -1,131 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab3A2HHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:07:07 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:46688 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab3A2HHF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:07:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAFp+6iHd66_dvj_M5zOpJZ7sEy-pYa-CdWKUZBYc3Dfn3JHtfg@mail.gmail.com>
-References: <1358257112-19595-1-git-send-email-gautam.vivek@samsung.com>
-	<1358257112-19595-4-git-send-email-gautam.vivek@samsung.com>
-	<3963234.Gb249i4a6U@flatron>
-	<CAFp+6iHd66_dvj_M5zOpJZ7sEy-pYa-CdWKUZBYc3Dfn3JHtfg@mail.gmail.com>
-Date: Tue, 29 Jan 2013 12:37:02 +0530
-Message-ID: <CAFp+6iEJAtizR1qZ6-To=LMRM99+TNQXhb1Wt=ojLpqGVOi8cw@mail.gmail.com>
-Subject: Re: [PATCH v4 3/4] ARM: Exynos5250: Add clock information for dwc3-exynos
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, jg1.han@samsung.com,
-        kgene.kim@samsung.com, devicetree-discuss@lists.ozlabs.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753701Ab3A2HMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:12:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40529 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751270Ab3A2HMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 02:12:05 -0500
+From: Hannes Reinecke <hare@suse.de>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Stefan Weinhuber <wein@de.ibm.com>,
+        Hannes Reinecke <hare@suse.de>
+Subject: [PATCH 4/9] dasd: Implement block timeout handling
+Date: Tue, 29 Jan 2013 08:11:56 +0100
+Message-Id: <1359443521-24670-5-git-send-email-hare@suse.de>
+X-Mailer: git-send-email 1.7.4.2
+In-Reply-To: <1359443521-24670-1-git-send-email-hare@suse.de>
+References: <1359443521-24670-1-git-send-email-hare@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+This patch implements generic block layer timeout handling
+callbacks for DASDs. When the timeout expires the respective
+cqr is aborted.
 
+With this timeout handler time-critical request abort
+is guaranteed as the abort does not depend on the internal
+state of the various DASD driver queues.
 
-On Wed, Jan 16, 2013 at 8:35 PM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
-> Hi Tomasz,
->
->
-> On Wed, Jan 16, 2013 at 1:19 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->> Hi Vivek,
->>
->> Don't you need also some clkdev lookup entry to make the clock available
->> in the driver?
->>
->
-> This clock source we added with a motive of completion, however it's
-> not being used as of now.
-> As far as i could see the lookup structure contains clocks for devices
-> having multiple instances.
-> Do you feel that i should be adding an entry in clk_lookup structure ?
-> May be i am missing here something. Can you please elaborate on the
-> use-case of clk_lookup
-> entries.
->
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Acked-by: Stefan Weinhuber <wein@de.ibm.com>
+---
+ drivers/s390/block/dasd.c      |   76 ++++++++++++++++++++++++++++++++++++++++
+ drivers/s390/block/dasd_diag.c |    5 ++-
+ drivers/s390/block/dasd_eckd.c |    4 ++
+ drivers/s390/block/dasd_fba.c  |    5 ++-
+ 4 files changed, 88 insertions(+), 2 deletions(-)
 
-As indicated above "sclk_usbdrd30" is added with a motive of
-completion, however it's
-not being used as of now.
-And "usbdrd30" is the actual device clock used, where 'drd30' is just
-an indicative of
-'dual role device and usb 3.0'. So the clock name 'usbdrd30' is the
-usb 3.0 clock for drd.
-
-Am i missing something that you wanted to convey here ?
-
->>
->> On Tuesday 15 of January 2013 19:08:31 Vivek Gautam wrote:
->>> Adding necessary device clock to exynos5 needed for
->>> the DWC3 controller.
->>>
->>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->>> ---
->>>  arch/arm/mach-exynos/clock-exynos5.c |   24 ++++++++++++++++++++++++
->>>  1 files changed, 24 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-exynos/clock-exynos5.c
->>> b/arch/arm/mach-exynos/clock-exynos5.c index 0208c3a..13af020 100644
->>> --- a/arch/arm/mach-exynos/clock-exynos5.c
->>> +++ b/arch/arm/mach-exynos/clock-exynos5.c
->>> @@ -757,6 +757,11 @@ static struct clk exynos5_init_clocks_off[] = {
->>>               .enable         = exynos5_clk_ip_fsys_ctrl ,
->>>               .ctrlbit        = (1 << 18),
->>>       }, {
->>> +             .name           = "usbdrd30",
->>> +             .parent         = &exynos5_clk_aclk_200.clk,
->>> +             .enable         = exynos5_clk_ip_fsys_ctrl,
->>> +             .ctrlbit        = (1 << 19),
->>> +     }, {
->>>               .name           = "usbotg",
->>>               .enable         = exynos5_clk_ip_fsys_ctrl,
->>>               .ctrlbit        = (1 << 7),
->>> @@ -1035,6 +1040,16 @@ static struct clksrc_sources exynos5_clkset_group
->>> = { .nr_sources       = ARRAY_SIZE(exynos5_clkset_group_list),
->>>  };
->>>
->>> +struct clk *exynos5_clkset_usbdrd30_list[] = {
->>> +     [0] = &exynos5_clk_mout_mpll.clk,
->>> +     [1] = &exynos5_clk_mout_cpll.clk,
->>> +};
->>> +
->>> +struct clksrc_sources exynos5_clkset_usbdrd30 = {
->>> +     .sources        = exynos5_clkset_usbdrd30_list,
->>> +     .nr_sources     = ARRAY_SIZE(exynos5_clkset_usbdrd30_list),
->>> +};
->>> +
->>>  /* Possible clock sources for aclk_266_gscl_sub Mux */
->>>  static struct clk *clk_src_gscl_266_list[] = {
->>>       [0] = &clk_ext_xtal_mux,
->>> @@ -1329,6 +1344,15 @@ static struct clksrc_clk exynos5_clksrcs[] = {
->>>                       .parent         = &exynos5_clk_mout_cpll.clk,
->>>               },
->>>               .reg_div = { .reg = EXYNOS5_CLKDIV_GEN, .shift = 4, .size = 3
->> },
->>> +     }, {
->>> +             .clk    = {
->>> +                     .name           = "sclk_usbdrd30",
->>> +                     .enable         = exynos5_clksrc_mask_fsys_ctrl,
->>> +                     .ctrlbit        = (1 << 28),
->>> +             },
->>> +             .sources = &exynos5_clkset_usbdrd30,
->>> +             .reg_src = { .reg = EXYNOS5_CLKSRC_FSYS, .shift = 28, .size =
->> 1 },
->>> +             .reg_div = { .reg = EXYNOS5_CLKDIV_FSYS0, .shift = 24, .size =
->> 4 },
->>>       },
->>>  };
->
->
-
-
+diff --git a/drivers/s390/block/dasd.c b/drivers/s390/block/dasd.c
+index 20b7517..0406325 100644
+--- a/drivers/s390/block/dasd.c
++++ b/drivers/s390/block/dasd.c
+@@ -2484,8 +2484,10 @@ static void __dasd_process_request_queue(struct dasd_block *block)
+ 		 */
+ 		cqr->callback_data = (void *) req;
+ 		cqr->status = DASD_CQR_FILLED;
++		req->completion_data = cqr;
+ 		blk_start_request(req);
+ 		list_add_tail(&cqr->blocklist, &block->ccw_queue);
++		INIT_LIST_HEAD(&cqr->devlist);
+ 		dasd_profile_start(block, cqr, req);
+ 	}
+ }
+@@ -2753,6 +2755,80 @@ static void do_dasd_request(struct request_queue *queue)
+ }
+ 
+ /*
++ * Block timeout callback, called from the block layer
++ *
++ * request_queue lock is held on entry.
++ *
++ * Return values:
++ * BLK_EH_RESET_TIMER if the request should be left running
++ * BLK_EH_NOT_HANDLED if the request is handled or terminated
++ *                    by the driver.
++ */
++enum blk_eh_timer_return dasd_times_out(struct request *req)
++{
++	struct dasd_ccw_req *cqr = req->completion_data;
++	struct dasd_block *block = req->q->queuedata;
++	struct dasd_device *device;
++	int rc = 0;
++
++	if (!cqr)
++		return BLK_EH_NOT_HANDLED;
++
++	device = cqr->startdev ? cqr->startdev : block->base;
++	DBF_DEV_EVENT(DBF_WARNING, device,
++		      " dasd_times_out cqr %p status %x",
++		      cqr, cqr->status);
++
++	spin_lock(&block->queue_lock);
++	spin_lock(get_ccwdev_lock(device->cdev));
++	cqr->retries = -1;
++	cqr->intrc = -ETIMEDOUT;
++	if (cqr->status >= DASD_CQR_QUEUED) {
++		spin_unlock(get_ccwdev_lock(device->cdev));
++		rc = dasd_cancel_req(cqr);
++	} else if (cqr->status == DASD_CQR_FILLED ||
++		   cqr->status == DASD_CQR_NEED_ERP) {
++		cqr->status = DASD_CQR_TERMINATED;
++		spin_unlock(get_ccwdev_lock(device->cdev));
++	} else if (cqr->status == DASD_CQR_IN_ERP) {
++		struct dasd_ccw_req *searchcqr, *nextcqr, *tmpcqr;
++
++		list_for_each_entry_safe(searchcqr, nextcqr,
++					 &block->ccw_queue, blocklist) {
++			tmpcqr = searchcqr;
++			while (tmpcqr->refers)
++				tmpcqr = tmpcqr->refers;
++			if (tmpcqr != cqr)
++				continue;
++			/* searchcqr is an ERP request for cqr */
++			searchcqr->retries = -1;
++			searchcqr->intrc = -ETIMEDOUT;
++			if (searchcqr->status >= DASD_CQR_QUEUED) {
++				spin_lock(get_ccwdev_lock(device->cdev));
++				rc = dasd_cancel_req(searchcqr);
++				spin_unlock(get_ccwdev_lock(device->cdev));
++			} else if ((searchcqr->status == DASD_CQR_FILLED) ||
++				   (searchcqr->status == DASD_CQR_NEED_ERP)) {
++				searchcqr->status = DASD_CQR_TERMINATED;
++				rc = 0;
++			} else if (searchcqr->status == DASD_CQR_IN_ERP) {
++				/*
++				 * Shouldn't happen; most recent ERP
++				 * request is at the front of queue
++				 */
++				continue;
++			}
++			break;
++		}
++		spin_unlock(get_ccwdev_lock(device->cdev));
++	}
++	dasd_schedule_block_bh(block);
++	spin_unlock(&block->queue_lock);
++
++	return rc ? BLK_EH_RESET_TIMER : BLK_EH_NOT_HANDLED;
++}
++
++/*
+  * Allocate and initialize request queue and default I/O scheduler.
+  */
+ static int dasd_alloc_queue(struct dasd_block *block)
+diff --git a/drivers/s390/block/dasd_diag.c b/drivers/s390/block/dasd_diag.c
+index 905b2c0..9e245ce 100644
+--- a/drivers/s390/block/dasd_diag.c
++++ b/drivers/s390/block/dasd_diag.c
+@@ -583,7 +583,10 @@ dasd_diag_free_cp(struct dasd_ccw_req *cqr, struct request *req)
+ 
+ static void dasd_diag_handle_terminated_request(struct dasd_ccw_req *cqr)
+ {
+-	cqr->status = DASD_CQR_FILLED;
++	if (cqr->retries < 0)
++		cqr->status = DASD_CQR_FAILED;
++	else
++		cqr->status = DASD_CQR_FILLED;
+ };
+ 
+ /* Fill in IOCTL data for device. */
+diff --git a/drivers/s390/block/dasd_eckd.c b/drivers/s390/block/dasd_eckd.c
+index 5b5b50b..137f18d 100644
+--- a/drivers/s390/block/dasd_eckd.c
++++ b/drivers/s390/block/dasd_eckd.c
+@@ -2251,6 +2251,10 @@ dasd_eckd_format_device(struct dasd_device * device,
+ 
+ static void dasd_eckd_handle_terminated_request(struct dasd_ccw_req *cqr)
+ {
++	if (cqr->retries < 0) {
++		cqr->status = DASD_CQR_FAILED;
++		return;
++	}
+ 	cqr->status = DASD_CQR_FILLED;
+ 	if (cqr->block && (cqr->startdev != cqr->block->base)) {
+ 		dasd_eckd_reset_ccw_to_base_io(cqr);
+diff --git a/drivers/s390/block/dasd_fba.c b/drivers/s390/block/dasd_fba.c
+index 3d8dc16..9f0bff7 100644
+--- a/drivers/s390/block/dasd_fba.c
++++ b/drivers/s390/block/dasd_fba.c
+@@ -428,7 +428,10 @@ out:
+ 
+ static void dasd_fba_handle_terminated_request(struct dasd_ccw_req *cqr)
+ {
+-	cqr->status = DASD_CQR_FILLED;
++	if (cqr->retries < 0)
++		cqr->status = DASD_CQR_FAILED;
++	else
++		cqr->status = DASD_CQR_FILLED;
+ };
+ 
+ static int
 -- 
-Thanks & Regards
-Vivek
+1.7.4.2
+
