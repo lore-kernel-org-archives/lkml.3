@@ -1,90 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601Ab3A2E3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 23:29:20 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:14744 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab3A2E3S (ORCPT
+	id S1754251Ab3A2Ebq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 23:31:46 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44038 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753323Ab3A2Ebo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 23:29:18 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Mon, 28 Jan 2013 23:29:14 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kyungsik Lee <kyungsik.lee@lge.com>, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>, hyojun.im@lge.com,
-        chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
-        namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>
-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-In-reply-to: <20130128142510.68092e10.akpm@linux-foundation.org>
-Message-id: <alpine.LFD.2.02.1301282320430.6300@xanadu.home>
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
- <20130128142510.68092e10.akpm@linux-foundation.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 28 Jan 2013 23:31:44 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] regmap: spi: Support asynchronous I/O for SPI
+Date: Tue, 29 Jan 2013 12:31:33 +0800
+Message-Id: <1359433894-28154-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359433894-28154-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1359433894-28154-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jan 2013, Andrew Morton wrote:
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-spi.c |   52 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
 
-> On Sat, 26 Jan 2013 14:50:43 +0900
-> Kyungsik Lee <kyungsik.lee@lge.com> wrote:
-> 
-> > This patchset is for supporting LZ4 compressed kernel and initial ramdisk on
-> > the x86 and ARM architectures.
-> > 
-> > According to http://code.google.com/p/lz4/, LZ4 is a very fast lossless
-> > compression algorithm and also features an extremely fast decoder.
-> > 
-> > Kernel Decompression APIs are based on implementation by Yann Collet
-> > (http://code.google.com/p/lz4/source/checkout).
-> > De/compression Tools are also provided from the site above.
-> > 
-> > The initial test result on ARM(v7) based board shows that the size of kernel
-> > with LZ4 compressed is 8% bigger than LZO compressed  but the decompressing
-> > speed is faster(especially under the enabled unaligned memory access).
-> > 
-> > Test: 3.4 based kernel built with many modules
-> > Uncompressed kernel size: 13MB
-> > lzo: 6.3MB, 301ms
-> > lz4: 6.8MB, 251ms(167ms, with enabled unaligned memory access)
-> > 
-> > It seems that it___s worth trying LZ4 compressed kernel image or ramdisk 
-> > for making the kernel boot more faster.
-> >
-> > ...
-> >
-> >  20 files changed, 663 insertions(+), 3 deletions(-)
-> >
-> > ...
-> >
-> 
-> What's this "with enabled unaligned memory access" thing?  You mean "if
-> the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"?  If so,
-> that's only x86, which isn't really in the target market for this
-> patch, yes?
+diff --git a/drivers/base/regmap/regmap-spi.c b/drivers/base/regmap/regmap-spi.c
+index ffa46a9..913274b 100644
+--- a/drivers/base/regmap/regmap-spi.c
++++ b/drivers/base/regmap/regmap-spi.c
+@@ -15,6 +15,21 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ 
++#include "internal.h"
++
++struct regmap_async_spi {
++	struct regmap_async core;
++	struct spi_message m;
++	struct spi_transfer t[2];
++};
++
++static void regmap_spi_complete(void *data)
++{
++	struct regmap_async_spi *async = data;
++
++	regmap_async_complete_cb(&async->core, async->m.status);
++}
++
+ static int regmap_spi_write(void *context, const void *data, size_t count)
+ {
+ 	struct device *dev = context;
+@@ -40,6 +55,41 @@ static int regmap_spi_gather_write(void *context,
+ 	return spi_sync(spi, &m);
+ }
+ 
++static int regmap_spi_async_write(void *context,
++				  const void *reg, size_t reg_len,
++				  const void *val, size_t val_len,
++				  struct regmap_async *a)
++{
++	struct regmap_async_spi *async = container_of(a,
++						      struct regmap_async_spi,
++						      core);
++	struct device *dev = context;
++	struct spi_device *spi = to_spi_device(dev);
++
++	async->t[0].tx_buf = reg;
++	async->t[0].len = reg_len;
++	async->t[1].tx_buf = val;
++	async->t[1].len = val_len;
++
++	spi_message_init(&async->m);
++	spi_message_add_tail(&async->t[0], &async->m);
++	spi_message_add_tail(&async->t[1], &async->m);
++
++	async->m.complete = regmap_spi_complete;
++	async->m.context = async;
++
++	return spi_async(spi, &async->m);
++}
++
++static struct regmap_async *regmap_spi_async_alloc(void)
++{
++	struct regmap_async_spi *async_spi;
++
++	async_spi = kzalloc(sizeof(*async_spi), GFP_KERNEL);
++
++	return &async_spi->core;
++}
++
+ static int regmap_spi_read(void *context,
+ 			   const void *reg, size_t reg_size,
+ 			   void *val, size_t val_size)
+@@ -53,6 +103,8 @@ static int regmap_spi_read(void *context,
+ static struct regmap_bus regmap_spi = {
+ 	.write = regmap_spi_write,
+ 	.gather_write = regmap_spi_gather_write,
++	.async_write = regmap_spi_async_write,
++	.async_alloc = regmap_spi_async_alloc,
+ 	.read = regmap_spi_read,
+ 	.read_flag_mask = 0x80,
+ };
+-- 
+1.7.10.4
 
-I'm guessing this is referring to commit 5010192d5a.
-
-> It's a lot of code for a 50ms boot-time improvement.  Does anyone have
-> any opinions on whether or not the benefits are worth the cost?
-
-Well, we used to have only one compressed format.  Now we have nearly 
-half a dozen, with the same worthiness issue between themselves.  
-Either we keep it very simple, or we make it very flexible.  The former 
-would argue in favor of removing some of the existing formats, the later 
-would let this new format in.
-
-
-Nicolas
