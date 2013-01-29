@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab3A2FAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 00:00:41 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:41826 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3A2FAi (ORCPT
+	id S1752260Ab3A2FDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 00:03:47 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:57757 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3A2FDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 00:00:38 -0500
+	Tue, 29 Jan 2013 00:03:44 -0500
+Date: Mon, 28 Jan 2013 21:03:41 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC 00/16] Transparent huge page cache
+In-Reply-To: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
+Message-ID: <alpine.LNX.2.00.1301282041280.27186@eggly.anvils>
+References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1359106615-17544-1-git-send-email-wangyijing@huawei.com>
-References: <1359106615-17544-1-git-send-email-wangyijing@huawei.com>
-Date: Mon, 28 Jan 2013 22:00:37 -0700
-Message-ID: <CAPoiz9zw-pVNGZC7Ox+Kf+=RNHJRCY5hoLejbrmWmjvHtUEihg@mail.gmail.com>
-Subject: Re: [PATCH v3] PCI: Document PCIE BUS MPS parameters
-From: Jon Mason <jdmason@kudzu.us>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Andrew Murray <andrew.murray@arm.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 2:36 AM, Yijing Wang <wangyijing@huawei.com> wrote:
-> v0->v1: Update MPS parameters as non-arch and add MRRS
->                 description into pcie_bus_perf parameter suggested
->                 by Andrew Murray.
-> v1->v2: Update some semantic problems and add MPS and MRRS
->                 explanation suggested by Joe Lawrence and Randy Dunlap.
-> v2->v3: Update some semantic problems and the description
->                 of pcie_bus_safe and pcie_bus_peer2peer suggested
->                 by Bjorn Helgaas.
->
-> Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
-> pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
-> These parameters were introduced by Jon Mason <mason@myri.com> at
-> commit 5f39e6705 and commit b03e7495a8.
->
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  Documentation/kernel-parameters.txt |   13 +++++++++++++
->  1 files changed, 13 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 363e348..2997df2 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2227,6 +2227,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->                                 This sorting is done to get a device
->                                 order compatible with older (<= 2.4) kernels.
->                 nobfsort        Don't sort PCI devices into breadth-first order.
-> +               pcie_bus_tune_off       Disable PCIe MPS (Max Payload Size)
-> +                               tuning and use the BIOS-configured MPS defaults.
-> +               pcie_bus_safe   Use the smallest supported MPS of any device
-> +                               below a root complex.
+On Mon, 28 Jan 2013, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> Here's first steps towards huge pages in page cache.
+> 
+> The intend of the work is get code ready to enable transparent huge page
+> cache for the most simple fs -- ramfs.
+> 
+> It's not yet near feature-complete. It only provides basic infrastructure.
+> At the moment we can read, write and truncate file on ramfs with huge pages in
+> page cache. The most interesting part, mmap(), is not yet there. For now
+> we split huge page on mmap() attempt.
+> 
+> I can't say that I see whole picture. I'm not sure if I understand locking
+> model around split_huge_page(). Probably, not.
+> Andrea, could you check if it looks correct?
+> 
+> Next steps (not necessary in this order):
+>  - mmap();
+>  - migration (?);
+>  - collapse;
+>  - stats, knobs, etc.;
+>  - tmpfs/shmem enabling;
+>  - ...
+> 
+> Kirill A. Shutemov (16):
+>   block: implement add_bdi_stat()
+>   mm: implement zero_huge_user_segment and friends
+>   mm: drop actor argument of do_generic_file_read()
+>   radix-tree: implement preload for multiple contiguous elements
+>   thp, mm: basic defines for transparent huge page cache
+>   thp, mm: rewrite add_to_page_cache_locked() to support huge pages
+>   thp, mm: rewrite delete_from_page_cache() to support huge pages
+>   thp, mm: locking tail page is a bug
+>   thp, mm: handle tail pages in page_cache_get_speculative()
+>   thp, mm: implement grab_cache_huge_page_write_begin()
+>   thp, mm: naive support of thp in generic read/write routines
+>   thp, libfs: initial support of thp in
+>     simple_read/write_begin/write_end
+>   thp: handle file pages in split_huge_page()
+>   thp, mm: truncate support for transparent huge page cache
+>   thp, mm: split huge page on mmap file page
+>   ramfs: enable transparent huge page cache
+> 
+>  fs/libfs.c                  |   54 +++++++++---
+>  fs/ramfs/inode.c            |    6 +-
+>  include/linux/backing-dev.h |   10 +++
+>  include/linux/huge_mm.h     |    8 ++
+>  include/linux/mm.h          |   15 ++++
+>  include/linux/pagemap.h     |   14 ++-
+>  include/linux/radix-tree.h  |    3 +
+>  lib/radix-tree.c            |   32 +++++--
+>  mm/filemap.c                |  204 +++++++++++++++++++++++++++++++++++--------
+>  mm/huge_memory.c            |   62 +++++++++++--
+>  mm/memory.c                 |   22 +++++
+>  mm/truncate.c               |   12 +++
+>  12 files changed, 375 insertions(+), 67 deletions(-)
 
-This isn't correct.  It should be something like "The largest MPS
-common to all devices below the root complex".
+Interesting.
 
-> +               pcie_bus_perf   Configure device MPS to the largest
-> +                               allowable MPS based on its parent bus. Also set
-> +                               MRRS (Max Read Request Size) to the largest supported
-> +                               value (no larger than the MPS that the device or bus
-> +                               can support) for best performance.
-> +               pcie_bus_peer2peer      Set every device's MPS to 128B, which
-> +                               every device is guaranteed to support. This
-> +                               configuration allows peer-to-peer DMA between any pair
-> +                               of devices possibly at the cost of reduced performance.
->                 cbiosize=nn[KMG]        The fixed amount of bus space which is
->                                 reserved for the CardBus bridge's IO window.
->                                 The default value is 256 bytes.
-> --
-> 1.7.1
->
->
+I was starting to think about Transparent Huge Pagecache a few
+months ago, but then got washed away by incoming waves as usual.
+
+Certainly I don't have a line of code to show for it; but my first
+impression of your patches is that we have very different ideas of
+where to start.
+
+Perhaps that's good complementarity, or perhaps I'll disagree with
+your approach.  I'll be taking a look at yours in the coming days,
+and trying to summon back up my own ideas to summarize them for you.
+
+Perhaps I was naive to imagine it, but I did intend to start out
+generically, independent of filesystem; but content to narrow down
+on tmpfs alone where it gets hard to support the others (writeback
+springs to mind).  khugepaged would be migrating little pages into
+huge pages, where it saw that the mmaps of the file would benefit
+(and for testing I would hack mmap alignment choice to favour it).
+
+I had arrived at a conviction that the first thing to change was
+the way that tail pages of a THP are refcounted, that it had been a
+mistake to use the compound page method of holding the THP together.
+But I'll have to enter a trance now to recall the arguments ;)
+
+Hugh
