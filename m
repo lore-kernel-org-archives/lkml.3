@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757144Ab3A2OOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:14:08 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:52974 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab3A2OOG (ORCPT
+	id S1757077Ab3A2OPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:15:21 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:61153 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab3A2OPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:14:06 -0500
+	Tue, 29 Jan 2013 09:15:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359418161.18955.14.camel@pasglop>
-References: <1359416520.18955.12.camel@pasglop>
-	<CA+55aFw=Gr_UYEjfQ6sjz-5YdoegzxC+A0x6e8GViOSuXtE6hA@mail.gmail.com>
-	<1359418161.18955.14.camel@pasglop>
-Date: Tue, 29 Jan 2013 15:14:04 +0100
-X-Google-Sender-Auth: pnAz7qJqauCSpcxTLSco6xqkXUk
-Message-ID: <CAMuHMdXn_W6x-5vNLSSNk-LPs_duz5CggTDJbhmqYcD8ob-dWw@mail.gmail.com>
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Tue, 29 Jan 2013 22:15:18 +0800
+Message-ID: <CAM_iQpVgEchb8UsxUP=w6OMbYx=zuP2yv=QwFhe8rPCbNBreVg@mail.gmail.com>
+Subject: No sysfs directory for openvswitch module when built-in
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>, Jesse Gross <jesse@nicira.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 1:09 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Mon, 2013-01-28 at 16:03 -0800, Linus Torvalds wrote:
->> I'll have you know that I haven't quite even left for Au yet, and I
->> have LCA before diving. So no snarky "in between dives" comments,
->> please.
->
-> It wasn't meant to be "snarky", sorry about that...
+Hello, Rusty, Jesse,
 
-Sharky? Sorry, couldn't resist.
+I met an interesting problem when I compile openvswitch module as a
+built-in (actually I compile ALL kernel modules as built-in), there is
+no /sys/module/openvswitch/ directory created by the kernel in this
+case.
 
-Gr{oetje,eeting}s,
+What's worse, the user-space init script thinks openvswitch module is
+not loaded by checking the exist of this directory, therefore refuses
+to start.
 
-                        Poor Geert without sun, dives, and sharks
+After digging a little deeper, I found the cause of this problem is
+actually that the core kernel doesn't create directory for any kernel
+module without a module version or any module parameters when
+built-in. Openvswitch is exactly such a module!!
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I believe there is nothing wrong either in the user-space init script,
+or in the openvswitch kernel module. So, the question why core kernel
+doesn't create module directory for such modules?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+>From the code:
+
+static int __init param_sysfs_init(void)
+{
+        module_kset = kset_create_and_add("module", &module_uevent_ops, NULL);
+        if (!module_kset) {
+                printk(KERN_WARNING "%s (%d): error creating kset\n",
+                        __FILE__, __LINE__);
+                return -ENOMEM;
+        }
+        module_sysfs_initialized = 1;
+
+        version_sysfs_builtin();
+        param_sysfs_builtin();
+
+        return 0;
+}
+
+it seems there is no way to get the name of the kernel module in such
+case, the above searches module name either in parameter or in version
+information. But I may miss something here...
+
+We can certainly workaround this issue by providing a (dummy) version
+in openvswitch module, but the more important question is can't we fix
+this in core kernel? It is perfectly valid to provide a kernel module
+without either a module version or any module parameter.
+
+What do you think?
+
+Thanks!
