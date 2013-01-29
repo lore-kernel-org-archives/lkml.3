@@ -1,295 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab3A2Oj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:39:28 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:41178 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab3A2OjV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:39:21 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, inderpal.singh@linaro.org
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH V3] cpufreq: Simplify cpufreq_add_dev()
-Date: Tue, 29 Jan 2013 20:09:08 +0530
-Message-Id: <c7c9f237a91821661bfc0735e390358124953695.1359469932.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S1757169Ab3A2Onv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:43:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:15847 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756934Ab3A2Ons (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 09:43:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,561,1355126400"; 
+   d="p7s'?scan'208";a="283614922"
+From: "Woodhouse, David" <david.woodhouse@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Kim Phillips <kim.phillips@freescale.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] arm: use built-in byte swap function
+Thread-Topic: [RFC] arm: use built-in byte swap function
+Thread-Index: AQHN/cCsyq8jjbGdz0yFuzpMnvmBrphgWh6AgAAIWIA=
+Date: Tue, 29 Jan 2013 14:43:23 +0000
+Message-ID: <1359470601.3529.120.camel@shinybook.infradead.org>
+References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
+	 <20130129141328.GV23505@n2100.arm.linux.org.uk>
+In-Reply-To: <20130129141328.GV23505@n2100.arm.linux.org.uk>
+Accept-Language: en-GB, en-US
+Content-Language: en-GB
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+Content-Type: multipart/signed; micalg=sha1;
+	protocol="application/x-pkcs7-signature"; boundary="=-TlGjHb9gPnTRcaFYYOhd"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently cpufreq_add_dev() firsts allocates policy, calls driver->init() and
-then checks if this cpu is already managed or not. And if it is already managed,
-free its policy.
+--=-TlGjHb9gPnTRcaFYYOhd
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-We can save all this if we somehow know cpu is managed or not in advance.
-policy->related_cpus contains list of all valid sibling cpus of policy->cpu. We
-can check this to know if current cpu is already managed.
+On Tue, 2013-01-29 at 14:13 +0000, Russell King - ARM Linux wrote:
+>=20
+> So, this compiler (4.5.4) has support for 32-bit and 64-bit bswaps
+> across all our architectures, but not the 16-bit ones.
 
->From now on, platforms don't really need to set related_cpus from their init()
-routines, as the same work is done by core too.
+That observation is consistent with my dig through GCC history. I had
+come to the conclusion that the 32-bit and 64-bit versions were added
+*generically* in 4.4, and that the 16-bit version was added in 4.6 to
+that PowerPC back end, and made generic in 4.8. So I *had* put that
+arch-specific check into compiler-gcc4.h, for PowerPC. It's just outside
+the context of Kim's patch. If it really does end up being different for
+every arch, I may reconsider that.
 
-If platform driver needs to set the related_cpus mask with some additional cpus,
-other than cpus present in policy->cpus, they are free to do it as we aren't
-overriding anything.
-    
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-V2->V3:
-- Set all cpus present in policy->cpus in related_cpus as well.
-- Remove code to set related_cpus from SPEAr cpufreq driver.
+As for the __bswapsi2() calls... if it's ever emitting an out-of-line
+call for something like that, that seems like a really dubious decision;
+surely it's better being inlined? So rather than adding it to your
+bits-of-libgcc.a in the kernel, I'd suggest just *not* using
+ARCH_USE_BUILTIN_BSWAP for the offending compilers, and filing a bug to
+get them fixed.
 
- drivers/cpufreq/cpufreq.c       | 158 +++++++++++++++-------------------------
- drivers/cpufreq/spear-cpufreq.c |   1 -
- 2 files changed, 58 insertions(+), 101 deletions(-)
+But really, this is why I created ARCH_USE_BUILTIN_BSWAP and left it to
+architecture maintainers to enable it at their leisure.... :)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index f1bb8f8..db81382 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -554,8 +554,6 @@ static ssize_t show_cpus(const struct cpumask *mask, char *buf)
-  */
- static ssize_t show_related_cpus(struct cpufreq_policy *policy, char *buf)
- {
--	if (cpumask_empty(policy->related_cpus))
--		return show_cpus(policy->cpus, buf);
- 	return show_cpus(policy->related_cpus, buf);
- }
- 
-@@ -711,92 +709,6 @@ static struct kobj_type ktype_cpufreq = {
- 	.release	= cpufreq_sysfs_release,
- };
- 
--/*
-- * Returns:
-- *   Negative: Failure
-- *   0:        Success
-- *   Positive: When we have a managed CPU and the sysfs got symlinked
-- */
--static int cpufreq_add_dev_policy(unsigned int cpu,
--				  struct cpufreq_policy *policy,
--				  struct device *dev)
--{
--	int ret = 0;
--#ifdef CONFIG_SMP
--	unsigned long flags;
--	unsigned int j;
--#ifdef CONFIG_HOTPLUG_CPU
--	struct cpufreq_governor *gov;
--
--	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
--	if (gov) {
--		policy->governor = gov;
--		pr_debug("Restoring governor %s for cpu %d\n",
--		       policy->governor->name, cpu);
--	}
--#endif
--
--	for_each_cpu(j, policy->cpus) {
--		struct cpufreq_policy *managed_policy;
--
--		if (cpu == j)
--			continue;
--
--		/* Check for existing affected CPUs.
--		 * They may not be aware of it due to CPU Hotplug.
--		 * cpufreq_cpu_put is called when the device is removed
--		 * in __cpufreq_remove_dev()
--		 */
--		managed_policy = cpufreq_cpu_get(j);
--		if (unlikely(managed_policy)) {
--
--			/* Set proper policy_cpu */
--			unlock_policy_rwsem_write(cpu);
--			per_cpu(cpufreq_policy_cpu, cpu) = managed_policy->cpu;
--
--			if (lock_policy_rwsem_write(cpu) < 0) {
--				/* Should not go through policy unlock path */
--				if (cpufreq_driver->exit)
--					cpufreq_driver->exit(policy);
--				cpufreq_cpu_put(managed_policy);
--				return -EBUSY;
--			}
--
--			__cpufreq_governor(managed_policy, CPUFREQ_GOV_STOP);
--
--			spin_lock_irqsave(&cpufreq_driver_lock, flags);
--			cpumask_copy(managed_policy->cpus, policy->cpus);
--			per_cpu(cpufreq_cpu_data, cpu) = managed_policy;
--			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
--
--			__cpufreq_governor(managed_policy, CPUFREQ_GOV_START);
--			__cpufreq_governor(managed_policy, CPUFREQ_GOV_LIMITS);
--
--			pr_debug("CPU already managed, adding link\n");
--			ret = sysfs_create_link(&dev->kobj,
--						&managed_policy->kobj,
--						"cpufreq");
--			if (ret)
--				cpufreq_cpu_put(managed_policy);
--			/*
--			 * Success. We only needed to be added to the mask.
--			 * Call driver->exit() because only the cpu parent of
--			 * the kobj needed to call init().
--			 */
--			if (cpufreq_driver->exit)
--				cpufreq_driver->exit(policy);
--
--			if (!ret)
--				return 1;
--			else
--				return ret;
--		}
--	}
--#endif
--	return ret;
--}
--
--
- /* symlink affected CPUs */
- static int cpufreq_add_dev_symlink(unsigned int cpu,
- 				   struct cpufreq_policy *policy)
-@@ -901,6 +813,42 @@ err_out_kobj_put:
- 	return ret;
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
-+				  struct device *dev)
-+{
-+	struct cpufreq_policy *policy;
-+	int ret = 0;
-+	unsigned long flags;
-+
-+	policy = cpufreq_cpu_get(sibling);
-+	WARN_ON(!policy);
-+
-+	per_cpu(cpufreq_policy_cpu, cpu) = policy->cpu;
-+
-+	lock_policy_rwsem_write(cpu);
-+
-+	__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-+
-+	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	cpumask_set_cpu(cpu, policy->cpus);
-+	per_cpu(cpufreq_cpu_data, cpu) = policy;
-+	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
-+	__cpufreq_governor(policy, CPUFREQ_GOV_START);
-+	__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-+
-+	unlock_policy_rwsem_write(cpu);
-+
-+	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
-+	if (ret) {
-+		cpufreq_cpu_put(policy);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+#endif
- 
- /**
-  * cpufreq_add_dev - add a CPU device
-@@ -913,12 +861,12 @@ err_out_kobj_put:
-  */
- static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- {
--	unsigned int cpu = dev->id;
--	int ret = 0, found = 0;
-+	unsigned int j, cpu = dev->id;
-+	int ret = -ENOMEM, found = 0;
- 	struct cpufreq_policy *policy;
- 	unsigned long flags;
--	unsigned int j;
- #ifdef CONFIG_HOTPLUG_CPU
-+	struct cpufreq_governor *gov;
- 	int sibling;
- #endif
- 
-@@ -935,6 +883,15 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 		cpufreq_cpu_put(policy);
- 		return 0;
- 	}
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+	/* Check if this cpu was hot-unplugged earlier and has siblings */
-+	for_each_online_cpu(sibling) {
-+		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
-+		if (cp && cpumask_test_cpu(cpu, cp->related_cpus))
-+			return cpufreq_add_policy_cpu(cpu, sibling, dev);
-+	}
-+#endif
- #endif
- 
- 	if (!try_module_get(cpufreq_driver->owner)) {
-@@ -942,7 +899,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 		goto module_out;
- 	}
- 
--	ret = -ENOMEM;
- 	policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
- 	if (!policy)
- 		goto nomem_out;
-@@ -987,6 +943,9 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 		goto err_unlock_policy;
- 	}
- 
-+	/* related cpus should atleast have policy->cpus */
-+	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
-+
- 	/*
- 	 * affected cpus must always be the one, which are online. We aren't
- 	 * managing offline cpus here.
-@@ -1000,14 +959,14 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
- 				     CPUFREQ_START, policy);
- 
--	ret = cpufreq_add_dev_policy(cpu, policy, dev);
--	if (ret) {
--		if (ret > 0)
--			/* This is a managed cpu, symlink created,
--			   exit with 0 */
--			ret = 0;
--		goto err_unlock_policy;
-+#ifdef CONFIG_HOTPLUG_CPU
-+	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
-+	if (gov) {
-+		policy->governor = gov;
-+		pr_debug("Restoring governor %s for cpu %d\n",
-+		       policy->governor->name, cpu);
- 	}
-+#endif
- 
- 	ret = cpufreq_add_dev_interface(cpu, policy, dev);
- 	if (ret)
-@@ -1021,7 +980,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 
- 	return 0;
- 
--
- err_out_unregister:
- 	spin_lock_irqsave(&cpufreq_driver_lock, flags);
- 	for_each_cpu(j, policy->cpus)
-diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-index 8ff26af..fc714a6 100644
---- a/drivers/cpufreq/spear-cpufreq.c
-+++ b/drivers/cpufreq/spear-cpufreq.c
-@@ -189,7 +189,6 @@ static int spear_cpufreq_init(struct cpufreq_policy *policy)
- 	policy->cur = spear_cpufreq_get(0);
- 
- 	cpumask_copy(policy->cpus, topology_core_cpumask(policy->cpu));
--	cpumask_copy(policy->related_cpus, policy->cpus);
- 
- 	return 0;
- }
--- 
-1.7.12.rc2.18.g61b472e
+--=20
+                   Sent with MeeGo's ActiveSync support.
 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
+
+
+
+--=-TlGjHb9gPnTRcaFYYOhd
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO6jCCAz0w
+ggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UEChMHRXF1
+aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTA2
+MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUludGVs
+IENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kgQ0EwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATDIsV2xDyt
+30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUjZzTZFq2N
+4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZvuSQ0E11y
+YL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4lz36wOdN
+Zn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+iC1HawJd
+AgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0Vgaj7TdU
+DDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3NlY3VyZWNh
+LmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTADAQH/MA0G
+CSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69tOkIP4Sg
+DJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3jMfr900fX
+ZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAAAAAABzAN
+BgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
+JzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI1MTNa
+Fw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlv
+bjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIwDQYJKoZI
+hvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpPZ7CrcIQ+FGa2
+KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx1jM8Z6GZEqbDUS+v
+BuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHEgzO784PgD9pOgBnnAbZH
+mEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1JW7N8pELAFDw0UFBWFgiv1QI
+usdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa1C2oSCmGN0003GMhQWMCAwEAAaOC
+AlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKoWZq+3PVZTYK4Nwu3z7gfLUWB+MAsG
+A1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBTCKwhTx+hdMsKC
+gOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdv
+qNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVsLmNv
+bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBDQS5j
+cmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIw
+RXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYI
+KwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0lu
+dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZgaHR0
+cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwl
+MjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQCU
+Y/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4Jcyna7fpC
+8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZksnDIlTVUv
+bR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPvhYeN7Y+3MKEd
+SMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650RUe3rOXsaV5NyJzB
+wB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIGFzCCBP+gAwIBAgIKEIhPUAABAABfaTANBgkq
+hkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
+BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0EwHhcNMTEwNDEyMTIzMzQx
+WhcNMTQwMzI3MTIzMzQxWjBFMRkwFwYDVQQDExBXb29kaG91c2UsIERhdmlkMSgwJgYJKoZIhvcN
+AQkBFhlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAvxW1JMLaZUeM6Cg2OVV1nfsZOt9x/CjVJ7SBlapefSjUoNT48n58zLK+Q00YxPkIxnwl
+m57dAxSUf/Dqg+C6DOdLknVQILrGeWNSZdC8GQ8HlHz+D5ldgTDY9L1vDM65p1wbXW4R5QfMbooZ
+IQKlyUivGkggwBUpTeeXDOfz5f4m2UW5aCnyG8yhiBUHISAQyXLwQg+iVhBpTqsVvvojybQY8lGF
+Z7U+kgbgBY0HCqOuEmT7Iz/tm4W3dpfh8mFluZUn1fMBvCaC+cdKVV/1lpeUdtMNREH+jKUU49lt
+BblH1qXmEViOvMT4itbfkUSWeWgeI9umMOK4eL31LLepCQIDAQABo4IC9jCCAvIwCwYDVR0PBAQD
+AgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4HevTmV
+8EMCAWQCAQgwHQYDVR0OBBYEFMcuq9ocKJ7EbWcVlAWTYVXwOsrHMB8GA1UdIwQYMBaAFKoWZq+3
+PVZTYK4Nwu3z7gfLUWB+MIHPBgNVHR8EgccwgcQwgcGggb6ggbuGV2h0dHA6Ly93d3cuaW50ZWwu
+Y29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBD
+QSUyMDNBKDEpLmNybIZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9D
+UkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0EoMSkuY3JsMIH1
+BggrBgEFBQcBAQSB6DCB5TBsBggrBgEFBQcwAoZgaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3Np
+dG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENB
+JTIwM0EoMSkuY3J0MHUGCCsGAQUFBzAChmlodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9y
+ZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5n
+JTIwQ0ElMjAzQSgxKS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwKQYJKwYB
+BAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMME8GA1UdEQRIMEagKQYKKwYBBAGC
+NxQCA6AbDBlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tgRlkYXZpZC53b29kaG91c2VAaW50ZWwu
+Y29tMA0GCSqGSIb3DQEBBQUAA4IBAQBxLiiAAGnWEDYYtUaje48WjSbMx8O+TsKX2x1sgi/ilnUR
+evhznvvFGx9hRrTtQ4Sz+hU7nWvoxbSLDVx6vDQ7+wyGo6SzE0MYqwB3EzwO/P8MnpgZTlEmgDeP
+GjYX2IFzp5fG7NNvc6byf8pLjXgn+2wqRLUqrh2PZZ5KKIiicVNT+UOlRIbB2T1WuSVHBMQxhQBr
+rzwwYuyoawJCHHo+eKUE51cSSzkT95K+m0Q6XYGC8tQ3i94nBIaLMIg/GM6K2cYKH3vdu/otvGPl
+j9/HEKo+mktp2A2S5sIwCKlw8nYOaYKe1dpmYtXKfVoOIIZ/LaVEB/XEIEC1x/oPbrH/MYIB6jCC
+AeYCAQEwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNV
+BAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0ECChCIT1AAAQAAX2kwCQYFKw4D
+AhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEzMDEyOTE0
+NDMyMVowIwYJKoZIhvcNAQkEMRYEFBrkHuNVslCgUD6DKU4XhPtmFk83MA0GCSqGSIb3DQEBAQUA
+BIIBAIs4t3R50r9qY+lz0kvXLph4GkDtVQ0Sc0k9kmngsc+H4dAzf+vWhxI2hBIzpbXRIl0knTYd
+KjNI2WQ6bP7x6/TPo0ndrz8OPaIRLvWV7nlGePoDrwTuxEyTLcuoVSOR4226FeaL63IEX9QlPLZA
+Vuh0iWUKUyvgcDEmQQfTHInUhwF2QK8lAa+y1EXq4LVUCn1yt0D7qYwtimtUhoWoCnWUJya0DqHo
+nEmKGGQRtiAsu5Qu6T7jA7Lk80RFzz5lSfJ+MuuiDvkkOesuBEgqjvYTmyWRxLYrjIvU/DHp4EmR
+UNdq0AmqbnZOg5KtpN63nxKykZlQEbIDRKr/7o7sQNQAAAAAAAA=
+
+
+--=-TlGjHb9gPnTRcaFYYOhd--
