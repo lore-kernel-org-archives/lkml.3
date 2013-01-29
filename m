@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3A2J5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 04:57:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47268 "EHLO mx2.suse.de"
+	id S1755753Ab3A2J6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 04:58:36 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45948 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755339Ab3A2J5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 04:57:46 -0500
-Date: Tue, 29 Jan 2013 10:57:38 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Wood <simon@mungewell.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rosegardener@freeode.co.uk
-Subject: Re: [PATCH 1/4] USB: HID: SRW-S1 Gaming Wheel Driver
-In-Reply-To: <926ebbac6c9e2f8db795dd0ef1ba3647.squirrel@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1301291057170.23853@pobox.suse.cz>
-References: <1359095687-13398-1-git-send-email-simon@mungewell.org>    <alpine.LNX.2.00.1301281557040.23853@pobox.suse.cz>    <1b4d173a8f4cbb94f6d99ae5c75c10d5.squirrel@mungewell.org>    <alpine.LNX.2.00.1301281750100.23853@pobox.suse.cz>
- <926ebbac6c9e2f8db795dd0ef1ba3647.squirrel@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751413Ab3A2J6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 04:58:32 -0500
+Date: Tue, 29 Jan 2013 11:57:58 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <stern@rowland.harvard.edu>, <linux@arm.linux.org.uk>,
+        <sameo@linux.intel.com>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 10/30] USB: ehci-omap: Use PHY APIs to get the PHY
+ device and put it out of suspend
+Message-ID: <20130129095758.GM8708@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1359372631-8180-11-git-send-email-rogerq@ti.com>
+ <1359453032-20604-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bFUYW7mPOLJ+Jd2A"
+Content-Disposition: inline
+In-Reply-To: <1359453032-20604-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jan 2013, simon@mungewell.org wrote:
+--bFUYW7mPOLJ+Jd2A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >> I'm happy to change it; However Steelseries' other devices are all
-> >> keyboards/mice intended for/marketed at gamers. Since other Steelseries
-> >> devices are unlikely to have the same structure (OK I'm just guessing on
-> >> that) is it better to keep this driver somewhat 'seperated'?
-> >>
-> >> I mean, not make life difficult trying to merge keyboard code in with
-> >> this
-> >> wheel's code.... if that is required in future.
-> >
-> > I don't think it's strictly required, but it seems to work quite nicely
-> > for other drivers as well.
-> 
-> OK I'll wait a couple of days in-case any more comments come in and re-do
-> the patch with the file name 'hid-steelseries.c' towards the end of the
-> week.
+Hi,
 
-Works for me. I have finished the review and don't have any other 
-comments.
+On Tue, Jan 29, 2013 at 11:50:32AM +0200, Roger Quadros wrote:
+> For each port that is in PHY mode we obtain a PHY device using the USB PHY
+> library and put it out of suspend.
+>=20
+> It is up to platform code to associate the PHY to the controller's
+> port and it is upto the PHY driver to manage the PHY's resources.
+>=20
+> Also remove wired spacing around declarations we come across.
+>=20
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-Thanks,
+ideally, this would be done generically by ehci-hcd.ko itself. Alan,
+would you have objections provided it doesn't break anyone else ?
 
--- 
-Jiri Kosina
-SUSE Labs
+--=20
+balbi
+
+--bFUYW7mPOLJ+Jd2A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRB50mAAoJEIaOsuA1yqRErb0P/02UfB4iZVXRa6a6R6/JXq6W
+WMuvCTbn8BUZWEW3qyETWcJcbdA5c5z3msNxeucVMWJynVdl5Y29FoUQeLr8hhEP
+zTCwWhk5C9t4XBvc4e2bM8UgHN5owsIQhJJy6oWW3+zkdRUclrZhKFKqQhgS4P8I
+rW9uza7ANHdYsEW36TPwwyK67/q67hXZCvtHVcwKzJZtYQHAUICFE/ozn2XBmoiI
+4pivz5GCh4XtxOV32UTLmshaOWLcG4r93lPTbg9MLJtmsj1CPpsPcZ69x37Maf5X
+cebV6t0rcbJUc7rqoXVy8nJxkQAet7d3vARv0OxWd8T024etUx2X1OA142LB3ECy
+br+7FPGe5vDdzrp7bIPqXcNEKH9ImfzD7BLGTBCPrNKqPMtUeQa/YheiYvH0XMy9
+yZqPwP6goyhwGVrUiunGMqS56jVV4zcBblXJfGBYInNw5VpdwfCJiTR1nimdHpdh
+drameYRaE879IGlRZ+JAr5lqXCzTvTmOzcvDIeNdtBDGk1u7REayuiZCv2nNVGTP
+WlpfcULKAzSkszldzM9NtlCusefIWE/VB7YZ/KBghsQoFUSqp+GyoYMSWoz2Ai0N
+Ogb9chiq6zkul9IzC5CEVO8PgHjJIQ4wzkEDYNmiW3KjRqWEMbZLfi7DOHXyUMeA
+m6VJYXd/FVM+DhJ8kPl1
+=Q/9E
+-----END PGP SIGNATURE-----
+
+--bFUYW7mPOLJ+Jd2A--
