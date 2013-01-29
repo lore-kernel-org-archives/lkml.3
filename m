@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab3A2Dqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 22:46:50 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:33359 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750874Ab3A2Dqs (ORCPT
+	id S1756433Ab3A2DuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 22:50:12 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:44933 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab3A2DuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 22:46:48 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 11/11] staging/fwserial: Remove unneeded push work
-Date: Mon, 28 Jan 2013 22:34:45 -0500
-Message-Id: <1359430485-5301-11-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1359430485-5301-1-git-send-email-peter@hurleysoftware.com>
-References: <1359430485-5301-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Mon, 28 Jan 2013 22:50:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <1a8f7aa6-f27a-4237-9be1-1b2c3718e21a@email.android.com>
+References: <510579C1.3000800@zytor.com>
+	<1359313804.10797.74.camel@shinybook.infradead.org>
+	<51057DA7.7040907@zytor.com>
+	<CAE9FiQUFZwmiBgYwsoLZ4O+f_w-V01Eb8_6L4ZrHeA4DfLJd8A@mail.gmail.com>
+	<0023b092-6149-418f-8adc-dd7f5631006c@email.android.com>
+	<CAE9FiQWnxQXQgjmEs+Jv=uoYHK-GuP34D1B_5NyJp6Nf6s2sYw@mail.gmail.com>
+	<1a8f7aa6-f27a-4237-9be1-1b2c3718e21a@email.android.com>
+Date: Mon, 28 Jan 2013 19:50:10 -0800
+X-Google-Sender-Auth: xQvIDr1drGPnmW37hYJhCFTmbdE
+Message-ID: <CAE9FiQXwwu7HELhNUMFTMswe=X58+0Jpc7GeEBdhiF9Jcm4o3Q@mail.gmail.com>
+Subject: Re: bzImage 2.12
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since rx push can be performed synchronously with unthrottle,
-remove the push work struct and code references to it.
+On Sun, Jan 27, 2013 at 7:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Thanks.
+>
+> Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>>On Sun, Jan 27, 2013 at 11:39 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> I'm planning to sort it out... I'll let you know if I run out of
+>>bandwidth.
+>>>
+>>> Yinghai Lu <yinghai@kernel.org> wrote:
+>>>
+>>>>On Sun, Jan 27, 2013 at 11:19 AM, H. Peter Anvin <hpa@zytor.com>
+>>wrote:
+>>>>>
+>>>>> I think we can probably do that, since it doesn't affect anything
+>>>>non-broken
+>>>>> at this point.  I'm sorting out what can be done for 3.8 vs 3.9 at
+>>>>this
+>>>>> point.
+>>>>>
+>>>>> Anyway, as you can tell I'm spending this weekend working for a
+>>>>reason.
+>>>>>
+>>>>> It turns out the patch I sent out doesn't actually build.  Here is
+>>an
+>>>>> updated patch.  Can I get your ack for this so I can do the
+>>>>appropriate
+>>>>> hacks to your and Yinghai's patchsets?
+>>>>
+>>>>Acked-by: Yinghai Lu <yinghai@kernel.org>
+>>>>
+>>>>Do you want to me to update my patchset on top it and resend?
+>>>>
+>>>>or you are going to sort it out by you self?
+>>>>
+>>
+>>To save your some time, please check attached patch.
+>>
+>>It would take position of
+>>
+>>https://patchwork.kernel.org/patch/2035731/
+>>
+>>[25/35] x86, boot: Add fields to support load bzImage and ramdisk above
+>>4G
+>>
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/staging/fwserial/fwserial.c | 2 --
- drivers/staging/fwserial/fwserial.h | 4 ----
- 2 files changed, 6 deletions(-)
+Did you get chance to put them into for-x86-boot?
 
-diff --git a/drivers/staging/fwserial/fwserial.c b/drivers/staging/fwserial/fwserial.c
-index 121beff..8983911 100644
---- a/drivers/staging/fwserial/fwserial.c
-+++ b/drivers/staging/fwserial/fwserial.c
-@@ -1112,7 +1112,6 @@ static void fwtty_port_shutdown(struct tty_port *tty_port)
- 
- 	cancel_delayed_work_sync(&port->emit_breaks);
- 	cancel_delayed_work_sync(&port->drain);
--	cancel_work_sync(&port->push);
- 
- 	spin_lock_bh(&port->lock);
- 	list_for_each_entry_safe(buf, next, &port->buf_list, list) {
-@@ -2300,7 +2299,6 @@ static int fwserial_create(struct fw_unit *unit)
- 		INIT_DELAYED_WORK(&port->drain, fwtty_drain_tx);
- 		INIT_DELAYED_WORK(&port->emit_breaks, fwtty_emit_breaks);
- 		INIT_WORK(&port->hangup, fwtty_do_hangup);
--		INIT_WORK(&port->push, fwtty_pushrx);
- 		INIT_LIST_HEAD(&port->buf_list);
- 		init_waitqueue_head(&port->wait_tx);
- 		port->max_payload = link_speed_to_max_payload(SCODE_100);
-diff --git a/drivers/staging/fwserial/fwserial.h b/drivers/staging/fwserial/fwserial.h
-index 33a3a53..6c179f0 100644
---- a/drivers/staging/fwserial/fwserial.h
-+++ b/drivers/staging/fwserial/fwserial.h
-@@ -223,9 +223,6 @@ struct buffered_rx {
-  *         The work can race with the writer but concurrent sending is
-  *         prevented with the IN_TX flag. Scheduled under lock to
-  *         limit scheduling when fifo has just been drained.
-- * @push: work responsible for pushing buffered rx to the ldisc.
-- *	  rx can become buffered if the tty buffer is filled before the
-- *	  ldisc throttles the sender.
-  * @buf_list: list of buffered rx yet to be sent to ldisc
-  * @buffered: byte count of buffered rx
-  * @tx_fifo: fifo used to store & block-up writes for dma to remote
-@@ -267,7 +264,6 @@ struct fwtty_port {
- 	spinlock_t		   lock;
- 	unsigned		   mctrl;
- 	struct delayed_work	   drain;
--	struct work_struct	   push;
- 	struct list_head	   buf_list;
- 	int			   buffered;
- 	struct dma_fifo		   tx_fifo;
--- 
-1.8.1.1
+You need to skip the first two about memmap= exactmap and reserveram ...
 
+Thanks
+
+Yinghai
