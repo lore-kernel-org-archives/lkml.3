@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab3A2LxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 06:53:23 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46353 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754997Ab3A2LxV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 06:53:21 -0500
-X-AuditID: 85900ec0-d687bb900000152f-7a-5107b82ec6b0
-Message-ID: <5107B82E.4020403@hitachi.com>
-Date: Tue, 29 Jan 2013 20:53:18 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756016Ab3A2LyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 06:54:16 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:58484 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754982Ab3A2LyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 06:54:12 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 1/5] e1000e: fix resuming from runtime-suspend
+Date: Tue, 29 Jan 2013 13:00:21 +0100
+Message-ID: <9460098.jyMkT8TSO0@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51076CEE.8050706@openvz.org>
+References: <20130118113019.6698.25941.stgit@zurg> <12263202.uQHxo0zU24@vostro.rjw.lan> <51076CEE.8050706@openvz.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: [PATCH 10/25] kprobes: fix wait_for_kprobe_optimizer()
-References: <1356141435-17340-1-git-send-email-tj@kernel.org> <1356141435-17340-11-git-send-email-tj@kernel.org> <50D922C9.3020706@hitachi.com> <20130128194949.GJ22465@mtj.dyndns.org>
-In-Reply-To: <20130128194949.GJ22465@mtj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/01/29 4:49), Tejun Heo wrote:
-> On Tue, Dec 25, 2012 at 12:51:37PM +0900, Masami Hiramatsu wrote:
->> (2012/12/22 10:57), Tejun Heo wrote:
->>> wait_for_kprobe_optimizer() seems largely broken.  It uses
->>> optimizer_comp which is never re-initialized, so
->>> wait_for_kprobe_optimizer() will never wait for anything once
->>> kprobe_optimizer() finishes all pending jobs for the first time.
->>
->> Thank you for fixing that!
->> I must misunderstand that the DECLARE_COMPLETION() macro.
->>
->>> Also, aside from completion, delayed_work_pending() is %false once
->>> kprobe_optimizer() starts execution and wait_for_kprobe_optimizer()
->>> won't wait for it.
->>>
->>> Reimplement it so that it flushes optimizing_work until
->>> [un]optimizing_lists are empty.  Note that this also makes
->>> optimizing_work execute immediately if someone's waiting for it, which
->>> is the nicer behavior.
->>
->> I think your enhancement is reasonable and GOOD for me.
->>
->> Thanks again!
->>
->> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On Tuesday, January 29, 2013 10:32:14 AM Konstantin Khlebnikov wrote:
+> Rafael J. Wysocki wrote:
+> > On Monday, January 28, 2013 04:05:33 PM Bjorn Helgaas wrote:
+> >> [+cc Rafael, author of patch you cited]
+> >>
+> >> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
+> >> <khlebnikov@openvz.org>  wrote:
+> >>> Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+> >>> ("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
+> >>>
+> >>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> >>> Cc: e1000-devel@lists.sourceforge.net
+> >>> Cc: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
+> >>> Cc: Bruce Allan<bruce.w.allan@intel.com>
+> >>> ---
+> >>>   drivers/net/ethernet/intel/e1000e/netdev.c |   13 ++++++++-----
+> >>>   1 file changed, 8 insertions(+), 5 deletions(-)
+> >>>
+> >>> diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+> >>> index fbf75fd..2853c11 100644
+> >>> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
+> >>> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+> >>> @@ -5691,14 +5691,17 @@ static int e1000_runtime_suspend(struct device *dev)
+> >>>          struct pci_dev *pdev = to_pci_dev(dev);
+> >>>          struct net_device *netdev = pci_get_drvdata(pdev);
+> >>>          struct e1000_adapter *adapter = netdev_priv(netdev);
+> >>> +       int retval;
+> >>> +       bool wake;
+> >>>
+> >>> -       if (e1000e_pm_ready(adapter)) {
+> >>> -               bool wake;
+> >>> +       if (!e1000e_pm_ready(adapter))
+> >>> +               return 0;
+> >>>
+> >>> -               __e1000_shutdown(pdev,&wake, true);
+> >>> -       }
+> >>> +       retval = __e1000_shutdown(pdev,&wake, true);
+> >>> +       if (!retval)
+> >>> +               e1000_power_off(pdev, true, wake);
+> >>>
+> >>> -       return 0;
+> >>> +       return retval;
+> >>>   }
+> >>>
+> >>>   static int e1000_idle(struct device *dev)
+> >>>
+> >
+> > I'd like the changelog to say what the bug is and how it is being fixed in
+> > general terms.
 > 
-> Can I take it through workqueue branch w/ other patches?
+> Ok, my bad.
+> 
+> Problem: ethernet device does not work (no carrier signal).
+> Right after boot it goes to runtime-suspend and never wake up.
+> 
+> Original code (before your commit) calls pci_prepare_to_sleep() and it
+> calls pci_enable_wake() and switches device to one of D3 state.
+> 
+> It seems redundant, because pci_pm_runtime_suspend() do the same thing
+> after calling ->runtime_suspend callback. Or rather it did it before commit
+> 42eca2302146fed51335b95128e949ee6f54478f ("PCI: Don't touch card regs after
+> runtime suspend D3") and third patch aimed fix this damage.
+> 
+> More over seems like calling pci_enable_wake() from e1000e isn't enough for my case,
+> because my enthernet cannot wakeup from runtime-suspend without third patch.
+> Seems like it's because pci_enable_wake() and pci_finish_runtime_suspend()
+> calls different pratform-pm callbacks -- platform_pci_run_wake() /
+> platform_pci_sleep_wake().
+> 
+> All this looks messy and I don't know how it should work.
+> 
+> If you prefer to minimize changes -- I can test how it would work without
+> first (this) patch. Probably fine.
 
-Yes, of course. I think it is not a critical bug, so I can
-wait for other patches.
+OK, I need to have a look at that driver, then.  Please give me some time,
+though, I'm working on something different at the moment.
 
-Thank you,
+And by the way, by sending patches you declare that you know what you're doing.
+If you really don't, it's better to just describe the problem. :-)
+
+Thanks,
+Rafael
+
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
