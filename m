@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab3A2J2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 04:28:55 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:47617 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab3A2J2x (ORCPT
+	id S1753229Ab3A2JaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 04:30:17 -0500
+Received: from forward4.mail.yandex.net ([77.88.46.9]:33294 "EHLO
+	forward4.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3A2JaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 04:28:53 -0500
-Date: Tue, 29 Jan 2013 10:28:49 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: nan chen <nachenn@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/2] mutex: use spin_[un]lock instead of
- arch_spin_[un]lock
-Message-ID: <20130129092849.GA6665@gmail.com>
-References: <1359019365-23646-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1359019365-23646-2-git-send-email-yuanhan.liu@linux.intel.com>
- <20130124161413.a3903fa4.akpm@linux-foundation.org>
- <20130125074053.GD18243@gmail.com>
- <CABBm8944FSNDZ2u=PJy0CsZmz=Vm7e+Y5jX+3UFLN5NOSGRgWQ@mail.gmail.com>
- <20130125092422.GA19541@gmail.com>
- <CABBm896XGVkubML9TyW_MTXMovd6nHoK0v24jbEDJOipzNqpDA@mail.gmail.com>
- <20130129090126.GA5547@gmail.com>
- <CABBm8979+XVRA-MQRdczMbStJR7DyPwNUvQL+RTuQL0sECOo8g@mail.gmail.com>
+	Tue, 29 Jan 2013 04:30:12 -0500
+X-Greylist: delayed 991 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 04:30:12 EST
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Libo Chen <chenlibo.3@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>, lizefan@huawei.com,
+        jovi.zhangwei@huawei.com
+Subject: Re:[PATCH]sched/rt: Do not try to push tasks if pinned task switches to RT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABBm8979+XVRA-MQRdczMbStJR7DyPwNUvQL+RTuQL0sECOo8g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <446051359450817@web10d.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Tue, 29 Jan 2013 13:13:37 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* nan chen <nachenn@gmail.com> wrote:
 
-> > #define spin_lock_mutex(lock, flags)                    \
-> >         do {                                            \
-> >                 struct mutex *l = container_of(lock, struct mutex,
-> > wait_lock); \
-> >                                                         \
-> >                 DEBUG_LOCKS_WARN_ON(in_interrupt());    \
-> >                 local_irq_save(flags);                  \
-> >                 arch_spin_lock(&(lock)->rlock.raw_lock);\
-> >                 DEBUG_LOCKS_WARN_ON(l->magic != l);     \
-> >         } while (0)
-> >
-> > The original question was why mutex-debug.h (unmodified) uses
-> > irq disabling.
-> >
-> > Thanks,
-> >
-> >         Ingo
-> >
+> From: Libo Chen <libo.chen@huawei.com>
 > 
-> So, the reason why you use WARN_ON here is try to keep things 
-> going?
+> On 2013-1-29 4:23, Kirill Tkhai wrote:
+> 
+>> Just switched pinned task is not able to be pushed. If the rq had had
+>> several RT tasks before they have already been considered as candidates
+>> to be pushed (or pulled).
+>>
+>> Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+>> CC: Steven Rostedt <rostedt@goodmis.org>
+>> CC: Ingo Molnar <mingo@kernel.org>
+>> CC: Peter Zijlstra <peterz@infradead.org>
+>> CC: linux-rt-users <linux-rt-users@vger.kernel.org>
+>> ---
+>> kernel/sched/rt.c | 4 ++--
+>> 1 file changed, 2 insertions(+), 2 deletions(-)
+>> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+>> index 4e8f0f4..5f7d92b 100644
+>> --- a/kernel/sched/rt.c
+>> +++ b/kernel/sched/rt.c
+>> @@ -1925,9 +1925,9 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
+>> */
+>> if (p->on_rq && rq->curr != p) {
+>> #ifdef CONFIG_SMP
+>> - if (rq->rt.overloaded && push_rt_task(rq) &&
+>> + if (rq->rt.overloaded && p->nr_cpus_allowed > 1 &&
+>> /* Don't resched if we changed runqueues */
+>> - rq != task_rq(p))
+>> + push_rt_task(rq) && rq != task_rq(p))
+> 
+> I think you worry about it was excess to call push_rt_task, since the task of p->nr_cpus_allowed=1 can`t be pushed. is that right?
 
-What would be the alternative?
+Sure.
 
-Thanks,
+> 
+> The task of p->nr_cpus_allowed =1 would`t be added to pushable_tasks list （see the enqueue_task_rt()）and this push_rt_task() need to push other tasks when rt.overloaded.
 
-	Ingo
+If rq has already had 2 or more pushable tasks and we try to add a pinned task then call of push_rt_task will just waste a time.
+
+> 
+> So I don`t agree this patch.
+> 
+>> check_resched = 0;
+>> #endif /* CONFIG_SMP */
+>> if (check_resched && p->prio < rq->curr->prio)
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+
+
+ -- 
