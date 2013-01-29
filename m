@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3A2TfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:35:21 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:63008 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab3A2TfU (ORCPT
+	id S1753605Ab3A2Tgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:36:43 -0500
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:53309 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753110Ab3A2Tgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:35:20 -0500
-Message-ID: <51082470.2070601@suse.cz>
-Date: Tue, 29 Jan 2013 20:35:12 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	Tue, 29 Jan 2013 14:36:40 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lingzhu Xiang <lxiang@redhat.com>, Roman Rakus <rrakus@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tty: set_termios/set_termiox should not return -EINTR
-References: <20130129190720.GA28000@redhat.com> <20130129190741.GA28004@redhat.com>
-In-Reply-To: <20130129190741.GA28004@redhat.com>
-X-Enigmail-Version: 1.5
+In-Reply-To: <CAE9FiQWof73nuTTg-hou2iXZQGXfmodiT9BN8Hh-=x4ROEu5jg@mail.gmail.com>
+References: <510579C1.3000800@zytor.com>
+	<1359313804.10797.74.camel@shinybook.infradead.org>
+	<51057DA7.7040907@zytor.com>
+	<CAE9FiQUFZwmiBgYwsoLZ4O+f_w-V01Eb8_6L4ZrHeA4DfLJd8A@mail.gmail.com>
+	<0023b092-6149-418f-8adc-dd7f5631006c@email.android.com>
+	<CAE9FiQWnxQXQgjmEs+Jv=uoYHK-GuP34D1B_5NyJp6Nf6s2sYw@mail.gmail.com>
+	<1a8f7aa6-f27a-4237-9be1-1b2c3718e21a@email.android.com>
+	<CAE9FiQXwwu7HELhNUMFTMswe=X58+0Jpc7GeEBdhiF9Jcm4o3Q@mail.gmail.com>
+	<CAE9FiQWof73nuTTg-hou2iXZQGXfmodiT9BN8Hh-=x4ROEu5jg@mail.gmail.com>
+Date: Tue, 29 Jan 2013 11:36:38 -0800
+X-Google-Sender-Auth: yRSkXPvV_HonxbJ2Qei-QWLAY4c
+Message-ID: <CAE9FiQVL86V96ry5=Gdg8nsyWiGHa4j=WMH_BRdQJomB7j3O1A@mail.gmail.com>
+Subject: Re: bzImage 2.12
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 08:07 PM, Oleg Nesterov wrote:
-> See https://bugzilla.redhat.com/show_bug.cgi?id=904907
-> read command causes bash to abort with double free or corruption (out).
-> 
-> A simple test-case from Roman:
-> 
-> 	// Compile the reproducer and send sigchld ti that process.
-> 	// EINTR occurs even if SA_RESTART flag is set.
-> 
-> 	void handler(int sig)
-> 	{
-> 	}
-> 
-> 	main()
-> 	{
-> 	  struct sigaction act;
-> 	  act.sa_handler = handler;
-> 	  act.sa_flags = SA_RESTART;
-> 	  sigaction (SIGCHLD, &act, 0);
-> 	  struct termio ttp;
-> 	  ioctl(0, TCGETA, &ttp);
-> 	  while(1)
-> 	  {
-> 	    if (ioctl(0, TCSETAW, ttp) < 0)
-> 	      {
-> 		if (errno == EINTR)
-> 		{
-> 		  fprintf(stderr, "BUG!"); return(1);
-> 		}
-> 	      }
-> 	  }
-> 	}
-> 
-> Change set_termios/set_termiox to return -ERESTARTSYS to fix this
-> particular problem.
+On Mon, Jan 28, 2013 at 8:22 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Jan 28, 2013 at 7:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Sun, Jan 27, 2013 at 7:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Did you get chance to put them into for-x86-boot?
+>>
+>> You need to skip the first two about memmap= exactmap and reserveram ...
+>>
+>
 
-This looks reasonable. However given the link above says:
- You are not authorized to access bug #904907.
-the description above is poor. What problem exactly does this fix? Why
-this should go to stable at all?
+please check
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-boot for-x86-boot-v7u5
 
--- 
-js
-suse labs
+and it is based on Linus tree +  tip:x86/mm2 + tip:x86/boot
+
+Also put Konrad Ack into last swiotlb patch.
+
+Thanks
+
+Yinghai
