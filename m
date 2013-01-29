@@ -1,60 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab3A2Mod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:44:33 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:55828 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3A2Mob (ORCPT
+	id S1756647Ab3A2Mrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:47:33 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:64512 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3A2Mra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:44:31 -0500
+	Tue, 29 Jan 2013 07:47:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130129000149.5fa5b0c3@stein>
-References: <1359410988-3740-1-git-send-email-mark.einon@gmail.com> <20130129000149.5fa5b0c3@stein>
+In-Reply-To: <20130128.231057.57111832691623178.davem@davemloft.net>
+References: <1358945130-3101-1-git-send-email-mark.einon@gmail.com>
+ <1358958278-3207-1-git-send-email-mark.einon@gmail.com> <20130128.231057.57111832691623178.davem@davemloft.net>
 From: Mark Einon <mark.einon@gmail.com>
-Date: Tue, 29 Jan 2013 12:44:15 +0000
-Message-ID: <CANK3SE0w08n1RSzqy5dV4eAymAfmnb-a+T9UfVSxw-+3fP-PVA@mail.gmail.com>
-Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Tue, 29 Jan 2013 12:47:14 +0000
+Message-ID: <CANK3SE2kiV0gPRaM0Y-eHs0cxXs8ZgZK=p=eNZnENOdXir7rNA@mail.gmail.com>
+Subject: Re: [RFC PATCH v4 linux-next] et131x: Promote staging et131x driver
+ to drivers/net
+To: David Miller <davem@davemloft.net>
+Cc: gregkh@linuxfoundation.org, sfr@canb.auug.org.au, netdev@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2013 23:01, Stefan Richter <stefanr@s5r6.in-berlin.de> wrote:
-> On Jan 28 Mark Einon wrote:
->> This patch fixes the kernel warning generated when putting an MSI MS-1727
->> GT740 laptop into suspend mode. The call sequence in this case calls
->> free_irq() twice, once in pci_remove() and once then in pci_suspend().
+On 29 January 2013 04:10, David Miller <davem@davemloft.net> wrote:
+> From: Mark Einon <mark.einon@gmail.com>
+> Date: Wed, 23 Jan 2013 16:24:38 +0000
 >
-> You mean /first/ in pci_suspend() and /then/ in pci_remove() on the
-> already suspended devices, right?
-
-Yes, I did. The call sequence is suspend then resume. My bad.
-
+>> +endif # NET_VENDOR_AGERE
+>> +
 >
-> Because the other way around, first pci_remove(), then pci_suspend(),
-> surely must not appen.  And if it does, the bug is elsewhere but not in
-> firewire-ohci.
+> Trailing empty line, delete it.
 >
-> On that note, is pci_suspend() -> pci_remove() actually a legal state
-> transition that must be handled by drivers?
-
-It's happening on the Ubuntu 12.10 distro which performs the suspend
-then remove sequence. I assumed that was normal.
-
+>> @@ -0,0 +1,6 @@
+>> +#
+>> +# Makefile for the Agere ET-131x ethernet driver
+>> +#
+>> +
+>> +obj-$(CONFIG_ET131X) += et131x.o
+>> +
 >
-> Another comment below.
-<snip>
+> Likewise, get rid of this trailing empty line.
 >
-> firewire-ohci's pci_resume() calls request_irq() a little bit before that,
-> in ohci_enable().  Is the sequence pci_probe/request_irq() ->
-> pci_suspend/disable_irq() -> pci_resume/request_irq() ->
-> pci_resume/enable_irq() legal?
+>> +     /* Spinlocks */
+>> +     spinlock_t lock;
+>> +
+>> +     spinlock_t tcb_send_qlock;
+>> +     spinlock_t tcb_ready_qlock;
+>> +     spinlock_t send_hw_lock;
+>> +
+>> +     spinlock_t rcv_lock;
+>> +     spinlock_t rcv_pend_lock;
+>> +     spinlock_t fbr_lock;
+>> +
+>> +     spinlock_t phy_lock;
+>
+> Do you really need _8_ spinlocks in an ethernet driver?  To me that's
+> way over the top and excessive.
+>
+> The most recent driver I've written, for the 10Gbit Sun NIU parts,
+> has only one spinlock.
+>
+>> +     /* Determine if this is a multicast packet coming in */
+>
+> What in the world are you doing in this huge code block?
+>
+> Such much complexity, multicast list iteration, etc. just to get some
+> statistics correct?  This stuff is going to run on every multicast
+> packet receive.
+>
+> No other driver does crap like this, get rid of this stuff.
+>
+>> +     skb->dev = adapter->netdev;
+>> +     skb->protocol = eth_type_trans(skb, adapter->netdev);
+>
+> eth_type_trans() sets skb->dev, you don't need to duplicate that.
+>
+>> +     netif_rx_ni(skb);
+>
+> Why isn't this driver supporting NAPI?  If you're going to put this
+> much time into a driver, use the best interfaces for event processing
+> rather than something that might have been appropriate in a new driver
+> two decades ago.
+>
+>> +static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+>> +{
+>> +     int status = 0;
+>> +     struct et131x_adapter *adapter = netdev_priv(netdev);
+>> +
+>> +     /* stop the queue if it's getting full */
+>> +     if (adapter->tx_ring.used >= NUM_TCB - 1 &&
+>> +         !netif_queue_stopped(netdev))
+>> +             netif_stop_queue(netdev);
+>> +
+>> +     /* Save the timestamp for the TX timeout watchdog */
+>> +     netdev->trans_start = jiffies;
+>> +
+>> +     /* Call the device-specific data Tx routine */
+>> +     status = et131x_send_packets(skb, netdev);
+>> +
+>> +     /* Check status and manage the netif queue if necessary */
+>> +     if (status != 0) {
+>> +             if (status == -ENOMEM)
+>> +                     status = NETDEV_TX_BUSY;
+>> +             else
+>> +                     status = NETDEV_TX_OK;
+>> +     }
+>> +     return status;
+>> +}
+>
+> Returning NETDEV_TX_BUSY is an error, no driver should ever return
+> that status under normal circumstances.  Some drivers return it
+> when internal consistency checks fail, but that indicates a driver
+> bug rather than a normal condition.
+>
+> Memory allocation erorrs do not denote NETDEV_TX_BUSY, simply drop
+> the packet silently with kfree_skb() and return NETDEV_TX_OK.
+>
+> That's about enough for me, this driver still needs a lot of work
+> and is far from being ready to move out of staging.
 
-I missed the call to request_irq(). Perhaps the simplest way to handle
-the fix would be to use a flag that holds the irq state? I'm open to
-suggestions.
+Thanks for taking the time to give feedback. I'll update the TODO list.
 
 Cheers,
 
