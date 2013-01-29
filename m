@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab3A2X6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 18:58:40 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:55487 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751067Ab3A2X6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 18:58:39 -0500
-Message-ID: <1359503917.16868.24.camel@joe-AO722>
-Subject: Re: [Q]staging/comedi: Considation of *_find_boardinfo possible?
-From: Joe Perches <joe@perches.com>
-To: Peter =?ISO-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Date: Tue, 29 Jan 2013 15:58:37 -0800
-In-Reply-To: <201301300041.36064.PeterHuewe@gmx.de>
-References: <201301300041.36064.PeterHuewe@gmx.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	id S1752434Ab3A2X7U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 18:59:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51784 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab3A2X7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 18:59:18 -0500
+Date: Tue, 29 Jan 2013 15:59:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Mike Lykov <combr@yandex.ru>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, kirill@shutemov.name
+Subject: Re: [BUG?] false positive in soft lockup detector while unlzma
+ initramfs on slow cpu
+Message-Id: <20130129155917.4ee64214.akpm@linux-foundation.org>
+In-Reply-To: <20130129153348.GR98867@redhat.com>
+References: <5107D1D3.6040105@yandex.ru>
+	<20130129153348.GR98867@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-30 at 00:41 +0100, Peter Hüwe wrote:
-> ---> is there a way to consolidate these functions into one function (which 
-> can operate on the different types) ?  It's almost a bit like 'templates'.
-> Maybe with some gcc extensions or kernel magic functions ?
+On Tue, 29 Jan 2013 10:33:48 -0500
+Don Zickus <dzickus@redhat.com> wrote:
 
-Nothing wrong with a macro.
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -79,6 +79,14 @@ static int __init softlockup_panic_setup(char *str)
+>  }
+>  __setup("softlockup_panic=", softlockup_panic_setup);
+>  
+> +static int __init watchdog_thresh_setup(char *str)
+> +{
+> +	watchdog_thresh = simple_strtoul(str, NULL, 0);
+> +
+> +	return 1;
+> +}
+> +__setup("watchdog_thresh=", watchdog_thresh_setup);
 
-Maybe something like:
+I wonder if there's some magical way in which we can set any sysctl
+from the kernel command line.  Add sys.vm.min_free_kbytes=42 to the
+command line, walk the hierarchy late in boot...
 
-#define comedi_find_board(array, board_id)		\
-({							\
-	int i;						\
-	typeof array *p = array;			\
-	typeof array *rtn = NULL;			\
-	for (i = 0; i < ARRAY_SIZE(array); i++, p++) {	\
-		if (p->device_id == board_id) {		\
-			rtn = p;			\
-			break;				\
-		}					\
-	}						\
-	rtn;						\
-})
-
-
+To address Mike's bug I suggest we poke a touch_softlockup_watchdog()
+into the appropriate place.  Presumably the loop in
+lib/decompress_unlzma.c:unlzma().  The decompress code makes me cry.
