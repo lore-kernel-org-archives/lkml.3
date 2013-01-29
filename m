@@ -1,153 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab3A2Oyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:54:44 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:52279 "HELO
-	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757123Ab3A2Ox6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:53:58 -0500
-From: Andreas Larsson <andreas@gaisler.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: [PATCH v2 5/6] of_spi: Add fetching of of_gpio flags to of_spi_register_master
-Date: Tue, 29 Jan 2013 15:53:42 +0100
-Message-Id: <1359471223-4794-6-git-send-email-andreas@gaisler.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
-References: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
+	id S1757275Ab3A2Oym (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:54:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59597 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757056Ab3A2Oyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 09:54:37 -0500
+Date: Tue, 29 Jan 2013 15:54:24 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz
+Subject: Re: [PATCH] printk: Avoid softlockups in console_unlock()
+Message-ID: <20130129145424.GF32246@quack.suse.cz>
+References: <20130115233742.e8571f92.akpm@linux-foundation.org>
+ <20130116101644.GA29162@quack.suse.cz>
+ <20130116145005.e20f4e53.akpm@linux-foundation.org>
+ <20130116235529.GA10251@quack.suse.cz>
+ <20130116161118.f6e2e6a4.akpm@linux-foundation.org>
+ <20130117210442.GA23984@quack.suse.cz>
+ <20130117133917.0f75728e.akpm@linux-foundation.org>
+ <20130117234614.GB10127@quack.suse.cz>
+ <20130117155029.cb70ec95.akpm@linux-foundation.org>
+ <20130121210008.GB23041@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130121210008.GB23041@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using a gpio chip select with a OF_GPIO_ACTIVE_LOW flag, this needs to be
-known to the controller driver.
+On Mon 21-01-13 22:00:08, Jan Kara wrote:
+> On Thu 17-01-13 15:50:29, Andrew Morton wrote:
+> > On Fri, 18 Jan 2013 00:46:14 +0100
+> > Jan Kara <jack@suse.cz> wrote:
+> > 
+> > > On Thu 17-01-13 13:39:17, Andrew Morton wrote:
+> > > > On Thu, 17 Jan 2013 22:04:42 +0100
+> > > > Jan Kara <jack@suse.cz> wrote:
+> > > > 
+> > > > > ...
+> > > > >
+> > > > >   So I played a bit with this. To make things easier for me I added
+> > > > > artificial mdelay(len*10) (effectively simulating console able to print 100
+> > > > > characters per second) just after call_console_drivers() so that I can
+> > > > > trigger issues even on a machine easily available to me. Booting actually
+> > > > > doesn't trigger any problems because there aren't enough things happening
+> > > > > in parallel on common machine during boot but
+> > > > >   echo t >/proc/sysrq-trigger &
+> > > > >   for i in /lib/modules/3.8.0-rc3-0-default/kernel/fs/*/*.ko; do 
+> > > > >     name=`basename $i`; name=${name%.ko}; modprobe $name
+> > > > >   done
+> > > > > easily triggers the problem (as modprobe uses both RCU & IPIs to signal all
+> > > > > CPUs).
+> > > > > 
+> > > > >   Adding
+> > > > > 	touch_nmi_watchdog();
+> > > > > 	touch_all_softlockup_watchdogs();
+> > > > > 	rcu_cpu_stall_reset();
+> > > > 
+> > > > I'm not sure that touch_all_softlockup_watchdogs() is needed? 
+> > > > touch_nmi_watchdog() itself calls touch_softlockup_watchdog().
+> > >   It is. I've tried without it and the machine died a horrible death
+> > > because softlockup reports added to already too heavy printk traffic. The
+> > > problem is that CPU doing printing cannot handle IPIs thus if someone calls
+> > > e.g. smp_call_function_many() that function will spin waiting for IPIs on
+> > > all CPUs to finish. And that doesn't happen until printing is done so
+> > > CPU doing smp_call_function_many() gets locked up as well.
+> > 
+> > erk.  I trust we'll have a nice comment explaining this mechanism ;)
+>   So I was testing the attached patch which does what we discussed. The bad
+> news is I was able to trigger a situation (twice) when suddently sda
+> disappeared and thus all IO requests failed with EIO. There is no trace of
+> what's happened in the kernel log. I'm guessing that disabled interrupts on
+> the printing CPU caused scsi layer to time out for some request and fail the
+> device. So where do we go from here?
+  Andrew? I guess this fell off your radar via the "hrm, strange, need to
+have a closer look later" path? Currently I'd be inclined to return to my
+original solution...
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
----
- Documentation/devicetree/bindings/spi/spi-bus.txt |    3 +-
- drivers/spi/spi.c                                 |   24 ++++++++++++++++++--
- include/linux/spi/spi.h                           |    5 ++++
- 3 files changed, 28 insertions(+), 4 deletions(-)
+								Honza
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-bus.txt b/Documentation/devicetree/bindings/spi/spi-bus.txt
-index 296015e..a4950a6 100644
---- a/Documentation/devicetree/bindings/spi/spi-bus.txt
-+++ b/Documentation/devicetree/bindings/spi/spi-bus.txt
-@@ -57,7 +57,8 @@ contain the following properties.
-     		    3-wire mode.
- 
- If a gpio chipselect is used for the SPI slave the gpio number will be passed
--via the cs_gpio
-+via the cs_gpio and the corresponding of_gpio_flags will be passed via
-+cs_gpio_flags.
- 
- SPI example for an MPC5200 SPI bus:
- 	spi@f00 {
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index a4baa0a..6f1b717 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -385,8 +385,10 @@ int spi_add_device(struct spi_device *spi)
- 		goto done;
- 	}
- 
--	if (master->cs_gpios)
-+	if (master->cs_gpios) {
- 		spi->cs_gpio = master->cs_gpios[spi->chip_select];
-+		spi->cs_gpio_flags = master->cs_gpio_flags[spi->chip_select];
-+	}
- 
- 	/* Drivers may modify this initial i/o setup, but will
- 	 * normally rely on the device being setup.  Devices
-@@ -1060,7 +1062,8 @@ EXPORT_SYMBOL_GPL(spi_alloc_master);
- static int of_spi_register_master(struct spi_master *master)
- {
- 	int nb;
--	int i, *cs;
-+	int ret, i, *cs;
-+	enum of_gpio_flags *flags;
- 	struct device_node *np = master->dev.of_node;
- 
- 	if (!np)
-@@ -1083,13 +1086,28 @@ static int of_spi_register_master(struct spi_master *master)
- 	if (!master->cs_gpios)
- 		return -ENOMEM;
- 
-+	flags = devm_kzalloc(&master->dev,
-+			     sizeof(*flags) * master->num_chipselect,
-+			     GFP_KERNEL);
-+	master->cs_gpio_flags = flags;
-+
-+	if (!master->cs_gpio_flags) {
-+		ret = -ENOMEM;
-+		goto err_alloc_flags;
-+	}
-+
- 	for (i = 0; i < master->num_chipselect; i++)
- 		cs[i] = -EINVAL;
- 
- 	for (i = 0; i < nb; i++)
--		cs[i] = of_get_named_gpio(np, "cs-gpios", i);
-+		cs[i] = of_get_named_gpio_flags(np, "cs-gpios", i, &flags[i]);
- 
- 	return 0;
-+
-+err_alloc_flags:
-+	devm_kfree(&master->dev, master->cs_gpios);
-+	master->cs_gpios = NULL;
-+	return ret;
- }
- #else
- static int of_spi_register_master(struct spi_master *master)
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index 88a669c..96b1055 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -23,6 +23,7 @@
- #include <linux/mod_devicetable.h>
- #include <linux/slab.h>
- #include <linux/kthread.h>
-+#include <linux/of_gpio.h>
- 
- /*
-  * INTERFACES between SPI master-side drivers and SPI infrastructure.
-@@ -58,6 +59,7 @@ extern struct bus_type spi_bus_type;
-  *	for that name.  This appears in the sysfs "modalias" attribute
-  *	for driver coldplugging, and in uevents used for hotplugging
-  * @cs_gpio: Negative or gpio for chip select.
-+ * @cs_gpio_flags: of_gpio_flags corresponding to cs_gpio
-  *
-  * A @spi_device is used to interchange data between an SPI slave
-  * (usually a discrete chip) and CPU memory.
-@@ -92,6 +94,7 @@ struct spi_device {
- 	void			*controller_data;
- 	char			modalias[SPI_NAME_SIZE];
- 	int			cs_gpio;	/* chip select gpio */
-+	enum of_gpio_flags	cs_gpio_flags;	/* chip select of_gpio_flags */
- 
- 	/*
- 	 * likely need more hooks for more protocol options affecting how
-@@ -260,6 +263,7 @@ static inline void spi_unregister_driver(struct spi_driver *sdrv)
-  *	queue so the subsystem notifies the driver that it may relax the
-  *	hardware by issuing this call
-  * @cs_gpios: possible array of negative values or gpios for chip selects
-+ * @cs_gpio_flags: possible array of of_gpio_flags corresponding to cs_gpios
-  *
-  * Each SPI master controller can communicate with one or more @spi_device
-  * children.  These make a small bus, sharing MOSI, MISO and SCK signals
-@@ -367,6 +371,7 @@ struct spi_master {
- 	int (*unprepare_transfer_hardware)(struct spi_master *master);
- 	/* gpio chip select */
- 	int			*cs_gpios;
-+	enum of_gpio_flags	*cs_gpio_flags;
- };
- 
- static inline void *spi_master_get_devdata(struct spi_master *master)
+
+> From 9373cb89d434519089a1a6a0955aef08c814d70f Mon Sep 17 00:00:00 2001
+> From: Jan Kara <jack@suse.cz>
+> Date: Mon, 21 Jan 2013 20:30:20 +0100
+> Subject: [PATCH] printk: Avoid softlockup reports during heavy printk traffic
+> 
+> A CPU can be caught in console_unlock() for a long time (tens of seconds are
+> reported by our customers) when other CPUs are using printk heavily and serial
+> console makes printing slow.  This triggers softlockup warnings because
+> interrupts are disabled for the whole time console_unlock() runs (e.g.
+> vprintk() calls console_unlock() with interrupts disabled).
+> 
+> It doesn't trigger hardlockup reports because serial drivers already call
+> touch_nmi_watchdog() but that's not enough in some cases. For example if some
+> process uses on_each_cpu(), smp_call_function() will block until IPI on the
+> printing CPU is processed and that doesn't happen for tens of seconds so the
+> CPU where on_each_cpu() is executing is locked up as well.
+> 
+> Postponing the printing to a worker thread was deemed too risky (see discussion
+> in the thread starting with https://lkml.org/lkml/2013/1/15/438) so here we
+> take a less risky approach and just silence all the watchdogs. We have to be
+> careful not to make them completely useless by touching them too often so we
+> touch the watchdogs only every 1000 characters we print in one console_unlock()
+> call. That should really happen only during boot, when printing sysrq-t output,
+> or in similarly extreme situations.
+> 
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  kernel/printk.c |   23 +++++++++++++++++++++++
+>  1 files changed, 23 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 357f714..1cbae2b 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -2043,6 +2043,7 @@ void console_unlock(void)
+>  	unsigned long flags;
+>  	bool wake_klogd = false;
+>  	bool retry;
+> +	unsigned int printed = 0;
+>  
+>  	if (console_suspended) {
+>  		up(&console_sem);
+> @@ -2103,8 +2104,30 @@ skip:
+>  
+>  		stop_critical_timings();	/* don't trace print latency */
+>  		call_console_drivers(level, text, len);
+> +		printed += len;
+>  		start_critical_timings();
+>  		local_irq_restore(flags);
+> +
+> +		/*
+> +		 * If we already printed too much, touch watchdogs. The limit
+> +		 * is set high enough so that it happens really rarely (and
+> +		 * printk traffic doesn't render lockup watchdogs useless) but
+> +		 * low enough so that even slower serial console doesn't cause
+> +		 * lockup reports. 9600 baud serial console prints 1000 chars
+> +		 * in about 1 second...
+> +		 */
+> +		if (printed > 1000) {
+> +			touch_nmi_watchdog();
+> +			/*
+> +			 * This is needed because other CPUs may be waiting on
+> +			 * this CPU to process IPI so they are stalled as well.
+> +			 */
+> +			touch_all_softlockup_watchdogs();
+> +			local_irq_save(flags);
+> +			rcu_cpu_stall_reset();
+> +			local_irq_restore(flags);
+> +			printed = 0;
+> +		}
+>  	}
+>  	console_locked = 0;
+>  	mutex_release(&console_lock_dep_map, 1, _RET_IP_);
+> -- 
+> 1.7.1
+> 
+
 -- 
-1.7.0.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
