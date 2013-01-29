@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab3A2MjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:39:15 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:18489 "EHLO
+	id S1756930Ab3A2MjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:39:22 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:18530 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756853Ab3A2MjM (ORCPT
+	with ESMTP id S1756896Ab3A2MjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:39:12 -0500
+	Tue, 29 Jan 2013 07:39:17 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@alien8.de>
-Subject: [PATCH v5 18/20] scripts/gdb: Add helper to iterate over CPU masks
-Date: Tue, 29 Jan 2013 13:38:01 +0100
-Message-Id: <328d5aa5badc05674d82feb678fd0288a903a8e3.1359463075.git.jan.kiszka@siemens.com>
+Subject: [PATCH v5 15/20] scripts/gdb: Add get_gdbserver_type helper
+Date: Tue, 29 Jan 2013 13:37:58 +0100
+Message-Id: <17368dae14b7f2e1ea15013990b62f35abf6a5c1.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
 References: <cover.1359463075.git.jan.kiszka@siemens.com>
@@ -25,58 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will be used first to count module references. It is optimized to read
-the mask only once per stop and to minimize the loop lengths.
+This helper probes the type of the gdb server. Supported are QEMU and
+KGDB so far. Knowledge about the gdb server is required e.g. to retrieve
+the current CPU or current task.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/percpu.py |   33 +++++++++++++++++++++++++++++++++
- 1 files changed, 33 insertions(+), 0 deletions(-)
+ scripts/gdb/utils.py |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/gdb/percpu.py b/scripts/gdb/percpu.py
-index 4dab8d3..bc04188 100644
---- a/scripts/gdb/percpu.py
-+++ b/scripts/gdb/percpu.py
-@@ -43,6 +43,39 @@ def per_cpu(var_ptr, cpu):
- 	pointer = var_ptr.cast(get_long_type()) + offset
- 	return pointer.cast(var_ptr.type).dereference()
- 
-+cpu_mask = { }
+diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
+index bcf4278..d381f63 100644
+--- a/scripts/gdb/utils.py
++++ b/scripts/gdb/utils.py
+@@ -121,3 +121,38 @@ def is_target_arch(arch):
+ 	if target_arch == None:
+ 		target_arch = gdb.execute("show architecture", False, True)
+ 	return target_arch.find(arch) >= 0
 +
-+def for_each_cpu(mask_name, func, arg = None):
-+	def invalidate_handler(event):
-+		global cpu_online_mask
-+		cpu_mask = { }
-+		gdb.events.stop.disconnect(invalidate_handler)
-+		gdb.events.new_objfile.disconnect(invalidate_handler)
 +
-+	global cpu_mask
-+	mask = None
-+	if mask_name in cpu_mask:
-+		mask = cpu_mask[mask_name]
-+	if mask == None:
-+		mask = gdb.parse_and_eval(mask_name + ".bits")
-+		cpu_mask[mask_name] = mask
-+		gdb.events.stop.connect(invalidate_handler)
-+		gdb.events.new_objfile.connect(invalidate_handler)
++GDBSERVER_QEMU = 0
++GDBSERVER_KGDB = 1
++gdbserver_type = None
 +
-+	max_cpu_id = mask.type.sizeof * 8
-+	bits_per_entry = mask[0].type.sizeof * 8
-+	for entry in range(max_cpu_id / bits_per_entry):
-+		bits = mask[entry]
-+		if bits == 0:
-+			continue
-+		for bit in range(bits_per_entry):
-+			if bits & 1:
-+				cpu = entry * bits_per_entry + bit
-+				func(cpu, arg)
-+			bits >>= 1
-+			if bits == 0:
-+				break
++def get_gdbserver_type():
++	def exit_handler(event):
++		global gdbserver_type
++		gdbserver_type = None
++		gdb.events.exited.disconnect(exit_handler)
 +
- 
- class PerCpu(gdb.Function):
- 	__doc__ = "Return per-cpu variable.\n" \
++	def probe_qemu():
++		try:
++			return gdb.execute("monitor info version", False,
++					   True) != ""
++		except:
++			return False
++
++	def probe_kgdb():
++		try:
++			thread_info = gdb.execute("info thread 2", False, True)
++			return thread_info.find("shadowCPU0") >= 0
++		except:
++			return False
++
++	global gdbserver_type
++	if gdbserver_type == None:
++		if probe_qemu():
++			gdbserver_type = GDBSERVER_QEMU
++		elif probe_kgdb():
++			gdbserver_type = GDBSERVER_KGDB
++		if gdbserver_type != None:
++			gdb.events.exited.connect(exit_handler)
++	return gdbserver_type
 -- 
 1.7.3.4
 
