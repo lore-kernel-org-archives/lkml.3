@@ -1,240 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3A2VhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:37:16 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:43060 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3A2VhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:37:13 -0500
+	id S1751851Ab3A2VjV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:39:21 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59434 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809Ab3A2VjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 16:39:19 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: inderpal.singh@linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH V3] cpufreq: Simplify cpufreq_add_dev()
+Date: Tue, 29 Jan 2013 22:45:27 +0100
+Message-ID: <1714110.knKZFeZSOf@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <c7c9f237a91821661bfc0735e390358124953695.1359469932.git.viresh.kumar@linaro.org>
+References: <c7c9f237a91821661bfc0735e390358124953695.1359469932.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1359494770.17639.76.camel@gandalf.local.home>
-References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
-	<1359417749.17639.6.camel@gandalf.local.home>
-	<1359426979.17639.10.camel@gandalf.local.home>
-	<1359494770.17639.76.camel@gandalf.local.home>
-Date: Tue, 29 Jan 2013 22:37:11 +0100
-Message-ID: <CAFTL4hzLLiStziK6MR+fbeWSMUP32=HKViP7htJ+_Po7TrXZyQ@mail.gmail.com>
-Subject: Re: [GIT PULL] cputime: Full dynticks task/cputime accounting v7
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/29 Steven Rostedt <rostedt@goodmis.org>:
-> On Mon, 2013-01-28 at 21:36 -0500, Steven Rostedt wrote:
->
->> [root@bxtest ~]# time /work/c/kernelspin  10
->>
->> real  0m10.001s
->> user  0m1.114s
->> sys   0m8.886s
->>
->>
->> But after enabling the force context_tracking I get this:
->>
->> [root@bxtest ~]# time /work/c/kernelspin  10
->>
->> real  0m10.001s
->> user  0m3.769s
->> sys   0m6.203s
->>
->>
->> Consistently. All the other runs always had a 1.X 8.X ratio. This seems
->> to give 3.7x 6.2x ratio consistently. Maybe it's more accurate then the
->> others. Or something else is broken.
->>
->> I'll look deeper into it.
->
-> After lots of investigation, I believe I know why this is so. It is
-> pretty much as accurate as what we have now, except before it would
-> error on the side of the kernel, where as here we error on the side of
-> userspace.
->
-> I added a trace_printk where the utime and stime is updated, and applied
-> my (coming to mainline soon) function_graph patch that adds a
-> "max_depth" to  limit the function graph tracing. Setting the max_depth
-> to 1 shows you nicely all the places that enter the kernel. Running this
-> against my kernelspin.c program I get:
->
-> kernelsp-2668    7d...  2837.236400: funcgraph_entry:        1.373 us   |  do_page_fault();
-> kernelsp-2668    7d...  2837.236403: funcgraph_entry:        1.409 us   |  do_page_fault();
-> kernelsp-2668    7....  2837.236405: funcgraph_entry:        0.441 us   |  syscall_trace_enter();
-> kernelsp-2668    7....  2837.236406: funcgraph_entry:        0.114 us   |  sys_brk();
-> kernelsp-2668    7....  2837.236406: funcgraph_entry:        1.155 us   |  syscall_trace_leave();
-> kernelsp-2668    7d...  2837.236408: funcgraph_entry:        2.579 us   |  do_page_fault();
-> kernelsp-2668    7d...  2837.236413: funcgraph_entry:        2.720 us   |  do_page_fault();
-> kernelsp-2668    7d...  2837.236417: funcgraph_entry:        2.314 us   |  do_page_fault();
->
-> I then wrote a perl script to parse the timestamps (and it notices the
-> syscall_trace_enter and leave as entering the kernel) and it creates a
-> more accurate time that the program was in the kernel. It outputs
-> something like:
->
-> user time: 0.750846
-> system time: 5.695917
-> dropped event time: 3.525461
-> calc utime: 1.878059 ns
-> calc stime: 4.520833 ns
->
-> The first two times are what it came up with from the timestamps. As
-> there were events dropped, it also was able to calculate the time missed
-> for that.
->
-> As I used trace_printk() to show the updates of utime and stime, the
-> last two numbers show the calculated times that those functions came up
-> with. Note, the dropped events would include both the tracing as well as
-> updates made by this time.
->
-> It's not really that far off.
->
-> Then you gave me your config where you could not reproduce the issue. I
-> ran that too, and got:
->
-> user time:      0.000009
-> system time:    9.974731
-> dropped event time:     0.000000
-> calc utime: 0.772511 ns
-> calc stime: 9.201983 ns
->
-> It still errored on the side of userspace, but what I found strange was
-> that:
->
-> 1) there were no dropped events
-> 2) the utime/stime from the trace timestamps was much different than my
-> config
->
-> Looking at the two outputs of the trace I found:
->
-> my config:
->
-> kernelsp-2668    7....  2837.239219: funcgraph_entry:        1.369 us   |  sys_brk();
-> kernelsp-2668    7....  2837.239225: funcgraph_entry:        1.790 us   |  sys_brk();
-> kernelsp-2668    7....  2837.239229: funcgraph_entry:        0.778 us   |  sys_brk();
-> kernelsp-2668    7....  2837.239232: funcgraph_entry:        0.896 us   |  sys_brk();
->
-> your config:
->
-> kernelsp-969     6....   207.618010: funcgraph_entry:      + 11.123 us  |  sys_brk();
-> kernelsp-969     6....   207.618024: funcgraph_entry:        7.519 us   |  sys_brk();
-> kernelsp-969     6....   207.618033: funcgraph_entry:        7.616 us   |  sys_brk();
-> kernelsp-969     6....   207.618043: funcgraph_entry:        7.420 us   |  sys_brk();
->
-> Big difference in the time spent in sys_brk()!
->
-> I did a full function graph trace and found:
->
->       kernelspin-1015  [006]   533.405921: funcgraph_entry:                   |  sys_brk() {
->       kernelspin-1015  [006]   533.405921: funcgraph_entry:                   |    down_write() {
->       kernelspin-1015  [006]   533.405921: funcgraph_entry:                   |      __might_sleep() {
->       kernelspin-1015  [006]   533.405922: funcgraph_entry:        0.051 us   |        debug_lockdep_rcu_enabled();
->           <idle>-0     [003]   533.405922: bprint:               account_system_time : system: 2368
->       kernelspin-1015  [006]   533.405922: funcgraph_entry:        0.044 us   |        debug_lockdep_rcu_enabled();
->       kernelspin-1015  [006]   533.405923: funcgraph_entry:        0.051 us   |        debug_lockdep_rcu_enabled();
->       kernelspin-1015  [006]   533.405923: funcgraph_exit:         1.440 us   |      }
->       kernelspin-1015  [006]   533.405923: funcgraph_exit:         2.015 us   |    }
->       kernelspin-1015  [006]   533.405924: funcgraph_entry:        0.113 us   |    find_vma();
-> [...]
->       kernelspin-1015  [006]   533.405938: funcgraph_entry:                   |            set_track() {
->       kernelspin-1015  [006]   533.405939: funcgraph_entry:                   |              save_stack_trace() {
->        trace-cmd-1010  [005]   533.405939: bprint:               account_system_time : system: 3492
->       kernelspin-1015  [006]   533.405939: funcgraph_entry:                   |                dump_trace() {
->       kernelspin-1015  [006]   533.405939: funcgraph_entry:                   |                  print_context_stack() {
->       kernelspin-1015  [006]   533.405939: funcgraph_entry:                   |                    __kernel_text_address() {
->       kernelspin-1015  [006]   533.405939: funcgraph_entry:                   |                      is_module_text_address() {
->       kernelspin-1015  [006]   533.405940: funcgraph_entry:                   |                        __module_text_address() {
->        trace-cmd-1010  [005]   533.405940: bprint:               account_user_time : user: 1014
->       kernelspin-1015  [006]   533.405940: funcgraph_entry:        0.041 us   |                          __module_address();
->       kernelspin-1015  [006]   533.405940: funcgraph_exit:         0.464 us   |                        }
->       kernelspin-1015  [006]   533.405940: funcgraph_exit:         0.849 us   |                      }
->       kernelspin-1015  [006]   533.405941: funcgraph_exit:         1.231 us   |                    }
->       kernelspin-1015  [006]   533.405941: funcgraph_entry:                   |                    __kernel_text_address() {
->       kernelspin-1015  [006]   533.405941: funcgraph_entry:                   |                      is_module_text_address() {
->       kernelspin-1015  [006]   533.405941: funcgraph_entry:                   |                        __module_text_address() {
->       kernelspin-1015  [006]   533.405941: funcgraph_entry:        0.046 us   |                          __module_address();
->       kernelspin-1015  [006]   533.405942: funcgraph_exit:         0.442 us   |                        }
->       kernelspin-1015  [006]   533.405942: funcgraph_exit:         0.851 us   |                      }
->       kernelspin-1015  [006]   533.405942: funcgraph_exit:         1.254 us   |                    }
->       kernelspin-1015  [006]   533.405942: funcgraph_entry:        0.049 us   |                    __kernel_text_address();
->       kernelspin-1015  [006]   533.405943: funcgraph_entry:                   |                    save_stack_address() {
->       kernelspin-1015  [006]   533.405943: funcgraph_entry:        0.042 us   |                      __save_stack_address();
->       kernelspin-1015  [006]   533.405944: funcgraph_exit:         0.447 us   |                    }
->           <idle>-0     [005]   533.405944: bprint:               account_system_time : system: 3993
->       kernelspin-1015  [006]   533.405944: funcgraph_entry:                   |                    save_stack_address() {
->       kernelspin-1015  [006]   533.405944: funcgraph_entry:        0.055 us   |                      __save_stack_address();
->       kernelspin-1015  [006]   533.405944: funcgraph_exit:         0.459 us   |                    }
->
-> And it goes on and on!
->
-> Sure enough, a big difference between my config and yours, was not only
-> that I had slab and you had slub, but you also had lockdep, slub
-> debugging and a whole host of things enabled in your config that will
-> slow the kernel down.
->
-> I turned off all that in your config, recompiled, rebooted, and now I
-> get this:
->
-> [root@bxtest ~]# time /work/c/kernelspin  10
->
-> real    0m10.001s
-> user    0m4.336s
-> sys     0m5.636s
->
-> Thus because the sys_brk is so fast, the program literally does millions
-> of them. As we suffer a little error to the user side every time we do
-> the calculation:
->
-> [user mode]
->
-> <enter kernel>     <------------+
->                                 |--- error
-> calculate utime    <------------+
->
-> [system mode]
->
-> calculate stime    <------------+
->                                 |--- error
-> <enter user>       <------------+
->
-> That is, from the time we enter the kernel to the time we make the
-> user/system calculation, plus the time we make the user/system
-> calculation and then leave the kernel, that total time is a slight
-> error. And this error happens every time we enter or leave the kernel.
-> There's no way around that.
->
-> Because this was an unrealistic program that did sys_brk() millions of
-> times (and that's all it did), this program exaggerated the error. By
-> adding the debug options, and slowing down the sys_brk by a multitude,
-> we also made the % error decrease by a multitude. It even allowed us not
-> to lose events.
->
-> Thus, I think we can blow off this concern as just an expected error of
-> the dynamic calculation process. And this will only happen when we have
-> a CPU in no hz mode, which shouldn't be a big deal anyway, as that is
-> usually done by processes that don't want to go into the kernel in the
-> first place. Thus keeping the error down.
->
-> But this error should be documented somewhere. Maybe in the Kconfig.
->
-> You can have my Acked-by back :-)
->
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+On Tuesday, January 29, 2013 08:09:08 PM Viresh Kumar wrote:
+> Currently cpufreq_add_dev() firsts allocates policy, calls driver->init() and
+> then checks if this cpu is already managed or not. And if it is already managed,
+> free its policy.
+> 
+> We can save all this if we somehow know cpu is managed or not in advance.
+> policy->related_cpus contains list of all valid sibling cpus of policy->cpu. We
+> can check this to know if current cpu is already managed.
+> 
+> From now on, platforms don't really need to set related_cpus from their init()
+> routines, as the same work is done by core too.
+> 
+> If platform driver needs to set the related_cpus mask with some additional cpus,
+> other than cpus present in policy->cpus, they are free to do it as we aren't
+> overriding anything.
+>     
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Tested-by: Shawn Guo <shawn.guo@linaro.org>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Wow you did a great analysis. Thanks for having taken so much time on this.
-Ok I'll wait for Ingo to pull the branch, if he's ok, then I'll add
-some precisions on the Kconfig to talk about that tiny error margin.
+Please don't add my sign-offs in advance.  Yes, I have signed off a *previous*
+version of that patch, but that doesn't apply to *this* version automatically.
 
-Thanks!
+While you can do such things with Acked-by or Reviewed-by tags (that's not very
+polite, but people usually don't mind), sign-off is a bit different, because
+it is a *certificate* that this particular patch (and not some previous version
+of it) has gone through my hands.
+
+I'm going to apply this, but please be more careful in the future.
+
+Thanks,
+Rafael
+
+
+> ---
+> V2->V3:
+> - Set all cpus present in policy->cpus in related_cpus as well.
+> - Remove code to set related_cpus from SPEAr cpufreq driver.
+> 
+>  drivers/cpufreq/cpufreq.c       | 158 +++++++++++++++-------------------------
+>  drivers/cpufreq/spear-cpufreq.c |   1 -
+>  2 files changed, 58 insertions(+), 101 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index f1bb8f8..db81382 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -554,8 +554,6 @@ static ssize_t show_cpus(const struct cpumask *mask, char *buf)
+>   */
+>  static ssize_t show_related_cpus(struct cpufreq_policy *policy, char *buf)
+>  {
+> -	if (cpumask_empty(policy->related_cpus))
+> -		return show_cpus(policy->cpus, buf);
+>  	return show_cpus(policy->related_cpus, buf);
+>  }
+>  
+> @@ -711,92 +709,6 @@ static struct kobj_type ktype_cpufreq = {
+>  	.release	= cpufreq_sysfs_release,
+>  };
+>  
+> -/*
+> - * Returns:
+> - *   Negative: Failure
+> - *   0:        Success
+> - *   Positive: When we have a managed CPU and the sysfs got symlinked
+> - */
+> -static int cpufreq_add_dev_policy(unsigned int cpu,
+> -				  struct cpufreq_policy *policy,
+> -				  struct device *dev)
+> -{
+> -	int ret = 0;
+> -#ifdef CONFIG_SMP
+> -	unsigned long flags;
+> -	unsigned int j;
+> -#ifdef CONFIG_HOTPLUG_CPU
+> -	struct cpufreq_governor *gov;
+> -
+> -	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
+> -	if (gov) {
+> -		policy->governor = gov;
+> -		pr_debug("Restoring governor %s for cpu %d\n",
+> -		       policy->governor->name, cpu);
+> -	}
+> -#endif
+> -
+> -	for_each_cpu(j, policy->cpus) {
+> -		struct cpufreq_policy *managed_policy;
+> -
+> -		if (cpu == j)
+> -			continue;
+> -
+> -		/* Check for existing affected CPUs.
+> -		 * They may not be aware of it due to CPU Hotplug.
+> -		 * cpufreq_cpu_put is called when the device is removed
+> -		 * in __cpufreq_remove_dev()
+> -		 */
+> -		managed_policy = cpufreq_cpu_get(j);
+> -		if (unlikely(managed_policy)) {
+> -
+> -			/* Set proper policy_cpu */
+> -			unlock_policy_rwsem_write(cpu);
+> -			per_cpu(cpufreq_policy_cpu, cpu) = managed_policy->cpu;
+> -
+> -			if (lock_policy_rwsem_write(cpu) < 0) {
+> -				/* Should not go through policy unlock path */
+> -				if (cpufreq_driver->exit)
+> -					cpufreq_driver->exit(policy);
+> -				cpufreq_cpu_put(managed_policy);
+> -				return -EBUSY;
+> -			}
+> -
+> -			__cpufreq_governor(managed_policy, CPUFREQ_GOV_STOP);
+> -
+> -			spin_lock_irqsave(&cpufreq_driver_lock, flags);
+> -			cpumask_copy(managed_policy->cpus, policy->cpus);
+> -			per_cpu(cpufreq_cpu_data, cpu) = managed_policy;
+> -			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> -
+> -			__cpufreq_governor(managed_policy, CPUFREQ_GOV_START);
+> -			__cpufreq_governor(managed_policy, CPUFREQ_GOV_LIMITS);
+> -
+> -			pr_debug("CPU already managed, adding link\n");
+> -			ret = sysfs_create_link(&dev->kobj,
+> -						&managed_policy->kobj,
+> -						"cpufreq");
+> -			if (ret)
+> -				cpufreq_cpu_put(managed_policy);
+> -			/*
+> -			 * Success. We only needed to be added to the mask.
+> -			 * Call driver->exit() because only the cpu parent of
+> -			 * the kobj needed to call init().
+> -			 */
+> -			if (cpufreq_driver->exit)
+> -				cpufreq_driver->exit(policy);
+> -
+> -			if (!ret)
+> -				return 1;
+> -			else
+> -				return ret;
+> -		}
+> -	}
+> -#endif
+> -	return ret;
+> -}
+> -
+> -
+>  /* symlink affected CPUs */
+>  static int cpufreq_add_dev_symlink(unsigned int cpu,
+>  				   struct cpufreq_policy *policy)
+> @@ -901,6 +813,42 @@ err_out_kobj_put:
+>  	return ret;
+>  }
+>  
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
+> +				  struct device *dev)
+> +{
+> +	struct cpufreq_policy *policy;
+> +	int ret = 0;
+> +	unsigned long flags;
+> +
+> +	policy = cpufreq_cpu_get(sibling);
+> +	WARN_ON(!policy);
+> +
+> +	per_cpu(cpufreq_policy_cpu, cpu) = policy->cpu;
+> +
+> +	lock_policy_rwsem_write(cpu);
+> +
+> +	__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+> +
+> +	spin_lock_irqsave(&cpufreq_driver_lock, flags);
+> +	cpumask_set_cpu(cpu, policy->cpus);
+> +	per_cpu(cpufreq_cpu_data, cpu) = policy;
+> +	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +
+> +	__cpufreq_governor(policy, CPUFREQ_GOV_START);
+> +	__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
+> +
+> +	unlock_policy_rwsem_write(cpu);
+> +
+> +	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
+> +	if (ret) {
+> +		cpufreq_cpu_put(policy);
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +#endif
+>  
+>  /**
+>   * cpufreq_add_dev - add a CPU device
+> @@ -913,12 +861,12 @@ err_out_kobj_put:
+>   */
+>  static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  {
+> -	unsigned int cpu = dev->id;
+> -	int ret = 0, found = 0;
+> +	unsigned int j, cpu = dev->id;
+> +	int ret = -ENOMEM, found = 0;
+>  	struct cpufreq_policy *policy;
+>  	unsigned long flags;
+> -	unsigned int j;
+>  #ifdef CONFIG_HOTPLUG_CPU
+> +	struct cpufreq_governor *gov;
+>  	int sibling;
+>  #endif
+>  
+> @@ -935,6 +883,15 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  		cpufreq_cpu_put(policy);
+>  		return 0;
+>  	}
+> +
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +	/* Check if this cpu was hot-unplugged earlier and has siblings */
+> +	for_each_online_cpu(sibling) {
+> +		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
+> +		if (cp && cpumask_test_cpu(cpu, cp->related_cpus))
+> +			return cpufreq_add_policy_cpu(cpu, sibling, dev);
+> +	}
+> +#endif
+>  #endif
+>  
+>  	if (!try_module_get(cpufreq_driver->owner)) {
+> @@ -942,7 +899,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  		goto module_out;
+>  	}
+>  
+> -	ret = -ENOMEM;
+>  	policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
+>  	if (!policy)
+>  		goto nomem_out;
+> @@ -987,6 +943,9 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  		goto err_unlock_policy;
+>  	}
+>  
+> +	/* related cpus should atleast have policy->cpus */
+> +	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
+> +
+>  	/*
+>  	 * affected cpus must always be the one, which are online. We aren't
+>  	 * managing offline cpus here.
+> @@ -1000,14 +959,14 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+>  				     CPUFREQ_START, policy);
+>  
+> -	ret = cpufreq_add_dev_policy(cpu, policy, dev);
+> -	if (ret) {
+> -		if (ret > 0)
+> -			/* This is a managed cpu, symlink created,
+> -			   exit with 0 */
+> -			ret = 0;
+> -		goto err_unlock_policy;
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
+> +	if (gov) {
+> +		policy->governor = gov;
+> +		pr_debug("Restoring governor %s for cpu %d\n",
+> +		       policy->governor->name, cpu);
+>  	}
+> +#endif
+>  
+>  	ret = cpufreq_add_dev_interface(cpu, policy, dev);
+>  	if (ret)
+> @@ -1021,7 +980,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  
+>  	return 0;
+>  
+> -
+>  err_out_unregister:
+>  	spin_lock_irqsave(&cpufreq_driver_lock, flags);
+>  	for_each_cpu(j, policy->cpus)
+> diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
+> index 8ff26af..fc714a6 100644
+> --- a/drivers/cpufreq/spear-cpufreq.c
+> +++ b/drivers/cpufreq/spear-cpufreq.c
+> @@ -189,7 +189,6 @@ static int spear_cpufreq_init(struct cpufreq_policy *policy)
+>  	policy->cur = spear_cpufreq_get(0);
+>  
+>  	cpumask_copy(policy->cpus, topology_core_cpumask(policy->cpu));
+> -	cpumask_copy(policy->related_cpus, policy->cpus);
+>  
+>  	return 0;
+>  }
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
