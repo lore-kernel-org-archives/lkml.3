@@ -1,149 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3A2AO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 19:14:59 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16000 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753214Ab3A2AOx (ORCPT
+	id S1753266Ab3A2AVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 19:21:12 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29799 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab3A2AVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 19:14:53 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Ui0MU6hDufDA73TPE+PmYzeihuAY6MVI=
-Date: Mon, 28 Jan 2013 19:13:54 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Soeren Moch <smoch@web.de>, gennarone@gmail.com, mchehab@redhat.com
-Cc: Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v2] mm: dmapool: use provided gfp flags for all
- dma_alloc_coherent() calls
-Message-ID: <20130129001354.GN1758@titan.lakedaemon.net>
-References: <50F800EB.6040104@web.de>
- <201301172026.45514.arnd@arndb.de>
- <50FABBED.1020905@web.de>
- <20130119185907.GA20719@lunn.ch>
- <5100022D.9050106@web.de>
- <20130123162515.GK13482@lunn.ch>
- <510018B4.9040903@web.de>
- <51001BEE.9020201@web.de>
- <20130123181029.GE20719@lunn.ch>
- <5106E6A6.7010207@web.de>
+	Mon, 28 Jan 2013 19:21:10 -0500
+USER-AGENT: Mutt/1.5.21 (2010-09-15)
 MIME-Version: 1.0
+Message-ID: <20130129002011.GA4757@blackbox.djwong.org>
+Date: Mon, 28 Jan 2013 16:20:11 -0800 (PST)
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: David Lang <david@lang.hm>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Daniel Phillips <daniel.raymond.phillips@gmail.com>,
+        linux-kernel@vger.kernel.org, tux3@tux3.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: Tux3 Report: Initial fsck has landed
+References: <CAEsagEgeaHC_2ULhr_yAtOuNUxk+PZC=aPXU4PQyY9NnUC=TyQ@mail.gmail.com>
+ <alpine.DEB.2.02.1301272158450.13067@nftneq.ynat.uz>
+ <CAEsagEjAoVNUUSotBXd0am5zZb5VMLWT2Dz9k5fj+C9-LKABnQ@mail.gmail.com>
+ <20130128141209.GA22711@thunk.org>
+ <alpine.DEB.2.02.1301281526410.21503@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1301281526410.21503@nftneq.ynat.uz>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5106E6A6.7010207@web.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 09:59:18PM +0100, Soeren Moch wrote:
-> On 23.01.2013 19:10, Andrew Lunn wrote:
-> >>>>
+On Mon, Jan 28, 2013 at 03:27:38PM -0800, David Lang wrote:
+> On Mon, 28 Jan 2013, Theodore Ts'o wrote:
+> 
+> >On Sun, Jan 27, 2013 at 10:13:37PM -0800, Daniel Phillips wrote:
+> >>>The thing that jumps out at me with this is the question of how you will
+> >>>avoid the 'filesystem image in a file' disaster that reiserfs had (where
+> >>>it's fsck could mix up metadata chunks from the main filesystem with
+> >>>metadata chunks from any filesystem images that it happened to stumble
+> >>>across when scanning the disk)
+
+Did that ever get fixed in reiserfs?
+
 > >>>
-> >>>Now (in the last hour) stable, occasionally lower numbers:
-> >>>3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >>>3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >>>3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >>>3396 3396 3396 3396 3396 3396 3396 3396 3396 3365 3396 3394 3396 3396
-> >>>3396 3396 3373 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >>>3396 3353 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396 3396
-> >>>3394 3396 3396 3396 3396 3396 3396 3396
-> >>>
-> >>>Before the last pool exhaustion going down:
-> >>>3395 3395 3389 3379 3379 3374 3367 3360 3352 3343 3343 3343 3342 3336
-> >>>3332 3324 3318 3314 3310 3307 3305 3299 3290 3283 3279 3272 3266 3265
-> >>>3247 3247 3247 3242 3236 3236
-> >>>
-> >>Here I stopped vdr (and so closed all dvb_demux devices), the number
-> >>was remaining the same 3236, even after restart of vdr (and restart
-> >>of streaming).
+> >>Only superficially. Deep thoughts are in order. First, there needs to be a
+> >>hole in the filesystem structure, before we would even consider trying to
+> >>plug something in there. Once we know there is a hole, we want to
+> >>narrow down the list of candidates to fill it. If a candidate already lies
+> >>within a perfectly viable file, obviously we would not want to interpret
+> >>that as lost metadata. Unless the filesystem is really mess up...
+> >>
+> >>That is about as far as I have got with the analysis. Clearly, much more
+> >>is required. Suggestions welcome.
 > >
-> >So it does suggest a leak. Probably somewhere on an error path,
-> >e.g. its lost video sync.
-> >
+> >The obvious answer is what resierfs4 ultimately ended up using.  Drop
+> >a file system UUID in the superblock; mix the UUID into a checksum
+> >which protects each of the your metadata blocks.  We're mixing in the
+> >inode number as well as the fs uuid in in ext4's new metadata checksum
+> >feature to protect against an inode table block getting written to the
+> >wrong location on disk.  It will also mean that e2fsck won't mistake
+> >an inode table from an earlier mkfs with the current file system.
+> >This will allow us to avoid needing to zero the inode table for newly
+> >initialized file systems.
 > 
-> Now I activated the debug messages in em28xx. From the messages I
-> see no correlation of the pool exhaustion and lost sync. Also I
-> cannot see any error messages from the em28xx driver.
-> I see a lot of init_isoc/stop_urbs (maybe EPG scan?) without
-> draining the coherent pool (checked with 'cat
-> /debug/dma-api/num_free_entries', which gave stable numbers), but
-> after half an hour there are only init_isoc messages without
-> corresponding stop_urbs messages and num_free_entries decreased
-> until coherent pool exhaustion.
+> The situation I'm thinking of is when dealing with VMs, you make a
+> filesystem image once and clone it multiple times. Won't that end up
+> with the same UUID in the superblock?
+
+Yes, but one ought to be able to change the UUID a la tune2fs -U.  Even
+still... so long as the VM images have a different UUID than the fs that they
+live on, it ought to be fine.
+
+--D
 > 
-> Any idea where the memory leak is? What is allocating coherent
-> buffers for orion-ehci?
-
-Keeping in mind that I am completely unfamiliar with usb dvb, my best
-guess is that the problem is in em28xx-core.c:1131
-
-According to your log messages, it is in mode 2, which is
-EM28XX_DIGITAL_MODE.
-
-There seem to be good hints in
-
-86d38d1e [media] em28xx: pre-allocate DVB isoc transfer buffers
-
-I added the relevant parties to the To:...
-
-For Gianluca and Mauro, the whole thread may be found at:
-
-http://markmail.org/message/wm4wlgzoudixd4so#query:+page:1+mid:o7phz7cosmwpcsrz+state:results
-
-thx,
-
-Jason.
-
-> 
->   Soeren
-> 
-> 
-> Jan 28 20:46:03 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers
-> each with 64 x 940 bytes
-> Jan 28 20:46:03 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx:
-> called em28xx_init_isoc in mode 2
-> Jan 28 20:46:03 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers
-> each with 64 x 940 bytes
-> Jan 28 20:46:03 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx:
-> called em28xx_init_isoc in mode 2
-> Jan 28 20:46:23 guruvdr kernel: em28xx #0 em28xx_stop_urbs :em28xx:
-> called em28xx_stop_urbs
-> Jan 28 20:46:23 guruvdr kernel: em28xx #1 em28xx_stop_urbs :em28xx:
-> called em28xx_stop_urbs
-> Jan 28 20:46:24 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers
-> each with 64 x 940 bytes
-> Jan 28 20:46:24 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx:
-> called em28xx_init_isoc in mode 2
-> Jan 28 20:46:24 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers
-> each with 64 x 940 bytes
-> Jan 28 20:46:24 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx:
-> called em28xx_init_isoc in mode 2
-> Jan 28 20:46:44 guruvdr kernel: em28xx #1 em28xx_stop_urbs :em28xx:
-> called em28xx_stop_urbs
-> Jan 28 20:46:44 guruvdr kernel: em28xx #0 em28xx_stop_urbs :em28xx:
-> called em28xx_stop_urbs
-> Jan 28 20:46:45 guruvdr kernel: em28xx #1/2-dvb: Using 5 buffers
-> each with 64 x 940 bytes
-> Jan 28 20:46:45 guruvdr kernel: em28xx #1 em28xx_init_isoc :em28xx:
-> called em28xx_init_isoc in mode 2
-> Jan 28 20:46:45 guruvdr kernel: em28xx #0/2-dvb: Using 5 buffers
-> each with 64 x 940 bytes
-> Jan 28 20:46:45 guruvdr kernel: em28xx #0 em28xx_init_isoc :em28xx:
-> called em28xx_init_isoc in mode 2
-> Jan 28 20:54:33 guruvdr kernel: ERROR: 1024 KiB atomic DMA coherent
-> pool is too small!
-> Jan 28 20:54:33 guruvdr kernel: Please increase it with
-> coherent_pool= kernel parameter!
-> 
+> David Lang
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
