@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab3A2Adh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 19:33:37 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38177 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab3A2Ade (ORCPT
+	id S1753639Ab3A2Aqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 19:46:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43420 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab3A2Aql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 19:33:34 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Grant Likely <glikely@secretlab.ca>
-Cc: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Scott Wood <scottwood@freescale.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V7 REPOST] kbuild: create a rule to run the pre-processor on *.dts files
-Date: Mon, 28 Jan 2013 17:33:20 -0700
-Message-Id: <1359419600-7967-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	Mon, 28 Jan 2013 19:46:41 -0500
+Date: Mon, 28 Jan 2013 16:46:40 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bret Towe <magnade@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+Subject: Re: crash in ocfs2_fast_symlink_readpage in kernel 3.5.0
+Message-Id: <20130128164640.5a468999.akpm@linux-foundation.org>
+In-Reply-To: <CALjC5hZaVwJBuR17dcM7hG1EMEoAYoUt0S-x6avCxRBuF54RGg@mail.gmail.com>
+References: <CALjC5hYxtPymauFddf4Qci3S-KsZHHck0LKQPZY5ocHcLw-XrQ@mail.gmail.com>
+	<CALjC5hZwVwRdY6muizzK-+jrq0RH43H6f2kgXstZuco7oM7FyQ@mail.gmail.com>
+	<CALjC5hbMq+bc-X8Ad+=gEZLuWy3ZXm4Z0Y2w44k5UZjL4g7vqg@mail.gmail.com>
+	<20130124143007.39c8545f.akpm@linux-foundation.org>
+	<CALjC5hZaVwJBuR17dcM7hG1EMEoAYoUt0S-x6avCxRBuF54RGg@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Thu, 24 Jan 2013 19:40:34 -0800
+Bret Towe <magnade@gmail.com> wrote:
 
-Create cmd_dtc_cpp to run the C pre-processor on *.dts file before
-passing them to dtc for final compilation. This allows the use of #define
-and #include within the .dts file.
+> On Thu, Jan 24, 2013 at 2:30 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Sat, 19 Jan 2013 20:15:33 -0800
+> > Bret Towe <magnade@gmail.com> wrote:
+> >
+> >> >
+> >> > it looks like you have a patch for this problem in a queue somewhere
+> >> > (email found on ocfs2-dev:
+> >> > https://oss.oracle.com/pipermail/ocfs2-devel/2012-August/008677.html )
+> >> > but its not in 3.6, any reason for the delay?
+> >> > I've been running that patch on 3.5 for a while now likely since
+> >> > around the time i found that email
+> >> > and its been working well
+> >>
+> >> doesn't look to be in 3.7 or 3.8-git
+> >> and from what i see on ocfs2-dev there are at least 16 other patches
+> >> that are also being ignored?
+> >> I'm sure if I'm bothering at this point to maintain my own patchset to
+> >> keep ocfs2 from crashing
+> >> that there is other folks doing the same
+> >
+> > Please resend all OCFS2 patches, cc'ing myself, Mark, Joel and
+> > ocfs2-devel@oss.oracle.com.
+> >
+> > I shall then review them, merge them into -mm (and hence linux-next) so
+> > they can get a bit of visibility and testing while the maintainers are
+> > checking them over.
+> >
+> > Thanks.
+> 
+> I've just been browsing the ocfs2-dev archives do you want me to pull them
+> and resend or should i just link to the archive?
+> keep in mind I'm just a end user not really a dev persay
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Simon Glass <sjg@chromium.org>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
----
-Grant, back in mid-November, you said you'd make a decision on this in
-the next couple of days, but I think this got overlooked.
+Well, someone needs to resend them.  If you're prepared to do that then
+thanks, and please remember to add your Tested-by where you feel that's
+appropriate.
 
-v7: Build *.dtb from *.dts not src/*.dts.
-v6: No change.
-v5:
-* Update Documentation/kbuild for the new command and rule.
-v4:
-* Use -x assembler-with-cpp so pre-defined macros are set up so that
-  #included header files know to only use cpp syntax, not C syntax.
-* Define __DTS__ for similar reasons.
-* use $(CPP) not $(CC) -E, and use $(cpp_flags).
-* Save the pre-processed results so they can be easily inspected when
-  debugging build issues.
-* The use of -x assembler-with-cpp causes cpp to recognize directives in
-  column 1 only. Hence, there's no need to escape property names that
-  begin with #. Hence, there's no need for separate skeleton.dtsi and
-  skeleton.dtsip. Maintain a separate file extension and build rule so that
-  CPP-usage is opt-in. In particular, when using CPP, #include must be used
-  rather than /include/ so that dependencies work.
-v3: Pass "-x c" not "-xc" to cpp.
-v2: Place make %.dtb: %.dtsp rule into Makefile.lib.
----
- Documentation/kbuild/makefiles.txt |   23 +++++++++++++++++++++++
- scripts/Makefile.lib               |    9 +++++++++
- 2 files changed, 32 insertions(+)
+> if you do want me to send the patches however I assume there is a document
+> i should read first?
 
-diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-index 14c3f4f..5198b74 100644
---- a/Documentation/kbuild/makefiles.txt
-+++ b/Documentation/kbuild/makefiles.txt
-@@ -1186,6 +1186,29 @@ When kbuild executes, the following steps are followed (roughly):
- 		clean-files += *.dtb
- 		DTC_FLAGS ?= -p 1024
- 
-+    dtc_cpp
-+	This is just like dtc as describe above, except that the C pre-
-+	processor is invoked upon the .dtsp file before compiling the result
-+	with dtc.
-+
-+	In order for build dependencies to work, all files compiled using
-+	dtc_cpp must use the C pre-processor's #include functionality and not
-+	dtc's /include/ functionality.
-+
-+	Using the C pre-processor allows use of #define to create named
-+	constants. In turn, the #defines will typically appear in a header
-+	file, which may be shared with regular C code. Since the dtc language
-+	represents a data structure rather than code in C syntax, similar
-+	restrictions are placed on a header file included by a device tree
-+	file as for a header file included by an assembly language file.
-+	In particular, the C pre-processor is passed -x assembler-with-cpp,
-+	which sets macro __ASSEMBLY__. __DTS__ is also set. These allow header
-+	files to restrict their content to that compatible with device tree
-+	source.
-+
-+	A central rule exists to create $(obj)/%.dtb from $(src)/%.dtsp;
-+	architecture Makefiles do no need to explicitly write out that rule.
-+
- --- 6.8 Custom kbuild commands
- 
- 	When kbuild is executing with KBUILD_VERBOSE=0, then only a shorthand
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index bdf42fd..2c2a302 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -269,6 +269,15 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile
- $(obj)/%.dtb: $(src)/%.dts FORCE
- 	$(call if_changed_dep,dtc)
- 
-+dtc-tmp = $(subst $(comma),_,$(dot-target).dts)
-+
-+quiet_cmd_dtc_cpp = DTC+CPP $@
-+cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__ -x assembler-with-cpp -o $(dtc-tmp) $< ; \
-+	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
-+
-+$(obj)/%.dtb: $(src)/%.dtsp FORCE
-+	$(call if_changed_dep,dtc_cpp)
-+
- # Bzip2
- # ---------------------------------------------------------------------------
- 
--- 
-1.7.10.4
+Documentation/SubmittingPatches is good.
+
+These patches should have a From: line at the start of the changelog
+indicating the original author.  They should have the original author's
+Signed-off-by: (if that was in the original patch) and also your
+Signed-off-by: as you were on the delivery path.  And optionally your
+Tested-by, as above.
+
+Be sure to cc everyone (ocfs2-devel, linux-kernel, Mark, Joel, myself
+and the original author(s).
+
+Lots of email clients like to mangle patches, including gmail :( Email
+the patchset to yourself first and check that what you received still
+applies.  Try using text/plain attachments if they are being mangled.
 
