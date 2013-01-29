@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3A2TB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:01:29 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56796 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab3A2TB0 (ORCPT
+	id S1754189Ab3A2TDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:03:51 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:51070 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752361Ab3A2TDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:01:26 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Cc: Axel Lin <axel.lin@ingics.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        AnilKumar Ch <anilkumar@ti.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: clear state each invocation of of_regulator_match
-Date: Tue, 29 Jan 2013 12:01:13 -0700
-Message-Id: <1359486073-26504-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	Tue, 29 Jan 2013 14:03:49 -0500
+Message-ID: <1359486226.8282.97.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [GIT PULL] EFI fixes for v3.8
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-efi <linux-efi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Tue, 29 Jan 2013 19:03:46 +0000
+In-Reply-To: <1358504987.8203.425.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1358504987.8203.425.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Hi guys,
 
-of_regulator_match() saves some dynamcially allocated state into the
-match table that's passed to it. By implementation and not contract, for
-each match table entry, if non-NULL state is already present,
-of_regulator_match() will not overwrite it. of_regulator_match() is
-typically called each time a regulator is probe()d. This means it is
-called with the same match table over and over again if a regulator
-triggers deferred probe. This results in stale, kfree()d data being left
-in the match table from probe to probe, which causes a variety of crashes
-or use of invalid data.
+The following changes since commit 7d1f9aeff1ee4a20b1aeb377dd0f579fe9647619:
 
-Explicitly free all output state from of_regulator_match() before
-generating new results in order to avoid this.
+  Linux 3.8-rc4 (2013-01-17 19:25:45 -0800)
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/regulator/of_regulator.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+are available in the git repository at:
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index 6f68491..66ca769 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -120,6 +120,12 @@ int of_regulator_match(struct device *dev, struct device_node *node,
- 	if (!dev || !node)
- 		return -EINVAL;
- 
-+	for (i = 0; i < num_matches; i++) {
-+		struct of_regulator_match *match = &matches[i];
-+		match->init_data = NULL;
-+		match->of_node = NULL;
-+	}
-+
- 	for_each_child_of_node(node, child) {
- 		name = of_get_property(child,
- 					"regulator-compatible", NULL);
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git 
+
+for you to fetch changes up to 739701888f5d98010a8960b2d974d74c77c830a2:
+
+  x86, efi: remove attribute check from setup_efi_pci (2013-01-29 17:52:06 +0000)
+
+----------------------------------------------------------------
+Various urgent EFI fixes and some warning cleanups for v3.8
+
+  * EFI boot stub fix for Macbook Pro's from Maarten Lankhorst
+  * Fix an oops in efivarfs from Lingzhu Xiang
+  * 32-bit warning cleanups from Jan Beulich
+  * Patch to Boot on >512GB RAM systems from Nathan Zimmer
+  * Set efi.runtime_version correctly
+  * efivarfs updates
+
+----------------------------------------------------------------
+Jan Beulich (1):
+      x86, efi: fix 32-bit warnings in setup_efi_pci()
+
+Lingzhu Xiang (1):
+      efivarfs: Drop link count of the right inode
+
+Maarten Lankhorst (1):
+      x86, efi: remove attribute check from setup_efi_pci
+
+Matt Fleming (3):
+      efivarfs: Never return ENOENT from firmware
+      efivarfs: Delete dentry from dcache in efivarfs_file_write()
+      x86, efi: Set runtime_version to the EFI spec revision
+
+Nathan Zimmer (1):
+      efi, x86: Pass a proper identity mapping in efi_call_phys_prelog
+
+ arch/x86/boot/compressed/eboot.c | 11 ++++-------
+ arch/x86/platform/efi/efi.c      |  2 +-
+ arch/x86/platform/efi/efi_64.c   | 22 +++++++++++++++++-----
+ drivers/firmware/efivars.c       |  5 +++--
+ 4 files changed, 25 insertions(+), 15 deletions(-)
+
 -- 
-1.7.10.4
+Matt Fleming, Intel Open Source Technology Center
 
