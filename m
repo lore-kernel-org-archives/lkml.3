@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3A2MjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:39:05 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:23354 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756738Ab3A2MjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:39:02 -0500
+	id S1756909Ab3A2MjU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:39:20 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:18538 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756897Ab3A2MjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:39:17 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@alien8.de>
-Subject: [PATCH v5 19/20] scripts/gdb: Add lx-lsmod command
-Date: Tue, 29 Jan 2013 13:38:02 +0100
-Message-Id: <e592cdaed1fcfd4abe425d72a6a46ab761774194.1359463075.git.jan.kiszka@siemens.com>
+        Borislav Petkov <bp@alien8.de>, Kay Sievers <kay@vrfy.org>
+Subject: [PATCH v5 10/20] scripts/gdb: Add lx-dmesg command
+Date: Tue, 29 Jan 2013 13:37:53 +0100
+Message-Id: <ce4e3b1a73ddc921edbf9a9f1619b247da609bdb.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
 References: <cover.1359463075.git.jan.kiszka@siemens.com>
@@ -24,72 +25,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a lsmod-like command to list all currently loaded modules of
-the target.
+This pokes into the log buffer of the debugged kernel, dumping it to the
+gdb console. Helping in case the target should or can no longer execute
+dmesg itself.
 
+CC: Kay Sievers <kay@vrfy.org>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/module.py |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+ scripts/gdb/dmesg.py       |   63 ++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |    1 +
+ 2 files changed, 64 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/gdb/dmesg.py
 
-diff --git a/scripts/gdb/module.py b/scripts/gdb/module.py
-index 333729a..101d2e0 100644
---- a/scripts/gdb/module.py
-+++ b/scripts/gdb/module.py
-@@ -15,6 +15,7 @@ import gdb
- import os
- import string
- 
-+from percpu import *
- from utils import *
- 
- module_type = CachedType("struct module")
-@@ -104,3 +105,45 @@ class LxModvar(gdb.Function):
- 		return var_addr.cast(var.type.pointer()).dereference()
- 
- LxModvar()
+diff --git a/scripts/gdb/dmesg.py b/scripts/gdb/dmesg.py
+new file mode 100644
+index 0000000..1bc3368
+--- /dev/null
++++ b/scripts/gdb/dmesg.py
+@@ -0,0 +1,63 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  kernel log buffer dump
++#
++# Copyright (c) Siemens AG, 2011, 2012
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
 +
++import gdb
++import string
 +
-+class LinuxLsmod(gdb.Command):
-+	__doc__ = "List currently loaded modules."
++from utils import *
 +
-+	_module_use_type = CachedType("struct module_use")
++class LinuxDmesg(gdb.Command):
++	__doc__ = "Print Linux kernel log buffer."
 +
 +	def __init__(self):
-+		super(LinuxLsmod, self).__init__("lx-lsmod", gdb.COMMAND_DATA)
++		super(LinuxDmesg, self).__init__("lx-dmesg", gdb.COMMAND_DATA)
 +
 +	def invoke(self, arg, from_tty):
-+		def print_module(module, arg):
-+			def collect_ref(cpu, arg):
-+				refptr = per_cpu(arg['refptr'], cpu)
-+				arg['ref'] += refptr['incs']
-+				arg['ref'] -= refptr['decs']
++		log_buf_addr = \
++			int(str(gdb.parse_and_eval("log_buf")).split()[0], 16)
++		log_first_idx = int(gdb.parse_and_eval("log_first_idx"))
++		log_next_idx = int(gdb.parse_and_eval("log_next_idx"))
++		log_buf_len = int(gdb.parse_and_eval("log_buf_len"))
 +
-+			arg = { 'refptr': module['refptr'], 'ref': 0 }
-+			for_each_cpu("cpu_possible_mask", collect_ref, arg)
++		inf = gdb.inferiors()[0]
++		start = log_buf_addr + log_first_idx
++		if log_first_idx < log_next_idx:
++			log_buf_2nd_half = -1
++			length = log_next_idx - log_first_idx
++			log_buf = inf.read_memory(start, length)
++		else:
++			log_buf_2nd_half = log_buf_len - log_first_idx
++			log_buf = inf.read_memory(start, log_buf_2nd_half) + \
++				  inf.read_memory(log_buf_addr, log_next_idx)
 +
-+			print "%s" % module['module_core'] + \
-+			      " %-19s" % module['name'].string() + \
-+			      " %8s" % module['core_size'] + \
-+			      "  %d" % arg['ref'],
++		pos = 0
++		while pos < log_buf.__len__():
++			length = read_u16(log_buf[pos + 8 : pos + 10])
++			if length == 0:
++				if log_buf_2nd_half == -1:
++					print "Corrupted log buffer!"
++					break
++				pos = log_buf_2nd_half
++				continue
 +
-+			source_list = module['source_list']
-+			t = self._module_use_type.get_type().pointer()
-+			entry = source_list['next']
-+			first = True
-+			while entry != source_list.address:
-+				use = container_of(entry, t, "source_list")
-+				gdb.write((" " if first else ",") + \
-+					  use['source']['name'].string())
-+				first = False
-+				entry = entry['next']
-+			print
++			text_len = read_u16(log_buf[pos + 10 : pos + 12])
++			time_stamp = read_u64(log_buf[pos : pos + 8])
 +
-+		print "Address%s    Module                  Size  Used by" % \
-+		      "        " if get_long_type().sizeof == 8 else ""
-+		for_each_module(print_module)
++			for line in log_buf[pos + 16 :
++					    pos + 16 + text_len].splitlines():
++				print "[%13.6f] " % \
++				      (time_stamp / 1000000000.0) + line
 +
-+LinuxLsmod()
++			pos += length
++
++LinuxDmesg()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 2a466a0..4a5685b 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -24,3 +24,4 @@ else:
+ 	import utils
+ 	import symbols
+ 	import module
++	import dmesg
 -- 
 1.7.3.4
 
