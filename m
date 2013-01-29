@@ -1,166 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3A2PkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 10:40:06 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:35306 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab3A2PkE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 10:40:04 -0500
-Date: Tue, 29 Jan 2013 16:39:57 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: davem@davemloft.net, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 3/5] net: mvmdio: enhance driver to support SMI
- error/done interrupts
-Message-ID: <20130129163957.79815ff7@skate>
-In-Reply-To: <1359473048-26551-4-git-send-email-florian@openwrt.org>
-References: <1359473048-26551-1-git-send-email-florian@openwrt.org>
-	<1359473048-26551-4-git-send-email-florian@openwrt.org>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756600Ab3A2Pm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 10:42:57 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:36610 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751870Ab3A2Pmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 10:42:54 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.8-rc6
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20130129154250.1B3CC4266DC@whiskey.americas.sgi.com>
+Date: Tue, 29 Jan 2013 09:42:50 -0600 (CST)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Florian Fainelli,
+Hi Linus,
 
-On Tue, 29 Jan 2013 16:24:06 +0100, Florian Fainelli wrote:
-
->  #define MVMDIO_SMI_DATA_SHIFT              0
->  #define MVMDIO_SMI_PHY_ADDR_SHIFT          16
-> @@ -36,12 +40,28 @@
->  #define MVMDIO_SMI_WRITE_OPERATION         0
->  #define MVMDIO_SMI_READ_VALID              BIT(27)
->  #define MVMDIO_SMI_BUSY                    BIT(28)
-> +#define MVMDIO_ERR_INT_CAUSE		   0x007C
-> +#define  MVMDIO_ERR_INT_SMI_DONE	   0x00000010
-> +#define MVMDIO_ERR_INT_MASK		   0x0080
->  
->  struct orion_mdio_dev {
->  	struct mutex lock;
->  	void __iomem *regs;
-> +	/*
-> +	 * If we have access to the error interrupt pin (which is
-> +	 * somewhat misnamed as it not only reflects internal errors
-> +	 * but also reflects SMI completion), use that to wait for
-> +	 * SMI access completion instead of polling the SMI busy bit.
-> +	 */
-> +	int err_interrupt;
-> +	wait_queue_head_t smi_busy_wait;
->  };
->  
-> +static int orion_mdio_smi_is_done(struct orion_mdio_dev *dev)
-> +{
-> +	return !(readl(dev->regs) & MVMDIO_SMI_BUSY);
-> +}
-> +
->  /* Wait for the SMI unit to be ready for another operation
->   */
->  static int orion_mdio_wait_ready(struct mii_bus *bus)
-> @@ -50,19 +70,30 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
->  	int count;
->  	u32 val;
->  
-> -	count = 0;
-> -	while (1) {
-> -		val = readl(dev->regs);
-> -		if (!(val & MVMDIO_SMI_BUSY))
-> -			break;
-> -
-> -		if (count > 100) {
-> -			dev_err(bus->parent, "Timeout: SMI busy for too long\n");
-> -			return -ETIMEDOUT;
-> +	if (dev->err_interrupt == NO_IRQ) {
-> +		count = 0;
-> +		while (1) {
-> +			val = readl(dev->regs);
-> +			if (!(val & MVMDIO_SMI_BUSY))
-> +				break;
-
-What about using your new orion_mdio_smi_is_done() function here?
-
-> +
-> +			if (count > 100) {
-> +				dev_err(bus->parent,
-> +					"Timeout: SMI busy for too long\n");
-> +				return -ETIMEDOUT;
-> +			}
-> +
-> +			udelay(10);
-> +			count++;
->  		}
-> +	}
->  
-> -		udelay(10);
-> -		count++;
-> +	if (!orion_mdio_smi_is_done(dev)) {
-
-Maybe it should be in an else if block so that the waitqueue case is
-only considered if there is an IRQ registered? Of course practically
-speaking, it's OK because if there is no IRQ, we'll wait in the polling
-loop above, and either exit from the function on timeout, or continue
-on success. But it still would make the code a little bit clearer, I'd
-say.
-
->  static int orion_mdio_probe(struct platform_device *pdev)
->  {
->  	struct device_node *np = pdev->dev.of_node;
-> @@ -181,6 +227,19 @@ static int orion_mdio_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
->  
-> +	dev->err_interrupt = NO_IRQ;
-
-Not needed, you already do dev->err_interrupt = something() below.
-
-> +	init_waitqueue_head(&dev->smi_busy_wait);
-> +
-> +	dev->err_interrupt = irq_of_parse_and_map(pdev->dev.of_node, 0);
-> +	if (dev->err_interrupt != NO_IRQ) {
-> +		ret = devm_request_irq(&pdev->dev, dev->err_interrupt,
-> +					orion_mdio_err_irq,
-> +					IRQF_SHARED, pdev->name, dev);
-> +		if (!ret)
-> +			writel(MVMDIO_ERR_INT_SMI_DONE,
-> +					dev->regs + MVMDIO_ERR_INT_MASK);
-> +	}
-> +
->  	mutex_init(&dev->lock);
->  
->  	ret = of_mdiobus_register(bus, np);
-> @@ -202,6 +261,8 @@ static int orion_mdio_remove(struct platform_device *pdev)
->  	struct mii_bus *bus = platform_get_drvdata(pdev);
->  	struct orion_mdio_dev *dev = bus->priv;
->  
-> +	writel(0, dev->regs + MVMDIO_ERR_INT_MASK);
-> +	free_irq(dev->err_interrupt, dev);
-
-free_irq() not needed since the IRQ handler is registered with
-devm_request_irq().
-
->  	mdiobus_unregister(bus);
->  	kfree(bus->irq);
->  	mdiobus_free(bus);
+   Please pull these fixes for XFS.  Here are fixes for returning
+   EFSCORRUPTED on probe of a non-xfs filesystem, the stack switch in
+   xfs_bmapi_allocate, a crash in _xfs_buf_find, speculative
+   preallocation as the filesystem nears ENOSPC, an unmount hang, a race
+   with AIO, and a regression with xfs_fsr.
 
 Thanks,
+	Ben 
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+The following changes since commit 37f13561de6039b3a916d1510086030d097dea0f:
+
+  xfs: recalculate leaf entry pointer after compacting a dir2 block (2013-01-16 16:08:55 -0600)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs tags/for-linus-v3.8-rc6
+
+for you to fetch changes up to 65e3aa77f1b0269720660a6879f6f28d158f54c8:
+
+  xfs: Fix xfs_swap_extents() after removal of xfs_flushinval_pages() (2013-01-28 16:05:10 -0600)
+
+----------------------------------------------------------------
+xfs: bugfixes for 3.8-rc6
+
+- fix return value when filesystem probe finds no XFS magic, a
+  regression introduced in 9802182.
+
+- fix stack switch in __xfs_bmapi_allocate by moving the check for stack
+  switch up into xfs_bmapi_write.
+
+- fix oops in _xfs_buf_find by validating that the requested block is
+  within the filesystem bounds.
+
+- limit speculative preallocation near ENOSPC.
+
+- fix an unmount hang in xfs_wait_buftarg by freeing the
+  xfs_buf_log_item in xfs_buf_item_unlock.
+
+- fix a possible use after free with AIO.
+
+- fix xfs_swap_extents after removal of xfs_flushinval_pages, a
+  regression introduced in fb59581404a.
+
+----------------------------------------------------------------
+Brian Foster (1):
+      xfs: pull up stack_switch check into xfs_bmapi_write
+
+Dave Chinner (3):
+      xfs: fix _xfs_buf_find oops on blocks beyond the filesystem end
+      xfs: limit speculative prealloc near ENOSPC thresholds
+      xfs: fix shutdown hang on invalid inode during create
+
+Eric Sandeen (1):
+      xfs: Do not return EFSCORRUPTED when filesystem probe finds no XFS magic
+
+Jan Kara (1):
+      xfs: Fix possible use-after-free with AIO
+
+Torsten Kaiser (1):
+      xfs: Fix xfs_swap_extents() after removal of xfs_flushinval_pages()
+
+ fs/xfs/xfs_aops.c     |  2 +-
+ fs/xfs/xfs_bmap.c     |  6 +++---
+ fs/xfs/xfs_buf.c      | 20 ++++++++++++++++++++
+ fs/xfs/xfs_buf_item.c | 12 ++++++++++--
+ fs/xfs/xfs_dfrag.c    |  4 ++--
+ fs/xfs/xfs_iomap.c    |  9 +++++++++
+ fs/xfs/xfs_mount.c    |  2 +-
+ fs/xfs/xfs_trace.h    |  1 +
+ 8 files changed, 47 insertions(+), 9 deletions(-)
