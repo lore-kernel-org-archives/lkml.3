@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab3A2HW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:22:58 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:33766 "EHLO
+	id S1754467Ab3A2HXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:23:00 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:33765 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab3A2HVs (ORCPT
+	with ESMTP id S1751650Ab3A2HVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jan 2013 02:21:48 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r0T7Lbuw004026
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r0T7Lbuu004026
 From: <wei_wang@realsil.com.cn>
 To: <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH 6/6] MFD:rtsx: Optimize card detect flow
-Date: Tue, 29 Jan 2013 15:21:37 +0800
-Message-ID: <cd40ddce56e51d6e9dcadce00bd95bf3d276401c.1359443488.git.wei_wang@realsil.com.cn>
+Subject: [PATCH 4/6] MFD:rtsx: Fix checkpatch warning
+Date: Tue, 29 Jan 2013 15:21:35 +0800
+Message-ID: <d2149e222185b6f2cd9706b43af6099ea7d245a2.1359443488.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1359443487.git.wei_wang@realsil.com.cn>
 References: <cover.1359443487.git.wei_wang@realsil.com.cn>
@@ -26,92 +26,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-1. Schedule card detect work at the end of ISR
-2. Callback function ops->cd_deglitch may delay for a period of time.
-It is not proper to call this callback when local irq disabled
-3. Card detect flow can't be exectued in parallel with other card reader
-operations, so it's better to be protected by mutex
+WARNING: Avoid CamelCase: <min_N>
++	u8 N, min_N, max_N, clk_divider;
+
+WARNING: Avoid CamelCase: <max_N>
++	u8 N, min_N, max_N, clk_divider;
 
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- drivers/mfd/rtsx_pcr.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ drivers/mfd/rtsx_pcr.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 67bb34e..9016932 100644
+index b2cfd2e..4897c39 100644
 --- a/drivers/mfd/rtsx_pcr.c
 +++ b/drivers/mfd/rtsx_pcr.c
-@@ -752,7 +752,7 @@ static void rtsx_pci_card_detect(struct work_struct *work)
- 	struct delayed_work *dwork;
- 	struct rtsx_pcr *pcr;
- 	unsigned long flags;
--	unsigned int card_detect = 0;
-+	unsigned int card_detect = 0, card_inserted, card_removed;
- 	u32 irq_status;
+@@ -590,7 +590,7 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
+ 		u8 ssc_depth, bool initial_mode, bool double_clk, bool vpclk)
+ {
+ 	int err, clk;
+-	u8 N, min_N, max_N, clk_divider;
++	u8 n, min_n, max_n, clk_divider;
+ 	u8 mcu_cnt, div, max_div;
+ 	u8 depth[] = {
+ 		[RTSX_SSC_DEPTH_4M] = SSC_DEPTH_4M,
+@@ -615,8 +615,8 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
+ 	card_clock /= 1000000;
+ 	dev_dbg(&(pcr->pci->dev), "Switch card clock to %dMHz\n", card_clock);
  
- 	dwork = to_delayed_work(work);
-@@ -760,25 +760,32 @@ static void rtsx_pci_card_detect(struct work_struct *work)
+-	min_N = 80;
+-	max_N = 208;
++	min_n = 80;
++	max_n = 208;
+ 	max_div = CLK_DIV_8;
  
- 	dev_dbg(&(pcr->pci->dev), "--> %s\n", __func__);
+ 	clk = card_clock;
+@@ -630,30 +630,30 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
+ 		return 0;
  
-+	mutex_lock(&pcr->pcr_mutex);
- 	spin_lock_irqsave(&pcr->lock, flags);
+ 	if (pcr->ops->conv_clk_and_div_n)
+-		N = (u8)pcr->ops->conv_clk_and_div_n(clk, CLK_TO_DIV_N);
++		n = (u8)pcr->ops->conv_clk_and_div_n(clk, CLK_TO_DIV_N);
+ 	else
+-		N = (u8)(clk - 2);
+-	if ((clk <= 2) || (N > max_N))
++		n = (u8)(clk - 2);
++	if ((clk <= 2) || (n > max_n))
+ 		return -EINVAL;
  
- 	irq_status = rtsx_pci_readl(pcr, RTSX_BIPR);
- 	dev_dbg(&(pcr->pci->dev), "irq_status: 0x%08x\n", irq_status);
+ 	mcu_cnt = (u8)(125/clk + 3);
+ 	if (mcu_cnt > 15)
+ 		mcu_cnt = 15;
  
--	if (pcr->card_inserted || pcr->card_removed) {
-+	irq_status &= CARD_EXIST;
-+	card_inserted = pcr->card_inserted & irq_status;
-+	card_removed = pcr->card_removed;
-+	pcr->card_inserted = 0;
-+	pcr->card_removed = 0;
-+
-+	spin_unlock_irqrestore(&pcr->lock, flags);
-+
-+	if (card_inserted || card_removed) {
- 		dev_dbg(&(pcr->pci->dev),
- 				"card_inserted: 0x%x, card_removed: 0x%x\n",
--				pcr->card_inserted, pcr->card_removed);
-+				card_inserted, card_removed);
- 
- 		if (pcr->ops->cd_deglitch)
--			pcr->card_inserted = pcr->ops->cd_deglitch(pcr);
-+			card_inserted = pcr->ops->cd_deglitch(pcr);
- 
--		card_detect = pcr->card_inserted | pcr->card_removed;
--		pcr->card_inserted = 0;
--		pcr->card_removed = 0;
-+		card_detect = card_inserted | card_removed;
- 	}
- 
--	spin_unlock_irqrestore(&pcr->lock, flags);
-+	mutex_unlock(&pcr->pcr_mutex);
- 
- 	if ((card_detect & SD_EXIST) && pcr->slots[RTSX_SD_CARD].card_event)
- 		pcr->slots[RTSX_SD_CARD].card_event(
-@@ -830,10 +837,6 @@ static irqreturn_t rtsx_pci_isr(int irq, void *dev_id)
+-	/* Make sure that the SSC clock div_n is equal or greater than min_N */
++	/* Make sure that the SSC clock div_n is equal or greater than min_n */
+ 	div = CLK_DIV_1;
+-	while ((N < min_N) && (div < max_div)) {
++	while ((n < min_n) && (div < max_div)) {
+ 		if (pcr->ops->conv_clk_and_div_n) {
+-			int dbl_clk = pcr->ops->conv_clk_and_div_n(N,
++			int dbl_clk = pcr->ops->conv_clk_and_div_n(n,
+ 					DIV_N_TO_CLK) * 2;
+-			N = (u8)pcr->ops->conv_clk_and_div_n(dbl_clk,
++			n = (u8)pcr->ops->conv_clk_and_div_n(dbl_clk,
+ 					CLK_TO_DIV_N);
+ 		} else {
+-			N = (N + 2) * 2 - 2;
++			n = (n + 2) * 2 - 2;
  		}
+ 		div++;
  	}
+-	dev_dbg(&(pcr->pci->dev), "N = %d, div = %d\n", N, div);
++	dev_dbg(&(pcr->pci->dev), "n = %d, div = %d\n", n, div);
  
--	if (pcr->card_inserted || pcr->card_removed)
--		schedule_delayed_work(&pcr->carddet_work,
--				msecs_to_jiffies(200));
--
- 	if (int_reg & (NEED_COMPLETE_INT | DELINK_INT)) {
- 		if (int_reg & (TRANS_FAIL_INT | DELINK_INT)) {
- 			pcr->trans_result = TRANS_RESULT_FAIL;
-@@ -846,6 +849,10 @@ static irqreturn_t rtsx_pci_isr(int irq, void *dev_id)
- 		}
- 	}
- 
-+	if (pcr->card_inserted || pcr->card_removed)
-+		schedule_delayed_work(&pcr->carddet_work,
-+				msecs_to_jiffies(200));
-+
- 	spin_unlock(&pcr->lock);
- 	return IRQ_HANDLED;
- }
+ 	ssc_depth = depth[ssc_depth];
+ 	if (double_clk)
+@@ -670,7 +670,7 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL1, SSC_RSTB, 0);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL2,
+ 			SSC_DEPTH_MASK, ssc_depth);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_DIV_N_0, 0xFF, N);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_DIV_N_0, 0xFF, n);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL1, SSC_RSTB, SSC_RSTB);
+ 	if (vpclk) {
+ 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD_VPCLK0_CTL,
 -- 
 1.7.9.5
 
