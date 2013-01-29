@@ -1,126 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab3A2FTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 00:19:19 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35113 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab3A2FTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 00:19:12 -0500
-From: "Kumar, Anil" <anilkumar.v@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-CC: <b-cousson@ti.com>, <tony@atomide.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <linux@arm.linux.org.uk>, <nsekhar@ti.com>,
-        <khilman@deeprootsystems.com>, <hs@denx.de>, <anilkumar.v@ti.com>
-Subject: [PATCH 1/2] ARM: davinci: da850 evm: add norflash DT node
-Date: Tue, 29 Jan 2013 10:49:55 +0530
-Message-ID: <1359436796-25135-2-git-send-email-anilkumar.v@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359436796-25135-1-git-send-email-anilkumar.v@ti.com>
-References: <1359436796-25135-1-git-send-email-anilkumar.v@ti.com>
+	id S1753382Ab3A2FdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 00:33:14 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:50737 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab3A2FdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 00:33:12 -0500
+Date: Mon, 28 Jan 2013 21:33:08 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Joe Millenbach <jmillenbach@gmail.com>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>,
+        "Mike A. Chan" <mikechan@google.com>,
+        Sheng Yang <sheng@linux.intel.com>,
+        Yunhong Jiang <yunhong.jiang@intel.com>,
+        Xiaohui Xin <xiaohui.xin@intel.com>,
+        Jun Nakajima <jun.nakajima@intel.com>,
+        Bruce Beare <bruce.j.beare@intel.com>,
+        Tom Keel <thomas.keel@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jamey Sharp <jamey@minilop.net>
+Subject: Re: linux-next: manual merge of the tty tree with the input tree
+Message-ID: <20130129053308.GB1083@core.coreip.homeip.net>
+References: <20130128204424.a3eedfee954ba6cc7a620652@canb.auug.org.au>
+ <20130128144615.GC2997@kroah.com>
+ <20130128173330.GA11769@core.coreip.homeip.net>
+ <CADwDc1AVOaA0N9evbR7A14udx+TRRQo6t_X_Nn15BdEEByupkg@mail.gmail.com>
+ <20130128224443.GA1083@core.coreip.homeip.net>
+ <20130128235916.GA3124@leaf>
+ <20130129002357.GA4420@core.coreip.homeip.net>
+ <20130129051321.GB3283@leaf>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130129051321.GB3283@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add norflash DT node on DA850 EVM and related pin mux.
+On Tue, Jan 29, 2013 at 04:13:21PM +1100, Josh Triplett wrote:
+> On Mon, Jan 28, 2013 at 04:23:57PM -0800, Dmitry Torokhov wrote:
+> > On Tue, Jan 29, 2013 at 10:59:17AM +1100, Josh Triplett wrote:
+> > > On Mon, Jan 28, 2013 at 02:44:43PM -0800, Dmitry Torokhov wrote:
+> > > > On Mon, Jan 28, 2013 at 02:09:31PM -0800, Joe Millenbach wrote:
+> > > > > On Mon, Jan 28, 2013 at 9:33 AM, Dmitry Torokhov
+> > > > > <dmitry.torokhov@gmail.com> wrote:
+> > > > > > On Mon, Jan 28, 2013 at 06:46:15AM -0800, Greg KH wrote:
+> > > > > >> On Mon, Jan 28, 2013 at 08:44:24PM +1100, Stephen Rothwell wrote:
+> > > > > >> > Hi Greg,
+> > > > > >> >
+> > > > > >> > Today's linux-next merge of the tty tree got a conflict in
+> > > > > >> > drivers/input/keyboard/Kconfig between commit 6f2ac009f29b ("Input:
+> > > > > >> > goldfish - virtual input event driver") from the input tree and commit
+> > > > > >> > 4f73bc4dd3e8 ("tty: Added a CONFIG_TTY option to allow removal of TTY")
+> > > > > >> > from the tty tree.
+> > > > > >> >
+> > > > > >> > I fixed it up (see below - I am not sure if GOLDFISH_EVENTS needs TTY or
+> > > > > >> > not) and can carry the fix as necessary (no action is required).
+> > > > > >> >
+> > > > > >> > --
+> > > > > >> > Cheers,
+> > > > > >> > Stephen Rothwell                    sfr@canb.auug.org.au
+> > > > > >> >
+> > > > > >> > diff --cc drivers/input/keyboard/Kconfig
+> > > > > >> > index 078305e,008f96a..0000000
+> > > > > >> > --- a/drivers/input/keyboard/Kconfig
+> > > > > >> > +++ b/drivers/input/keyboard/Kconfig
+> > > > > >> > @@@ -479,16 -482,8 +482,18 @@@ config KEYBOARD_SAMSUN
+> > > > > >> >       To compile this driver as a module, choose M here: the
+> > > > > >> >       module will be called samsung-keypad.
+> > > > > >> >
+> > > > > >> > + if TTY
+> > > > > >> > +
+> > > > > >> >  +config KEYBOARD_GOLDFISH_EVENTS
+> > > > > >> >  +  depends on GOLDFISH
+> > > > > >> >  +  tristate "Generic Input Event device for Goldfish"
+> > > > > >> >  +  help
+> > > > > >> >  +    Say Y here to get an input event device for the Goldfish virtual
+> > > > > >>
+> > > > > >> Looks good, thanks.
+> > > > > >
+> > > > > > Greg,
+> > > > > >
+> > > > > > Please drop 4f73bc4dd3e8563ef4109f293a092820dff66d92, at least the parts
+> > > > > > related to input. As far as I know nothing except serport driver
+> > > > > > depends on tty and we do not need to introduce this kind of
+> > > > > > dependencie. Anyone needing slim config can simply try disabling
+> > > > > > input (or parts of it) without needing an artificial dependencies.
+> > > > > >
+> > > > > > Thanks.
+> > > > > >
+> > > > > > --
+> > > > > > Dmitry
+> > > > > 
+> > > > > Dmitry and Greg,
+> > > > > 
+> > > > > SERIO needs TTY, 
+> > > > 
+> > > > No it does not. There is only one (1) serio driver that needs the tty
+> > > > layer and that is serport.
+> > > > 
+> > > > > and the majority of the input changes are adding "depends on TTY" to
+> > > > > things that "select SERIO" as they break the dependency chain.  In
+> > > > > other words, enabling a component that selects SERIO will turn SERIO
+> > > > > on even when SERIO depends on TTY and TTY is disabled.
+> > > > 
+> > > > Except that it does not. Are you confusing SERIO with SERIAL by any
+> > > > chance?
+> > > 
+> > > A few serial drivers don't actually need the TTY layer.  However, most
+> > 
+> > Can you please tell me why you are talking about serial layer here?
+> 
+> Probably terminology sloppiness.  Insert noun for "things that depend on
+> SERIO" here. 
 
-Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
----
-:100644 100644 087ba28... 95ffeca... M	arch/arm/boot/dts/da850-evm.dts
-:100644 100644 160ebac... 036b02a... M	arch/arm/boot/dts/da850.dtsi
- arch/arm/boot/dts/da850-evm.dts |   25 +++++++++++++++++++++++
- arch/arm/boot/dts/da850.dtsi    |   41 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 66 insertions(+), 0 deletions(-)
+Still does not make sense as SERIO subsystem does not depend on TTY, a
+single driver belonging to it does.
 
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index 087ba28..95ffeca 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -28,4 +28,29 @@
- 			status = "okay";
- 		};
- 	};
-+	norflash_cs2@60000000 {
-+		compatible = "intel,PC28F640P30T85", "cfi-flash";
-+		reg = <0x60000000 0x1FFFFFF>;
-+		bank-width = <2>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		linux,mtd-name = "physmap-flash";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&norflash_cs2_pins>;
-+
-+		bootloaders_env@0 {
-+			label = "bootloaders_env";
-+			reg = <0 0x80000>;
-+		};
-+
-+		kernel@80000 {
-+			label = "kernel";
-+			reg = <0x80000 0x200000>;
-+		};
-+
-+		filesystem@280000 {
-+			label = "filesystem";
-+			reg = <0x280000 0x580000>;
-+		};
-+	};
- };
-diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-index 160ebac..036b02a 100644
---- a/arch/arm/boot/dts/da850.dtsi
-+++ b/arch/arm/boot/dts/da850.dtsi
-@@ -38,6 +38,47 @@
- 			pinctrl-single,register-width = <32>;
- 			pinctrl-single,function-mask = <0xffffffff>;
- 			status = "disabled";
-+
-+			norflash_cs2_pins: pinmux_norflash_pins{
-+				pinctrl-single,bits = <
-+					/* EMA_BA[1] */
-+					0x14 0x01000000 0x0f000000
-+					/* EMA_CLK, EMA_WAIT[1] */
-+					0x18 0x01000001 0x0f00000f
-+					/* EMA_OE, EMA_WE, EMA_CS[2] */
-+					0x1c 0x00110001 0x00ff000f
-+					/*
-+					 * EMA_D[0], EMA_D[1], EMA_D[2],
-+					 * EMA_D[3], EMA_D[4], EMA_D[5],
-+					 * EMA_D[6], EMA_D[7]
-+					 */
-+					0x24 0x11111111 0xffffffff
-+					/*
-+					 * EMA_D[8], EMA_D[9], EMA_D[10],
-+					 * EMA_D[11], EMA_D[12], EMA_D[13],
-+					 * EMA_D[14], EMA_D[15]
-+					 */
-+					0x20 0x11111111 0xffffffff
-+					/*
-+					 * EMA_A[0], EMA_A[1], EMA_A[2],
-+					 * EMA_A[3], EMA_A[4], EMA_A[5],
-+					 * EMA_A[6], EMA_A[7]
-+					 */
-+					0x30 0x11111111 0xffffffff
-+					/*
-+					 * EMA_A[8], EMA_A[9], EMA_A[10],
-+					 * EMA_A[11], EMA_A[12], EMA_A[13],
-+					 * EMA_A[14], EMA_A[15]
-+					 */
-+					0x2c 0x11111111 0xffffffff
-+					/*
-+					 * EMA_A[16], EMA_A[17], EMA_A[18],
-+					 * EMA_A[19], EMA_A[20], EMA_A[21],
-+					 * EMA_A[22]
-+					 */
-+					0x28 0x11111110 0xfffffff0
-+				>;
-+			};
- 		};
- 		serial0: serial@1c42000 {
- 			compatible = "ns16550a";
+ 
+> > > do, including many that don't obviously appear to at first glance.  For
+> > > instance, MOUSE_PS2 doesn't *appear* to need TTY, but without the
+> > > dependency, having MOUSE_PS2 enabled and TTY disabled produces a kernel
+> > > that doesn't build.
+> > 
+> > Compile log please.
+> 
+> http://marc.info/?l=linux-kernel&m=134555498507747&w=1
+> 
+> IIRC, produced by dropping the "depends on TTY" from MOUSE_PS2, enabling
+> MOUSE_PS2, leaving TTY disabled, and changing nothing else.  (In
+> particular, not changing anything related to serport directly.)
+
+Right, because serport (one single diriver outr of all of them) does
+depend on TTY.
+
+> 
+> > >  (Also keep in mind that many other headers include
+> > > <linux/tty.h>.)  Many of the drivers that don't actually need TTY
+> > > nonetheless won't typically appear on systems small enough to want to
+> > > compile out TTY.
+> > > 
+> > > In any case, it seems simple enough to whittle down dependencies on TTY
+> > > later on, but for a first pass, the conserative approach seems
+> > > preferable.
+> > 
+> > However my approach would be not to touch anything except serport
+> > driver (which indeed depends on TTY layer).
+> 
+> Quite a bit more than that depends on the TTY layer.
+
+No, if you look at the log you mention above the only build failure is
+coming from serport driver, exactly as I said. There is exactly *ONE*
+driver in drivers/input/serio that depends on tty layer.
+
+> 
+> > > > In the future it would be nice if you CCed people involved in the
+> > > > subsystem you are changing.
+> > > 
+> > > Such as the maintainers of the TTY and serial layers?  Alan Cox OKed
+> > > this conservative addition of dependencies in the original version of
+> > > this change, and Greg had no complaints at the time.
+> > 
+> > Maintainer of _SERIO_ (not SERIAL, SERIO) layer, yours truly.
+> 
+> This change affected the dependencies of several hundred drivers, and
+> the output of get_maintainer.pl included hundreds of email addresses.
+> Spamming *all* of them for a one-line change to the dependencies of a
+> Kconfig option, when that change acts as a no-op except on systems
+> trying to use CONFIG_TTY=n, seemed imprudent.  Given that this was a
+> change to the TTY layer, and not to the SERIO subsystem other than its
+> dependencies (along with the dependencies of hundreds of other drivers),
+> SERIO didn't particularly seem to stand out here as one to keep the CC
+> for.
+
+And yet, if you bothered to CC me on it I'd tell you right away that
+there is no point whatsoever to make this misguided change. In general,
+if you think you need to add a new dependency to majority of the
+drivers in the subsystem maybe you should ask yourself if what you are
+doing is right thing or not.
+
+Once again SERIO != SERIAL and has no direct relation to the TTY.
+
+Please revert the input changes and add *ONE* new dependency to the
+serport driver.
+
+Thanks.
+
 -- 
-1.7.4.1
-
+Dmitry
