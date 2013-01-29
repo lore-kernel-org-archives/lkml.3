@@ -1,128 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab3A2GlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 01:41:22 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54887 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab3A2GlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 01:41:19 -0500
-Date: Mon, 28 Jan 2013 22:40:55 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 4/4] rcu: Make rcutorture's shuffler task
- shuffle recently added tasks
-Message-ID: <20130129064055.GU6395@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130127000435.GA1521@linux.vnet.ibm.com>
- <1359245120-2266-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1359245120-2266-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130127104747.GA3119@leaf>
+	id S1754417Ab3A2GnQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 01:43:16 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:37992 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754369Ab3A2GnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 01:43:13 -0500
+Message-ID: <51076FA2.9070002@ti.com>
+Date: Tue, 29 Jan 2013 12:13:46 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130127104747.GA3119@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012906-7606-0000-0000-000007D10E35
+To: John Stultz <john.stultz@linaro.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Sealey <matt@genesi-usa.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben@simtec.co.uk>, Ingo Molnar <mingo@redhat.com>,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: One of these things (CONFIG_HZ) is not like the others..
+References: <CAKGA1bkiowcO7OPSfPmaB6eRj_3FNr+4ONnaQHEZkpxB2XfduQ@mail.gmail.com> <20130121232322.GK15361@atomide.com> <50FE307F.9000701@ti.com> <201301220931.24570.arnd@arndb.de> <50FE666B.10902@ti.com> <20130122145113.GK23505@n2100.arm.linux.org.uk> <50FEAABA.6050307@ti.com> <510615F8.7010203@ti.com> <5107114C.4070307@linaro.org>
+In-Reply-To: <5107114C.4070307@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 27, 2013 at 09:47:47PM +1100, Josh Triplett wrote:
-> On Sat, Jan 26, 2013 at 04:05:20PM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > A number of kthreads have been added to rcutorture, but the shuffler
-> > task was not informed of them, and thus did not shuffle them.  This
-> > commit therefore adds the requisite shuffling.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> This also makes an unrelated semantic change, and several unrelated
-> whitespace changes.
-> 
-> > ---
-> >  kernel/rcutorture.c |   24 ++++++++++++++++++++----
-> >  1 files changed, 20 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-> > index a583f1c..3ebc8bf 100644
-> > --- a/kernel/rcutorture.c
-> > +++ b/kernel/rcutorture.c
-> > @@ -846,7 +846,7 @@ static int rcu_torture_boost(void *arg)
-> >  		/* Wait for the next test interval. */
-> >  		oldstarttime = boost_starttime;
-> >  		while (ULONG_CMP_LT(jiffies, oldstarttime)) {
-> > -			schedule_timeout_uninterruptible(1);
-> > +			schedule_timeout_interruptible(oldstarttime - jiffies);
-> 
-> This change doesn't seem related, and the commit message doesn't explain
-> it either.  Could you split it out into a separate commit and document
-> the rationale, please?
+Jon,
 
-Ah, it is related because the shuffling is trying to keep CPUs idle,
-which means that we don't want all the boost kthreads waking up every
-CPU every jiffy.  I agree that this is not obvious, so I have updated
-the commit message to call this out.
+On Tuesday 29 January 2013 05:31 AM, John Stultz wrote:
+> On 01/27/2013 10:08 PM, Santosh Shilimkar wrote:
+>> On Tuesday 22 January 2013 08:35 PM, Santosh Shilimkar wrote:
+>>> On Tuesday 22 January 2013 08:21 PM, Russell King - ARM Linux wrote:
+>>>> On Tue, Jan 22, 2013 at 03:44:03PM +0530, Santosh Shilimkar wrote:
 
-> >  			rcu_stutter_wait("rcu_torture_boost");
-> >  			if (kthread_should_stop() ||
-> >  			    fullstop != FULLSTOP_DONTSTOP)
-> > @@ -1318,19 +1318,35 @@ static void rcu_torture_shuffle_tasks(void)
-> >  				set_cpus_allowed_ptr(reader_tasks[i],
-> >  						     shuffle_tmp_mask);
-> >  	}
-> > -
-> >  	if (fakewriter_tasks) {
-> >  		for (i = 0; i < nfakewriters; i++)
-> >  			if (fakewriter_tasks[i])
-> >  				set_cpus_allowed_ptr(fakewriter_tasks[i],
-> >  						     shuffle_tmp_mask);
-> >  	}
-> > -
-> >  	if (writer_task)
-> >  		set_cpus_allowed_ptr(writer_task, shuffle_tmp_mask);
-> > -
-> 
-> These three whitespace changes seem unrelated as well.
+[..]
 
-Some cleanup while in the neighborhood.  ;-)
+>>> Thanks for expanding it. It is really helpful.
+>>>
+>>>> And I think further discussion is pointless until such research has
+>>>> been
+>>>> done (or someone who _really_ knows the time keeping/timer/sched code
+>>>> inside out comments.)
+>>>>
+>>> Fully agree about experimentation to re-asses the drift.
+>>>  From what I recollect from past, few OMAP customers did
+>>> report the time drift issue and that is how the switch
+>>> from 100 --> 128 happened.
+>>>
+>>> Anyway I have added the suggested task to my long todo list.
+>>>
+>> So I tried to see if any time drift with HZ = 100 on OMAP. I ran the
+>> setup for 62 hours and 27 mins with time synced up once with NTP server.
+>> I measure about ~174 millisecond drift which is almost noise considering
+>> the observed duration was ~224820000 milliseconds.
+>
+> So 174ms drift doesn't sound great, as < 2ms (often much less - though
+> that depends on how close the server is) can be expected with NTP.
+> Although its not clear how you were measuring: Did you see a max 174ms
+> offset while trying to sync with NTP? Was that offset shortly after
+> starting NTP or after NTP converged down?
+>
+To avoid the server latency, we didn't do continuous sync. The time was 
+synced in the beginning and after 62.5 hours (#ntpd -qg) and the drift
+of about 174 ms was observed. As you said this could be because of
+server sync time along with probably some addition from system calls
+from #ntpd. As mentioned, the other run with HZ = 128 which started
+15 hours 20 mins is already showing about 24 mS drift now. I will
+let it run for couple of more days just to have similar duration run.
 
-I added this to the commit message as well.
+Regards,
+santosh
 
-							Thanx, Paul
 
-> >  	if (stats_task)
-> >  		set_cpus_allowed_ptr(stats_task, shuffle_tmp_mask);
-> > +	if (stutter_task)
-> > +		set_cpus_allowed_ptr(stutter_task, shuffle_tmp_mask);
-> > +	if (fqs_task)
-> > +		set_cpus_allowed_ptr(fqs_task, shuffle_tmp_mask);
-> > +	if (shutdown_task)
-> > +		set_cpus_allowed_ptr(shutdown_task, shuffle_tmp_mask);
-> > +#ifdef CONFIG_HOTPLUG_CPU
-> > +	if (onoff_task)
-> > +		set_cpus_allowed_ptr(onoff_task, shuffle_tmp_mask);
-> > +#endif /* #ifdef CONFIG_HOTPLUG_CPU */
-> > +	if (stall_task)
-> > +		set_cpus_allowed_ptr(stall_task, shuffle_tmp_mask);
-> > +	if (barrier_cbs_tasks)
-> > +		for (i = 0; i < n_barrier_cbs; i++)
-> > +			if (barrier_cbs_tasks[i])
-> > +				set_cpus_allowed_ptr(barrier_cbs_tasks[i],
-> > +						     shuffle_tmp_mask);
-> > +	if (barrier_task)
-> > +		set_cpus_allowed_ptr(barrier_task, shuffle_tmp_mask);
-> 
-> The rest of this seems fine.
-> 
-> - Josh Triplett
-> 
 
