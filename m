@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab3A2NA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 08:00:56 -0500
-Received: from mga11.intel.com ([192.55.52.93]:1154 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755802Ab3A2NAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 08:00:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,559,1355126400"; 
-   d="scan'208";a="279764473"
-Date: Tue, 29 Jan 2013 15:01:27 +0200
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <5107c827d855d_f167d78c842627@blue.mail>
-In-Reply-To: <CAJd=RBAAdYef6+sHnD9kS=7mygSrgAD3cDW1wk8YsT2OK0sfZQ@mail.gmail.com>
-References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com> <1359365068-10147-7-git-send-email-kirill.shutemov@linux.intel.com> <CAJd=RBAAdYef6+sHnD9kS=7mygSrgAD3cDW1wk8YsT2OK0sfZQ@mail.gmail.com>
-Subject: Re: [PATCH, RFC 06/16] thp, mm: rewrite add_to_page_cache_locked() to
- support huge pages
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1756651Ab3A2NBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 08:01:25 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:34381 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3A2NBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 08:01:22 -0500
+Date: Tue, 29 Jan 2013 13:01:12 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Keun-O Park <kpark3469@gmail.com>
+Cc: rostedt@goodmis.org, sahara <keun-o.park@windriver.com>,
+        linux@arm.linux.org.uk, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: fix returning wrong CALLER_ADDRx
+Message-ID: <20130129130039.GA3817@linaro.org>
+References: <1357888690-24012-1-git-send-email-kpark3469@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357888690-24012-1-git-send-email-kpark3469@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Mon, Jan 28, 2013 at 5:24 PM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > @@ -443,6 +443,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
-> >                 pgoff_t offset, gfp_t gfp_mask)
-> >  {
-> >         int error;
-> > +       int nr = 1;
-> >
-> >         VM_BUG_ON(!PageLocked(page));
-> >         VM_BUG_ON(PageSwapBacked(page));
-> > @@ -450,31 +451,61 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
-> >         error = mem_cgroup_cache_charge(page, current->mm,
-> >                                         gfp_mask & GFP_RECLAIM_MASK);
-> >         if (error)
-> > -               goto out;
-> > +               return error;
+On Fri, Jan 11, 2013 at 04:18:10PM +0900, Keun-O Park wrote:
+> From: sahara <keun-o.park@windriver.com>
 > 
-> Due to PageCompound check, thp could not be charged effectively.
-> Any change added for charging it?
+> This makes return_address return correct value for ftrace feature.
+> unwind_frame does not update frame->lr but frame->pc for backtrace.
+> And, the initialization for data.addr was missing so that wrong value
+> returned when unwind_frame failed.
+> 
+> Signed-off-by: sahara <keun-o.park@windriver.com>
 
-I've missed this. Will fix.
+Reviewed-by: Dave Martin <dave.martin@linaro.org>
 
--- 
- Kirill A. Shutemov
+This is the same as a patch I previously posted:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-November/129381.html
+
+...except for the initialisation of data.addr to NULL, which is needed
+in order to prevent a garbage pointer being returned in the case where
+the unwinder fails to unwind a frame before the required level
+is reached.
+
+Cheers
+---Dave
+
+> ---
+>  arch/arm/kernel/return_address.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/return_address.c b/arch/arm/kernel/return_address.c
+> index 8085417..fafedd8 100644
+> --- a/arch/arm/kernel/return_address.c
+> +++ b/arch/arm/kernel/return_address.c
+> @@ -26,7 +26,7 @@ static int save_return_addr(struct stackframe *frame, void *d)
+>  	struct return_address_data *data = d;
+>  
+>  	if (!data->level) {
+> -		data->addr = (void *)frame->lr;
+> +		data->addr = (void *)frame->pc;
+>  
+>  		return 1;
+>  	} else {
+> @@ -41,7 +41,8 @@ void *return_address(unsigned int level)
+>  	struct stackframe frame;
+>  	register unsigned long current_sp asm ("sp");
+>  
+> -	data.level = level + 1;
+> +	data.level = level + 2;
+> +	data.addr = NULL;
+>  
+>  	frame.fp = (unsigned long)__builtin_frame_address(0);
+>  	frame.sp = current_sp;
+> -- 
+> 1.7.1
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
