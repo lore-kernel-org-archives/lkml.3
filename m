@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab3A2HjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:39:15 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38115 "EHLO bear.ext.ti.com"
+	id S1754621Ab3A2Hj0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:39:26 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42183 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754512Ab3A2HjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:39:09 -0500
+	id S1754512Ab3A2HjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 02:39:21 -0500
 From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -16,9 +16,9 @@ CC: <anilkumar@ti.com>, <tony@atomide.com>, <hs@denx.de>,
         <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
         <rob@landley.net>, <rob.herring@calxeda.com>,
         <grant.likely@secretlab.ca>, <manishv.b@ti.com>
-Subject: [PATCH V2 3/6] ARM: davinci: da850: add DT node for I2C0
-Date: Tue, 29 Jan 2013 13:08:51 +0530
-Message-ID: <1359445134-13323-4-git-send-email-manishv.b@ti.com>
+Subject: [PATCH V2 5/6] ARM: regulator: add tps6507x device tree data
+Date: Tue, 29 Jan 2013 13:08:53 +0530
+Message-ID: <1359445134-13323-6-git-send-email-manishv.b@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359445134-13323-1-git-send-email-manishv.b@ti.com>
 References: <1359445134-13323-1-git-send-email-manishv.b@ti.com>
@@ -28,71 +28,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add I2C0 device tree node information to da850-evm.
-Also, add I2C0 pin muxing information in da850-evm.
+Add device tree data for tps6507x regulator by adding
+all tps6507x regulator nodes. Regulators are initialized
+based on compatible name provided in tps6507x DT file.
+
+All tps6507x PMIC regulator device tree nodes are placed
+in a separate device tree include file (tps6507x.dtsi).
+tps6507x.dtsi file is created using datasheet
+http://www.ti.com/lit/ds/symlink/tps65070.pdf
+
+Tested on da850-evm.
 
 Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
 ---
 Changes since V1:
- - Updated i2c0 node names in dts and dtsi file.
- - Removed interrupt parent from i2c0 node.
- - Handled i2c0 pin mux inside i2c0 node.
+ - Updated Copyright information.
 
-:100644 100644 433027f... c9ed683... M	arch/arm/boot/dts/da850-evm.dts
-:100644 100644 5e0eb5c... 245ab9a... M	arch/arm/boot/dts/da850.dtsi
- arch/arm/boot/dts/da850-evm.dts |    5 +++++
- arch/arm/boot/dts/da850.dtsi    |   15 +++++++++++++++
- 2 files changed, 20 insertions(+), 0 deletions(-)
+:000000 100644 0000000... 4c326e5... A	arch/arm/boot/dts/tps6507x.dtsi
+ arch/arm/boot/dts/tps6507x.dtsi |   47 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index 433027f..c9ed683 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -27,6 +27,11 @@
- 		serial2: serial@1d0d000 {
- 			status = "okay";
- 		};
-+		i2c0: i2c0@1c22000 {
-+			status = "okay";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&i2c0_pins>;
+diff --git a/arch/arm/boot/dts/tps6507x.dtsi b/arch/arm/boot/dts/tps6507x.dtsi
+new file mode 100644
+index 0000000..4c326e5
+--- /dev/null
++++ b/arch/arm/boot/dts/tps6507x.dtsi
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/*
++ * Integrated Power Management Chip
++ * http://www.ti.com/lit/ds/symlink/tps65070.pdf
++ */
++
++&tps {
++	compatible = "ti,tps6507x";
++
++	regulators {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vdcdc1_reg: regulator@0 {
++			reg = <0>;
++			regulator-compatible = "VDCDC1";
 +		};
- 	};
- 	nand_cs3@62000000 {
- 		status = "okay";
-diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-index 5e0eb5c..245ab9a 100644
---- a/arch/arm/boot/dts/da850.dtsi
-+++ b/arch/arm/boot/dts/da850.dtsi
-@@ -56,6 +56,12 @@
- 					0x30 0x01100000  0x0ff00000
- 				>;
- 			};
-+			i2c0_pins: pinmux_i2c0_pins {
-+				pinctrl-single,bits = <
-+					/* I2C0_SDA,I2C0_SCL */
-+					0x10 0x00002200 0x0000ff00
-+				>;
-+			};
- 		};
- 		serial0: serial@1c42000 {
- 			compatible = "ns16550a";
-@@ -81,6 +87,15 @@
- 			interrupts = <61>;
- 			status = "disabled";
- 		};
-+		i2c0: i2c0@1c22000 {
-+			compatible = "ti,davinci-i2c";
-+			reg = <0x22000 0x1000>;
-+			clock-frequency = <100000>;
-+			interrupts = <15>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			status = "disabled";
++
++		vdcdc2_reg: regulator@1 {
++			reg = <1>;
++			regulator-compatible = "VDCDC2";
 +		};
- 	};
- 	nand_cs3@62000000 {
- 		compatible = "ti,davinci-nand";
++
++		vdcdc3_reg: regulator@2 {
++			reg = <2>;
++			regulator-compatible = "VDCDC3";
++		};
++
++		ldo1_reg: regulator@3 {
++			reg = <3>;
++			regulator-compatible = "LDO1";
++		};
++
++		ldo2_reg: regulator@4 {
++			reg = <4>;
++			regulator-compatible = "LDO2";
++		};
++
++	};
++};
 -- 
 1.7.4.1
 
