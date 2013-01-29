@@ -1,238 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab3A2NHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 08:07:51 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:55480 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3A2NHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 08:07:47 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v2] media: tvp514x: add OF support
-Date: Tue, 29 Jan 2013 18:37:11 +0530
-Message-Id: <1359464832-8875-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756662Ab3A2NIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 08:08:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28038 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457Ab3A2NIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 08:08:52 -0500
+Date: Tue, 29 Jan 2013 14:08:50 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Zdenek Kabelac <zkabelac@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
+Subject: Re: iwl3945 prints warning
+Message-ID: <20130129130850.GC2306@redhat.com>
+References: <5106867F.80309@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5106867F.80309@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Mon, Jan 28, 2013 at 03:09:03PM +0100, Zdenek Kabelac wrote:
+> I'm getting tthis warning printed with current 3.8-rc  kernel
+> My hw is Lenovo  T61.
+> 
+> 
+> [    5.920284] iwl3945 0000:03:00.0: loaded firmware version 15.32.2.9
+> [    5.976605] systemd[1]: Started NFS file locking service..
+> [    5.982624] NFSD: starting 90-second grace period (net ffffffff81aa08c0)
+> [    5.987930] ------------[ cut here ]------------
+> [    5.988026] WARNING: at lib/dma-debug.c:933 check_unmap+0x4ae/0x9a0()
+> [    5.988111] Hardware name: 6464CTO
+> [    5.988194] iwl3945 0000:03:00.0: DMA-API: device driver failed
+> to check map error[device address=0x00000000bb7a7800] [size=4096
+> bytes] [mapped as page]
 
-add OF support for the tvp514x driver.
+We have to check dma_map_*() error. Fixing all of calls to dma_map* in
+iwlegacy is not so simple. For now, you can just ignore this WARNING or
+disable CONFIG_DMA_API_DEBUG. 
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- Changes for v2:
-  1: Fixed review comment pointed by Heiko.
-  2: Fixed review comment pointed by Laurent.
-
- This patch is on top of following patches:
-  1: https://patchwork.kernel.org/patch/1930941/
-  2: http://patchwork.linuxtv.org/patch/16193/
-  3: https://patchwork.kernel.org/patch/1944901
-
- .../devicetree/bindings/media/i2c/tvp514x.txt      |   38 +++++++++++
- drivers/media/i2c/tvp514x.c                        |   70 ++++++++++++++++++--
- 2 files changed, 103 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp514x.txt
-
-diff --git a/Documentation/devicetree/bindings/media/i2c/tvp514x.txt b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
-new file mode 100644
-index 0000000..55d3ffd
---- /dev/null
-+++ b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
-@@ -0,0 +1,38 @@
-+* Texas Instruments TVP514x video decoder
-+
-+The TVP5146/TVP5146m2/TVP5147/TVP5147m1 device is high quality, single-chip
-+digital video decoder that digitizes and decodes all popular baseband analog
-+video formats into digital video component. The tvp514x decoder supports analog-
-+to-digital (A/D) conversion of component RGB and YPbPr signals as well as A/D
-+conversion and decoding of NTSC, PAL and SECAM composite and S-video into
-+component YCbCr.
-+
-+Required Properties :
-+- compatible: Must be "ti,tvp514x-decoder"
-+- hsync-active: HSYNC Polarity configuration for current interface.
-+- vsync-active: VSYNC Polarity configuration for current interface.
-+- data-active: Clock polarity of the current interface.
-+
-+Example:
-+
-+i2c0@1c22000 {
-+	...
-+	...
-+
-+	tvp514x@5c {
-+		compatible = "ti,tvp514x-decoder";
-+		reg = <0x5c>;
-+
-+		port {
-+			tvp514x_1: endpoint {
-+				/* Active high (Defaults to 0) */
-+				hsync-active = <1>;
-+				/* Active high (Defaults to 0) */
-+				hsync-active = <1>;
-+				/* Active low (Defaults to 0) */
-+				data-active = <0>;
-+			};
-+		};
-+	};
-+	...
-+};
-diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-index a4f0a70..24ce759 100644
---- a/drivers/media/i2c/tvp514x.c
-+++ b/drivers/media/i2c/tvp514x.c
-@@ -12,6 +12,7 @@
-  *     Hardik Shah <hardik.shah@ti.com>
-  *     Manjunath Hadli <mrh@ti.com>
-  *     Karicheri Muralidharan <m-karicheri2@ti.com>
-+ *     Prabhakar Lad <prabhakar.lad@ti.com>
-  *
-  * This package is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -33,7 +34,9 @@
- #include <linux/delay.h>
- #include <linux/videodev2.h>
- #include <linux/module.h>
-+#include <linux/of_device.h>
- 
-+#include <media/v4l2-of.h>
- #include <media/v4l2-async.h>
- #include <media/v4l2-device.h>
- #include <media/v4l2-common.h>
-@@ -930,6 +933,58 @@ static struct tvp514x_decoder tvp514x_dev = {
- 
- };
- 
-+#if defined(CONFIG_OF)
-+static const struct of_device_id tvp514x_of_match[] = {
-+	{.compatible = "ti,tvp514x-decoder", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, tvp514x_of_match);
-+
-+static struct tvp514x_platform_data
-+	*tvp514x_get_pdata(struct i2c_client *client)
-+{
-+	if (!client->dev.platform_data && client->dev.of_node) {
-+		struct tvp514x_platform_data *pdata;
-+		struct v4l2_of_endpoint bus_cfg;
-+		struct device_node *endpoint;
-+
-+		pdata = devm_kzalloc(&client->dev,
-+				sizeof(struct tvp514x_platform_data),
-+				GFP_KERNEL);
-+		client->dev.platform_data = pdata;
-+		if (!pdata)
-+			return NULL;
-+
-+		endpoint = of_get_child_by_name(client->dev.of_node, "port");
-+		if (endpoint)
-+			endpoint = of_get_child_by_name(endpoint, "endpoint");
-+
-+		if (!endpoint) {
-+			v4l2_info(client, "Using default data!!\n");
-+		} else {
-+			v4l2_of_parse_parallel_bus(endpoint, &bus_cfg);
-+
-+			if (bus_cfg.mbus_flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
-+				pdata->hs_polarity = 1;
-+			if (bus_cfg.mbus_flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
-+				pdata->vs_polarity = 1;
-+			if (bus_cfg.mbus_flags & V4L2_MBUS_PCLK_SAMPLE_RISING)
-+				pdata->clk_polarity = 1;
-+		}
-+	}
-+
-+	return client->dev.platform_data;
-+}
-+#else
-+#define tvp514x_of_match NULL
-+
-+static struct tvp514x_platform_data
-+	*tvp514x_get_pdata(struct i2c_client *client)
-+{
-+	return client->dev.platform_data;
-+}
-+#endif
-+
- /**
-  * tvp514x_probe() - decoder driver i2c probe handler
-  * @client: i2c driver client device structure
-@@ -941,6 +996,7 @@ static struct tvp514x_decoder tvp514x_dev = {
- static int
- tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
- {
-+	struct tvp514x_platform_data *pdata;
- 	struct tvp514x_decoder *decoder;
- 	struct v4l2_subdev *sd;
- 	int ret;
-@@ -949,22 +1005,25 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
- 		return -EIO;
- 
-+	pdata = tvp514x_get_pdata(client);
-+	if (!pdata) {
-+		v4l2_err(client, "No platform data!!\n");
-+		return -EPROBE_DEFER;
-+	}
-+
- 	decoder = devm_kzalloc(&client->dev, sizeof(*decoder), GFP_KERNEL);
- 	if (!decoder)
- 		return -ENOMEM;
- 
- 	/* Initialize the tvp514x_decoder with default configuration */
- 	*decoder = tvp514x_dev;
--	if (!client->dev.platform_data) {
--		v4l2_err(client, "No platform data!!\n");
--		return -EPROBE_DEFER;
--	}
-+
- 	/* Copy default register configuration */
- 	memcpy(decoder->tvp514x_regs, tvp514x_reg_list_default,
- 			sizeof(tvp514x_reg_list_default));
- 
- 	/* Copy board specific information here */
--	decoder->pdata = client->dev.platform_data;
-+	decoder->pdata = pdata;
- 
- 	/**
- 	 * Fetch platform specific data, and configure the
-@@ -1096,6 +1155,7 @@ MODULE_DEVICE_TABLE(i2c, tvp514x_id);
- 
- static struct i2c_driver tvp514x_driver = {
- 	.driver = {
-+		.of_match_table = tvp514x_of_match,
- 		.owner = THIS_MODULE,
- 		.name = TVP514X_MODULE_NAME,
- 	},
--- 
-1.7.4.1
-
+Stanislaw
