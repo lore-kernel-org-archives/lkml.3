@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3A2GcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 01:32:22 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:42240 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab3A2GcS (ORCPT
+	id S1753343Ab3A2GiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 01:38:11 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:34916 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab3A2GiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 01:32:18 -0500
-Message-ID: <51076CEE.8050706@openvz.org>
-Date: Tue, 29 Jan 2013 10:32:14 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
+	Tue, 29 Jan 2013 01:38:07 -0500
+Date: Mon, 28 Jan 2013 22:38:03 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Joe Millenbach <jmillenbach@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>,
+        "Mike A. Chan" <mikechan@google.com>,
+        Sheng Yang <sheng@linux.intel.com>,
+        Yunhong Jiang <yunhong.jiang@intel.com>,
+        Xiaohui Xin <xiaohui.xin@intel.com>,
+        Jun Nakajima <jun.nakajima@intel.com>,
+        Bruce Beare <bruce.j.beare@intel.com>,
+        Tom Keel <thomas.keel@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jamey Sharp <jamey@minilop.net>
+Subject: Re: linux-next: manual merge of the tty tree with the input tree
+Message-ID: <20130129063803.GC5797@core.coreip.homeip.net>
+References: <20130128204424.a3eedfee954ba6cc7a620652@canb.auug.org.au>
+ <20130128144615.GC2997@kroah.com>
+ <20130128173330.GA11769@core.coreip.homeip.net>
+ <CADwDc1AVOaA0N9evbR7A14udx+TRRQo6t_X_Nn15BdEEByupkg@mail.gmail.com>
+ <20130128224443.GA1083@core.coreip.homeip.net>
+ <20130128235916.GA3124@leaf>
+ <20130129002357.GA4420@core.coreip.homeip.net>
+ <20130129051321.GB3283@leaf>
+ <20130129053308.GB1083@core.coreip.homeip.net>
+ <CADwDc1CbNeDSNKDh0a01Nde7Mpz3xT6XpsTY4nui8DVt6M40Mw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 1/5] e1000e: fix resuming from runtime-suspend
-References: <20130118113019.6698.25941.stgit@zurg> <20130118114214.6698.24975.stgit@zurg> <CAErSpo4G=hQ79KJg_6QgoO9nmG-B5xA_ooph7G6Uu-9wGkrnTQ@mail.gmail.com> <12263202.uQHxo0zU24@vostro.rjw.lan>
-In-Reply-To: <12263202.uQHxo0zU24@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADwDc1CbNeDSNKDh0a01Nde7Mpz3xT6XpsTY4nui8DVt6M40Mw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> On Monday, January 28, 2013 04:05:33 PM Bjorn Helgaas wrote:
->> [+cc Rafael, author of patch you cited]
->>
->> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
->> <khlebnikov@openvz.org>  wrote:
->>> Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
->>> ("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
->>>
->>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->>> Cc: e1000-devel@lists.sourceforge.net
->>> Cc: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
->>> Cc: Bruce Allan<bruce.w.allan@intel.com>
->>> ---
->>>   drivers/net/ethernet/intel/e1000e/netdev.c |   13 ++++++++-----
->>>   1 file changed, 8 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
->>> index fbf75fd..2853c11 100644
->>> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
->>> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
->>> @@ -5691,14 +5691,17 @@ static int e1000_runtime_suspend(struct device *dev)
->>>          struct pci_dev *pdev = to_pci_dev(dev);
->>>          struct net_device *netdev = pci_get_drvdata(pdev);
->>>          struct e1000_adapter *adapter = netdev_priv(netdev);
->>> +       int retval;
->>> +       bool wake;
->>>
->>> -       if (e1000e_pm_ready(adapter)) {
->>> -               bool wake;
->>> +       if (!e1000e_pm_ready(adapter))
->>> +               return 0;
->>>
->>> -               __e1000_shutdown(pdev,&wake, true);
->>> -       }
->>> +       retval = __e1000_shutdown(pdev,&wake, true);
->>> +       if (!retval)
->>> +               e1000_power_off(pdev, true, wake);
->>>
->>> -       return 0;
->>> +       return retval;
->>>   }
->>>
->>>   static int e1000_idle(struct device *dev)
->>>
->
-> I'd like the changelog to say what the bug is and how it is being fixed in
-> general terms.
+Hi Joe,
 
-Ok, my bad.
+On Mon, Jan 28, 2013 at 10:26:47PM -0800, Joe Millenbach wrote:
+> On Mon, Jan 28, 2013 at 9:33 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > Please revert the input changes and add *ONE* new dependency to the
+> > serport driver.
+> >
+> > Thanks.
+> >
+> > --
+> > Dmitry
+> 
+> Apologies on this.  I must have misunderstood the problem originally,
+> and I definitely misunderstood your solution until I looked at it
+> again.  I just went through applying the changes I'd created minus the
+> driver/input changes, plus your SERPORT TTY dependency.  You were
+> right that it solves the dependency issue and is much more elegant.  I
+> thought it was going to leave dangling select dependencies for users
+> to deal with later.  Sorry I was so hesitant at first.
+> 
+> I'll be making up a new patch for Greg after I get it reviewed.
 
-Problem: ethernet device does not work (no carrier signal).
-Right after boot it goes to runtime-suspend and never wake up.
+Thank you for making the changes.
 
-Original code (before your commit) calls pci_prepare_to_sleep() and it
-calls pci_enable_wake() and switches device to one of D3 state.
+By the "dangling select dependencies" I assume you mean "select SERIO"
+that several drivers do? "select SERIO" selects only serio core which is
+self contained and has no additional dependencies [so far], that is why
+it is being selected rather than being depended upon.
 
-It seems redundant, because pci_pm_runtime_suspend() do the same thing
-after calling ->runtime_suspend callback. Or rather it did it before commit
-42eca2302146fed51335b95128e949ee6f54478f ("PCI: Don't touch card regs after
-runtime suspend D3") and third patch aimed fix this damage.
+Thanks.
 
-More over seems like calling pci_enable_wake() from e1000e isn't enough for my case,
-because my enthernet cannot wakeup from runtime-suspend without third patch.
-Seems like it's because pci_enable_wake() and pci_finish_runtime_suspend()
-calls different pratform-pm callbacks -- platform_pci_run_wake() /
-platform_pci_sleep_wake().
-
-All this looks messy and I don't know how it should work.
-
-If you prefer to minimize changes -- I can test how it would work without
-first (this) patch. Probably fine.
-
->
-> Thanks,
-> Rafael
->
->
-
+-- 
+Dmitry
