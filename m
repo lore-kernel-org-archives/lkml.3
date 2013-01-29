@@ -1,305 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab3A2Xg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 18:36:28 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:63727 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3A2Xg0 (ORCPT
+	id S1752112Ab3A2Xhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 18:37:34 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:5443 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3A2Xhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 18:36:26 -0500
-Date: Tue, 29 Jan 2013 18:36:23 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 1/3] ARM: vmregion: remove vmregion code entirely
-In-Reply-To: <1358990934-4893-2-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.LFD.2.02.1301291835590.6300@xanadu.home>
-References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com> <1358990934-4893-2-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 Jan 2013 18:37:31 -0500
+Message-ID: <1359502048.15120.75.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/4] ACPI / scan: Introduce struct acpi_scan_handler
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 29 Jan 2013 16:27:28 -0700
+In-Reply-To: <3143588.b2lxVgXVDr@vostro.rjw.lan>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan>
+	 <12270898.1ejuD0aCLg@vostro.rjw.lan>
+	 <1359500230.15120.58.camel@misato.fc.hp.com>
+	 <3143588.b2lxVgXVDr@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jan 2013, Joonsoo Kim wrote:
-
-> From: Joonsoo Kim <js1304@gmail.com>
+On Wed, 2013-01-30 at 00:19 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, January 29, 2013 03:57:10 PM Toshi Kani wrote:
+> > On Tue, 2013-01-29 at 22:32 +0100, Rafael J. Wysocki wrote:
+> > > On Tuesday, January 29, 2013 07:50:43 AM Toshi Kani wrote:
+> > > > On Tue, 2013-01-29 at 12:28 +0100, Rafael J. Wysocki wrote:
+> > > > > On Monday, January 28, 2013 07:35:39 PM Toshi Kani wrote:
+> > > > > > On Mon, 2013-01-28 at 13:59 +0100, Rafael J. Wysocki wrote:
+> > > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > > 
+> > > > > > > Introduce struct acpi_scan_handler for representing objects that
+> > > > > > > will do configuration tasks depending on ACPI device nodes'
+> > > > > > > hardware IDs (HIDs).
+> > > > > > > 
+> > > > > > > Currently, those tasks are done either directly by the ACPI namespace
+> > > > > > > scanning code or by ACPI device drivers designed specifically for
+> > > > > > > this purpose.  None of the above is desirable, however, because
+> > > > > > > doing that directly in the namespace scanning code makes that code
+> > > > > > > overly complicated and difficult to follow and doing that in
+> > > > > > > "special" device drivers leads to a great deal of confusion about
+> > > > > > > their role and to confusing interactions with the driver core (for
+> > > > > > > example, sysfs directories are created for those drivers, but they
+> > > > > > > are completely unnecessary and only increase the kernel's memory
+> > > > > > > footprint in vain).
+> > > > > > > 
+> > > > > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > > ---
+> > > > > > >  Documentation/acpi/scan_handlers.txt |   77 +++++++++++++++++++++++++++++++++++
+> > > > > > >  drivers/acpi/scan.c                  |   60 ++++++++++++++++++++++++---
+> > > > > > >  include/acpi/acpi_bus.h              |   14 ++++++
+> > > > > > >  3 files changed, 144 insertions(+), 7 deletions(-)
+> > > > > > > 
+> > > > > > > Index: test/include/acpi/acpi_bus.h
+> > > > > > > ===================================================================
+> > > > > > > --- test.orig/include/acpi/acpi_bus.h
+> > > > > > > +++ test/include/acpi/acpi_bus.h
+> > > > > > > @@ -84,6 +84,18 @@ struct acpi_driver;
+> > > > > > >  struct acpi_device;
+> > > > > > >  
+> > > > > > >  /*
+> > > > > > > + * ACPI Scan Handler
+> > > > > > > + * -----------------
+> > > > > > > + */
+> > > > > > > +
+> > > > > > > +struct acpi_scan_handler {
+> > > > > > > +	const struct acpi_device_id *ids;
+> > > > > > > +	struct list_head list_node;
+> > > > > > > +	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
+> > > > > > > +	void (*detach)(struct acpi_device *dev);
+> > > > > > > +};
+> > > > > > > +
+> > > > > > > +/*
+> > > > > > >   * ACPI Driver
+> > > > > > >   * -----------
+> > > > > > >   */
+> > > > > > > @@ -269,6 +281,7 @@ struct acpi_device {
+> > > > > > >  	struct acpi_device_wakeup wakeup;
+> > > > > > >  	struct acpi_device_perf performance;
+> > > > > > >  	struct acpi_device_dir dir;
+> > > > > > > +	struct acpi_scan_handler *handler;
+> > > > > > >  	struct acpi_driver *driver;
+> > > > > > >  	void *driver_data;
+> > > > > > >  	struct device dev;
+> > > > > > > @@ -382,6 +395,7 @@ int acpi_bus_receive_event(struct acpi_b
+> > > > > > >  static inline int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data)
+> > > > > > >  	{ return 0; }
+> > > > > > >  #endif
+> > > > > > > +int acpi_scan_add_handler(struct acpi_scan_handler *handler);
+> > > > > > >  int acpi_bus_register_driver(struct acpi_driver *driver);
+> > > > > > >  void acpi_bus_unregister_driver(struct acpi_driver *driver);
+> > > > > > >  int acpi_bus_scan(acpi_handle handle);
+> > > > > > > Index: test/drivers/acpi/scan.c
+> > > > > > > ===================================================================
+> > > > > > > --- test.orig/drivers/acpi/scan.c
+> > > > > > > +++ test/drivers/acpi/scan.c
+> > > > > > > @@ -53,6 +53,7 @@ static const struct acpi_device_id acpi_
+> > > > > > >  static LIST_HEAD(acpi_device_list);
+> > > > > > >  static LIST_HEAD(acpi_bus_id_list);
+> > > > > > >  static DEFINE_MUTEX(acpi_scan_lock);
+> > > > > > > +static LIST_HEAD(acpi_scan_handlers_list);
+> > > > > > >  DEFINE_MUTEX(acpi_device_lock);
+> > > > > > >  LIST_HEAD(acpi_wakeup_device_list);
+> > > > > > >  
+> > > > > > > @@ -62,6 +63,15 @@ struct acpi_device_bus_id{
+> > > > > > >  	struct list_head node;
+> > > > > > >  };
+> > > > > > >  
+> > > > > > > +int acpi_scan_add_handler(struct acpi_scan_handler *handler)
+> > > > > > > +{
+> > > > > > > +	if (!handler || !handler->attach)
+> > > > > > > +		return -EINVAL;
+> > > > > > > +
+> > > > > > > +	list_add_tail(&handler->list_node, &acpi_scan_handlers_list);
+> > > > > > > +	return 0;
+> > > > > > > +}
+> > > > > > > +
+> > > > > > >  /*
+> > > > > > >   * Creates hid/cid(s) string needed for modalias and uevent
+> > > > > > >   * e.g. on a device with hid:IBM0001 and cid:ACPI0001 you get:
+> > > > > > > @@ -1570,20 +1580,42 @@ static acpi_status acpi_bus_check_add(ac
+> > > > > > >  	return AE_OK;
+> > > > > > >  }
+> > > > > > >  
+> > > > > > > +static int acpi_scan_attach_handler(struct acpi_device *device)
+> > > > > > > +{
+> > > > > > > +	struct acpi_scan_handler *handler;
+> > > > > > > +	int ret = 0;
+> > > > > > > +
+> > > > > > > +	list_for_each_entry(handler, &acpi_scan_handlers_list, list_node) {
+> > > > > > > +		const struct acpi_device_id *id;
+> > > > > > > +
+> > > > > > > +		id = __acpi_match_device(device, handler->ids);
+> > > > > > > +		if (!id)
+> > > > > > > +			continue;
+> > > > > > > +
+> > > > > > > +		ret = handler->attach(device, id);
+> > > > > > > +		if (ret > 0) {
+> > > > > > > +			device->handler = handler;
+> > > > > > > +			break;
+> > > > > > > +		} else if (ret < 0) {
+> > > > > > > +			break;
+> > > > > > > +		}
+> > > > > > > +	}
+> > > > > > > +	return ret;
+> > > > > > > +}
+> > > > > > 
+> > > > > > Now that we have full control over the attach logic, it would be great
+> > > > > > if we can update it to match with the ACPI spec -- HID has priority over
+> > > > > > CIDs, and CIDs are also listed in their priority.  For example, Device-X
+> > > > > > has HID and CID.  In this case, this Device-X should be attached to
+> > > > > > Handler-A since it supports HID.  The current logic simply chooses a
+> > > > > > handler whichever registered before.  
+> > > > > > 
+> > > > > > Device-X: HID PNPID-A, CID PNPID-B
+> > > > > > Handler-A: PNPID-A
+> > > > > > Handler-B: PNPID-B
+> > > > > > 
+> > > > > > So, the attach logic should be something like:
+> > > > > > 
+> > > > > > list_for_each_entry(hwid, acpi_device->pnp.ids,) {
+> > > > > > 	list_for_each_entry(,&acpi_scan_handlers_list,)
+> > > > > > 		check if this handler supports a given hwid
+> > > > > > }
+> > > > > 
+> > > > > OK, I see the problem, but I think it's better to address it in a separate
+> > > > > patch on top of the current series.
+> > > > 
+> > > > I agree.
+> > > > 
+> > > > > I'm not sure what approach is best, though.  Do you think there should be two
+> > > > > passes the first of which will check HIDs only and the second one will check
+> > > > > CIDs?  Or do you have something different in mind?
+> > > > 
+> > > > HID and CIDs are already listed in their priority order in
+> > > > acpi_device->pnp.ids.  So, the single pass like I described above should
+> > > > work.
+> > > 
+> > > Well, I'm not sure if I understand you correctly.
+> > > 
+> > > The device is given and we need to find a handler for it.  So, it looks like
+> > > we first should check if any handler matches the HID.  This has to be a pass
+> > > through all handlers.  If there's no match, we need to check if any handler
+> > > matches any of the device IDs.  That will be the second pass, won't it?
+> > 
+> > acpi_device->pnp.ids has a list of HID->CID[0]->CID[1]..CID[n] since
+> > acpi_device_set_id() checks HID before CIDs.  So, the first pass is to
+> > check with the first entry of pnp.ids.  If no handler is found, then
+> > check the second entry, and so on.
 > 
-> Now, there is no user for vmregion.
-> So remove it.
-> 
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> I'd prefer to check HID and then all CIDs at once in accordance with the
+> following rule:
+> 1) Use the first handler that matches HID exactly.  If there's none:
+> 2) Use the first handler compatible with the given device.
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+What do you mean by all CIDs at once?  CIDs also have priority when
+there are multiple CIDs.  That is, CID[0] takes priority over CID[1].
+So, going down the pnp.ids list handles the ordering correctly.
 
 
+> > > The difficulty is that the first item in pnp.ids need not be *the* HID.
+> > > It only will be the HID if ACPI_VALID_HID is set in the device info in
+> > > acpi_device_set_id().  So perhaps we need to add a hid_valid bit in
+> > > device->flags and only do the "HID pass" if that is set?
+> > 
+> > I do not think such bit is necessary for this.  _HID is required (unless
+> > it has _ADR), but _CID is optional.  So, the valid cases are that a
+> > device object has HID only, has both HID and CID(s), or has none of them
+> > (i.e. _ADR device).  If there is a device with CID only, this is a FW
+> > bug and we just have to check with CID then.
 > 
-> diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
-> index 8a9c4cb..4e333fa 100644
-> --- a/arch/arm/mm/Makefile
-> +++ b/arch/arm/mm/Makefile
-> @@ -6,7 +6,7 @@ obj-y				:= dma-mapping.o extable.o fault.o init.o \
->  				   iomap.o
->  
->  obj-$(CONFIG_MMU)		+= fault-armv.o flush.o idmap.o ioremap.o \
-> -				   mmap.o pgd.o mmu.o vmregion.o
-> +				   mmap.o pgd.o mmu.o
->  
->  ifneq ($(CONFIG_MMU),y)
->  obj-y				+= nommu.o
-> diff --git a/arch/arm/mm/vmregion.c b/arch/arm/mm/vmregion.c
-> deleted file mode 100644
-> index a631016..0000000
-> --- a/arch/arm/mm/vmregion.c
-> +++ /dev/null
-> @@ -1,205 +0,0 @@
-> -#include <linux/fs.h>
-> -#include <linux/spinlock.h>
-> -#include <linux/list.h>
-> -#include <linux/proc_fs.h>
-> -#include <linux/seq_file.h>
-> -#include <linux/slab.h>
-> -
-> -#include "vmregion.h"
-> -
-> -/*
-> - * VM region handling support.
-> - *
-> - * This should become something generic, handling VM region allocations for
-> - * vmalloc and similar (ioremap, module space, etc).
-> - *
-> - * I envisage vmalloc()'s supporting vm_struct becoming:
-> - *
-> - *  struct vm_struct {
-> - *    struct vmregion	region;
-> - *    unsigned long	flags;
-> - *    struct page	**pages;
-> - *    unsigned int	nr_pages;
-> - *    unsigned long	phys_addr;
-> - *  };
-> - *
-> - * get_vm_area() would then call vmregion_alloc with an appropriate
-> - * struct vmregion head (eg):
-> - *
-> - *  struct vmregion vmalloc_head = {
-> - *	.vm_list	= LIST_HEAD_INIT(vmalloc_head.vm_list),
-> - *	.vm_start	= VMALLOC_START,
-> - *	.vm_end		= VMALLOC_END,
-> - *  };
-> - *
-> - * However, vmalloc_head.vm_start is variable (typically, it is dependent on
-> - * the amount of RAM found at boot time.)  I would imagine that get_vm_area()
-> - * would have to initialise this each time prior to calling vmregion_alloc().
-> - */
-> -
-> -struct arm_vmregion *
-> -arm_vmregion_alloc(struct arm_vmregion_head *head, size_t align,
-> -		   size_t size, gfp_t gfp, const void *caller)
-> -{
-> -	unsigned long start = head->vm_start, addr = head->vm_end;
-> -	unsigned long flags;
-> -	struct arm_vmregion *c, *new;
-> -
-> -	if (head->vm_end - head->vm_start < size) {
-> -		printk(KERN_WARNING "%s: allocation too big (requested %#x)\n",
-> -			__func__, size);
-> -		goto out;
-> -	}
-> -
-> -	new = kmalloc(sizeof(struct arm_vmregion), gfp);
-> -	if (!new)
-> -		goto out;
-> -
-> -	new->caller = caller;
-> -
-> -	spin_lock_irqsave(&head->vm_lock, flags);
-> -
-> -	addr = rounddown(addr - size, align);
-> -	list_for_each_entry_reverse(c, &head->vm_list, vm_list) {
-> -		if (addr >= c->vm_end)
-> -			goto found;
-> -		addr = rounddown(c->vm_start - size, align);
-> -		if (addr < start)
-> -			goto nospc;
-> -	}
-> -
-> - found:
-> -	/*
-> -	 * Insert this entry after the one we found.
-> -	 */
-> -	list_add(&new->vm_list, &c->vm_list);
-> -	new->vm_start = addr;
-> -	new->vm_end = addr + size;
-> -	new->vm_active = 1;
-> -
-> -	spin_unlock_irqrestore(&head->vm_lock, flags);
-> -	return new;
-> -
-> - nospc:
-> -	spin_unlock_irqrestore(&head->vm_lock, flags);
-> -	kfree(new);
-> - out:
-> -	return NULL;
-> -}
-> -
-> -static struct arm_vmregion *__arm_vmregion_find(struct arm_vmregion_head *head, unsigned long addr)
-> -{
-> -	struct arm_vmregion *c;
-> -
-> -	list_for_each_entry(c, &head->vm_list, vm_list) {
-> -		if (c->vm_active && c->vm_start == addr)
-> -			goto out;
-> -	}
-> -	c = NULL;
-> - out:
-> -	return c;
-> -}
-> -
-> -struct arm_vmregion *arm_vmregion_find(struct arm_vmregion_head *head, unsigned long addr)
-> -{
-> -	struct arm_vmregion *c;
-> -	unsigned long flags;
-> -
-> -	spin_lock_irqsave(&head->vm_lock, flags);
-> -	c = __arm_vmregion_find(head, addr);
-> -	spin_unlock_irqrestore(&head->vm_lock, flags);
-> -	return c;
-> -}
-> -
-> -struct arm_vmregion *arm_vmregion_find_remove(struct arm_vmregion_head *head, unsigned long addr)
-> -{
-> -	struct arm_vmregion *c;
-> -	unsigned long flags;
-> -
-> -	spin_lock_irqsave(&head->vm_lock, flags);
-> -	c = __arm_vmregion_find(head, addr);
-> -	if (c)
-> -		c->vm_active = 0;
-> -	spin_unlock_irqrestore(&head->vm_lock, flags);
-> -	return c;
-> -}
-> -
-> -void arm_vmregion_free(struct arm_vmregion_head *head, struct arm_vmregion *c)
-> -{
-> -	unsigned long flags;
-> -
-> -	spin_lock_irqsave(&head->vm_lock, flags);
-> -	list_del(&c->vm_list);
-> -	spin_unlock_irqrestore(&head->vm_lock, flags);
-> -
-> -	kfree(c);
-> -}
-> -
-> -#ifdef CONFIG_PROC_FS
-> -static int arm_vmregion_show(struct seq_file *m, void *p)
-> -{
-> -	struct arm_vmregion *c = list_entry(p, struct arm_vmregion, vm_list);
-> -
-> -	seq_printf(m, "0x%08lx-0x%08lx %7lu", c->vm_start, c->vm_end,
-> -		c->vm_end - c->vm_start);
-> -	if (c->caller)
-> -		seq_printf(m, " %pS", (void *)c->caller);
-> -	seq_putc(m, '\n');
-> -	return 0;
-> -}
-> -
-> -static void *arm_vmregion_start(struct seq_file *m, loff_t *pos)
-> -{
-> -	struct arm_vmregion_head *h = m->private;
-> -	spin_lock_irq(&h->vm_lock);
-> -	return seq_list_start(&h->vm_list, *pos);
-> -}
-> -
-> -static void *arm_vmregion_next(struct seq_file *m, void *p, loff_t *pos)
-> -{
-> -	struct arm_vmregion_head *h = m->private;
-> -	return seq_list_next(p, &h->vm_list, pos);
-> -}
-> -
-> -static void arm_vmregion_stop(struct seq_file *m, void *p)
-> -{
-> -	struct arm_vmregion_head *h = m->private;
-> -	spin_unlock_irq(&h->vm_lock);
-> -}
-> -
-> -static const struct seq_operations arm_vmregion_ops = {
-> -	.start	= arm_vmregion_start,
-> -	.stop	= arm_vmregion_stop,
-> -	.next	= arm_vmregion_next,
-> -	.show	= arm_vmregion_show,
-> -};
-> -
-> -static int arm_vmregion_open(struct inode *inode, struct file *file)
-> -{
-> -	struct arm_vmregion_head *h = PDE(inode)->data;
-> -	int ret = seq_open(file, &arm_vmregion_ops);
-> -	if (!ret) {
-> -		struct seq_file *m = file->private_data;
-> -		m->private = h;
-> -	}
-> -	return ret;
-> -}
-> -
-> -static const struct file_operations arm_vmregion_fops = {
-> -	.open	= arm_vmregion_open,
-> -	.read	= seq_read,
-> -	.llseek	= seq_lseek,
-> -	.release = seq_release,
-> -};
-> -
-> -int arm_vmregion_create_proc(const char *path, struct arm_vmregion_head *h)
-> -{
-> -	proc_create_data(path, S_IRUSR, NULL, &arm_vmregion_fops, h);
-> -	return 0;
-> -}
-> -#else
-> -int arm_vmregion_create_proc(const char *path, struct arm_vmregion_head *h)
-> -{
-> -	return 0;
-> -}
-> -#endif
-> diff --git a/arch/arm/mm/vmregion.h b/arch/arm/mm/vmregion.h
-> deleted file mode 100644
-> index 0f5a5f2..0000000
-> --- a/arch/arm/mm/vmregion.h
-> +++ /dev/null
-> @@ -1,31 +0,0 @@
-> -#ifndef VMREGION_H
-> -#define VMREGION_H
-> -
-> -#include <linux/spinlock.h>
-> -#include <linux/list.h>
-> -
-> -struct page;
-> -
-> -struct arm_vmregion_head {
-> -	spinlock_t		vm_lock;
-> -	struct list_head	vm_list;
-> -	unsigned long		vm_start;
-> -	unsigned long		vm_end;
-> -};
-> -
-> -struct arm_vmregion {
-> -	struct list_head	vm_list;
-> -	unsigned long		vm_start;
-> -	unsigned long		vm_end;
-> -	int			vm_active;
-> -	const void		*caller;
-> -};
-> -
-> -struct arm_vmregion *arm_vmregion_alloc(struct arm_vmregion_head *, size_t, size_t, gfp_t, const void *);
-> -struct arm_vmregion *arm_vmregion_find(struct arm_vmregion_head *, unsigned long);
-> -struct arm_vmregion *arm_vmregion_find_remove(struct arm_vmregion_head *, unsigned long);
-> -void arm_vmregion_free(struct arm_vmregion_head *, struct arm_vmregion *);
-> -
-> -int arm_vmregion_create_proc(const char *, struct arm_vmregion_head *);
-> -
-> -#endif
-> -- 
-> 1.7.9.5
-> 
+> In addition to that there's a number of objects that we assign artificial HIDs.
+> I think we should treat them as CIDs rather than as real HIDs in this regard.
+
+When an object does not support the _HID/_CID combination, it means that
+this type of objects can only support a single characteristic, which is
+the same as a device object with HID only.  Therefore, an artificial ID
+should be considered as an HID.
+
+
+Thanks,
+-Toshi
+
