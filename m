@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab3A2VUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:20:52 -0500
-Received: from smtp01.zmail.com ([212.227.218.32]:49423 "EHLO smtp01.zmail.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751747Ab3A2VUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:20:49 -0500
-X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 16:20:49 EST
-Date: Tue, 29 Jan 2013 21:09:58 +0000 (UTC)
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-kbuild@jasper.es, Rajesh Pawar <pawaraj@india.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: RE: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-Message-ID: <254788880.18003.1359493798737.JavaMail.tomcat@be12>
-In-Reply-To: <20130128142510.68092e10.akpm@linux-foundation.org>
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>,
- <20130128142510.68092e10.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Origin-Reference: 2_SU5CT1g=_PDIwMTMwMTI4MTQyNTEwLjY4MDkyZTEwLmFrcG1AbGludXgtZm91bmRhdGlvbi5vcmc+_REPLY
-X-Origin: Andrew Morton <akpm@linux-foundation.org>
-X-Origin-Recipient: Kyungsik Lee <kyungsik.lee@lge.com>
-X-Origin-Received: 29 Jan 2013 20:35:58 +0000 (UTC)
-X-Origin-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-X-Priority: 3
-From: Rajesh Pawar <pawaraj@india.com>
-X-Mailer: zMail Mailer (beta)
+	id S1752532Ab3A2VXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:23:38 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:44279 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab3A2VXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 16:23:36 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] ARM: dove: cleanup includes
+Date: Tue, 29 Jan 2013 22:23:09 +0100
+Message-Id: <1359494590-26005-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1355790269-10596-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1355790269-10596-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Andrew Morton <akpm@linux-foundation.org> wrote:
->
->On Sat, 26 Jan 2013 14:50:43 +0900
->Kyungsik Lee <kyungsik.lee@lge.com> wrote:
->> This patchset is for supporting LZ4 compressed kernel and initial ramdisk on
->> the x86 and ARM architectures.
->> 
->> According to [[http://code.google.com/p/lz4/,]] LZ4 is a very fast lossless
->> compression algorithm and also features an extremely fast decoder.
->> 
->> Kernel Decompression APIs are based on implementation by Yann Collet
->> ([[http://code.google.com/p/lz4/source/checkout]]).
->> De/compression Tools are also provided from the site above.
->> 
->> The initial test result on ARM(v7) based board shows that the size of kernel
->> with LZ4 compressed is 8% bigger than LZO compressed but the decompressing
->> speed is faster(especially under the enabled unaligned memory access).
->> 
->> Test: 3.4 based kernel built with many modules
->> Uncompressed kernel size: 13MB
->> lzo: 6.3MB, 301ms
->> lz4: 6.8MB, 251ms(167ms, with enabled unaligned memory access)
->> 
->> It seems that it___s worth trying LZ4 compressed kernel image or ramdisk 
->> for making the kernel boot more faster.
->>
->> ...
->>
->> 20 files changed, 663 insertions(+), 3 deletions(-)
->>
->> ...
->>
->What's this "with enabled unaligned memory access" thing? You mean "if
->the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"? If so,
->that's only x86, which isn't really in the target market for this
->patch, yes?
->It's a lot of code for a 50ms boot-time improvement. Does anyone have
->any opinions on whether or not the benefits are worth the cost?
+This patch cleans unneccessary includes and reorders the remaining
+includes in common dove code.
 
-BTW, what happened to the proposed LZO update - woudn't it better to merge this first?
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Changelog:
+[v2]
+- restructure patches to first cleanup common.c includes [1/2]
+  and then split legacy and DT specific code [2/2]
+- removed v1 patch "[PATCH 3/3] ARM: Dove: add Cubox sdhci card
+  detect gpio" that was taken independently
 
-Also, under the hood LZ4 seems to be quite similar to LZO, so probably
-LZO speed would also greatly benefit from unaligned access and some other
-ARM optimisations
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/mach-dove/common.c |   29 +++++++++--------------------
+ 1 file changed, 9 insertions(+), 20 deletions(-)
+
+diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
+index 89f4f99..be887feea 100644
+--- a/arch/arm/mach-dove/common.c
++++ b/arch/arm/mach-dove/common.c
+@@ -8,35 +8,24 @@
+  * warranty of any kind, whether express or implied.
+  */
  
+-#include <linux/kernel.h>
+-#include <linux/delay.h>
+-#include <linux/init.h>
+-#include <linux/platform_device.h>
+-#include <linux/pci.h>
+ #include <linux/clk-provider.h>
+ #include <linux/clk/mvebu.h>
+-#include <linux/ata_platform.h>
+-#include <linux/gpio.h>
++#include <linux/dma-mapping.h>
++#include <linux/init.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+-#include <asm/page.h>
+-#include <asm/setup.h>
+-#include <asm/timex.h>
++#include <linux/platform_data/dma-mv_xor.h>
++#include <linux/platform_data/usb-ehci-orion.h>
++#include <linux/platform_device.h>
+ #include <asm/hardware/cache-tauros2.h>
++#include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/mach/time.h>
+-#include <asm/mach/pci.h>
+-#include <mach/dove.h>
+-#include <mach/pm.h>
+ #include <mach/bridge-regs.h>
+-#include <asm/mach/arch.h>
+-#include <linux/irq.h>
+-#include <plat/time.h>
+-#include <linux/platform_data/usb-ehci-orion.h>
+-#include <linux/platform_data/dma-mv_xor.h>
+-#include <plat/irq.h>
++#include <mach/pm.h>
+ #include <plat/common.h>
+-#include <plat/addr-map.h>
++#include <plat/irq.h>
++#include <plat/time.h>
+ #include "common.h"
+ 
+ /*****************************************************************************
+-- 
+1.7.10.4
+
