@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab3A2H1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:27:10 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:56891 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab3A2H1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:27:07 -0500
-Date: Tue, 29 Jan 2013 08:26:56 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kyungsik Lee <kyungsik.lee@lge.com>, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>, hyojun.im@lge.com,
-        chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
-        namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>
-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-Message-ID: <20130129072656.GA18272@localhost.localdomain>
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
- <20130128142510.68092e10.akpm@linux-foundation.org>
+	id S1753790Ab3A2Hbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:31:44 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5804 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717Ab3A2Hbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 02:31:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,557,1355126400"; 
+   d="scan'208";a="254011951"
+Date: Tue, 29 Jan 2013 09:35:32 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ACPI / platform: Use struct acpi_scan_handler for
+ creating devices
+Message-ID: <20130129073532.GI2239@intel.com>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan>
+ <4311642.nDd2RCVeDc@vostro.rjw.lan>
+ <1540645.4oLGJ3spZ3@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130128142510.68092e10.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1540645.4oLGJ3spZ3@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 02:25:10PM -0800, Andrew Morton wrote:
+On Mon, Jan 28, 2013 at 02:01:14PM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> It's a lot of code for a 50ms boot-time improvement.  Does anyone have
-> any opinions on whether or not the benefits are worth the cost?
+> Currently, the ACPI namespace scanning code creates platform device
+> objects for ACPI device nodes whose IDs match the contents of the
+> acpi_platform_device_ids[] table.  However, this adds a superfluous
+> special case into acpi_bus_device_attach() and makes it more
+> difficult to follow than it has to be.  It also will make it more
+> difficult to implement removal code for those platform device objects
+> in the future.
+> 
+> For the above reasons, introduce a struct acpi_scan_handler object
+> for creating platform devices and move the code related to that from
+> acpi_bus_device_attach() to the .attach() callback of that object.
+> Also move the acpi_platform_device_ids[] table to acpi_platform.c.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-In the embedded space, quick boot is a really important feature to
-have. Many people resort to awful hacks in order to improve boot time,
-and so I would welcome this option.
+I've tested this with Haswell machine and once you fix the problem pointed
+out by Yasuaki Ishimat (returning always when ACPI_PLATFORM_CLK is set) the
+platform device creation works well. This is a nice cleanup and localizes
+the hard coded platform device table in one file making maintenance bit
+easier.
 
-I have seen arm systems that boot in 300 ms. I would say that 50 ms is
-maybe not such a small improvement after all.
+Feel free to add:
 
-Thanks,
-Richard
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
