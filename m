@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab3A2BAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 20:00:34 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:55016 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3A2BAc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 20:00:32 -0500
-Date: Tue, 29 Jan 2013 02:00:29 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 07/12] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
-Message-ID: <20130129010029.GY30577@one.firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org> <1359151245-13179-8-git-send-email-andi@firstfloor.org> <CABPqkBTM8w_RVrQNiyhBprMBjL5a0Q7Y9KQsKP3Ld62EZPSufQ@mail.gmail.com> <20130128231659.GW30577@one.firstfloor.org> <CABPqkBS=1gQCiWRQYJ8Y0QqFLvmkf0NiRivK-xpFmqwpXwyByA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBS=1gQCiWRQYJ8Y0QqFLvmkf0NiRivK-xpFmqwpXwyByA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1754192Ab3A2BFR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 20:05:17 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:58094 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab3A2BFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 20:05:15 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-pci@vger.kernel.org, Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 1/5] e1000e: fix resuming from runtime-suspend
+Date: Tue, 29 Jan 2013 02:11:23 +0100
+Message-ID: <12263202.uQHxo0zU24@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo4G=hQ79KJg_6QgoO9nmG-B5xA_ooph7G6Uu-9wGkrnTQ@mail.gmail.com>
+References: <20130118113019.6698.25941.stgit@zurg> <20130118114214.6698.24975.stgit@zurg> <CAErSpo4G=hQ79KJg_6QgoO9nmG-B5xA_ooph7G6Uu-9wGkrnTQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 01:30:19AM +0100, Stephane Eranian wrote:
-> >> The counter is reinstated to its state before the critical section but
-> >> the PMI cannot be
-> >> cancelled and there is no state left behind to tell what to do with it.
+On Monday, January 28, 2013 04:05:33 PM Bjorn Helgaas wrote:
+> [+cc Rafael, author of patch you cited]
+> 
+> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
+> <khlebnikov@openvz.org> wrote:
+> > Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+> > ("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
 > >
-> > The PMI is effectively spurious, but we use it to set back. Don't know
-> > what you mean with "cancel". It already happened of course.
+> > Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> > Cc: e1000-devel@lists.sourceforge.net
+> > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> > Cc: Bruce Allan <bruce.w.allan@intel.com>
+> > ---
+> >  drivers/net/ethernet/intel/e1000e/netdev.c |   13 ++++++++-----
+> >  1 file changed, 8 insertions(+), 5 deletions(-)
 > >
-> But when you do this, it seems you making INT_CP events unusable
-> for sampling, because you're resetting their value under the cover.
-> So what happens when you sample, especially with a fixed period?
+> > diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+> > index fbf75fd..2853c11 100644
+> > --- a/drivers/net/ethernet/intel/e1000e/netdev.c
+> > +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+> > @@ -5691,14 +5691,17 @@ static int e1000_runtime_suspend(struct device *dev)
+> >         struct pci_dev *pdev = to_pci_dev(dev);
+> >         struct net_device *netdev = pci_get_drvdata(pdev);
+> >         struct e1000_adapter *adapter = netdev_priv(netdev);
+> > +       int retval;
+> > +       bool wake;
+> >
+> > -       if (e1000e_pm_ready(adapter)) {
+> > -               bool wake;
+> > +       if (!e1000e_pm_ready(adapter))
+> > +               return 0;
+> >
+> > -               __e1000_shutdown(pdev, &wake, true);
+> > -       }
+> > +       retval = __e1000_shutdown(pdev, &wake, true);
+> > +       if (!retval)
+> > +               e1000_power_off(pdev, true, wake);
+> >
+> > -       return 0;
+> > +       return retval;
+> >  }
+> >
+> >  static int e1000_idle(struct device *dev)
+> >
 
-Sampling is forbidden for checkpointed events, the setup code
-enforces that. It's unlikely to be useful anyways.
+I'd like the changelog to say what the bug is and how it is being fixed in
+general terms.
 
-The main use case for checkpointing is perf stat -T and related
-counting usages.
-
-> >>
-> >> > +               if (event->attr.sample_period > 0 &&
-> >> > +                   event->attr.sample_period < 0x7fffffff)
-> >> > +                       return -EIO;
-> >> > +       }
-> Explain the 0x7fffffff to me? Is that the max period set by default when you
-> just count?
-
-Originally I had just > 0, but then I found that perf stat from the
-guest doesn't work anymore because it sets an very high overflow
-to accumulate counters.
-
-The 0x7fffffff is a somewhat arbitary threshold to detect this case.
+Thanks,
+Rafael
 
 
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
