@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab3A2JBc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 04:01:32 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:64737 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754695Ab3A2JBa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 04:01:30 -0500
-Date: Tue, 29 Jan 2013 10:01:26 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: nan chen <nachenn@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/2] mutex: use spin_[un]lock instead of
- arch_spin_[un]lock
-Message-ID: <20130129090126.GA5547@gmail.com>
-References: <1359019365-23646-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1359019365-23646-2-git-send-email-yuanhan.liu@linux.intel.com>
- <20130124161413.a3903fa4.akpm@linux-foundation.org>
- <20130125074053.GD18243@gmail.com>
- <CABBm8944FSNDZ2u=PJy0CsZmz=Vm7e+Y5jX+3UFLN5NOSGRgWQ@mail.gmail.com>
- <20130125092422.GA19541@gmail.com>
- <CABBm896XGVkubML9TyW_MTXMovd6nHoK0v24jbEDJOipzNqpDA@mail.gmail.com>
+	id S1755143Ab3A2JFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 04:05:33 -0500
+Received: from mga03.intel.com ([143.182.124.21]:23063 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754749Ab3A2JF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 04:05:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,559,1355126400"; 
+   d="scan'208";a="249616825"
+Date: Tue, 29 Jan 2013 17:06:20 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Huang Ying <ying.huang@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        lkp@linux.intel.com
+Subject: Re: aim7 performance regression by commit 5a50508 report from LKP
+Message-ID: <20130129090620.GT12678@yliu-dev.sh.intel.com>
+References: <20130129082537.GS12678@yliu-dev.sh.intel.com>
+ <20130129084400.GA5350@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABBm896XGVkubML9TyW_MTXMovd6nHoK0v24jbEDJOipzNqpDA@mail.gmail.com>
+In-Reply-To: <20130129084400.GA5350@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* nan chen <nachenn@gmail.com> wrote:
-
-> 2013/1/25 Ingo Molnar <mingo@kernel.org>
+On Tue, Jan 29, 2013 at 09:44:00AM +0100, Ingo Molnar wrote:
 > 
-> >
-> > * nan chen <nachenn@gmail.com> wrote:
-> >
-> > > 2013/1/25 Ingo Molnar <mingo@kernel.org>
-> > >
-> > > >
-> > > > * Andrew Morton <akpm@linux-foundation.org> wrote:
-> > > >
-> > > > > On Thu, 24 Jan 2013 17:22:45 +0800
-> > > > > Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> > > > >
-> > > > > > Use spin_[un]lock instead of arch_spin_[un]lock in mutex-debug.h so
-> > > > > > that we can collect the lock statistics of spin_lock_mutex from
-> > > > > > /proc/lock_stat.
-> > > >
-> > > > So, as per the discussion we don't want this patch, because we
-> > > > are using raw locks there to keep mutex lockdep overhead low.
-> > > > The value of lockdep-checking such a basic locking primitive is
-> > > > minimal - it's rarely tweaked and if it breaks we won't have a
-> > > > bootable kernel to begin with.
-> > > >
-> > > > So instead I suggested a different patch: adding a comment to
-> > > > explain why we don't lockdep-cover the mutex code spinlocks.
-> > > >
-> > > > > Also, I believe your patch permits this cleanup:
-> > > > >
-> > > > > ---
-> > > >
-> > a/kernel/mutex-debug.h~mutex-use-spin_lock-instead-of-arch_spin_lock-fix
-> > > > > +++ a/kernel/mutex-debug.h
-> > > > > @@ -42,14 +42,12 @@ static inline void mutex_clear_owner(str
-> > > > >               struct mutex *l = container_of(lock, struct mutex,
-> > > > wait_lock); \
-> > > > >                                                       \
-> > > > >               DEBUG_LOCKS_WARN_ON(in_interrupt());    \
-> > > > > -             local_irq_save(flags);                  \
-> > > > > -             spin_lock(lock);                        \
-> > > > > +             spin_lock_irqsave(lock, flags);         \
-> > > >
-> > > > Yes, I mentioned that yesterday, but we really don't want the
-> > > > change to begin with.
-> > > >
-> > > > Thanks,
-> > > >
-> > > >         Ingo
-> > > >
-> > >
-> > > Hi,
-> > >
-> > > Looks like in mutex.h, it does not disable local interrupt.
-> > > But why the code disable local interrupt in mutex-debug.h?
-> >
-> > To protect against preemption I suspect. preempt_disable() could
-> > be used in the mutex-debug.h variant I suppose.
-> >
-> > Thanks,
-> >
-> >         Ingo
-> >
+> * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
 > 
+> > [...]
 > 
-> spin_lock() itself already protects against preemption.
+> Very nice measurements and analysis, thanks!
+> 
+> > As stated above, anybody can have a chance to own the lock in 
+> > mutex once somebody release the lock. Well, there is only one 
+> > to own the lock in rwsem write lock, and the one is known 
+> > already: the one in the head of wait list. That would result 
+> > to more contention in rwsem write lock case, especially if the 
+> > one _will_ own the lock is not running now.
+> 
+> I think we should allow lock-steal between rwsem writers - that 
+> will not hurt fairness as most rwsem fairness concerns relate to 
+> reader vs. writer fairness.
 
-Yes, but mutex-debug.h does not use spin_lock(), it uses 
-arch_spin_lock():
+Agreed, and I'm sure this will improve performance and may make this
+performance regression go away. 
 
-#define spin_lock_mutex(lock, flags)                    \
-        do {                                            \
-                struct mutex *l = container_of(lock, struct mutex, wait_lock); \
-                                                        \
-                DEBUG_LOCKS_WARN_ON(in_interrupt());    \
-                local_irq_save(flags);                  \
-                arch_spin_lock(&(lock)->rlock.raw_lock);\
-                DEBUG_LOCKS_WARN_ON(l->magic != l);     \
-        } while (0)
+David, is that Ok to you? If so, I may have a try.
 
-The original question was why mutex-debug.h (unmodified) uses 
-irq disabling.
+> 
+> Am I correct to assume that all relevant users in this workload 
+> are down_write() users?
 
-Thanks,
+Yes, as commit 5a50508 just convert all mutex to down_write.
 
-	Ingo
+Thanks.
+
+	--yliu
+> 
+> You can see the type of lock use in:
+> 
+>    perf record -g
+>    perf report
+> 
+> I bet that allowing rwsem writer lock-steal would improve other 
+> workloads as well.
