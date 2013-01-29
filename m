@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab3A2QY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:24:28 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35170 "EHLO
+	id S1753289Ab3A2QYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:24:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35180 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab3A2QYY (ORCPT
+	with ESMTP id S1751591Ab3A2QYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jan 2013 11:24:24 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
@@ -13,9 +13,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V6 06/30] iov_iter: add bvec support
-Date: Tue, 29 Jan 2013 10:23:19 -0600
-Message-Id: <1359476623-10544-7-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH V6 14/30] bio: add bvec_length(), like iov_length()
+Date: Tue, 29 Jan 2013 10:23:27 -0600
+Message-Id: <1359476623-10544-15-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
@@ -26,197 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zach Brown <zab@zabbo.net>
 
-This adds a set of iov_iter_ops calls which work with memory which is
-specified by an array of bio_vec structs instead of an array of iovec
-structs.
-
-The big difference is that the pages referenced by the bio_vec elements
-are pinned.  They don't need to be faulted in and we can always use
-kmap_atomic() to map them one at a time.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
 ---
- fs/iov-iter.c      | 128 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h |  19 ++++++++
- 2 files changed, 147 insertions(+)
+ include/linux/bio.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/fs/iov-iter.c b/fs/iov-iter.c
-index bae1553..22ef9ca 100644
---- a/fs/iov-iter.c
-+++ b/fs/iov-iter.c
-@@ -5,6 +5,7 @@
- #include <linux/hardirq.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
-+#include <linux/bio.h>
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 820e7aa..f5f9829 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -290,6 +290,14 @@ extern struct bio_vec *bvec_alloc_bs(gfp_t, int, unsigned long *, struct bio_set
+ extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
+ extern unsigned int bvec_nr_vecs(unsigned short idx);
  
- static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
- 				   size_t base, size_t bytes, int atomic)
-@@ -86,6 +87,133 @@ static size_t ii_iovec_copy_to_user(struct page *page,
- 	return copied;
- }
- 
-+#ifdef CONFIG_BLOCK
-+/*
-+ * As an easily verifiable first pass, we implement all the methods that
-+ * copy data to and from bvec pages with one function.  We implement it
-+ * all with kmap_atomic().
-+ */
-+static size_t bvec_copy_tofrom_page(struct iov_iter *iter, struct page *page,
-+				    unsigned long page_offset, size_t bytes,
-+				    int topage)
++static inline ssize_t bvec_length(const struct bio_vec *bvec, unsigned long nr)
 +{
-+	struct bio_vec *bvec = (struct bio_vec *)iter->data;
-+	size_t bvec_offset = iter->iov_offset;
-+	size_t remaining = bytes;
-+	void *bvec_map;
-+	void *page_map;
-+	size_t copy;
-+
-+	page_map = kmap_atomic(page);
-+
-+	BUG_ON(bytes > iter->count);
-+	while (remaining) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec_offset >= bvec->bv_len);
-+		copy = min(remaining, bvec->bv_len - bvec_offset);
-+		bvec_map = kmap_atomic(bvec->bv_page);
-+		if (topage)
-+			memcpy(page_map + page_offset,
-+			       bvec_map + bvec->bv_offset + bvec_offset,
-+			       copy);
-+		else
-+			memcpy(bvec_map + bvec->bv_offset + bvec_offset,
-+			       page_map + page_offset,
-+			       copy);
-+		kunmap_atomic(bvec_map);
-+		remaining -= copy;
-+		bvec_offset += copy;
-+		page_offset += copy;
-+		if (bvec_offset == bvec->bv_len) {
-+			bvec_offset = 0;
-+			bvec++;
-+		}
-+	}
-+
-+	kunmap_atomic(page_map);
-+
++	ssize_t bytes = 0;
++	while (nr--)
++		bytes += (bvec++)->bv_len;
 +	return bytes;
 +}
 +
-+static size_t ii_bvec_copy_to_user_atomic(struct page *page, struct iov_iter *i,
-+					  unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+static size_t ii_bvec_copy_to_user(struct page *page, struct iov_iter *i,
-+				   unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+static size_t ii_bvec_copy_from_user_atomic(struct page *page,
-+					    struct iov_iter *i,
-+					    unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+static size_t ii_bvec_copy_from_user(struct page *page, struct iov_iter *i,
-+				     unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+
-+/*
-+ * bio_vecs have a stricter structure than iovecs that might have
-+ * come from userspace.  There are no zero length bio_vec elements.
-+ */
-+static void ii_bvec_advance(struct iov_iter *i, size_t bytes)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	size_t offset = i->iov_offset;
-+	size_t delta;
-+
-+	BUG_ON(i->count < bytes);
-+	while (bytes) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec->bv_len <= offset);
-+		delta = min(bytes, bvec->bv_len - offset);
-+		offset += delta;
-+		i->count -= delta;
-+		bytes -= delta;
-+		if (offset == bvec->bv_len) {
-+			bvec++;
-+			offset = 0;
-+		}
-+	}
-+
-+	i->data = (unsigned long)bvec;
-+	i->iov_offset = offset;
-+}
-+
-+/*
-+ * pages pointed to by bio_vecs are always pinned.
-+ */
-+static int ii_bvec_fault_in_readable(struct iov_iter *i, size_t bytes)
-+{
-+	return 0;
-+}
-+
-+static size_t ii_bvec_single_seg_count(struct iov_iter *i)
-+{
-+	const struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	if (i->nr_segs == 1)
-+		return i->count;
-+	else
-+		return min(i->count, bvec->bv_len - i->iov_offset);
-+}
-+
-+struct iov_iter_ops ii_bvec_ops = {
-+	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
-+	.ii_copy_to_user = ii_bvec_copy_to_user,
-+	.ii_copy_from_user_atomic = ii_bvec_copy_from_user_atomic,
-+	.ii_copy_from_user = ii_bvec_copy_from_user,
-+	.ii_advance = ii_bvec_advance,
-+	.ii_fault_in_readable = ii_bvec_fault_in_readable,
-+	.ii_single_seg_count = ii_bvec_single_seg_count,
-+};
-+EXPORT_SYMBOL(ii_bvec_ops);
-+#endif	/* CONFIG_BLOCK */
-+
- static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
- 				     size_t base, size_t bytes, int atomic)
- {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 5618301..955d79e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -343,6 +343,25 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
- 	return i->ops->ii_single_seg_count(i);
- }
- 
-+#ifdef CONFIG_BLOCK
-+extern struct iov_iter_ops ii_bvec_ops;
-+
-+struct bio_vec;
-+static inline void iov_iter_init_bvec(struct iov_iter *i,
-+				      struct bio_vec *bvec,
-+				      unsigned long nr_segs,
-+				      size_t count, size_t written)
-+{
-+	i->ops = &ii_bvec_ops;
-+	i->data = (unsigned long)bvec;
-+	i->nr_segs = nr_segs;
-+	i->iov_offset = 0;
-+	i->count = count + written;
-+
-+	iov_iter_advance(i, written);
-+}
-+#endif
-+
- extern struct iov_iter_ops ii_iovec_ops;
- 
- static inline void iov_iter_init(struct iov_iter *i,
+ #ifdef CONFIG_BLK_CGROUP
+ int bio_associate_current(struct bio *bio);
+ void bio_disassociate_task(struct bio *bio);
 -- 
 1.8.1.1
 
