@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab3A2TtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:49:10 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:49632 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab3A2TtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:49:04 -0500
-Date: Tue, 29 Jan 2013 11:49:01 -0800
-From: Tejun Heo <tj@kernel.org>
-To: aris@redhat.com
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v3 5/9] devcg: prepare may_access() for hierarchy support
-Message-ID: <20130129194901.GF6824@mtj.dyndns.org>
-References: <20130129190759.117458287@napanee.usersys.redhat.com>
- <20130129190759.993951510@napanee.usersys.redhat.com>
+	id S1754061Ab3A2Tuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:50:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753110Ab3A2Tui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 14:50:38 -0500
+Date: Tue, 29 Jan 2013 20:49:08 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lingzhu Xiang <lxiang@redhat.com>, Roman Rakus <rrakus@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] tty: set_termios/set_termiox should not return
+	-EINTR
+Message-ID: <20130129194908.GA29480@redhat.com>
+References: <20130129190720.GA28000@redhat.com> <20130129190741.GA28004@redhat.com> <51082470.2070601@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130129190759.993951510@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51082470.2070601@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 02:08:04PM -0500, aris@redhat.com wrote:
-> Currently may_access() is only able to verify if an exception is valid for the
-> current cgroup, which has the same behavior. With hierarchy, it'll be also used
-> to verify if a cgroup local exception is valid towards its cgroup parent, which
-> might have different behavior.
-> 
-> v2:
-> - updated patch description
-> - rebased on top of a new patch to expand the may_access() logic to make it
->   more clear
-> - fixed argument description order in may_access()
-> 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-> 
-> ---
->  security/device_cgroup.c |   44 +++++++++++++++++++++++++++-----------------
->  1 file changed, 27 insertions(+), 17 deletions(-)
-> 
-> --- github.orig/security/device_cgroup.c	2013-01-29 11:49:15.514669057 -0500
-> +++ github/security/device_cgroup.c	2013-01-29 11:49:15.795673240 -0500
-> @@ -354,9 +354,11 @@ 	return 0;
->   *		verify if a certain access is allowed.
->   * @dev_cgroup: dev cgroup to be tested against
->   * @refex: new exception
-> + * @behavior: behavior of the exception
->   */
-> -static int may_access(struct dev_cgroup *dev_cgroup,
-> -		      struct dev_exception_item *refex)
-> +static bool may_access(struct dev_cgroup *dev_cgroup,
-> +		       struct dev_exception_item *refex,
-> +		       enum devcg_behavior behavior)
+On 01/29, Jiri Slaby wrote:
+>
+> On 01/29/2013 08:07 PM, Oleg Nesterov wrote:
+> >
+> > Change set_termios/set_termiox to return -ERESTARTSYS to fix this
+> > particular problem.
+>
+> This looks reasonable. However given the link above says:
+>  You are not authorized to access bug #904907.
+> the description above is poor. What problem exactly does this fix?
 
-Probably belongs to the previous patch.  Other than that,
+A syscall must never return EINTR unless it can not be restarted
+(or it should not be restarted by, say, historical reasons).
 
-Acked-by: Tejun Heo <tj@kernel.org>
+In this case ioctl(TCSETAW) returns -EINTR even if it is interrupted
+by the signal which has the SA_RESTART handler. This doesn't look right
+no matter what.
 
-Thanks.
+> Why this should go to stable at all?
 
--- 
-tejun
+OK, this is up to you.
+
+But if this patch is correct, perhaps it should be backported. This
+-EINTR breaks /bin/bash which doesn't expect it, this leads to
+"*** glibc detected *** ./bash-4.1.2-14.el6/bin/bash: double free or corruption (out):"
+
+Perhaps /bin/bash is buggy too, I do not know. Probably Roman and
+Lingzhu can tell more.
+
+Oleg.
+
