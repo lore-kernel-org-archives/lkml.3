@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab3A2S4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 13:56:12 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:42612 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753485Ab3A2S4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 13:56:10 -0500
-Date: Tue, 29 Jan 2013 19:56:07 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Simon Que <sque@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH] Add -Werror build option
-Message-ID: <20130129185607.GF14444@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Simon Que <sque@chromium.org>, linux-kernel@vger.kernel.org,
-	Mandeep Singh Baines <msb@chromium.org>
-References: <1359485478-23639-1-git-send-email-sque@chromium.org>
+	id S1754202Ab3A2S4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 13:56:25 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:41228 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab3A2S4W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 13:56:22 -0500
+Message-ID: <51081B3B.5080001@linux.vnet.ibm.com>
+Date: Tue, 29 Jan 2013 12:55:55 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1359485478-23639-1-git-send-email-sque@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv3 5/6] zswap: add to mm/
+References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359409767-30092-6-git-send-email-sjenning@linux.vnet.ibm.com> <20130129062756.GH4752@blaptop>
+In-Reply-To: <20130129062756.GH4752@blaptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012918-2398-0000-0000-00001088C6BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 10:51:18AM -0800, Simon Que wrote:
-> Add a config option "ERROR_ON_WARNING" that adds the "-Werror" flag to
-> gcc, which turns warnings into errors.
+On 01/29/2013 12:27 AM, Minchan Kim wrote:
+<snip>
+> On Mon, Jan 28, 2013 at 03:49:26PM -0600, Seth Jennings wrote:
+<snip>
+>> +/*********************************
+>> +* tunables
+>> +**********************************/
+>> +/* Enable/disable zswap (enabled by default, fixed at boot for now) */
+>> +static bool zswap_enabled;
+>> +module_param_named(enabled, zswap_enabled, bool, 0);
 > 
-> This option enables developers to set a stricter level of code checking
-> for kernel code: all code must be warning-free.
+> It seems default is disable at the moment?
 
-And we want this because...?
+I completely missed what you were saying before.  The comment is
+incorrect :)  I'll fix it.
 
--- 
-Regards/Gruss,
-    Boris.
+Seth
 
-Sent from a fat crate under my desk. Formatting is fine.
---
