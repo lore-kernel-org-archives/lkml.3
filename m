@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3A2CGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 21:06:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48478 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755388Ab3A2CGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 21:06:05 -0500
-Message-ID: <51072E84.4080509@zytor.com>
-Date: Mon, 28 Jan 2013 18:05:56 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755917Ab3A2CHr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 21:07:47 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:1311 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab3A2CHn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 21:07:43 -0500
+Message-ID: <51072EDA.2000704@huawei.com>
+Date: Tue, 29 Jan 2013 10:07:22 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 0/2] Secure Boot: More controversial changes
-References: <1359391662-26120-1-git-send-email-matthew.garrett@nebula.com>
-In-Reply-To: <1359391662-26120-1-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jiang Liu <liuj97@gmail.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com> <1358525267-14268-5-git-send-email-jiang.liu@huawei.com> <3500982.MUDp6kKU3R@vostro.rjw.lan> <CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com> <CAE9FiQVM4+Wirpb3_D0Zxi4r1p9SAMi4ZrNYr=-eas-C6pKJYA@mail.gmail.com> <CAErSpo7WbbzZ8cKfLvuE331ofWir2vswUnYaxVLBBYGFowedXQ@mail.gmail.com> <CAE9FiQXkrYubkgbbOXmrEXvGZBZXMZ6sh8kGTpF1_=tD3OMPJw@mail.gmail.com> <CAErSpo7vHXdh=ogvfZnxx9gqgiifWGa=XzS+ZKjXFFOPue4TTw@mail.gmail.com> <CAE9FiQU84OSQrQJEGAQTDzVv8kGCi+fmgM8+ycoMXMUfHsNe-g@mail.gmail.com>
+In-Reply-To: <CAE9FiQU84OSQrQJEGAQTDzVv8kGCi+fmgM8+ycoMXMUfHsNe-g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 08:47 AM, Matthew Garrett wrote:
-> These patches break functionality that people rely on without providing
-> any functional equivalent, so I'm not suggesting that they be merged
-> as-is. kexec allows trivial circumvention of the trust model (it's
-> trivially equivalent to permitting module loading, for instance) and
-> hibernation allows similar attacks (disable swap, write a pre-formed resume
-> image to swap, reboot). The hibernation patch also shows up a different
-> issue - some userspace drops all capabilities, resulting in things that
-> userspace expects to work no longer working. This seems like an
-> unsurprising result, but breaking userspace is bad and so it'd be nice to
-> figure out if there's another way to handle this.
+On 2013-1-29 6:58, Yinghai Lu wrote:
+> On Mon, Jan 28, 2013 at 2:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>
+>> CONFIG_ACPI_PCI_SLOT=y in RHEL6, so evidently they have this problem.
+> 
+> oh, I only checked opensuse that has that set to m.
+> 
+>>
+>> Asking users to edit module.conf by hand is not a solution, just like
+>> asking users to boot with a command line option is not a solution.
+>> That sort of stuff is fine for a hobbyist OS intended only for techie
+>> geeks.  It's not fine for Linux.
+> 
+> not sure. add something in command line or conf files.
+> but recompile kernel is another story.
+> 
+>>
+>> If you would give a concrete example of the ACPI namespace info and
+>> device config, hotplug sequence, etc., required to show the problem,
+>> we could have a useful discussion about ways to fix it.  But if all
+>> you have is FUD about "this might break and users won't have the
+>> ability to edit modules.conf," that doesn't help me see why this patch
+>> is a bad idea.
+> 
+> Never mind, We should save your bandwidth to more patches.
+Hi Yinghai,
+	Could we use quirk to auto-disable PCIe native hotplug for
+problematic platforms?
+Regards!
+Gerry
 
-These at the very least need some kind of CONFIG_WEAK_SECURE_BOOT option 
-or something like that.
+> 
+> Yinghai
+> 
+> .
+> 
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
