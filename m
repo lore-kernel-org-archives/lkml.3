@@ -1,62 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab3A2HQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:16:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34264 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab3A2HQk convert rfc822-to-8bit (ORCPT
+	id S1751642Ab3A2HTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:19:49 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:64492 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab3A2HTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:16:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,557,1355126400"; 
-   d="scan'208";a="254003909"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Mathieu Chouquet-Stringer <mathieu@csetco.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>
-Subject: RE: [Ilw] iwlwifi/iwldvm soft lockup with 3.8.0-rc5 (was: almost
- unusable on 3.8.0-rc5)
-Thread-Topic: [Ilw] iwlwifi/iwldvm soft lockup with 3.8.0-rc5 (was: almost
- unusable on 3.8.0-rc5)
-Thread-Index: AQHN/ar8A9PKTNcEVEuBvT+o3zOfR5hf5A0g
-Date: Tue, 29 Jan 2013 07:16:34 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB301925D7A@HASMSX103.ger.corp.intel.com>
-References: <20130128225657.GA17533@kashmir>
-In-Reply-To: <20130128225657.GA17533@kashmir>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.11]
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 Jan 2013 02:19:47 -0500
+Date: Tue, 29 Jan 2013 09:11:08 +0200
+From: Pekka Enberg <penberg@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, stable@vger.kernel.org,
+        Jerome Marchand <jmarchan@redhat.com>
+Message-ID: <5107760ca0614_5bf811b9fe4132b@golgotha.mail>
+In-Reply-To: <20130128232145.GA2666@blaptop>
+References: <1359333506-13599-1-git-send-email-minchan@kernel.org> <CAOJsxLFg_5uhZsvPmVVC0nnsZLGpkJ0W6mHa=aavmguLGuTTnA@mail.gmail.com> <20130128232145.GA2666@blaptop>
+Subject: Re: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial write
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 29, 2013 at 1:21 AM, Minchan Kim <minchan@kernel.org> wrote:
+> How about this?
+> ------------------------- >8 -------------------------------
 > 
-> 	Hello all,
+> From 9f8756ae0b0f2819f93cb94dcd38da372843aa12 Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Mon, 21 Jan 2013 13:58:52 +0900
+> Subject: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial read/write
 > 
-> Oh the irony, I was just starting an email saying wifi is almost unusable for me
-> with 3.8 and my machine (a thinkpad t530) completely froze while typing it...
+> Now zram allocates new page with GFP_KERNEL in zram I/O path
+> if IO is partial. Unfortunately, It may cause deadlock with
+> reclaim path like below.
 > 
-> I was going to say I'm getting a lot of:
-> iwlwifi 0000:03:00.0: fail to flush all tx fifo queues
+> write_page from fs
+> fs_lock
+> allocation(GFP_KERNEL)
+> reclaim
+> pageout
+> 				write_page from fs
+> 				fs_lock <-- deadlock
 > 
+> This patch fixes it by using GFP_ATOMIC and GFP_NOIO.
+> In read path, we called kmap_atomic so that we need GFP_ATOMIC
+> while we need GFP_NOIO in write path.
 
-Please try this one:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=c3e5d7181afb66657393066bccce0956fab09ab3
+The patch description makes sense now. Thanks!
 
-as you can see, it is in mainline already.
----------------------------------------------------------------------
-A member of the Intel Corporation group of companies
+On Tue, Jan 29, 2013 at 1:21 AM, Minchan Kim <minchan@kernel.org> wrote:
+> We could use GFP_IO instead of GFP_ATOMIC in zram_bvec_read with
+> some modification related to buffer allocation in case of partial IO.
+> But it needs more churn and prevent merge this patch into stable
+> if we should send this to stable so I'd like to keep it as simple
+> as possbile. GFP_IO usage could be separate patch after we merge it.
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+I don't see why something like below couldn't be merged for stable.
+Going for GFP_ATOMIC might seem like the simplest thing to go for but
+usually bites you in the end.
+
+			Pekka
+
+------------------------- >8 -------------------------------
+
+>From 936a12b423c58542628d6fd683e859f752eb3d41 Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Mon, 21 Jan 2013 13:58:52 +0900
+Subject: [PATCH] zram: Fix deadlock bug in partial read/write
+
+Now zram allocates new page with GFP_KERNEL in zram I/O path
+if IO is partial. Unfortunately, It may cause deadlock with
+reclaim path like below.
+
+write_page from fs
+fs_lock
+allocation(GFP_KERNEL)
+reclaim
+pageout
+				write_page from fs
+				fs_lock <-- deadlock
+
+This patch fixes it by using GFP_NOIO.  In read path, we
+reorganize code flow so that kmap_atomic is called after the
+GFP_NOIO allocation.
+
+Cc: stable@vger.kernel.org
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+[ penberg@kernel.org: don't use GFP_ATOMIC ]
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ drivers/staging/zram/zram_drv.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index f2a73bd..071e058 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -228,11 +228,12 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 		return 0;
+ 	}
+ 
+-	user_mem = kmap_atomic(page);
+ 	if (is_partial_io(bvec))
+ 		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-	else
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
++
++	user_mem = kmap_atomic(page);
++	if (!is_partial_io(bvec))
+ 		uncmem = user_mem;
+ 
+ 	if (!uncmem) {
+@@ -279,7 +280,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		 * This is a partial IO. We need to read the full page
+ 		 * before to write the changes.
+ 		 */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			ret = -ENOMEM;
+-- 
+1.7.11.7
 
