@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3A2U5F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 15:57:05 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:44093 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3A2U5B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 15:57:01 -0500
-Message-ID: <5108378F.80003@ahsoftware.de>
-Date: Tue, 29 Jan 2013 21:56:47 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753000Ab3A2U6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 15:58:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549Ab3A2U6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 15:58:53 -0500
+Date: Tue, 29 Jan 2013 17:58:36 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH v6 2/2] perf stat: add interval printing
+Message-ID: <20130129205836.GB6896@infradead.org>
+References: <1358860732-4435-1-git-send-email-eranian@google.com>
+ <1358860732-4435-3-git-send-email-eranian@google.com>
+ <20130125025247.GA16249@infradead.org>
+ <CABPqkBT-JuR=3q4X2o7Et9idd3T5Ut_GSnhpQKbqfr5SC4eDWA@mail.gmail.com>
+ <20130128175938.GA15351@infradead.org>
+ <CABPqkBS9yPGb3DOZv9qTULZrP+-8Zrbri99ZGBt7KopTfPWEfQ@mail.gmail.com>
+ <20130128192151.GC15351@infradead.org>
+ <CABPqkBQRZaErbJeJjcCZYzJOFe0WuAN3s5KYVojgTT8N3STKXg@mail.gmail.com>
+ <20130129014125.GD15351@infradead.org>
+ <CABPqkBRJD1DEBGO8xniQwzVFg8_R2SbbebQ1JefZ_f39oms9yg@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Bernie Thompson <bernie@plugable.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/3 v2] fb: udlfb: fix hang at disconnect
-References: <50F2A310.5010006@ahsoftware.de> <1359139768-32294-1-git-send-email-holler@ahsoftware.de> <1359139768-32294-2-git-send-email-holler@ahsoftware.de> <20130128162238.7fba92fe.akpm@linux-foundation.org> <51071E21.9030008@ahsoftware.de> <5107A5ED.7020009@ahsoftware.de> <5107AE4F.9000809@ahsoftware.de> <5107F014.4030704@ahsoftware.de> <5108329E.2050802@ahsoftware.de>
-In-Reply-To: <5108329E.2050802@ahsoftware.de>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRJD1DEBGO8xniQwzVFg8_R2SbbebQ1JefZ_f39oms9yg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.01.2013 21:35, schrieb Alexander Holler:
->
-> So, if the above down_timeout_killable() is only down_interruptible(),
-> as in kernel 3.7.5, the  box would not shutdown afterwards, because on
-> shutdown no signal would be send to that kernel-thread which called
-> dlfb_free_urb_list().
->
-> A last note: dlfb_usb_disconnect() (thus dlfb_free_urb_list()) isn't
-> called on shutdown if the device would still be connected. So the
-> problem only might happen, if the screen will be disconnected before
-> shutdown (and an urb gets missed). So the subject of my patch is
-> correct. ;)
->
-> </monologue>
+Em Tue, Jan 29, 2013 at 12:48:51PM +0100, Stephane Eranian escreveu:
+> Arnaldo,
+> 
+> V7 posted. It's a rebase done against your perf/core, was no big deal.
+> Let me know if it works for you now.
 
-Hmm, wrong, sorry, I still have something to add: As no signal arrives 
-at all, v1 of that patch is enough and the implementation of 
-down_timeout_killable() isn't necessary at all.
+Thanks, it is now merged in my perf/core branch,
 
-If there is a chance that the patch would be Acked-by by someone, I 
-would made a v3, replacing
-
-+		ret = down_timeout(&dev->urbs.limit_sem, GET_URB_TIMEOUT);
-
-in v1 with
-
-+		ret = down_timeout(&dev->urbs.limit_sem, FREE_URB_TIMEOUT);
-
-as this seems to be what it should be.
-
-Regards,
-
-Alexander
+- Arnaldo
+ 
+> 
+> On Tue, Jan 29, 2013 at 2:41 AM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+> > Em Mon, Jan 28, 2013 at 11:45:56PM +0100, Stephane Eranian escreveu:
+> >> On Mon, Jan 28, 2013 at 8:21 PM, Arnaldo Carvalho de Melo
+> >> <acme@redhat.com> wrote:
+> >> > Em Mon, Jan 28, 2013 at 07:26:17PM +0100, Stephane Eranian escreveu:
+> >> >> On Mon, Jan 28, 2013 at 6:59 PM, Arnaldo Carvalho de Melo
+> >> >> <acme@redhat.com> wrote:
+> >> >> > Em Fri, Jan 25, 2013 at 04:21:11PM +0100, Stephane Eranian escreveu:
+> >> >> >> My patches are always relative to:
+> >> >> >> git://git.kernel.org/pub/scm/linux/kernel/git/tip.tip.git
+> >
+> >> >> >> Do you still need to rebase against your tree?
+> >
+> >> >> > Well, userspace code normally is developed on my tree and eventually
+> >> >> > goes to the one you mentioned. If you make sure that now, that both are
+> >> >> > synched after some weeks, then probably it'll work with my tree.
+> >
+> >> >> How's the kernel proper side of your tree sync'd with tip.git? I cannot have
+> >> >> the kernel patches for one tree and the perf patches for another. That's a
+> >> >> lot of overhead especially when it comes to testing.
+> >
+> >> > Normally regularly, right now it seems all is synched.
+> >
+> >> Ok, will resubmit the series against your tree then.
+> >
+> > Also everytime Ingo merges I rebase my tree against tip/perf/core, if
+> > you ever need something that is in some other branch that everybody
+> > agrees will go upstream, like tip/perf/urgent or Linus's, just let me
+> > know and I'll coordinate with Ingo and merge it into acme/perf/core.
+> >
+> > Talking about that I need to merge tip/perf/urgent, Jiri needs that
+> > precise attribute revert...
+> >
+> > - Arnaldo
