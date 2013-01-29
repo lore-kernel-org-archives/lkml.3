@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3A2FS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 00:18:58 -0500
-Received: from mga01.intel.com ([192.55.52.88]:62740 "EHLO mga01.intel.com"
+	id S1753342Ab3A2FTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 00:19:11 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35100 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab3A2FSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 00:18:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,556,1355126400"; 
-   d="scan'208";a="283386808"
-Date: Tue, 29 Jan 2013 07:22:47 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line base
-Message-ID: <20130129052247.GH2239@intel.com>
-References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
+	id S1753168Ab3A2FTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 00:19:09 -0500
+From: "Kumar, Anil" <anilkumar.v@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+CC: <b-cousson@ti.com>, <tony@atomide.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <linux@arm.linux.org.uk>, <nsekhar@ti.com>,
+        <khilman@deeprootsystems.com>, <hs@denx.de>, <anilkumar.v@ti.com>
+Subject: [PATCH 2/2] ARM: davinci: da850: configure CS2(aemif) for norflash
+Date: Tue, 29 Jan 2013 10:49:56 +0530
+Message-ID: <1359436796-25135-3-git-send-email-anilkumar.v@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359436796-25135-1-git-send-email-anilkumar.v@ti.com>
+References: <1359436796-25135-1-git-send-email-anilkumar.v@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 10:29:43AM +0530, Viresh Kumar wrote:
-> Next time, please direct these mails to my Linaro id :)
-> 
-> On Mon, Jan 28, 2013 at 4:34 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > On some hardware configurations we have got the request line with the offset.
-> > The patch introduces convert_slave_id() helper for that cases. The request line
-> > base is got from the platform device resources provided by the IORESOURCE_DMA
-> > type.
-> 
-> @Vinod: Is IORESOURCE_DMA suitable for this purpose?
+Configure 16 bit data bus width for CS2(aemif) to use the norflash on
+DA850.
 
-We had a discusssion about this with Andy as well. The thing is that there
-is no way in current resource to pass DMA request line numbers supported by
-the controller to the driver in a generic way. We on the other hand have to
-deal this somehow as we have a shared DMA controller on Lynxpoint where the
-offset will start from 16 (but it might be something else as well).
+Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
+---
+:100644 100644 37c27af... 540e284... M	arch/arm/mach-davinci/da8xx-dt.c
+ arch/arm/mach-davinci/da8xx-dt.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-Is there something which limits the usage of IORESOUCE_DMA to be only
-usable for ISA DMA channels?
+diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+index 37c27af..540e284 100644
+--- a/arch/arm/mach-davinci/da8xx-dt.c
++++ b/arch/arm/mach-davinci/da8xx-dt.c
+@@ -38,12 +38,29 @@ static void __init da8xx_init_irq(void)
+ }
+ 
+ #ifdef CONFIG_ARCH_DAVINCI_DA850
++#define DA8XX_AEMIF_CE2CFG_OFFSET       0x10
++#define DA8XX_AEMIF_ASIZE_16BIT         0x1
++
++static void __init da8xx_init_nor(void)
++{
++	void __iomem *aemif_addr;
++
++	aemif_addr = ioremap(DA8XX_AEMIF_CTL_BASE, SZ_32K);
++
++	/* Configure data bus width of CS2 to 16 bit */
++	writel(readl(aemif_addr + DA8XX_AEMIF_CE2CFG_OFFSET) |
++			DA8XX_AEMIF_ASIZE_16BIT,
++			aemif_addr + DA8XX_AEMIF_CE2CFG_OFFSET);
++
++	iounmap(aemif_addr);
++}
+ 
+ static void __init da850_init_machine(void)
+ {
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ 
+ 	da8xx_uart_clk_enable();
++	da8xx_init_nor();
+ }
+ 
+ static const char *da850_boards_compat[] __initdata = {
+-- 
+1.7.4.1
 
-We have made supporting code that currently sits in linux-pm/linux-next
-tree that parses an ACPI CSRT table and creates the platform devices with
-suitable resources here: 13176bbf183c8 (ACPI: add support for CSRT table).
-
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> >  drivers/dma/dw_dmac.c      |   13 +++++++++++++
-> >  drivers/dma/dw_dmac_regs.h |    1 +
-> >  2 files changed, 14 insertions(+)
-> >
-> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> > index 3155c11..8484ca1 100644
-> > --- a/drivers/dma/dw_dmac.c
-> > +++ b/drivers/dma/dw_dmac.c
-> > @@ -995,6 +995,13 @@ static inline void convert_burst(u32 *maxburst)
-> >                 *maxburst = 0;
-> >  }
-> >
-> > +static inline void convert_slave_id(struct dw_dma_chan *dwc)
-> > +{
-> > +       struct dw_dma *dw = to_dw_dma(dwc->chan.device);
-> > +
-> > +       dwc->dma_sconfig.slave_id -= dw->request_line_base;
-> > +}
-> > +
-> >  static int
-> >  set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
-> >  {
-> > @@ -1009,6 +1016,7 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
-> >
-> >         convert_burst(&dwc->dma_sconfig.src_maxburst);
-> >         convert_burst(&dwc->dma_sconfig.dst_maxburst);
-> > +       convert_slave_id(dwc);
-> >
-> >         return 0;
-> >  }
-> > @@ -1717,6 +1725,11 @@ static int dw_probe(struct platform_device *pdev)
-> >                 memcpy(dw->data_width, pdata->data_width, 4);
-> >         }
-> >
-> > +       /* Get the base request line if set */
-> > +       io = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-> > +       if (io)
-> > +               dw->request_line_base = (unsigned int)io->start;
-> > +
-> 
-> How will it work in case of DT?
-
-Can't the DT version do the same thing and pass IORESOURCE_DMA to the
-driver? Or we can check dev->of_node and parse it directly from DT instead
-of resource.
