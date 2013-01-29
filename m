@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab3A2WoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 17:44:21 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:37373 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab3A2WoT (ORCPT
+	id S1752434Ab3A2Wsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 17:48:41 -0500
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:42449 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab3A2Wsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 17:44:19 -0500
-Message-ID: <510850BF.7070003@free-electrons.com>
-Date: Tue, 29 Jan 2013 23:44:15 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 29 Jan 2013 17:48:39 -0500
+Subject: [PATCH] MAINTAINERS: update SGI & ia64 Altix stuff
+To: Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jes Sorensen <jes@trained-monkey.org>, Dimitri Sivanich <sivanich@sgi.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lori Gilbertson <loriann@sgi.com>, Robin Holt <holt@sgi.com>
+Date: Tue, 29 Jan 2013 15:48:37 -0700
+Message-ID: <20130129224837.7237.78495.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, Alejandro Mery <amery@geeks.cl>,
-        Stefan Roese <sr@denx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4] ARM: sunxi: gpio: Add Allwinner SoCs GPIO drivers
-References: <1359405192-1192-1-git-send-email-maxime.ripard@free-electrons.com> <CACRpkdaNz6szEu6v=C97MfUzQzM3rG1hGHtHdO-aWXLCgHQEeQ@mail.gmail.com>
-In-Reply-To: <CACRpkdaNz6szEu6v=C97MfUzQzM3rG1hGHtHdO-aWXLCgHQEeQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Dimitri and Robin have taken over GRU maintenance.
 
-Le 29/01/2013 23:38, Linus Walleij a écrit :
-> On Mon, Jan 28, 2013 at 9:33 PM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
-> 
->> The IP responsible for the muxing on the Allwinner SoCs are also
->> handling the GPIOs on the system. This patch adds the needed driver that
->> relies on the pinctrl driver for most of its operations.
->>
->> The number of pins available for GPIOs operations are already declared
->> in the pinctrl driver, we only need to probe a generic driver to handle
->> the banks available for each SoC.
->>
->> This driver has been tested on a A13-Olinuxino.
->>
->> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> 
-> Applied to my allwinner branch.
-> 
-> I'm a bit confused with other patches floating around,
-> I hope I'm supposed to apply this first...
+Linux on Altix is no longer maintained except as part of ia64, and
+there's already a separate IA64 maintainer entry.
 
-Ah, yes, sorry, I forgot to mention the order of the patchset.
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ MAINTAINERS |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
-This one is indeed the first one, then comes "Add pinctrl/gpio support
-for A10 SoCs", and finally "Add support for user LED on the A13-Olinuxino".
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fa309ab..0526e21 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6768,7 +6768,8 @@ S:	Supported
+ F:	drivers/net/ethernet/sfc/
+ 
+ SGI GRU DRIVER
+-M:	Jack Steiner <steiner@sgi.com>
++M:	Dimitri Sivanich <sivanich@sgi.com>
++M:	Robin Holt <holt@sgi.com>
+ S:	Maintained
+ F:	drivers/misc/sgi-gru/
+ 
+@@ -6963,14 +6964,6 @@ L:	linux-fbdev@vger.kernel.org
+ S:	Maintained
+ F:	drivers/video/smscufx.c
+ 
+-SN-IA64 (Itanium) SUB-PLATFORM
+-M:	Jes Sorensen <jes@sgi.com>
+-L:	linux-altix@sgi.com
+-L:	linux-ia64@vger.kernel.org
+-W:	http://www.sgi.com/altix
+-S:	Maintained
+-F:	arch/ia64/sn/
+-
+ SOC-CAMERA V4L2 SUBSYSTEM
+ M:	Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+ L:	linux-media@vger.kernel.org
 
-Since you already started to merge most of the patches for the sunxi
-device tree, maybe the most reasonnable thing to do to avoid merge
-conflicts would be for you to merge all of these patches.
-
-Thanks!
-Maxime
-
-
--- 
-Maxime Ripard, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
