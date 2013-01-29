@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab3A2Ozy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:55:54 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:33044 "HELO
-	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756569Ab3A2Oxx (ORCPT
+	id S1757022Ab3A2O4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:56:50 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:35693 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756480Ab3A2O4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:53:53 -0500
-From: Andreas Larsson <andreas@gaisler.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: [PATCH v2 1/6] of: Return -EEXIST from of_parse_phandle_with_args for holes in phandle list
-Date: Tue, 29 Jan 2013 15:53:38 +0100
-Message-Id: <1359471223-4794-2-git-send-email-andreas@gaisler.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
-References: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
+	Tue, 29 Jan 2013 09:56:49 -0500
+Message-ID: <1359471400.4985.5.camel@thor.lan>
+Subject: Re: 3.8-rc2: lockdep warning in nouveau driver
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: dri-devel@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arend van Spriel <arend@broadcom.com>
+Date: Tue, 29 Jan 2013 09:56:40 -0500
+In-Reply-To: <50ED5874.5010209@broadcom.com>
+References: <50ED5874.5010209@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return value for an empty phandle was -EEXIST before commit 15c9a0ac, that
-changed the return value in this case to -ENOENT. However, of_gpio_named_count
-relies upon the return value to be -EEXIST and relies upon being able to
-distinguish this case from the case of no list at all which also returns
--ENOENT.
+On Wed, 2013-01-09 at 12:45 +0100, Arend van Spriel wrote:
+> Maybe this one is already known, but I did not find a post about it. So
+> here it is.
+> 
+> Regards,
+> Arend
 
-Also change the of selftest to expect -EEXIST in this case.
+[snip]
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
----
+> [    9.589986] =============================================
+> [    9.595365] [ INFO: possible recursive locking detected ]
+> [    9.600745] 3.8.0-rc2-wl-testing-lockdep-00002-ga524cf0 #1 Not tainted
+> [    9.607248] ---------------------------------------------
+> [    9.612626] modprobe/163 is trying to acquire lock:
+> [    9.617486]  (&subdev->mutex){+.+.+.}, at: [<f8929c12>]
+> nv50_fb_vram_new+0x92/0x230 [nouveau]
+> [    9.626052]
+> [    9.626052] but task is already holding lock:
+> [    9.631865]  (&subdev->mutex){+.+.+.}, at: [<f8936505>]
+> nv50_disp_data_ctor+0x55/0xc0 [nouveau]
+> [    9.640593]
+> [    9.640593] other info that might help us debug this:
+> [    9.647096]  Possible unsafe locking scenario:
+> [    9.647096]
+> [    9.652995]        CPU0
+> [    9.655430]        ----
+> [    9.657867]   lock(&subdev->mutex);
+> [    9.661365]   lock(&subdev->mutex);
+> [    9.664863]
+> [    9.664863]  *** DEADLOCK ***
+> [    9.664863]
+> [    9.670762]  May be due to missing lock nesting notation
 
-I have only compile tested the selftest, not having appropriate hardware around for running it.
+Same.
 
- drivers/of/base.c     |    4 ++--
- drivers/of/selftest.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+[    5.995881] =============================================
+[    5.995886] [ INFO: possible recursive locking detected ]
+[    5.995892] 3.8.0-next-20130125+ttypatch-xeon+lockdep #20130125+ttypatch Not tainted
+[    5.995898] ---------------------------------------------
+[    5.995904] modprobe/275 is trying to acquire lock:
+[    5.995909]  (&subdev->mutex){+.+.+.}, at: [<ffffffffa00d10b8>] nouveau_instobj_create_+0x48/0x90 [nouveau]
+[    5.995955] 
+[    5.995955] but task is already holding lock:
+[    5.995961]  (&subdev->mutex){+.+.+.}, at: [<ffffffffa00da3b5>] nv50_disp_data_ctor+0x65/0xd0 [nouveau]
+[    5.995989] 
+[    5.995989] other info that might help us debug this:
+[    5.995995]  Possible unsafe locking scenario:
+[    5.995995] 
+[    5.996001]        CPU0
+[    5.996004]        ----
+[    5.996005]   lock(&subdev->mutex);
+[    5.996005]   lock(&subdev->mutex);
+[    5.996005] 
+[    5.996005]  *** DEADLOCK ***
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 2390ddb..986afd7 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1083,11 +1083,11 @@ int of_parse_phandle_with_args(const struct device_node *np, const char *list_na
- 		 * All of the error cases above bail out of the loop, so at
- 		 * this point, the parsing is successful. If the requested
- 		 * index matches, then fill the out_args structure and return,
--		 * or return -ENOENT for an empty entry.
-+		 * or return -EEXIST for an empty entry.
- 		 */
- 		if (cur_index == index) {
- 			if (!phandle)
--				return -ENOENT;
-+				return -EEXIST;
- 
- 			if (out_args) {
- 				int i;
-diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-index f24ffd7..b1c2ae9 100644
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -54,7 +54,7 @@ static void __init of_selftest_parse_phandle_with_args(void)
- 			passed &= (args.args[1] == 0);
- 			break;
- 		case 2:
--			passed &= (rc == -ENOENT);
-+			passed &= (rc == -EEXIST);
- 			break;
- 		case 3:
- 			passed &= !rc;
--- 
-1.7.0.4
+Regards,
+Peter Hurley
+
+
 
