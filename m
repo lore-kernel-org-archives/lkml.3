@@ -1,20 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab3A2WtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 17:49:13 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:59980 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab3A2WtL (ORCPT
+	id S1751702Ab3A2Wvi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 17:51:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51451 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3A2Wvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 17:49:11 -0500
-Message-ID: <510851E0.8000009@linux.vnet.ibm.com>
-Date: Tue, 29 Jan 2013 16:49:04 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Tue, 29 Jan 2013 17:51:36 -0500
+Date: Tue, 29 Jan 2013 14:51:34 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Dan Magenheimer <dan.magenheimer@oracle.com>,
@@ -25,34 +21,80 @@ CC: Andrew Morton <akpm@linux-foundation.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv4 0/7] zswap: compressed swap caching
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359497685.16868.11.camel@joe-AO722>
-In-Reply-To: <1359497685.16868.11.camel@joe-AO722>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCHv4 2/7] zsmalloc: promote to lib/
+Message-Id: <20130129145134.813672cf.akpm@linux-foundation.org>
+In-Reply-To: <1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012922-7408-0000-0000-00000C585DED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 04:14 PM, Joe Perches wrote:
-> On Tue, 2013-01-29 at 15:40 -0600, Seth Jennings wrote:
->> The code required for the flushing is in a separate patch now
->> as requested.
-> 
-> What tree does this apply to?
-> Both -next and linus fail to compile.
+On Tue, 29 Jan 2013 15:40:22 -0600
+Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
 
-Link to build instruction in the cover letter:
+> This patch promotes the slab-based zsmalloc memory allocator
+> from the staging tree to lib/
 
->> NOTE: To build, read this:
->> http://lkml.org/lkml/2013/1/28/586
+Hate to rain on the parade, but...  we haven't reviewed zsmalloc
+yet.  At least, I haven't, and I haven't seen others do so.
 
-The complexity is due to a conflict with a zsmalloc patch in Greg's
-staging tree that has yet to make its way upstream.
+So how's about we forget that zsmalloc was previously in staging and
+send the zsmalloc code out for review?  With a very good changelog
+explaining why it exists, what problems it solves, etc.
 
-Sorry for the inconvenience.
 
-Seth
+I peeked.
 
+Don't answer any of the below questions - they are examples of
+concepts which should be accessible to readers of the
+hopefully-forthcoming very-good-changelog.
+
+- kmap_atomic() returns a void* - there's no need to cast its return value.
+
+- Remove private MAX(), use the (much better implemented) max().
+
+- It says "This was one of the major issues with its predecessor
+  (xvmalloc)", but drivers/staging/ramster/xvmalloc.c is still in the tree.
+
+- USE_PGTABLE_MAPPING should be done via Kconfig.
+
+- USE_PGTABLE_MAPPING is interesting and the changelog should go into
+  some details.  What are the pros and cons here?  Why do the two
+  options exist?  Can we eliminate one mode or the other?
+
+- Various functions are obscure and would benefit from explanatory
+  comments.  Good comments explain "why it exists", more than "what it
+  does".
+
+  These include get_size_class_index, get_fullness_group,
+  insert_zspage, remove_zspage, fix_fullness_group.
+
+  Also a description of this handle encoding thing - what do these
+  "handles" refer to?  Why is stuff being encoded into them and how?
+
+- I don't understand how the whole thing works :( If I allocate a
+  16 kbyte object with zs_malloc(), what do I get?  16k of
+  contiguous memory?  How can it do that if
+  USE_PGTABLE_MAPPING=false?  Obviously it can't so it's doing
+  something else.  But what?
+
+- What does zs_create_pool() do and how do I use it?  It appears
+  to create a pool of all possible object sizes.  But why do we need
+  more than one such pool kernel-wide?
+
+- I tried to work out the actual value of ZS_SIZE_CLASSES but it
+  made my head spin.
+
+- We really really don't want to merge zsmalloc!  It would be far
+  better to use an existing allocator (perhaps after modifying it)
+  than to add yet another new one.  The really-good-changelog should
+  be compelling on this point, please.
+
+See, I (and I assume others) are totally on first base here and we need
+to get through this before we can get onto zswap.  Sorry. 
+drivers/staging is where code goes to be ignored :(
