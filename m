@@ -1,377 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab3A2TK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:10:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7967 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754379Ab3A2TIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:08:04 -0500
-Message-Id: <20130129190800.590181489@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 29 Jan 2013 14:08:08 -0500
-From: aris@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v3 9/9] devcg: propagate local changes down the hierarchy
-References: <20130129190759.117458287@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=propagate.patch
+	id S1754453Ab3A2TLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:11:31 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:46871 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab3A2TL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 14:11:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+	<CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
+	<CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
+Date: Tue, 29 Jan 2013 12:11:28 -0700
+Message-ID: <CAKocOOPsvh=jOXLahe6ukjpyjOOqt9tRdwELxv8i0_Vi1xqQkA@mail.gmail.com>
+Subject: Re: Linux 3.8-rc4
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes all changes propagate down in hierarchy respecting when
-possible local configurations.
+On Tue, Jan 29, 2013 at 6:05 AM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> -----Original Message-----
+>> I was out sick for a few days and finally picked this bisect backup
+>> again. I started at 3.7 tag instead of 3.8-rc1 that I did in the past
+>> and also did bisect at drivers/gpu/drm/radeon instead. Here are the
+>> results:
+>>
+>> 6253e4c75d96006c06b9ac8f417eba873de2497b is the first bad commit
+>> commit 6253e4c75d96006c06b9ac8f417eba873de2497b
+>> Author: Alex Deucher <alexander.deucher@amd.com>
+>> Date:   Wed Dec 12 14:30:32 2012 -0500
+>>
+>>     drm/radeon: improve mc_stop/mc_resume on r5xx-r7xx
+>>
+>>     Along the same lines of what was done for evergreen+
+>>     in the last kernel.
+>>
+>>     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+>>
+>> git bisect log attached.
+>>
+>
+> Try the attached patch.  I think it should fix the issue.  I just applied a similar patch for newer asics.
+>
+> Alex
+>
 
-Behavior changes will clean up exceptions in all the children except when the
-parent changes the behavior from allow to deny and the child's behavior was
-already deny, in which case the local exceptions will be reused. The inverse
-is not possible: you can't have a parent with behavior deny and a child with
-behavior accept.
-
-New exceptions allowing additional access to devices won't be propagated, but
-it'll be possible to add an exception to access all of part of the newly
-allowed device(s).
-
-New exceptions disallowing access to devices will be propagated down and the
-local group's exceptions will be revalidated for the new situation.
-Example:
-      A
-     / \
-        B
-
-    group        behavior          exceptions
-    A            allow             "b 8:* rwm", "c 116:1 rw"
-    B            deny              "c 1:3 rwm", "c 116:2 rwm", "b 3:* rwm"
-
-If a new exception is added to group A:
-	# echo "c 116:* r" > A/devices.deny
-it'll propagate down and after revalidating B's local exceptions, the exception
-"c 116:2 rwm" will be removed.
-
-In case parent behavior or exceptions change and local settings are not
-allowed anymore, they'll be deleted.
-
-v3:
-- update documentation
-- move css_online/css_offline changes to a new patch
-- use cgroup_for_each_descendant_pre() instead of own descendant walk
-- move exception_copy rework to a separared patch
-- move exception_clean rework to a separated patch
-
-v2:
-- instead of keeping the local settings that won't apply anymore, remove them
+I reverted 6253e4c75d96006c06b9ac8f417eba873de2497b and DMAR faults
+went away. Undid the revert and applied your new patch. DMAR faults
+are back again.
 
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+[   25.158653] [drm] PCIE GART of 512M enabled (table at 0x0000000000040000).
+[   25.158715] radeon 0000:01:00.0: WB enabled
+[   25.158719] radeon 0000:01:00.0: fence driver on ring 0 use gpu
+addr 0x0000000008000c00 and cpu addr 0xffff88002f143c00
+[   25.158721] radeon 0000:01:00.0: fence driver on ring 3 use gpu
+addr 0x0000000008000c0c and cpu addr 0xffff88002f143c0c
 
----
- Documentation/cgroups/devices.txt |   66 ++++++++++++++
- security/device_cgroup.c          |  170 ++++++++++++++++++++++++++++++++++++--
- 2 files changed, 230 insertions(+), 6 deletions(-)
+A few observations and questions about r600_startup() code sequence:
 
---- github.orig/security/device_cgroup.c	2013-01-29 11:49:16.653686016 -0500
-+++ github/security/device_cgroup.c	2013-01-29 13:58:07.537099962 -0500
-@@ -60,6 +60,9 @@ struct dev_cgroup {
- 		struct list_head exceptions;
- 		enum devcg_behavior behavior;
- 	} local;
-+
-+	/* temporary list for pending propagation operations */
-+	struct list_head propagate_pending;
- };
- 
- static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
-@@ -241,6 +244,11 @@ static void dev_exception_clean_all(stru
- 	__dev_exception_clean_all(dev_cgroup);
- }
- 
-+static inline bool is_devcg_online(const struct dev_cgroup *devcg)
-+{
-+	return (devcg->behavior != DEVCG_DEFAULT_NONE);
-+}
-+
- /**
-  * devcgroup_online - initializes devcgroup's behavior and exceptions based on
-  * 		      parent's
-@@ -292,6 +300,7 @@ static struct cgroup_subsys_state *devcg
- 		return ERR_PTR(-ENOMEM);
- 	INIT_LIST_HEAD(&dev_cgroup->exceptions);
- 	INIT_LIST_HEAD(&dev_cgroup->local.exceptions);
-+	INIT_LIST_HEAD(&dev_cgroup->propagate_pending);
- 	dev_cgroup->local.behavior = DEVCG_DEFAULT_NONE;
- 	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
- 	parent_cgroup = cgroup->parent;
-@@ -471,6 +480,139 @@ static inline int may_allow_all(struct d
- 	return parent->behavior == DEVCG_DEFAULT_ALLOW;
- }
- 
-+/**
-+ * revalidate_exceptions - walks through the exception list and revalidates
-+ *			     the exceptions based on parents' behavior and
-+ *			     exceptions. Called with devcgroup_mutex held.
-+ * @devcg: cgroup which exceptions will be checked
-+ *
-+ * returns: 0 in success, -ENOMEM in case of out of memory
-+ *
-+ * This is one of the two key functions for hierarchy implementation.
-+ * This function is responsible for re-evaluating all the cgroup's locally
-+ * set exceptions due to a parent's behavior or exception change.
-+ * Refer to Documentation/cgroups/devices.txt for more details.
-+ */
-+static int revalidate_exceptions(struct dev_cgroup *devcg)
-+{
-+	struct dev_exception_item *ex;
-+	struct list_head *this, *tmp;
-+
-+	list_for_each_safe(this, tmp, &devcg->local.exceptions) {
-+		ex = container_of(this, struct dev_exception_item, list);
-+		if (parent_has_perm(devcg, ex)) {
-+			if (dev_exception_copy(&devcg->exceptions, ex))
-+				goto error;
-+		} else
-+			__dev_exception_rm(&devcg->local.exceptions, ex);
-+	}
-+	return 0;
-+
-+error:
-+	dev_exception_clean(&devcg->exceptions);
-+	return -ENOMEM;
-+}
-+
-+/**
-+ * propagate_behavior - propagates a change in the behavior down in hierarchy
-+ * @devcg_root: device cgroup that changed behavior
-+ *
-+ * returns: 0 in case of success, != 0 in case of error
-+ *
-+ * This is one of the two key functions for hierarchy implementation.
-+ * All cgroup's children recursively will have the behavior changed and
-+ * exceptions copied from the parent then its local behavior and exceptions
-+ * re-evaluated and applied if they're still allowed.  Refer to
-+ * Documentation/cgroups/devices.txt for more details.
-+ */
-+static int propagate_behavior(struct dev_cgroup *devcg_root)
-+{
-+	struct cgroup *root = devcg_root->css.cgroup, *pos;
-+	struct dev_cgroup *parent, *devcg, *tmp;
-+	int rc = 0;
-+	LIST_HEAD(pending);
-+
-+	rcu_read_lock();
-+	cgroup_for_each_descendant_pre(pos, root) {
-+		devcg = cgroup_to_devcgroup(pos);
-+		if (is_devcg_online(devcg))
-+			list_add_tail(&devcg->propagate_pending, &pending);
-+	}
-+	rcu_read_unlock();
-+
-+	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-+		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-+
-+		/* first copy parent's state */
-+		devcg->behavior = parent->behavior;
-+		dev_exception_clean(&devcg->exceptions);
-+		rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-+		if (rc) {
-+			devcg->behavior = DEVCG_DEFAULT_DENY;
-+			break;
-+		}
-+
-+		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
-+		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
-+			devcg->behavior = DEVCG_DEFAULT_DENY;
-+		}
-+		if (devcg->local.behavior == devcg->behavior)
-+			rc = revalidate_exceptions(devcg);
-+		if (rc)
-+			break;
-+		list_del_init(&devcg->propagate_pending);
-+	}
-+
-+	return rc;
-+}
-+
-+/**
-+ * propagate_exception - propagates a new exception to the children
-+ * @devcg_root: device cgroup that added a new exception
-+ *
-+ * returns: 0 in case of success, != 0 in case of error
-+ */
-+static int propagate_exception(struct dev_cgroup *devcg_root)
-+{
-+	struct cgroup *root = devcg_root->css.cgroup, *pos;
-+	struct dev_cgroup *devcg, *parent, *tmp;
-+	int rc = 0;
-+	LIST_HEAD(pending);
-+
-+	rcu_read_lock();
-+	cgroup_for_each_descendant_pre(pos, root) {
-+		devcg = cgroup_to_devcgroup(pos);
-+		if (is_devcg_online(devcg))
-+			list_add_tail(&devcg->propagate_pending, &pending);
-+	}
-+	rcu_read_unlock();
-+
-+	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-+		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-+
-+		dev_exception_clean(&devcg->exceptions);
-+		if (devcg->behavior == parent->behavior) {
-+			rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-+			if (rc) {
-+				devcg->behavior = DEVCG_DEFAULT_DENY;
-+				break;
-+			}
-+			rc = revalidate_exceptions(devcg);
-+			if (rc)
-+				break;
-+		} else {
-+			/* we never give more permissions to the child */
-+			WARN_ONCE(devcg->behavior == DEVCG_DEFAULT_ALLOW,
-+				  "devcg: parent/child behavior is inconsistent");
-+			rc = revalidate_exceptions(devcg);
-+			if (rc)
-+				break;
-+		}
-+		list_del_init(&devcg->propagate_pending);
-+	}
-+	return rc;
-+}
-+
- /*
-  * Modify the exception list using allow/deny rules.
-  * CAP_SYS_ADMIN is needed for this.  It's at least separate from CAP_MKNOD
-@@ -515,11 +657,13 @@ 	memset(&ex, 0, sizeof(ex));
- 							 &parent->exceptions);
- 			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
- 			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
-+			rc = propagate_behavior(devcgroup);
- 			break;
- 		case DEVCG_DENY:
- 			dev_exception_clean_all(devcgroup);
- 			devcgroup->behavior = DEVCG_DEFAULT_DENY;
- 			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
-+			rc = propagate_behavior(devcgroup);
- 			break;
- 		default:
- 			rc = -EINVAL;
-@@ -610,9 +754,14 @@ 		case '\0':
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
- 			dev_exception_rm(devcgroup, &ex);
--			return 0;
-+			rc = propagate_exception(devcgroup);
-+			return rc;
- 		}
--		return dev_exception_add(devcgroup, &ex);
-+		rc = dev_exception_add(devcgroup, &ex);
-+		if (!rc)
-+			/* if a local behavior wasn't explicitely choosen, pick it */
-+			devcgroup->local.behavior = devcgroup->behavior;
-+		break;
- 	case DEVCG_DENY:
- 		/*
- 		 * If the default policy is to deny by default, try to remove
-@@ -621,13 +770,22 @@ 			return 0;
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
- 			dev_exception_rm(devcgroup, &ex);
--			return 0;
-+			rc = propagate_exception(devcgroup);
-+			return rc;
- 		}
--		return dev_exception_add(devcgroup, &ex);
-+		rc = dev_exception_add(devcgroup, &ex);
-+		if (rc)
-+			return rc;
-+		/* we only propagate new restrictions */
-+		rc = propagate_exception(devcgroup);
-+		if (!rc)
-+			/* if a local behavior wasn't explicitely choosen, pick it */
-+			devcgroup->local.behavior = devcgroup->behavior;
-+		break;
- 	default:
--		return -EINVAL;
-+		rc = -EINVAL;
- 	}
--	return 0;
-+	return rc;
- }
- 
- static int devcgroup_access_write(struct cgroup *cgrp, struct cftype *cft,
---- github.orig/Documentation/cgroups/devices.txt	2013-01-29 11:44:51.258734330 -0500
-+++ github/Documentation/cgroups/devices.txt	2013-01-29 11:49:16.935690216 -0500
-@@ -50,3 +50,69 @@ task to a new cgroup.  (Again we'll prob
- 
- A cgroup may not be granted more permissions than the cgroup's
- parent has.
-+
-+4. Hierarchy
-+
-+device cgroups maintain hierarchy by making sure never a cgroup has more
-+access permissions than its parent.  Every time an entry is written to
-+a cgroup's devices.deny file, all its children will have that entry removed
-+from the the whitelist and all the locally set whitelist entries re-evaluated.
-+In case one of the locally set whitelist entries would provide more access
-+than the cgroup's parent, it'll be removed from the whitelist.
-+
-+Example:
-+      A
-+     / \
-+        B
-+
-+    group        behavior	exceptions
-+    A            allow		"b 8:* rwm", "c 116:1 rw"
-+    B            deny		"c 1:3 rwm", "c 116:2 rwm", "b 3:* rwm"
-+
-+If a device is denied in group A:
-+	# echo "c 116:* r" > A/devices.deny
-+it'll propagate down and after revalidating B's entries, the whitelist entry
-+"c 116:2 rwm" will be removed:
-+
-+    group        whitelist entries                        denied devices
-+    A            all                                      "b 8:* rwm", "c 116:* rw"
-+    B            "c 1:3 rwm", "b 3:* rwm"                 all the rest
-+
-+In case parent behavior or exceptions change and local settings are not
-+allowed anymore, they'll be deleted.
-+
-+Notice that new whitelist entries will not be propagated:
-+      A
-+     / \
-+        B
-+
-+    group        whitelist entries                        denied devices
-+    A            "c 1:3 rwm", "c 1:5 r"                   all the rest
-+    B            "c 1:3 rwm", "c 1:5 r"                   all the rest
-+
-+when adding "c *:3 rwm":
-+	# echo "c *:3 rwm" >A/devices.allow
-+
-+the result:
-+    group        whitelist entries                        denied devices
-+    A            "c *:3 rwm", "c 1:5 r"                   all the rest
-+    B            "c 1:3 rwm", "c 1:5 r"                   all the rest
-+
-+but not it'll be possible to add new entries to B:
-+	# echo "c 2:3 rwm" >B/devices.allow
-+	# echo "c 50:3 r" >B/devices.allow
-+or even
-+	# echo "c *:3 rwm" >B/devices.allow
-+
-+4.1 Hierarchy (internal implementation)
-+
-+device cgroups is implemented internally using a behavior (ALLOW, DENY) and a
-+list of exceptions.  The internal state is controlled using the same user
-+interface to preserve compatibility.  A change in behavior (writing "a" to
-+devices.deny or devices.allow) will be propagated down the hierarchy as well
-+new exceptions that will reduce the access to devices (an exception when
-+behavior is ALLOW).  Each cgroup will have its local behavior and exception
-+list to keep track what was set by the user for that cgroup in specific.  For
-+every propagated change, the effective rules will be built starting with
-+parent's rules and the locally set behavior and exceptions in case they still
-+apply, otherwise those will be lost.
+I notice DMAR faults right after
 
+[drm] Loading RV620 Microcode message which is from
+r600_init_microcode(). This routine does a series of
+request_firmware() calls. btw. don't see release_firmware() calls in
+regular code path, only from error legs in r600_init_microcode().
+
+However, this routine doesn't do any loading yet. When this routine
+returns, I am assuming request_firmware() step isn't complete yet
+based on my reading request_firmware() interface. At this point
+r600_startup() keeps chugging along, and does r600_mc_program() which
+in turn calls rv515_mc_stop() which was changed with the
+6253e4c75d96006c06b9ac8f417eba873de2497b commit.
+
+I am thinking the changes somehow eliminated a wait or delay that used
+be there for request_firmware() step to complete (?)
+
+I can see from dmesg that the faults occur right after:
+
+r600_init_microcode(rdev);
+
+and stop before r600_pcie_gart_enable()
+
+-- Shuah
