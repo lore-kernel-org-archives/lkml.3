@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab3A2NLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 08:11:09 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:42275 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709Ab3A2NLH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 08:11:07 -0500
+	id S1756397Ab3A2NRB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 08:17:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14734 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751977Ab3A2NQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 08:16:57 -0500
+Date: Tue, 29 Jan 2013 15:16:51 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi.kivity@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 06/12] KVM: MMU: introduce a static table to map guest
+ access to spte access
+Message-ID: <20130129131651.GD15004@redhat.com>
+References: <50FFB5A1.5090708@linux.vnet.ibm.com>
+ <50FFB658.6040205@linux.vnet.ibm.com>
+ <20130125001550.GB22875@amt.cnet>
+ <5101F207.6040603@linux.vnet.ibm.com>
+ <20130129000715.GA10814@amt.cnet>
+ <20130129010758.GA12132@amt.cnet>
 MIME-Version: 1.0
-In-Reply-To: <1358762966-20791-8-git-send-email-thierry.reding@avionic-design.de>
-References: <1358762966-20791-1-git-send-email-thierry.reding@avionic-design.de>
-	<1358762966-20791-8-git-send-email-thierry.reding@avionic-design.de>
-Date: Tue, 29 Jan 2013 15:11:05 +0200
-Message-ID: <CAHp75VdeBrMg-ccxwY-45H_-_KatdwL7FnjB8SXWWgF1C+9Y1Q@mail.gmail.com>
-Subject: Re: [PATCH 07/33] dma: Convert to devm_ioremap_resource()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130129010758.GA12132@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 12:09 PM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> Convert all uses of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
->
-> devm_ioremap_resource() provides its own error messages so all explicit
-> error messages can be removed from the failure code paths.
->
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> ---
->  drivers/dma/dw_dmac.c         |  7 ++++---
->  drivers/dma/imx-dma.c         |  7 ++++---
->  drivers/dma/mmp_pdma.c        |  7 ++++---
->  drivers/dma/mmp_tdma.c        |  7 ++++---
->  drivers/dma/tegra20-apb-dma.c | 10 ++++------
->  5 files changed, 20 insertions(+), 18 deletions(-)
->
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 3e8ba02..b33d1f6 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -14,6 +14,7 @@
->  #include <linux/delay.h>
->  #include <linux/dmaengine.h>
->  #include <linux/dma-mapping.h>
-> +#include <linux/err.h>
->  #include <linux/init.h>
->  #include <linux/interrupt.h>
->  #include <linux/io.h>
-> @@ -1489,9 +1490,9 @@ static int dw_probe(struct platform_device *pdev)
->         if (irq < 0)
->                 return irq;
->
-> -       regs = devm_request_and_ioremap(&pdev->dev, io);
-> -       if (!regs)
-> -               return -EBUSY;
-> +       regs = devm_ioremap_resource(&pdev->dev, io);
-> +       if (IS_ERR(regs))
-> +               return PTR_ERR(regs);
+On Mon, Jan 28, 2013 at 11:07:58PM -0200, Marcelo Tosatti wrote:
+> On Mon, Jan 28, 2013 at 10:07:15PM -0200, Marcelo Tosatti wrote:
+> > On Fri, Jan 25, 2013 at 10:46:31AM +0800, Xiao Guangrong wrote:
+> > > On 01/25/2013 08:15 AM, Marcelo Tosatti wrote:
+> > > > On Wed, Jan 23, 2013 at 06:07:20PM +0800, Xiao Guangrong wrote:
+> > > >> It makes set_spte more clean and reduces branch prediction
+> > > >>
+> > > >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> > > >> ---
+> > > >>  arch/x86/kvm/mmu.c |   37 ++++++++++++++++++++++++++-----------
+> > > >>  1 files changed, 26 insertions(+), 11 deletions(-)
+> > > > 
+> > > > Don't see set_spte as being a performance problem?
+> > > > IMO the current code is quite simple.
+> > > 
+> > > Yes, this is not a performance problem.
+> > > 
+> > > I just dislike this many continuous "if"-s in the function:
+> > > 
+> > > if (xxx)
+> > > 	xxx
+> > > if (xxx)
+> > > 	xxx
+> > > ....
+> > > 
+> > > Totally, it has 7 "if"-s before this patch.
+> > > 
+> > > Okay, if you think this is unnecessary, i will drop this patch. :)
+> > 
+> > Yes, please (unless you can show set_spte is a performance problem).
+> 
+> Same thing for spte fast drop: is it a performance problem? 
+> 
+I like spte fast drop because it gets rid of "goto restart" pattern.
+for_each_spte_in_rmap_safe() can be the alternative.
 
-Do you concern that change makes sparse crazy?
+> Please try to group changes into smaller, less controversial sets with 
+> a clear goal:
+> 
+> - Debated performance improvement.
+> - Cleanups (eg mmu_set_spte argument removal).
+> - Bug fixes.
+> - Performance improvements.
+> 
+> Thanks.
 
-drivers/dma/dw_dmac.c:1690:20: warning: incorrect type in argument 1
-(different address spaces)
-drivers/dma/dw_dmac.c:1690:20:    expected void const *ptr
-drivers/dma/dw_dmac.c:1690:20:    got void [noderef] <asn:2>*[assigned] regs
-drivers/dma/dw_dmac.c:1691:32: warning: incorrect type in argument 1
-(different address spaces)
-drivers/dma/dw_dmac.c:1691:32:    expected void const *ptr
-drivers/dma/dw_dmac.c:1691:32:    got void [noderef] <asn:2>*[assigned] regs
-
-
--- 
-With Best Regards,
-Andy Shevchenko
+--
+			Gleb.
