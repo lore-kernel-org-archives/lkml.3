@@ -1,87 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675Ab3A2HFE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:05:04 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:58300 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab3A2HFA (ORCPT
+	id S1752302Ab3A2HHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:07:07 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:46688 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab3A2HHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:05:00 -0500
-Message-ID: <51077499.90602@openvz.org>
-Date: Tue, 29 Jan 2013 11:04:57 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
+	Tue, 29 Jan 2013 02:07:05 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend
- finalization
-References: <20130118113019.6698.25941.stgit@zurg> <20130118114222.6698.7103.stgit@zurg> <CAErSpo4sEv-Qw1iztGn-SsPKZ=Y+st-tPAFOvsp17MUo6X=xrA@mail.gmail.com> <1821500.CRlxLgYU5r@vostro.rjw.lan>
-In-Reply-To: <1821500.CRlxLgYU5r@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAFp+6iHd66_dvj_M5zOpJZ7sEy-pYa-CdWKUZBYc3Dfn3JHtfg@mail.gmail.com>
+References: <1358257112-19595-1-git-send-email-gautam.vivek@samsung.com>
+	<1358257112-19595-4-git-send-email-gautam.vivek@samsung.com>
+	<3963234.Gb249i4a6U@flatron>
+	<CAFp+6iHd66_dvj_M5zOpJZ7sEy-pYa-CdWKUZBYc3Dfn3JHtfg@mail.gmail.com>
+Date: Tue, 29 Jan 2013 12:37:02 +0530
+Message-ID: <CAFp+6iEJAtizR1qZ6-To=LMRM99+TNQXhb1Wt=ojLpqGVOi8cw@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] ARM: Exynos5250: Add clock information for dwc3-exynos
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, jg1.han@samsung.com,
+        kgene.kim@samsung.com, devicetree-discuss@lists.ozlabs.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> On Monday, January 28, 2013 04:17:42 PM Bjorn Helgaas wrote:
->> [+cc Rafael]
+Hi Tomasz,
+
+
+On Wed, Jan 16, 2013 at 8:35 PM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
+> Hi Tomasz,
+>
+>
+> On Wed, Jan 16, 2013 at 1:19 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>> Hi Vivek,
 >>
->> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
->> <khlebnikov@openvz.org>  wrote:
->>> This patch effectively reverts commit 42eca2302146fed51335b95128e949ee6f54478f
->>> ("PCI: Don't touch card regs after runtime suspend D3")
->>>
->>> | This patch checks whether the pci state is saved and doesn't attempt to hit
->>> | any registers after that point if it is.
->>>
->>> This seems completely wrong. Yes, PCI configuration space has been saved by
->>> driver, but this doesn't means that all job is done and device has been
->>> suspended and ready for waking up in the future.
->>>
->>> For example driver e1000e for ethernet in my thinkpad x220 saves pci-state
->>> but device cannot wakeup after that, because it needs some ACPI callbacks
->>> which usually called from pci_finish_runtime_suspend().
->>>
->>> | Optimus (dual-gpu) laptops seem to have their own form of D3cold, but
->>> | unfortunately enter it on normal D3 transitions via the ACPI callback.
->>>
->>> Hardware which disappears from the bus unexpectedly is exception, so let's
->>> handle it as an exception. Its driver should set device state to D3cold and
->>> the rest code will handle it properly.
+>> Don't you need also some clkdev lookup entry to make the clock available
+>> in the driver?
 >>
->> Functions in D3cold don't have power, so it's completely expected that
->> they would disappear from the bus and not respond to config accesses.
->> Maybe Dave was referring to D3hot, where functions *should* respond to
->> config accesses.  I dunno.
+>
+> This clock source we added with a motive of completion, however it's
+> not being used as of now.
+> As far as i could see the lookup structure contains clocks for devices
+> having multiple instances.
+> Do you feel that i should be adding an entry in clk_lookup structure ?
+> May be i am missing here something. Can you please elaborate on the
+> use-case of clk_lookup
+> entries.
+>
+
+As indicated above "sclk_usbdrd30" is added with a motive of
+completion, however it's
+not being used as of now.
+And "usbdrd30" is the actual device clock used, where 'drd30' is just
+an indicative of
+'dual role device and usb 3.0'. So the clock name 'usbdrd30' is the
+usb 3.0 clock for drd.
+
+Am i missing something that you wanted to convey here ?
+
 >>
->> Just to be clear, it sounds like 42eca230 caused a regression on your
->> e1000e device?  If so, I guess we should revert it unless you and Dave
->> can figure out a better patch that fixes both your e1000e device and
->> the Optimus issue.
+>> On Tuesday 15 of January 2013 19:08:31 Vivek Gautam wrote:
+>>> Adding necessary device clock to exynos5 needed for
+>>> the DWC3 controller.
+>>>
+>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>> ---
+>>>  arch/arm/mach-exynos/clock-exynos5.c |   24 ++++++++++++++++++++++++
+>>>  1 files changed, 24 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-exynos/clock-exynos5.c
+>>> b/arch/arm/mach-exynos/clock-exynos5.c index 0208c3a..13af020 100644
+>>> --- a/arch/arm/mach-exynos/clock-exynos5.c
+>>> +++ b/arch/arm/mach-exynos/clock-exynos5.c
+>>> @@ -757,6 +757,11 @@ static struct clk exynos5_init_clocks_off[] = {
+>>>               .enable         = exynos5_clk_ip_fsys_ctrl ,
+>>>               .ctrlbit        = (1 << 18),
+>>>       }, {
+>>> +             .name           = "usbdrd30",
+>>> +             .parent         = &exynos5_clk_aclk_200.clk,
+>>> +             .enable         = exynos5_clk_ip_fsys_ctrl,
+>>> +             .ctrlbit        = (1 << 19),
+>>> +     }, {
+>>>               .name           = "usbotg",
+>>>               .enable         = exynos5_clk_ip_fsys_ctrl,
+>>>               .ctrlbit        = (1 << 7),
+>>> @@ -1035,6 +1040,16 @@ static struct clksrc_sources exynos5_clkset_group
+>>> = { .nr_sources       = ARRAY_SIZE(exynos5_clkset_group_list),
+>>>  };
+>>>
+>>> +struct clk *exynos5_clkset_usbdrd30_list[] = {
+>>> +     [0] = &exynos5_clk_mout_mpll.clk,
+>>> +     [1] = &exynos5_clk_mout_cpll.clk,
+>>> +};
+>>> +
+>>> +struct clksrc_sources exynos5_clkset_usbdrd30 = {
+>>> +     .sources        = exynos5_clkset_usbdrd30_list,
+>>> +     .nr_sources     = ARRAY_SIZE(exynos5_clkset_usbdrd30_list),
+>>> +};
+>>> +
+>>>  /* Possible clock sources for aclk_266_gscl_sub Mux */
+>>>  static struct clk *clk_src_gscl_266_list[] = {
+>>>       [0] = &clk_ext_xtal_mux,
+>>> @@ -1329,6 +1344,15 @@ static struct clksrc_clk exynos5_clksrcs[] = {
+>>>                       .parent         = &exynos5_clk_mout_cpll.clk,
+>>>               },
+>>>               .reg_div = { .reg = EXYNOS5_CLKDIV_GEN, .shift = 4, .size = 3
+>> },
+>>> +     }, {
+>>> +             .clk    = {
+>>> +                     .name           = "sclk_usbdrd30",
+>>> +                     .enable         = exynos5_clksrc_mask_fsys_ctrl,
+>>> +                     .ctrlbit        = (1 << 28),
+>>> +             },
+>>> +             .sources = &exynos5_clkset_usbdrd30,
+>>> +             .reg_src = { .reg = EXYNOS5_CLKSRC_FSYS, .shift = 28, .size =
+>> 1 },
+>>> +             .reg_div = { .reg = EXYNOS5_CLKDIV_FSYS0, .shift = 24, .size =
+>> 4 },
+>>>       },
+>>>  };
 >
-> Yes, if there's a regression, let's revert it, but I'd like the regression
-> to be described clearly.
-
-Yep, this is regression.
-
-commit 42eca2302146fed51335b95128e949ee6f54478f ("PCI: Don't touch
-card regs after runtime suspend D3") changes state convention during
-runtime-suspend transaction too much. If PCI configuration space
-has been saved by driver that does not means that all job is done
-and device has been suspended and ready for waking up in the future.
-
-e1000e saves pci-config space itself, but it requires operations which
-pci_finish_runtime_suspend() does: preparing for wake (calling particular
-platform pm-callbacks) and switching to proper sleep state.
-
->
-> Thanks,
-> Rafael
->
 >
 
+
+-- 
+Thanks & Regards
+Vivek
