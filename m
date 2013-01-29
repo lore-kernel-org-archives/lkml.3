@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab3A2Xfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 18:35:47 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:43377 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3A2Xfp (ORCPT
+	id S1752427Ab3A2Xg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 18:36:28 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:63727 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3A2Xg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 18:35:45 -0500
-Date: Tue, 29 Jan 2013 18:35:42 -0500 (EST)
+	Tue, 29 Jan 2013 18:36:26 -0500
+Date: Tue, 29 Jan 2013 18:36:23 -0500 (EST)
 From: Nicolas Pitre <nicolas.pitre@linaro.org>
 To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/3] introduce static_vm for ARM-specific static mapped
- area
-In-Reply-To: <20130129065656.GC5131@lge.com>
-Message-ID: <alpine.LFD.2.02.1301291833580.6300@xanadu.home>
-References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com> <20130128175106.GI23470@mudshark.cambridge.arm.com> <alpine.LFD.2.02.1301281300250.6300@xanadu.home> <20130129065656.GC5131@lge.com>
+cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v3 1/3] ARM: vmregion: remove vmregion code entirely
+In-Reply-To: <1358990934-4893-2-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.LFD.2.02.1301291835590.6300@xanadu.home>
+References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com> <1358990934-4893-2-git-send-email-iamjoonsoo.kim@lge.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,72 +25,281 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jan 2013, Joonsoo Kim wrote:
+On Thu, 24 Jan 2013, Joonsoo Kim wrote:
 
-> On Mon, Jan 28, 2013 at 01:04:24PM -0500, Nicolas Pitre wrote:
-> > On Mon, 28 Jan 2013, Will Deacon wrote:
-> > 
-> > > Hello,
-> > > 
-> > > On Thu, Jan 24, 2013 at 01:28:51AM +0000, Joonsoo Kim wrote:
-> > > > In current implementation, we used ARM-specific flag, that is,
-> > > > VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
-> > > > The purpose of static mapped area is to re-use static mapped area when
-> > > > entire physical address range of the ioremap request can be covered
-> > > > by this area.
-> > > > 
-> > > > This implementation causes needless overhead for some cases.
-> > > > For example, assume that there is only one static mapped area and
-> > > > vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
-> > > > deciding whether it is matched or not. Moreover, even if there is
-> > > > no static mapped area and vmlist has 300 areas, every time we call
-> > > > ioremap, we check 300 areas in now.
-> > > > 
-> > > > If we construct a extra list for static mapped area, we can eliminate
-> > > > above mentioned overhead.
-> > > > With a extra list, if there is one static mapped area,
-> > > > we just check only one area and proceed next operation quickly.
-> > > > 
-> > > > In fact, it is not a critical problem, because ioremap is not frequently
-> > > > used. But reducing overhead is better idea.
-> > > > 
-> > > > Another reason for doing this work is for removing vm_struct list management,
-> > > > entirely. For more information, look at the following link.
-> > > > http://lkml.org/lkml/2012/12/6/184
-> > > 
-> > > First patch looks good (removing the unused vmregion stuff) but I'm not so
-> > > sure about the rest of it. If you really care about ioremap performance,
-> > > perhaps it would be better to have a container struct around the vm_struct
-> > > for static mappings and then stick them in an augmented rbtree so you can
-> > > efficiently find the mapping encompassing a particular physical address?
-> > 
-> > How can ioremap performance be a problem is the question I had since the 
-> > beginning.
-> > 
-> > Firstly, ioremap is _not_ meant to be used in performance critical 
-> > paths.
-> > 
-> > Secondly, there shouldn't be _that_ many entries on the vmlist such as 
-> > 300.  That sounds a bit excessive.
-> > 
-> > So please, can we discuss the reasons that motivated those patches in 
-> > the first place?  Maybe that's where the actual problem is.
+> From: Joonsoo Kim <js1304@gmail.com>
 > 
-> Hello, Wiil and Nicolas.
-> First of all, thanks for reviewing.
+> Now, there is no user for vmregion.
+> So remove it.
 > 
-> There is another reason for doing this work.
-> As mentioned above, I try to remove list management for vm_struct(vmlist),
-> entirely. For that purpose, removing architecture dependency against vmlist
-> is needed. Below link is for my RFC patch trying to remove list management
-> for vm_struct.
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+
 > 
-> http://lkml.org/lkml/2012/12/6/184
-
-OK,  I get it now.
-
-I do have comments on your patches.  I'll provide them as a reply to 
-them.
-
-
-Nicolas
+> diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
+> index 8a9c4cb..4e333fa 100644
+> --- a/arch/arm/mm/Makefile
+> +++ b/arch/arm/mm/Makefile
+> @@ -6,7 +6,7 @@ obj-y				:= dma-mapping.o extable.o fault.o init.o \
+>  				   iomap.o
+>  
+>  obj-$(CONFIG_MMU)		+= fault-armv.o flush.o idmap.o ioremap.o \
+> -				   mmap.o pgd.o mmu.o vmregion.o
+> +				   mmap.o pgd.o mmu.o
+>  
+>  ifneq ($(CONFIG_MMU),y)
+>  obj-y				+= nommu.o
+> diff --git a/arch/arm/mm/vmregion.c b/arch/arm/mm/vmregion.c
+> deleted file mode 100644
+> index a631016..0000000
+> --- a/arch/arm/mm/vmregion.c
+> +++ /dev/null
+> @@ -1,205 +0,0 @@
+> -#include <linux/fs.h>
+> -#include <linux/spinlock.h>
+> -#include <linux/list.h>
+> -#include <linux/proc_fs.h>
+> -#include <linux/seq_file.h>
+> -#include <linux/slab.h>
+> -
+> -#include "vmregion.h"
+> -
+> -/*
+> - * VM region handling support.
+> - *
+> - * This should become something generic, handling VM region allocations for
+> - * vmalloc and similar (ioremap, module space, etc).
+> - *
+> - * I envisage vmalloc()'s supporting vm_struct becoming:
+> - *
+> - *  struct vm_struct {
+> - *    struct vmregion	region;
+> - *    unsigned long	flags;
+> - *    struct page	**pages;
+> - *    unsigned int	nr_pages;
+> - *    unsigned long	phys_addr;
+> - *  };
+> - *
+> - * get_vm_area() would then call vmregion_alloc with an appropriate
+> - * struct vmregion head (eg):
+> - *
+> - *  struct vmregion vmalloc_head = {
+> - *	.vm_list	= LIST_HEAD_INIT(vmalloc_head.vm_list),
+> - *	.vm_start	= VMALLOC_START,
+> - *	.vm_end		= VMALLOC_END,
+> - *  };
+> - *
+> - * However, vmalloc_head.vm_start is variable (typically, it is dependent on
+> - * the amount of RAM found at boot time.)  I would imagine that get_vm_area()
+> - * would have to initialise this each time prior to calling vmregion_alloc().
+> - */
+> -
+> -struct arm_vmregion *
+> -arm_vmregion_alloc(struct arm_vmregion_head *head, size_t align,
+> -		   size_t size, gfp_t gfp, const void *caller)
+> -{
+> -	unsigned long start = head->vm_start, addr = head->vm_end;
+> -	unsigned long flags;
+> -	struct arm_vmregion *c, *new;
+> -
+> -	if (head->vm_end - head->vm_start < size) {
+> -		printk(KERN_WARNING "%s: allocation too big (requested %#x)\n",
+> -			__func__, size);
+> -		goto out;
+> -	}
+> -
+> -	new = kmalloc(sizeof(struct arm_vmregion), gfp);
+> -	if (!new)
+> -		goto out;
+> -
+> -	new->caller = caller;
+> -
+> -	spin_lock_irqsave(&head->vm_lock, flags);
+> -
+> -	addr = rounddown(addr - size, align);
+> -	list_for_each_entry_reverse(c, &head->vm_list, vm_list) {
+> -		if (addr >= c->vm_end)
+> -			goto found;
+> -		addr = rounddown(c->vm_start - size, align);
+> -		if (addr < start)
+> -			goto nospc;
+> -	}
+> -
+> - found:
+> -	/*
+> -	 * Insert this entry after the one we found.
+> -	 */
+> -	list_add(&new->vm_list, &c->vm_list);
+> -	new->vm_start = addr;
+> -	new->vm_end = addr + size;
+> -	new->vm_active = 1;
+> -
+> -	spin_unlock_irqrestore(&head->vm_lock, flags);
+> -	return new;
+> -
+> - nospc:
+> -	spin_unlock_irqrestore(&head->vm_lock, flags);
+> -	kfree(new);
+> - out:
+> -	return NULL;
+> -}
+> -
+> -static struct arm_vmregion *__arm_vmregion_find(struct arm_vmregion_head *head, unsigned long addr)
+> -{
+> -	struct arm_vmregion *c;
+> -
+> -	list_for_each_entry(c, &head->vm_list, vm_list) {
+> -		if (c->vm_active && c->vm_start == addr)
+> -			goto out;
+> -	}
+> -	c = NULL;
+> - out:
+> -	return c;
+> -}
+> -
+> -struct arm_vmregion *arm_vmregion_find(struct arm_vmregion_head *head, unsigned long addr)
+> -{
+> -	struct arm_vmregion *c;
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&head->vm_lock, flags);
+> -	c = __arm_vmregion_find(head, addr);
+> -	spin_unlock_irqrestore(&head->vm_lock, flags);
+> -	return c;
+> -}
+> -
+> -struct arm_vmregion *arm_vmregion_find_remove(struct arm_vmregion_head *head, unsigned long addr)
+> -{
+> -	struct arm_vmregion *c;
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&head->vm_lock, flags);
+> -	c = __arm_vmregion_find(head, addr);
+> -	if (c)
+> -		c->vm_active = 0;
+> -	spin_unlock_irqrestore(&head->vm_lock, flags);
+> -	return c;
+> -}
+> -
+> -void arm_vmregion_free(struct arm_vmregion_head *head, struct arm_vmregion *c)
+> -{
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&head->vm_lock, flags);
+> -	list_del(&c->vm_list);
+> -	spin_unlock_irqrestore(&head->vm_lock, flags);
+> -
+> -	kfree(c);
+> -}
+> -
+> -#ifdef CONFIG_PROC_FS
+> -static int arm_vmregion_show(struct seq_file *m, void *p)
+> -{
+> -	struct arm_vmregion *c = list_entry(p, struct arm_vmregion, vm_list);
+> -
+> -	seq_printf(m, "0x%08lx-0x%08lx %7lu", c->vm_start, c->vm_end,
+> -		c->vm_end - c->vm_start);
+> -	if (c->caller)
+> -		seq_printf(m, " %pS", (void *)c->caller);
+> -	seq_putc(m, '\n');
+> -	return 0;
+> -}
+> -
+> -static void *arm_vmregion_start(struct seq_file *m, loff_t *pos)
+> -{
+> -	struct arm_vmregion_head *h = m->private;
+> -	spin_lock_irq(&h->vm_lock);
+> -	return seq_list_start(&h->vm_list, *pos);
+> -}
+> -
+> -static void *arm_vmregion_next(struct seq_file *m, void *p, loff_t *pos)
+> -{
+> -	struct arm_vmregion_head *h = m->private;
+> -	return seq_list_next(p, &h->vm_list, pos);
+> -}
+> -
+> -static void arm_vmregion_stop(struct seq_file *m, void *p)
+> -{
+> -	struct arm_vmregion_head *h = m->private;
+> -	spin_unlock_irq(&h->vm_lock);
+> -}
+> -
+> -static const struct seq_operations arm_vmregion_ops = {
+> -	.start	= arm_vmregion_start,
+> -	.stop	= arm_vmregion_stop,
+> -	.next	= arm_vmregion_next,
+> -	.show	= arm_vmregion_show,
+> -};
+> -
+> -static int arm_vmregion_open(struct inode *inode, struct file *file)
+> -{
+> -	struct arm_vmregion_head *h = PDE(inode)->data;
+> -	int ret = seq_open(file, &arm_vmregion_ops);
+> -	if (!ret) {
+> -		struct seq_file *m = file->private_data;
+> -		m->private = h;
+> -	}
+> -	return ret;
+> -}
+> -
+> -static const struct file_operations arm_vmregion_fops = {
+> -	.open	= arm_vmregion_open,
+> -	.read	= seq_read,
+> -	.llseek	= seq_lseek,
+> -	.release = seq_release,
+> -};
+> -
+> -int arm_vmregion_create_proc(const char *path, struct arm_vmregion_head *h)
+> -{
+> -	proc_create_data(path, S_IRUSR, NULL, &arm_vmregion_fops, h);
+> -	return 0;
+> -}
+> -#else
+> -int arm_vmregion_create_proc(const char *path, struct arm_vmregion_head *h)
+> -{
+> -	return 0;
+> -}
+> -#endif
+> diff --git a/arch/arm/mm/vmregion.h b/arch/arm/mm/vmregion.h
+> deleted file mode 100644
+> index 0f5a5f2..0000000
+> --- a/arch/arm/mm/vmregion.h
+> +++ /dev/null
+> @@ -1,31 +0,0 @@
+> -#ifndef VMREGION_H
+> -#define VMREGION_H
+> -
+> -#include <linux/spinlock.h>
+> -#include <linux/list.h>
+> -
+> -struct page;
+> -
+> -struct arm_vmregion_head {
+> -	spinlock_t		vm_lock;
+> -	struct list_head	vm_list;
+> -	unsigned long		vm_start;
+> -	unsigned long		vm_end;
+> -};
+> -
+> -struct arm_vmregion {
+> -	struct list_head	vm_list;
+> -	unsigned long		vm_start;
+> -	unsigned long		vm_end;
+> -	int			vm_active;
+> -	const void		*caller;
+> -};
+> -
+> -struct arm_vmregion *arm_vmregion_alloc(struct arm_vmregion_head *, size_t, size_t, gfp_t, const void *);
+> -struct arm_vmregion *arm_vmregion_find(struct arm_vmregion_head *, unsigned long);
+> -struct arm_vmregion *arm_vmregion_find_remove(struct arm_vmregion_head *, unsigned long);
+> -void arm_vmregion_free(struct arm_vmregion_head *, struct arm_vmregion *);
+> -
+> -int arm_vmregion_create_proc(const char *, struct arm_vmregion_head *);
+> -
+> -#endif
+> -- 
+> 1.7.9.5
+> 
