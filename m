@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab3A2IgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:36:01 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:37232 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab3A2If6 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Tue, 29 Jan 2013 03:35:58 -0500
-Message-Id: <510797FA02000078000BA4B8@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Tue, 29 Jan 2013 08:35:54 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        "KY Srinivasan" <kys@microsoft.com>
-Cc: "Olaf Hering" <olaf@aepfle.de>, "Greg KH" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86: Hyper-V: register clocksource only if its
- advertised
-References: <1359121036-16309-1-git-send-email-olaf@aepfle.de>
- <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125165443.GA15833@aepfle.de>
- <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125171923.GA19306@aepfle.de>
- <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com>
- <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754862Ab3A2Ikn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:40:43 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:54126 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754647Ab3A2Ikk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 03:40:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <87k3qxnt07.fsf@nemi.mork.no>
+References: <1359387918-2791-1-git-send-email-dnlplm@gmail.com>
+	<87k3qxnt07.fsf@nemi.mork.no>
+Date: Tue, 29 Jan 2013 09:40:38 +0100
+Message-ID: <CAGRyCJEThQaex9au5AbWT-hm1Vvj2jxiXuAfrgNTdTofqAYY3A@mail.gmail.com>
+Subject: Re: [PATCH 1/1] NET: qmi_wwan: add Telit LE920 support
+From: Daniele Palmas <dnlplm@gmail.com>
+To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.01.13 at 18:44, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> I think that Olaf made his point very clear: a feature A should only be
-> enabled if the corresponding flag A is set.
-> In fact it seems to me that this patch is correct on its own merits,
-> regardless of Xen does or does not.
-> 
-> The Xen tools might or might not know whether a guest is going to be
-> Linux, Windows, FreeBSD or whatever else people use nowadays.  Setting
-> viridian=1 is the safe choice, given that it shouldn't create any
-> issues: after all guests are supposed to check for feature flags before
-> using them.
-> 
-> If Xen is going to implement "Partition Reference Counter", it is also
-> going to set the corresponding flag, so the guest OS (Windows, Linux,
-> my pet OS) can check whether the feature is available and decide whether
-> it wants to use it.
+Hello,
 
-While I agree in general, the specific case of the callback vector
-seems a little more difficult: As KY says, there's no feature flag
-for this (or perhaps more precisely for it being deliverable across
-all CPUs), and hence there's both the problem of detection and
-the problem of disambiguation (as otherwise both the Hyper-V
-code and the Xen code in Linux could be trying to use the same
-vector).
+2013/1/28 Bjørn Mork <bjorn@mork.no>:
+> Daniele Palmas <dnlplm@gmail.com> writes:
+>
+>> Add VID, PID and fixed interface for Telit LE920
+>>
+>> Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+>> ---
+>>  drivers/net/usb/qmi_wwan.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+>> index 6a1ca50..e32f9a1 100644
+>> --- a/drivers/net/usb/qmi_wwan.c
+>> +++ b/drivers/net/usb/qmi_wwan.c
+>> @@ -459,6 +459,7 @@ static const struct usb_device_id products[] = {
+>>       {QMI_FIXED_INTF(0x1199, 0x68a2, 19)},   /* Sierra Wireless MC7710 in QMI mode */
+>>       {QMI_FIXED_INTF(0x1199, 0x901c, 8)},    /* Sierra Wireless EM7700 */
+>>       {QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},    /* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
+>> +     {QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},    /* Telit LE920 */
+>>
+>>       /* 4. Gobi 1000 devices */
+>>       {QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},    /* Acer Gobi Modem Device */
+>
+> Thanks for adding this device. But the patch doesn't apply to the
+> current "net" tree.  Care to rebase it?
+>
 
-Jan
+Sure. Should I use the following git repository
 
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/net-next.git
+
+?
+
+Thanks,
+Daniele
