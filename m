@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab3A2VlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:41:16 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48810 "EHLO e9.ny.us.ibm.com"
+	id S1753242Ab3A2Vlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:41:31 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49298 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112Ab3A2VlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:41:09 -0500
+	id S1751894Ab3A2Vl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 16:41:28 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
@@ -20,243 +20,104 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv4 0/7] zswap: compressed swap caching
-Date: Tue, 29 Jan 2013 15:40:20 -0600
-Message-Id: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCHv4 1/7] debugfs: add get/set for atomic types
+Date: Tue, 29 Jan 2013 15:40:21 -0600
+Message-Id: <1359495627-30285-2-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012921-7182-0000-0000-000004CA7193
+x-cbid: 13012921-7182-0000-0000-000004CA7270
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the churn but just this set might be easier to review.
-The code required for the flushing is in a separate patch now
-as requested.
+debugfs currently lack the ability to create attributes
+that set/get atomic_t values.
 
-Changelog:
+This patch adds support for this through a new
+debugfs_create_atomic_t() function.
 
-v4:
-* Added Acks (Minchan)
-* Separated flushing functionality into standalone patch
-  for easier review (Minchan)
-* fix comment on zswap enabled attribute (Minchan)
-* add TODO for dynamic mempool size (Minchan)
-* and check for NULL in zswap_free_page() (Minchan)
-* add missing zs_free() in error path (Minchan)
-* TODO: add comments for flushing/refcounting (Minchan)
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/debugfs.h |  2 ++
+ 2 files changed, 44 insertions(+)
 
-NOTE: To build, read this:
-http://lkml.org/lkml/2013/1/28/586
-
-v3:
-* Dropped the zsmalloc patches from the set, except the promotion patch
-  which has be converted to a rename patch (vs full diff).  The dropped
-  patches have been Acked and are going into Greg's staging tree soon.
-* Separated [PATCHv2 7/9] into two patches since it makes changes for two
-  different reasons (Minchan)
-* Moved ZSWAP_MAX_OUTSTANDING_FLUSHES near the top in zswap.c (Rik)
-* Rebase to v3.8-rc5. linux-next is a little volatile with the
-  swapper_space per type changes which will effect this patchset.
-* TODO: Move some stats from debugfs to sysfs. Which ones? (Rik)
-
-v2:
-* Rename zswap_fs_* functions to zswap_frontswap_* to avoid
-  confusion with "filesystem"
-* Add comment about what the tree lock protects
-* Remove "#if 0" code (should have been done before)
-* Break out changes to existing swap code into separate patch
-* Fix blank line EOF warning on documentation file
-* Rebase to next-20130107
-
-Zswap Overview:
-
-Zswap is a lightweight compressed cache for swap pages. It takes
-pages that are in the process of being swapped out and attempts to
-compress them into a dynamically allocated RAM-based memory pool.
-If this process is successful, the writeback to the swap device is
-deferred and, in many cases, avoided completely.  This results in
-a significant I/O reduction and performance gains for systems that
-are swapping.
-
-The results of a kernel building benchmark indicate a
-runtime reduction of 53% and an I/O reduction 76% with zswap vs normal
-swapping with a kernel build under heavy memory pressure (see
-Performance section for more).
-
-Some addition performance metrics regarding the performance
-improvements and I/O reductions that can be achieved using zswap as
-measured by SPECjbb are provided here:
-
-http://ibm.co/VCgHvM
-
-These results include runs on x86 and new results on Power7+ with
-hardware compression acceleration.
-
-Of particular note is that zswap is able to evict pages from the compressed
-cache, on an LRU basis, to the backing swap device when the compressed pool
-reaches it size limit or the pool is unable to obtain additional pages
-from the buddy allocator.  This eviction functionality had been identified
-as a requirement in prior community discussions.
-
-Patchset Structure:
-1:   add atomic_t get/set to debugfs
-2:   promote zsmalloc to /lib
-3,4: changes to existing swap code for zswap
-5,6: add zswap and documentation
-
-Rationale:
-
-Zswap provides compressed swap caching that basically trades CPU cycles
-for reduced swap I/O.  This trade-off can result in a significant
-performance improvement as reads to/writes from to the compressed
-cache almost always faster that reading from a swap device
-which incurs the latency of an asynchronous block I/O read.
-
-Some potential benefits:
-* Desktop/laptop users with limited RAM capacities can mitigate the
-    performance impact of swapping.
-* Overcommitted guests that share a common I/O resource can
-    dramatically reduce their swap I/O pressure, avoiding heavy
-    handed I/O throttling by the hypervisor.  This allows more work
-    to get done with less impact to the guest workload and guests
-    sharing the I/O subsystem
-* Users with SSDs as swap devices can extend the life of the device by
-    drastically reducing life-shortening writes.
-
-Compressed swap is also provided in zcache, along with page cache
-compression and RAM clustering through RAMSter. Zswap seeks to deliver
-the benefit of swap  compression to users in a discrete function.
-This design decision is akin to Unix design philosophy of doing one
-thing well, it leaves file cache compression and other features
-for separate code.
-
-Design:
-
-Zswap receives pages for compression through the Frontswap API and
-is able to evict pages from its own compressed pool on an LRU basis
-and write them back to the backing swap device in the case that the
-compressed pool is full or unable to secure additional pages from
-the buddy allocator.
-
-Zswap makes use of zsmalloc for the managing the compressed memory
-pool.  This is because zsmalloc is specifically designed to minimize
-fragmentation on large (> PAGE_SIZE/2) allocation sizes.  Each
-allocation in zsmalloc is not directly accessible by address.
-Rather, a handle is return by the allocation routine and that handle
-must be mapped before being accessed.  The compressed memory pool grows
-on demand and shrinks as compressed pages are freed.  The pool is
-not preallocated.
-
-When a swap page is passed from frontswap to zswap, zswap maintains
-a mapping of the swap entry, a combination of the swap type and swap
-offset, to the zsmalloc handle that references that compressed swap
-page.  This mapping is achieved with a red-black tree per swap type.
-The swap offset is the search key for the tree nodes.
-
-Zswap seeks to be simple in its policies.  Sysfs attributes allow for
-two user controlled policies:
-* max_compression_ratio - Maximum compression ratio, as as percentage,
-    for an acceptable compressed page. Any page that does not compress
-    by at least this ratio will be rejected.
-* max_pool_percent - The maximum percentage of memory that the compressed
-    pool can occupy.
-
-To enabled zswap, the "enabled" attribute must be set to 1 at boot time.
-
-Zswap allows the compressor to be selected at kernel boot time by
-setting the “compressor” attribute.  The default compressor is lzo.
-
-A debugfs interface is provided for various statistic about pool size,
-number of pages stored, and various counters for the reasons pages
-are rejected.
-
-Performance, Kernel Building:
-
-Setup
-========
-Gentoo w/ kernel v3.7-rc7
-Quad-core i5-2500 @ 3.3GHz
-512MB DDR3 1600MHz (limited with mem=512m on boot)
-Filesystem and swap on 80GB HDD (about 58MB/s with hdparm -t)
-majflt are major page faults reported by the time command
-pswpin/out is the delta of pswpin/out from /proc/vmstat before and after
-the make -jN
-
-Summary
-========
-* Zswap reduces I/O and improves performance at all swap pressure levels.
-
-* Under heavy swaping at 24 threads, zswap reduced I/O by 76%, saving
-  over 1.5GB of I/O, and cut runtime in half.
-
-Details
-========
-I/O (in pages)
-	base				zswap				change	change
-N	pswpin	pswpout	majflt	I/O sum	pswpin	pswpout	majflt	I/O sum	%I/O	MB
-8	1	335	291	627	0	0	249	249	-60%	1
-12	3688	14315	5290	23293	123	860	5954	6937	-70%	64
-16	12711	46179	16803	75693	2936	7390	46092	56418	-25%	75
-20	42178	133781	49898	225857	9460	28382	92951	130793	-42%	371
-24	96079	357280	105242	558601	7719	18484	109309	135512	-76%	1653
-
-Runtime (in seconds)
-N	base	zswap	%change
-8	107	107	0%
-12	128	110	-14%
-16	191	179	-6%
-20	371	240	-35%
-24	570	267	-53%
-
-%CPU utilization (out of 400% on 4 cpus)
-N	base	zswap	%change
-8	317	319	1%
-12	267	311	16%
-16	179	191	7%
-20	94	143	52%
-24	60	128	113%
-
-
-Seth Jennings (7):
-  debugfs: add get/set for atomic types
-  zsmalloc: promote to lib/
-  zswap: add to mm/
-  mm: break up swap_writepage() for frontswap backends
-  mm: allow for outstanding swap writeback accounting
-  zswap: add flushing support
-  zswap: add documentation
-
- Documentation/vm/zswap.txt                         |   73 ++
- drivers/staging/Kconfig                            |    2 -
- drivers/staging/Makefile                           |    1 -
- drivers/staging/zcache/zcache-main.c               |    3 +-
- drivers/staging/zram/zram_drv.h                    |    3 +-
- drivers/staging/zsmalloc/Kconfig                   |   10 -
- drivers/staging/zsmalloc/Makefile                  |    3 -
- fs/debugfs/file.c                                  |   42 +
- include/linux/debugfs.h                            |    2 +
- include/linux/swap.h                               |    4 +
- .../staging/zsmalloc => include/linux}/zsmalloc.h  |    0
- lib/Kconfig                                        |   18 +
- lib/Makefile                                       |    1 +
- .../zsmalloc/zsmalloc-main.c => lib/zsmalloc.c     |    3 +-
- mm/Kconfig                                         |   15 +
- mm/Makefile                                        |    1 +
- mm/page_io.c                                       |   22 +-
- mm/swap_state.c                                    |    2 +-
- mm/zswap.c                                         | 1073 ++++++++++++++++++++
- 19 files changed, 1250 insertions(+), 28 deletions(-)
- create mode 100644 Documentation/vm/zswap.txt
- delete mode 100644 drivers/staging/zsmalloc/Kconfig
- delete mode 100644 drivers/staging/zsmalloc/Makefile
- rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
- rename drivers/staging/zsmalloc/zsmalloc-main.c => lib/zsmalloc.c (99%)
- create mode 100644 mm/zswap.c
-
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c5ca6ae..fa26d5b 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -21,6 +21,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/atomic.h>
+ 
+ static ssize_t default_read_file(struct file *file, char __user *buf,
+ 				 size_t count, loff_t *ppos)
+@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+ 
++static int debugfs_atomic_t_set(void *data, u64 val)
++{
++	atomic_set((atomic_t *)data, val);
++	return 0;
++}
++static int debugfs_atomic_t_get(void *data, u64 *val)
++{
++	*val = atomic_read((atomic_t *)data);
++	return 0;
++}
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
++			debugfs_atomic_t_set, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
++
++/**
++ * debugfs_create_atomic_t - create a debugfs file that is used to read and
++ * write an atomic_t value
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @value: a pointer to the variable that the file should read to and write
++ *         from.
++ */
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				 struct dentry *parent, atomic_t *value)
++{
++	/* if there are no write bits set, make read only */
++	if (!(mode & S_IWUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_ro);
++	/* if there are no read bits set, make write only */
++	if (!(mode & S_IRUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_wo);
++
++	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+ 
+ static ssize_t read_file_bool(struct file *file, char __user *user_buf,
+ 			      size_t count, loff_t *ppos)
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 66c434f..51fea70 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
+ 				  struct dentry *parent, u64 *value);
+ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ 				     struct dentry *parent, size_t *value);
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				     struct dentry *parent, atomic_t *value);
+ struct dentry *debugfs_create_bool(const char *name, umode_t mode,
+ 				  struct dentry *parent, u32 *value);
+ 
 -- 
 1.8.1.1
 
