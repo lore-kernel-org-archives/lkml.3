@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab3A2C6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 21:58:09 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47267 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab3A2C6I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 21:58:08 -0500
-Message-ID: <51073AB7.3050207@linux.vnet.ibm.com>
-Date: Tue, 29 Jan 2013 10:57:59 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 01/12] KVM: MMU: lazily drop large spte
-References: <50FFB5A1.5090708@linux.vnet.ibm.com> <20130127120657.GA21650@redhat.com>
-In-Reply-To: <20130127120657.GA21650@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756275Ab3A2C75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 21:59:57 -0500
+Received: from mga03.intel.com ([143.182.124.21]:15654 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874Ab3A2C74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 21:59:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,555,1355126400"; 
+   d="scan'208";a="196091360"
+Subject: [PATCH] suspend: enable freeze timeout configuration through sysctl
+From: fli24 <fei.li@intel.com>
+To: rjw@sisk.pl, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        chuansheng.liu@intel.com, fei.li@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Jan 2013 10:58:20 +0800
+Message-ID: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012902-5564-0000-0000-00000665EDF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2013 08:06 PM, Gleb Natapov wrote:
-> On Wed, Jan 23, 2013 at 06:04:17PM +0800, Xiao Guangrong wrote:
->> Do not drop large spte until it can be insteaded by small pages so that
->> the guest can happliy read memory through it
->>
->> The idea is from Avi:
->> | As I mentioned before, write-protecting a large spte is a good idea,
->> | since it moves some work from protect-time to fault-time, so it reduces
->> | jitter.  This removes the need for the return value.
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c |   21 ++++++---------------
->>  1 files changed, 6 insertions(+), 15 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 9f628f7..0f90269 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -1105,7 +1105,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
->>
->>  /*
->>   * Write-protect on the specified @sptep, @pt_protect indicates whether
->> - * spte writ-protection is caused by protecting shadow page table.
->> + * spte write-protection is caused by protecting shadow page table.
->>   * @flush indicates whether tlb need be flushed.
->>   *
->>   * Note: write protection is difference between drity logging and spte
->> @@ -1114,31 +1114,23 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
->>   *   its dirty bitmap is properly set.
->>   * - for spte protection, the spte can be writable only after unsync-ing
->>   *   shadow page.
->> - *
->> - * Return true if the spte is dropped.
->>   */
->> -static bool
->> +static void
->>  spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
-> Since return value is not longer used make the function return true if flush is needed
-> instead of returning it via pointer to a variable.
 
-Right, i forgot to check it, will update it in the next version. Thanks for your pointing
-it out.
+At present, the timeout value for freezing tasks is fixed as 20s,
+which is too long for handheld device usage, especially for mobile
+phone.
+
+In order to improve user experience, we enable freeze timeout
+configuration through sysctl, so that we can tune the value easily
+for concrete usage, such as smaller value for handheld device such
+as mobile phone.
+
+Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Li Fei <fei.li@intel.com>
+---
+ include/linux/freezer.h |    5 +++++
+ kernel/power/process.c  |    4 ++--
+ kernel/sysctl.c         |   12 ++++++++++++
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index e4238ce..f37b3be 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect */
+ extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
+ 
+ /*
++ * Timeout for stopping processes
++ */
++extern unsigned int sysctl_freeze_process_timeout_secs;
++
++/*
+  * Check if a process has been frozen
+  */
+ static inline bool frozen(struct task_struct *p)
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index d5a258b..f7eb7c9 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -21,7 +21,7 @@
+ /* 
+  * Timeout for stopping processes
+  */
+-#define TIMEOUT	(20 * HZ)
++unsigned int __read_mostly sysctl_freeze_process_timeout_secs = 20;
+ 
+ static int try_to_freeze_tasks(bool user_only)
+ {
+@@ -36,7 +36,7 @@ static int try_to_freeze_tasks(bool user_only)
+ 
+ 	do_gettimeofday(&start);
+ 
+-	end_time = jiffies + TIMEOUT;
++	end_time = jiffies + sysctl_freeze_process_timeout_secs * HZ;
+ 
+ 	if (!user_only)
+ 		freeze_workqueues_begin();
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c88878d..f88bcb9 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -90,6 +90,9 @@
+ #include <linux/nmi.h>
+ #endif
+ 
++#ifdef CONFIG_FREEZER
++#include <linux/freezer.h>
++#endif
+ 
+ #if defined(CONFIG_SYSCTL)
+ 
+@@ -1047,6 +1050,15 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++#ifdef CONFIG_FREEZER
++	{
++		.procname	= "freeze_process_timeout_secs",
++		.data		= &sysctl_freeze_process_timeout_secs,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++#endif
+ 	{ }
+ };
+ 
+-- 
+1.7.4.1
+
 
 
