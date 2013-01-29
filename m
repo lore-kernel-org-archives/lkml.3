@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab3A2NCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 08:02:36 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:33359 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3A2NCd (ORCPT
+	id S1756664Ab3A2NFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 08:05:08 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:46243 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3A2NFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 08:02:33 -0500
-Message-ID: <1359464544.1624.16.camel@kernel>
+	Tue, 29 Jan 2013 08:05:02 -0500
+Message-ID: <1359464694.1624.18.camel@kernel>
 Subject: Re: [PATCH v6 08/15] memory-hotplug: Common APIs to support page
  tables hot-remove
 From: Simon Jeons <simon.jeons@gmail.com>
@@ -23,7 +23,7 @@ Cc: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
         linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
         cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Date: Tue, 29 Jan 2013 07:02:24 -0600
+Date: Tue, 29 Jan 2013 07:04:54 -0600
 In-Reply-To: <1357723959-5416-9-git-send-email-tangchen@cn.fujitsu.com>
 References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
 	 <1357723959-5416-9-git-send-email-tangchen@cn.fujitsu.com>
@@ -42,10 +42,11 @@ On Wed, 2013-01-09 at 17:32 +0800, Tang Chen wrote:
 > When memory is removed, the corresponding pagetables should alse be removed.
 > This patch introduces some common APIs to support vmemmap pagetable and x86_64
 > architecture pagetable removing.
+
+Why don't need to build_all_zonelists like online_pages does during
+hot-add path(add_memory)?
+
 > 
-
-When page table of hot-add memory is created?
-
 > All pages of virtual mapping in removed memory cannot be freedi if some pages
 > used as PGD/PUD includes not only removed memory but also other memory. So the
 > patch uses the following way to check whether page can be freed or not.
