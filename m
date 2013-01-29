@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab3A2Rwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 12:52:51 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:27921 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab3A2Rwt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 12:52:49 -0500
-Date: Tue, 29 Jan 2013 18:52:47 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH v3 02/71] ARC: Build system: Makefiles, Kconfig, Linker
-	script
-Message-ID: <20130129175246.GA25081@merkur.ravnborg.org>
-References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-3-git-send-email-vgupta@synopsys.com> <51061AD0.4020200@synopsys.com> <20130128184419.GA24853@merkur.ravnborg.org> <5107D263.4090606@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5107D263.4090606@synopsys.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754677Ab3A2RzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 12:55:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60979 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751586Ab3A2Ry7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 12:54:59 -0500
+Message-ID: <1359482093.8282.94.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] x86, efi: remove attribute check from setup_efi_pci
+From: Matt Fleming <matt.fleming@intel.com>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
+        x86@kernel.org
+Date: Tue, 29 Jan 2013 17:54:53 +0000
+In-Reply-To: <5107FE48.7080402@canonical.com>
+References: <5107FE48.7080402@canonical.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 07:15:07PM +0530, Vineet Gupta wrote:
-> On Tuesday 29 January 2013 12:14 AM, Sam Ravnborg wrote:
-> > On Mon, Jan 28, 2013 at 11:59:36AM +0530, Vineet Gupta wrote:
-> >> Hi Sam,
-> >>
-> >> On Thursday 24 January 2013 04:20 PM, Vineet Gupta wrote:
-> >>> Arnd in his review pointed out that arch Kconfig organisation has several
-> >>> deficiencies:
-> >>>
-> >>> * Build time entries for things which can be runtime extracted from DT
-> >>>   (e.g. SDRAM size, core clk frequency..)
-> >>> * Not multi-platform-image-build friendly (choice .. endchoice constructs)
-> >>> * cpu variants support (750/770) is exclusive.
-> >>>
-> >>> The first 2 have been fixed in subsequent patches.
-> >>> Due to the nature of the 750 and 770, it is not possible to build for
-> >>> both together, w/o special runtime glue code which would hurt
-> >>> performance.
-> >>>
-> >>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> >>> Cc: Arnd Bergmann <arnd@arndb.de>
-> >>> Cc: Sam Ravnborg <sam@ravnborg.org>
-> > Looks good - all former comments addressed, and nothing were jumping
-> > into my eyes now.
-> > Many existing architectures looks worse from the build stuff perspective...
-> >
-> > Acked-by: Sam Ravnborg <sam@ravnborg.org>
-> >
-> > 	Sam
+On Tue, 2013-01-29 at 17:52 +0100, Maarten Lankhorst wrote:
+> It looks like the original commit that copied the rom contents from efi always copied
+> the rom, and the fixup in setup_efi_pci from commit 886d751a2ea99a160
+> ("x86, efi: correct precedence of operators in setup_efi_pci") broke that.
 > 
-> Thx Sam. I have a following one liner change to the version you reviewed. Will it
-> be OK to add your ACK despite that or do I need to send the updated patch for you
-> to take a look again.
-OK
+> This resulted in macbook pro's no longer finding the rom images, and thus not being able to use the radeon card any more.
+> 
+> The solution is to just remove the check for now, and always copy the rom if available.
+> 
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+
+Applied, thanks!
+
