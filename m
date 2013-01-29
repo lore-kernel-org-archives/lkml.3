@@ -1,383 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab3A2Ro5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 12:44:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:45459 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3A2Row (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 12:44:52 -0500
-Date: Tue, 29 Jan 2013 20:42:36 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Joe Perches <joe@perches.com>, Valdis.Kletnieks@vt.edu,
-        cocci@systeme.lip6.fr, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: coccinelle and bitmask arithmetic (was: Re: [patch] TTY:
- synclink, small cleanup in dtr_rts())
-Message-ID: <20130129174236.GR16282@mwanda>
-References: <20130127194039.GA18787@elgon.mountain>
- <1359317078.14406.12.camel@joe-AO722>
- <20130127201947.GO16282@mwanda>
- <9561.1359474916@turing-police.cc.vt.edu>
- <1359475998.4196.26.camel@joe-AO722>
- <alpine.DEB.2.02.1301291717530.3339@hadrien>
- <20130129173004.GP16282@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130129173004.GP16282@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1754308Ab3A2RtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 12:49:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab3A2Rs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 12:48:58 -0500
+Message-ID: <1359481737.1635.14.camel@dcbw.foobar.com>
+Subject: Re: [PATCH 1/1] USB: option: add support for Telit LE920
+From: Dan Williams <dcbw@redhat.com>
+To: Daniele Palmas <dnlplm@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthias Urlichs <smurf@smurf.noris.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 29 Jan 2013 11:48:57 -0600
+In-Reply-To: <1359479958.1635.8.camel@dcbw.foobar.com>
+References: <1359388030-2821-1-git-send-email-dnlplm@gmail.com>
+	 <1359479958.1635.8.camel@dcbw.foobar.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are the warnings for yesterday's linux-next (next-20130128).
+On Tue, 2013-01-29 at 11:19 -0600, Dan Williams wrote:
+> On Mon, 2013-01-28 at 16:47 +0100, Daniele Palmas wrote:
+> > From: danielepa <danielepa@L2011.(none)>
+> > 
+> > Add PID and special handling for Telit LE920
+> 
+> Any idea what interfaces 1 and 5 are?  Is one perhaps a pseudo-ethernet
+> interface that could be used instead of PPP?  What's the lsusb -v output
+> for the device?
 
-regards,
-dan carpenter
+Nevermind, I see the QMI patch for the device now on netdev.
 
-arch/x86/crypto/crc32-pclmul_glue.c:66 crc32_pclmul_le() warn: bit mask 'SCALE_F_MASK' used for math 'p + (16 - 1)'
-arch/x86/kernel/cpu/mcheck/mce_amd.c:155 threshold_restart_bank() warn: bit mask 'THRESHOLD_MAX' used for math '4095 - tr->b->threshold_limit'
-arch/x86/kernel/cpu/mcheck/mce_amd.c:400 show_error_count() warn: bit mask 'THRESHOLD_MAX' used for math '4095 - b->threshold_limit'
-arch/x86/realmode/init.c:81 setup_real_mode() warn: bit mask '_KERNPG_TABLE' used for math '__phys_addr_symbol(((level3_ident_pgt))) + ((((1)) << 0) | (((1)) << 1) | (((1)) << 5) | (((1)) << 6))'
-arch/x86/realmode/init.c:82 setup_real_mode() warn: bit mask '_KERNPG_TABLE' used for math '__phys_addr_symbol(((level3_kernel_pgt))) + ((((1)) << 0) | (((1)) << 1) | (((1)) << 5) | (((1)) << 6))'
-arch/x86/kvm/x86.c:1560 msr_mtrr_valid() warn: bit mask 'KVM_NR_VAR_MTRR' used for math '2 * 8'
-fs/proc/mmu.c:55 get_vmalloc_info() warn: bit mask 'VMALLOC_END' used for math '(-25288767438849) - prev_end'
-fs/proc/mmu.c:56 get_vmalloc_info() warn: bit mask 'VMALLOC_END' used for math '(-25288767438849) - prev_end'
-fs/proc/kcore.c:225 kclist_add_private() warn: bit mask 'VMALLOC_START' used for math '(-60473139527680) - ent->addr'
-fs/proc/kcore.c:226 kclist_add_private() warn: bit mask 'VMALLOC_START' used for math '(-60473139527680) - ent->addr'
-fs/proc/kcore.c:629 proc_kcore_init() warn: bit mask 'VMALLOC_END' used for math '(-25288767438849) - (-60473139527680)'
-fs/proc/kcore.c:629 proc_kcore_init() warn: bit mask 'VMALLOC_START' used for math '(-25288767438849) - (-60473139527680)'
-fs/inode.c:460 hash() warn: bit mask 'GOLDEN_RATIO_PRIME' used for math '-7045881617021403135 + hashval'
-fs/udf/inode.c:1009 udf_merge_extents() warn: bit mask 'UDF_EXTENT_LENGTH_MASK' used for math 'lip1->extLength - (li->extLength & 1073741823) + 1073741823'
-fs/udf/inode.c:1014 udf_merge_extents() warn: bit mask 'UDF_EXTENT_LENGTH_MASK' used for math '1073741823 + 1'
-fs/udf/inode.c:1049 udf_merge_extents() warn: bit mask 'UDF_EXTENT_LENGTH_MASK' used for math 'lip1->extLength - (li->extLength & 1073741823) + 1073741823'
-fs/udf/inode.c:1054 udf_merge_extents() warn: bit mask 'UDF_EXTENT_LENGTH_MASK' used for math '1073741823 + 1'
-fs/jffs2/compr_rubin.c:98 init_rubin() warn: bit mask 'UPPER_BIT_RUBIN' used for math '2 * ((1) << (16 - 1))'
-fs/ubifs/lprops.c:189 add_to_lpt_heap() warn: bit mask 'b' used for math '((lprops >> 4) & b) + b'
-fs/nfs/blocklayout/blocklayout.c:520 bl_do_readpage_sync() warn: bit mask 'SECTOR_SIZE' used for math 'offset / (1 << 9)'
-net/batman-adv/translation-table.c:1615 batadv_tt_response_fill_table() warn: bit mask 'NET_IP_ALIGN' used for math 'len + 14 + 0'
-net/batman-adv/translation-table.c:1782 batadv_send_other_tt_response() warn: bit mask 'NET_IP_ALIGN' used for math 'len + 14 + 0'
-net/batman-adv/translation-table.c:1900 batadv_send_my_tt_response() warn: bit mask 'NET_IP_ALIGN' used for math 'len + 14 + 0'
-net/batman-adv/vis.c:400 batadv_add_packet() warn: bit mask 'NET_IP_ALIGN' used for math 'len + 14 + 0'
-net/batman-adv/icmp_socket.c:180 batadv_socket_write() warn: bit mask 'NET_IP_ALIGN' used for math 'packet_len + 14 + 0'
-net/dsa/tag_trailer.c:37 trailer_xmit() warn: bit mask 'NET_IP_ALIGN' used for math '0 + skb->len'
-net/sched/sch_prio.c:186 prio_tune() warn: bit mask 'TC_PRIO_MAX' used for math '15 + 1'
-net/sched/sch_prio.c:248 prio_dump() warn: bit mask 'TC_PRIO_MAX' used for math '15 + 1'
-net/sched/sch_sfb.c:392 sfb_enqueue() warn: bit mask 'SFB_MAX_PROB' used for math '65535 / 2'
-net/sched/sch_generic.c:494 pfifo_fast_dump() warn: bit mask 'TC_PRIO_MAX' used for math '15 + 1'
-net/ieee802154/6lowpan.c:259 lowpan_compress_udp_header() warn: bit mask 'LOWPAN_NHC_UDP_4BIT_PORT' used for math 'uh->dest - 61616'
-net/ieee802154/6lowpan.c:344 lowpan_uncompress_udp_header() warn: bit mask 'LOWPAN_NHC_UDP_4BIT_PORT' used for math '61616 + (*skb->data + 0 >> 4)'
-net/ieee802154/6lowpan.c:346 lowpan_uncompress_udp_header() warn: bit mask 'LOWPAN_NHC_UDP_4BIT_PORT' used for math '61616 + (*skb->data + 0 & 15)'
-net/core/neighbour.c:1543 neigh_table_init_no_netlink() warn: bit mask 'PNEIGH_HASHMASK' used for math '15 + 1'
-net/core/dev.c:3874 napi_reuse_skb() warn: bit mask 'NET_IP_ALIGN' used for math ' + 0'
-net/openvswitch/datapath.c:669 ovs_packet_cmd_execute() warn: bit mask 'NET_IP_ALIGN' used for math '0 + len'
-net/rds/iw_rdma.c:300 rds_iw_map_scatterlist() warn: bit mask 'PAGE_MASK' used for math 'end_addr + (~(((1) << 12) - 1))'
-sound/pci/pcxhr/pcxhr_core.c:1249 pcxhr_interrupt() warn: bit mask 'PCXHR_DSP_TIME_MASK' used for math 'dsp_time_diff + 16777215'
-sound/pci/intel8x0m.c:398 snd_intel8x0m_setup_periods() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0m.c:398 snd_intel8x0m_setup_periods() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0m.c:410 snd_intel8x0m_setup_periods() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0m.c:410 snd_intel8x0m_setup_periods() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0m.c:455 snd_intel8x0m_update() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0.c:684 snd_intel8x0_setup_periods() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0.c:684 snd_intel8x0_setup_periods() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0.c:696 snd_intel8x0_setup_periods() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0.c:696 snd_intel8x0_setup_periods() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/intel8x0.c:767 snd_intel8x0_update() warn: bit mask 'ICH_REG_LVI_MASK' used for math '31 + 1'
-sound/pci/cs4281.c:1024 snd_cs4281_get_volume() warn: bit mask 'CS_VOL_MASK' used for math '31 - (snd_cs4281_peekBA0(regL, chip) & 31)'
-sound/pci/cs4281.c:1025 snd_cs4281_get_volume() warn: bit mask 'CS_VOL_MASK' used for math '31 - (snd_cs4281_peekBA0(regR, chip) & 31)'
-sound/pci/cs4281.c:1041 snd_cs4281_put_volume() warn: bit mask 'CS_VOL_MASK' used for math '31 - (snd_cs4281_peekBA0(regL, chip) & 31)'
-sound/pci/cs4281.c:1042 snd_cs4281_put_volume() warn: bit mask 'CS_VOL_MASK' used for math '31 - (snd_cs4281_peekBA0(regR, chip) & 31)'
-sound/pci/cs4281.c:1045 snd_cs4281_put_volume() warn: bit mask 'CS_VOL_MASK' used for math '31 - (ucontrol->value.integer.value[0] & 31)'
-sound/pci/cs4281.c:1050 snd_cs4281_put_volume() warn: bit mask 'CS_VOL_MASK' used for math '31 - (ucontrol->value.integer.value[1] & 31)'
-sound/drivers/opl3/opl3_midi.c:74 snd_opl3_calc_volume() warn: bit mask 'OPL3_TOTAL_LEVEL_MASK' used for math '63 - (*volbyte & 63)'
-sound/drivers/opl3/opl3_midi.c:82 snd_opl3_calc_volume() warn: bit mask 'OPL3_TOTAL_LEVEL_MASK' used for math '63 - (newvol & 63)'
-sound/firewire/isight.c:625 get_unit_base() warn: bit mask 'CSR_REGISTER_BASE' used for math '281474708275200 + value * 4'
-sound/firewire/cmp.c:65 pcr_modify() warn: bit mask 'CSR_REGISTER_BASE' used for math '281474708275200 + (2436 + (c->pcr_index) * 4)'
-mm/rmap.c:970 page_move_anon_rmap() warn: bit mask 'PAGE_MAPPING_ANON' used for math 'anon_vma + 1'
-mm/rmap.c:999 __page_set_anon_rmap() warn: bit mask 'PAGE_MAPPING_ANON' used for math 'anon_vma + 1'
-mm/rmap.c:1783 __hugepage_set_anon_rmap() warn: bit mask 'PAGE_MAPPING_ANON' used for math 'anon_vma + 1'
-mm/vmalloc.c:1172 vm_area_register_early() warn: bit mask 'VMALLOC_START' used for math '(((addr + vm->size) + (((1) << 12) - 1)) & (~(((1) << 12) - 1))) - (-60473139527680)'
-mm/percpu.c:1689 pcpu_embed_first_chunk() warn: bit mask 'VMALLOC_END' used for math '(-25288767438849) - (-60473139527680)'
-mm/percpu.c:1689 pcpu_embed_first_chunk() warn: bit mask 'VMALLOC_START' used for math '(-25288767438849) - (-60473139527680)'
-drivers/staging/fwserial/fwserial.c:2057 fwserial_add_peer() warn: bit mask 'CSR_REGISTER_BASE' used for math '281474708275200 + 4 * val'
-drivers/staging/iio/light/tsl2x7x_core.c:774 tsl2x7x_chip_on() warn: bit mask 'TSL2X7X_CMD_REG' used for math '128 + i'
-drivers/staging/iio/light/tsl2583.c:443 taos_chip_on() warn: bit mask 'TSL258X_CMD_REG' used for math '128 + i'
-drivers/staging/iio/light/tsl2583.c:834 taos_probe() warn: bit mask 'TSL258X_CNTRL' used for math '0 + i'
-drivers/staging/media/lirc/lirc_igorplugusb.c:333 igorplugusb_remote_poll() warn: bit mask 'PULSE_MASK' used for math '16777215 / 1000000'
-drivers/staging/media/go7007/wis-saa7113.c:144 wis_saa7113_command() warn: bit mask 'V4L2_STD_SECAM' used for math 'dec->norm * ((65536) | (262144) | (524288) | ((131072) | (1048576) | (2097152)) | (4194304) | (8388608))'
-drivers/iommu/amd_iommu.c:3552 amd_iommu_domain_enable_v2() warn: bit mask 'PASID_MASK' used for math '1048575 + 1'
-drivers/iommu/amd_iommu_v2.c:763 amd_iommu_init_device() warn: bit mask 'PASID_MASK' used for math '1048575 + 1'
-drivers/usb/c67x00/c67x00-sched.c:202 frame_after() warn: bit mask 'HOST_FRAME_MASK' used for math '2047 + a'
-drivers/usb/c67x00/c67x00-sched.c:203 frame_after() warn: bit mask 'HOST_FRAME_MASK' used for math '2047 / 2'
-drivers/usb/c67x00/c67x00-sched.c:211 frame_after_eq() warn: bit mask 'HOST_FRAME_MASK' used for math '2047 + 1'
-drivers/usb/c67x00/c67x00-sched.c:212 frame_after_eq() warn: bit mask 'HOST_FRAME_MASK' used for math '2047 / 2'
-drivers/usb/core/message.c:1188 usb_disable_device() warn: bit mask 'USB_DIR_IN' used for math 'i + 128'
-drivers/usb/core/message.c:1198 usb_disable_device() warn: bit mask 'USB_DIR_IN' used for math 'i + 128'
-drivers/usb/core/message.c:1447 usb_reset_configuration() warn: bit mask 'USB_DIR_IN' used for math 'i + 128'
-drivers/usb/host/xhci-mem.c:2410 xhci_mem_init() warn: bit mask 'ERST_NUM_SEGS' used for math '16 * 1'
-drivers/usb/host/uhci-hcd.c:598 uhci_start() warn: bit mask 'UHCI_NUMFRAMES' used for math '1024 * '
-drivers/usb/misc/sisusbvga/sisusb.c:2537 sisusb_read() warn: bit mask 'SISUSB_PCI_IOPORTBASE' used for math '(*ppos) - 53248 + 53248'
-drivers/usb/misc/sisusbvga/sisusb.c:2592 sisusb_read() warn: bit mask 'SISUSB_PCI_MEMBASE' used for math '(*ppos) - 268435456 + 3489660928'
-drivers/usb/misc/sisusbvga/sisusb.c:2608 sisusb_read() warn: bit mask 'SISUSB_PCI_MMIOBASE' used for math '(*ppos) - 536870912 + 3825205248'
-drivers/usb/misc/sisusbvga/sisusb.c:2679 sisusb_write() warn: bit mask 'SISUSB_PCI_IOPORTBASE' used for math '(*ppos) - 53248 + 53248'
-drivers/usb/misc/sisusbvga/sisusb.c:2733 sisusb_write() warn: bit mask 'SISUSB_PCI_MEMBASE' used for math '(*ppos) - 268435456 + 3489660928'
-drivers/usb/misc/sisusbvga/sisusb.c:2752 sisusb_write() warn: bit mask 'SISUSB_PCI_MMIOBASE' used for math '(*ppos) - 536870912 + 3825205248'
-drivers/usb/misc/sisusbvga/sisusb.c:2852 sisusb_handle_command() warn: bit mask 'SISUSB_PCI_IOPORTBASE' used for math 'y->data3 - 53248 + 53248'
-drivers/usb/misc/sisusbvga/sisusb.c:2898 sisusb_handle_command() warn: bit mask 'SISUSB_PCI_MEMBASE' used for math 'y->data3 - 268435456 + 3489660928'
-drivers/usb/misc/sisusbvga/sisusb_con.c:679 sisusbcon_blank() warn: bit mask 'VESA_VSYNC_SUSPEND' used for math '1 + 1'
-drivers/usb/atm/usbatm.c:342 usbatm_extract_one_cell() warn: bit mask 'ATM_CELL_PAYLOAD' used for math 'sarb->tail + 48'
-drivers/usb/atm/usbatm.c:489 usbatm_write_cells() warn: bit mask 'ATM_CELL_PAYLOAD' used for math '48 - data_len'
-drivers/net/tun.c:1070 tun_get_user() warn: bit mask 'NET_IP_ALIGN' used for math ''
-drivers/net/xen-netback/netback.c:1336 xen_netbk_tx_build_gops() warn: bit mask 'NET_IP_ALIGN' used for math 'data_len +  + 0'
-drivers/net/xen-netback/netback.c:1346 xen_netbk_tx_build_gops() warn: bit mask 'NET_IP_ALIGN' used for math ' + 0'
-drivers/net/usb/smsc95xx.c:1741 smsc95xx_rx_fixup() warn: bit mask 'NET_IP_ALIGN' used for math 'size + 0'
-drivers/net/ethernet/marvell/skge.c:1011 skge_rx_fill() warn: bit mask 'NET_IP_ALIGN' used for math 'skge->rx_buf_size + 0'
-drivers/net/ethernet/intel/ixgbe/ixgbe_common.c:1128 ixgbe_read_eerd_buffer_generic() warn: bit mask 'IXGBE_EEPROM_RW_REG_START' used for math '((offset + i) << 2) + 1'
-drivers/net/ethernet/intel/ixgb/ixgb_main.c:1997 ixgb_check_copybreak() warn: bit mask 'NET_IP_ALIGN' used for math '(*skb)->data - 0'
-drivers/net/ethernet/intel/ixgb/ixgb_main.c:1998 ixgb_check_copybreak() warn: bit mask 'NET_IP_ALIGN' used for math 'length + 0'
-drivers/net/ethernet/intel/e1000/e1000_main.c:4234 e1000_check_copybreak() warn: bit mask 'NET_IP_ALIGN' used for math '(*skb)->data - 0'
-drivers/net/ethernet/intel/e1000/e1000_main.c:4235 e1000_check_copybreak() warn: bit mask 'NET_IP_ALIGN' used for math 'length + 0'
-drivers/net/ethernet/intel/e1000e/netdev.c:1013 e1000_clean_rx_irq() warn: bit mask 'NET_IP_ALIGN' used for math 'skb->data - 0'
-drivers/net/ethernet/intel/e1000e/netdev.c:1015 e1000_clean_rx_irq() warn: bit mask 'NET_IP_ALIGN' used for math 'length + 0'
-drivers/net/ethernet/intel/e1000e/nvm.c:333 e1000e_read_nvm_eerd() warn: bit mask 'E1000_NVM_RW_REG_START' used for math '((offset + i) << 2) + 1'
-drivers/net/ethernet/intel/igb/e1000_nvm.c:410 igb_read_nvm_eerd() warn: bit mask 'E1000_NVM_RW_REG_START' used for math '((offset + i) << 2) + 1'
-drivers/net/ethernet/dec/tulip/winbond-840.c:1019 start_tx() warn: bit mask 'TX_BUFLIMIT' used for math 'skb->len - (1024 - 128)'
-drivers/net/ethernet/dec/tulip/winbond-840.c:1021 start_tx() warn: bit mask 'TX_BUFLIMIT' used for math 'np->tx_addr[entry] + (1024 - 128)'
-drivers/net/ethernet/dec/tulip/de4x5.c:3394 test_for_100Mb() warn: bit mask 'SAMPLE_INTERVAL' used for math 'msec / 500'
-drivers/net/ethernet/dec/tulip/de4x5.c:3396 test_for_100Mb() warn: bit mask 'SAMPLE_INTERVAL' used for math '(msec - 2000) / 500'
-drivers/net/ethernet/dec/tulip/de4x5.c:3396 test_for_100Mb() warn: bit mask 'SAMPLE_DELAY' used for math 'msec - 2000'
-drivers/net/ethernet/dec/tulip/de4x5.c:3400 test_for_100Mb() warn: bit mask 'SAMPLE_INTERVAL' used for math 'msec / 500'
-drivers/net/ethernet/dec/tulip/de2104x.c:817 de_rx_missed() warn: bit mask 'RxMissedMask' used for math ''
-drivers/net/ethernet/microchip/enc28j60.c:957 enc28j60_hw_rx() warn: bit mask 'NET_IP_ALIGN' used for math 'len + 0'
-drivers/net/ethernet/neterion/s2io.c:2521 fill_rx_buffers() warn: bit mask 'NET_IP_ALIGN' used for math ''
-drivers/net/ethernet/neterion/s2io.c:2547 fill_rx_buffers() warn: bit mask 'NET_IP_ALIGN' used for math 'size - 0'
-drivers/net/ethernet/neterion/s2io.c:6836 set_rxd_buffer_pointer() warn: bit mask 'NET_IP_ALIGN' used for math 'size - 0'
-drivers/net/ethernet/neterion/s2io.c:6933 rxd_owner_bit_reset() warn: bit mask 'NET_IP_ALIGN' used for math ''
-drivers/net/ethernet/stmicro/stmmac/stmmac_main.c:568 init_dma_desc_rings() warn: bit mask 'NET_IP_ALIGN' used for math 'bfsize + 0'
-drivers/net/ethernet/tehuti/tehuti.c:1104 bdx_rx_alloc_skbs() warn: bit mask 'NET_IP_ALIGN' used for math 'f->m.pktsz + 0'
-drivers/net/ethernet/tehuti/tehuti.c:1274 bdx_rx_receive() warn: bit mask 'NET_IP_ALIGN' used for math 'len + 0'
-drivers/net/ethernet/atheros/atlx/atl1.c:1670 atl1_via_workaround() warn: bit mask 'PCI_COMMAND' used for math 'adapter->hw.hw_addr + 4'
-drivers/net/ethernet/atheros/atlx/atl1.c:1673 atl1_via_workaround() warn: bit mask 'PCI_COMMAND' used for math 'adapter->hw.hw_addr + 4'
-drivers/net/ethernet/sfc/tx.c:104 efx_tx_queue_partner() warn: bit mask 'EFX_TXQ_TYPE_OFFLOAD' used for math 'tx_queue + 1'
-drivers/net/ethernet/sfc/rx.c:155 efx_init_rx_buffers_skb() warn: bit mask 'NET_IP_ALIGN' used for math 'skb_len - 0'
-drivers/net/ethernet/qlogic/qlge/qlge_main.c:1606 ql_process_mac_rx_skb() warn: bit mask 'NET_IP_ALIGN' used for math 'length + 0'
-drivers/net/ethernet/qlogic/qlge/qlge_main.c:1694 ql_realign_skb() warn: bit mask 'NET_IP_ALIGN' used for math '0 - 0'
-drivers/net/ethernet/qlogic/qlge/qlge_main.c:1695 ql_realign_skb() warn: bit mask 'NET_IP_ALIGN' used for math '0 - 0'
-drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c:255 netxen_alloc_sw_resources() warn: bit mask 'NET_IP_ALIGN' used for math 'rds_ring->dma_size + 0'
-drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c:272 netxen_alloc_sw_resources() warn: bit mask 'NET_IP_ALIGN' used for math 'rds_ring->dma_size + 0'
-drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c:278 netxen_alloc_sw_resources() warn: bit mask 'NET_IP_ALIGN' used for math 'rds_ring->dma_size + 0'
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:2617 qlcnic_83xx_get_registers() warn: bit mask 'QLCNIC_DEV_INFO_SIZE' used for math '1 + 1'
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_init.c:207 qlcnic_alloc_sw_resources() warn: bit mask 'NET_IP_ALIGN' used for math 'rds_ring->dma_size + 0'
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_init.c:220 qlcnic_alloc_sw_resources() warn: bit mask 'NET_IP_ALIGN' used for math 'rds_ring->dma_size + 0'
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_ethtool.c:216 qlcnic_get_regs_len() warn: bit mask 'QLCNIC_DEV_INFO_SIZE' used for math '(20 * 4) + len + 1'
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_ethtool.c:460 qlcnic_82xx_get_registers() warn: bit mask 'QLCNIC_DEV_INFO_SIZE' used for math '1 + 1'
-drivers/net/ethernet/cadence/macb.c:553 macb_rx_frame() warn: bit mask 'NET_IP_ALIGN' used for math 'len + 0'
-drivers/net/ethernet/cadence/macb.c:570 macb_rx_frame() warn: bit mask 'NET_IP_ALIGN' used for math ''
-drivers/net/ethernet/mellanox/mlx4/reset.c:174 mlx4_reset() warn: bit mask 'PCI_COMMAND' used for math '4 / 4'
-drivers/net/ethernet/amd/pcnet32.c:1175 pcnet32_rx_entry() warn: bit mask 'NET_IP_ALIGN' used for math 'pkt_len + 0'
-drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c:1409 pch_gbe_alloc_rx_buffers() warn: bit mask 'NET_IP_ALIGN' used for math 'adapter->rx_buffer_len + 0'
-drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c:1503 pch_gbe_alloc_tx_buffers() warn: bit mask 'NET_IP_ALIGN' used for math 'adapter->hw.mac.max_frame_size + 0 + 0'
-drivers/net/ethernet/rdc/r6040.c:219 r6040_phy_read() warn: bit mask 'MDIO_READ' used for math '8192 + reg'
-drivers/net/ethernet/rdc/r6040.c:239 r6040_phy_write() warn: bit mask 'MDIO_WRITE' used for math '16384 + reg'
-drivers/net/ethernet/micrel/ksz884x.c:1817 port_r_mib_cnt() warn: bit mask 'MIB_COUNTER_VALUE' used for math '1073741823 + 1'
-drivers/net/ethernet/micrel/ksz884x.c:1861 port_r_mib_pkt() warn: bit mask 'MIB_PACKET_DROPPED' used for math '65535 + 1'
-drivers/net/ethernet/broadcom/b44.c:657 b44_alloc_rx_skb() warn: bit mask 'RX_PKT_BUF_SZ' used for math 'mapping + (1536 + (28 + 2))'
-drivers/net/ethernet/broadcom/b44.c:670 b44_alloc_rx_skb() warn: bit mask 'RX_PKT_BUF_SZ' used for math 'mapping + (1536 + (28 + 2))'
-drivers/net/ethernet/broadcom/b44.c:774 b44_rx() warn: bit mask 'RX_PKT_BUF_SZ' used for math '(1536 + (28 + 2)) - (28 + 2)'
-drivers/net/ethernet/broadcom/tg3.c:15749 tg3_get_invariants() warn: bit mask 'NET_IP_ALIGN' used for math ' + 0'
-drivers/net/ethernet/broadcom/cnic.c:5001 cnic_init_bnx2x_rx_ring() warn: bit mask 'BNX2X_MAX_RCQ_DESC_CNT' used for math ''
-drivers/net/ethernet/smsc/smsc9420.c:829 smsc9420_rx_handoff() warn: bit mask 'NET_IP_ALIGN' used for math 'skb_tail_pointer(skb) + 0'
-drivers/net/ethernet/smsc/smsc9420.c:866 smsc9420_alloc_rx_buffer() warn: bit mask 'NET_IP_ALIGN' used for math 'mapping + 0'
-drivers/net/wimax/i2400m/rx.c:932 i2400m_rx_roq_destroy() warn: bit mask 'I2400M_RO_CIN' used for math '15 + 1'
-drivers/net/wimax/i2400m/rx.c:932 i2400m_rx_roq_destroy() warn: bit mask 'I2400M_RO_CIN' used for math '15 + 1'
-drivers/net/wimax/i2400m/rx.c:1359 i2400m_rx_setup() warn: bit mask 'I2400M_RO_CIN' used for math '15 + 1'
-drivers/net/wimax/i2400m/rx.c:1367 i2400m_rx_setup() warn: bit mask 'I2400M_RO_CIN' used for math '15 + 1'
-drivers/net/wimax/i2400m/rx.c:1376 i2400m_rx_setup() warn: bit mask 'I2400M_RO_CIN' used for math '15 + 1'
-drivers/net/wimax/i2400m/rx.c:1376 i2400m_rx_setup() warn: bit mask 'I2400M_RO_CIN' used for math '15 + 1'
-drivers/net/wireless/ray_cs.c:2377 copy_from_rx_buff() warn: bit mask 'RX_BUFF_END' used for math '16383 + 1'
-drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:3740 brcmf_sdbrcm_probe_attach() warn: bit mask 'PRIOMASK' used for math '7 + 1'
-drivers/net/wireless/ath/carl9170/rx.c:471 carl9170_rx_copy_data() warn: bit mask 'NET_IP_ALIGN' used for math ''
-drivers/net/wireless/ath/carl9170/rx.c:474 carl9170_rx_copy_data() warn: bit mask 'NET_IP_ALIGN' used for math ''
-drivers/net/wireless/ath/carl9170/rx.c:478 carl9170_rx_copy_data() warn: bit mask 'NET_IP_ALIGN' used for math ''
-drivers/net/wireless/ath/ath6kl/txrx.c:1152 aggr_process_recv_frm() warn: bit mask 'ATH6KL_MAX_SEQ_NO' used for math '4095 - (rxtid->hold_q_sz - 2 - cur)'
-drivers/net/wireless/ath/ath6kl/txrx.c:1163 aggr_process_recv_frm() warn: bit mask 'ATH6KL_MAX_SEQ_NO' used for math '4095 - (rxtid->hold_q_sz - 2 - cur)'
-drivers/net/wireless/ti/wl1251/tx.c:40 wl1251_tx_double_buffer_busy() warn: bit mask 'TX_STATUS_DATA_OUT_COUNT_MASK' used for math '15 + 1'
-drivers/md/persistent-data/dm-space-map-common.c:133 bitmap_word_used() warn: bit mask 'WORD_MASK_HIGH' used for math 'bits + -6148914691236517206'
-drivers/md/dm-bufio.c:1654 dm_bufio_init() warn: bit mask 'VMALLOC_END' used for math '(-25288767438849) - (-60473139527680)'
-drivers/md/dm-bufio.c:1654 dm_bufio_init() warn: bit mask 'VMALLOC_START' used for math '(-25288767438849) - (-60473139527680)'
-drivers/md/dm-bufio.c:1655 dm_bufio_init() warn: bit mask 'VMALLOC_END' used for math '(-25288767438849) - (-60473139527680)'
-drivers/md/dm-bufio.c:1655 dm_bufio_init() warn: bit mask 'VMALLOC_START' used for math '(-25288767438849) - (-60473139527680)'
-drivers/rtc/rtc-ds1305.c:550 ds1305_nvram_read() warn: bit mask 'DS1305_NVRAM' used for math '32 + off'
-drivers/rtc/rtc-msm6242.c:172 msm6242_set_time() warn: bit mask 'MSM6242_HOUR10_PM' used for math '(1 << 2) + (tm->tm_hour - 12) / 10'
-drivers/gpu/drm/gma500/psb_intel_lvds.c:118 psb_lvds_i2c_set_brightness() warn: bit mask 'BRIGHTNESS_MASK' used for math 'level * 255'
-drivers/gpu/drm/gma500/psb_intel_lvds.c:123 psb_lvds_i2c_set_brightness() warn: bit mask 'BRIGHTNESS_MASK' used for math '255 - blc_i2c_brightness'
-drivers/ide/ide-eh.c:39 ide_ata_error() warn: bit mask 'SECTOR_SIZE' used for math 'nsect * 512'
-drivers/ide/ide-disk_proc.c:102 __idedisk_proc_show() warn: bit mask 'SECTOR_SIZE' used for math '512 / 2'
-drivers/ide/ide-disk_proc.c:102 __idedisk_proc_show() warn: bit mask 'SECTOR_SIZE' used for math '512 / 2'
-drivers/ide/ide-taskfile.c:317 ide_error_cmd() warn: bit mask 'SECTOR_SIZE' used for math ''
-drivers/ide/ide-taskfile.c:445 ide_raw_taskfile() warn: bit mask 'SECTOR_SIZE' used for math 'nsect * 512'
-drivers/ide/ide-taskfile.c:596 ide_taskfile_ioctl() warn: bit mask 'SECTOR_SIZE' used for math 'taskout / 512'
-drivers/ide/ide-taskfile.c:614 ide_taskfile_ioctl() warn: bit mask 'SECTOR_SIZE' used for math 'taskin / 512'
-drivers/ide/ide-ioctls.c:158 ide_cmd_ioctl() warn: bit mask 'SECTOR_SIZE' used for math '512 * args[3]'
-drivers/ide/tc86c001.c:125 tc86c001_dma_start() warn: bit mask 'SECTOR_SIZE' used for math '512 / 2'
-drivers/ide/ide-proc.c:134 ide_identify_proc_show() warn: bit mask 'SECTOR_SIZE' used for math '512 / 2'
-drivers/ide/ide-proc.c:134 ide_identify_proc_show() warn: bit mask 'SECTOR_SIZE' used for math '512 / 2'
-drivers/input/joydev.c:808 joydev_connect() warn: bit mask 'KEY_MAX' used for math '767 - 256'
-drivers/input/joydev.c:808 joydev_connect() warn: bit mask 'KEY_MAX' used for math '767 - 256'
-drivers/media/pci/mantis/mantis_ioc.c:104 mantis_stream_control() warn: bit mask 'MANTIS_BYPASS' used for math '255 - (1 << 2)'
-drivers/media/pci/mantis/mantis_ioc.c:114 mantis_stream_control() warn: bit mask 'MANTIS_BYPASS' used for math '255 - (1 << 2)'
-drivers/media/pci/cx23885/cx23888-ir.c:338 pulse_clocks_to_clock_divider() warn: bit mask 'RXCLK_RCD' used for math '65535 + 1'
-drivers/media/pci/cx23885/cx23888-ir.c:186 count_to_clock_divider() warn: bit mask 'RXCLK_RCD' used for math '65535 + 1'
-drivers/media/usb/gspca/ov519.c:4064 sethvflip() warn: bit mask 'OV7670_MVFP_MIRROR' used for math '32 * hflip'
-drivers/media/usb/gspca/ov519.c:4064 sethvflip() warn: bit mask 'OV7670_MVFP_VFLIP' used for math '16 * vflip'
-drivers/media/usb/dvb-usb/af9005.c:616 af9005_boot_packet() warn: bit mask 'FW_BULKOUT_SIZE' used for math '250 + 2'
-drivers/media/usb/dvb-usb/af9005.c:621 af9005_boot_packet() warn: bit mask 'FW_BULKOUT_SIZE' used for math '250 + 2'
-drivers/media/usb/dvb-usb/af9005.c:733 af9005_download_firmware() warn: bit mask 'FW_BULKOUT_SIZE' used for math 'fw->size / 250'
-drivers/media/usb/dvb-usb/af9005.c:737 af9005_download_firmware() warn: bit mask 'FW_BULKOUT_SIZE' used for math 'i * 250'
-drivers/media/usb/dvb-usb/af9005.c:743 af9005_download_firmware() warn: bit mask 'FW_BULKOUT_SIZE' used for math '250 + 2'
-drivers/media/dvb-frontends/dib0090.c:2471 dib0090_tune() warn: bit mask 'EN_CRYSTAL' used for math 'state->config->use_pwm_agc * 2'
-drivers/media/i2c/cx25840/cx25840-ir.c:322 pulse_clocks_to_clock_divider() warn: bit mask 'RXCLK_RCD' used for math '65535 + 1'
-drivers/media/i2c/cx25840/cx25840-ir.c:144 count_to_clock_divider() warn: bit mask 'RXCLK_RCD' used for math '65535 + 1'
-drivers/ata/sata_mv.c:3678 mv_port_init() warn: bit mask 'ATA_REG_DATA' used for math '4 * 0'
-drivers/ata/sata_mv.c:3681 mv_port_init() warn: bit mask 'ATA_REG_NSECT' used for math '4 * 2'
-drivers/ata/sata_mv.c:3682 mv_port_init() warn: bit mask 'ATA_REG_LBAL' used for math '4 * 3'
-drivers/ata/sata_mv.c:3685 mv_port_init() warn: bit mask 'ATA_REG_DEVICE' used for math '4 * 6'
-drivers/ata/sata_nv.c:1296 nv_adma_setup_port() warn: bit mask 'ATA_REG_NSECT' used for math '2 * 4'
-drivers/ata/sata_nv.c:1297 nv_adma_setup_port() warn: bit mask 'ATA_REG_LBAL' used for math '3 * 4'
-drivers/ata/sata_nv.c:1300 nv_adma_setup_port() warn: bit mask 'ATA_REG_DEVICE' used for math '6 * 4'
-drivers/ata/libata-sff.c:2245 ata_sff_std_ports() warn: bit mask 'ATA_REG_DATA' used for math 'ioaddr->cmd_addr + 0'
-drivers/ata/libata-sff.c:2247 ata_sff_std_ports() warn: bit mask 'ATA_REG_FEATURE' used for math 'ioaddr->cmd_addr + 1'
-drivers/ata/libata-sff.c:2248 ata_sff_std_ports() warn: bit mask 'ATA_REG_NSECT' used for math 'ioaddr->cmd_addr + 2'
-drivers/ata/libata-sff.c:2249 ata_sff_std_ports() warn: bit mask 'ATA_REG_LBAL' used for math 'ioaddr->cmd_addr + 3'
-drivers/ata/libata-sff.c:2252 ata_sff_std_ports() warn: bit mask 'ATA_REG_DEVICE' used for math 'ioaddr->cmd_addr + 6'
-drivers/ata/libata-sff.c:2254 ata_sff_std_ports() warn: bit mask 'ATA_REG_CMD' used for math 'ioaddr->cmd_addr + 7'
-drivers/mtd/rfd_ftl.c:139 build_block_map() warn: bit mask 'SECTOR_SIZE' used for math '(i + part->header_sectors_per_block) * 512'
-drivers/mtd/rfd_ftl.c:157 scan_header() warn: bit mask 'SECTOR_SIZE' used for math 'part->block_size / 512'
-drivers/mtd/rfd_ftl.c:166 scan_header() warn: bit mask 'SECTOR_SIZE' used for math '((3 + sectors_per_block) * 2 + 512 - 1) / 512'
-drivers/mtd/rfd_ftl.c:166 scan_header() warn: bit mask 'SECTOR_SIZE' used for math '(3 + sectors_per_block) * 2 + 512'
-drivers/mtd/rfd_ftl.c:404 move_block_contents() warn: bit mask 'SECTOR_SIZE' used for math '(i + part->header_sectors_per_block) * 512'
-drivers/mtd/rfd_ftl.c:591 mark_sector_deleted() warn: bit mask 'SECTOR_SIZE' used for math '(old_addr % part->block_size) / 512'
-drivers/mtd/rfd_ftl.c:667 do_writesect() warn: bit mask 'SECTOR_SIZE' used for math '(i + part->header_sectors_per_block) * 512'
-drivers/mtd/ftl.c:434 prepare_xfer() warn: bit mask 'SECTOR_SIZE' used for math '(part->BlocksPerUnit * 4 + () + 512 - 1) / 512'
-drivers/mtd/ftl.c:434 prepare_xfer() warn: bit mask 'SECTOR_SIZE' used for math 'part->BlocksPerUnit * 4 + () + 512'
-drivers/mtd/ftl.c:548 copy_erase_unit() warn: bit mask 'SECTOR_SIZE' used for math ''
-drivers/mtd/ftl.c:549 copy_erase_unit() warn: bit mask 'SECTOR_SIZE' used for math ''
-drivers/mtd/ftl.c:805 ftl_read() warn: bit mask 'SECTOR_SIZE' used for math '(sector + i) * 512'
-drivers/mtd/ftl.c:823 ftl_read() warn: bit mask 'SECTOR_SIZE' used for math ''
-drivers/mtd/ftl.c:849 set_bam_entry() warn: bit mask 'SECTOR_SIZE' used for math '(log_addr % bsize) / 512'
-drivers/mtd/ftl.c:925 ftl_write() warn: bit mask 'SECTOR_SIZE' used for math 'sector * 512'
-drivers/mtd/ftl.c:943 ftl_write() warn: bit mask 'SECTOR_SIZE' used for math 'blk * 512'
-drivers/mtd/ftl.c:950 ftl_write() warn: bit mask 'SECTOR_SIZE' used for math 'blk * 512'
-drivers/mtd/ftl.c:976 ftl_write() warn: bit mask 'SECTOR_SIZE' used for math ''
-drivers/mtd/ftl.c:977 ftl_write() warn: bit mask 'SECTOR_SIZE' used for math ''
-drivers/mtd/ftl.c:988 ftl_getgeo() warn: bit mask 'SECTOR_SIZE' used for math '() / 512'
-drivers/mtd/devices/docecc.c:199 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:199 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:210 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:210 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:213 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:218 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:218 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:213 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:225 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:225 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:281 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:281 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:290 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:306 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:306 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:318 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:319 eras_dec_rs() warn: bit mask 'NN' used for math 'Index_of[lambda[i]] - discr_r + ((1 << 10) - 1)'
-drivers/mtd/devices/docecc.c:318 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:290 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:331 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:331 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:342 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) + k'
-drivers/mtd/devices/docecc.c:374 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:374 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:385 eras_dec_rs() warn: bit mask 'NN' used for math '((1 << 10) - 1) - (1023 - 4)'
-drivers/mtd/devices/docecc.c:397 eras_dec_rs() warn: bit mask 'NN' used for math 'root[j] * (510 - 1) + ((1 << 10) - 1)'
-drivers/mtd/devices/docecc.c:415 eras_dec_rs() warn: bit mask 'NN' used for math 'Index_of[num1] + Index_of[num2] + ((1 << 10) - 1)'
-drivers/mtd/devices/docecc.c:73 modnn() warn: bit mask 'NN' used for math ''
-drivers/mtd/devices/docecc.c:448 doc_decode_ecc() warn: bit mask 'NN' used for math '((1 << 10) - 1) + 1'
-drivers/mtd/devices/docecc.c:452 doc_decode_ecc() warn: bit mask 'NN' used for math '((1 << 10) - 1) + 1'
-drivers/mtd/nand/docg4.c:526 read_progstatus() warn: bit mask 'DOC_IOSPACE_DATA' used for math 'docptr + 2048'
-drivers/mtd/nand/docg4.c:527 read_progstatus() warn: bit mask 'DOC_IOSPACE_DATA' used for math 'docptr + 2048'
-drivers/mtd/nand/docg4.c:781 read_page() warn: bit mask 'DOC_IOSPACE_DATA' used for math 'docptr + 2048'
-drivers/mtd/nand/docg4.c:858 docg4_read_oob() warn: bit mask 'DOC_IOSPACE_DATA' used for math 'docptr + 2048'
-drivers/mtd/nand/docg4.c:1235 init_mtd_structs() warn: bit mask 'DOC_IOSPACE_DATA' used for math 'doc->virtadr + 2048'
-drivers/mtd/nand/diskonchip.c:174 doc_ecc_decode() warn: bit mask 'NN' used for math '1023 - 510'
-drivers/xen/evtchn.c:175 evtchn_read() warn: bit mask 'EVTCHN_RING_SIZE' used for math '(((1) << 12) / 4) - ((c) & ((((1) << 12) / 4) - 1))'
-drivers/video/aty/atyfb_base.c:1117 aty_var_to_crtc() warn: bit mask 'VERT_STRETCH_RATIO0' used for math '1023 + 1'
-drivers/leds/leds-ss4200.c:283 ich7_gpio_init() warn: bit mask 'NAS_RECOVERY' used for math 'all_nas_led + 1024'
-drivers/infiniband/ulp/iser/iser_verbs.c:195 iser_create_ib_conn_res() warn: bit mask 'ISCSI_DEF_MAX_RECV_SEG_LEN' used for math '8192 + ((32 + 48) + 8192)'
-drivers/infiniband/ulp/iser/iser_verbs.c:201 iser_create_ib_conn_res() warn: bit mask 'ISCSI_DEF_MAX_RECV_SEG_LEN' used for math 'ib_conn->login_buf + 8192'
-drivers/infiniband/hw/amso1100/c2.c:101 c2_set_rxbufsize() warn: bit mask 'NET_IP_ALIGN' used for math 'netdev->mtu + 14 + 8 + 0'
-drivers/infiniband/hw/mthca/mthca_reset.c:224 mthca_reset() warn: bit mask 'PCI_COMMAND' used for math '4 / 4'
-drivers/infiniband/hw/mthca/mthca_reset.c:274 mthca_reset() warn: bit mask 'PCI_COMMAND' used for math '4 / 4'
-drivers/infiniband/hw/qib/qib_qsfp.c:474 qib_qsfp_init() warn: bit mask 'QSFP_GPIO_MOD_RST_N' used for math 'mask - (32)'
-drivers/infiniband/hw/nes/nes_utils.c:399 nes_read16_eeprom() warn: bit mask 'NES_EEPROM_READ_REQUEST' used for math '(1 << 16) + (offset >> 1)'
-drivers/isdn/hisax/hfc4s8s_l1.c:693 rx_d_frame() warn: bit mask 'MAX_F_CNT' used for math 'f1 - f2 + 15'
-drivers/isdn/hisax/hfc_pci.c:361 receive_dmsg() warn: bit mask 'MAX_D_FRAMES' used for math '15 + 1'
-drivers/isdn/hisax/hfc_pci.c:382 receive_dmsg() warn: bit mask 'MAX_D_FRAMES' used for math '15 + 1'
-drivers/isdn/hisax/hfc_pci.c:495 main_rec_hfcpci() warn: bit mask 'MAX_B_FRAMES' used for math '31 + 1'
-drivers/isdn/hisax/hfc_pci.c:538 hfcpci_fill_dfifo() warn: bit mask 'MAX_D_FRAMES' used for math '15 + 1'
-drivers/isdn/hisax/hfc_pci.c:562 hfcpci_fill_dfifo() warn: bit mask 'D_FREG_MASK' used for math '15 + 1'
-drivers/isdn/hisax/hfc_pci.c:672 hfcpci_fill_fifo() warn: bit mask 'MAX_B_FRAMES' used for math '31 + 1'
-drivers/isdn/hisax/hfc_pci.c:912 receive_emsg() warn: bit mask 'MAX_B_FRAMES' used for math '31 + 1'
-drivers/isdn/hisax/hfc_sx.c:158 write_fifo() warn: bit mask 'MAX_B_FRAMES' used for math '31 + 1'
-drivers/isdn/hardware/mISDN/netjet.c:271 mode_tiger() warn: bit mask 'NJ_DMA_READ_ADR' used for math 'card->base + 20'
-drivers/isdn/hardware/mISDN/netjet.c:272 mode_tiger() warn: bit mask 'NJ_DMA_WRITE_ADR' used for math 'card->base + 36'
-drivers/isdn/hardware/mISDN/hfcpci.c:501 receive_dmsg() warn: bit mask 'MAX_D_FRAMES' used for math '15 + 1'
-drivers/isdn/hardware/mISDN/hfcpci.c:533 receive_dmsg() warn: bit mask 'MAX_D_FRAMES' used for math '15 + 1'
-drivers/isdn/hardware/mISDN/hfcpci.c:651 main_rec_hfcpci() warn: bit mask 'MAX_B_FRAMES' used for math '31 + 1'
-drivers/isdn/hardware/mISDN/hfcpci.c:699 hfcpci_fill_dfifo() warn: bit mask 'MAX_D_FRAMES' used for math '15 + 1'
-drivers/isdn/hardware/mISDN/hfcpci.c:725 hfcpci_fill_dfifo() warn: bit mask 'D_FREG_MASK' used for math '15 + 1'
-drivers/isdn/hardware/mISDN/hfcpci.c:867 hfcpci_fill_fifo() warn: bit mask 'MAX_B_FRAMES' used for math '31 + 1'
-drivers/firewire/ohci.c:1504 handle_local_rom() warn: bit mask 'CSR_CONFIG_ROM' used for math 'csr - 1024'
-drivers/firewire/ohci.c:1580 handle_local_request() warn: bit mask 'CSR_REGISTER_BASE' used for math 'offset - 281474708275200'
-drivers/firewire/sbp2.c:1040 sbp2_scan_unit_dir() warn: bit mask 'CSR_REGISTER_BASE' used for math '281474708275200 + 4 * value'
-drivers/firewire/sbp2.c:1171 sbp2_probe() warn: bit mask 'CSR_CONFIG_ROM' used for math '(unit->directory - device->config_rom) * 4 + 1024'
-drivers/block/drbd/drbd_receiver.c:3960 receive_state() warn: bit mask 'CS_VERBOSE' used for math '2 + ()'
-drivers/block/rbd.c:1587 rbd_rq_fn() warn: bit mask 'SECTOR_SIZE' used for math 'blk_rq_pos(rq) * (1 << 9)'
-drivers/block/rbd.c:1815 rbd_update_mapping_size() warn: bit mask 'SECTOR_SIZE' used for math 'rbd_dev->header.image_size / (1 << 9)'
-drivers/block/rbd.c:1908 rbd_init_disk() warn: bit mask 'SECTOR_SIZE' used for math 'segment_size / (1 << 9)'
-drivers/block/rbd.c:1920 rbd_init_disk() warn: bit mask 'SECTOR_SIZE' used for math 'rbd_dev->mapping.size / (1 << 9)'
-drivers/block/rbd.c:1948 rbd_size_show() warn: bit mask 'SECTOR_SIZE' used for math 'size * (1 << 9)'
-drivers/scsi/isci/host.c:2256 sci_controller_dma_alloc() warn: bit mask 'SCU_MAX_COMPLETION_QUEUE_ENTRIES' used for math '((384) + (1 << (7)) + (128) + (256) + (128)) * 4'
-drivers/scsi/pm8001/pm8001_init.c:239 pm8001_alloc() warn: bit mask 'PM8001_MPI_QUEUE' used for math '1024 * 64'
-drivers/scsi/pm8001/pm8001_init.c:245 pm8001_alloc() warn: bit mask 'PM8001_MPI_QUEUE' used for math '1024 * 64'
-drivers/scsi/advansys.c:12161 advansys_board_found() warn: bit mask 'ASC_MAX_TID' used for math '7 + 1'
-drivers/scsi/advansys.c:12172 advansys_board_found() warn: bit mask 'ADV_MAX_TID' used for math '15 + 1'
-drivers/scsi/qla4xxx/ql4_nx.c:567 qla4_82xx_pci_get_crb_addr_2M() warn: bit mask 'QLA82XX_PCI_CRBSPACE' used for math ''
-drivers/scsi/qla4xxx/ql4_nx.c:1100 qla4_82xx_pinit_from_rom() warn: bit mask 'QLA82XX_PCI_CRBSPACE' used for math 'qla4_82xx_decode_crb_addr(buf + i->addr) + 100663296'
-drivers/scsi/qla2xxx/qla_nx.c:436 qla82xx_pci_get_crb_addr_2M() warn: bit mask 'QLA82XX_PCI_CRBSPACE' used for math ''
-drivers/scsi/qla2xxx/qla_nx.c:1231 qla82xx_pinit_from_rom() warn: bit mask 'QLA82XX_PCI_CRBSPACE' used for math 'qla82xx_decode_crb_addr(buf + i->addr) + 100663296'
-drivers/char/pcmcia/synclink_cs.c:2469 dtr_rts() warn: bit mask 'SerialSignal_DTR' used for math '~32 + 128'
-drivers/target/sbp/sbp_target.c:2006 sbp_update_unit_directory() warn: bit mask 'CSR_REGISTER_BASE' used for math 'tport->mgt_agt->handler.offset - 281474708275200'
-drivers/tty/serial/jsm/jsm_tty.c:772 jsm_check_queue_flow_control() warn: bit mask 'RQUEUEMASK' used for math '8191 + 1'
-drivers/tty/serial/jsm/jsm_neo.c:312 neo_copy_data_from_uart_to_queue() warn: bit mask 'RQUEUEMASK' used for math '8191 + 1'
-drivers/tty/n_gsm.c:2682 gsm_mux_rx_netchar() warn: bit mask 'NET_IP_ALIGN' used for math 'size + 0'
-drivers/atm/fore200e.c:1611 fore200e_send() warn: bit mask 'ATM_CELL_PAYLOAD' used for math '((skb_len / 48) + 1) * 48'
-drivers/atm/fore200e.c:1611 fore200e_send() warn: bit mask 'ATM_CELL_PAYLOAD' used for math 'skb_len / 48'
-drivers/atm/zatm.c:447 poll_rx() warn: bit mask 'ATM_CELL_PAYLOAD' used for math 'cells * 48'
-drivers/atm/zatm.c:448 poll_rx() warn: bit mask 'ATM_CELL_PAYLOAD' used for math '(cells - 1) * 48'
-drivers/atm/zatm.c:502 open_rx_first() warn: bit mask 'ATM_CELL_PAYLOAD' used for math 'cells * 48'
-drivers/atm/idt77252.c:1103 dequeue_rx() warn: bit mask 'ATM_CELL_PAYLOAD' used for math ''
-drivers/atm/idt77252.c:1115 dequeue_rx() warn: bit mask 'ATM_CELL_PAYLOAD' used for math '(stat & 511) * 48'
-drivers/atm/eni.c:1077 do_tx() warn: bit mask 'ATM_CELL_PAYLOAD' used for math 'skb->len + 4 * (8 / 4) + 48'
-drivers/atm/eni.c:1151 do_tx() warn: bit mask 'ATM_CELL_PAYLOAD' used for math '48 / 4'
-drivers/atm/horizon.c:1666 hrz_send() warn: bit mask 'ATM_CELL_PAYLOAD' used for math '(skb->len + (8 - 1)) / 48'
-drivers/atm/nicstar.c:2072 dequeue_rx() warn: bit mask 'ATM_CELL_PAYLOAD' used for math ''
-drivers/atm/he.c:451 he_init_rx_lbfp0() warn: bit mask 'ATM_CELL_PAYLOAD' used for math 'he_dev->cells_per_lbuf * 48'
-drivers/atm/he.c:481 he_init_rx_lbfp1() warn: bit mask 'ATM_CELL_PAYLOAD' used for math 'he_dev->cells_per_lbuf * 48'
-drivers/atm/he.c:511 he_init_tx_lbfp() warn: bit mask 'ATM_CELL_PAYLOAD' used for math 'he_dev->cells_per_lbuf * 48'
-drivers/atm/he.c:2559 he_send() warn: bit mask 'ATM_CELL_PAYLOAD' used for math '52 - 48'
-lib/bch.c:260 modulo() warn: bit mask 'n' used for math ''
-lib/bch.c:272 mod_s() warn: bit mask 'n' used for math 'v - n'
-lib/bch.c:401 compute_error_locator_polynomial() warn: bit mask 'n' used for math 'a_log(d, bch) + n'
+Dan
+
+> Dan
+> 
+> > Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+> > ---
+> >  drivers/usb/serial/option.c |    8 ++++++++
+> >  1 files changed, 8 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+> > index 0d9dac9..384bb92 100644
+> > --- a/drivers/usb/serial/option.c
+> > +++ b/drivers/usb/serial/option.c
+> > @@ -242,6 +242,7 @@ static void option_instat_callback(struct urb *urb);
+> >  #define TELIT_PRODUCT_CC864_DUAL		0x1005
+> >  #define TELIT_PRODUCT_CC864_SINGLE		0x1006
+> >  #define TELIT_PRODUCT_DE910_DUAL		0x1010
+> > +#define TELIT_PRODUCT_LE920			0x1200
+> >  
+> >  /* ZTE PRODUCTS */
+> >  #define ZTE_VENDOR_ID				0x19d2
+> > @@ -534,6 +535,11 @@ static const struct option_blacklist_info zte_1255_blacklist = {
+> >  	.reserved = BIT(3) | BIT(4),
+> >  };
+> >  
+> > +static const struct option_blacklist_info telit_le920_blacklist = {
+> > +	.sendsetup = BIT(0),
+> > +	.reserved = BIT(1) | BIT(5),
+> > +};
+> > +
+> >  static const struct usb_device_id option_ids[] = {
+> >  	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+> >  	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+> > @@ -784,6 +790,8 @@ static const struct usb_device_id option_ids[] = {
+> >  	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
+> >  	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
+> >  	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
+> > +	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
+> > +		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
+> >  	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+> >  	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff),
+> >  		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
