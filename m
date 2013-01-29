@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab3A2M7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:59:07 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11062 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756745Ab3A2M65 (ORCPT
+	id S1756838Ab3A2M7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:59:04 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5713 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab3A2M65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Jan 2013 07:58:57 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 29 Jan 2013 04:56:46 -0800
+	by hqnvupgp06.nvidia.com on Tue, 29 Jan 2013 04:56:38 -0800
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>
 CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 6/7] ARM: DT: tegra114:add aliases and DMA requestor for serial controller
-Date: Tue, 29 Jan 2013 18:26:22 +0530
-Message-ID: <1359464183-6255-7-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 2/7] ARM: DT: tegra114: add GPIO DT entry
+Date: Tue, 29 Jan 2013 18:26:18 +0530
+Message-ID: <1359464183-6255-3-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1359464183-6255-1-git-send-email-ldewangan@nvidia.com>
 References: <1359464183-6255-1-git-send-email-ldewangan@nvidia.com>
@@ -26,89 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add APB DMA requestor and serial aliases for serial controller.
-There will be two serial driver i.e. 8250 based simple serial driver
-and APB DMA based serial driver for higher baudrate and performace.
+Tegra114 has the GPIO controllers with 8 GPIO bank and each bank
+supports 32 pins.
 
-The simple serial driver get enabled with compatible nvidia,tegra20-uart
-and APB DMA based driver will get enabled with compatible
-nvidia,tegra30-hsuart.
+Add DT entry for GPIO controller. Tegra114 GPIO controller is
+compatible with Tegra30 GPIO controller driver.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- arch/arm/boot/dts/tegra114.dtsi |   27 +++++++++++++++++++++++----
- 1 files changed, 23 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/tegra114.dtsi |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
 diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-index 74d18b2..17fd061 100644
+index 96a8235..9ce1a68 100644
 --- a/arch/arm/boot/dts/tegra114.dtsi
 +++ b/arch/arm/boot/dts/tegra114.dtsi
-@@ -4,6 +4,13 @@
- 	compatible = "nvidia,tegra114";
- 	interrupt-parent = <&gic>;
+@@ -37,6 +37,23 @@
+ 		reg = <0x6000c004 0x14c>;
+ 	};
  
-+	aliases {
-+		serial0 = &uarta;
-+		serial1 = &uartb;
-+		serial2 = &uartc;
-+		serial3 = &uartd;
++	gpio: gpio {
++		compatible = "nvidia,tegra114-gpio", "nvidia,tegra30-gpio";
++		reg = <0x6000d000 0x1000>;
++		interrupts = <0 32 0x04
++			      0 33 0x04
++			      0 34 0x04
++			      0 35 0x04
++			      0 55 0x04
++			      0 87 0x04
++			      0 89 0x04
++			      0 125 0x04>;
++		#gpio-cells = <2>;
++		gpio-controller;
++		#interrupt-cells = <2>;
++		interrupt-controller;
 +	};
 +
- 	gic: interrupt-controller {
- 		compatible = "arm,cortex-a15-gic";
- 		#interrupt-cells = <3>;
-@@ -97,35 +104,47 @@
- 		       0x70003000 0x40c>;	/* Mux registers */
- 	};
- 
--	serial@70006000 {
-+	/*
-+	 * There are two serial driver i.e. 8250 based simple serial
-+	 * driver and APB DMA based serial driver for higher baudrate
-+	 * and performace. To enable the 8250 based driver, the compatible
-+	 * is "nvidia,tegra30-uart", "nvidia,tegra20-uart" and to enable
-+	 * the APB DMA based serial driver, the comptible is
-+	 * "nvidia,tegra30-hsuart", "nvidia,tegra20-hsuart".
-+	 */
-+	uarta: serial@70006000 {
+ 	serial@70006000 {
  		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
  		reg = <0x70006000 0x40>;
- 		reg-shift = <2>;
- 		interrupts = <0 36 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 8>;
- 		status = "disabled";
- 	};
- 
--	serial@70006040 {
-+	uartb: serial@70006040 {
- 		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
- 		reg = <0x70006040 0x40>;
- 		reg-shift = <2>;
- 		interrupts = <0 37 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 9>;
- 		status = "disabled";
- 	};
- 
--	serial@70006200 {
-+	uartc: serial@70006200 {
- 		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
- 		reg = <0x70006200 0x100>;
- 		reg-shift = <2>;
- 		interrupts = <0 46 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 10>;
- 		status = "disabled";
- 	};
- 
--	serial@70006300 {
-+	uartd: serial@70006300 {
- 		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
- 		reg = <0x70006300 0x100>;
- 		reg-shift = <2>;
- 		interrupts = <0 90 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 19>;
- 		status = "disabled";
- 	};
- 
 -- 
 1.7.1.1
 
