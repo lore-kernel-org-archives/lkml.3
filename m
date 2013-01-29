@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab3A2Mih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:38:37 -0500
-Received: from david.siemens.de ([192.35.17.14]:29285 "EHLO david.siemens.de"
+	id S1756705Ab3A2MnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:43:09 -0500
+Received: from david.siemens.de ([192.35.17.14]:29280 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751958Ab3A2Mig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:38:36 -0500
+	id S1753452Ab3A2Mih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:38:37 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@alien8.de>
-Subject: [PATCH v5 07/20] scripts/gdb: Add lx_modvar convenience function
-Date: Tue, 29 Jan 2013 13:37:50 +0100
-Message-Id: <891cf2ac77f548810473403ca7f224ada8ac1d1e.1359463075.git.jan.kiszka@siemens.com>
+Subject: [PATCH v5 05/20] scripts/gdb: Add lx-symbols command
+Date: Tue, 29 Jan 2013 13:37:48 +0100
+Message-Id: <9fd8d68344bdc125a0345f04d2f7484f262459a8.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
 References: <cover.1359463075.git.jan.kiszka@siemens.com>
@@ -24,98 +24,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function looks up and returns global module variables. Gdb is only
-aware of their types and section offsets, not their absolute addresses.
-The function either searches the symbol table of a specified module or
-it derives the module name from the object file of the current frame.
+This is probably the most useful helper when debugging kernel modules:
+lx-symbols will first reload vmlinux. Then it searches recursively for
+*.ko files in the specified paths and the current directory. Finally it
+walks the kernel's module list, issuing the necessary add-symbol-file
+command for each loaded module so that gdb know which module symbol
+correspond to which address.
+
+In addition, the command installs a silent breakpoint in the load_module
+function at the point where the module was loaded but not yet
+initialized. The breakpoint handler will try to load symbols from the
+module files found during lx-symbols execution. This way, breakpoints
+can be set to module initialization functions, and there is usually no
+need to explicitly call lx-symbols after (re-)loading a module.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/module.py |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/utils.py  |    7 +++++++
- 2 files changed, 55 insertions(+), 0 deletions(-)
+ scripts/gdb/symbols.py     |  147 ++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |    1 +
+ 2 files changed, 148 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/gdb/symbols.py
 
-diff --git a/scripts/gdb/module.py b/scripts/gdb/module.py
-index e309c0a..333729a 100644
---- a/scripts/gdb/module.py
-+++ b/scripts/gdb/module.py
-@@ -12,6 +12,8 @@
- #
- 
- import gdb
+diff --git a/scripts/gdb/symbols.py b/scripts/gdb/symbols.py
+new file mode 100644
+index 0000000..8b672e2
+--- /dev/null
++++ b/scripts/gdb/symbols.py
+@@ -0,0 +1,147 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  load kernel and module symbols
++#
++# Copyright (c) Siemens AG, 2011-2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
 +import os
++import re
 +import string
- 
- from utils import *
- 
-@@ -56,3 +58,49 @@ class LxModule(gdb.Function):
- 			raise gdb.GdbError("Unable to find MODULE " + mod_name)
- 
- LxModule()
 +
++from module import for_each_module
++from utils import *
 +
-+class LxModvar(gdb.Function):
-+	__doc__ = "Return global variable of a module.\n" \
++class LinuxSymbols(gdb.Command):
++	__doc__ = "(Re-)load symbols of Linux kernel and currently loaded modules.\n" \
 +		  "\n" \
-+		  "$lx_modvar(\"VAR\"[, \"MODULE\"]): Return the global variable called VAR that is\n" \
-+		  "defined by given MODULE. If MODULE is omitted, the current frame is used to\n" \
-+		  "try finding the corresponding module name."
++		  "The kernel (vmlinux) is taken from the current working directly. Modules (.ko)\n" \
++		  "are scanned recursively, starting in the same directory. Optionally, the module\n" \
++		  "search path can be extended by a space separated list of paths passed to the\n" \
++		  "lx-symbols command."
++
++	module_files = []
++	breakpoint = None
 +
 +	def __init__(self):
-+		super(LxModvar, self).__init__("lx_modvar")
++		super(LinuxSymbols, self).__init__("lx-symbols",
++						   gdb.COMMAND_FILES,
++						   gdb.COMPLETE_FILENAME)
 +
-+	def _lookup_mod_symbol(self, module, var_name):
-+		char_ptr_type = get_char_type().pointer()
-+		for i in range(0, int(module['num_symtab'])):
-+			symtab_entry = module['symtab'][i]
-+			idx = int(symtab_entry['st_name'])
-+			synname_addr = module['strtab'][idx].address
-+			symname = synname_addr.cast(char_ptr_type)
-+			if symname.string() == var_name:
-+				return symtab_entry['st_value']
-+		return None
++	def _load_module_symbols(self, module, arg = None):
++		module_name = module['name'].string()
++		module_addr = str(module['module_core']).split()[0]
++		module_pattern = ".*/" + \
++			string.replace(module_name, "_", r"[_\-]") + r"\.ko$"
++		module_path = ""
++		for name in self.module_files:
++			if re.match(module_pattern, name):
++				module_path = name
++				break
 +
-+	def invoke(self, var_name, mod_name = None):
-+		if (mod_name == None):
-+			obj = gdb.selected_frame().function().symtab.objfile
-+			mod_name = string.replace(
-+				os.path.basename(obj.filename), ".ko", "")
-+			module = find_module_by_name(mod_name)
-+			if module == None:
-+				raise gdb.GdbError("Current frame does not " \
-+						   "belong to a module")
++		if module_path:
++			print "loading @" + module_addr + ": " + module_path
++			if gdb.VERSION >= "7.2":
++				gdb.execute("add-symbol-file " + \
++					    module_path + " " + module_addr,
++					    to_string = True)
++			else:
++				gdb.execute("add-symbol-file " + \
++					    module_path + " " + module_addr)
 +		else:
-+			mod_name = mod_name.string()
-+			module = find_module_by_name(mod_name)
-+			if module == None:
-+				raise gdb.GdbError("Unable to find MODULE " +
-+						   mod_name)
-+		var_name = var_name.string()
-+		var_addr = self._lookup_mod_symbol(module, var_name)
-+		if var_addr == None:
-+			raise gdb.GdbError("Unable to find VAR " + var_name)
-+		var = gdb.parse_and_eval(var_name)
-+		return var_addr.cast(var.type.pointer()).dereference()
++			print "no module object found for '" + \
++			      module_name + "'"
 +
-+LxModvar()
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-index d1f6f12..13f903a 100644
---- a/scripts/gdb/utils.py
-+++ b/scripts/gdb/utils.py
-@@ -45,6 +45,13 @@ def get_long_type():
- 	return long_type.get_type()
- 
- 
-+char_type = CachedType("char")
++	if gdb_version >= "7.3":
++		class _LoadModuleBreakpoint(gdb.Breakpoint):
++			def __init__(self, spec, gdb_command):
++				super(LinuxSymbols._LoadModuleBreakpoint,
++				      self).__init__(spec, internal = True)
++				self.silent = True
++				self.gdb_command = gdb_command
 +
-+def get_char_type():
-+	global char_type
-+	return char_type.get_type()
++			def stop(self):
++				module = gdb.parse_and_eval("mod")
++				self.gdb_command._load_module_symbols(module)
++				return False
 +
++		def _find_breakpoint_location(self):
++			breakpoint_match = "^[0-9]*[\t]*err = parse_args\(.*"
 +
- def offset_of(typeobj, field):
- 	element = gdb.Value(0).cast(typeobj)
- 	return int(str(element[field].address).split()[0], 16)
++			src = gdb.execute("list kernel/module.c:load_module",
++					  to_string = True)
++			done = False
++			lineno = None
++			while not done:
++				src = gdb.execute("list", to_string = True)
++				for line in src.splitlines():
++					if re.match(breakpoint_match, line):
++						done = True
++						lineno = line.split()[0]
++						break
++					elif re.match("^[0-9]*\t}$", line):
++						done = True
++						break
++			return lineno
++
++	def _load_all_module_symbols(self, arg):
++		if gdb.parse_and_eval("modules.next == &modules"):
++			print "no modules found"
++			return
++
++		self.module_files = []
++		paths = arg.split()
++		paths.append(os.getcwd())
++		for path in paths:
++			print "scanning for modules in " + path
++			for root, dirs, files in os.walk(path):
++				for name in files:
++					if re.match(r".*\.ko$", name):
++						self.module_files.append(
++							root + "/" + name)
++
++		for_each_module(self._load_module_symbols)
++
++	def invoke(self, arg, from_tty):
++		print "loading vmlinux"
++
++		saved_states = []
++		if (gdb.breakpoints() != None):
++			for breakpoint in gdb.breakpoints():
++				saved_states.append({
++					'breakpoint': breakpoint,
++					'enabled': breakpoint.enabled })
++
++		# drop all current symbols and reload vmlinux
++		gdb.execute("symbol-file", to_string = True)
++		gdb.execute("symbol-file vmlinux")
++
++		self._load_all_module_symbols(arg)
++
++		for saved_state in saved_states:
++			saved_state['breakpoint'].enabled = \
++				saved_state['enabled']
++
++		if gdb_version < "7.3":
++			print "Note: symbol update on module loading not " \
++			      "supported with this gdb version"
++		else:
++			if self.breakpoint != None:
++				self.breakpoint.delete()
++				self.breakpoint = None
++			lineno = self._find_breakpoint_location()
++			if lineno != None:
++				self.breakpoint = self._LoadModuleBreakpoint(
++					lineno, self)
++			else:
++				print "unable to detect breakpoint location " \
++				      "of load module completion"
++
++LinuxSymbols()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 8ef76c9..3553b7d 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -22,3 +22,4 @@ if gdb_version < "7.1":
+ 	      "to work."
+ else:
+ 	import utils
++	import symbols
 -- 
 1.7.3.4
 
