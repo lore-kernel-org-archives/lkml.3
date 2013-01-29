@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab3A2Wsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 17:48:41 -0500
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:42449 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab3A2Wsj (ORCPT
+	id S1753069Ab3A2WtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 17:49:13 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:59980 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab3A2WtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 17:48:39 -0500
-Subject: [PATCH] MAINTAINERS: update SGI & ia64 Altix stuff
-To: Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jes Sorensen <jes@trained-monkey.org>, Dimitri Sivanich <sivanich@sgi.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lori Gilbertson <loriann@sgi.com>, Robin Holt <holt@sgi.com>
-Date: Tue, 29 Jan 2013 15:48:37 -0700
-Message-ID: <20130129224837.7237.78495.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Tue, 29 Jan 2013 17:49:11 -0500
+Message-ID: <510851E0.8000009@linux.vnet.ibm.com>
+Date: Tue, 29 Jan 2013 16:49:04 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv4 0/7] zswap: compressed swap caching
+References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359497685.16868.11.camel@joe-AO722>
+In-Reply-To: <1359497685.16868.11.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012922-7408-0000-0000-00000C585DED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dimitri and Robin have taken over GRU maintenance.
+On 01/29/2013 04:14 PM, Joe Perches wrote:
+> On Tue, 2013-01-29 at 15:40 -0600, Seth Jennings wrote:
+>> The code required for the flushing is in a separate patch now
+>> as requested.
+> 
+> What tree does this apply to?
+> Both -next and linus fail to compile.
 
-Linux on Altix is no longer maintained except as part of ia64, and
-there's already a separate IA64 maintainer entry.
+Link to build instruction in the cover letter:
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- MAINTAINERS |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+>> NOTE: To build, read this:
+>> http://lkml.org/lkml/2013/1/28/586
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fa309ab..0526e21 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6768,7 +6768,8 @@ S:	Supported
- F:	drivers/net/ethernet/sfc/
- 
- SGI GRU DRIVER
--M:	Jack Steiner <steiner@sgi.com>
-+M:	Dimitri Sivanich <sivanich@sgi.com>
-+M:	Robin Holt <holt@sgi.com>
- S:	Maintained
- F:	drivers/misc/sgi-gru/
- 
-@@ -6963,14 +6964,6 @@ L:	linux-fbdev@vger.kernel.org
- S:	Maintained
- F:	drivers/video/smscufx.c
- 
--SN-IA64 (Itanium) SUB-PLATFORM
--M:	Jes Sorensen <jes@sgi.com>
--L:	linux-altix@sgi.com
--L:	linux-ia64@vger.kernel.org
--W:	http://www.sgi.com/altix
--S:	Maintained
--F:	arch/ia64/sn/
--
- SOC-CAMERA V4L2 SUBSYSTEM
- M:	Guennadi Liakhovetski <g.liakhovetski@gmx.de>
- L:	linux-media@vger.kernel.org
+The complexity is due to a conflict with a zsmalloc patch in Greg's
+staging tree that has yet to make its way upstream.
+
+Sorry for the inconvenience.
+
+Seth
 
