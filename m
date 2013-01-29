@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab3A2M6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:58:55 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5699 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3A2M6v (ORCPT
+	id S1756796Ab3A2M67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:58:59 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11060 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3A2M64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:58:51 -0500
+	Tue, 29 Jan 2013 07:58:56 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 29 Jan 2013 04:58:26 -0800
+	by hqnvupgp07.nvidia.com on Tue, 29 Jan 2013 04:58:21 -0800
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>
 CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/7] ARM: tegra114: select PINCTRL for Tegra114 SoC
-Date: Tue, 29 Jan 2013 18:26:17 +0530
-Message-ID: <1359464183-6255-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 7/7] ARM: DT: tegra114: add KBC controller DT entry
+Date: Tue, 29 Jan 2013 18:26:23 +0530
+Message-ID: <1359464183-6255-8-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1359464183-6255-1-git-send-email-ldewangan@nvidia.com>
 References: <1359464183-6255-1-git-send-email-ldewangan@nvidia.com>
@@ -26,27 +26,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Select PINCTRL and PINCTRL_TEGRA114 for enabling Tegra114 pincontrol
-driver for Tegra114 SoC.
+NVIDIA's Tegra114 SoCs have the matrix keyboard controller which
+supports 11x8 type of matrix. The number of rows and columns
+are configurable.
+
+Add DT entry for KBC controller.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- arch/arm/mach-tegra/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/tegra114.dtsi |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index eada60f..bde8197 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -51,6 +51,8 @@ config ARCH_TEGRA_114_SOC
- 	select CPU_V7
- 	select ARM_L1_CACHE_SHIFT_6
- 	select ARM_ARCH_TIMER
-+	select PINCTRL
-+	select PINCTRL_TEGRA114
- 	help
- 	  Support for NVIDIA Tegra T114 processor family, based on the
- 	  ARM CortexA15MP CPU
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+index 17fd061..73a49f5 100644
+--- a/arch/arm/boot/dts/tegra114.dtsi
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -199,6 +199,13 @@
+ 		interrupts = <0 2 0x04>;
+ 	};
+ 
++	kbc {
++		compatible = "nvidia,tegra20-kbc";
++		reg = <0x7000e200 0x100>;
++		interrupts = <0 85 0x04>;
++		status = "disabled";
++	};
++
+ 	pmc {
+ 		compatible = "nvidia,tegra114-pmc", "nvidia,tegra30-pmc";
+ 		reg = <0x7000e400 0x400>;
 -- 
 1.7.1.1
 
