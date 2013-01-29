@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3A2Ikn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:40:43 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:54126 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab3A2Ikk convert rfc822-to-8bit (ORCPT
+	id S1754880Ab3A2Imt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:42:49 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48536 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754647Ab3A2Imr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:40:40 -0500
+	Tue, 29 Jan 2013 03:42:47 -0500
+Message-ID: <51078B66.9050805@gmail.com>
+Date: Tue, 29 Jan 2013 16:42:14 +0800
+From: Libo Chen <chenlibo.3@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <87k3qxnt07.fsf@nemi.mork.no>
-References: <1359387918-2791-1-git-send-email-dnlplm@gmail.com>
-	<87k3qxnt07.fsf@nemi.mork.no>
-Date: Tue, 29 Jan 2013 09:40:38 +0100
-Message-ID: <CAGRyCJEThQaex9au5AbWT-hm1Vvj2jxiXuAfrgNTdTofqAYY3A@mail.gmail.com>
-Subject: Re: [PATCH 1/1] NET: qmi_wwan: add Telit LE920 support
-From: Daniele Palmas <dnlplm@gmail.com>
-To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Kirill Tkhai <tkhai@yandex.ru>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>, lizefan@huawei.com,
+        jovi.zhangwei@huawei.com
+Subject: Re: [PATCH]sched/rt: Do not try to push tasks if pinned task switches
+ to RT
+References: <3019251359404630@web18f.yandex.ru>
+In-Reply-To: <3019251359404630@web18f.yandex.ru>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Libo Chen <libo.chen@huawei.com>
 
-2013/1/28 Bj�rn Mork <bjorn@mork.no>:
-> Daniele Palmas <dnlplm@gmail.com> writes:
+
+On 2013-1-29 4:23, Kirill Tkhai wrote:
+> Just switched pinned task is not able to be pushed. If the rq had had
+> several RT tasks before they have already been considered as candidates
+> to be pushed (or pulled).
 >
->> Add VID, PID and fixed interface for Telit LE920
->>
->> Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
->> ---
->>  drivers/net/usb/qmi_wwan.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
->> index 6a1ca50..e32f9a1 100644
->> --- a/drivers/net/usb/qmi_wwan.c
->> +++ b/drivers/net/usb/qmi_wwan.c
->> @@ -459,6 +459,7 @@ static const struct usb_device_id products[] = {
->>       {QMI_FIXED_INTF(0x1199, 0x68a2, 19)},   /* Sierra Wireless MC7710 in QMI mode */
->>       {QMI_FIXED_INTF(0x1199, 0x901c, 8)},    /* Sierra Wireless EM7700 */
->>       {QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},    /* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
->> +     {QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},    /* Telit LE920 */
->>
->>       /* 4. Gobi 1000 devices */
->>       {QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},    /* Acer Gobi Modem Device */
+> Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: linux-rt-users <linux-rt-users@vger.kernel.org>
+> ---
+>  kernel/sched/rt.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index 4e8f0f4..5f7d92b 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1925,9 +1925,9 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
+>  	 */
+>  	if (p->on_rq && rq->curr != p) {
+>  #ifdef CONFIG_SMP
+> -		if (rq->rt.overloaded && push_rt_task(rq) &&
+> +		if (rq->rt.overloaded && p->nr_cpus_allowed > 1 &&
+>  		    /* Don't resched if we changed runqueues */
+> -		    rq != task_rq(p))
+> +		    push_rt_task(rq) && rq != task_rq(p))
+
+I think you worry about it was excess to call push_rt_task, since the task of p->nr_cpus_allowed=1 can`t be pushed. is that right?
+
+The task of p->nr_cpus_allowed =1 would`t be added to  pushable_tasks list （see the enqueue_task_rt()）and  this push_rt_task() need to push other tasks when rt.overloaded.
+
+So I don`t agree this patch.  
+
+
+>  			check_resched = 0;
+>  #endif /* CONFIG_SMP */
+>  		if (check_resched && p->prio < rq->curr->prio)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
-> Thanks for adding this device. But the patch doesn't apply to the
-> current "net" tree.  Care to rebase it?
->
 
-Sure. Should I use the following git repository
-
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/net-next.git
-
-?
-
-Thanks,
-Daniele
