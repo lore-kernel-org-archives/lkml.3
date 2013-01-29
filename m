@@ -1,48 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab3A2QOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:14:46 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:27961 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab3A2QOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:14:44 -0500
-X-IronPort-AV: E=Sophos;i="4.84,561,1355097600"; 
-   d="scan'208";a="5486894"
-Date: Tue, 29 Jan 2013 16:14:39 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: KY Srinivasan <kys@microsoft.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Olaf Hering <olaf@aepfle.de>, Jan Beulich <JBeulich@suse.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86: Hyper-V: register clocksource only if its
- advertised
-In-Reply-To: <f4315e27ffc14047b5e2ef61eeeba036@SN2PR03MB061.namprd03.prod.outlook.com>
-Message-ID: <alpine.DEB.2.02.1301291611270.10432@kaball.uk.xensource.com>
-References: <1359121036-16309-1-git-send-email-olaf@aepfle.de> <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com> <20130125165443.GA15833@aepfle.de> <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125171923.GA19306@aepfle.de> <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com> <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com> <510797FA02000078000BA4B8@nat28.tlf.novell.com> <20130129092652.GA9020@aepfle.de>
- <a23c7fab41444058845badb015b7dc0a@SN2PR03MB061.namprd03.prod.outlook.com> <alpine.DEB.2.02.1301291522460.10432@kaball.uk.xensource.com> <f4315e27ffc14047b5e2ef61eeeba036@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1752779Ab3A2QY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:24:28 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35170 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab3A2QYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 11:24:24 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH V6 06/30] iov_iter: add bvec support
+Date: Tue, 29 Jan 2013 10:23:19 -0600
+Message-Id: <1359476623-10544-7-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jan 2013, KY Srinivasan wrote:
-> > > I agree with you that your patch is valid for making the Hyper-V code more
-> > robust but not for dealing
-> > > with general issue of Xen emulating Hyper-V.
-> > 
-> > What "general issue" would that be?
-> 
-> Not all Hyper-V specific features are advertised via a feature bit. For instance, we need to reserve
-> an IDT entry to have VMBUS interrupts delivered on a per-CPU basis and this reservation is done
-> after confirming that we are running on Hyper-V. With Xen emulating Hyper-V, we have an issue.
-> Since Hyper-V will never emulate Xen, I am going to add a check in the Hyper-V detection code to
-> deal with this issue.
+From: Zach Brown <zab@zabbo.net>
 
-I personally think that it would be much nicer to have a feature flag
-somewhere to advertise per-CPU VMBUS interrupts.
-However adding a check in the Hyper-V detection code is OK too for me.
+This adds a set of iov_iter_ops calls which work with memory which is
+specified by an array of bio_vec structs instead of an array of iovec
+structs.
+
+The big difference is that the pages referenced by the bio_vec elements
+are pinned.  They don't need to be faulted in and we can always use
+kmap_atomic() to map them one at a time.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+---
+ fs/iov-iter.c      | 128 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h |  19 ++++++++
+ 2 files changed, 147 insertions(+)
+
+diff --git a/fs/iov-iter.c b/fs/iov-iter.c
+index bae1553..22ef9ca 100644
+--- a/fs/iov-iter.c
++++ b/fs/iov-iter.c
+@@ -5,6 +5,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
++#include <linux/bio.h>
+ 
+ static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
+ 				   size_t base, size_t bytes, int atomic)
+@@ -86,6 +87,133 @@ static size_t ii_iovec_copy_to_user(struct page *page,
+ 	return copied;
+ }
+ 
++#ifdef CONFIG_BLOCK
++/*
++ * As an easily verifiable first pass, we implement all the methods that
++ * copy data to and from bvec pages with one function.  We implement it
++ * all with kmap_atomic().
++ */
++static size_t bvec_copy_tofrom_page(struct iov_iter *iter, struct page *page,
++				    unsigned long page_offset, size_t bytes,
++				    int topage)
++{
++	struct bio_vec *bvec = (struct bio_vec *)iter->data;
++	size_t bvec_offset = iter->iov_offset;
++	size_t remaining = bytes;
++	void *bvec_map;
++	void *page_map;
++	size_t copy;
++
++	page_map = kmap_atomic(page);
++
++	BUG_ON(bytes > iter->count);
++	while (remaining) {
++		BUG_ON(bvec->bv_len == 0);
++		BUG_ON(bvec_offset >= bvec->bv_len);
++		copy = min(remaining, bvec->bv_len - bvec_offset);
++		bvec_map = kmap_atomic(bvec->bv_page);
++		if (topage)
++			memcpy(page_map + page_offset,
++			       bvec_map + bvec->bv_offset + bvec_offset,
++			       copy);
++		else
++			memcpy(bvec_map + bvec->bv_offset + bvec_offset,
++			       page_map + page_offset,
++			       copy);
++		kunmap_atomic(bvec_map);
++		remaining -= copy;
++		bvec_offset += copy;
++		page_offset += copy;
++		if (bvec_offset == bvec->bv_len) {
++			bvec_offset = 0;
++			bvec++;
++		}
++	}
++
++	kunmap_atomic(page_map);
++
++	return bytes;
++}
++
++static size_t ii_bvec_copy_to_user_atomic(struct page *page, struct iov_iter *i,
++					  unsigned long offset, size_t bytes)
++{
++	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
++}
++static size_t ii_bvec_copy_to_user(struct page *page, struct iov_iter *i,
++				   unsigned long offset, size_t bytes)
++{
++	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
++}
++static size_t ii_bvec_copy_from_user_atomic(struct page *page,
++					    struct iov_iter *i,
++					    unsigned long offset, size_t bytes)
++{
++	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
++}
++static size_t ii_bvec_copy_from_user(struct page *page, struct iov_iter *i,
++				     unsigned long offset, size_t bytes)
++{
++	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
++}
++
++/*
++ * bio_vecs have a stricter structure than iovecs that might have
++ * come from userspace.  There are no zero length bio_vec elements.
++ */
++static void ii_bvec_advance(struct iov_iter *i, size_t bytes)
++{
++	struct bio_vec *bvec = (struct bio_vec *)i->data;
++	size_t offset = i->iov_offset;
++	size_t delta;
++
++	BUG_ON(i->count < bytes);
++	while (bytes) {
++		BUG_ON(bvec->bv_len == 0);
++		BUG_ON(bvec->bv_len <= offset);
++		delta = min(bytes, bvec->bv_len - offset);
++		offset += delta;
++		i->count -= delta;
++		bytes -= delta;
++		if (offset == bvec->bv_len) {
++			bvec++;
++			offset = 0;
++		}
++	}
++
++	i->data = (unsigned long)bvec;
++	i->iov_offset = offset;
++}
++
++/*
++ * pages pointed to by bio_vecs are always pinned.
++ */
++static int ii_bvec_fault_in_readable(struct iov_iter *i, size_t bytes)
++{
++	return 0;
++}
++
++static size_t ii_bvec_single_seg_count(struct iov_iter *i)
++{
++	const struct bio_vec *bvec = (struct bio_vec *)i->data;
++	if (i->nr_segs == 1)
++		return i->count;
++	else
++		return min(i->count, bvec->bv_len - i->iov_offset);
++}
++
++struct iov_iter_ops ii_bvec_ops = {
++	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
++	.ii_copy_to_user = ii_bvec_copy_to_user,
++	.ii_copy_from_user_atomic = ii_bvec_copy_from_user_atomic,
++	.ii_copy_from_user = ii_bvec_copy_from_user,
++	.ii_advance = ii_bvec_advance,
++	.ii_fault_in_readable = ii_bvec_fault_in_readable,
++	.ii_single_seg_count = ii_bvec_single_seg_count,
++};
++EXPORT_SYMBOL(ii_bvec_ops);
++#endif	/* CONFIG_BLOCK */
++
+ static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
+ 				     size_t base, size_t bytes, int atomic)
+ {
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 5618301..955d79e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -343,6 +343,25 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
+ 	return i->ops->ii_single_seg_count(i);
+ }
+ 
++#ifdef CONFIG_BLOCK
++extern struct iov_iter_ops ii_bvec_ops;
++
++struct bio_vec;
++static inline void iov_iter_init_bvec(struct iov_iter *i,
++				      struct bio_vec *bvec,
++				      unsigned long nr_segs,
++				      size_t count, size_t written)
++{
++	i->ops = &ii_bvec_ops;
++	i->data = (unsigned long)bvec;
++	i->nr_segs = nr_segs;
++	i->iov_offset = 0;
++	i->count = count + written;
++
++	iov_iter_advance(i, written);
++}
++#endif
++
+ extern struct iov_iter_ops ii_iovec_ops;
+ 
+ static inline void iov_iter_init(struct iov_iter *i,
+-- 
+1.8.1.1
+
