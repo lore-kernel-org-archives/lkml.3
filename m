@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab3A2Hrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:47:53 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:36001 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab3A2Hru (ORCPT
+	id S1754410Ab3A2Hvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:51:39 -0500
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:31864
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753045Ab3A2Hvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:47:50 -0500
-Date: Tue, 29 Jan 2013 08:47:46 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
-        "Pearson, Greg" <greg.pearson@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH] x86/apic: check FADT settings after enable x2apic
-Message-ID: <20130129074746.GA594@gmail.com>
-References: <1358214636-4801-1-git-send-email-song-bo.wang@hp.com>
- <FE3E8B88161FFE48B03E3B93408433EC671016E2@G9W0754.americas.hpqcorp.net>
- <CAE9FiQW75eP_exufb1gd7jQuu98WnkyGX23EBXktUCSyZX9Jvg@mail.gmail.com>
- <20130128101135.GD7168@gmail.com>
- <CAE9FiQUtQ4uaBZxndV+acHW55JL5-nb0EnuXHhwiB-mK8Swtag@mail.gmail.com>
+	Tue, 29 Jan 2013 02:51:37 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Tue, 29 Jan 2013 15:51:48 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Brian Lilly <brian@crystalfontz.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: dts: cfa10049: Change the SPI3 bus to spi-gpio
+Message-ID: <20130129075146.GE21504@S2101-09.ap.freescale.net>
+References: <1359103175-26304-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1359103175-26304-3-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQUtQ4uaBZxndV+acHW55JL5-nb0EnuXHhwiB-mK8Swtag@mail.gmail.com>
+In-Reply-To: <1359103175-26304-3-git-send-email-maxime.ripard@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Yinghai Lu <yinghai@kernel.org> wrote:
-
-> On Mon, Jan 28, 2013 at 2:11 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> >> HP has systems that work with x2apic phys mode and BIOS set
-> >> ACPI_FADT_APIC_PHYSICAL in FADT table, and all cpuid < 255,
-> >> the spec requires BIOS only put system on xapic mode. Kernel
-> >
-> > Which spec?
-> >
-> >> will set to x2apic logical mode instead of x2apic phys mode.
-> >
-> > Which has exactly what bad effect on users of these systems?
-> >
-> > You left out the most important information from the changelog:
-> > why do users care, what good does the patch do?
+On Fri, Jan 25, 2013 at 09:39:35AM +0100, Maxime Ripard wrote:
+> The DAC found on the last chip select requires a word length of 12 bits,
+> which is not supported by the SSP controller of the iMX28. Use
+> bitbanging for that bus to support such a length.
 > 
-> please check you are happy with this:
-> 
-> ---
-> From:   Stoney Wang <song-bo.wang@hp.com>
-> Subject: [PATCH] x86, apic: Check fadt x2apic phys in x2apic_phys_probe()
-> 
-> HP has systems that only work with x2apic phys mode and BIOS set
-> ACPI_FADT_APIC_PHYSICAL in FADT table. But all apicid < 255,
-> according to x2apic-spec, chapter 2.9, BIOS need to pass the control
-> to the OS with xapic mode.
-> Kernel will set apic driver wrong to x2apic cluster instead of x2apic phys.
-> 
-> The user will have to append nox2apic in boot command line to stay xapic mode,
-> or append x2apic_phys to switch to x2apic phys mode.
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-This still does not explain what happens if none of this user 
-action is taken. I.e. what exact _user visible problem_ does the 
-patch fix?
+Applied, thanks.
 
-Is this really so unimportant to you? Almost everyone will start 
-a changelog with explaining what badness happens. Not you - you 
-explain everything from how the fix works to how to work around 
-the bug - except describing the most important thing: theuser 
-visible problem itself ... Weird.
-
-Thanks,
-
-	Ingo
