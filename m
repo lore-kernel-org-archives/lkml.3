@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab3A2IRl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:17:41 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40603 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754446Ab3A2IRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:17:38 -0500
-Message-ID: <51078580.2000808@ti.com>
-Date: Tue, 29 Jan 2013 09:17:04 +0100
+	id S1754660Ab3A2IUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:20:32 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:34877 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab3A2IU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 03:20:29 -0500
+Message-ID: <5107863F.10503@ti.com>
+Date: Tue, 29 Jan 2013 09:20:15 +0100
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 1/4] pwm_backlight: Fix PWM levels support in non DT case
-References: <1358861996-27194-1-git-send-email-peter.ujfalusi@ti.com> <1358861996-27194-2-git-send-email-peter.ujfalusi@ti.com> <20130128210123.GA24673@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130128210123.GA24673@avionic-0098.mockup.avionic-design.de>
+To: Florian Vaussard <florian.vaussard@epfl.ch>
+CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <linux-leds@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/3] pwm: Add pwm_can_sleep() as exported API to users
+References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch> <1359381659-24454-2-git-send-email-florian.vaussard@epfl.ch>
+In-Reply-To: <1359381659-24454-2-git-send-email-florian.vaussard@epfl.ch>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 10:01 PM, Thierry Reding wrote:
-> On Tue, Jan 22, 2013 at 02:39:53PM +0100, Peter Ujfalusi wrote:
->> It is expected that board files would have:
->> static unsigned int bl_levels[] = { 0, 50, 100, 150, 200, 250, };
->>
->> static struct platform_pwm_backlight_data bl_data = {
->> 	.levels = bl_levels,
->> 	.max_brightness = ARRAY_SIZE(bl_levels),
->> 	.dft_brightness = 4,
->> 	.pwm_period_ns = 7812500,
->> };
->>
->> In this case the max_brightness would be out of range in the levels array.
->> Decrement the received max_brightness in every case (DT or non DT) when the
->> levels has been provided.
+On 01/28/2013 03:00 PM, Florian Vaussard wrote:
+> Calls to some external PWM chips can sleep. To help users,
+> add pwm_can_sleep() API.
 > 
-> What's wrong with specifying .max_brightness = ARRAY_SIZE(bl_levels) - 1
-> instead?
+> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
 
-There is nothing wrong with that either but IMHO it is more natural for board
-files to use just ARRAY_SIZE(bl_levels). In this way the handling of
-data->max_brightness among non DT and DT booted kernel is more uniform in the
-driver itself.
-Right now all board files are using only the .max_brightness to specify the
-maximum value, I could not find any users of .levels in the kernel.
+Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+
+> ---
+>  drivers/pwm/core.c  |   12 ++++++++++++
+>  include/linux/pwm.h |   10 ++++++++++
+>  2 files changed, 22 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+> index 4a13da4..41c0b0c 100644
+> --- a/drivers/pwm/core.c
+> +++ b/drivers/pwm/core.c
+> @@ -763,6 +763,18 @@ void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
+>  }
+>  EXPORT_SYMBOL_GPL(devm_pwm_put);
+>  
+> +/**
+> +  * pwm_can_sleep() - report whether PWM access will sleep
+> +  * @pwm: PWM device
+> +  *
+> +  * It returns true if accessing the PWM can sleep, false otherwise.
+> +  */
+> +bool pwm_can_sleep(struct pwm_device *pwm)
+> +{
+> +	return pwm->chip->can_sleep;
+> +}
+> +EXPORT_SYMBOL_GPL(pwm_can_sleep);
+> +
+>  #ifdef CONFIG_DEBUG_FS
+>  static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
+>  {
+> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+> index 70655a2..747c657 100644
+> --- a/include/linux/pwm.h
+> +++ b/include/linux/pwm.h
+> @@ -146,6 +146,8 @@ struct pwm_ops {
+>   * @base: number of first PWM controlled by this chip
+>   * @npwm: number of PWMs controlled by this chip
+>   * @pwms: array of PWM devices allocated by the framework
+> + * @can_sleep: flag must be set iff config()/enable()/disable() methods sleep,
+> + *      as they must while accessing PWM chips over I2C or SPI
+>   */
+>  struct pwm_chip {
+>  	struct device		*dev;
+> @@ -159,6 +161,7 @@ struct pwm_chip {
+>  	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
+>  					    const struct of_phandle_args *args);
+>  	unsigned int		of_pwm_n_cells;
+> +	bool			can_sleep;
+>  };
+>  
+>  #if IS_ENABLED(CONFIG_PWM)
+> @@ -182,6 +185,8 @@ struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id);
+>  struct pwm_device *devm_of_pwm_get(struct device *dev, struct device_node *np,
+>  				   const char *con_id);
+>  void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
+> +
+> +bool pwm_can_sleep(struct pwm_device *pwm);
+>  #else
+>  static inline int pwm_set_chip_data(struct pwm_device *pwm, void *data)
+>  {
+> @@ -242,6 +247,11 @@ static inline struct pwm_device *devm_of_pwm_get(struct device *dev,
+>  static inline void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
+>  {
+>  }
+> +
+> +static inline bool pwm_can_sleep(struct pwm_device *pwm)
+> +{
+> +	return false;
+> +}
+>  #endif
+>  
+>  struct pwm_lookup {
+> 
+
 
 -- 
 Péter
