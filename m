@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab3A2KNS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 05:13:18 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:46582 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753141Ab3A2KNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 05:13:15 -0500
-Date: Tue, 29 Jan 2013 12:12:30 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, <tony@atomide.com>, <stern@rowland.harvard.edu>,
-        <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
-        <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 10/30] USB: ehci-omap: Use PHY APIs to get the PHY
- device and put it out of suspend
-Message-ID: <20130129101230.GO8708@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1359372631-8180-11-git-send-email-rogerq@ti.com>
- <1359453032-20604-1-git-send-email-rogerq@ti.com>
- <20130129095758.GM8708@arwen.pp.htv.fi>
- <51079F97.6080109@ti.com>
+	id S1753986Ab3A2KRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 05:17:11 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57428 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3A2KRJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 05:17:09 -0500
+Date: Tue, 29 Jan 2013 10:15:49 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kyungsik Lee <kyungsik.lee@lge.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Michal Marek <mmarek@suse.cz>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>, hyojun.im@lge.com,
+        chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
+        namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
+        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>
+Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
+Message-ID: <20130129101549.GP23505@n2100.arm.linux.org.uk>
+References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com> <20130128142510.68092e10.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KDy5+/kaQUC2a3Gw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51079F97.6080109@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130128142510.68092e10.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---KDy5+/kaQUC2a3Gw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 28, 2013 at 02:25:10PM -0800, Andrew Morton wrote:
+> What's this "with enabled unaligned memory access" thing?  You mean "if
+> the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"?  If so,
+> that's only x86, which isn't really in the target market for this
+> patch, yes?
+> 
+> It's a lot of code for a 50ms boot-time improvement.  Does anyone have
+> any opinions on whether or not the benefits are worth the cost?
 
-On Tue, Jan 29, 2013 at 12:08:23PM +0200, Roger Quadros wrote:
-> On 01/29/2013 11:57 AM, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Tue, Jan 29, 2013 at 11:50:32AM +0200, Roger Quadros wrote:
-> >> For each port that is in PHY mode we obtain a PHY device using the USB=
- PHY
-> >> library and put it out of suspend.
-> >>
-> >> It is up to platform code to associate the PHY to the controller's
-> >> port and it is upto the PHY driver to manage the PHY's resources.
-> >>
-> >> Also remove wired spacing around declarations we come across.
-> >>
-> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >=20
-> > ideally, this would be done generically by ehci-hcd.ko itself. Alan,
-> > would you have objections provided it doesn't break anyone else ?
-> >=20
-> Agreed, and PHY suspend/resume should be done at port granularity.
+Well... when I saw this my immediate reaction was "oh no, yet another
+decompressor for the kernel".  We have five of these things already.
+Do we really need a sixth?
 
-right.
+My feeling is that we should have:
+- one decompressor which is the fastest
+- one decompressor for the highest compression ratio
+- one popular decompressor (eg conventional gzip)
 
-> But considering the erratas we have in OMAP EHCI, I would still prefer to
-> have control of the PHY in ehci-omap. We might even have to do some ULPI
-> transfers in certain scenarios to work around some of the erratas.
+And if we have a replacement one for one of these, then it should do
+exactly that: replace it.  I realise that various architectures will
+behave differently, so we should really be looking at numbers across
+several arches.
 
-fair enough, then let's start with your change and make it more generic
-later.
-
---=20
-balbi
-
---KDy5+/kaQUC2a3Gw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRB6COAAoJEIaOsuA1yqRE8I8P/jMBMy9WodHV4yAJ3noCCzql
-T3rGtOV9t2V7lqjIOvy/juEFDO4gG8DRBDqKS948hQIIR4NuY4orRug1y9ec0fR0
-1EK4+NeCetg2+bIDIiTqfirrbVCBfNnKUR1iz9XMNF9CCN+MC+1h9B/kYKoLK0Su
-qfX0y0VURxGNtcoQ+ZWrHWx61QPzmI9YhNsKMdVCZ/c0lKAoW7360SC4sp45+VYm
-c/gNYjz5lJ9cG+JdifOr9xHScOSzkly1EZ5elhrOdIJekZsXAe1bdJ8+iqK1mjyB
-ydDw+ESbW/8PrCahjNqGP/GNSEwCnbebO954RghkakbiuYI3JVXnFs8sG3JN7QxX
-J54Z65OEsUe1G0ZfA5LGnc2GibcNrQtlLPTphK/Qm77d8/esVDqj5LYKyj9VCeCg
-kOueAZ/z97ZqePcgOWZWGjtKhutRX3jLUMJwajGMZf58A8ItEDkPP2tXAseF9S8s
-007UPKjREAXyf4l/JDKn3AFiPtMrCxvvAdX6LCaY4+KGxlThWf8znj6p8FqQwEdF
-AgqjPg88YdjXMWRDfqHjRjqrs89517S5NwrtrMc1TwfT2tAI408sBtNx5Bz/CXf4
-lJ0tUlOCTtqWu040cEG5g7JNZQuCWaqKw9wO++3rVHBB6pSQSR3YAmho/pNwr3Ys
-GPHBn+/RP7/s6adGXa8B
-=s3Mj
------END PGP SIGNATURE-----
-
---KDy5+/kaQUC2a3Gw--
+Otherwise, where do we stop adding new ones?  After we have 6 of these
+(which is after this one).  After 12?  After the 20th?
