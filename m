@@ -1,43 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab3A2Q0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:26:34 -0500
-Received: from mail-gg0-f175.google.com ([209.85.161.175]:51860 "EHLO
-	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3A2Q02 (ORCPT
+	id S1753476Ab3A2QYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:24:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19366 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab3A2QY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:26:28 -0500
-Date: Tue, 29 Jan 2013 13:26:20 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf evsel:  Fix memory leaks on evsel->counts
-Message-ID: <20130129162620.GA4512@ghostprotocols.net>
-References: <1359078284-32080-1-git-send-email-namhyung@kernel.org>
- <20130125024558.GF1954@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125024558.GF1954@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Jan 2013 11:24:28 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH V6 20/30] ext4: add support for read_iter and write_iter
+Date: Tue, 29 Jan 2013 10:23:33 -0600
+Message-Id: <1359476623-10544-21-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jan 24, 2013 at 11:45:58PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Fri, Jan 25, 2013 at 10:44:44AM +0900, Namhyung Kim escreveu:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > The ->counts field was never freed in the current code.  Add
-> > perf_evsel__free_counts() function to free it properly.
-> 
-> I still haven't applied Stephane's patches, that his one depends on,
-> will do it tomorrow.
+use the generic_file_read_iter(), create ext4_file_write_iter() based on
+ext4_file_write(), and make ext4_file_write() a wrapper around
+ext4_file_write_iter().
 
-Done, applied, thanks!
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
+---
+ fs/ext4/file.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-- Arnaldo
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 405565a..54aa681 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -73,12 +73,11 @@ void ext4_unwritten_wait(struct inode *inode)
+  * or one thread will zero the other's data, causing corruption.
+  */
+ static int
+-ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
+-		   unsigned long nr_segs, loff_t pos)
++ext4_unaligned_aio(struct inode *inode, struct iov_iter *iter, loff_t pos)
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 	int blockmask = sb->s_blocksize - 1;
+-	size_t count = iov_length(iov, nr_segs);
++	size_t count = iov_iter_count(iter);
+ 	loff_t final_size = pos + count;
+ 
+ 	if (pos >= inode->i_size)
+@@ -91,8 +90,8 @@ ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
+ }
+ 
+ static ssize_t
+-ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+-		    unsigned long nr_segs, loff_t pos)
++ext4_file_dio_write(struct kiocb *iocb, struct iov_iter *iter,
++		    loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
+@@ -100,11 +99,11 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	int unaligned_aio = 0;
+ 	ssize_t ret;
+ 	int overwrite = 0;
+-	size_t length = iov_length(iov, nr_segs);
++	size_t length = iov_iter_count(iter);
+ 
+ 	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS) &&
+ 	    !is_sync_kiocb(iocb))
+-		unaligned_aio = ext4_unaligned_aio(inode, iov, nr_segs, pos);
++		unaligned_aio = ext4_unaligned_aio(inode, iter, pos);
+ 
+ 	/* Unaligned direct AIO must be serialized; see comment above */
+ 	if (unaligned_aio) {
+@@ -145,7 +144,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			overwrite = 1;
+ 	}
+ 
+-	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
++	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+ 	if (ret > 0 || ret == -EIOCBQUEUED) {
+@@ -164,8 +163,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ }
+ 
+ static ssize_t
+-ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+-		unsigned long nr_segs, loff_t pos)
++ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ {
+ 	struct inode *inode = iocb->ki_filp->f_path.dentry->d_inode;
+ 	ssize_t ret;
+@@ -177,22 +175,24 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
+ 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+-		size_t length = iov_length(iov, nr_segs);
++		size_t length = iov_iter_count(iter);
+ 
+ 		if ((pos > sbi->s_bitmap_maxbytes ||
+ 		    (pos == sbi->s_bitmap_maxbytes && length > 0)))
+ 			return -EFBIG;
+ 
+ 		if (pos + length > sbi->s_bitmap_maxbytes) {
+-			nr_segs = iov_shorten((struct iovec *)iov, nr_segs,
+-					      sbi->s_bitmap_maxbytes - pos);
++			ret = iov_iter_shorten(iter,
++					       sbi->s_bitmap_maxbytes - pos);
++			if (ret)
++				return ret;
+ 		}
+ 	}
+ 
+ 	if (unlikely(iocb->ki_filp->f_flags & O_DIRECT))
+-		ret = ext4_file_dio_write(iocb, iov, nr_segs, pos);
++		ret = ext4_file_dio_write(iocb, iter, pos);
+ 	else
+-		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);
++		ret = generic_file_write_iter(iocb, iter, pos);
+ 
+ 	return ret;
+ }
+@@ -630,8 +630,8 @@ const struct file_operations ext4_file_operations = {
+ 	.llseek		= ext4_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= generic_file_aio_read,
+-	.aio_write	= ext4_file_write,
++	.read_iter	= generic_file_read_iter,
++	.write_iter	= ext4_file_write_iter,
+ 	.unlocked_ioctl = ext4_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl	= ext4_compat_ioctl,
+-- 
+1.8.1.1
+
