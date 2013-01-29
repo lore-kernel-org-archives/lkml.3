@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab3A2AbZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 19:31:25 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:41935 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab3A2AbV (ORCPT
+	id S1753455Ab3A2AcI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 19:32:08 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:37709 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab3A2AcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 19:31:21 -0500
+	Mon, 28 Jan 2013 19:32:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130128234620.GA8524@localhost>
-References: <510441ca.jKKGS3DOYyOC3gnk%fengguang.wu@intel.com>
-	<20130127010632.GF12329@localhost>
-	<CABPqkBR4VCOpBH25yQOnhkOs6c52xEnNe=P4qifDXzr7WBERxw@mail.gmail.com>
-	<20130128234620.GA8524@localhost>
-Date: Tue, 29 Jan 2013 01:31:19 +0100
-Message-ID: <CABPqkBS4Y7y4OPH_5XYcrupGfRat9whT=3B8Fpyo7KuBAHDFfg@mail.gmail.com>
-Subject: Re: [PATCH tip] perf/x86: nhm_events_attrs and snb_events_attrs can
- be static
-From: Stephane Eranian <eranian@google.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAErSpo5Cfi0KbOqDr4TfnzjWFy7V-oi0bOY-vf8Y16_RPtEGdQ@mail.gmail.com>
+References: <20130118113019.6698.25941.stgit@zurg> <20130118114218.6698.42484.stgit@zurg>
+ <CAErSpo5Cfi0KbOqDr4TfnzjWFy7V-oi0bOY-vf8Y16_RPtEGdQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 28 Jan 2013 17:31:44 -0700
+Message-ID: <CAErSpo7g7H8QM4Rgc05ORM1xHPxVf74KX2G61mvMtMF+N=qh5Q@mail.gmail.com>
+Subject: Re: [PATCH 2/5] e1000e: fix pci device enable counter balance
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-pci@vger.kernel.org, Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 12:46 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+[+cc Rafael @sisk.pl]
 
-Acked-by: Stephane Eranian <eranian@google.com>
+On Mon, Jan 28, 2013 at 4:09 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc Rafael]
+>
+> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
+> <khlebnikov@openvz.org> wrote:
+>> __e1000_shutdown() calls pci_disable_device() at the end, thus __e1000_resume()
+>> should call pci_enable_device_mem() to keep enable counter in balance.
+>>
+>> Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+>> ("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
+>>
+>> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+>> Cc: e1000-devel@lists.sourceforge.net
+>> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+>> Cc: Bruce Allan <bruce.w.allan@intel.com>
+>> ---
+>>  drivers/net/ethernet/intel/e1000e/netdev.c |    7 +++++++
+>>  1 file changed, 7 insertions(+)
+>>
+>> diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+>> index 2853c11..6bce796 100644
+>> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
+>> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+>> @@ -5598,6 +5598,13 @@ static int __e1000_resume(struct pci_dev *pdev)
+>>         pci_restore_state(pdev);
+>>         pci_save_state(pdev);
+>>
+>> +       err = pci_enable_device_mem(pdev);
+>> +       if (err) {
+>> +               dev_err(&pdev->dev,
+>> +                       "Cannot re-enable PCI device after suspend.\n");
+>> +               return err;
+>> +       }
+>
+> Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+>
+> Seems right to me, and the other users I looked at (igb, azx,
+> virtio_pci) call pci_disable_device() in .suspend() and call
+> pci_enable_device() in .resume() as you propose to do here.
+>
+> I assume the e1000 folks will handle this patch (and the previous one).
+>
+>> +
+>>         e1000e_set_interrupt_capability(adapter);
+>>         if (netif_running(netdev)) {
+>>                 err = e1000_request_irq(adapter);
+>>
 
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+I'm still missing something.  In your original report
+(https://lkml.org/lkml/2013/1/1/25), you noticed that "enable_cnt ==
+0" immediately after boot, after e1000e had claimed the device:
+
+> Right after boot it looks like this:
 >
-> --- linux-next.orig/arch/x86/kernel/cpu/perf_event_intel.c      2013-01-29 07:42:16.238595053 +0800
-> +++ linux-next/arch/x86/kernel/cpu/perf_event_intel.c   2013-01-29 07:43:47.678597226 +0800
-> @@ -139,12 +139,12 @@ static struct extra_reg intel_snb_extra_
->  EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
->  EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
->
-> -struct attribute *nhm_events_attrs[] = {
-> +static struct attribute *nhm_events_attrs[] = {
->         EVENT_PTR(mem_ld_nhm),
->         NULL,
->  };
->
-> -struct attribute *snb_events_attrs[] = {
-> +static struct attribute *snb_events_attrs[] = {
->         EVENT_PTR(mem_ld_snb),
->         NULL,
->  };
+> root@zurg:/sys/bus/pci/devices# lspci
+> ...
+> 00:19.0 Ethernet controller: Intel Corporation 82579LM Gigabit Network Connection (rev 04)
+> ...
+> root@zurg:/sys/bus/pci/devices# cat 0000\:00\:19.0/enable
+> 0
+> here must be '1', not '0'
+
+But these patches only change the e1000e suspend/resume path.  How
+could they change the enable_cnt before you've even done a suspend?
+
+Bjorn
