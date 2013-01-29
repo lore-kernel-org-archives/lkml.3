@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab3A2Pa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 10:30:57 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:49728 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756730Ab3A2Pay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 10:30:54 -0500
-X-IronPort-AV: E=Sophos;i="4.84,561,1355097600"; 
-   d="scan'208";a="5478221"
-Date: Tue, 29 Jan 2013 15:30:51 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: KY Srinivasan <kys@microsoft.com>
-CC: Olaf Hering <olaf@aepfle.de>, Jan Beulich <JBeulich@suse.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86: Hyper-V: register clocksource only if its
- advertised
-In-Reply-To: <a23c7fab41444058845badb015b7dc0a@SN2PR03MB061.namprd03.prod.outlook.com>
-Message-ID: <alpine.DEB.2.02.1301291522460.10432@kaball.uk.xensource.com>
-References: <1359121036-16309-1-git-send-email-olaf@aepfle.de> <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com> <20130125165443.GA15833@aepfle.de> <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125171923.GA19306@aepfle.de> <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com> <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com> <510797FA02000078000BA4B8@nat28.tlf.novell.com> <20130129092652.GA9020@aepfle.de>
- <a23c7fab41444058845badb015b7dc0a@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1757263Ab3A2Pcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 10:32:52 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:35183 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab3A2Pcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 10:32:50 -0500
+Date: Tue, 29 Jan 2013 16:32:42 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: davem@davemloft.net, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/5] net: mvmdio: unmap base register address at driver
+ removal
+Message-ID: <20130129163242.1df2caf5@skate>
+In-Reply-To: <1359473048-26551-2-git-send-email-florian@openwrt.org>
+References: <1359473048-26551-1-git-send-email-florian@openwrt.org>
+	<1359473048-26551-2-git-send-email-florian@openwrt.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jan 2013, KY Srinivasan wrote:
-> > The patch which started this thread is still valid because it enables
-> > feature B only if the featurebit for B is enabled.
+Dear Florian Fainelli,
+
+On Tue, 29 Jan 2013 16:24:04 +0100, Florian Fainelli wrote:
+> Fix the driver remove callback to unmap the base register address and
+> not leak this mapping after the driver has been removed.
 > 
-> Why would we need this if we have some other way of detecting that Hyper-V is being
-> emulated.
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
 
-I don't think that Hyper-V being emulated or not matters here.
-What matters is whether the feature is available: only if it is then it
-should be used.
+What about using devm_request_and_ioremap() instead, in order to get
+automatic unmap on error and in the ->remove() path?
 
+But maybe it won't work because this memory range is claimed both by
+the MDIO driver and the Ethernet driver itself. In that case, you could
+use devm_ioremap().
 
-> Furthermore, I am not sure I understand the logic here. The fact that the hypervisor
-> supports PARTITION_REFERENCE_COUNTER does not necessarily mean that we should register
-> a clocksource based on that reference counter. It is true that that is the case on Hyper-V today.
-> However, on other hypervisors emulating Hyper-V, other standard clocksources maybe more
-> appropriate.
+Best regards,
 
-The point is that if a feature is NOT supported, then it should NOT be
-used. Only if it is supported, then Linux might consider using it. And
-of course can decide not to use it.
-
-
-> I agree with you that your patch is valid for making the Hyper-V code more robust but not for dealing
-> with general issue of Xen emulating Hyper-V.
-
-What "general issue" would that be?
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
