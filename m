@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3A2UvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 15:51:05 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:52077 "EHLO
+	id S1753328Ab3A2Uvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 15:51:51 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:47644 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab3A2Uu7 (ORCPT
+	with ESMTP id S1751033Ab3A2Uvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 15:50:59 -0500
-Date: Wed, 30 Jan 2013 07:50:57 +1100
+	Tue, 29 Jan 2013 15:51:50 -0500
+Date: Wed, 30 Jan 2013 07:51:48 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v3 00/44] Meta Linux Kernel Port
-Message-Id: <20130130075057.3f03382b0c6e230850f60514@canb.auug.org.au>
-In-Reply-To: <20130130074452.f67abeeaae3a00d046f5699f@canb.auug.org.au>
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
-	<5102BB38.3050207@imgtec.com>
-	<201301260025.10020.arnd@arndb.de>
-	<51062460.9060902@synopsys.com>
-	<20130130074452.f67abeeaae3a00d046f5699f@canb.auug.org.au>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>, Arnd <arnd@arndb.de>
+Subject: Re: linux-next: new arch/metag tree
+Message-Id: <20130130075148.2f34a4d16fdd4a62625260d2@canb.auug.org.au>
+In-Reply-To: <5107DD1C.2080008@imgtec.com>
+References: <5107DD1C.2080008@imgtec.com>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Wed__30_Jan_2013_07_50_57_+1100_M9BJU2M6YabP_EhX"
+ boundary="Signature=_Wed__30_Jan_2013_07_51_48_+1100_3u2qu.3INsTe=wrc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__30_Jan_2013_07_50_57_+1100_M9BJU2M6YabP_EhX
+--Signature=_Wed__30_Jan_2013_07_51_48_+1100_3u2qu.3INsTe=wrc
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Vineet,
+Hi James,
 
-On Wed, 30 Jan 2013 07:44:52 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Tue, 29 Jan 2013 14:30:52 +0000 James Hogan <james.hogan@imgtec.com> wro=
+te:
 >
-> On Mon, 28 Jan 2013 12:40:24 +0530 Vineet Gupta <Vineet.Gupta1@synopsys.c=
-om> wrote:
-> >
-> > Stephen, can you please add the following branch (rebased off 3.8-rc5) =
-to linux-next
-> >=20
-> > git://github.com/foss-for-synopsys-dwc-arc-processors/linux.git  arc-ne=
-xt
+> Please can you add the following branch to linux-next for Meta
+> architecture support:
 >=20
-> Added from today (though there may not be a linux-next release today).
->=20
-> > While the first pull request can go directly from github, I presume the=
- logistics
-> > for setting up accounts on kernel.org will only kick start after the fi=
-rst batch
-> > of code has been accepted. I can't seem to find any discussions on list=
-s to that
-> > effect.
->=20
-> Linus prefers to not pull from github, but will if you ask him to pull a
-> tag signed with a verifiable gpg key.  This is not a requirement if your
-> tree is on kernel.org (though you still need a verifiable gpg key to get
-> a kernel.org account).
+> git://github.com/jahogan/metag-linux.git for-next
 
-I forgot the legal boilerplate:
+Added from today (though there may not be a linux-next release today).
 
 Thanks for adding your subsystem tree as a participant of linux-next.  As
 you may know, this is not a judgment of your code.  The purpose of
@@ -99,25 +76,25 @@ project, the testing procedures, the results, the e-mails, etc.  If you
 don't agree to these ground rules, let me know and I'll remove your tree
 from participation in linux-next.
 
---Signature=_Wed__30_Jan_2013_07_50_57_+1100_M9BJU2M6YabP_EhX
+--Signature=_Wed__30_Jan_2013_07_51_48_+1100_3u2qu.3INsTe=wrc
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRCDYxAAoJEECxmPOUX5FEoHsP/j8ke4kBYdt9zRFY0D/KGdmT
-MqAC/bz+NXEDEmXjFj+YxpxvnHyHLTh96KeInwoeCZknTZ51cYHmW0aDejPF69gA
-ZhyntmYOjJyoo7WJB127fuNPOa8B/R4dqPlnGa9enRMjgoFfdf57pu3zkFgV+9Fa
-G3Pw8WLa0XcixeHiyL5CpTvWiTSf7/DzXw7EjNOmjy5nLMcuPTOipS6LrOoSl4J6
-NvyLyayx/GuAiJRYWcz3dVA/db5JKfyaz8wnj2D+J0LBQ2+oRHIdKqEUHzHB6t1F
-cC0PpyNinhWM3Yv1Wc4V7IOgpLc6918XfKDMlBk7dgdvy/mxcyrkqA3kx8AQNcf/
-joVo9LvpQEgZ2BuoF5LGTlBB3J4wu4zLmD7SOXSYLFOgG8HTfgTWeKOcsxli65pu
-lvbZoyZjghOhIZBUt5SEO8RZ+ncaCm4azrMCKUKNX4tJCRIi7x/ld1d5cia1xf8m
-VHCDdM8vsYsl/dZB2RV4/RyQ3zeXjGtWt2SZ+vpMAcOCygC7RD7A8N7ukowqlud8
-1wf1kmzutu6kdaBvzjILhoEj85pkG3xfz14MbNDEJLOvVEI/2VCKIVpO8l2HT1Yg
-vLcoGH8zdJ6Q4uzL7qAQhjhkOg1RtcUWZvyA7YX8bDtHFIjrp4TeinGmL9zR/aee
-+eXJg8RFdE0ADaaIth/7
-=cSh+
+iQIcBAEBCAAGBQJRCDZkAAoJEECxmPOUX5FE2zMP/iA+FtttgY6II+g2FMykl2rl
+4haNjdHSegihW5Gl5f0wy4tqDfm6wEhaqYWF1+46qApicwRuSQz04iAuSZTBR+Dt
+6UnIHpJcusMASSucw0GJfnNT1XIjr3Z7ckLBuL0g9pjYHhm96QBfO0CS17QqlYjT
+Pcs8whiYJRPJED61yW6j15+nWdVa5xcgKQltR93ttLgi7XHelhujtZnyIsE6IYa6
+N4OT/CPnMhyTy8E48h/Ai0XxEeKO1BbKOV7fcLMR6jUT2o7lA0n4Krugm5/DRy9b
+VHW2dEqpIcovbyHUcJoGUYuD/8jceRlUV531KHmwwSMB8Btuz6DN/Ai0XwiePPkP
+XvwNiXpDoVfsIyD6x3Y2wBJE1hnv99l4ZHopQA5BUIUJKHf927woViQBesxUEbgd
+QKWRzFS57vCgSLqTkayzH9rG/VPA7UD9tjFPxko+Djtv1rYmvZLkfJxoceg4Ktzc
+OxwKm+cayf/muirWO2kxzI7/O66ZGSjD4Ay7wOHrFqcoAaM1ASwCKI0+++yfNxdI
+tHS/S0IX180m8fmGtvb8mW64LUVDXhEBb05mrK+SUxutInl/6a3bLOJ6NUkWmmFS
+TT07YZQxdt8ldnHFiFmpUXCYDslbFkFaA4dATyY32ebhuvuT5/Cq8R7IQJCgx+WV
+PGSLgQM9sb4DWpWuVai1
+=mmsc
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__30_Jan_2013_07_50_57_+1100_M9BJU2M6YabP_EhX--
+--Signature=_Wed__30_Jan_2013_07_51_48_+1100_3u2qu.3INsTe=wrc--
