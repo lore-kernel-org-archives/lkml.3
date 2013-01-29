@@ -1,485 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab3A2NFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 08:05:08 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:46243 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3A2NFC (ORCPT
+	id S1756747Ab3A2NFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 08:05:52 -0500
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:29073
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751457Ab3A2NFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 08:05:02 -0500
-Message-ID: <1359464694.1624.18.camel@kernel>
-Subject: Re: [PATCH v6 08/15] memory-hotplug: Common APIs to support page
- tables hot-remove
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Date: Tue, 29 Jan 2013 07:04:54 -0600
-In-Reply-To: <1357723959-5416-9-git-send-email-tangchen@cn.fujitsu.com>
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1357723959-5416-9-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Jan 2013 08:05:49 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VPS-7(zz98dI9371I15bfKc85fh542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahz8dhz17326ah8275dh8275bhz2dh668h839hd25hf0ah1288h12a5h12bdh137ah1441h1504h1537h153bh15d0h162dh1631h1758h18e1h34h1155h)
+X-WSS-ID: 0MHE1PG-02-CI8-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: Linux 3.8-rc4
+Thread-Topic: Linux 3.8-rc4
+Thread-Index: AQHN9cxhktnF6ESNpkuAIBoIzsaQJZhQNCEAgACn4tCABRQtgP//oN5AgAB+F4D//6LmYIAAax0AgABUMQCAAH8jgIAAu/gAgAhrfoCAAD7IYA==
+Date: Tue, 29 Jan 2013 13:05:40 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+	<CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
+ <CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
+In-Reply-To: <CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.224.8.62]
+Content-Type: multipart/mixed;
+	boundary="_002_A3397C8B8B789E45844E7EC5DEAD89D02DF0A266sausexdag04amdc_"
+MIME-Version: 1.0
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tang,
-On Wed, 2013-01-09 at 17:32 +0800, Tang Chen wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
-> 
-> When memory is removed, the corresponding pagetables should alse be removed.
-> This patch introduces some common APIs to support vmemmap pagetable and x86_64
-> architecture pagetable removing.
+--_002_A3397C8B8B789E45844E7EC5DEAD89D02DF0A266sausexdag04amdc_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Why don't need to build_all_zonelists like online_pages does during
-hot-add path(add_memory)?
+> -----Original Message-----
+> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+> Sent: Monday, January 28, 2013 10:20 PM
+> To: Deucher, Alexander
+> Cc: Linus Torvalds; Linux Kernel Mailing List
+> Subject: Re: Linux 3.8-rc4
+>=20
+> On Wed, Jan 23, 2013 at 11:44 AM, Shuah Khan <shuahkhan@gmail.com>
+> wrote:
+> > On Wed, Jan 23, 2013 at 6:40 AM, Deucher, Alexander
+> > <Alexander.Deucher@amd.com> wrote:
+> >>> -----Original Message-----
+> >>> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+> >>> Sent: Tuesday, January 22, 2013 6:57 PM
+> >>> To: Deucher, Alexander
+> >>> Cc: Linus Torvalds; Linux Kernel Mailing List
+> >>> Subject: Re: Linux 3.8-rc4
+> >>>
+> >>> On Tue, Jan 22, 2013 at 11:55 AM, Shuah Khan <shuahkhan@gmail.com>
+> >>> wrote:
+> >>>
+> >>> >>> init:
+> >>> >>
+> >>> >> Does the attached patch stop them?  It basically skips all initial=
+ization
+> of
+> >>> the DMA ring on your system.  What I don't understand is why you stil=
+l
+> get
+> >>> them with the previous patch, but not with
+> >>> 909d9eb67f1e4e39f2ea88e96bde03d560cde3eb reverted.
+> >>> 909d9eb67f1e4e39f2ea88e96bde03d560cde3eb only affects the use of
+> the
+> >>> DMA ring for buffer migration and the patch I previously attached
+> disables
+> >>> the use of the DMA ring for buffer migration.  Does the latest batch =
+of
+> drm-
+> >>> fixes from Dave that Linus just merged help?
+> >>> >>
+> >>> >> Alex
+> >>> >
+> >>> > Will try your latest patch. Will also try the latest git - I am
+> >>> > currently on Jan 17th. However, in the meantime, I found that these
+> >>> > messages might not be new and getting printed now with the
+> >>> > eaaa6983ab2ccdf826c90838eb584211e0cadb76 [PATCH] drm/radeon:
+> print
+> >>> dma
+> >>> > status reg on lockup (v2) commit that introduced debug messages in
+> >>> > r600_gpu_soft_reset(). I couldn't revert this commit, but doing a
+> >>> > compile with these messages commented out. Will update you on the
+> >>> > results and then test the new git
+> >>> >
+> >>> > -- Shuah
+> >>>
+> >>> Here is what I tried:
+> >>>
+> >>> 1. Applied your latest disable_dma_ring_on_6xx-2.diff and still see
+> >>> messages.
+> >>
+> >> If that is the case, I'm beginning to think the bug is elsewhere.  Sup=
+port
+> for the DMA ring was the only major feature we added in this cycle.  If y=
+ou
+> are still getting errors even with the ring completely disabled, it's pro=
+bably
+> not the DMA ring.
+> >>
+> >> Make sure your kernel has this patch:
+> >>
+> http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux.git;a=3Dcommit=
+diff;h=3D2
+> 0707874fd4fd37e09513f508e642fa8bd06365a
+> >> That's the only thing I can think of that may cause the DMAR errors if=
+ the
+> DMA ring is disabled.
+> >>
+> >
+> > I verified I have this commit. ok maybe the bug is elsewhere. So far
+> > all my bisects are on drivers/gpu/drm/radeon - I am going go one more
+> > level up and start at drivers/gpu/drm and see what I can isolate it
+> > that way. I do know that I don't see this problem on 3.7.4
+> >
+> > -- Shuah
+>=20
+> Alex,
+>=20
+> I was out sick for a few days and finally picked this bisect backup
+> again. I started at 3.7 tag instead of 3.8-rc1 that I did in the past
+> and also did bisect at drivers/gpu/drm/radeon instead. Here are the
+> results:
+>=20
+> 6253e4c75d96006c06b9ac8f417eba873de2497b is the first bad commit
+> commit 6253e4c75d96006c06b9ac8f417eba873de2497b
+> Author: Alex Deucher <alexander.deucher@amd.com>
+> Date:   Wed Dec 12 14:30:32 2012 -0500
+>=20
+>     drm/radeon: improve mc_stop/mc_resume on r5xx-r7xx
+>=20
+>     Along the same lines of what was done for evergreen+
+>     in the last kernel.
+>=20
+>     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+>=20
+> git bisect log attached.
+>=20
 
-> 
-> All pages of virtual mapping in removed memory cannot be freedi if some pages
-> used as PGD/PUD includes not only removed memory but also other memory. So the
-> patch uses the following way to check whether page can be freed or not.
-> 
->  1. When removing memory, the page structs of the revmoved memory are filled
->     with 0FD.
->  2. All page structs are filled with 0xFD on PT/PMD, PT/PMD can be cleared.
->     In this case, the page used as PT/PMD can be freed.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/pgtable_types.h |    1 +
->  arch/x86/mm/init_64.c                |  299 ++++++++++++++++++++++++++++++++++
->  arch/x86/mm/pageattr.c               |   47 +++---
->  include/linux/bootmem.h              |    1 +
->  4 files changed, 326 insertions(+), 22 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-> index 3c32db8..4b6fd2a 100644
-> --- a/arch/x86/include/asm/pgtable_types.h
-> +++ b/arch/x86/include/asm/pgtable_types.h
-> @@ -352,6 +352,7 @@ static inline void update_page_count(int level, unsigned long pages) { }
->   * as a pte too.
->   */
->  extern pte_t *lookup_address(unsigned long address, unsigned int *level);
-> +extern int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase);
->  
->  #endif	/* !__ASSEMBLY__ */
->  
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 9ac1723..fe01116 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -682,6 +682,305 @@ int arch_add_memory(int nid, u64 start, u64 size)
->  }
->  EXPORT_SYMBOL_GPL(arch_add_memory);
->  
-> +#define PAGE_INUSE 0xFD
-> +
-> +static void __meminit free_pagetable(struct page *page, int order)
-> +{
-> +	struct zone *zone;
-> +	bool bootmem = false;
-> +	unsigned long magic;
-> +	unsigned int nr_pages = 1 << order;
-> +
-> +	/* bootmem page has reserved flag */
-> +	if (PageReserved(page)) {
-> +		__ClearPageReserved(page);
-> +		bootmem = true;
-> +
-> +		magic = (unsigned long)page->lru.next;
-> +		if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
-> +			while (nr_pages--)
-> +				put_page_bootmem(page++);
-> +		} else
-> +			__free_pages_bootmem(page, order);
-> +	} else
-> +		free_pages((unsigned long)page_address(page), order);
-> +
-> +	/*
-> +	 * SECTION_INFO pages and MIX_SECTION_INFO pages
-> +	 * are all allocated by bootmem.
-> +	 */
-> +	if (bootmem) {
-> +		zone = page_zone(page);
-> +		zone_span_writelock(zone);
-> +		zone->present_pages += nr_pages;
-> +		zone_span_writeunlock(zone);
-> +		totalram_pages += nr_pages;
-> +	}
-> +}
-> +
-> +static void __meminit free_pte_table(pte_t *pte_start, pmd_t *pmd)
-> +{
-> +	pte_t *pte;
-> +	int i;
-> +
-> +	for (i = 0; i < PTRS_PER_PTE; i++) {
-> +		pte = pte_start + i;
-> +		if (pte_val(*pte))
-> +			return;
-> +	}
-> +
-> +	/* free a pte talbe */
-> +	free_pagetable(pmd_page(*pmd), 0);
-> +	spin_lock(&init_mm.page_table_lock);
-> +	pmd_clear(pmd);
-> +	spin_unlock(&init_mm.page_table_lock);
-> +}
-> +
-> +static void __meminit free_pmd_table(pmd_t *pmd_start, pud_t *pud)
-> +{
-> +	pmd_t *pmd;
-> +	int i;
-> +
-> +	for (i = 0; i < PTRS_PER_PMD; i++) {
-> +		pmd = pmd_start + i;
-> +		if (pmd_val(*pmd))
-> +			return;
-> +	}
-> +
-> +	/* free a pmd talbe */
-> +	free_pagetable(pud_page(*pud), 0);
-> +	spin_lock(&init_mm.page_table_lock);
-> +	pud_clear(pud);
-> +	spin_unlock(&init_mm.page_table_lock);
-> +}
-> +
-> +/* Return true if pgd is changed, otherwise return false. */
-> +static bool __meminit free_pud_table(pud_t *pud_start, pgd_t *pgd)
-> +{
-> +	pud_t *pud;
-> +	int i;
-> +
-> +	for (i = 0; i < PTRS_PER_PUD; i++) {
-> +		pud = pud_start + i;
-> +		if (pud_val(*pud))
-> +			return false;
-> +	}
-> +
-> +	/* free a pud table */
-> +	free_pagetable(pgd_page(*pgd), 0);
-> +	spin_lock(&init_mm.page_table_lock);
-> +	pgd_clear(pgd);
-> +	spin_unlock(&init_mm.page_table_lock);
-> +
-> +	return true;
-> +}
-> +
-> +static void __meminit
-> +remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
-> +		 bool direct)
-> +{
-> +	unsigned long next, pages = 0;
-> +	pte_t *pte;
-> +	void *page_addr;
-> +	phys_addr_t phys_addr;
-> +
-> +	pte = pte_start + pte_index(addr);
-> +	for (; addr < end; addr = next, pte++) {
-> +		next = (addr + PAGE_SIZE) & PAGE_MASK;
-> +		if (next > end)
-> +			next = end;
-> +
-> +		if (!pte_present(*pte))
-> +			continue;
-> +
-> +		/*
-> +		 * We mapped [0,1G) memory as identity mapping when
-> +		 * initializing, in arch/x86/kernel/head_64.S. These
-> +		 * pagetables cannot be removed.
-> +		 */
-> +		phys_addr = pte_val(*pte) + (addr & PAGE_MASK);
-> +		if (phys_addr < (phys_addr_t)0x40000000)
-> +			return;
-> +
-> +		if (IS_ALIGNED(addr, PAGE_SIZE) &&
-> +		    IS_ALIGNED(next, PAGE_SIZE)) {
-> +			if (!direct) {
-> +				free_pagetable(pte_page(*pte), 0);
-> +				pages++;
-> +			}
-> +
-> +			spin_lock(&init_mm.page_table_lock);
-> +			pte_clear(&init_mm, addr, pte);
-> +			spin_unlock(&init_mm.page_table_lock);
-> +		} else {
-> +			/*
-> +			 * If we are not removing the whole page, it means
-> +			 * other ptes in this page are being used and we canot
-> +			 * remove them. So fill the unused ptes with 0xFD, and
-> +			 * remove the page when it is wholly filled with 0xFD.
-> +			 */
-> +			memset((void *)addr, PAGE_INUSE, next - addr);
-> +			page_addr = page_address(pte_page(*pte));
-> +
-> +			if (!memchr_inv(page_addr, PAGE_INUSE, PAGE_SIZE)) {
-> +				free_pagetable(pte_page(*pte), 0);
-> +				pages++;
-> +
-> +				spin_lock(&init_mm.page_table_lock);
-> +				pte_clear(&init_mm, addr, pte);
-> +				spin_unlock(&init_mm.page_table_lock);
-> +			}
-> +		}
-> +	}
-> +
-> +	/* Call free_pte_table() in remove_pmd_table(). */
-> +	flush_tlb_all();
-> +	if (direct)
-> +		update_page_count(PG_LEVEL_4K, -pages);
-> +}
-> +
-> +static void __meminit
-> +remove_pmd_table(pmd_t *pmd_start, unsigned long addr, unsigned long end,
-> +		 bool direct)
-> +{
-> +	unsigned long pte_phys, next, pages = 0;
-> +	pte_t *pte_base;
-> +	pmd_t *pmd;
-> +
-> +	pmd = pmd_start + pmd_index(addr);
-> +	for (; addr < end; addr = next, pmd++) {
-> +		next = pmd_addr_end(addr, end);
-> +
-> +		if (!pmd_present(*pmd))
-> +			continue;
-> +
-> +		if (pmd_large(*pmd)) {
-> +			if (IS_ALIGNED(addr, PMD_SIZE) &&
-> +			    IS_ALIGNED(next, PMD_SIZE)) {
-> +				if (!direct) {
-> +					free_pagetable(pmd_page(*pmd),
-> +						       get_order(PMD_SIZE));
-> +					pages++;
-> +				}
-> +
-> +				spin_lock(&init_mm.page_table_lock);
-> +				pmd_clear(pmd);
-> +				spin_unlock(&init_mm.page_table_lock);
-> +				continue;
-> +			}
-> +
-> +			/*
-> +			 * We use 2M page, but we need to remove part of them,
-> +			 * so split 2M page to 4K page.
-> +			 */
-> +			pte_base = (pte_t *)alloc_low_page(&pte_phys);
-> +			BUG_ON(!pte_base);
-> +			__split_large_page((pte_t *)pmd, addr,
-> +					   (pte_t *)pte_base);
-> +
-> +			spin_lock(&init_mm.page_table_lock);
-> +			pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-> +			spin_unlock(&init_mm.page_table_lock);
-> +
-> +			flush_tlb_all();
-> +		}
-> +
-> +		pte_base = (pte_t *)map_low_page((pte_t *)pmd_page_vaddr(*pmd));
-> +		remove_pte_table(pte_base, addr, next, direct);
-> +		free_pte_table(pte_base, pmd);
-> +		unmap_low_page(pte_base);
-> +	}
-> +
-> +	/* Call free_pmd_table() in remove_pud_table(). */
-> +	if (direct)
-> +		update_page_count(PG_LEVEL_2M, -pages);
-> +}
-> +
-> +static void __meminit
-> +remove_pud_table(pud_t *pud_start, unsigned long addr, unsigned long end,
-> +		 bool direct)
-> +{
-> +	unsigned long pmd_phys, next, pages = 0;
-> +	pmd_t *pmd_base;
-> +	pud_t *pud;
-> +
-> +	pud = pud_start + pud_index(addr);
-> +	for (; addr < end; addr = next, pud++) {
-> +		next = pud_addr_end(addr, end);
-> +
-> +		if (!pud_present(*pud))
-> +			continue;
-> +
-> +		if (pud_large(*pud)) {
-> +			if (IS_ALIGNED(addr, PUD_SIZE) &&
-> +			    IS_ALIGNED(next, PUD_SIZE)) {
-> +				if (!direct) {
-> +					free_pagetable(pud_page(*pud),
-> +						       get_order(PUD_SIZE));
-> +					pages++;
-> +				}
-> +
-> +				spin_lock(&init_mm.page_table_lock);
-> +				pud_clear(pud);
-> +				spin_unlock(&init_mm.page_table_lock);
-> +				continue;
-> +			}
-> +
-> +			/*
-> +			 * We use 1G page, but we need to remove part of them,
-> +			 * so split 1G page to 2M page.
-> +			 */
-> +			pmd_base = (pmd_t *)alloc_low_page(&pmd_phys);
-> +			BUG_ON(!pmd_base);
-> +			__split_large_page((pte_t *)pud, addr,
-> +					   (pte_t *)pmd_base);
-> +
-> +			spin_lock(&init_mm.page_table_lock);
-> +			pud_populate(&init_mm, pud, __va(pmd_phys));
-> +			spin_unlock(&init_mm.page_table_lock);
-> +
-> +			flush_tlb_all();
-> +		}
-> +
-> +		pmd_base = (pmd_t *)map_low_page((pmd_t *)pud_page_vaddr(*pud));
-> +		remove_pmd_table(pmd_base, addr, next, direct);
-> +		free_pmd_table(pmd_base, pud);
-> +		unmap_low_page(pmd_base);
-> +	}
-> +
-> +	if (direct)
-> +		update_page_count(PG_LEVEL_1G, -pages);
-> +}
-> +
-> +/* start and end are both virtual address. */
-> +static void __meminit
-> +remove_pagetable(unsigned long start, unsigned long end, bool direct)
-> +{
-> +	unsigned long next;
-> +	pgd_t *pgd;
-> +	pud_t *pud;
-> +	bool pgd_changed = false;
-> +
-> +	for (; start < end; start = next) {
-> +		pgd = pgd_offset_k(start);
-> +		if (!pgd_present(*pgd))
-> +			continue;
-> +
-> +		next = pgd_addr_end(start, end);
-> +
-> +		pud = (pud_t *)map_low_page((pud_t *)pgd_page_vaddr(*pgd));
-> +		remove_pud_table(pud, start, next, direct);
-> +		if (free_pud_table(pud, pgd))
-> +			pgd_changed = true;
-> +		unmap_low_page(pud);
-> +	}
-> +
-> +	if (pgd_changed)
-> +		sync_global_pgds(start, end - 1);
-> +
-> +	flush_tlb_all();
-> +}
-> +
->  #ifdef CONFIG_MEMORY_HOTREMOVE
->  int __ref arch_remove_memory(u64 start, u64 size)
->  {
-> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-> index a718e0d..7dcb6f9 100644
-> --- a/arch/x86/mm/pageattr.c
-> +++ b/arch/x86/mm/pageattr.c
-> @@ -501,21 +501,13 @@ out_unlock:
->  	return do_split;
->  }
->  
-> -static int split_large_page(pte_t *kpte, unsigned long address)
-> +int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
->  {
->  	unsigned long pfn, pfninc = 1;
->  	unsigned int i, level;
-> -	pte_t *pbase, *tmp;
-> +	pte_t *tmp;
->  	pgprot_t ref_prot;
-> -	struct page *base;
-> -
-> -	if (!debug_pagealloc)
-> -		spin_unlock(&cpa_lock);
-> -	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
-> -	if (!debug_pagealloc)
-> -		spin_lock(&cpa_lock);
-> -	if (!base)
-> -		return -ENOMEM;
-> +	struct page *base = virt_to_page(pbase);
->  
->  	spin_lock(&pgd_lock);
->  	/*
-> @@ -523,10 +515,11 @@ static int split_large_page(pte_t *kpte, unsigned long address)
->  	 * up for us already:
->  	 */
->  	tmp = lookup_address(address, &level);
-> -	if (tmp != kpte)
-> -		goto out_unlock;
-> +	if (tmp != kpte) {
-> +		spin_unlock(&pgd_lock);
-> +		return 1;
-> +	}
->  
-> -	pbase = (pte_t *)page_address(base);
->  	paravirt_alloc_pte(&init_mm, page_to_pfn(base));
->  	ref_prot = pte_pgprot(pte_clrhuge(*kpte));
->  	/*
-> @@ -579,17 +572,27 @@ static int split_large_page(pte_t *kpte, unsigned long address)
->  	 * going on.
->  	 */
->  	__flush_tlb_all();
-> +	spin_unlock(&pgd_lock);
->  
-> -	base = NULL;
-> +	return 0;
-> +}
->  
-> -out_unlock:
-> -	/*
-> -	 * If we dropped out via the lookup_address check under
-> -	 * pgd_lock then stick the page back into the pool:
-> -	 */
-> -	if (base)
-> +static int split_large_page(pte_t *kpte, unsigned long address)
-> +{
-> +	pte_t *pbase;
-> +	struct page *base;
-> +
-> +	if (!debug_pagealloc)
-> +		spin_unlock(&cpa_lock);
-> +	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
-> +	if (!debug_pagealloc)
-> +		spin_lock(&cpa_lock);
-> +	if (!base)
-> +		return -ENOMEM;
-> +
-> +	pbase = (pte_t *)page_address(base);
-> +	if (__split_large_page(kpte, address, pbase))
->  		__free_page(base);
-> -	spin_unlock(&pgd_lock);
->  
->  	return 0;
->  }
-> diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-> index 3f778c2..190ff06 100644
-> --- a/include/linux/bootmem.h
-> +++ b/include/linux/bootmem.h
-> @@ -53,6 +53,7 @@ extern void free_bootmem_node(pg_data_t *pgdat,
->  			      unsigned long size);
->  extern void free_bootmem(unsigned long physaddr, unsigned long size);
->  extern void free_bootmem_late(unsigned long physaddr, unsigned long size);
-> +extern void __free_pages_bootmem(struct page *page, unsigned int order);
->  
->  /*
->   * Flags for reserve_bootmem (also if CONFIG_HAVE_ARCH_BOOTMEM_NODE,
+Try the attached patch.  I think it should fix the issue.  I just applied a=
+ similar patch for newer asics.
+
+Alex
 
 
+--_002_A3397C8B8B789E45844E7EC5DEAD89D02DF0A266sausexdag04amdc_
+Content-Type: application/octet-stream;
+	name="0001-drm-radeon-fix-MC-blackout-on-r5xx-r7xx.patch"
+Content-Description: 0001-drm-radeon-fix-MC-blackout-on-r5xx-r7xx.patch
+Content-Disposition: attachment;
+	filename="0001-drm-radeon-fix-MC-blackout-on-r5xx-r7xx.patch"; size=2469;
+	creation-date="Tue, 29 Jan 2013 13:04:19 GMT";
+	modification-date="Tue, 29 Jan 2013 13:02:27 GMT"
+Content-Transfer-Encoding: base64
+
+RnJvbSA5MDg1Zjc4ZDI4OWJjNzVkNjkxNjJiNDAyZDcxNWQzMmRhNDAzMDgwIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
+b20+CkRhdGU6IFR1ZSwgMjkgSmFuIDIwMTMgMDc6NTk6MDcgLTA1MDAKU3ViamVjdDogW1BBVENI
+XSBkcm0vcmFkZW9uOiBmaXggTUMgYmxhY2tvdXQgb24gcjV4eC1yN3h4CgpGb3JjZSB0aGUgY3J0
+YyBtZW0gcmVxdWVzdHMgb24vb2ZmIGltbWVkaWF0ZWx5IHJhdGhlcgp0aGFuIHdhaXRpbmcgZm9y
+IHRoZSBkb3VibGUgYnVmZmVyZWQgdXBkYXRlcyB0byBraWNrIGluLgpTZWVtcyB3ZSBtaXNzIHRo
+ZSB1cGRhdGUgaW4gY2VydGFpbiBjb25kaXRpb25zLiBCYXNlZCBvbgphIHNpbWlsYXIgZml4IGZv
+ciBldmVyZ3JlZW4uCgpSZXBvcnRlZC1ieTogU2h1YWggS2hhbiA8c2h1YWhraGFuQGdtYWlsLmNv
+bT4KU2lnbmVkLW9mZi1ieTogQWxleCBEZXVjaGVyIDxhbGV4YW5kZXIuZGV1Y2hlckBhbWQuY29t
+PgpDYzogc3RhYmxlQHZnZXIua2VybmVsLm9yZwotLS0KIGRyaXZlcnMvZ3B1L2RybS9yYWRlb24v
+cjUwMF9yZWcuaCB8ICAgIDEgKwogZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9ydjUxNS5jICAgIHwg
+ICAgNCArKysrCiAyIGZpbGVzIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygrKSwgMCBkZWxldGlvbnMo
+LSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3I1MDBfcmVnLmggYi9kcml2
+ZXJzL2dwdS9kcm0vcmFkZW9uL3I1MDBfcmVnLmgKaW5kZXggZWM1NzZhYS4uNTE1OWYwZCAxMDA2
+NDQKLS0tIGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yNTAwX3JlZy5oCisrKyBiL2RyaXZlcnMv
+Z3B1L2RybS9yYWRlb24vcjUwMF9yZWcuaApAQCAtMzU4LDYgKzM1OCw3IEBACiAjZGVmaW5lIEFW
+SVZPX0QxQ1JUQ19TVEVSRU9fQ09OVFJPTCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgMHg2
+MGM0CiAKICNkZWZpbmUgQVZJVk9fRDFNT0RFX01BU1RFUl9VUERBVEVfTU9ERSAgICAgICAgICAg
+ICAgICAgICAgICAgICAweDYwZTQKKyNkZWZpbmUgQVZJVk9fRDFDUlRDX1VQREFURV9MT0NLICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAweDYwZTgKIAogLyogbWFzdGVyIGNvbnRyb2xz
+ICovCiAjZGVmaW5lIEFWSVZPX0RDX0NSVENfTUFTVEVSX0VOICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgMHg2MGY4CmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3J2
+NTE1LmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3J2NTE1LmMKaW5kZXggMmJiNmQwZS4uYTUy
+OTBiMiAxMDA2NDQKLS0tIGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9ydjUxNS5jCisrKyBiL2Ry
+aXZlcnMvZ3B1L2RybS9yYWRlb24vcnY1MTUuYwpAQCAtMzA0LDcgKzMwNCw5IEBAIHZvaWQgcnY1
+MTVfbWNfc3RvcChzdHJ1Y3QgcmFkZW9uX2RldmljZSAqcmRldiwgc3RydWN0IHJ2NTE1X21jX3Nh
+dmUgKnNhdmUpCiAJCQlpZiAoISh0bXAgJiBBVklWT19DUlRDX0RJU1BfUkVBRF9SRVFVRVNUX0RJ
+U0FCTEUpKSB7CiAJCQkJcmFkZW9uX3dhaXRfZm9yX3ZibGFuayhyZGV2LCBpKTsKIAkJCQl0bXAg
+fD0gQVZJVk9fQ1JUQ19ESVNQX1JFQURfUkVRVUVTVF9ESVNBQkxFOworCQkJCVdSRUczMihBVklW
+T19EMUNSVENfVVBEQVRFX0xPQ0sgKyBjcnRjX29mZnNldHNbaV0sIDEpOwogCQkJCVdSRUczMihB
+VklWT19EMUNSVENfQ09OVFJPTCArIGNydGNfb2Zmc2V0c1tpXSwgdG1wKTsKKwkJCQlXUkVHMzIo
+QVZJVk9fRDFDUlRDX1VQREFURV9MT0NLICsgY3J0Y19vZmZzZXRzW2ldLCAwKTsKIAkJCX0KIAkJ
+CS8qIHdhaXQgZm9yIHRoZSBuZXh0IGZyYW1lICovCiAJCQlmcmFtZV9jb3VudCA9IHJhZGVvbl9n
+ZXRfdmJsYW5rX2NvdW50ZXIocmRldiwgaSk7CkBAIC0zODQsNyArMzg2LDkgQEAgdm9pZCBydjUx
+NV9tY19yZXN1bWUoc3RydWN0IHJhZGVvbl9kZXZpY2UgKnJkZXYsIHN0cnVjdCBydjUxNV9tY19z
+YXZlICpzYXZlKQogCQlpZiAoc2F2ZS0+Y3J0Y19lbmFibGVkW2ldKSB7CiAJCQl0bXAgPSBSUkVH
+MzIoQVZJVk9fRDFDUlRDX0NPTlRST0wgKyBjcnRjX29mZnNldHNbaV0pOwogCQkJdG1wICY9IH5B
+VklWT19DUlRDX0RJU1BfUkVBRF9SRVFVRVNUX0RJU0FCTEU7CisJCQlXUkVHMzIoQVZJVk9fRDFD
+UlRDX1VQREFURV9MT0NLICsgY3J0Y19vZmZzZXRzW2ldLCAxKTsKIAkJCVdSRUczMihBVklWT19E
+MUNSVENfQ09OVFJPTCArIGNydGNfb2Zmc2V0c1tpXSwgdG1wKTsKKwkJCVdSRUczMihBVklWT19E
+MUNSVENfVVBEQVRFX0xPQ0sgKyBjcnRjX29mZnNldHNbaV0sIDApOwogCQkJLyogd2FpdCBmb3Ig
+dGhlIG5leHQgZnJhbWUgKi8KIAkJCWZyYW1lX2NvdW50ID0gcmFkZW9uX2dldF92YmxhbmtfY291
+bnRlcihyZGV2LCBpKTsKIAkJCWZvciAoaiA9IDA7IGogPCByZGV2LT51c2VjX3RpbWVvdXQ7IGor
+KykgewotLSAKMS43LjcuNQoK
+
+--_002_A3397C8B8B789E45844E7EC5DEAD89D02DF0A266sausexdag04amdc_--
