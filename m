@@ -1,87 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab3A2N7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 08:59:51 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33607 "EHLO mail.skyhub.de"
+	id S1757099Ab3A2OGS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:06:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53451 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756559Ab3A2N7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 08:59:49 -0500
-Date: Tue, 29 Jan 2013 14:59:46 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: [PATCH v5 14/20] scripts/gdb: Add internal helper and
- convenience function to retrieve thread_info
-Message-ID: <20130129135946.GG14302@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jan Kiszka <jan.kiszka@siemens.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org,
-	Jason Wessel <jason.wessel@windriver.com>,
-	kgdb-bugreport@lists.sourceforge.net,
-	Andi Kleen <andi@firstfloor.org>, Tom Tromey <tromey@redhat.com>,
-	Ben Widawsky <ben@bwidawsk.net>, Tony Luck <tony.luck@intel.com>,
-	Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
-References: <cover.1359463075.git.jan.kiszka@siemens.com>
- <c4fb2b8d82932f2e86956bd0bd08caf15855b652.1359463075.git.jan.kiszka@siemens.com>
+	id S1756324Ab3A2OGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 09:06:15 -0500
+Date: Tue, 29 Jan 2013 16:05:58 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RESEND RFC 0/2] kvm: Improving undercommit scenarios
+Message-ID: <20130129140558.GF15004@redhat.com>
+References: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <c4fb2b8d82932f2e86956bd0bd08caf15855b652.1359463075.git.jan.kiszka@siemens.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130122073854.24731.9426.sendpatchset@codeblue.in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 01:37:57PM +0100, Jan Kiszka wrote:
-> Add the internal helper get_thread_info that calculated the thread_info
-> from a given task variable. Also export this service as a convenience
-> function.
+On Tue, Jan 22, 2013 at 01:08:54PM +0530, Raghavendra K T wrote:
+>  In some special scenarios like #vcpu <= #pcpu, PLE handler may
+> prove very costly, because there is no need to iterate over vcpus
+> and do unsuccessful yield_to burning CPU.
 > 
-> Note: ia64 version is untested.
+>  The first patch optimizes all the yield_to by bailing out when there
+>  is no need to continue in yield_to (i.e., when there is only one task 
+>  in source and target rq).
 > 
-> CC: Tony Luck <tony.luck@intel.com>
-> CC: Fenghua Yu <fenghua.yu@intel.com>
-> CC: linux-ia64@vger.kernel.org
-> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-> ---
+>  Second patch uses that in PLE handler. Further when a yield_to fails
+>  we do not immediately go out of PLE handler instead we try thrice 
+>  to have better statistical possibility of false return. Otherwise that
+>  would affect moderate overcommit cases.
+>  
+>  Result on 3.7.0-rc6 kernel shows around 140% improvement for ebizzy 1x and
+>  around 51% for dbench 1x  with 32 core PLE machine with 32 vcpu guest.
+> 
+> 
+> base = 3.7.0-rc6 
+> machine: 32 core mx3850 x5 PLE mc
+> 
+> --+-----------+-----------+-----------+------------+-----------+
+>                ebizzy (rec/sec higher is beter)
+> --+-----------+-----------+-----------+------------+-----------+
+>     base        stdev       patched     stdev       %improve     
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x   2511.3000    21.5409    6051.8000   170.2592   140.98276   
+> 2x   2679.4000   332.4482    2692.3000   251.4005     0.48145
+> 3x   2253.5000   266.4243    2192.1667   178.9753    -2.72169
+> --+-----------+-----------+-----------+------------+-----------+
+> 
+> --+-----------+-----------+-----------+------------+-----------+
+>         dbench (throughput in MB/sec. higher is better)
+> --+-----------+-----------+-----------+------------+-----------+
+>     base        stdev       patched     stdev       %improve     
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x  6677.4080   638.5048    10098.0060   3449.7026     51.22643
+> 2x  2012.6760    64.7642    2019.0440     62.6702       0.31639
+> 3x  1302.0783    40.8336    1292.7517     27.0515      -0.71629
+> --+-----------+-----------+-----------+------------+-----------+
+> 
+> Here is the refernce of no ple result.
+>  ebizzy-1x_nople 7592.6000 rec/sec
+>  dbench_1x_nople 7853.6960 MB/sec
+> 
+> The result says we can still improve by 60% for ebizzy, but overall we are
+> getting impressive performance with the patches.
+> 
+>  Changes Since V2:
+>  - Dropped global measures usage patch (Peter Zilstra)
+>  - Do not bail out on first failure (Avi Kivity)
+>  - Try thrice for the failure of yield_to to get statistically more correct
+>    behaviour.
+> 
+>  Changes since V1:
+>  - Discard the idea of exporting nrrunning and optimize in core scheduler (Peter)
+>  - Use yield() instead of schedule in overcommit scenarios (Rik)
+>  - Use loadavg knowledge to detect undercommit/overcommit
+> 
+>  Peter Zijlstra (1):
+>   Bail out of yield_to when source and target runqueue has one task
+> 
+>  Raghavendra K T (1):
+>   Handle yield_to failure return for potential undercommit case
+> 
+>  Please let me know your comments and suggestions.
+> 
+>  Link for the discussion of V3 original:
+>  https://lkml.org/lkml/2012/11/26/166
+> 
+>  Link for V2:
+>  https://lkml.org/lkml/2012/10/29/287
+> 
+>  Link for V1:
+>  https://lkml.org/lkml/2012/9/21/168
+> 
+>  kernel/sched/core.c | 25 +++++++++++++++++++------
+>  virt/kvm/kvm_main.c | 26 ++++++++++++++++----------
+>  2 files changed, 35 insertions(+), 16 deletions(-)
+Applied, thanks.
 
-[ … ]
-
-> +class LxThreadInfoFunc (gdb.Function):
-> +	# Calculate Linux thread_info from task variable.
-> +	__doc__ = "Calculate Linux thread_info from task variable.\n" \
-> +		  "\n" \
-> +		  "$lx_thread_info(TASK): Given TASK, return the corresponding thread_info\n" \
-> +		  "variable."
-> +
-> +	def __init__(self):
-> +		super(LxThreadInfoFunc, self).__init__("lx_thread_info")
-> +
-> +	def invoke(self, task):
-> +		return get_thread_info(task)
-> +
-> +LxThreadInfoFunc()
-
-Nice, you can plug commands into one-another:
-
-(gdb) p $lx_thread_info($lx_current())
-$12 = {task = 0xffffffff81a14440, exec_domain = 0xffffffff81a21e00, flags = 0, status = 0, cpu = 0, 
-  preempt_count = 1, addr_limit = {seg = 18446744073709551615}, restart_block = {
-    fn = 0xffffffff81054cd0 <do_no_restart_syscall>, {futex = {uaddr = 0x0, val = 0, flags = 0, bitset = 0, 
-        time = 0, uaddr2 = 0x0}, nanosleep = {clockid = 0, rmtp = 0x0, compat_rmtp = 0x0, expires = 0}, 
-      poll = {ufds = 0x0, nfds = 0, has_timeout = 0, tv_sec = 0, tv_nsec = 0}}}, sysenter_return = 0x0, 
-  sig_on_uaccess_error = 0, uaccess_err = 0}
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
 --
+			Gleb.
