@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab3A2BQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 20:16:32 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64221 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab3A2BQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 20:16:30 -0500
-X-AuditID: 9c930179-b7d01ae000004006-c9-510722eacbd8
-Message-ID: <510722E9.5090603@lge.com>
-Date: Tue, 29 Jan 2013 10:16:25 +0900
-From: "kyungsik.lee" <kyungsik.lee@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1755442Ab3A2BQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 20:16:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:1064 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755151Ab3A2BQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 20:16:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,555,1355126400"; 
+   d="scan'208";a="253871454"
+Message-ID: <51072327.2000807@intel.com>
+Date: Tue, 29 Jan 2013 09:17:27 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>, hyojun.im@lge.com,
-        chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
-        namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        Dave Martin <dave.martin@linaro.org>
-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com> <20130128142510.68092e10.akpm@linux-foundation.org>
-In-Reply-To: <20130128142510.68092e10.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+To: Mike Galbraith <efault@gmx.de>
+CC: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>  <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>  <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net>  <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>  <1359301903.5805.11.camel@marge.simpson.net>  <1359350266.5783.39.camel@marge.simpson.net> <510611D2.1020007@intel.com>  <1359353720.5783.51.camel@marge.simpson.net> <1359355337.5783.56.camel@marge.simpson.net>
+In-Reply-To: <1359355337.5783.56.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-29 오전 7:25, Andrew Morton wrote:
-> On Sat, 26 Jan 2013 14:50:43 +0900
-> Kyungsik Lee <kyungsik.lee@lge.com> wrote:
->
->> This patchset is for supporting LZ4 compressed kernel and initial ramdisk on
->> the x86 and ARM architectures.
->>
->> According to http://code.google.com/p/lz4/, LZ4 is a very fast lossless
->> compression algorithm and also features an extremely fast decoder.
->>
->> Kernel Decompression APIs are based on implementation by Yann Collet
->> (http://code.google.com/p/lz4/source/checkout).
->> De/compression Tools are also provided from the site above.
->>
->> The initial test result on ARM(v7) based board shows that the size of kernel
->> with LZ4 compressed is 8% bigger than LZO compressed  but the decompressing
->> speed is faster(especially under the enabled unaligned memory access).
->>
->> Test: 3.4 based kernel built with many modules
->> Uncompressed kernel size: 13MB
->> lzo: 6.3MB, 301ms
->> lz4: 6.8MB, 251ms(167ms, with enabled unaligned memory access)
->>
->> It seems that it___s worth trying LZ4 compressed kernel image or ramdisk
->> for making the kernel boot more faster.
->>
->> ...
->>
->>   20 files changed, 663 insertions(+), 3 deletions(-)
->>
->> ...
->>
-> What's this "with enabled unaligned memory access" thing?  You mean "if
-> the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"?  If so,
-> that's only x86, which isn't really in the target market for this
-> patch, yes?
+On 01/28/2013 02:42 PM, Mike Galbraith wrote:
+> Back to original 1ms sleep, 8ms work, turning NUMA box into a single
+> node 10 core box with numactl.
+> 
+> monteverdi:/abuild/mike/:[0]# echo powersaving > /sys/devices/system/cpu/sched_policy/current_sched_policy
+> monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
+> 045286  00043872
+> 045289  00043464
+> 045284  00043488
+> 045287  00043440
+> 045283  00043416
+> 045281  00044456
+> 045285  00043456
+> 045288  00044312
+> 045280  00043048
+> 045282  00043240
 
-Yes, exactly. If the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS,
-
-then it is expected more boot-time improvement by LZ4-decompressor.
-
-Currently there are two architectures which support it in mainline; x86 and powerpc.
-And it is expected that ARM arch(v6 or above) also support it since the commit below.
-Commit ID: 5010192d5
-ARM: 7583/1: decompressor: Enable unaligned memory access for v6 and above
-by Dave Martin
-
-The test results(167ms) come from the ARM(v7 arch), MSM8960 based board with
-CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS set.
-  
-
->
-> It's a lot of code for a 50ms boot-time improvement.  Does anyone have
-> any opinions on whether or not the benefits are worth the cost?
->
-
-Not only for the kernel but also the ramdisk can be compressed with LZ4 so
-the boot-time would be more improved. The test case above didn't include
-the decompressing time result for LZ4-compressed ramdisk.
-
-So far the implementation is applicable to boot-time improvement for
-LZ4-compressed kernel and ramdisk images but the decompressor module is
-exported as an interface for other usages like LZO.
-With LZ4 compressor(not yet implemented for the kernel), it is expected
-that it will be used in many places in kernel such as crypto and fs(squashfs, btrfs).
-
-Thanks,
-Kyungsik
-
-  
+Um, no idea why the powersaving data is so low.
+> monteverdi:/abuild/mike/:[0]# echo balance > /sys/devices/system/cpu/sched_policy/current_sched_policy
+> monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
+> 045300  00052536
+> 045307  00052472
+> 045304  00052536
+> 045299  00052536
+> 045305  00052520
+> 045306  00052528
+> 045302  00052528
+> 045303  00052528
+> 045308  00052512
+> 045301  00052520
+> monteverdi:/abuild/mike/:[0]# echo performance > /sys/devices/system/cpu/sched_policy/current_sched_policy
+> monteverdi:/abuild/mike/:[0]# numactl --cpunodebind=0 massive_intr 10 60
+> 045339  00052600
+> 045340  00052608
+> 045338  00052600
+> 045337  00052608
+> 045343  00052600
+> 045341  00052600
+> 045336  00052608
+> 045335  00052616
+> 045334  00052576
 
 
-
-
+-- 
+Thanks Alex
