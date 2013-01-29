@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3A2OSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:18:25 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:37652 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab3A2OSV (ORCPT
+	id S1756466Ab3A2OTX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:19:23 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57745 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab3A2OTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:18:21 -0500
+	Tue, 29 Jan 2013 09:19:21 -0500
+Date: Tue, 29 Jan 2013 14:13:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kim Phillips <kim.phillips@freescale.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] arm: use built-in byte swap function
+Message-ID: <20130129141328.GV23505@n2100.arm.linux.org.uk>
+References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <51076787.1020201@huawei.com>
-References: <1359106615-17544-1-git-send-email-wangyijing@huawei.com>
-	<CAPoiz9zw-pVNGZC7Ox+Kf+=RNHJRCY5hoLejbrmWmjvHtUEihg@mail.gmail.com>
-	<51076787.1020201@huawei.com>
-Date: Tue, 29 Jan 2013 07:18:20 -0700
-Message-ID: <CAPoiz9zyms8y_bU56=i2UDRrEOgWEH2kzd275HOrz=FhuFQTJA@mail.gmail.com>
-Subject: Re: [PATCH v3] PCI: Document PCIE BUS MPS parameters
-From: Jon Mason <jdmason@kudzu.us>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Rob Landley <rob@landley.net>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Andrew Murray <andrew.murray@arm.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 11:09 PM, Yijing Wang <wangyijing@huawei.com> wrote:
-> On 2013/1/29 13:00, Jon Mason wrote:
->> On Fri, Jan 25, 2013 at 2:36 AM, Yijing Wang <wangyijing@huawei.com> wrote:
->>> v0->v1: Update MPS parameters as non-arch and add MRRS
->>>                 description into pcie_bus_perf parameter suggested
->>>                 by Andrew Murray.
->>> v1->v2: Update some semantic problems and add MPS and MRRS
->>>                 explanation suggested by Joe Lawrence and Randy Dunlap.
->>> v2->v3: Update some semantic problems and the description
->>>                 of pcie_bus_safe and pcie_bus_peer2peer suggested
->>>                 by Bjorn Helgaas.
->>>
->>> Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
->>> pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
->>> These parameters were introduced by Jon Mason <mason@myri.com> at
->>> commit 5f39e6705 and commit b03e7495a8.
->>>
->>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->>> ---
->>>  Documentation/kernel-parameters.txt |   13 +++++++++++++
->>>  1 files changed, 13 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->>> index 363e348..2997df2 100644
->>> --- a/Documentation/kernel-parameters.txt
->>> +++ b/Documentation/kernel-parameters.txt
->>> @@ -2227,6 +2227,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>>                                 This sorting is done to get a device
->>>                                 order compatible with older (<= 2.4) kernels.
->>>                 nobfsort        Don't sort PCI devices into breadth-first order.
->>> +               pcie_bus_tune_off       Disable PCIe MPS (Max Payload Size)
->>> +                               tuning and use the BIOS-configured MPS defaults.
->>> +               pcie_bus_safe   Use the smallest supported MPS of any device
->>> +                               below a root complex.
->>
->> This isn't correct.  It should be something like "The largest MPS
->> common to all devices below the root complex".
->
-> Hi Jon,
->    Thanks for your review and comment!
-> What about "Set every device's MPS to the largest MPSS (Max Payload Size Support)
-> common to all devices below the root complex" ?
+On Mon, Jan 28, 2013 at 07:30:33PM -0600, Kim Phillips wrote:
+> AFAICT, arm gcc got __builtin_bswap{32,64} support in 4.6,
+> and for the 16-bit version in 4.8.
 
-Sounds great!  Thanks so much for documenting this.
+Hmm.
 
->
->>
->>> +               pcie_bus_perf   Configure device MPS to the largest
->>> +                               allowable MPS based on its parent bus. Also set
->>> +                               MRRS (Max Read Request Size) to the largest supported
->>> +                               value (no larger than the MPS that the device or bus
->>> +                               can support) for best performance.
->>> +               pcie_bus_peer2peer      Set every device's MPS to 128B, which
->>> +                               every device is guaranteed to support. This
->>> +                               configuration allows peer-to-peer DMA between any pair
->>> +                               of devices possibly at the cost of reduced performance.
->>>                 cbiosize=nn[KMG]        The fixed amount of bus space which is
->>>                                 reserved for the CardBus bridge's IO window.
->>>                                 The default value is 256 bytes.
->>> --
->>> 1.7.1
->>>
->>>
->>
->> .
->>
->
->
-> --
-> Thanks!
-> Yijing
->
+$ /usr/local/aeabi/bin/arm-linux-gcc --version
+arm-linux-gcc (GCC) 4.5.4
+Copyright (C) 2010 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+$ for a in armv3 armv4 armv4t armv5t armv5te armv6k armv6 armv7-a; do \
+   echo $a:; \
+   for f in 16 32 64; do \
+      echo 'unsigned foo(unsigned val) { return __builtin_bswap'$f'(val); }' | \
+      /usr/local/aeabi/bin/arm-linux-gcc -x c -S -o - - -march=$a | grep 'bl'; \
+   done; \
+done
+
+produces:
+
+armv3:
+        bl __builtin_bswap16
+armv4:
+        bl __builtin_bswap16
+armv4t:
+        bl __builtin_bswap16
+armv5t:
+        bl __builtin_bswap16
+armv5te:
+        bl __builtin_bswap16
+armv6k:
+        bl __builtin_bswap16
+armv6:
+        bl __builtin_bswap16
+armv7-a:
+        bl __builtin_bswap16
+
+So, this compiler (4.5.4) has support for 32-bit and 64-bit bswaps
+across all our architectures, but not the 16-bit ones.
