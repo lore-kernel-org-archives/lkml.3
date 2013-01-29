@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab3A2Blm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 20:41:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518Ab3A2Blj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 20:41:39 -0500
-Date: Mon, 28 Jan 2013 22:41:26 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH v6 2/2] perf stat: add interval printing
-Message-ID: <20130129014125.GD15351@infradead.org>
-References: <1358860732-4435-1-git-send-email-eranian@google.com>
- <1358860732-4435-3-git-send-email-eranian@google.com>
- <20130125025247.GA16249@infradead.org>
- <CABPqkBT-JuR=3q4X2o7Et9idd3T5Ut_GSnhpQKbqfr5SC4eDWA@mail.gmail.com>
- <20130128175938.GA15351@infradead.org>
- <CABPqkBS9yPGb3DOZv9qTULZrP+-8Zrbri99ZGBt7KopTfPWEfQ@mail.gmail.com>
- <20130128192151.GC15351@infradead.org>
- <CABPqkBQRZaErbJeJjcCZYzJOFe0WuAN3s5KYVojgTT8N3STKXg@mail.gmail.com>
+	id S1755155Ab3A2BmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 20:42:24 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:54880 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab3A2BmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 20:42:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQRZaErbJeJjcCZYzJOFe0WuAN3s5KYVojgTT8N3STKXg@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <0000013c82cc2743-ce9b6845-1fc1-4d61-a887-344b3b88a758-000000@email.amazonses.com>
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+	<0000013c82983b45-daa2c9db-a8e8-4cc1-a3b8-73613689b144-000000@email.amazonses.com>
+	<CAFTL4hzcijbtAGrfjpx6RvYUxc2K95j1VW+CeB3w3Ou2Ptpqpg@mail.gmail.com>
+	<0000013c82cc2743-ce9b6845-1fc1-4d61-a887-344b3b88a758-000000@email.amazonses.com>
+Date: Tue, 29 Jan 2013 02:42:20 +0100
+Message-ID: <CAFTL4hzD1X1anOcnS1shZ+OZR5w+OiS36AYrHGaTJ1FD1-0dYw@mail.gmail.com>
+Subject: Re: [GIT PULL] cputime: Full dynticks task/cputime accounting v7
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jan 28, 2013 at 11:45:56PM +0100, Stephane Eranian escreveu:
-> On Mon, Jan 28, 2013 at 8:21 PM, Arnaldo Carvalho de Melo
-> <acme@redhat.com> wrote:
-> > Em Mon, Jan 28, 2013 at 07:26:17PM +0100, Stephane Eranian escreveu:
-> >> On Mon, Jan 28, 2013 at 6:59 PM, Arnaldo Carvalho de Melo
-> >> <acme@redhat.com> wrote:
-> >> > Em Fri, Jan 25, 2013 at 04:21:11PM +0100, Stephane Eranian escreveu:
-> >> >> My patches are always relative to:
-> >> >> git://git.kernel.org/pub/scm/linux/kernel/git/tip.tip.git
+2013/1/28 Christoph Lameter <cl@linux.com>:
+> On Mon, 28 Jan 2013, Frederic Weisbecker wrote:
+>
+>> 2013/1/28 Christoph Lameter <cl@linux.com>:
+>> > On Mon, 28 Jan 2013, Frederic Weisbecker wrote:
+>> >
+>> >> My last concern is the dependency on CONFIG_64BIT. We rely on cputime_t
+>> >> being u64 for reasonable nanosec granularity implementation. And therefore
+>> >> we need a single instruction fetch to read kernel cpustat for atomicity
+>> >> requirement against concurrent incrementation, which only 64 bit archs
+>> >> can provide.
+>> >
+>> > Most x86 cpus support cmpxchg8b on 32bit which can be abused for
+>> > 64 bit reads (see cmpxchg64 in cmpxchg_32.h). Simply do a cmpxchg with
+>> > zero and use whatever it returns.
+>> >
+>> > A percpu version that uses the instruction is called
+>> > this_cpu_cmpxchg_double().
+>>
+>> Yeah but we need to be able to do remote read. In fact atomic_read()
+>> would do the trick.
+>
+> Well yes, cmpxchg64() could do the same without the need for an atomic
+> variable.
 
-> >> >> Do you still need to rebase against your tree?
+Yeah I'll have a look at this.
 
-> >> > Well, userspace code normally is developed on my tree and eventually
-> >> > goes to the one you mentioned. If you make sure that now, that both are
-> >> > synched after some weeks, then probably it'll work with my tree.
+>
+>> >> There is just no emergency though as this new option depends on the context
+>> >> tracking subsystem that only x86-64 (and soon ppc64) implements yet. And
+>> >> this set is complex enough already. I think we can deal with that later.
+>> >
+>> > Ok then this may not be that useful.
+>>
+>> What is not useful?
+>
+> The information about the 64 bit reads that I posted.
 
-> >> How's the kernel proper side of your tree sync'd with tip.git? I cannot have
-> >> the kernel patches for one tree and the perf patches for another. That's a
-> >> lot of overhead especially when it comes to testing.
+Ah ok.
 
-> > Normally regularly, right now it seems all is synched.
-
-> Ok, will resubmit the series against your tree then.
-
-Also everytime Ingo merges I rebase my tree against tip/perf/core, if
-you ever need something that is in some other branch that everybody
-agrees will go upstream, like tip/perf/urgent or Linus's, just let me
-know and I'll coordinate with Ingo and merge it into acme/perf/core.
-
-Talking about that I need to merge tip/perf/urgent, Jiri needs that
-precise attribute revert...
-
-- Arnaldo
+Thanks.
