@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab3A2WHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 17:07:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59383 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab3A2WHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 17:07:01 -0500
-Date: Tue, 29 Jan 2013 14:08:48 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Roger Quadros <rogerq@ti.com>,
-        tony@atomide.com, sameo@linux.intel.com, balbi@ti.com,
-        eballetbo@gmail.com, javier@dowhile0.org, sshtylyov@mvista.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/30] USB: ehci-omap: Use devm_request_and_ioremap()
-Message-ID: <20130129220848.GA11524@kroah.com>
-References: <20130128152010.GN23505@n2100.arm.linux.org.uk>
- <Pine.LNX.4.44L0.1301291033000.1507-100000@iolanthe.rowland.org>
- <20130129160134.GC23505@n2100.arm.linux.org.uk>
+	id S1752281Ab3A2WIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 17:08:45 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:63670 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3A2WIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 17:08:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130129160134.GC23505@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359123276-15833-13-git-send-email-arnd@arndb.de>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
+	<1359123276-15833-13-git-send-email-arnd@arndb.de>
+Date: Tue, 29 Jan 2013 23:08:41 +0100
+Message-ID: <CACRpkda_XOG_ASEGSmERY3W7zCYG4qGVXQX=cKETaah=YJMO3g@mail.gmail.com>
+Subject: Re: [PATCH 12/19] pinctrl: exynos: don't mark probing functions as __init
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@list.infradead.org, linux-kernel@vger.kernel.org,
+        Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 04:01:34PM +0000, Russell King - ARM Linux wrote:
-> On Tue, Jan 29, 2013 at 10:34:53AM -0500, Alan Stern wrote:
-> > On Mon, 28 Jan 2013, Russell King - ARM Linux wrote:
-> > 
-> > > On Mon, Jan 28, 2013 at 10:17:33AM -0500, Alan Stern wrote:
-> > > > On Mon, 28 Jan 2013, Roger Quadros wrote:
-> > > > 
-> > > > > Make use of devm_request_and_ioremap() and correct comment.
-> > > > 
-> > > > Didn't a big patch come through recently converting all usages of 
-> > > > devm_request_and_ioremap() to another function (I forget the name) that 
-> > > > does its own error reporting and returns an ERR_PTR value?
-> > > > 
-> > > > (Checks the mailing list archive...)  Ah, here it is:
-> > > > 
-> > > > 	http://marc.info/?l=linux-usb&m=135876311801537&w=2
-> > > > 
-> > > > And the new function is devm_ioremap_resource().  We should avoid 
-> > > > adding new usages of an old interface.
-> > > 
-> > > Maybe... if devm_ioremap_resource() was already in the kernel.  The
-> > > problem at the moment is it isn't, and it'll probably be rather
-> > > horrid for everyone to deal with especially when it comes to testing.
-> > 
-> > Not in the kernel yet?  I didn't realize that.  Looks like Thierry 
-> > Reding will have some clean-up work to do when it does get in.
-> 
-> It may be in linux-next, but it isn't in Linus' yet... (of course, it's
-> probably scheduled for the upcoming merge window).  Certainly:
-> 
-> $ grep -r devm_ioremap_resource include
-> 
-> against Linus' tree (6abb7c2) still turns up nothing.
+On Fri, Jan 25, 2013 at 3:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-It's in my driver-core-next tree and will be going to Linus for 3.9-rc1.
+> Functions called from a driver probe() method must not be
+> marked __init, because they may get called after the
+> init phase is done, when the device shows up late, or
+> because of deferred probing.
+>
+> Without this patch, building exynos_defconfig results in
+> multiple warnings like:
+>
+> WARNING: drivers/pinctrl/built-in.o(.text+0x51bc): Section mismatch in reference from the function exynos5440_pinctrl_probe() to the function .init.text:exynos5440_gpiolib_register()
+> The function exynos5440_pinctrl_probe() references
+> the function __init exynos5440_gpiolib_register().
+> This is often because exynos5440_pinctrl_probe lacks a __init
+> annotation or the annotation of exynos5440_gpiolib_register is wrong.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Tomasz Figa <t.figa@samsung.com>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
 
-thanks,
+Applied with Kukjin's ACK, thanks!
 
-greg k-h
+Yours,
+Linus Walleij
