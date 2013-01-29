@@ -1,222 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab3A2IzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:55:25 -0500
-Received: from smtp4.nedap.com ([213.160.213.85]:51993 "EHLO smtp.nedap.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754487Ab3A2IzX convert rfc822-to-8bit (ORCPT
+	id S1755002Ab3A2I5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:57:54 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:34006 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754098Ab3A2I5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:55:23 -0500
-X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 03:55:22 EST
-From: Dirkjan Bussink <dirkjan.bussink@nedap.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 29 Jan 2013 09:49:52 +0100
-Subject: [PATCH] Prevent deadlock in n_gsm driver
-Thread-Topic: [PATCH] Prevent deadlock in n_gsm driver
-Thread-Index: Ac39/ZnD9ivWE5P2SNiS0Vnvbv6bgA==
-Message-ID: <4B03AD17-906A-4FBF-9F00-3F860395B229@nedap.com>
-Accept-Language: en-US, nl-NL
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, nl-NL
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 29 Jan 2013 03:57:51 -0500
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Wim Van Sebroeck <wim@iguana.be>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-watchdog@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH v2 3/4] watchdog: add support for ux500_wdt watchdog
+Date: Tue, 29 Jan 2013 09:57:19 +0100
+Message-Id: <1359449839-17742-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.7.12.1
+In-Reply-To: <20130128211222.GA3338@spo001.leaseweb.com>
+References: <20130128211222.GA3338@spo001.leaseweb.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change fixes a deadlock when the multiplexer is closed while there
-are still client side ports open.
+This patch adds support for the ux500_wdt watchdog that is found in
+ST-Ericsson Ux500 platform.  The driver is based on PRCMU APIs.
 
-When the multiplexer is closed and there are active tty's it tries to
-close them with tty_vhangup. This has a problem though, because
-tty_vhangup needs the tty_lock. This patch changes it to unlock the
-tty_lock before attempting the hangup and relocks afterwards. The
-additional call to tty_port_tty_set is needed because otherwise the
-port stays active because of the reference counter.
-
-This change also exposed another problem that other code paths don't
-expect that the multiplexer could have been closed. This patch also adds
-checks for these cases in the gsmtty_ class of function that could be
-called.
-
-The documentation explicitly states that "first close all virtual ports
-before closing the physical port" but we've found this to not always
-reality in our field situations. The GPRS / UTMS modem sometimes crashes
-and needs a power cycle in that case which means cleanly shutting down
-everything is not always possible. This change makes it much more robust
-for our situation where at least the system is recoverable with this patch
-and doesn't hang in a deadlock situation inside the kernel.
-
-The patch is against the long term support kernel (3.4.27) and should
-apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
-and Telit HE910 modem.
-
-Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/tty/n_gsm.c |   42 +++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 41 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 90dff82..d9bde03 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1692,6 +1692,8 @@ static inline void dlci_put(struct gsm_dlci *dlci)
- 	kref_put(&dlci->ref, gsm_dlci_free);
- }
+Changes from v1:
+- changed timeout as unsigned in both module parameter and pdata
+- changed nowayout to bool
+- added Linus Walleij's Ack
+
+ drivers/watchdog/Kconfig                |  12 +++
+ drivers/watchdog/Makefile               |   1 +
+ drivers/watchdog/ux500_wdt.c            | 171 ++++++++++++++++++++++++++++++++
+ include/linux/platform_data/ux500_wdt.h |  19 ++++
+ 4 files changed, 203 insertions(+)
+ create mode 100644 drivers/watchdog/ux500_wdt.c
+ create mode 100644 include/linux/platform_data/ux500_wdt.h
+
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 7f809fd..26e1fdb 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -364,6 +364,18 @@ config IMX2_WDT
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called imx2_wdt.
  
-+static void gsm_destroy_network(struct gsm_dlci *dlci);
++config UX500_WATCHDOG
++	tristate "ST-Ericsson Ux500 watchdog"
++	depends on MFD_DB8500_PRCMU
++	select WATCHDOG_CORE
++	default y
++	help
++	  Say Y here to include Watchdog timer support for the watchdog
++	  existing in the prcmu of ST-Ericsson Ux500 series platforms.
 +
- /**
-  *	gsm_dlci_release		-	release DLCI
-  *	@dlci: DLCI to destroy
-@@ -1705,9 +1707,19 @@ static void gsm_dlci_release(struct gsm_dlci *dlci)
- {
- 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
- 	if (tty) {
-+		mutex_lock(&dlci->mutex);
-+		gsm_destroy_network(dlci);
-+		mutex_unlock(&dlci->mutex);
++	  To compile this driver as a module, choose M here: the
++	  module will be called ux500_wdt.
 +
-+		/* tty_vhangup needs the tty_lock, so unlock and
-+		   relock after doing the hangup. */
-+		tty_unlock();
- 		tty_vhangup(tty);
-+		tty_lock();
-+		tty_port_tty_set(&dlci->port, NULL);
- 		tty_kref_put(tty);
- 	}
-+	dlci->state = DLCI_CLOSED;
- 	dlci_put(dlci);
- }
+ # AVR32 Architecture
  
-@@ -2933,6 +2945,8 @@ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
+ config AT32AP700X_WDT
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 97bbdb3a..bec86ee 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_STMP3XXX_WATCHDOG) += stmp3xxx_wdt.o
+ obj-$(CONFIG_NUC900_WATCHDOG) += nuc900_wdt.o
+ obj-$(CONFIG_TS72XX_WATCHDOG) += ts72xx_wdt.o
+ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
++obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
  
- 	if (dlci == NULL)
- 		return;
-+	if (dlci->state != DLCI_OPEN)
-+		return;
- 	mutex_lock(&dlci->mutex);
- 	gsm_destroy_network(dlci);
- 	mutex_unlock(&dlci->mutex);
-@@ -2951,6 +2965,8 @@ out:
- static void gsmtty_hangup(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return;
- 	tty_port_hangup(&dlci->port);
- 	gsm_dlci_begin_close(dlci);
- }
-@@ -2958,9 +2974,12 @@ static void gsmtty_hangup(struct tty_struct *tty)
- static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
- 								    int len)
- {
-+	int sent;
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return -EINVAL;
- 	/* Stuff the bytes into the fifo queue */
--	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
-+	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
- 	/* Need to kick the channel */
- 	gsm_dlci_data_kick(dlci);
- 	return sent;
-@@ -2969,18 +2988,24 @@ static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
- static int gsmtty_write_room(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return -EINVAL;
- 	return TX_SIZE - kfifo_len(dlci->fifo);
- }
- 
- static int gsmtty_chars_in_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return -EINVAL;
- 	return kfifo_len(dlci->fifo);
- }
- 
- static void gsmtty_flush_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return;
- 	/* Caution needed: If we implement reliable transport classes
- 	   then the data being transmitted can't simply be junked once
- 	   it has first hit the stack. Until then we can just blow it
-@@ -2999,6 +3024,8 @@ static void gsmtty_wait_until_sent(struct tty_struct *tty, int timeout)
- static int gsmtty_tiocmget(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return -EINVAL;
- 	return dlci->modem_rx;
- }
- 
-@@ -3008,6 +3035,8 @@ static int gsmtty_tiocmset(struct tty_struct *tty,
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	unsigned int modem_tx = dlci->modem_tx;
- 
-+	if (dlci->state != DLCI_OPEN)
-+		return -EINVAL;
- 	modem_tx &= ~clear;
- 	modem_tx |= set;
- 
-@@ -3026,6 +3055,8 @@ static int gsmtty_ioctl(struct tty_struct *tty,
- 	struct gsm_netconfig nc;
- 	int index;
- 
-+	if (dlci->state != DLCI_OPEN)
-+		return -EINVAL;
- 	switch (cmd) {
- 	case GSMIOC_ENABLE_NET:
- 		if (copy_from_user(&nc, (void __user *)arg, sizeof(nc)))
-@@ -3052,6 +3083,9 @@ static int gsmtty_ioctl(struct tty_struct *tty,
- 
- static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
- {
-+	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return;
- 	/* For the moment its fixed. In actual fact the speed information
- 	   for the virtual channel can be propogated in both directions by
- 	   the RPN control message. This however rapidly gets nasty as we
-@@ -3063,6 +3097,8 @@ static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
- static void gsmtty_throttle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return;
- 	if (tty->termios->c_cflag & CRTSCTS)
- 		dlci->modem_tx &= ~TIOCM_DTR;
- 	dlci->throttled = 1;
-@@ -3073,6 +3109,8 @@ static void gsmtty_throttle(struct tty_struct *tty)
- static void gsmtty_unthrottle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state != DLCI_OPEN)
-+		return;
- 	if (tty->termios->c_cflag & CRTSCTS)
- 		dlci->modem_tx |= TIOCM_DTR;
- 	dlci->throttled = 0;
-@@ -3084,6 +3122,8 @@ static int gsmtty_break_ctl(struct tty_struct *tty, int state)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	int encode = 0;	/* Off */
-+	if (dlci->state != DLCI_OPEN)
-+		return -EINVAL;
- 
- 	if (state == -1)	/* "On indefinitely" - we can't encode this
- 				    properly */
+ # AVR32 Architecture
+ obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+diff --git a/drivers/watchdog/ux500_wdt.c b/drivers/watchdog/ux500_wdt.c
+new file mode 100644
+index 0000000..a614d84
+--- /dev/null
++++ b/drivers/watchdog/ux500_wdt.c
+@@ -0,0 +1,171 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2011-2013
++ *
++ * License Terms: GNU General Public License v2
++ *
++ * Author: Mathieu Poirier <mathieu.poirier@linaro.org> for ST-Ericsson
++ * Author: Jonas Aaberg <jonas.aberg@stericsson.com> for ST-Ericsson
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/moduleparam.h>
++#include <linux/miscdevice.h>
++#include <linux/err.h>
++#include <linux/uaccess.h>
++#include <linux/watchdog.h>
++#include <linux/platform_device.h>
++#include <linux/platform_data/ux500_wdt.h>
++
++#include <linux/mfd/dbx500-prcmu.h>
++
++#define WATCHDOG_TIMEOUT 600 /* 10 minutes */
++
++#define WATCHDOG_MIN	0
++#define WATCHDOG_MAX28	268435  /* 28 bit resolution in ms == 268435.455 s */
++#define WATCHDOG_MAX32	4294967 /* 32 bit resolution in ms == 4294967.295 s */
++
++static unsigned int timeout = WATCHDOG_TIMEOUT;
++module_param(timeout, uint, 0);
++MODULE_PARM_DESC(timeout,
++	"Watchdog timeout in seconds. default="
++				__MODULE_STRING(WATCHDOG_TIMEOUT) ".");
++
++static bool nowayout = WATCHDOG_NOWAYOUT;
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout,
++	"Watchdog cannot be stopped once started (default="
++				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++
++static int ux500_wdt_start(struct watchdog_device *wdd)
++{
++	return prcmu_enable_a9wdog(PRCMU_WDOG_ALL);
++}
++
++static int ux500_wdt_stop(struct watchdog_device *wdd)
++{
++	return prcmu_disable_a9wdog(PRCMU_WDOG_ALL);
++}
++
++static int ux500_wdt_keepalive(struct watchdog_device *wdd)
++{
++	return prcmu_kick_a9wdog(PRCMU_WDOG_ALL);
++}
++
++static int ux500_wdt_set_timeout(struct watchdog_device *wdd,
++				 unsigned int timeout)
++{
++	ux500_wdt_stop(wdd);
++	prcmu_load_a9wdog(PRCMU_WDOG_ALL, timeout * 1000);
++	ux500_wdt_start(wdd);
++
++	return 0;
++}
++
++static const struct watchdog_info ux500_wdt_info = {
++	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
++	.identity = "Ux500 WDT",
++	.firmware_version = 1,
++};
++
++static const struct watchdog_ops ux500_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = ux500_wdt_start,
++	.stop  = ux500_wdt_stop,
++	.ping  = ux500_wdt_keepalive,
++	.set_timeout = ux500_wdt_set_timeout,
++};
++
++static struct watchdog_device ux500_wdt = {
++	.info = &ux500_wdt_info,
++	.ops = &ux500_wdt_ops,
++	.min_timeout = WATCHDOG_MIN,
++	.max_timeout = WATCHDOG_MAX32,
++};
++
++static int ux500_wdt_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct ux500_wdt_data *pdata = pdev->dev.platform_data;
++
++	if (pdata) {
++		if (pdata->timeout > 0)
++			timeout = pdata->timeout;
++		if (pdata->has_28_bits_resolution)
++			ux500_wdt.max_timeout = WATCHDOG_MAX28;
++	}
++
++	watchdog_set_nowayout(&ux500_wdt, nowayout);
++
++	/* disable auto off on sleep */
++	prcmu_config_a9wdog(PRCMU_WDOG_CPU1, false);
++
++	/* set HW initial value */
++	prcmu_load_a9wdog(PRCMU_WDOG_ALL, timeout * 1000);
++
++	ret = watchdog_register_device(&ux500_wdt);
++	if (ret)
++		return ret;
++
++	dev_info(&pdev->dev, "initialized\n");
++
++	return 0;
++}
++
++static int ux500_wdt_remove(struct platform_device *dev)
++{
++	watchdog_unregister_device(&ux500_wdt);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int ux500_wdt_suspend(struct platform_device *pdev,
++			     pm_message_t state)
++{
++	if (watchdog_active(&ux500_wdt)) {
++		ux500_wdt_stop(&ux500_wdt);
++		prcmu_config_a9wdog(PRCMU_WDOG_CPU1, true);
++
++		prcmu_load_a9wdog(PRCMU_WDOG_ALL, timeout * 1000);
++		ux500_wdt_start(&ux500_wdt);
++	}
++	return 0;
++}
++
++static int ux500_wdt_resume(struct platform_device *pdev)
++{
++	if (watchdog_active(&ux500_wdt)) {
++		ux500_wdt_stop(&ux500_wdt);
++		prcmu_config_a9wdog(PRCMU_WDOG_CPU1, false);
++
++		prcmu_load_a9wdog(PRCMU_WDOG_ALL, timeout * 1000);
++		ux500_wdt_start(&ux500_wdt);
++	}
++	return 0;
++}
++#else
++#define ux500_wdt_suspend NULL
++#define ux500_wdt_resume NULL
++#endif
++
++static struct platform_driver ux500_wdt_driver = {
++	.probe		= ux500_wdt_probe,
++	.remove		= ux500_wdt_remove,
++	.suspend	= ux500_wdt_suspend,
++	.resume		= ux500_wdt_resume,
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "ux500_wdt",
++	},
++};
++
++module_platform_driver(ux500_wdt_driver);
++
++MODULE_AUTHOR("Jonas Aaberg <jonas.aberg@stericsson.com>");
++MODULE_DESCRIPTION("Ux500 Watchdog Driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
++MODULE_ALIAS("platform:ux500_wdt");
+diff --git a/include/linux/platform_data/ux500_wdt.h b/include/linux/platform_data/ux500_wdt.h
+new file mode 100644
+index 0000000..1689ff4
+--- /dev/null
++++ b/include/linux/platform_data/ux500_wdt.h
+@@ -0,0 +1,19 @@
++/*
++ * Copyright (C) ST Ericsson SA 2011
++ *
++ * License Terms: GNU General Public License v2
++ *
++ * STE Ux500 Watchdog platform data
++ */
++#ifndef __UX500_WDT_H
++#define __UX500_WDT_H
++
++/**
++ * struct ux500_wdt_data
++ */
++struct ux500_wdt_data {
++	unsigned int timeout;
++	bool has_28_bits_resolution;
++};
++
++#endif /* __UX500_WDT_H */
 -- 
-1.7.2.5
-
-
-
+1.7.12.1
 
