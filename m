@@ -1,167 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab3A2TGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:06:01 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:37090 "EHLO relay.sw.ru"
+	id S1754423Ab3A2TIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:08:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17123 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913Ab3A2TF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:05:57 -0500
-From: Andrey Vagin <avagin@openvz.org>
+	id S1753994Ab3A2TID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 14:08:03 -0500
+Message-Id: <20130129190759.117458287@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 29 Jan 2013 14:07:59 -0500
+From: aris@redhat.com
 To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH 3/3] signalfd: add ability to read siginfo-s without dequeuing signals (v2)
-Date: Tue, 29 Jan 2013 23:03:01 +0400
-Message-Id: <1359486181-29088-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1358849741-9611-4-git-send-email-avagin@openvz.org>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
+Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: [PATCH v3 0/9] devcg: introduce proper hierarchy support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If signalfd is created with the flag SFD_PEEK, it reads siginfo-s
-without dequeuing signals.
+This patchset implements device cgroup hierarchy. Behaviors and exceptions
+will be propagated down in the tree and local preferences will be re-evaluated
+everytime a change in its parent occours, reapplying them if it's still
+possible.
 
-For reading not first siginfo pread(fd, buf, size, pos) can be used,
-where ppos / sizeof(signalfd_siginfo) is a sequence number of a signal
-in a queue.
+git://github.com/aristeu/linux-2.6.git
+branch: devcg_hierarchy_review
 
-This functionality is required for checkpointing pending signals.
+v3:
+- update documentation
+- move css_online/css_offline changes to a new patch
+- use cgroup_for_each_descendant_pre() instead of own descendant walk
+- move exception_copy rework to a separared patch
+- move exception_clean rework to a separated patch
+- new patch to just move dev_exception_rm() before dev_exception_add()
+  as requested by Tejun.
+- updated patch description for may_access() changes
+- new patch to expand the may_access() logic before changing it
+- fixed argument description order in may_access()
 
-v2: * signals can be dumped only from one queue.
-    * treat pos as offset in bytes, not in elements, so pos should be
-      aligned to the size of signalfd_siginfo.
+v2:
+- rebase on top "device_cgroup: don't grab mutex in rcu callback"
+- in case parent changes behavior or exceptions and the local exceptions won't
+  apply anymore, remove them instead of keeping them around.
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Andrey Vagin <avagin@openvz.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/signalfd.c                 | 61 ++++++++++++++++++++++++++++++++++++++++---
- include/uapi/linux/signalfd.h |  2 ++
- 2 files changed, 60 insertions(+), 3 deletions(-)
+Cc: Tejun Heo <tj@kernel.org>                                                                                               
+Cc: Serge Hallyn <serge.hallyn@canonical.com>                                                                               
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>                                                                           
 
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index 8019ec9..0da6a30 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -51,6 +51,47 @@ struct signalfd_ctx {
- 	sigset_t sigmask;
- };
- 
-+static int peek_signal(struct sigpending *pending, sigset_t *mask,
-+				siginfo_t *info, loff_t *pseq)
-+{
-+	struct sigqueue *q;
-+	int ret = 0;
-+
-+	spin_lock_irq(&current->sighand->siglock);
-+
-+	list_for_each_entry(q, &pending->list, list) {
-+		if (sigismember(mask, q->info.si_signo))
-+			continue;
-+
-+		if ((*pseq)-- == 0) {
-+			copy_siginfo(info, &q->info);
-+			ret = info->si_signo;
-+			break;
-+		}
-+	}
-+
-+	spin_unlock_irq(&current->sighand->siglock);
-+
-+	return ret;
-+}
-+
-+static ssize_t signalfd_peek(struct signalfd_ctx *ctx,
-+				siginfo_t *info, loff_t *ppos, int queue_mask)
-+{
-+	loff_t seq = *ppos / sizeof(struct signalfd_siginfo);
-+	int signr = 0;
-+
-+	if (queue_mask & SIGQUEUE_PRIVATE)
-+		signr = peek_signal(&current->pending,
-+					&ctx->sigmask, info, &seq);
-+	else if (queue_mask & SIGQUEUE_SHARED)
-+		signr = peek_signal(&current->signal->shared_pending,
-+					 &ctx->sigmask, info, &seq);
-+	(*ppos) += sizeof(struct signalfd_siginfo);
-+
-+	return signr;
-+}
-+
- static int signalfd_release(struct inode *inode, struct file *file)
- {
- 	kfree(file->private_data);
-@@ -257,9 +298,15 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
- 	if (!count)
- 		return -EINVAL;
- 
-+	if (*ppos % sizeof(struct signalfd_siginfo))
-+		return -EINVAL;
-+
- 	siginfo = (struct signalfd_siginfo __user *) buf;
- 	do {
--		ret = signalfd_dequeue(ctx, &info, nonblock, qmask);
-+		if (file->f_flags & SFD_PEEK)
-+			ret = signalfd_peek(ctx, &info, ppos, qmask);
-+		else
-+			ret = signalfd_dequeue(ctx, &info, nonblock, qmask);
- 
- 		if (unlikely(ret <= 0))
- 			break;
-@@ -315,7 +362,12 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
- 	BUILD_BUG_ON(SFD_CLOEXEC != O_CLOEXEC);
- 	BUILD_BUG_ON(SFD_NONBLOCK != O_NONBLOCK);
- 
--	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW | SFD_QUEUES))
-+	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK |
-+			SFD_RAW | SFD_PEEK | SFD_QUEUES))
-+		return -EINVAL;
-+
-+	/* SFD_PEEK can be used for one queue only */
-+	if ((flags & SFD_PEEK) && ((flags & SFD_QUEUES) == SFD_QUEUES))
- 		return -EINVAL;
- 
- 	if (sizemask != sizeof(sigset_t) ||
-@@ -352,7 +404,10 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
- 		}
- 
- 		file->f_flags |= (flags & SFD_QUEUES) ? : SFD_QUEUES;
--		file->f_flags |= flags & SFD_RAW;
-+		file->f_flags |= flags & (SFD_RAW | SFD_PEEK);
-+
-+		if (file->f_flags & SFD_PEEK)
-+			file->f_mode |= FMODE_PREAD;
- 
- 		fd_install(ufd, file);
- 	} else {
-diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
-index 481b658..24c5d2d 100644
---- a/include/uapi/linux/signalfd.h
-+++ b/include/uapi/linux/signalfd.h
-@@ -20,6 +20,8 @@
- #define SFD_SHARED_QUEUE O_DIRECTORY
- /* Read signals from a per-thread queue */
- #define SFD_PER_THREAD_QUEUE O_EXCL
-+/* Read signals without removing them from a queue */
-+#define SFD_PEEK O_APPEND
- 
- struct signalfd_siginfo {
- 	__u32 ssi_signo;
 -- 
-1.7.11.7
-
+Aristeu
