@@ -1,259 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3A2QcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:32:21 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35257 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab3A2QY1 (ORCPT
+	id S1754719Ab3A2Qcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:32:47 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19993 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab3A2QY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:24:27 -0500
+	Tue, 29 Jan 2013 11:24:26 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V6 15/30] loop: use aio to perform io on the underlying file
-Date: Tue, 29 Jan 2013 10:23:28 -0600
-Message-Id: <1359476623-10544-16-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH V6 07/30] iov_iter: add a shorten call
+Date: Tue, 29 Jan 2013 10:23:20 -0600
+Message-Id: <1359476623-10544-8-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zach Brown <zab@zabbo.net>
 
-This uses the new kernel aio interface to process loopback IO by
-submitting concurrent direct aio.  Previously loop's IO was serialized
-by synchronous processing in a thread.
+The generic direct write path wants to shorten its memory vector.  It
+does this when it finds that it has to perform a partial write due to
+LIMIT_FSIZE.  .direct_IO() always performs IO on all of the referenced
+memory because it doesn't have an argument to specify the length of the
+IO.
 
-The aio operations specify the memory for the IO with the bio_vec arrays
-directly instead of mappings of the pages.
-
-The use of aio operations is enabled when the backing file supports the
-read_iter, write_iter and direct_IO methods.
+We add an iov_iter operation for this so that the generic path can ask
+to shorten the memory vector without having to know what kind it is.
+We're happy to shorten the kernel copy of the iovec array, but we refuse
+to shorten the bio_vec array and return an error in this case.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
 ---
- drivers/block/loop.c      | 148 +++++++++++++++++++++++++++++++++-------------
- include/uapi/linux/loop.h |   1 +
- 2 files changed, 109 insertions(+), 40 deletions(-)
+ fs/iov-iter.c      | 14 ++++++++++++++
+ include/linux/fs.h |  5 +++++
+ 2 files changed, 19 insertions(+)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index ae12512..fc6f201 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -76,6 +76,7 @@
- #include <linux/sysfs.h>
- #include <linux/miscdevice.h>
- #include <linux/falloc.h>
-+#include <linux/aio.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -213,6 +214,48 @@ lo_do_transfer(struct loop_device *lo, int cmd,
- 	return lo->transfer(lo, cmd, rpage, roffs, lpage, loffs, size, rblock);
+diff --git a/fs/iov-iter.c b/fs/iov-iter.c
+index 22ef9ca..ac2d96e 100644
+--- a/fs/iov-iter.c
++++ b/fs/iov-iter.c
+@@ -202,6 +202,11 @@ static size_t ii_bvec_single_seg_count(struct iov_iter *i)
+ 		return min(i->count, bvec->bv_len - i->iov_offset);
  }
  
-+#ifdef CONFIG_AIO
-+static void lo_rw_aio_complete(u64 data, long res)
++static int ii_bvec_shorten(struct iov_iter *i, size_t count)
 +{
-+	struct bio *bio = (struct bio *)(uintptr_t)data;
-+
-+	if (res > 0)
-+		res = 0;
-+	else if (res < 0)
-+		res = -EIO;
-+
-+	bio_endio(bio, res);
++	return -EINVAL;
 +}
 +
-+static int lo_rw_aio(struct loop_device *lo, struct bio *bio)
-+{
-+	struct file *file = lo->lo_backing_file;
-+	struct kiocb *iocb;
-+	unsigned short op;
-+	struct iov_iter iter;
-+	struct bio_vec *bvec;
-+	size_t nr_segs;
-+	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
-+
-+	iocb = aio_kernel_alloc(GFP_NOIO);
-+	if (!iocb)
-+		return -ENOMEM;
-+
-+	if (bio_rw(bio) & WRITE)
-+		op = IOCB_CMD_WRITE_ITER;
-+	else
-+		op = IOCB_CMD_READ_ITER;
-+
-+	bvec = bio_iovec_idx(bio, bio->bi_idx);
-+	nr_segs = bio_segments(bio);
-+	iov_iter_init_bvec(&iter, bvec, nr_segs, bvec_length(bvec, nr_segs), 0);
-+	aio_kernel_init_iter(iocb, file, op, &iter, pos);
-+	aio_kernel_init_callback(iocb, lo_rw_aio_complete, (u64)(uintptr_t)bio);
-+
-+	return aio_kernel_submit(iocb);
-+}
-+#endif /* CONFIG_AIO */
-+
- /**
-  * __do_lo_send_write - helper for writing data to a loop device
-  *
-@@ -411,50 +454,33 @@ static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
- 	pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
- 
- 	if (bio_rw(bio) == WRITE) {
--		struct file *file = lo->lo_backing_file;
--
--		if (bio->bi_rw & REQ_FLUSH) {
--			ret = vfs_fsync(file, 0);
--			if (unlikely(ret && ret != -EINVAL)) {
--				ret = -EIO;
--				goto out;
--			}
--		}
-+		ret = lo_send(lo, bio, pos);
-+	} else
-+		ret = lo_receive(lo, bio, lo->lo_blocksize, pos);
- 
--		/*
--		 * We use punch hole to reclaim the free space used by the
--		 * image a.k.a. discard. However we do not support discard if
--		 * encryption is enabled, because it may give an attacker
--		 * useful information.
--		 */
--		if (bio->bi_rw & REQ_DISCARD) {
--			struct file *file = lo->lo_backing_file;
--			int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
-+	return ret;
-+}
- 
--			if ((!file->f_op->fallocate) ||
--			    lo->lo_encrypt_key_size) {
--				ret = -EOPNOTSUPP;
--				goto out;
--			}
--			ret = file->f_op->fallocate(file, mode, pos,
--						    bio->bi_size);
--			if (unlikely(ret && ret != -EINVAL &&
--				     ret != -EOPNOTSUPP))
--				ret = -EIO;
--			goto out;
--		}
-+static int lo_discard(struct loop_device *lo, struct bio *bio)
-+{
-+	struct file *file = lo->lo_backing_file;
-+	int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
-+	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
-+	int ret;
- 
--		ret = lo_send(lo, bio, pos);
-+	/*
-+	 * We use punch hole to reclaim the free space used by the
-+	 * image a.k.a. discard. However we do not support discard if
-+	 * encryption is enabled, because it may give an attacker
-+	 * useful information.
-+	 */
- 
--		if ((bio->bi_rw & REQ_FUA) && !ret) {
--			ret = vfs_fsync(file, 0);
--			if (unlikely(ret && ret != -EINVAL))
--				ret = -EIO;
--		}
--	} else
--		ret = lo_receive(lo, bio, lo->lo_blocksize, pos);
-+	if ((!file->f_op->fallocate) || lo->lo_encrypt_key_size)
-+		return -EOPNOTSUPP;
- 
--out:
-+	ret = file->f_op->fallocate(file, mode, pos, bio->bi_size);
-+	if (unlikely(ret && ret != -EINVAL && ret != -EOPNOTSUPP))
-+		ret = -EIO;
- 	return ret;
+ struct iov_iter_ops ii_bvec_ops = {
+ 	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
+ 	.ii_copy_to_user = ii_bvec_copy_to_user,
+@@ -210,6 +215,7 @@ struct iov_iter_ops ii_bvec_ops = {
+ 	.ii_advance = ii_bvec_advance,
+ 	.ii_fault_in_readable = ii_bvec_fault_in_readable,
+ 	.ii_single_seg_count = ii_bvec_single_seg_count,
++	.ii_shorten = ii_bvec_shorten,
+ };
+ EXPORT_SYMBOL(ii_bvec_ops);
+ #endif	/* CONFIG_BLOCK */
+@@ -360,6 +366,13 @@ static size_t ii_iovec_single_seg_count(struct iov_iter *i)
+ 		return min(i->count, iov->iov_len - i->iov_offset);
  }
  
-@@ -518,7 +544,35 @@ static inline void loop_handle_bio(struct loop_device *lo, struct bio *bio)
- 		do_loop_switch(lo, bio->bi_private);
- 		bio_put(bio);
- 	} else {
--		int ret = do_bio_filebacked(lo, bio);
-+		int ret;
++static int ii_iovec_shorten(struct iov_iter *i, size_t count)
++{
++	struct iovec *iov = (struct iovec *)i->data;
++	i->nr_segs = iov_shorten(iov, i->nr_segs, count);
++	return 0;
++}
 +
-+		if (bio_rw(bio) == WRITE) {
-+			if (bio->bi_rw & REQ_FLUSH) {
-+				ret = vfs_fsync(lo->lo_backing_file, 1);
-+				if (unlikely(ret && ret != -EINVAL))
-+					goto out;
-+			}
-+			if (bio->bi_rw & REQ_DISCARD) {
-+				ret = lo_discard(lo, bio);
-+				goto out;
-+			}
-+		}
-+#ifdef CONFIG_AIO
-+		if (lo->lo_flags & LO_FLAGS_USE_AIO &&
-+		    lo->transfer == transfer_none) {
-+			ret = lo_rw_aio(lo, bio);
-+			if (ret == 0)
-+				return;
-+		} else
-+#endif
-+			ret = do_bio_filebacked(lo, bio);
-+
-+		if ((bio_rw(bio) == WRITE) && bio->bi_rw & REQ_FUA && !ret) {
-+			ret = vfs_fsync(lo->lo_backing_file, 0);
-+			if (unlikely(ret && ret != -EINVAL))
-+				ret = -EIO;
-+		}
-+out:
- 		bio_endio(bio, ret);
- 	}
- }
-@@ -540,6 +594,12 @@ static int loop_thread(void *data)
- 	struct loop_device *lo = data;
- 	struct bio *bio;
- 
-+	/*
-+	 * In cases where the underlying filesystem calls balance_dirty_pages()
-+	 * we want less throttling to avoid lock ups trying to write dirty
-+	 * pages through the loop device
-+	 */
-+	current->flags |= PF_LESS_THROTTLE;
- 	set_user_nice(current, -20);
- 
- 	while (!kthread_should_stop() || !bio_list_empty(&lo->lo_bio_list)) {
-@@ -862,6 +922,14 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
- 	    !file->f_op->write)
- 		lo_flags |= LO_FLAGS_READ_ONLY;
- 
-+#ifdef CONFIG_AIO
-+	if (file->f_op->write_iter && file->f_op->read_iter &&
-+	    mapping->a_ops->direct_IO) {
-+		file->f_flags |= O_DIRECT;
-+		lo_flags |= LO_FLAGS_USE_AIO;
-+	}
-+#endif
-+
- 	lo_blocksize = S_ISBLK(inode->i_mode) ?
- 		inode->i_bdev->bd_block_size : PAGE_SIZE;
- 
-diff --git a/include/uapi/linux/loop.h b/include/uapi/linux/loop.h
-index e0cecd2..6edc6b6 100644
---- a/include/uapi/linux/loop.h
-+++ b/include/uapi/linux/loop.h
-@@ -21,6 +21,7 @@ enum {
- 	LO_FLAGS_READ_ONLY	= 1,
- 	LO_FLAGS_AUTOCLEAR	= 4,
- 	LO_FLAGS_PARTSCAN	= 8,
-+	LO_FLAGS_USE_AIO	= 16,
+ struct iov_iter_ops ii_iovec_ops = {
+ 	.ii_copy_to_user_atomic = ii_iovec_copy_to_user_atomic,
+ 	.ii_copy_to_user = ii_iovec_copy_to_user,
+@@ -368,5 +381,6 @@ struct iov_iter_ops ii_iovec_ops = {
+ 	.ii_advance = ii_iovec_advance,
+ 	.ii_fault_in_readable = ii_iovec_fault_in_readable,
+ 	.ii_single_seg_count = ii_iovec_single_seg_count,
++	.ii_shorten = ii_iovec_shorten,
+ };
+ EXPORT_SYMBOL(ii_iovec_ops);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 955d79e..cc4ed53 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -308,6 +308,7 @@ struct iov_iter_ops {
+ 	void (*ii_advance)(struct iov_iter *, size_t);
+ 	int (*ii_fault_in_readable)(struct iov_iter *, size_t);
+ 	size_t (*ii_single_seg_count)(struct iov_iter *);
++	int (*ii_shorten)(struct iov_iter *, size_t);
  };
  
- #include <asm/posix_types.h>	/* for __kernel_old_dev_t */
+ static inline size_t iov_iter_copy_to_user_atomic(struct page *page,
+@@ -342,6 +343,10 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
+ {
+ 	return i->ops->ii_single_seg_count(i);
+ }
++static inline int iov_iter_shorten(struct iov_iter *i, size_t count)
++{
++	return i->ops->ii_shorten(i, count);
++}
+ 
+ #ifdef CONFIG_BLOCK
+ extern struct iov_iter_ops ii_bvec_ops;
 -- 
 1.8.1.1
 
