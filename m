@@ -1,42 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab3A2K2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 05:28:38 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:31874
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750972Ab3A2K2h (ORCPT
+	id S1752933Ab3A2KgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 05:36:13 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:34242 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3A2KgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 05:28:37 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 29 Jan 2013 18:28:47 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Brian Lilly <brian@crystalfontz.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ARM: dts: mxs: Add the LCD to the 10049 board
-Message-ID: <20130129102844.GB11345@S2101-09.ap.freescale.net>
-References: <1359104048-26823-1-git-send-email-maxime.ripard@free-electrons.com>
- <1359104048-26823-4-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 29 Jan 2013 05:36:11 -0500
+Message-ID: <5107A5ED.7020009@ahsoftware.de>
+Date: Tue, 29 Jan 2013 11:35:25 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1359104048-26823-4-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Bernie Thompson <bernie@plugable.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 2/3 v2] fb: udlfb: fix hang at disconnect
+References: <50F2A310.5010006@ahsoftware.de> <1359139768-32294-1-git-send-email-holler@ahsoftware.de> <1359139768-32294-2-git-send-email-holler@ahsoftware.de> <20130128162238.7fba92fe.akpm@linux-foundation.org> <51071E21.9030008@ahsoftware.de>
+In-Reply-To: <51071E21.9030008@ahsoftware.de>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 09:54:07AM +0100, Maxime Ripard wrote:
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  arch/arm/boot/dts/imx28-cfa10049.dts |   99 ++++++++++++++++++++++++++++++++++
->  arch/arm/mach-mxs/mach-mxs.c         |   22 ++++++++
->  2 files changed, 121 insertions(+)
-> 
-Applied, thanks.
+Am 29.01.2013 01:56, schrieb Alexander Holler:
+> Am 29.01.2013 01:22, schrieb Andrew Morton:
+>> On Fri, 25 Jan 2013 19:49:27 +0100
+>> Alexander Holler <holler@ahsoftware.de> wrote:
+>>
+>>> When a device was disconnected the driver may hang at waiting for urbs it never
+>>> will get. Fix this by using a timeout while waiting for the used semaphore.
+>>>
+>>> There is still a memory leak if a timeout happens, but at least the driver
+>>> now continues his disconnect routine.
+>>>
+>>> ...
+>>>
+>>> --- a/drivers/video/udlfb.c
+>>> +++ b/drivers/video/udlfb.c
+>>> @@ -1832,8 +1832,9 @@ static void dlfb_free_urb_list(struct dlfb_data *dev)
+>>>   	/* keep waiting and freeing, until we've got 'em all */
+>>>   	while (count--) {
+>>>
+>>> -		/* Getting interrupted means a leak, but ok at disconnect */
+>>> -		ret = down_interruptible(&dev->urbs.limit_sem);
+>>> +		/* Timeout likely occurs at disconnect (resulting in a leak) */
+>>> +		ret = down_timeout_killable(&dev->urbs.limit_sem,
+>>> +						FREE_URB_TIMEOUT);
+>>>   		if (ret)
+>>>   			break;
+>>
+>> This is rather a hack.  Do you have an understanding of the underlying
+>> bug?  Why is the driver waiting for things which will never happen?
+
+To add a bit more explanation:
+
+I've experienced that bug after moving the fb-damage-handling into a 
+workqueue (to make the driver usable as console). This likely has 
+increased the possibility that an urb gets missed when the usb-stack 
+calls the (usb-)disconnect function of the driver. But I don't know as I 
+couldn't use the driver before (as fbcon) so I don't really have a 
+comparison.
+
+What currently happens here is something like that:
+
+fb -> damage -> workload which sends urb and waits for answer
+device disconnect -> dlfb_usb_disconnect() -> stall (no answer to the 
+above urb)
+
+I don't know why the disconnect waits for all urbs. The code looks like 
+it does that just to free the allocated memory. As I'm not very familiar 
+with the usb-stack, I would have to read up about the urb-handling to 
+find out how to free the memory otherwise.
+
+As the previous comment in the code suggests that urbs already got 
+missed (on shutdown) before, I assume that even without my patch, which 
+moved the damage into a workqueue, the problem could occur which then 
+prevents a shutdown as there is no timeout. As I've experienced that 
+problem not only on disconnect, but on shutdown too (no shutdown was 
+possible), I have to assume, that the previous used down_interruptible() 
+didn't get a signal on shutdown (if the driver is used as fbcon), 
+therefor I consider the timeout as necessary.
+
+Regards,
+
+Alexander
 
