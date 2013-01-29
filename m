@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab3A2Xiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 18:38:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18216 "EHLO mx1.redhat.com"
+	id S1753172Ab3A2XjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 18:39:11 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:57865 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751657Ab3A2Xiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 18:38:50 -0500
-Date: Tue, 29 Jan 2013 19:53:45 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 03/12] KVM: MMU: simplify mmu_set_spte
-Message-ID: <20130129215345.GA27735@amt.cnet>
-References: <50FFB5A1.5090708@linux.vnet.ibm.com>
- <50FFB5E9.2010500@linux.vnet.ibm.com>
- <20130129002151.GB10814@amt.cnet>
- <51073A1C.1050600@linux.vnet.ibm.com>
+	id S1751695Ab3A2Xiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 18:38:51 -0500
+Date: Tue, 29 Jan 2013 17:38:42 -0600
+From: Nishanth Menon <nm@ti.com>
+To: Ruslan Bilovol <ruslan.bilovol@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <eduardo.valentin@ti.com>
+Subject: Re: [RFC PATCH 0/2] ARM: update cpuinfo to print CPU model name
+Message-ID: <20130129233842.GA8024@kahuna>
+References: <1359474865-15408-1-git-send-email-ruslan.bilovol@ti.com>
+ <20130129160243.GA3389@kahuna>
+ <CAB=otbSV6CH4WOrr577bHXFcjEVRGjZxatgy4CJ3cr0M0h4vfw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <51073A1C.1050600@linux.vnet.ibm.com>
+In-Reply-To: <CAB=otbSV6CH4WOrr577bHXFcjEVRGjZxatgy4CJ3cr0M0h4vfw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 10:55:24AM +0800, Xiao Guangrong wrote:
-> On 01/29/2013 08:21 AM, Marcelo Tosatti wrote:
-> > On Wed, Jan 23, 2013 at 06:05:29PM +0800, Xiao Guangrong wrote:
-> >> In order to detecting spte remapping, we can simply check whether the
-> >> spte has already been pointing to the pfn even if the spte is not the
-> >> last spte, for middle spte is pointing to the kernel pfn which can not
-> >> be mapped to userspace
-> > 
-> > This check is detecting spte overwrite, when a large spte is replaced by 
-> > pointer to spte table.
-> > 
-> > Can't see why check for different pfn is safe: only 'int level' can
-> > differ, and pfn be equivalent, for example.
+On 01:08-20130130, Ruslan Bilovol wrote:
+> Hi,
 > 
-> The 'u64 *sptep' must on the "int level" we want to set, that means:
->  page_header(__pa(sptep)).role.level == "int level".
+> On Tue, Jan 29, 2013 at 6:02 PM, Nishanth Menon <nm@ti.com> wrote:
+> >
+> > On 17:54-20130129, Ruslan Bilovol wrote:
+> > > Hi,
+> > >
+> > > The following patches update cpuinfo to print CPU
+> > > model name for ARM. First patch exactly makes needed
+> > > changes for ARM architecture.
+> > > Second patch adds this ability to OMAP4 SoCs.
+> > >
+> > > This adds a common approach to show SoC name.
+> > >
+> > > Looks like there were few attempts to do similar
+> > > changes to cpuinfo without any luck.
+> > >
+> > > So - comments are welcome
+> > >
+> > > Ruslan Bilovol (2):
+> > >   ARM: kernel: update cpuinfo to print CPU model name
+> > >   ARM: OMAP4: setup CPU model name during ID initialisation
+> >
+> > We had an discussion on similar lines but a generic suggestion:
+> > https://patchwork.kernel.org/patch/98720/
+> > SoCinfo framework which was supposed to introduce this
+> >
+> > Would'nt that be a better approach to take than an OMAP only solution?
+> 
+> My goal is only to say what is the SoC model name in the /proc/cpuinfo
+> (And it is not an OMAP-only solution - it is common. Support for OMAP
+> is added in second patch)
+> This is the only type of information that we can apply for any SoC.
+> My point is - any SoC-specific information should go through some other
+> way - like SoCinfo framework mentioned by you.
+> And additional point - in cpuinfo we already have CPU name and Machine name.
+> The SoC name (that is something between these two things) looks also relevant
+Looking at the sample output in patch #1/2
+OMAP4470 ES1.0 HS
 
-Right, then stick a comment there noting which cases that condition handles.
-Keep the current comment and add more.
+OMAP4470 is SoC name
+ES1.0 is SoC revision
+HS is SoC type
 
-> We discussed this before :), the discussion can be found at:
-> http://marc.info/?l=kvm&m=135345057329427&w=2.
+We even have SoC features (e.g. at boot NEON etc..)
 
-Note http://marc.info/?l=kvm&m=135345059929436&w=2, please take into
-account in the future.
+Is the intent to put all this inside /proc/cpuinfo?? I bet every SoC has
+it's own interesting data it'd like to have (like some of the info
+populated by DT even). I am hardpressed to think this fits inside
+/proc/cpuinfo. I might even suspect that the list of interesting
+information might even vary per SoC.
 
+having machine name is something ARM specific? dumping it on my linux
+machines (x86[1] and sparc[2]) dont seem to show that.
+
+but in the interest of not breaking existing interfaces, new interfaces
+should potentially belong elsewhere.. my 2 cents.
+
+[1] http://pastebin.com/CF8HPDAC (Xubuntu 12.04 3.2.0-36)
+[2] http://pastebin.com/qNwWHwiu (Debian 3.2.35-2)
+-- 
+Regards,
+Nishanth Menon
