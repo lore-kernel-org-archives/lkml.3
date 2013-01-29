@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3A2IK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:10:29 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:33025 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754422Ab3A2IK0 (ORCPT
+	id S1754604Ab3A2IMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:12:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63997 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422Ab3A2IMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:10:26 -0500
-Date: Tue, 29 Jan 2013 09:10:19 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] one s390 patch for 3.8-rc6
-Message-ID: <20130129091019.0e7c4455@mschwide>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 13012908-5024-0000-0000-0000050F8BB4
+	Tue, 29 Jan 2013 03:12:08 -0500
+Date: Tue, 29 Jan 2013 09:12:03 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: ling.ma.program@gmail.com, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Ma Ling <ling.ml@alipay.com>
+Subject: Re: [PATCH] [x86]: Compiler Option Os is better on latest x86
+Message-ID: <20130129081203.GD594@gmail.com>
+References: <1359123061-6139-1-git-send-email-ling.ma@alipay.com>
+ <26437.1359393357@turing-police.cc.vt.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <26437.1359393357@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-please pull from the 'for-linus' branch of
+* Valdis.Kletnieks@vt.edu <Valdis.Kletnieks@vt.edu> wrote:
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+> On Fri, 25 Jan 2013 09:11:01 -0500, ling.ma.program@gmail.com said:
+> 
+> > Based on above reasons, we compiled linux kernel 3.6.9 with O2 and Os
+> > respectively. The results show Os improve performance netperf 4.8%,
+> > 2.7% for volano as below
+> 
+> Am I allowed to NAK this?  What the numbers given so far 
+> *actually* show is 4.8% more instructions executed, *not* 4.8% 
+> better performance.
 
-to receive the following update:
-Another transparent huge page fix, we need to define a s390 variant
-for pmdp_set_wrprotect to flush the TLB for the huge page correctly.
+cycles and elapsed time is down in both tests - the speedup 
+seems statistically a wash in the first test and significant for 
+the second workload.
 
-Gerald Schaefer (1):
-      s390/thp: implement pmdp_set_wrprotect()
+the instruction count might be an artifact of byte wise versus 
+word wise REP; MOV.
 
- arch/s390/include/asm/pgtable.h |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+> I'm having a *very* hard time convincing myself that what 
+> we're seeing isn't simply the expected behavior of loops *not* 
+> being unrolled and similar non-optimizations done by -Os, so 
+> more instructions get executed to do the same amount of work.
+> 
+> Rather than "run for 10 seconds and count instructions", can 
+> we "run for 50,000 syscalls and count clock time" or similar 
+> that shows an *actual* improvement?
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index c1d7930..098adbb 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1365,6 +1365,18 @@ static inline void pmdp_invalidate(struct vm_area_struct *vma,
- 	__pmd_idte(address, pmdp);
- }
- 
-+#define __HAVE_ARCH_PMDP_SET_WRPROTECT
-+static inline void pmdp_set_wrprotect(struct mm_struct *mm,
-+				      unsigned long address, pmd_t *pmdp)
-+{
-+	pmd_t pmd = *pmdp;
-+
-+	if (pmd_write(pmd)) {
-+		__pmd_idte(address, pmdp);
-+		set_pmd_at(mm, address, pmdp, pmd_wrprotect(pmd));
-+	}
-+}
-+
- static inline pmd_t mk_pmd_phys(unsigned long physpage, pgprot_t pgprot)
- {
- 	pmd_t __pmd;
+Look at the numbers, it counts a whole lot of other things as 
+well beyond instructions - elapsed time being the most important 
+one.
 
+But more numbers never hurt.
+
+Thanks,
+
+	Ingo
