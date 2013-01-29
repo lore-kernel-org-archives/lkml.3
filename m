@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab3A2BHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 20:07:20 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:48858 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab3A2BHS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 20:07:18 -0500
-Date: Mon, 28 Jan 2013 17:07:15 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Anton Arapov <anton@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 0/11] ksm: NUMA trees and page migration
-In-Reply-To: <20130128155452.16882a6e.akpm@linux-foundation.org>
-Message-ID: <alpine.LNX.2.00.1301281701010.4947@eggly.anvils>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils> <20130128155452.16882a6e.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753444Ab3A2BJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 20:09:23 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:58103 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342Ab3A2BJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 20:09:20 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-pci@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend finalization
+Date: Tue, 29 Jan 2013 02:15:30 +0100
+Message-ID: <1821500.CRlxLgYU5r@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo4sEv-Qw1iztGn-SsPKZ=Y+st-tPAFOvsp17MUo6X=xrA@mail.gmail.com>
+References: <20130118113019.6698.25941.stgit@zurg> <20130118114222.6698.7103.stgit@zurg> <CAErSpo4sEv-Qw1iztGn-SsPKZ=Y+st-tPAFOvsp17MUo6X=xrA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jan 2013, Andrew Morton wrote:
-> On Fri, 25 Jan 2013 17:53:10 -0800 (PST)
-> Hugh Dickins <hughd@google.com> wrote:
+On Monday, January 28, 2013 04:17:42 PM Bjorn Helgaas wrote:
+> [+cc Rafael]
 > 
-> > Here's a KSM series
+> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
+> <khlebnikov@openvz.org> wrote:
+> > This patch effectively reverts commit 42eca2302146fed51335b95128e949ee6f54478f
+> > ("PCI: Don't touch card regs after runtime suspend D3")
+> >
+> > | This patch checks whether the pci state is saved and doesn't attempt to hit
+> > | any registers after that point if it is.
+> >
+> > This seems completely wrong. Yes, PCI configuration space has been saved by
+> > driver, but this doesn't means that all job is done and device has been
+> > suspended and ready for waking up in the future.
+> >
+> > For example driver e1000e for ethernet in my thinkpad x220 saves pci-state
+> > but device cannot wakeup after that, because it needs some ACPI callbacks
+> > which usually called from pci_finish_runtime_suspend().
+> >
+> > | Optimus (dual-gpu) laptops seem to have their own form of D3cold, but
+> > | unfortunately enter it on normal D3 transitions via the ACPI callback.
+> >
+> > Hardware which disappears from the bus unexpectedly is exception, so let's
+> > handle it as an exception. Its driver should set device state to D3cold and
+> > the rest code will handle it properly.
 > 
-> Sanity check: do you have a feeling for how useful KSM is? 
-> Performance/space improvements for typical (or atypical) workloads? 
-> Are people using it?  Successfully?
+> Functions in D3cold don't have power, so it's completely expected that
+> they would disappear from the bus and not respond to config accesses.
+> Maybe Dave was referring to D3hot, where functions *should* respond to
+> config accesses.  I dunno.
 > 
-> IOW, is it justifying itself?
+> Just to be clear, it sounds like 42eca230 caused a regression on your
+> e1000e device?  If so, I guess we should revert it unless you and Dave
+> can figure out a better patch that fixes both your e1000e device and
+> the Optimus issue.
 
-I have no idea!  To me it's simply a technical challenge - and I agree
-with your implication that that's not a good enough justification.
+Yes, if there's a regression, let's revert it, but I'd like the regression
+to be described clearly.
 
-I've added Marcelo and Gleb and the KVM list to the Cc:
-my understanding is that it's the KVM guys who really appreciate KSM.
+Thanks,
+Rafael
 
-Hugh
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
