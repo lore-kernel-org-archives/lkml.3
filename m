@@ -1,100 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab3A2OyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:54:20 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:42733 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100Ab3A2OyB (ORCPT
+	id S1757295Ab3A2Oyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:54:44 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:52279 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757123Ab3A2Ox6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:54:01 -0500
-Message-ID: <5107E285.8060304@gmail.com>
-Date: Tue, 29 Jan 2013 08:53:57 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Kim Phillips <kim.phillips@freescale.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Daniel Santos <daniel.santos@pobox.com>,
-        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC] arm: use built-in byte swap function
-References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
-In-Reply-To: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Jan 2013 09:53:58 -0500
+From: Andreas Larsson <andreas@gaisler.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+Subject: [PATCH v2 5/6] of_spi: Add fetching of of_gpio flags to of_spi_register_master
+Date: Tue, 29 Jan 2013 15:53:42 +0100
+Message-Id: <1359471223-4794-6-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
+References: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 07:30 PM, Kim Phillips wrote:
-> Enable the compiler intrinsic for byte swapping on arch ARM.  This
-> allows the compiler to detect and be able to optimize out byte
-> swappings, e.g. in big endian to big endian moves.
-> 
-> AFAICT, arm gcc got __builtin_bswap{32,64} support in 4.6,
-> and for the 16-bit version in 4.8.
+When using a gpio chip select with a OF_GPIO_ACTIVE_LOW flag, this needs to be
+known to the controller driver.
 
-I think these are the versions ARM got optimized swap support. The newer
-compilers are smart enough to replace a swap written in C with a rev
-instruction. Last time I checked, they did not do rev16, but that is
-probably what was added in 4.8 (and backported to Linaro gcc). The
-Linaro backports make it impossible to define what gcc version has a
-specific feature.
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
+ Documentation/devicetree/bindings/spi/spi-bus.txt |    3 +-
+ drivers/spi/spi.c                                 |   24 ++++++++++++++++++--
+ include/linux/spi/spi.h                           |    5 ++++
+ 3 files changed, 28 insertions(+), 4 deletions(-)
 
-If you specify to use the builtin's, do you still get inline rev
-instructions emitted?
-
-Rob
-
-> 
-> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
-> ---
-> akin to: http://comments.gmane.org/gmane.linux.kernel.cross-arch/16016
-> 
-> based on linux-next.  Depends on commit "compiler-gcc{3,4}.h: Use
-> GCC_VERSION macro" by Daniel Santos <daniel.santos@pobox.com>,
-> currently in the akpm branch.
-> 
-> RFC because of unfamiliarity with arch ARM, and that at91sam9rl,
-> at91rm9200, and lpd270 (so far, at least) builds fail with:
-> 
-> include/uapi/linux/swab.h:60: undefined reference to `__bswapsi2'
-> 
-> I'm using eldk-5.2.1/armv7a's arm-linux-gnueabi-gcc (GCC) 4.6.4
-> 20120303 (prerelease)
-> 
->  arch/arm/Kconfig              |    1 +
->  include/linux/compiler-gcc4.h |    3 ++-
->  2 files changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index eda8711..437d11a 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -3,6 +3,7 @@ config ARM
->  	default y
->  	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
->  	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-> +	select ARCH_USE_BUILTIN_BSWAP
->  	select ARCH_HAVE_CUSTOM_GPIO_H
->  	select ARCH_WANT_IPC_PARSE_VERSION
->  	select BUILDTIME_EXTABLE_SORT if MMU
-> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> index 68b162d..da5f728 100644
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -67,7 +67,8 @@
->  
->  
->  #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
-> -#if GCC_VERSION >= 40400
-> +#if (!defined(__arm__) && GCC_VERSION >= 40400) || \
-> +    (defined(__arm__) && GCC_VERSION >= 40600)
->  #define __HAVE_BUILTIN_BSWAP32__
->  #define __HAVE_BUILTIN_BSWAP64__
->  #endif
-> 
+diff --git a/Documentation/devicetree/bindings/spi/spi-bus.txt b/Documentation/devicetree/bindings/spi/spi-bus.txt
+index 296015e..a4950a6 100644
+--- a/Documentation/devicetree/bindings/spi/spi-bus.txt
++++ b/Documentation/devicetree/bindings/spi/spi-bus.txt
+@@ -57,7 +57,8 @@ contain the following properties.
+     		    3-wire mode.
+ 
+ If a gpio chipselect is used for the SPI slave the gpio number will be passed
+-via the cs_gpio
++via the cs_gpio and the corresponding of_gpio_flags will be passed via
++cs_gpio_flags.
+ 
+ SPI example for an MPC5200 SPI bus:
+ 	spi@f00 {
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index a4baa0a..6f1b717 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -385,8 +385,10 @@ int spi_add_device(struct spi_device *spi)
+ 		goto done;
+ 	}
+ 
+-	if (master->cs_gpios)
++	if (master->cs_gpios) {
+ 		spi->cs_gpio = master->cs_gpios[spi->chip_select];
++		spi->cs_gpio_flags = master->cs_gpio_flags[spi->chip_select];
++	}
+ 
+ 	/* Drivers may modify this initial i/o setup, but will
+ 	 * normally rely on the device being setup.  Devices
+@@ -1060,7 +1062,8 @@ EXPORT_SYMBOL_GPL(spi_alloc_master);
+ static int of_spi_register_master(struct spi_master *master)
+ {
+ 	int nb;
+-	int i, *cs;
++	int ret, i, *cs;
++	enum of_gpio_flags *flags;
+ 	struct device_node *np = master->dev.of_node;
+ 
+ 	if (!np)
+@@ -1083,13 +1086,28 @@ static int of_spi_register_master(struct spi_master *master)
+ 	if (!master->cs_gpios)
+ 		return -ENOMEM;
+ 
++	flags = devm_kzalloc(&master->dev,
++			     sizeof(*flags) * master->num_chipselect,
++			     GFP_KERNEL);
++	master->cs_gpio_flags = flags;
++
++	if (!master->cs_gpio_flags) {
++		ret = -ENOMEM;
++		goto err_alloc_flags;
++	}
++
+ 	for (i = 0; i < master->num_chipselect; i++)
+ 		cs[i] = -EINVAL;
+ 
+ 	for (i = 0; i < nb; i++)
+-		cs[i] = of_get_named_gpio(np, "cs-gpios", i);
++		cs[i] = of_get_named_gpio_flags(np, "cs-gpios", i, &flags[i]);
+ 
+ 	return 0;
++
++err_alloc_flags:
++	devm_kfree(&master->dev, master->cs_gpios);
++	master->cs_gpios = NULL;
++	return ret;
+ }
+ #else
+ static int of_spi_register_master(struct spi_master *master)
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index 88a669c..96b1055 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -23,6 +23,7 @@
+ #include <linux/mod_devicetable.h>
+ #include <linux/slab.h>
+ #include <linux/kthread.h>
++#include <linux/of_gpio.h>
+ 
+ /*
+  * INTERFACES between SPI master-side drivers and SPI infrastructure.
+@@ -58,6 +59,7 @@ extern struct bus_type spi_bus_type;
+  *	for that name.  This appears in the sysfs "modalias" attribute
+  *	for driver coldplugging, and in uevents used for hotplugging
+  * @cs_gpio: Negative or gpio for chip select.
++ * @cs_gpio_flags: of_gpio_flags corresponding to cs_gpio
+  *
+  * A @spi_device is used to interchange data between an SPI slave
+  * (usually a discrete chip) and CPU memory.
+@@ -92,6 +94,7 @@ struct spi_device {
+ 	void			*controller_data;
+ 	char			modalias[SPI_NAME_SIZE];
+ 	int			cs_gpio;	/* chip select gpio */
++	enum of_gpio_flags	cs_gpio_flags;	/* chip select of_gpio_flags */
+ 
+ 	/*
+ 	 * likely need more hooks for more protocol options affecting how
+@@ -260,6 +263,7 @@ static inline void spi_unregister_driver(struct spi_driver *sdrv)
+  *	queue so the subsystem notifies the driver that it may relax the
+  *	hardware by issuing this call
+  * @cs_gpios: possible array of negative values or gpios for chip selects
++ * @cs_gpio_flags: possible array of of_gpio_flags corresponding to cs_gpios
+  *
+  * Each SPI master controller can communicate with one or more @spi_device
+  * children.  These make a small bus, sharing MOSI, MISO and SCK signals
+@@ -367,6 +371,7 @@ struct spi_master {
+ 	int (*unprepare_transfer_hardware)(struct spi_master *master);
+ 	/* gpio chip select */
+ 	int			*cs_gpios;
++	enum of_gpio_flags	*cs_gpio_flags;
+ };
+ 
+ static inline void *spi_master_get_devdata(struct spi_master *master)
+-- 
+1.7.0.4
 
