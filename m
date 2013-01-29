@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab3A2SNQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 13:13:16 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:35577 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741Ab3A2SNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 13:13:13 -0500
-X-Greylist: delayed 828 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 13:13:13 EST
-Date: Tue, 29 Jan 2013 11:13:06 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: davem@davemloft.net,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, linux-doc@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH 5/5] mv643xx_eth: convert to use the Marvell Orion MDIO
- driver
-Message-ID: <20130129181306.GF25646@obsidianresearch.com>
-References: <1359473048-26551-1-git-send-email-florian@openwrt.org>
- <1359473048-26551-6-git-send-email-florian@openwrt.org>
+	id S1753432Ab3A2SQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 13:16:25 -0500
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:51517 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab3A2SQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 13:16:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359473048-26551-6-git-send-email-florian@openwrt.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+In-Reply-To: <20130128230059.GE7789@quad.lixom.net>
+References: <1359381151-28127-1-git-send-email-linus.walleij@stericsson.com>
+	<20130128230059.GE7789@quad.lixom.net>
+Date: Tue, 29 Jan 2013 19:16:23 +0100
+Message-ID: <CACRpkdZuu0skVSPV5qcUx3g5UYGxzigeCDkN_NeuNB+Ak8m3wQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ARM: ux500: select the DB8540 pin controller
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, arm@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 04:24:08PM +0100, Florian Fainelli wrote:
-> This patch converts the Marvell MV643XX ethernet driver to use the
-> Marvell Orion MDIO driver. As a result, PowerPC and ARM platforms
-> registering the Marvell MV643XX ethernet driver are also updated to
-> register a Marvell Orion MDIO driver. This driver voluntarily overlaps
-> with the Marvell Ethernet shared registers because it will use a subset
-> of this shared register (shared_base + 0x4 - shared_base + 0x84). The
-> Ethernet driver is also updated to look up for a PHY device using the
-> Orion MDIO bus driver.
+On Tue, Jan 29, 2013 at 12:00 AM, Olof Johansson <olof@lixom.net> wrote:
+> On Mon, Jan 28, 2013 at 02:52:31PM +0100, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> The pin controller is an inherent part of the SoC, without
+>> it the system will not boot, thus it needs to be selected
+>> from Kconfig.
+>>
+>> Cc: arm@kernel.org
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>> ---
+>> Requesting ACK from ARM SoC on this patch.
+>
+> Acked-by: Olof Johansson <olof@lixom.net>
 
-Can you finish off this job by making the mv643xx_eth driver accept
-the standard phy-handle OF property instead of using a phy address?
+Thanks!
 
-Ie the end result should be something like:
+> ... but I wonder if this is growing out of hand. Since they will always
+> be selected (and required) for UX500_SOC_DB8500, why not just make them
+> silent options that default to y with that as a depend?
 
-                smi0: mdio@72000 {
-                        device_type = "mdio";
-                        compatible = "marvell,orion-mdio";
-                        reg = <0x72004 0x4>;
+So either I do it like this by using select FOO in the
+Kconfig for the affected SoC, or I just turn it around
+and make it depend on the affected SoC and select it
+to "y" default.
 
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-                        PHY1: ethernet-phy@1 {
-                                reg = <1>;
-                                device_type = "ethernet-phy";
-                                phy-id = <0x01410e90>;
-                        };
-                };
+It's like eating eggs from the little or big end or something.
 
-                egiga0 {
-                        device_type = "network";
-                        compatible = "marvell,mv643xx-eth";
-                        reg = <0x72000 0x4000>;
-                        port_number = <0>;
-                        phy-handle = <&PHY1>;
-                        interrupts = <11>;
-                        local-mac-address = [000000000002];  /* Filled by boot loader */
-                };
+This current approach has the upside of not proliferating
+the SoC Kconfig symbol outside of the ARM tree, but
+I have no strong preference...
 
-Regards,
-Jason
+All this stuff used to live in the arch/arm/mach-foo
+folders in the past, like the clocks you just have to
+default-enable it somehow.
+
+Linus Walleij
