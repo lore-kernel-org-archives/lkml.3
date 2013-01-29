@@ -1,100 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab3A2Uvv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 15:51:51 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:47644 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab3A2Uvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 15:51:50 -0500
-Date: Wed, 30 Jan 2013 07:51:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>, Arnd <arnd@arndb.de>
-Subject: Re: linux-next: new arch/metag tree
-Message-Id: <20130130075148.2f34a4d16fdd4a62625260d2@canb.auug.org.au>
-In-Reply-To: <5107DD1C.2080008@imgtec.com>
-References: <5107DD1C.2080008@imgtec.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__30_Jan_2013_07_51_48_+1100_3u2qu.3INsTe=wrc"
+	id S1752552Ab3A2U4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 15:56:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23994 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab3A2Uz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 15:55:58 -0500
+Subject: [PATCH v2] vfio-pci: Add support for VGA region access
+To: alex.williamson@redhat.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: vijaymohan.pandarathil@hp.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Date: Tue, 29 Jan 2013 13:55:56 -0700
+Message-ID: <20130129204219.5769.6102.stgit@bling.home>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__30_Jan_2013_07_51_48_+1100_3u2qu.3INsTe=wrc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+PCI defines display class VGA regions at I/O port address 0x3b0, 0x3c0
+and MMIO address 0xa0000.  As these are non-overlapping, we can ignore
+the I/O port vs MMIO difference and expose them both in a single
+region.  We make use of the VGA arbiter around each access to
+configure chipset access as necessary.
 
-Hi James,
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-On Tue, 29 Jan 2013 14:30:52 +0000 James Hogan <james.hogan@imgtec.com> wro=
-te:
->
-> Please can you add the following branch to linux-next for Meta
-> architecture support:
->=20
-> git://github.com/jahogan/metag-linux.git for-next
+v2: Revise the region access based on VFIO AER discussion.  We don't
+need to add flags for everything or over-engineer generic legacy
+resources.  GET_REGION_INFO.num_regions should return the the highest
+index, as the documentation specifies, not a count.  Thus we always
+return VFIO_PCI_NUM_REGIONS and userspace can probe for interesting
+things within that.  The existence of VFIO_PCI_VGA_REGION_INDEX
+therefore indicates the presense of PCI VGA support and due to the VGA
+I/O port and MMIO being non-overlapping, we can expose them in a
+single region.
 
-Added from today (though there may not be a linux-next release today).
+VFIO PCI AER can follow this lead for an IRQ and region for describing
+AER events and data with VFIO_PCI_AER_IRQ_INDEX and
+VFIO_PCI_AER_REGION_INDEX.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+ drivers/vfio/pci/Kconfig            |   10 ++++++
+ drivers/vfio/pci/vfio_pci.c         |   18 ++++++++++
+ drivers/vfio/pci/vfio_pci_private.h |    4 ++
+ drivers/vfio/pci/vfio_pci_rdwr.c    |   61 +++++++++++++++++++++++++++++++++++
+ include/uapi/linux/vfio.h           |    9 +++++
+ 5 files changed, 102 insertions(+)
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+diff --git a/drivers/vfio/pci/Kconfig b/drivers/vfio/pci/Kconfig
+index 5980758..e84300b 100644
+--- a/drivers/vfio/pci/Kconfig
++++ b/drivers/vfio/pci/Kconfig
+@@ -6,3 +6,13 @@ config VFIO_PCI
+ 	  use of PCI drivers using the VFIO framework.
+ 
+ 	  If you don't know what to do here, say N.
++
++config VFIO_PCI_VGA
++	bool "VFIO PCI support for VGA devices"
++	depends on VFIO_PCI && X86 && VGA_ARB && EXPERIMENTAL
++	help
++	  Support for VGA extension to VFIO PCI.  This exposes an additional
++	  region on VGA devices for accessing legacy VGA addresses used by
++	  BIOS and generic video drivers.
++
++	  If you don't know what to do here, say N.
+diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+index bb8c8c2..8189cb6 100644
+--- a/drivers/vfio/pci/vfio_pci.c
++++ b/drivers/vfio/pci/vfio_pci.c
+@@ -84,6 +84,11 @@ static int vfio_pci_enable(struct vfio_pci_device *vdev)
+ 	} else
+ 		vdev->msix_bar = 0xFF;
+ 
++#ifdef CONFIG_VFIO_PCI_VGA
++	if ((pdev->class >> 8) == PCI_CLASS_DISPLAY_VGA)
++		vdev->has_vga = true;
++#endif
++
+ 	return 0;
+ }
+ 
+@@ -285,6 +290,16 @@ static long vfio_pci_ioctl(void *device_data,
+ 			info.flags = VFIO_REGION_INFO_FLAG_READ;
+ 			break;
+ 		}
++		case VFIO_PCI_VGA_REGION_INDEX:
++			if (!vdev->has_vga)
++				return -EINVAL;
++
++			info.offset = VFIO_PCI_INDEX_TO_OFFSET(info.index);
++			info.size = 0xc0000;
++			info.flags = VFIO_REGION_INFO_FLAG_READ |
++				     VFIO_REGION_INFO_FLAG_WRITE;
++
++			break;
+ 		default:
+ 			return -EINVAL;
+ 		}
+@@ -386,6 +401,9 @@ static ssize_t vfio_pci_rw(void *device_data, char __user *buf,
+ 
+ 	case VFIO_PCI_BAR0_REGION_INDEX ... VFIO_PCI_BAR5_REGION_INDEX:
+ 		return vfio_pci_bar_rw(vdev, buf, count, ppos, iswrite);
++
++	case VFIO_PCI_VGA_REGION_INDEX:
++		return vfio_pci_vga_rw(vdev, buf, count, ppos, iswrite);
+ 	}
+ 
+ 	return -EINVAL;
+diff --git a/drivers/vfio/pci/vfio_pci_private.h b/drivers/vfio/pci/vfio_pci_private.h
+index 00d19b9..d7e55d0 100644
+--- a/drivers/vfio/pci/vfio_pci_private.h
++++ b/drivers/vfio/pci/vfio_pci_private.h
+@@ -53,6 +53,7 @@ struct vfio_pci_device {
+ 	bool			reset_works;
+ 	bool			extended_caps;
+ 	bool			bardirty;
++	bool			has_vga;
+ 	struct pci_saved_state	*pci_saved_state;
+ 	atomic_t		refcnt;
+ };
+@@ -77,6 +78,9 @@ extern ssize_t vfio_pci_config_rw(struct vfio_pci_device *vdev,
+ extern ssize_t vfio_pci_bar_rw(struct vfio_pci_device *vdev, char __user *buf,
+ 			       size_t count, loff_t *ppos, bool iswrite);
+ 
++extern ssize_t vfio_pci_vga_rw(struct vfio_pci_device *vdev, char __user *buf,
++			       size_t count, loff_t *ppos, bool iswrite);
++
+ extern int vfio_pci_init_perm_bits(void);
+ extern void vfio_pci_uninit_perm_bits(void);
+ 
+diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c b/drivers/vfio/pci/vfio_pci_rdwr.c
+index e9d78eb..210db24 100644
+--- a/drivers/vfio/pci/vfio_pci_rdwr.c
++++ b/drivers/vfio/pci/vfio_pci_rdwr.c
+@@ -17,6 +17,7 @@
+ #include <linux/pci.h>
+ #include <linux/uaccess.h>
+ #include <linux/io.h>
++#include <linux/vgaarb.h>
+ 
+ #include "vfio_pci_private.h"
+ 
+@@ -175,3 +176,63 @@ ssize_t vfio_pci_bar_rw(struct vfio_pci_device *vdev, char __user *buf,
+ 
+ 	return done;
+ }
++
++ssize_t vfio_pci_vga_rw(struct vfio_pci_device *vdev, char __user *buf,
++			       size_t count, loff_t *ppos, bool iswrite)
++{
++	int ret;
++	loff_t off, pos = *ppos & VFIO_PCI_OFFSET_MASK;
++	void __iomem *iomem = NULL;
++	unsigned int rsrc;
++	bool is_ioport;
++	ssize_t done;
++
++	if (!vdev->has_vga)
++		return -EINVAL;
++
++	switch (pos) {
++	case 0xa0000 ... 0xbffff:
++		count = min(count, (size_t)(0xc0000 - pos));
++		iomem = ioremap_nocache(0xa0000, 0xbffff - 0xa0000 + 1);
++		off = pos - 0xa0000;
++		rsrc = VGA_RSRC_LEGACY_MEM;
++		is_ioport = false;
++		break;
++	case 0x3b0 ... 0x3bb:
++		count = min(count, (size_t)(0x3bc - pos));
++		iomem = ioport_map(0x3b0, 0x3bb - 0x3b0 + 1);
++		off = pos - 0x3b0;
++		rsrc = VGA_RSRC_LEGACY_IO;
++		is_ioport = true;
++		break;
++	case 0x3c0 ... 0x3df:
++		count = min(count, (size_t)(0x3e0 - pos));
++		iomem = ioport_map(0x3c0, 0x3df - 0x3c0 + 1);
++		off = pos - 0x3c0;
++		rsrc = VGA_RSRC_LEGACY_IO;
++		is_ioport = true;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	if (!iomem)
++		return -ENOMEM;
++
++	ret = vga_get_interruptible(vdev->pdev, rsrc);
++	if (ret) {
++		is_ioport ? ioport_unmap(iomem) : iounmap(iomem);
++		return ret;
++	}
++
++	done = do_io_rw(iomem, buf, off, count, 0, 0, iswrite);
++
++	vga_put(vdev->pdev, rsrc);
++
++	is_ioport ? ioport_unmap(iomem) : iounmap(iomem);
++
++	if (done >= 0)
++		*ppos += done;
++
++	return done;
++}
+diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+index 4758d1b..4f41f30 100644
+--- a/include/uapi/linux/vfio.h
++++ b/include/uapi/linux/vfio.h
+@@ -303,6 +303,15 @@ enum {
+ 	VFIO_PCI_BAR5_REGION_INDEX,
+ 	VFIO_PCI_ROM_REGION_INDEX,
+ 	VFIO_PCI_CONFIG_REGION_INDEX,
++	/*
++	 * Expose VGA regions defined for PCI base class 03, subclass 00.
++	 * This includes I/O port ranges 0x3b0 to 0x3bb and 0x3c0 to 0x3df
++	 * as well as the MMIO range 0xa0000 to 0xbffff.  Each implemented
++	 * range is found at it's identity mapped offset from the region
++	 * offset, for example 0x3b0 is region_info.offset + 0x3b0.  Areas
++	 * between described ranges are unimplemented.
++	 */
++	VFIO_PCI_VGA_REGION_INDEX,
+ 	VFIO_PCI_NUM_REGIONS
+ };
+ 
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Wed__30_Jan_2013_07_51_48_+1100_3u2qu.3INsTe=wrc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRCDZkAAoJEECxmPOUX5FE2zMP/iA+FtttgY6II+g2FMykl2rl
-4haNjdHSegihW5Gl5f0wy4tqDfm6wEhaqYWF1+46qApicwRuSQz04iAuSZTBR+Dt
-6UnIHpJcusMASSucw0GJfnNT1XIjr3Z7ckLBuL0g9pjYHhm96QBfO0CS17QqlYjT
-Pcs8whiYJRPJED61yW6j15+nWdVa5xcgKQltR93ttLgi7XHelhujtZnyIsE6IYa6
-N4OT/CPnMhyTy8E48h/Ai0XxEeKO1BbKOV7fcLMR6jUT2o7lA0n4Krugm5/DRy9b
-VHW2dEqpIcovbyHUcJoGUYuD/8jceRlUV531KHmwwSMB8Btuz6DN/Ai0XwiePPkP
-XvwNiXpDoVfsIyD6x3Y2wBJE1hnv99l4ZHopQA5BUIUJKHf927woViQBesxUEbgd
-QKWRzFS57vCgSLqTkayzH9rG/VPA7UD9tjFPxko+Djtv1rYmvZLkfJxoceg4Ktzc
-OxwKm+cayf/muirWO2kxzI7/O66ZGSjD4Ay7wOHrFqcoAaM1ASwCKI0+++yfNxdI
-tHS/S0IX180m8fmGtvb8mW64LUVDXhEBb05mrK+SUxutInl/6a3bLOJ6NUkWmmFS
-TT07YZQxdt8ldnHFiFmpUXCYDslbFkFaA4dATyY32ebhuvuT5/Cq8R7IQJCgx+WV
-PGSLgQM9sb4DWpWuVai1
-=mmsc
------END PGP SIGNATURE-----
-
---Signature=_Wed__30_Jan_2013_07_51_48_+1100_3u2qu.3INsTe=wrc--
