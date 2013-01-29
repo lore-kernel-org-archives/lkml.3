@@ -1,144 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3A2Vpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:45:44 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55234 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3A2Vpl (ORCPT
+	id S1751591Ab3A2Vt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:49:26 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:58082 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3A2VtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:45:41 -0500
-Date: Tue, 29 Jan 2013 13:45:37 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic dynamic per cpu refcounting
-Message-ID: <20130129214537.GA18571@localhost>
-References: <20130128205540.GE26407@google.com>
- <20130128211832.GK22465@mtj.dyndns.org>
- <20130128212407.GF26407@google.com>
- <20130128212814.GL22465@mtj.dyndns.org>
- <20130128214506.GG26407@google.com>
- <20130128215042.GN22465@mtj.dyndns.org>
- <20130129163942.GI26407@google.com>
- <20130129192904.GA6824@mtj.dyndns.org>
- <20130129195141.GO26407@google.com>
- <20130129200218.GJ6824@mtj.dyndns.org>
+	Tue, 29 Jan 2013 16:49:25 -0500
+Date: Tue, 29 Jan 2013 13:49:22 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: xtu4 <xiaobing.tu@intel.com>
+cc: linux-kernel@vger.kernel.org, guifang.tang@intel.com,
+        linX.z.chen@intel.com, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Avoid high order memory allocating with kmalloc, when read large
+ seq file
+In-Reply-To: <510768B6.3070000@intel.com>
+Message-ID: <alpine.DEB.2.00.1301291347360.11447@chino.kir.corp.google.com>
+References: <510768B6.3070000@intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130129200218.GJ6824@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 12:02:18PM -0800, Tejun Heo wrote:
-> Hello, Kent.
+On Tue, 29 Jan 2013, xtu4 wrote:
+
+> Subject: [PATCH] [SEQ_FILE] Avoid high order memory allocating with kmalloc
+>  when read large seq file
 > 
-> On Tue, Jan 29, 2013 at 11:51:41AM -0800, Kent Overstreet wrote:
-> > > What about overflow?  Note that we can have systemetic cases where ref
-> > > is gotten on one cpu and put on another transferring counts in a
-> > > specific direction.
-> > 
-> > Heh, this keeps coming up.
-> > 
-> > It works because modular arithmatic is still associative for addition
-> > and subtraction. It doesn't matter which cpu the gets and puts happen
-> > on, the counters will still sum to the same value - even if individual
-> > counters overflow/underflow.
-> > 
-> > (It's the same as doing a bunch of increments and decrements to a single
-> > integer, but in random order. 0 - 1 - 1 + 1 + 1 + 1 will always equal 1,
-> > no matter where you stick parentheses).
-> > 
-> > That's also why I use an unsigned integer for the per cpu counters...
-> > since they're going to wrap and signed integer overflow is undefined.
-> > Not that I really expect gcc to figure out a way to screw me for that,
-> > but I tend to be anal about such things.
+> currently, when dumpstate access /proc/xxx/binder , this binder include lots
+> of info,
+> it will use seq_read in kernel, in this function, it will trigger high order
+> memory alloc,
+> when read binder info or other large file, this will cause memory presure when
+> system
+> don't have contious high order memory, it will lead to high kswap workload to
+> reclaim the
+> page. so change kmalloc to vmalloc, it can avoid contiously high order memory
+> allocating.
+> [ 4356.532357] dumpstate: page allocation failure: order:4, mode:0x40d0
+> [ 4356.532400] Pid: 18256, comm: dumpstate Tainted: G         C
+> 3.0.34-141128-g4be7088 #1
+> [ 4356.532416] Call Trace:
+> [ 4356.532443]  [<c185c836>] ? printk+0x1d/0x1f
+> [ 4356.532467]  [<c12cde1f>] warn_alloc_failed+0xbf/0xf0
+> [ 4356.532491]  [<c12d0aba>] __alloc_pages_nodemask+0x4ba/0x6a0
+> [ 4356.532521]  [<c12d0d1c>] __get_free_pages+0x1c/0x30
+> [ 4356.532541]  [<c12f51e1>] kmalloc_order_trace+0x21/0xd0
+> [ 4356.532561]  [<c131d0f7>] ? seq_read+0x137/0x390
+> [ 4356.532579]  [<c12f549a>] __kmalloc+0x20a/0x230
+> [ 4356.532596]  [<c131d0f7>] ? seq_read+0x137/0x390
+> [ 4356.532616]  [<c12d343c>] ? put_page+0x2c/0x40
+> [ 4356.532634]  [<c12f4a7d>] ? kfree+0xcd/0x160
+> [ 4356.532655]  [<c18656cd>] ? mutex_unlock+0xd/0x10
+> [ 4356.532675]  [<c131d109>] seq_read+0x149/0x390
+> [ 4356.532697]  [<c130062c>] vfs_read+0x8c/0x160
+> [ 4356.532716]  [<c131cfc0>] ? seq_lseek+0x180/0x180
+> [ 4356.532735]  [<c130073d>] sys_read+0x3d/0x70
+> [ 4356.532755]  [<c1866e91>] syscall_call+0x7/0xb
+> [ 4356.532777]  [<c1860000>] ? log_dir_items+0x33d/0x40c
+> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+> Signed-off-by: linX z chen <linX.z.chen@intel.com>
+> Signed-off-by: guifang tang <guifang.tang@intel.com>
+> Change-Id: I892c97d02cf25e59b23c9bc68dff754ea01c1d56
+> ---
+>  fs/seq_file.c |   18 +++++++++++++++---
+>  1 files changed, 15 insertions(+), 3 deletions(-)
 > 
-> Hmmm... okay, but that only works if the summing up is also done in
-> 32bits, right?  Is that why the global counter is kept at 32bits?
+> diff --git a/fs/seq_file.c b/fs/seq_file.c
+> index dba43c3..20b8e36 100644
+> --- a/fs/seq_file.c
+> +++ b/fs/seq_file.c
+> @@ -209,8 +209,17 @@ ssize_t seq_read(struct file *file, char __user *buf,
+> size_t size, loff_t *ppos)
+>          if (m->count < m->size)
+>              goto Fill;
+>          m->op->stop(m, p);
+> -        kfree(m->buf);
+> -        m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
+> +        if (m->size > 2 * PAGE_SIZE) {
+> +            vfree(m->buf);
+> +        } else
+> +            kfree(m->buf);
+> +        m->size <<= 1;
+> +        if (m->size > 2 * PAGE_SIZE) {
+> +            m->buf = vmalloc(m->size);
+> +        } else
+> +            m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
 
-Global counter's actually kept at 50 bits - arbitrarily, because the top
-14 bits are used for the get counter.
+I thought m->size was already shifted.
 
-It would definitely be cleaner if the global counter was also 32 bits (I
-probably should've done it that way at first) but it works with it being
-bigger _provided the sum of the percpu counters is sign extended_ when
-collecting them up at the end.
+Your patch is severely mangled, please check out 
+Documentation/SubmittingPatches and Documentation/email-clients.txt.
 
-With the bias though we kind of want the global counter to be bigger...
-the bias needs to fit in the global counter.
-
-> > > I really don't get this.  Why use 1<<32 for bias which isn't too
-> > > difficult to overflow especially if you have many cpu threads and some
-> > > systemetic drift in percpu refs?  What's the point of not using the
-> > > higher bits?  Is it to encode count usage statistics into the same
-> > > counter?  If so, just add another field.  24bytes is fine.
-> > 
-> > The systematic drift doesn't affect overflow here - the bias is only
-> > applied to the atomic counter, which can only be off by at most whatever
-> > the per cpu counters happen to sum to (and remember it's modular
-> > arithmatic, so that's INT_MIN/INT_MAX).
-> 
-> Yeah if you don't have to worry about flushing percpu counters to
-> prevent over/underflows, this shouldn't matter.  It would be nice to
-> document it tho.
-
-Good point, I'll add the explanation to the comments.
-
-> > Since I'm using 32 bit ints for the per cpu counters, 1 << 32 works just
-> > fine. If we want to expand the per cpu counters to longs or 64 bit ints,
-> > then yeah I'd use a larger bias.
-> > 
-> > It's nitpicky but using a larger bias feels like overly defensive
-> > programming to me (if you know how big the bias has to be, great, use
-> > that - if you aren't sure, wtf are you doing :P)
-> 
-> I don't know.  I think it's a correctness issue.  If you
-> over/underflow into global counter, you need buffer space to be
-> (practically) correct. 
-
-Not quite sure what you mean... 
-
-> If modular calculation makes it unnecessary to
-> worry about over/underflows, we can't use more than 32bits for global
-> sums, right? 
-
-It doesn't really make sense to use more than 32 bits for the global sum
-(ignoring the bias value... that complicates it) but it does work, with
-the sign extending. I haven't figured out a good way of explaining why
-though... I should probably look at what happens without it again. (I
-missed the sign extending when I first coded it, had to debug that).
-
-> I'm still a bit hazy but it looks like using all 32bit
-> counters should work w/o worrying about over/underflows and that's
-> really nice.
-
-I know my math :D
-
-> > > I'd really like to see just basic percpu refcnt with async and sync
-> > > interfaces w/o dynamic allocation.  At this point, we aren't really
-> > > sure if there are gonna be enough benefits or use cases from dynamic
-> > > allocation, so I don't really see the point in the added complexity.
-> > > Let's start with basic stuff and add on dynamic alloc if it actually
-> > > is necessary.
-> > 
-> > Well, with the alloc rework the dynamic allocation is completely hidden
-> > from the users - it's just get and put. Killing dynamic allocation would
-> > just mean that percpu_ref_init() could fail, as far as the api is
-> > concerned.
-> 
-> There really is no point in adding complexity which isn't needed.  It
-> slows down the code unnecessarily (however minute) and adds
-> maintenance overhead.  Why do that when there's no need?
-
-Well, like I said I want this to be a drop in replacement for atomic_t
-anyone can use without having to think about the potential overhead.
-
-If it really does turn out there aren't enough uses for it to be worth
-it I'll be ok with ripping out the dynamic alloc... but the slowdown is
-pretty damn minute (one instruction in the fast path) and the additional
-complexity is fairly minor and quite self contained so I'm just not
-seeing the urgency.
+> +
+> +
+>          if (!m->buf)
+>              goto Enomem;
+>          m->count = 0;
+> @@ -325,7 +334,10 @@ EXPORT_SYMBOL(seq_lseek);
+>  int seq_release(struct inode *inode, struct file *file)
+>  {
+>      struct seq_file *m = file->private_data;
+> -    kfree(m->buf);
+> +    if (m->size > 2 * PAGE_SIZE) {
+> +        vfree(m->buf);
+> +    } else
+> +        kfree(m->buf);
+>      kfree(m);
+>      return 0;
+>  }
