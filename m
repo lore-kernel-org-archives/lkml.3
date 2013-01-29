@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab3A2AVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 19:21:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29799 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab3A2AVK (ORCPT
+	id S1753343Ab3A2AWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 19:22:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43314 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab3A2AWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 19:21:10 -0500
-USER-AGENT: Mutt/1.5.21 (2010-09-15)
-MIME-Version: 1.0
-Message-ID: <20130129002011.GA4757@blackbox.djwong.org>
-Date: Mon, 28 Jan 2013 16:20:11 -0800 (PST)
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: David Lang <david@lang.hm>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Daniel Phillips <daniel.raymond.phillips@gmail.com>,
-        linux-kernel@vger.kernel.org, tux3@tux3.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: Tux3 Report: Initial fsck has landed
-References: <CAEsagEgeaHC_2ULhr_yAtOuNUxk+PZC=aPXU4PQyY9NnUC=TyQ@mail.gmail.com>
- <alpine.DEB.2.02.1301272158450.13067@nftneq.ynat.uz>
- <CAEsagEjAoVNUUSotBXd0am5zZb5VMLWT2Dz9k5fj+C9-LKABnQ@mail.gmail.com>
- <20130128141209.GA22711@thunk.org>
- <alpine.DEB.2.02.1301281526410.21503@nftneq.ynat.uz>
-In-Reply-To: <alpine.DEB.2.02.1301281526410.21503@nftneq.ynat.uz>
-Content-Type: text/plain; charset=us-ascii
+	Mon, 28 Jan 2013 19:22:40 -0500
+Date: Mon, 28 Jan 2013 16:22:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Bernie Thompson <bernie@plugable.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/3 v2] fb: udlfb: fix hang at disconnect
+Message-Id: <20130128162238.7fba92fe.akpm@linux-foundation.org>
+In-Reply-To: <1359139768-32294-2-git-send-email-holler@ahsoftware.de>
+References: <50F2A310.5010006@ahsoftware.de>
+	<1359139768-32294-1-git-send-email-holler@ahsoftware.de>
+	<1359139768-32294-2-git-send-email-holler@ahsoftware.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 03:27:38PM -0800, David Lang wrote:
-> On Mon, 28 Jan 2013, Theodore Ts'o wrote:
+On Fri, 25 Jan 2013 19:49:27 +0100
+Alexander Holler <holler@ahsoftware.de> wrote:
+
+> When a device was disconnected the driver may hang at waiting for urbs it never
+> will get. Fix this by using a timeout while waiting for the used semaphore.
 > 
-> >On Sun, Jan 27, 2013 at 10:13:37PM -0800, Daniel Phillips wrote:
-> >>>The thing that jumps out at me with this is the question of how you will
-> >>>avoid the 'filesystem image in a file' disaster that reiserfs had (where
-> >>>it's fsck could mix up metadata chunks from the main filesystem with
-> >>>metadata chunks from any filesystem images that it happened to stumble
-> >>>across when scanning the disk)
-
-Did that ever get fixed in reiserfs?
-
-> >>>
-> >>Only superficially. Deep thoughts are in order. First, there needs to be a
-> >>hole in the filesystem structure, before we would even consider trying to
-> >>plug something in there. Once we know there is a hole, we want to
-> >>narrow down the list of candidates to fill it. If a candidate already lies
-> >>within a perfectly viable file, obviously we would not want to interpret
-> >>that as lost metadata. Unless the filesystem is really mess up...
-> >>
-> >>That is about as far as I have got with the analysis. Clearly, much more
-> >>is required. Suggestions welcome.
-> >
-> >The obvious answer is what resierfs4 ultimately ended up using.  Drop
-> >a file system UUID in the superblock; mix the UUID into a checksum
-> >which protects each of the your metadata blocks.  We're mixing in the
-> >inode number as well as the fs uuid in in ext4's new metadata checksum
-> >feature to protect against an inode table block getting written to the
-> >wrong location on disk.  It will also mean that e2fsck won't mistake
-> >an inode table from an earlier mkfs with the current file system.
-> >This will allow us to avoid needing to zero the inode table for newly
-> >initialized file systems.
+> There is still a memory leak if a timeout happens, but at least the driver
+> now continues his disconnect routine.
 > 
-> The situation I'm thinking of is when dealing with VMs, you make a
-> filesystem image once and clone it multiple times. Won't that end up
-> with the same UUID in the superblock?
+> ...
+>
+> --- a/drivers/video/udlfb.c
+> +++ b/drivers/video/udlfb.c
+> @@ -1832,8 +1832,9 @@ static void dlfb_free_urb_list(struct dlfb_data *dev)
+>  	/* keep waiting and freeing, until we've got 'em all */
+>  	while (count--) {
+>  
+> -		/* Getting interrupted means a leak, but ok at disconnect */
+> -		ret = down_interruptible(&dev->urbs.limit_sem);
+> +		/* Timeout likely occurs at disconnect (resulting in a leak) */
+> +		ret = down_timeout_killable(&dev->urbs.limit_sem,
+> +						FREE_URB_TIMEOUT);
+>  		if (ret)
+>  			break;
 
-Yes, but one ought to be able to change the UUID a la tune2fs -U.  Even
-still... so long as the VM images have a different UUID than the fs that they
-live on, it ought to be fine.
+This is rather a hack.  Do you have an understanding of the underlying
+bug?  Why is the driver waiting for things which will never happen?
 
---D
-> 
-> David Lang
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
