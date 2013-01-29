@@ -1,100 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab3A2Le2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 06:34:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50964 "EHLO mx2.suse.de"
+	id S1755821Ab3A2LgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 06:36:10 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:58443 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755149Ab3A2LeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 06:34:25 -0500
-Message-ID: <5107B3C0.60004@suse.de>
-Date: Tue, 29 Jan 2013 12:34:24 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S1751483Ab3A2LgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 06:36:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: fli24 <fei.li@intel.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, chuansheng.liu@intel.com
+Subject: Re: [PATCH] suspend: enable freeze timeout configuration through sysctl
+Date: Tue, 29 Jan 2013 12:42:16 +0100
+Message-ID: <2146878.OLeVueUb0g@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Stefan Weinhuber <wein@de.ibm.com>
-Subject: Re: [PATCH 4/9] dasd: Implement block timeout handling
-References: <1359443521-24670-1-git-send-email-hare@suse.de> <1359443521-24670-5-git-send-email-hare@suse.de> <20130129113228.GA5984@osiris>
-In-Reply-To: <20130129113228.GA5984@osiris>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 12:32 PM, Heiko Carstens wrote:
-> On Tue, Jan 29, 2013 at 08:11:56AM +0100, Hannes Reinecke wrote:
->> This patch implements generic block layer timeout handling
->> callbacks for DASDs. When the timeout expires the respective
->> cqr is aborted.
->>
->> With this timeout handler time-critical request abort
->> is guaranteed as the abort does not depend on the internal
->> state of the various DASD driver queues.
->>
->> Signed-off-by: Hannes Reinecke <hare@suse.de>
->> Acked-by: Stefan Weinhuber <wein@de.ibm.com>
->
-> [...]
->
->> +enum blk_eh_timer_return dasd_times_out(struct request *req)
->> +{
->> +	struct dasd_ccw_req *cqr = req->completion_data;
->> +	struct dasd_block *block = req->q->queuedata;
->> +	struct dasd_device *device;
->> +	int rc = 0;
->> +
->> +	if (!cqr)
->> +		return BLK_EH_NOT_HANDLED;
->> +
->> +	device = cqr->startdev ? cqr->startdev : block->base;
->> +	DBF_DEV_EVENT(DBF_WARNING, device,
->> +		      " dasd_times_out cqr %p status %x",
->> +		      cqr, cqr->status);
->> +
->> +	spin_lock(&block->queue_lock);
->> +	spin_lock(get_ccwdev_lock(device->cdev));
->
->          ^^^
->
->> +	cqr->retries = -1;
->> +	cqr->intrc = -ETIMEDOUT;
->> +	if (cqr->status >= DASD_CQR_QUEUED) {
->> +		spin_unlock(get_ccwdev_lock(device->cdev));
->> +		rc = dasd_cancel_req(cqr);
->> +	} else if (cqr->status == DASD_CQR_FILLED ||
->> +		   cqr->status == DASD_CQR_NEED_ERP) {
->> +		cqr->status = DASD_CQR_TERMINATED;
->> +		spin_unlock(get_ccwdev_lock(device->cdev));
->> +	} else if (cqr->status == DASD_CQR_IN_ERP) {
->> +		struct dasd_ccw_req *searchcqr, *nextcqr, *tmpcqr;
->> +
->> +		list_for_each_entry_safe(searchcqr, nextcqr,
->> +					 &block->ccw_queue, blocklist) {
->> +			tmpcqr = searchcqr;
->> +			while (tmpcqr->refers)
->> +				tmpcqr = tmpcqr->refers;
->> +			if (tmpcqr != cqr)
->> +				continue;
->> +			/* searchcqr is an ERP request for cqr */
->> +			searchcqr->retries = -1;
->> +			searchcqr->intrc = -ETIMEDOUT;
->> +			if (searchcqr->status >= DASD_CQR_QUEUED) {
->> +				spin_lock(get_ccwdev_lock(device->cdev));
->
-> 				^^^
-> This looks like a potential dead lock.
->
-Right.
+On Tuesday, January 29, 2013 10:58:20 AM fli24 wrote:
+> 
+> At present, the timeout value for freezing tasks is fixed as 20s,
+> which is too long for handheld device usage, especially for mobile
+> phone.
+> 
+> In order to improve user experience, we enable freeze timeout
+> configuration through sysctl, so that we can tune the value easily
+> for concrete usage, such as smaller value for handheld device such
+> as mobile phone.
 
-Will be resending the patch.
+Well, I'd argue that you shouldn't see freeze problems on such systems.
+If you're seeing them, it's better to fix them than to try to hide them
+from users (they are problems after all).
 
-Cheers,
+Do you have a specific example in which that new knob will be useful?
 
-Hannes
+Why do you want to do that through sysctl and not sysfs?
+
+Rafael
+
+
+> Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
+> Signed-off-by: Li Fei <fei.li@intel.com>
+> ---
+>  include/linux/freezer.h |    5 +++++
+>  kernel/power/process.c  |    4 ++--
+>  kernel/sysctl.c         |   12 ++++++++++++
+>  3 files changed, 19 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index e4238ce..f37b3be 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect */
+>  extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
+>  
+>  /*
+> + * Timeout for stopping processes
+> + */
+> +extern unsigned int sysctl_freeze_process_timeout_secs;
+> +
+> +/*
+>   * Check if a process has been frozen
+>   */
+>  static inline bool frozen(struct task_struct *p)
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index d5a258b..f7eb7c9 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -21,7 +21,7 @@
+>  /* 
+>   * Timeout for stopping processes
+>   */
+> -#define TIMEOUT	(20 * HZ)
+> +unsigned int __read_mostly sysctl_freeze_process_timeout_secs = 20;
+>  
+>  static int try_to_freeze_tasks(bool user_only)
+>  {
+> @@ -36,7 +36,7 @@ static int try_to_freeze_tasks(bool user_only)
+>  
+>  	do_gettimeofday(&start);
+>  
+> -	end_time = jiffies + TIMEOUT;
+> +	end_time = jiffies + sysctl_freeze_process_timeout_secs * HZ;
+>  
+>  	if (!user_only)
+>  		freeze_workqueues_begin();
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index c88878d..f88bcb9 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -90,6 +90,9 @@
+>  #include <linux/nmi.h>
+>  #endif
+>  
+> +#ifdef CONFIG_FREEZER
+> +#include <linux/freezer.h>
+> +#endif
+>  
+>  #if defined(CONFIG_SYSCTL)
+>  
+> @@ -1047,6 +1050,15 @@ static struct ctl_table kern_table[] = {
+>  		.proc_handler	= proc_dointvec,
+>  	},
+>  #endif
+> +#ifdef CONFIG_FREEZER
+> +	{
+> +		.procname	= "freeze_process_timeout_secs",
+> +		.data		= &sysctl_freeze_process_timeout_secs,
+> +		.maxlen		= sizeof(unsigned int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dointvec,
+> +	},
+> +#endif
+>  	{ }
+>  };
+>  
+> 
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
