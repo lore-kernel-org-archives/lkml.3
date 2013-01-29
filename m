@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3A2PWC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 10:22:02 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:36644 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756633Ab3A2PV7 (ORCPT
+	id S1757056Ab3A2PXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 10:23:07 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:50808 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756480Ab3A2PXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 10:21:59 -0500
-Date: Tue, 29 Jan 2013 10:21:58 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Vivek Gautam <gautam.vivek@samsung.com>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <jg1.han@samsung.com>, Doug Anderson <dianders@chromium.org>
-Subject: Re: [PATCH] usb: ehci: s5p: Power-off VBUS during suspend.
-In-Reply-To: <1359456765-7335-1-git-send-email-gautam.vivek@samsung.com>
-Message-ID: <Pine.LNX.4.44L0.1301291017360.1507-100000@iolanthe.rowland.org>
+	Tue, 29 Jan 2013 10:23:06 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1359471984-26336-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1359471984-26336-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 29 Jan 2013 20:53:04 +0530
+Message-ID: <CAKohpo=upCjze53v5STZJUz5OSrRqBU+mU3Q-C9BL18sXYAs5Q@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: apply default dma_mask if needed
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jan 2013, Vivek Gautam wrote:
+Adding Arnd in cc.
 
-> This change de-asserts vbus_gpio on suspend and
-> re-asserts on resume in order to save power.
-> NOTE, this change means no USB charging in suspend
-> mode.
+On 29 January 2013 20:36, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> In some cases we got the device without dma_mask configured. We have to apply
+> the default value to avoid crashes during memory mapping.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/dma/dw_dmac.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+>
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index e8d0679..a572a1e 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -1673,6 +1673,12 @@ static int dw_probe(struct platform_device *pdev)
+>         if (IS_ERR(regs))
+>                 return PTR_ERR(regs);
+>
+> +       /* Apply default dma_mask if needed */
+> +       if (!pdev->dev.dma_mask) {
+> +               pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+> +               pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+> +       }
+> +
 
-Doing this would mean USB devices could not wake up the system.  This 
-would be unacceptable.
+Hmm... Why is it required for a DMA controller? What kind of crash do you
+get?
 
-However, turning off VBUS power is okay provided:
-
-	no root-hub ports are enabled, and
-
-	the root hub is not enabled for wakeup.
-
-Under those circumstances there can't be any wakeup-enabled USB devices 
-on the bus, and the root hub itself would not need to detect new 
-connections and disconnections.
-
-Alan Stern
-
+@Arnd: Is this change recommended?
