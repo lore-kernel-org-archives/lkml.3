@@ -1,155 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab3A2JJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 04:09:25 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48459 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237Ab3A2JJS (ORCPT
+	id S1755468Ab3A2JJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 04:09:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51631 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab3A2JHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 04:09:18 -0500
-Message-ID: <510791B2.6090506@linux.vnet.ibm.com>
-Date: Tue, 29 Jan 2013 17:09:06 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 29 Jan 2013 04:07:39 -0500
+Date: Tue, 29 Jan 2013 01:07:20 -0800
+From: tip-bot for David Woodhouse <dwmw2@infradead.org>
+Message-ID: <tip-2b9b6d8c715b23fa119261c32ad360681f4464a9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
+        David.Woodhouse@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
+        David.Woodhouse@intel.com
+In-Reply-To: <1359395390.3529.65.camel@shinybook.infradead.org>
+References: <1359395390.3529.65.camel@shinybook.infradead.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Require MOVBE feature in cpuid when we use it
+Git-Commit-ID: 2b9b6d8c715b23fa119261c32ad360681f4464a9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [RFC PATCH v3 1/3] sched: schedule balance map foundation
-References: <51079178.3070002@linux.vnet.ibm.com>
-In-Reply-To: <51079178.3070002@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012909-6102-0000-0000-000002EDE2A0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 01:07:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to get rid of the complex code in select_task_rq_fair(),
-approach to directly get sd on each level with proper flag is
-required.
+Commit-ID:  2b9b6d8c715b23fa119261c32ad360681f4464a9
+Gitweb:     http://git.kernel.org/tip/2b9b6d8c715b23fa119261c32ad360681f4464a9
+Author:     David Woodhouse <dwmw2@infradead.org>
+AuthorDate: Mon, 28 Jan 2013 17:49:50 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 28 Jan 2013 16:59:55 -0800
 
-Schedule balance map is the solution, which record the sd according
-to it's flag and level.
+x86: Require MOVBE feature in cpuid when we use it
 
-For example, cpu_sbm->sd[wake][l] will locate the sd of cpu which
-support wake up on level l.
+Add MOVBE to asm/required-features.h so we check for it during startup
+and don't bother checking for it later.
 
-This patch contain the foundation of schedule balance map in order
-to serve the follow patches.
+CONFIG_MATOM is used because it corresponds to -march=atom in the
+Makefiles.  If the rules get more complicated it may be necessary to
+make this an explicit Kconfig option which uses -mmovbe/-mno-movbe to
+control the use of this instruction explicitly.
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Link: http://lkml.kernel.org/r/1359395390.3529.65.camel@shinybook.infradead.org
+[ hpa: added a patch description ]
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- kernel/sched/core.c  |   44 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/sched.h |   14 ++++++++++++++
- 2 files changed, 58 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/required-features.h | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 257002c..092c801 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5575,6 +5575,9 @@ static void update_top_cache_domain(int cpu)
- 	per_cpu(sd_llc_id, cpu) = id;
- }
+diff --git a/arch/x86/include/asm/required-features.h b/arch/x86/include/asm/required-features.h
+index 6c7fc25..5c6e4fb 100644
+--- a/arch/x86/include/asm/required-features.h
++++ b/arch/x86/include/asm/required-features.h
+@@ -47,6 +47,12 @@
+ # define NEED_NOPL	0
+ #endif
  
-+static int sbm_max_level;
-+DEFINE_PER_CPU_SHARED_ALIGNED(struct sched_balance_map, sbm_array);
++#ifdef CONFIG_MATOM
++# define NEED_MOVBE	(1<<(X86_FEATURE_MOVBE & 31))
++#else
++# define NEED_MOVBE	0
++#endif
 +
- /*
-  * Attach the domain 'sd' to 'cpu' as its base domain. Callers must
-  * hold the hotplug lock.
-@@ -6037,6 +6040,46 @@ static struct sched_domain_topology_level default_topology[] = {
+ #ifdef CONFIG_X86_64
+ #ifdef CONFIG_PARAVIRT
+ /* Paravirtualized systems may not have PSE or PGE available */
+@@ -80,7 +86,7 @@
  
- static struct sched_domain_topology_level *sched_domain_topology = default_topology;
- 
-+static void sched_init_sbm(void)
-+{
-+	size_t size;
-+	int cpu, type, node;
-+	struct sched_balance_map *sbm;
-+	struct sched_domain_topology_level *tl;
-+
-+	/*
-+	 * Inelegant method, any good idea?
-+	 */
-+	for (tl = sched_domain_topology; tl->init; tl++, sbm_max_level++)
-+		;
-+
-+	for_each_possible_cpu(cpu) {
-+		sbm = &per_cpu(sbm_array, cpu);
-+		node = cpu_to_node(cpu);
-+		size = sizeof(struct sched_domain *) * sbm_max_level;
-+
-+		for (type = 0; type < SBM_MAX_TYPE; type++) {
-+			sbm->sd[type] = kmalloc_node(size, GFP_KERNEL, node);
-+			WARN_ON(!sbm->sd[type]);
-+			if (!sbm->sd[type])
-+				goto failed;
-+		}
-+	}
-+
-+	return;
-+
-+failed:
-+	for_each_possible_cpu(cpu) {
-+		sbm = &per_cpu(sbm_array, cpu);
-+
-+		for (type = 0; type < SBM_MAX_TYPE; type++)
-+			kfree(sbm->sd[type]);
-+	}
-+
-+	/* prevent further work */
-+	sbm_max_level = 0;
-+}
-+
- #ifdef CONFIG_NUMA
- 
- static int sched_domains_numa_levels;
-@@ -6765,6 +6808,7 @@ void __init sched_init_smp(void)
- 	alloc_cpumask_var(&fallback_doms, GFP_KERNEL);
- 
- 	sched_init_numa();
-+	sched_init_sbm();
- 
- 	get_online_cpus();
- 	mutex_lock(&sched_domains_mutex);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index fc88644..d060913 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -349,6 +349,19 @@ struct root_domain {
- 
- extern struct root_domain def_root_domain;
- 
-+enum {
-+	SBM_EXEC_TYPE,
-+	SBM_FORK_TYPE,
-+	SBM_WAKE_TYPE,
-+	SBM_MAX_TYPE
-+};
-+
-+struct sched_balance_map {
-+	struct sched_domain **sd[SBM_MAX_TYPE];
-+	int top_level[SBM_MAX_TYPE];
-+	struct sched_domain *affine_map[NR_CPUS];
-+};
-+
- #endif /* CONFIG_SMP */
- 
- /*
-@@ -416,6 +429,7 @@ struct rq {
- #ifdef CONFIG_SMP
- 	struct root_domain *rd;
- 	struct sched_domain *sd;
-+	struct sched_balance_map *sbm;
- 
- 	unsigned long cpu_power;
- 
--- 
-1.7.4.1
-
+ #define REQUIRED_MASK2	0
+ #define REQUIRED_MASK3	(NEED_NOPL)
+-#define REQUIRED_MASK4	0
++#define REQUIRED_MASK4	(NEED_MOVBE)
+ #define REQUIRED_MASK5	0
+ #define REQUIRED_MASK6	0
+ #define REQUIRED_MASK7	0
