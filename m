@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298Ab3A2G45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 01:56:57 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46101 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab3A2G4z (ORCPT
+	id S1751886Ab3A2HAK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:00:10 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54067 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab3A2HAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 01:56:55 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-bd-510772b52663
-Date: Tue, 29 Jan 2013 15:56:56 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/3] introduce static_vm for ARM-specific static
- mapped area
-Message-ID: <20130129065656.GC5131@lge.com>
-References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20130128175106.GI23470@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1301281300250.6300@xanadu.home>
+	Tue, 29 Jan 2013 02:00:08 -0500
+X-AuditID: 9c930179-b7d01ae000004006-c6-51077375c735
+From: Namhyung Kim <namhyung@kernel.org>
+To: Thomas Backlund <tmb@mageia.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        irina.tirdea@intel.com, acme@redhat.com
+Subject: Re: the patch "perf tools: Update Makefile for Android" broke 3.8-rc perf build.
+References: <20121212031346.B5BB366071F@gitolite.kernel.org>
+	<510745D9.9000209@mageia.org>
+Date: Tue, 29 Jan 2013 16:00:04 +0900
+In-Reply-To: <510745D9.9000209@mageia.org> (Thomas Backlund's message of "Tue,
+	29 Jan 2013 05:45:29 +0200")
+Message-ID: <87r4l4v5hn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1301281300250.6300@xanadu.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 01:04:24PM -0500, Nicolas Pitre wrote:
-> On Mon, 28 Jan 2013, Will Deacon wrote:
-> 
-> > Hello,
-> > 
-> > On Thu, Jan 24, 2013 at 01:28:51AM +0000, Joonsoo Kim wrote:
-> > > In current implementation, we used ARM-specific flag, that is,
-> > > VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
-> > > The purpose of static mapped area is to re-use static mapped area when
-> > > entire physical address range of the ioremap request can be covered
-> > > by this area.
-> > > 
-> > > This implementation causes needless overhead for some cases.
-> > > For example, assume that there is only one static mapped area and
-> > > vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
-> > > deciding whether it is matched or not. Moreover, even if there is
-> > > no static mapped area and vmlist has 300 areas, every time we call
-> > > ioremap, we check 300 areas in now.
-> > > 
-> > > If we construct a extra list for static mapped area, we can eliminate
-> > > above mentioned overhead.
-> > > With a extra list, if there is one static mapped area,
-> > > we just check only one area and proceed next operation quickly.
-> > > 
-> > > In fact, it is not a critical problem, because ioremap is not frequently
-> > > used. But reducing overhead is better idea.
-> > > 
-> > > Another reason for doing this work is for removing vm_struct list management,
-> > > entirely. For more information, look at the following link.
-> > > http://lkml.org/lkml/2012/12/6/184
-> > 
-> > First patch looks good (removing the unused vmregion stuff) but I'm not so
-> > sure about the rest of it. If you really care about ioremap performance,
-> > perhaps it would be better to have a container struct around the vm_struct
-> > for static mappings and then stick them in an augmented rbtree so you can
-> > efficiently find the mapping encompassing a particular physical address?
-> 
-> How can ioremap performance be a problem is the question I had since the 
-> beginning.
-> 
-> Firstly, ioremap is _not_ meant to be used in performance critical 
-> paths.
-> 
-> Secondly, there shouldn't be _that_ many entries on the vmlist such as 
-> 300.  That sounds a bit excessive.
-> 
-> So please, can we discuss the reasons that motivated those patches in 
-> the first place?  Maybe that's where the actual problem is.
+Hi Thomas,
 
-Hello, Wiil and Nicolas.
-First of all, thanks for reviewing.
+On Tue, 29 Jan 2013 05:45:29 +0200, Thomas Backlund wrote:
+> Linux Kernel Mailing List skrev 12.12.2012 05:13:
+>> Gitweb:     http://git.kernel.org/linus/;a=commit;h=d816ec2d1bea55cfeac373f0ab0ab8a3105e49b4
+>> Commit:     d816ec2d1bea55cfeac373f0ab0ab8a3105e49b4
+>> Parent:     78da39faf7c903bb6e3c20a726fde1bf98d10af8
+>> Author:     Irina Tirdea <irina.tirdea@intel.com>
+>> AuthorDate: Mon Oct 8 09:43:27 2012 +0300
+>> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+>> CommitDate: Mon Oct 8 17:42:16 2012 -0300
+>>
+>>      perf tools: Update Makefile for Android
+>>
+>>      For cross-compiling on Android, some specific changes are needed in
+>>      the Makefile.
+>>
+>
+> The above patch broke perf build on i586 and x86_64:
+>
+> [tmb@tmb linux-3.8-rc5]$ make -C tools/perf -s V=1
+> HAVE_CPLUS_DEMANGLE=1 prefix=%{_prefix} all
+>     CHK -fstack-protector-all
+>     CHK -Wstack-protector
+>     CHK -Wvolatile-register-var
+>     CHK bionic
+> <stdin>:1:31: fatal error: android/api-level.h: No such file or directory
+> compilation terminated.
 
-There is another reason for doing this work.
-As mentioned above, I try to remove list management for vm_struct(vmlist),
-entirely. For that purpose, removing architecture dependency against vmlist
-is needed. Below link is for my RFC patch trying to remove list management
-for vm_struct.
+Are you sure does it break your build?  In my case, it only hid the
+compilation from user and kept the work behind us.  When I run a clean
+build I could see a final perf binary there.
 
-http://lkml.org/lkml/2012/12/6/184
+It's because QUIET_{CC,LINK,...} honour the -s option but TRY_CC_MSG not
+and maybe we need something like this:
 
-Removing dependency for other architectures is rather trivial, but for ARM,
-it is not trivial case. So I prepared this patchset.
-My description makes you missleading possibly.
-Sorry for this.
 
-Answer for your other questions is below.
 
-I know ioremap is _not_ meant to be used in performance critical paths, and
-I mentioned it earlier.
-"In fact, it is not a critical problem, because ioremap is not frequently used.
-But reducing overhead is better idea."
+>From 5015f5f4961006e31b9298caeb86b3cc0e31bcf7 Mon Sep 17 00:00:00 2001
+From: Namhyung Kim <namhyung.kim@lge.com>
+Date: Tue, 29 Jan 2013 15:48:36 +0900
+Subject: [PATCH] perf tools: Hide feature test result on make -s
 
-And, there are many entries on the vmlist for my test devices(Android phone).
-I saw more than 300 entries in former days, but today, I re-check it and
-find 230~250 entries.
+Other commands like QUIET_CC already honour -s option of make so the
+try-cc should do the same.  Make it really quiet if -s option is given
+and ignore V=1 (it's only meaningful without -s option).
 
-Thanks.
+Reported-by: Thomas Backlund <tmb@mageia.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/config/utilities.mak | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
+index e5413125e6bb..9d202fce1306 100644
+--- a/tools/perf/config/utilities.mak
++++ b/tools/perf/config/utilities.mak
+@@ -181,10 +181,13 @@ _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
+ 
+ # try-cc
+ # Usage: option = $(call try-cc, source-to-build, cc-options, msg)
+-ifndef V
+ TRY_CC_OUTPUT= > /dev/null 2>&1
+-endif
++ifneq ($(findstring $(MAKEFLAGS),s),s)
+ TRY_CC_MSG=echo "    CHK $(3)" 1>&2;
++ifdef V
++TRY_CC_OUTPUT=
++endif
++endif
+ 
+ try-cc = $(shell sh -c						  \
+ 	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
+-- 
+1.7.11.7
+
