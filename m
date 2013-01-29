@@ -1,78 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab3A2VoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:44:21 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:59444 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab3A2VoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:44:20 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: inderpal.singh@linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 1/2] cpufreq: Set policy->related_cpus to atleast policy->cpus
-Date: Tue, 29 Jan 2013 22:50:30 +0100
-Message-ID: <21265323.IYDsrYoA7t@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpomDtasshcO53eD0kR1c3aO+ePC5pAK_mGjJn1EKAMBf_w@mail.gmail.com>
-References: <d6827976a56d429848ab8ababa2779a21c68d65f.1359434113.git.viresh.kumar@linaro.org> <2215618.GPIWS1OcnB@vostro.rjw.lan> <CAKohpomDtasshcO53eD0kR1c3aO+ePC5pAK_mGjJn1EKAMBf_w@mail.gmail.com>
+	id S1751934Ab3A2Vpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:45:44 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:55234 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab3A2Vpl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 16:45:41 -0500
+Date: Tue, 29 Jan 2013 13:45:37 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] generic dynamic per cpu refcounting
+Message-ID: <20130129214537.GA18571@localhost>
+References: <20130128205540.GE26407@google.com>
+ <20130128211832.GK22465@mtj.dyndns.org>
+ <20130128212407.GF26407@google.com>
+ <20130128212814.GL22465@mtj.dyndns.org>
+ <20130128214506.GG26407@google.com>
+ <20130128215042.GN22465@mtj.dyndns.org>
+ <20130129163942.GI26407@google.com>
+ <20130129192904.GA6824@mtj.dyndns.org>
+ <20130129195141.GO26407@google.com>
+ <20130129200218.GJ6824@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130129200218.GJ6824@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 29, 2013 08:00:23 PM Viresh Kumar wrote:
-> On 29 January 2013 17:21, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Tuesday, January 29, 2013 10:09:59 AM Viresh Kumar wrote:
-> >> With the addition of following patch, related_cpus is required to be set by
-> >> cpufreq platform drivers:
-> >>
-> >> commit c1070fd743533efb54e98142252283583f379190
-> >> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> >> Date:   Mon Jan 14 13:23:04 2013 +0000
-> >>
-> >>     cpufreq: Simplify cpufreq_add_dev()
-> >>
-> >
-> > I've dropped this one in the meantime.
-> >
-> > Can you please fold the $subject patch into "cpufreq: Simplify cpufreq_add_dev()"
-> > and post the result instead?  That surely will be less confusing?
+On Tue, Jan 29, 2013 at 12:02:18PM -0800, Tejun Heo wrote:
+> Hello, Kent.
 > 
-> Okay. I will squash this one with cpufreq_add_dev() one + following line:
+> On Tue, Jan 29, 2013 at 11:51:41AM -0800, Kent Overstreet wrote:
+> > > What about overflow?  Note that we can have systemetic cases where ref
+> > > is gotten on one cpu and put on another transferring counts in a
+> > > specific direction.
+> > 
+> > Heh, this keeps coming up.
+> > 
+> > It works because modular arithmatic is still associative for addition
+> > and subtraction. It doesn't matter which cpu the gets and puts happen
+> > on, the counters will still sum to the same value - even if individual
+> > counters overflow/underflow.
+> > 
+> > (It's the same as doing a bunch of increments and decrements to a single
+> > integer, but in random order. 0 - 1 - 1 + 1 + 1 + 1 will always equal 1,
+> > no matter where you stick parentheses).
+> > 
+> > That's also why I use an unsigned integer for the per cpu counters...
+> > since they're going to wrap and signed integer overflow is undefined.
+> > Not that I really expect gcc to figure out a way to screw me for that,
+> > but I tend to be anal about such things.
 > 
-> diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-> index 8ff26af..fc714a6 100644
-> --- a/drivers/cpufreq/spear-cpufreq.c
-> +++ b/drivers/cpufreq/spear-cpufreq.c
-> @@ -189,7 +189,6 @@ static int spear_cpufreq_init(struct cpufreq_policy *policy)
->         policy->cur = spear_cpufreq_get(0);
-> 
->         cpumask_copy(policy->cpus, topology_core_cpumask(policy->cpu));
-> -       cpumask_copy(policy->related_cpus, policy->cpus);
-> 
->         return 0;
->  }
-> 
-> 
-> Also, because you are happy loosing your commit history in linux-next,
-> you can drop
-> the patch that i have reverted as 2/2 of this set.
+> Hmmm... okay, but that only works if the summing up is also done in
+> 32bits, right?  Is that why the global counter is kept at 32bits?
 
-Well, I'm not attached to the linux-next commit history, but also it's a
-pain to change it too oftern. :-)
+Global counter's actually kept at 50 bits - arbitrarily, because the top
+14 bits are used for the get counter.
 
-I generally avoid changing it unless there are build issues and such that
-would cause pain to people doing bisection, for example.
+It would definitely be cleaner if the global counter was also 32 bits (I
+probably should've done it that way at first) but it works with it being
+bigger _provided the sum of the percpu counters is sign extended_ when
+collecting them up at the end.
 
-Thanks,
-Rafael
+With the bias though we kind of want the global counter to be bigger...
+the bias needs to fit in the global counter.
 
+> > > I really don't get this.  Why use 1<<32 for bias which isn't too
+> > > difficult to overflow especially if you have many cpu threads and some
+> > > systemetic drift in percpu refs?  What's the point of not using the
+> > > higher bits?  Is it to encode count usage statistics into the same
+> > > counter?  If so, just add another field.  24bytes is fine.
+> > 
+> > The systematic drift doesn't affect overflow here - the bias is only
+> > applied to the atomic counter, which can only be off by at most whatever
+> > the per cpu counters happen to sum to (and remember it's modular
+> > arithmatic, so that's INT_MIN/INT_MAX).
+> 
+> Yeah if you don't have to worry about flushing percpu counters to
+> prevent over/underflows, this shouldn't matter.  It would be nice to
+> document it tho.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Good point, I'll add the explanation to the comments.
+
+> > Since I'm using 32 bit ints for the per cpu counters, 1 << 32 works just
+> > fine. If we want to expand the per cpu counters to longs or 64 bit ints,
+> > then yeah I'd use a larger bias.
+> > 
+> > It's nitpicky but using a larger bias feels like overly defensive
+> > programming to me (if you know how big the bias has to be, great, use
+> > that - if you aren't sure, wtf are you doing :P)
+> 
+> I don't know.  I think it's a correctness issue.  If you
+> over/underflow into global counter, you need buffer space to be
+> (practically) correct. 
+
+Not quite sure what you mean... 
+
+> If modular calculation makes it unnecessary to
+> worry about over/underflows, we can't use more than 32bits for global
+> sums, right? 
+
+It doesn't really make sense to use more than 32 bits for the global sum
+(ignoring the bias value... that complicates it) but it does work, with
+the sign extending. I haven't figured out a good way of explaining why
+though... I should probably look at what happens without it again. (I
+missed the sign extending when I first coded it, had to debug that).
+
+> I'm still a bit hazy but it looks like using all 32bit
+> counters should work w/o worrying about over/underflows and that's
+> really nice.
+
+I know my math :D
+
+> > > I'd really like to see just basic percpu refcnt with async and sync
+> > > interfaces w/o dynamic allocation.  At this point, we aren't really
+> > > sure if there are gonna be enough benefits or use cases from dynamic
+> > > allocation, so I don't really see the point in the added complexity.
+> > > Let's start with basic stuff and add on dynamic alloc if it actually
+> > > is necessary.
+> > 
+> > Well, with the alloc rework the dynamic allocation is completely hidden
+> > from the users - it's just get and put. Killing dynamic allocation would
+> > just mean that percpu_ref_init() could fail, as far as the api is
+> > concerned.
+> 
+> There really is no point in adding complexity which isn't needed.  It
+> slows down the code unnecessarily (however minute) and adds
+> maintenance overhead.  Why do that when there's no need?
+
+Well, like I said I want this to be a drop in replacement for atomic_t
+anyone can use without having to think about the potential overhead.
+
+If it really does turn out there aren't enough uses for it to be worth
+it I'll be ok with ripping out the dynamic alloc... but the slowdown is
+pretty damn minute (one instruction in the fast path) and the additional
+complexity is fairly minor and quite self contained so I'm just not
+seeing the urgency.
