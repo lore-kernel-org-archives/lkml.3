@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab3A2Wvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 17:51:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51451 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3A2Wvg (ORCPT
+	id S1751657Ab3A2Wxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 17:53:47 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:34379 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3A2Wxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 17:51:36 -0500
-Date: Tue, 29 Jan 2013 14:51:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv4 2/7] zsmalloc: promote to lib/
-Message-Id: <20130129145134.813672cf.akpm@linux-foundation.org>
-In-Reply-To: <1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Jan 2013 17:53:45 -0500
+MIME-Version: 1.0
+Date: Tue, 29 Jan 2013 23:53:44 +0100
+Message-ID: <CACRpkdaViOmDNP0YD+jd_aKNt0uXhzHNwfqpx=TsckfhE_hj_Q@mail.gmail.com>
+Subject: [GIT PULL] late pinctrl fixes for v3.8
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Fabio Estevam <festevam@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Simon Guinot <simon.guinot@sequanux.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jan 2013 15:40:22 -0600
-Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+Hi Linus,
 
-> This patch promotes the slab-based zsmalloc memory allocator
-> from the staging tree to lib/
+This is a late pinctrl fix pull request, we had to revert out the pinctrl-single
+GPIO backend, because of, well, design issues. We're cooking a better
+thing for the next cycle.
 
-Hate to rain on the parade, but...  we haven't reviewed zsmalloc
-yet.  At least, I haven't, and I haven't seen others do so.
+Please pull it in!
 
-So how's about we forget that zsmalloc was previously in staging and
-send the zsmalloc code out for review?  With a very good changelog
-explaining why it exists, what problems it solves, etc.
+Yours,
+Linus Walleij
 
 
-I peeked.
+The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
 
-Don't answer any of the below questions - they are examples of
-concepts which should be accessible to readers of the
-hopefully-forthcoming very-good-changelog.
+  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
 
-- kmap_atomic() returns a void* - there's no need to cast its return value.
+are available in the git repository at:
 
-- Remove private MAX(), use the (much better implemented) max().
+  http://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-fixes-rc6
 
-- It says "This was one of the major issues with its predecessor
-  (xvmalloc)", but drivers/staging/ramster/xvmalloc.c is still in the tree.
+for you to fetch changes up to 0fafd50e4b41c06bf6be8dead87075e88ef25303:
 
-- USE_PGTABLE_MAPPING should be done via Kconfig.
+  pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused (2013-01-29
+23:10:30 +0100)
 
-- USE_PGTABLE_MAPPING is interesting and the changelog should go into
-  some details.  What are the pros and cons here?  Why do the two
-  options exist?  Can we eliminate one mode or the other?
+----------------------------------------------------------------
+Pinctrl fixes for the v3.8 series:
+- Revert gpio request/free backend, new patch set
+  in the works, will be for v3.9. Get this old cruft
+  out before anyone hurts himself on it.
+- Kconfig buzz
+- Various compile warnings
+- MPP6 value for the Kirkwood
 
-- Various functions are obscure and would benefit from explanatory
-  comments.  Good comments explain "why it exists", more than "what it
-  does".
+----------------------------------------------------------------
+Andrew Lunn (1):
+      pinctrl: mvebu: Fix compiler warnings
 
-  These include get_size_class_index, get_fullness_group,
-  insert_zspage, remove_zspage, fix_fullness_group.
+Arnd Bergmann (2):
+      pinctrl: exynos: don't mark probing functions as __init
+      pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused
 
-  Also a description of this handle encoding thing - what do these
-  "handles" refer to?  Why is stuff being encoded into them and how?
+Fabio Estevam (1):
+      pinctrl: pinctrl-mxs: Fix variables' definition type
 
-- I don't understand how the whole thing works :( If I allocate a
-  16 kbyte object with zs_malloc(), what do I get?  16k of
-  contiguous memory?  How can it do that if
-  USE_PGTABLE_MAPPING=false?  Obviously it can't so it's doing
-  something else.  But what?
+Haojian Zhuang (1):
+      Revert "pinctrl: single: support gpio request and free"
 
-- What does zs_create_pool() do and how do I use it?  It appears
-  to create a pool of all possible object sizes.  But why do we need
-  more than one such pool kernel-wide?
+Kukjin Kim (1):
+      pinctrl: samsung: removing duplicated condition for PINCTRL_SAMSUNG
 
-- I tried to work out the actual value of ZS_SIZE_CLASSES but it
-  made my head spin.
+Simon Guinot (1):
+      pinctrl: mvebu: fix MPP6 value for kirkwood driver
 
-- We really really don't want to merge zsmalloc!  It would be far
-  better to use an existing allocator (perhaps after modifying it)
-  than to add yet another new one.  The really-good-changelog should
-  be compelling on this point, please.
-
-See, I (and I assume others) are totally on first base here and we need
-to get through this before we can get onto zswap.  Sorry. 
-drivers/staging is where code goes to be ignored :(
+ drivers/pinctrl/Kconfig                  |  1 -
+ drivers/pinctrl/mvebu/pinctrl-dove.c     |  2 +-
+ drivers/pinctrl/mvebu/pinctrl-kirkwood.c |  8 ++--
+ drivers/pinctrl/pinctrl-exynos5440.c     | 10 ++--
+ drivers/pinctrl/pinctrl-mxs.c            |  9 ++--
+ drivers/pinctrl/pinctrl-nomadik.c        |  2 +-
+ drivers/pinctrl/pinctrl-single.c         | 79 +-------------------------------
+ 7 files changed, 17 insertions(+), 94 deletions(-)
