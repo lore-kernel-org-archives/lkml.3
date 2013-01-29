@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab3A2FHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 00:07:34 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:38185 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab3A2FHc (ORCPT
+	id S1752681Ab3A2FKi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 00:10:38 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:36443 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab3A2FKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 00:07:32 -0500
+	Tue, 29 Jan 2013 00:10:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Tue, 29 Jan 2013 10:29:43 +0530
-X-Google-Sender-Auth: D_FVoY8VZT__2f4yjORpKohVFJ8
-Message-ID: <CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line base
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
+Date: Tue, 29 Jan 2013 10:40:34 +0530
+Message-ID: <CAK9yfHybC6ZgGwxa_i=LrMpU_q9M4aaMraTqK63B+fw11NBqRA@mail.gmail.com>
+Subject: Failure due to missing (Exynos related) pinctrl patch
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Next time, please direct these mails to my Linaro id :)
+Hi Linus, Kukjin,
 
-On Mon, Jan 28, 2013 at 4:34 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> On some hardware configurations we have got the request line with the offset.
-> The patch introduces convert_slave_id() helper for that cases. The request line
-> base is got from the platform device resources provided by the IORESOURCE_DMA
-> type.
+Patch titled "pinctrl: exynos: change PINCTRL_EXYNOS option"
+(linux-next commit Id: 7452b64d) which is present in linux-next is
+missing in the mainline kernel. This patch is required along with the
+patch "gpio: samsung: fix pinctrl condition for exynos and exynos5440"
+(mainline commit Id: e4a5da51) which has already made it into
+mainline. Without the missing patch we get the following boot up
+warnings and subsequent failures with dt boot on 4412 based board:
 
-@Vinod: Is IORESOURCE_DMA suitable for this purpose?
+ WARNING: at drivers/gpio/gpio-samsung.c:3102 samsung_gpiolib_init+0x29c/0x2e8()
+ Unknown SoC in gpio-samsung, no GPIOs added
+ Modules linked in:
+ [<c00142dc>] (unwind_backtrace+0x0/0xf8) from [<c00202bc>]
+(warn_slowpath_common+0x4c/0x64)
+ [<c00202bc>] (warn_slowpath_common+0x4c/0x64) from [<c0020368>]
+(warn_slowpath_fmt+0x30/0x40)
+ [<c0020368>] (warn_slowpath_fmt+0x30/0x40) from [<c028b924>]
+(samsung_gpiolib_init+0x29c/0x2e8)
+ [<c028b924>] (samsung_gpiolib_init+0x29c/0x2e8) from [<c000862c>]
+(do_one_initcall+0x34/0x174)
+ [<c000862c>] (do_one_initcall+0x34/0x174) from [<c0275960>]
+(kernel_init_freeable+0xfc/0x1c8)
+ [<c0275960>] (kernel_init_freeable+0xfc/0x1c8) from [<c01c0a5c>]
+(kernel_init+0x8/0xe4)
+ [<c01c0a5c>] (kernel_init+0x8/0xe4) from [<c000e158>] (ret_from_fork+0x14/0x3c)
 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/dma/dw_dmac.c      |   13 +++++++++++++
->  drivers/dma/dw_dmac_regs.h |    1 +
->  2 files changed, 14 insertions(+)
->
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 3155c11..8484ca1 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -995,6 +995,13 @@ static inline void convert_burst(u32 *maxburst)
->                 *maxburst = 0;
->  }
->
-> +static inline void convert_slave_id(struct dw_dma_chan *dwc)
-> +{
-> +       struct dw_dma *dw = to_dw_dma(dwc->chan.device);
-> +
-> +       dwc->dma_sconfig.slave_id -= dw->request_line_base;
-> +}
-> +
->  static int
->  set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
->  {
-> @@ -1009,6 +1016,7 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
->
->         convert_burst(&dwc->dma_sconfig.src_maxburst);
->         convert_burst(&dwc->dma_sconfig.dst_maxburst);
-> +       convert_slave_id(dwc);
->
->         return 0;
->  }
-> @@ -1717,6 +1725,11 @@ static int dw_probe(struct platform_device *pdev)
->                 memcpy(dw->data_width, pdata->data_width, 4);
->         }
->
-> +       /* Get the base request line if set */
-> +       io = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-> +       if (io)
-> +               dw->request_line_base = (unsigned int)io->start;
-> +
-
-How will it work in case of DT?
-
->         /* Calculate all channel mask before DMA setup */
->         dw->all_chan_mask = (1 << nr_channels) - 1;
->
-> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-> index 88dd8eb..3eeb766 100644
-> --- a/drivers/dma/dw_dmac_regs.h
-> +++ b/drivers/dma/dw_dmac_regs.h
-> @@ -248,6 +248,7 @@ struct dw_dma {
->         /* hardware configuration */
->         unsigned char           nr_masters;
->         unsigned char           data_width[4];
-> +       unsigned int            request_line_base;
->
->         struct dw_dma_chan      chan[0];
->  };
-
---
-viresh
+-- 
+With warm regards,
+Sachin
