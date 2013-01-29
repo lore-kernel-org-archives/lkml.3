@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab3A2J1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 04:27:07 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:33240 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab3A2J1D (ORCPT
+	id S1755207Ab3A2J2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 04:28:55 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:47617 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab3A2J2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 04:27:03 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFJii0PEz2J
-X-RZG-CLASS-ID: mo00
-Date: Tue, 29 Jan 2013 10:26:52 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Hyper-V: register clocksource only if its advertised
-Message-ID: <20130129092652.GA9020@aepfle.de>
-References: <1359121036-16309-1-git-send-email-olaf@aepfle.de>
- <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125165443.GA15833@aepfle.de>
- <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
- <20130125171923.GA19306@aepfle.de>
- <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com>
- <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com>
- <510797FA02000078000BA4B8@nat28.tlf.novell.com>
+	Tue, 29 Jan 2013 04:28:53 -0500
+Date: Tue, 29 Jan 2013 10:28:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: nan chen <nachenn@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/2] mutex: use spin_[un]lock instead of
+ arch_spin_[un]lock
+Message-ID: <20130129092849.GA6665@gmail.com>
+References: <1359019365-23646-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1359019365-23646-2-git-send-email-yuanhan.liu@linux.intel.com>
+ <20130124161413.a3903fa4.akpm@linux-foundation.org>
+ <20130125074053.GD18243@gmail.com>
+ <CABBm8944FSNDZ2u=PJy0CsZmz=Vm7e+Y5jX+3UFLN5NOSGRgWQ@mail.gmail.com>
+ <20130125092422.GA19541@gmail.com>
+ <CABBm896XGVkubML9TyW_MTXMovd6nHoK0v24jbEDJOipzNqpDA@mail.gmail.com>
+ <20130129090126.GA5547@gmail.com>
+ <CABBm8979+XVRA-MQRdczMbStJR7DyPwNUvQL+RTuQL0sECOo8g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <510797FA02000078000BA4B8@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21.rev5636 (2013-01-23)
+In-Reply-To: <CABBm8979+XVRA-MQRdczMbStJR7DyPwNUvQL+RTuQL0sECOo8g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, Jan Beulich wrote:
 
-> >>> On 28.01.13 at 18:44, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > I think that Olaf made his point very clear: a feature A should only be
-> > enabled if the corresponding flag A is set.
-> > In fact it seems to me that this patch is correct on its own merits,
-> > regardless of Xen does or does not.
-> > 
-> > The Xen tools might or might not know whether a guest is going to be
-> > Linux, Windows, FreeBSD or whatever else people use nowadays.  Setting
-> > viridian=1 is the safe choice, given that it shouldn't create any
-> > issues: after all guests are supposed to check for feature flags before
-> > using them.
-> > 
-> > If Xen is going to implement "Partition Reference Counter", it is also
-> > going to set the corresponding flag, so the guest OS (Windows, Linux,
-> > my pet OS) can check whether the feature is available and decide whether
-> > it wants to use it.
+* nan chen <nachenn@gmail.com> wrote:
+
+> > #define spin_lock_mutex(lock, flags)                    \
+> >         do {                                            \
+> >                 struct mutex *l = container_of(lock, struct mutex,
+> > wait_lock); \
+> >                                                         \
+> >                 DEBUG_LOCKS_WARN_ON(in_interrupt());    \
+> >                 local_irq_save(flags);                  \
+> >                 arch_spin_lock(&(lock)->rlock.raw_lock);\
+> >                 DEBUG_LOCKS_WARN_ON(l->magic != l);     \
+> >         } while (0)
+> >
+> > The original question was why mutex-debug.h (unmodified) uses
+> > irq disabling.
+> >
+> > Thanks,
+> >
+> >         Ingo
+> >
 > 
-> While I agree in general, the specific case of the callback vector
-> seems a little more difficult: As KY says, there's no feature flag
-> for this (or perhaps more precisely for it being deliverable across
-> all CPUs), and hence there's both the problem of detection and
-> the problem of disambiguation (as otherwise both the Hyper-V
-> code and the Xen code in Linux could be trying to use the same
-> vector).
+> So, the reason why you use WARN_ON here is try to keep things 
+> going?
 
-This is true, but belongs to that other thread about the interrupt
-vector. I agree that the detection in ms_hyperv_platform() should be
-extended, with a DMI check for example.
+What would be the alternative?
 
-The patch which started this thread is still valid because it enables
-feature B only if the featurebit for B is enabled.
+Thanks,
 
-Olaf
+	Ingo
