@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab3A2Min (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:38:43 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:23157 "EHLO thoth.sbs.de"
+	id S1756764Ab3A2Mir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:38:47 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:23213 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756609Ab3A2Mij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:38:39 -0500
+	id S1756609Ab3A2Mio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:38:44 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@alien8.de>
-Subject: [PATCH v5 02/20] scripts/gdb: Add cache for type objects
-Date: Tue, 29 Jan 2013 13:37:45 +0100
-Message-Id: <464529fe760334f693f88e25084b54a92f2be9fc.1359463075.git.jan.kiszka@siemens.com>
+Subject: [PATCH v5 06/20] scripts/gdb: Add internal helper and convenience function to look up a module
+Date: Tue, 29 Jan 2013 13:37:49 +0100
+Message-Id: <5c1a7b110bb2be463e979528d67a0ff7f1d54096.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
 References: <cover.1359463075.git.jan.kiszka@siemens.com>
@@ -24,45 +24,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Type lookups are very slow in gdb-python which is often noticeable when
-iterating over a number of objects. Introduce the helper class
-CachedType that keeps a reference to a gdb.Type object but also
-refreshes it after an object file has been loaded.
+Add the internal helper get_module_by_name to obtain the module
+structure corresponding to the given name. Also export this service as a
+convenience function.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/utils.py |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+ scripts/gdb/module.py      |   30 ++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |    1 +
+ 2 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-index f75eae6..fdff85e 100644
---- a/scripts/gdb/utils.py
-+++ b/scripts/gdb/utils.py
-@@ -15,3 +15,24 @@ import gdb
- import re
- 
- gdb_version = re.sub("^[^0-9]*", "", gdb.VERSION)
+diff --git a/scripts/gdb/module.py b/scripts/gdb/module.py
+index 01b23df..e309c0a 100644
+--- a/scripts/gdb/module.py
++++ b/scripts/gdb/module.py
+@@ -26,3 +26,33 @@ def for_each_module(func, arg = None):
+ 		module = container_of(entry, module_ptr_type, "list")
+ 		func(module, arg)
+ 		entry = entry['next']
++
++def find_module_by_name(name):
++	def match_name(module, arg):
++		if module['name'].string() == arg['name']:
++			arg['module'] = module
++
++	arg = { 'name': name, 'module': None }
++	for_each_module(match_name, arg)
++
++	return arg['module']
 +
 +
-+class CachedType:
-+	_type = None
++class LxModule(gdb.Function):
++	__doc__ = "Find module by name and return the module variable.\n" \
++		  "\n" \
++		  "$lx_module(MODULE): Given the name MODULE, iterate over all loaded modules of\n" \
++		  "the target and return that module variable which MODULE matches."
 +
-+	def _new_objfile_handler(self, event):
-+		self._type = None
-+		gdb.events.new_objfile.disconnect(self._new_objfile_handler)
++	def __init__(self):
++		super(LxModule, self).__init__("lx_module")
 +
-+	def __init__(self, name):
-+		self._name = name
++	def invoke(self, mod_name):
++		mod_name = mod_name.string()
++		module = find_module_by_name(mod_name)
++		if module:
++			return module.dereference()
++		else:
++			raise gdb.GdbError("Unable to find MODULE " + mod_name)
 +
-+	def get_type(self):
-+		if self._type == None:
-+			self._type = gdb.lookup_type(self._name)
-+			if self._type == None:
-+				raise gdb.GdbError("cannot resolve " \
-+						   "type '%s'" % self._name)
-+			gdb.events.new_objfile.connect(
-+				self._new_objfile_handler)
-+		return self._type
++LxModule()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 3553b7d..2a466a0 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -23,3 +23,4 @@ if gdb_version < "7.1":
+ else:
+ 	import utils
+ 	import symbols
++	import module
 -- 
 1.7.3.4
 
