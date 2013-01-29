@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab3A2Djq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 22:39:46 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54027 "EHLO
+	id S1753806Ab3A2DmI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 22:42:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47087 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750874Ab3A2Djo (ORCPT
+	by vger.kernel.org with ESMTP id S1750874Ab3A2DmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 22:39:44 -0500
-Date: Tue, 29 Jan 2013 11:39:20 +0800
+	Mon, 28 Jan 2013 22:42:04 -0500
+Date: Tue, 29 Jan 2013 11:41:49 +0800
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Axel Lin <axel.lin@ingics.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        AnilKumar Ch <anilkumar@ti.com>
-Subject: Re: [PATCH 2/2] regulator: tps65910: Fix using wrong dev argument
- for calling of_regulator_match
-Message-ID: <20130129033918.GA6878@opensource.wolfsonmicro.com>
-References: <1358994450.20257.1.camel@phoenix>
- <1358994705.20257.4.camel@phoenix>
- <510711D1.3090205@wwwdotorg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: [GIT PULL] regulator updates for v3.8
+Message-ID: <20130129034142.GB6878@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
+	protocol="application/pgp-signature"; boundary="rS8CxjVDS/+yyDmU"
 Content-Disposition: inline
-In-Reply-To: <510711D1.3090205@wwwdotorg.org>
 X-Cookie: Make a wish, it might come true.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,47 +24,69 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1yeeQ81UyVL57Vl7
+--rS8CxjVDS/+yyDmU
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Mon, Jan 28, 2013 at 05:03:29PM -0700, Stephen Warren wrote:
-> On 01/23/2013 07:31 PM, Axel Lin wrote:
-> > The dev parameter is the device requesting the data.
-> > In this case it should be &pdev->dev rather than pdev->dev.parent.
+The following changes since commit 949db153b6466c6f7cad5a427ecea94985927311:
 
-> > The dev parameter is used to call devm_kzalloc in of_get_regulator_init_data(),
-> > which means this fixes a memory leak because the memory is allocated every time
-> > probe() is called, thus it should be freed when this driver is unloaded.
+  Linux 3.8-rc5 (2013-01-25 11:57:28 -0800)
 
-> With this patch as part of next-20130128, I see a crash when booting my
-> system. Reverting this patch solves the problem.
+are available in the git repository at:
 
-Hrm, there's nothing obviously wrong with the code here - all we do with
-dev is call devm_kzalloc().  Can you decode where the crash is actually
-occurring, that might give a clue as to what's getting upset?  In the
-backtrace it's in regulator_register() but that's a pretty big function.
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-3.8-rc5
 
---1yeeQ81UyVL57Vl7
+for you to fetch changes up to 51b919bae5ea1a14083c54f494f68b6bee737716:
+
+  Merge remote-tracking branch 'regulator/fix/lrg' into tmp (2013-01-29 11:14:41 +0800)
+
+----------------------------------------------------------------
+
+regulator: Fixes for v3.8-rc5
+
+Fairly small stuff - a build failure fix for ST platforms, an error
+checking fix and an update to the MAINTAINERS file for Liam.
+
+----------------------------------------------------------------
+Axel Lin (1):
+      regulator: tps80031: Use IS_ERR to check return value of regulator_register()
+
+Liam Girdwood (1):
+      regulator: MAINTAINERS: update email address
+
+Mark Brown (3):
+      Merge remote-tracking branch 'regulator/fix/db8500' into tmp
+      Merge remote-tracking branch 'regulator/fix/tps80031' into tmp
+      Merge remote-tracking branch 'regulator/fix/lrg' into tmp
+
+Steven Rostedt (1):
+      regulators: db8500: Fix compile failure for drivers/regulator/dbx500-prcmu.c
+
+ MAINTAINERS                            |    2 +-
+ drivers/regulator/dbx500-prcmu.c       |    1 +
+ drivers/regulator/tps80031-regulator.c |    2 +-
+ 3 files changed, 3 insertions(+), 2 deletions(-)
+
+--rS8CxjVDS/+yyDmU
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRB0RRAAoJELSic+t+oim9n1sP/1o4Me0X5PvFf0OW5SpjSs/m
-p8K5rwBQK1uU5ShfayC7fvBXZty+mrz0+grxX5hc9AxFqZJAI9+KnqWrXG6dpVxz
-+TQ1dNS6c0QwEqPOZ7pHkbwL7WDV8r/HIDAzSfzCIzNGvcEXnbPSJOnGOG7tKdlL
-cEAVZ1518B3Qldw7WbywW6J5XwgkgtNaCv0Ia70vG6ycRQkKqgwzE6vQ3VNIQ6fp
-b9TQua5y5qhFrE7IgwZpZ3isOpugVYko4+jAyF36CLiJmy1J3QyJOsilvJQS/eb/
-hHOK+tAexMOumVUj44LIAXQ9e0nhjPxujSc4KOMrRAAEOLE1vhNJ2fplat1JHHbl
-NDl4+7FhqVpqk5QzRz9QpELHOWaOUWr3eOaA+udURHrhvj9Rq/nYVNeqAA/dn03I
-qCXXuXI9NI+YDES3vpfmbazCYoRfHoTji48+uopcf9+ru+VE2XyaKPLIqkdXTmcC
-/N0APHtL+l/Dh4BJGE61fyF4+TDrgj/f6IgOU+W9Tfh9pLHHXYOYBo/3R6cknQU3
-BEA6vUM2SJ6t7Y1K+NxFlEYiraE4lJiYXphI+R/jH821IYpAx7uRepafJ1LTQfor
-QjNpd++xdoYvVsK/H/VSwMCGRNTt4FnytQTA29u3xQ9gSmVCLb+IMjmLp9NB2FBi
-wU+dI6w/wm9TZ1hThbhM
-=YpQA
+iQIcBAEBAgAGBQJRB0TuAAoJELSic+t+oim9cWIP/isb9WXkQegHh7AmdbQ5dYio
+QH2g1uUXuMbY9oO7y6JH7NeXYv8vG+Q8e9iB5VKmy+GZUiYwHCLU9Uish5eK6YdS
+Ls5PXyagJVESKyrlYlYhRCTFiBKlimimf8ocICyjs1DmNtk47JeTPMqTzMQ9JZ/O
+Y6U4msOGgSNprEjAgosn2UNtWZX6vsEJ0sas1LK/mCLBDzNs+sIFIXxSr4eiemAz
+yifKfCH6LbtP06fIQrIJafN9XWdInCnydqsU+QRd8JkPwYcTc1CQq5dbxee3z154
+UdBwTWMbsVa3xlo6KLTZiRMtjCvfBP/tg/lWIYx7tAPmrqYJU3a6Ye83uRvQ7eGJ
+drbTnk47MBgGMFppk4YRLLLRCHqs6/FgCGbbom12Lo8zrZu39twuiK6iFyCW7Hg4
+h9U9epCg37BOgLv/DMzKcVC5prqh3XQgYtGpZi1ylL9lrb0gZO67HeWzRuRBh6gB
+MzwdL4zdqrrafFJ5n6G8xa+zCKRs4md9zk64YF1VsYN/JTDRn4HgE74zQPxg/Jln
+hS8LumfrK9ZraS/wWjsDuil5lOW9mmp+7IJGPdmB15z/0u9ltsJXYMGFU/r7q4V7
+s2S0G9T8vk6zqgIepkBjWNRRn1SwCPkiBDvi6/dXopHVsu6vRKkK7fXddBwBecly
+3ffcVDU6I5pQ7FmwQhvI
+=32Fw
 -----END PGP SIGNATURE-----
 
---1yeeQ81UyVL57Vl7--
+--rS8CxjVDS/+yyDmU--
