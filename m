@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab3A2Jmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 04:42:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52381 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab3A2Jmk (ORCPT
+	id S1755472Ab3A2Jm7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 04:42:59 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53476 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306Ab3A2Jm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 04:42:40 -0500
-Date: Tue, 29 Jan 2013 01:42:24 -0800
-From: tip-bot for Fengguang Wu <fengguang.wu@intel.com>
-Message-ID: <tip-a4a607086d86d1315c4e2d9496bbe502e645bdd1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, fengguang.wu@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        fengguang.wu@intel.com
-In-Reply-To: <20130128234620.GA8524@localhost>
-References: <20130128234620.GA8524@localhost>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/x86] perf/x86: Mark nhm_events_attrsas static
-Git-Commit-ID: a4a607086d86d1315c4e2d9496bbe502e645bdd1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 29 Jan 2013 04:42:56 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v2 1/4] ARM: OMAP2+: dpll: round rate to closest value
+Thread-Topic: [PATCH v2 1/4] ARM: OMAP2+: dpll: round rate to closest value
+Thread-Index: AQHN+V650qHIse4sHkK4E3rAfVNglZhZWhaAgACdMNCABhe6cA==
+Date: Tue, 29 Jan 2013 09:42:39 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA94FDD@DBDE01.ent.ti.com>
+References: <cover.1358937533.git.afzal@ti.com>
+ <871e6890897534b6c3669e252f23bef5ff1247b6.1358937533.git.afzal@ti.com>
+ <alpine.DEB.2.00.1301250816010.471@utopia.booyaka.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA9388C@DBDE01.ent.ti.com>
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EA9388C@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 01:42:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0T9h40W007111
 
-Commit-ID:  a4a607086d86d1315c4e2d9496bbe502e645bdd1
-Gitweb:     http://git.kernel.org/tip/a4a607086d86d1315c4e2d9496bbe502e645bdd1
-Author:     Fengguang Wu <fengguang.wu@intel.com>
-AuthorDate: Tue, 29 Jan 2013 07:46:20 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 29 Jan 2013 08:51:46 +0100
+Hi Paul,
 
-perf/x86: Mark nhm_events_attrsas static
+On Fri, Jan 25, 2013 at 17:48:22, Mohammed, Afzal wrote:
+> On Fri, Jan 25, 2013 at 13:48:11, Paul Walmsley wrote:
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Acked-by: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/20130128234620.GA8524@localhost
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> > like MPU CPUFreq.  I'd suggest reverting 
+> > 241d3a8dca239610d3d991bf58d4fe38c2d86fd5 or using a similar approach.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 9d0d036..bb910bd 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -140,12 +140,12 @@ EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
- EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
- EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
- 
--struct attribute *nhm_events_attrs[] = {
-+static struct attribute *nhm_events_attrs[] = {
- 	EVENT_PTR(mem_ld_nhm),
- 	NULL,
- };
- 
--struct attribute *snb_events_attrs[] = {
-+static struct attribute *snb_events_attrs[] = {
- 	EVENT_PTR(mem_ld_snb),
- 	EVENT_PTR(mem_st_snb),
- 	NULL,
+> As you prefer reverting the above commit, I will proceed so, hmm.. got
+
+This patch or reverting the above mentioned commit is not required for
+lcdc to be usable on am335x, instead please consider for inclusion
+patches 3 & 4 of this series,
+
+"ARM: OMAP2+: clock: DEFINE_STRUCT_CLK_FLAGS helper" and
+"ARM: AM33XX: clock: SET_RATE_PARENT in lcd path"
+
+Patches 3 & 4 are required to have a functional frame buffer driver
+on am335x, also it may help drm driver for the lcdc ip in am335x to
+be a platform independent one.
+
+Regards
+Afzal
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
