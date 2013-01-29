@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab3A2GWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 01:22:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50518 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753467Ab3A2GWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 01:22:07 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.LFD.2.02.1301282320430.6300@xanadu.home>
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com> <20130128142510.68092e10.akpm@linux-foundation.org> <alpine.LFD.2.02.1301282320430.6300@xanadu.home>
+	id S1754125Ab3A2G0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 01:26:51 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:43851 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570Ab3A2G0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 01:26:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 28 Jan 2013 22:18:04 -0800
-To: Nicolas Pitre <nico@fluxnic.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Kyungsik Lee <kyungsik.lee@lge.com>, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Michal Marek <mmarek@suse.cz>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>, hyojun.im@lge.com,
-        chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
-        namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>
-Message-ID: <bce35b9a-0b62-4655-ad5e-972e2bd51a95@email.android.com>
+In-Reply-To: <20130129053308.GB1083@core.coreip.homeip.net>
+References: <20130128204424.a3eedfee954ba6cc7a620652@canb.auug.org.au>
+	<20130128144615.GC2997@kroah.com>
+	<20130128173330.GA11769@core.coreip.homeip.net>
+	<CADwDc1AVOaA0N9evbR7A14udx+TRRQo6t_X_Nn15BdEEByupkg@mail.gmail.com>
+	<20130128224443.GA1083@core.coreip.homeip.net>
+	<20130128235916.GA3124@leaf>
+	<20130129002357.GA4420@core.coreip.homeip.net>
+	<20130129051321.GB3283@leaf>
+	<20130129053308.GB1083@core.coreip.homeip.net>
+Date: Mon, 28 Jan 2013 22:26:47 -0800
+Message-ID: <CADwDc1CbNeDSNKDh0a01Nde7Mpz3xT6XpsTY4nui8DVt6M40Mw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the tty tree with the input tree
+From: Joe Millenbach <jmillenbach@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>,
+        "Mike A. Chan" <mikechan@google.com>,
+        Sheng Yang <sheng@linux.intel.com>,
+        Yunhong Jiang <yunhong.jiang@intel.com>,
+        Xiaohui Xin <xiaohui.xin@intel.com>,
+        Jun Nakajima <jun.nakajima@intel.com>,
+        Bruce Beare <bruce.j.beare@intel.com>,
+        Tom Keel <thomas.keel@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jamey Sharp <jamey@minilop.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uhm... you're saying we have to be at one extreme or the other?
+On Mon, Jan 28, 2013 at 9:33 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Please revert the input changes and add *ONE* new dependency to the
+> serport driver.
+>
+> Thanks.
+>
+> --
+> Dmitry
 
-We probably could drop the legacy lzma format, but someone might rely on it.
+Apologies on this.  I must have misunderstood the problem originally,
+and I definitely misunderstood your solution until I looked at it
+again.  I just went through applying the changes I'd created minus the
+driver/input changes, plus your SERPORT TTY dependency.  You were
+right that it solves the dependency issue and is much more elegant.  I
+thought it was going to leave dangling select dependencies for users
+to deal with later.  Sorry I was so hesitant at first.
 
-Nicolas Pitre <nico@fluxnic.net> wrote:
+I'll be making up a new patch for Greg after I get it reviewed.  And
+thank you for your help and persistence in this, Dmitry.
 
->On Mon, 28 Jan 2013, Andrew Morton wrote:
->
->> On Sat, 26 Jan 2013 14:50:43 +0900
->> Kyungsik Lee <kyungsik.lee@lge.com> wrote:
->> 
->> > This patchset is for supporting LZ4 compressed kernel and initial
->ramdisk on
->> > the x86 and ARM architectures.
->> > 
->> > According to http://code.google.com/p/lz4/, LZ4 is a very fast
->lossless
->> > compression algorithm and also features an extremely fast decoder.
->> > 
->> > Kernel Decompression APIs are based on implementation by Yann
->Collet
->> > (http://code.google.com/p/lz4/source/checkout).
->> > De/compression Tools are also provided from the site above.
->> > 
->> > The initial test result on ARM(v7) based board shows that the size
->of kernel
->> > with LZ4 compressed is 8% bigger than LZO compressed  but the
->decompressing
->> > speed is faster(especially under the enabled unaligned memory
->access).
->> > 
->> > Test: 3.4 based kernel built with many modules
->> > Uncompressed kernel size: 13MB
->> > lzo: 6.3MB, 301ms
->> > lz4: 6.8MB, 251ms(167ms, with enabled unaligned memory access)
->> > 
->> > It seems that it___s worth trying LZ4 compressed kernel image or
->ramdisk 
->> > for making the kernel boot more faster.
->> >
->> > ...
->> >
->> >  20 files changed, 663 insertions(+), 3 deletions(-)
->> >
->> > ...
->> >
->> 
->> What's this "with enabled unaligned memory access" thing?  You mean
->"if
->> the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"?  If so,
->> that's only x86, which isn't really in the target market for this
->> patch, yes?
->
->I'm guessing this is referring to commit 5010192d5a.
->
->> It's a lot of code for a 50ms boot-time improvement.  Does anyone
->have
->> any opinions on whether or not the benefits are worth the cost?
->
->Well, we used to have only one compressed format.  Now we have nearly 
->half a dozen, with the same worthiness issue between themselves.  
->Either we keep it very simple, or we make it very flexible.  The former
->
->would argue in favor of removing some of the existing formats, the
->later 
->would let this new format in.
->
->
->Nicolas
-
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+- Joe
