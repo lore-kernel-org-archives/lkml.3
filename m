@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3A2TpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:45:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21446 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753132Ab3A2TpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:45:18 -0500
-Date: Tue, 29 Jan 2013 14:45:14 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: Tejun Heo <tj@kernel.org>
+	id S1754149Ab3A2TqZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:46:25 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:41657 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3A2TqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 14:46:23 -0500
+Date: Tue, 29 Jan 2013 11:46:19 -0800
+From: Tejun Heo <tj@kernel.org>
+To: aris@redhat.com
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v3 1/9] device_cgroup: prepare exception list handling
- functions for two lists
-Message-ID: <20130129194514.GW17632@redhat.com>
+Subject: Re: [PATCH v3 3/9] device_cgroup: keep track of local group settings
+Message-ID: <20130129194619.GD6824@mtj.dyndns.org>
 References: <20130129190759.117458287@napanee.usersys.redhat.com>
- <20130129190759.321644928@napanee.usersys.redhat.com>
- <20130129194155.GB6824@mtj.dyndns.org>
+ <20130129190759.713469698@napanee.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130129194155.GB6824@mtj.dyndns.org>
+In-Reply-To: <20130129190759.713469698@napanee.usersys.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 11:41:55AM -0800, Tejun Heo wrote:
-> On Tue, Jan 29, 2013 at 02:08:00PM -0500, aris@redhat.com wrote:
-> > In the following patches, device_cgroup structure will have two sets of
-> > behavior and exceptions list (actual one, another with the local settings)
-> > so rework the functions to use exception list, not a device_cgroup.
-> > 
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> > Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+On Tue, Jan 29, 2013 at 02:08:02PM -0500, aris@redhat.com wrote:
+> In preparation for better hierarchy support, it's needed to retain the local
+> settings in order to try to reapply them after a propagated change if they're
+> still valid.
 > 
-> Acked-by: Tejun Heo <tj@kernel.org>
+> v2: split this patch in two, one to just move dev_exception_rm() before
+>     dev_exception_add() while keeping functional changes in this patch as
+>     requested by Tejun.
 > 
-> Can you please keep acks across postings?  That makes it a bit easier
-> for reviewers.
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-sure, will do it in the future submissions.
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
 
 -- 
-Aristeu
-
+tejun
