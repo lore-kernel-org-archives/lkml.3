@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab3A2KFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 05:05:33 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:49896 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751113Ab3A2KFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 05:05:31 -0500
-Message-ID: <1359453928.1345.35.camel@x61.thuisdomein>
-Subject: Re: [PATCH] aic7xxx_old: silence GCC warnings
-From: Paul Bolle <pebolle@tiscali.nl>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 29 Jan 2013 11:05:28 +0100
-In-Reply-To: <1351514716.1339.15.camel@x61.thuisdomein>
-References: <1348219723.1581.5.camel@x61.thuisdomein>
-	 <1351506978.1339.8.camel@x61.thuisdomein>
-	 <1351513026.2480.4.camel@dabdike.sthat4.btopenzone.com>
-	 <1351514716.1339.15.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 29 Jan 2013 10:05:28.0836 (UTC) FILETIME=[2A697440:01CDFE08]
-X-RcptDomain: vger.kernel.org
+	id S1753110Ab3A2KGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 05:06:37 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:17601 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab3A2KGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 05:06:35 -0500
+Message-ID: <51079F27.1040905@imgtec.com>
+Date: Tue, 29 Jan 2013 10:06:31 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, Grant Likely <grant.likely@secretlab.ca>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v3 32/71] ARC: [DeviceTree] Basic support
+References: <1359024639-21915-1-git-send-email-vgupta@synopsys.com> <1359024639-21915-15-git-send-email-vgupta@synopsys.com> <5106513E.4010205@imgtec.com> <51079C05.7040308@synopsys.com>
+In-Reply-To: <51079C05.7040308@synopsys.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_29_10_06_33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-29 at 13:45 +0100, Paul Bolle wrote:
-> On Mon, 2012-10-29 at 12:17 +0000, James Bottomley wrote:
-> > mvsas has a maintainer: poke them harder
+Hi Vineet,
+
+>> arm64 also adds dtbs and $(dtb-y) to targets (at least in linux-next). I
+>> think this makes sure that they don't get rebuilt unless they've
+>> actually changed. I've also copied this for metag.
 > 
-> According to MAINTAINERS that's you. Is Xiangliang Yu perhaps the actual
-> maintainer?
+> Did you verify that it makes a difference - at least at my end it's not - the
+> default dtb is getting rebuilt everytime. I need to debug this some more.
 
-Building the mvsas driver triggers identical warnings in v3.8-rc5:
-    drivers/scsi/mvsas/mv_sas.c: In function ‘mvs_update_phyinfo’:
-    drivers/scsi/mvsas/mv_sas.c:1156:34: warning: comparison between ‘enum sas_device_type’ and ‘enum sas_dev_type’ [-Wenum-compare]
-    drivers/scsi/mvsas/mv_sas.c:1159:39: warning: comparison between ‘enum sas_device_type’ and ‘enum sas_dev_type’ [-Wenum-compare]
+Yeh, for me it prevents the following build lines appearing every time:
+DTC     arch/metag/boot/dts/tz1090_01sp.dtb
 
-And according to MAINTAINERS you're still the maintainer. So I'd guess
-I'm poking the maintainer now.
+but it still does these every time:
+DTB    arch/metag/boot/dts/tz1090_01sp.dtb.S
+AS      arch/metag/boot/dts/tz1090_01sp.dtb.o
 
+Adding dtbs o targets actually didn't seem to be necessary with $(dtb-y)
+added.
 
-Paul Bolle
+Cheers
+James
 
