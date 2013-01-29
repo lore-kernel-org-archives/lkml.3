@@ -1,135 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab3A2AaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 19:30:23 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:58822 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab3A2AaV (ORCPT
+	id S1753300Ab3A2AbZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 19:31:25 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:41935 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab3A2AbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 19:30:21 -0500
+	Mon, 28 Jan 2013 19:31:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130128231659.GW30577@one.firstfloor.org>
-References: <1359151245-13179-1-git-send-email-andi@firstfloor.org>
-	<1359151245-13179-8-git-send-email-andi@firstfloor.org>
-	<CABPqkBTM8w_RVrQNiyhBprMBjL5a0Q7Y9KQsKP3Ld62EZPSufQ@mail.gmail.com>
-	<20130128231659.GW30577@one.firstfloor.org>
-Date: Tue, 29 Jan 2013 01:30:19 +0100
-Message-ID: <CABPqkBS=1gQCiWRQYJ8Y0QqFLvmkf0NiRivK-xpFmqwpXwyByA@mail.gmail.com>
-Subject: Re: [PATCH 07/12] perf, x86: Avoid checkpointed counters causing
- excessive TSX aborts v3
+In-Reply-To: <20130128234620.GA8524@localhost>
+References: <510441ca.jKKGS3DOYyOC3gnk%fengguang.wu@intel.com>
+	<20130127010632.GF12329@localhost>
+	<CABPqkBR4VCOpBH25yQOnhkOs6c52xEnNe=P4qifDXzr7WBERxw@mail.gmail.com>
+	<20130128234620.GA8524@localhost>
+Date: Tue, 29 Jan 2013 01:31:19 +0100
+Message-ID: <CABPqkBS4Y7y4OPH_5XYcrupGfRat9whT=3B8Fpyo7KuBAHDFfg@mail.gmail.com>
+Subject: Re: [PATCH tip] perf/x86: nhm_events_attrs and snb_events_attrs can
+ be static
 From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 12:16 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> I don't buy really this workaround. You are assuming you're always
->> measuring INTC_CHECKPOINTED
->> event by itself.
->
-> There's no such assumption.
->
->> So what if you get into the handler because of an PMI
->> due to an overflow
->> of another counter which is active at the same time as counter2?
->> You're going to artificially
->> add an overflow to counter2. Unless you're enforcing only counter2 in use.
->
-> All the code does it to always check the counter. There's no
-> "overflow added". For counting it may be set back and accumulated
-> a bit earlier than normal, but that's no problem. This will only
-> happen for a checkpointed counter 2, not for anything else.
->
-Ok, you're right. I misunderstood the point of the check. Yes, it systematically
-adds INTX_CP to the list of events to check. That does not mean it will detect
-an overflow.
+On Tue, Jan 29, 2013 at 12:46 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 
->> The counter is reinstated to its state before the critical section but
->> the PMI cannot be
->> cancelled and there is no state left behind to tell what to do with it.
->
-> The PMI is effectively spurious, but we use it to set back. Don't know
-> what you mean with "cancel". It already happened of course.
->
-But when you do this, it seems you making INT_CP events unusable
-for sampling, because you're resetting their value under the cover.
-So what happens when you sample, especially with a fixed period?
+Acked-by: Stephane Eranian <eranian@google.com>
 
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 >
->> static inline bool is_event_intx_cp(struct perf_event *event)
->> {
->>    return event && (event->hw.config & HSW_INTX_CHECKPOINTED);
->> }
+> --- linux-next.orig/arch/x86/kernel/cpu/perf_event_intel.c      2013-01-29 07:42:16.238595053 +0800
+> +++ linux-next/arch/x86/kernel/cpu/perf_event_intel.c   2013-01-29 07:43:47.678597226 +0800
+> @@ -139,12 +139,12 @@ static struct extra_reg intel_snb_extra_
+>  EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
+>  EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
 >
-> They both look the same to me.
->>
-I think you understand what I meant by this. You substitue all the
-long checks by the inline. It does not change anything to the code, it
-makes is easier to read and avoid long lines.
-
->>
->> >         for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
->> >                 struct perf_event *event = cpuc->events[bit];
->> >
->> > @@ -1615,6 +1635,20 @@ static int hsw_hw_config(struct perf_event *event)
->> >              ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
->> >               event->attr.precise_ip > 0))
->> >                 return -EIO;
->> > +       if (event->hw.config & HSW_INTX_CHECKPOINTED) {
->> > +               /*
->> > +                * Sampling of checkpointed events can cause situations where
->> > +                * the CPU constantly aborts because of a overflow, which is
->> > +                * then checkpointed back and ignored. Forbid checkpointing
->> > +                * for sampling.
->> > +                *
->> > +                * But still allow a long sampling period, so that perf stat
->> > +                * from KVM works.
->> > +                */
->>
->> What has perf stat have to do with sample_period?
+> -struct attribute *nhm_events_attrs[] = {
+> +static struct attribute *nhm_events_attrs[] = {
+>         EVENT_PTR(mem_ld_nhm),
+>         NULL,
+>  };
 >
-> It always uses a period to accumulate in a larger counter as you probably know.
-> Also with the other code we only allow checkpoint with stat.
->
-Yes, I know.
-
->
->>
->> > +               if (event->attr.sample_period > 0 &&
->> > +                   event->attr.sample_period < 0x7fffffff)
->> > +                       return -EIO;
->> > +       }
-Explain the 0x7fffffff to me? Is that the max period set by default when you
-just count?
-
-
->> same comment about -EIO vs. EOPNOTSUPP. sample_period is u64
->> so, it's always >= 0. Where does this 31-bit limit come from?
->
-> That's what perf stat uses when running in the KVM guest.
->
->> Experimentation?
->
-> The code does > 0, not >= 0
->
->> Could be written:
->>       if (event->attr.sample_period && event->attr.sample_period < 0x7fffffff)
->
-> That's 100% equivalent to what I wrote.
->
-I know.
-Usually when I see x > 0, I interpret as to mean the field could be negative.
-That's what I was trying to say. However, here we know it cannot be. No
-big deal.
-
-> I can change the error value.
-
-Ok.
+> -struct attribute *snb_events_attrs[] = {
+> +static struct attribute *snb_events_attrs[] = {
+>         EVENT_PTR(mem_ld_snb),
+>         NULL,
+>  };
