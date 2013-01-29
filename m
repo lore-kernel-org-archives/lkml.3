@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab3A2WLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 17:11:07 -0500
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:32794 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab3A2WLF (ORCPT
+	id S1752519Ab3A2WOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 17:14:32 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:14879 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751755Ab3A2WOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 17:11:05 -0500
+	Tue, 29 Jan 2013 17:14:31 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h1155h)
+X-WSS-ID: 0MHER3X-01-BMB-02
+X-M-MSG: 
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>
+CC: <Jacob.Shin@amd.com>, <bp@alien8.de>, <linux-kernel@vger.kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>
+Subject: [PATCH v2 0/2] Enable WC+ memory type on AMD family 10h processors
+Date: Tue, 29 Jan 2013 17:14:13 -0500
+Message-ID: <1359497653-24684-1-git-send-email-boris.ostrovsky@amd.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <1359123276-15833-14-git-send-email-arnd@arndb.de>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de>
-	<1359123276-15833-14-git-send-email-arnd@arndb.de>
-Date: Tue, 29 Jan 2013 23:11:04 +0100
-Message-ID: <CACRpkdYoy8teh4Tg3vkKJ2taOxyeBCvQ=HcFKW2XiMRgUXf4Sg@mail.gmail.com>
-Subject: Re: [PATCH 13/19] pinctrl: nomadik: nmk_prcm_gpiocr_get_mode may be unused
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@list.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 3:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+Resending since previous message went with incorrect From header. Also
+fixing redundant check in the second patch.
 
-> nmk_prcm_gpiocr_get_mode is only needed for debugfs output at
-> the moment, which can be compile-time disabled. Marking
-> the function __maybe_unused still gives us compile-time
-> coverage, but avoids a gcc warning.
->
-> Without this patch, building nhk8815_defconfig results in:
->
-> drivers/pinctrl/pinctrl-nomadik.c:676:12: warning: 'nmk_prcm_gpiocr_get_mode' defined but not used [-Wunused-function]
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Enable WC+ memory type on AMD family 10h processors if BIOS doesn't do
+this. WC+ is used only in in virtualized scenarios and never in bare metal
+cases (see AMD APM v2).
 
-Patch applied, thanks!
+Also clean up init_amd() a little.
 
-Linus Walleij
+Boris Ostrovsky (2):
+  AMD,x86: Clean up init_amd()
+  x86,AMD: Enable WC+ memory type on family 10 processors
+
+ arch/x86/include/uapi/asm/msr-index.h |    1 +
+ arch/x86/kernel/cpu/amd.c             |   49 ++++++++++++++++++---------------
+ 2 files changed, 28 insertions(+), 22 deletions(-)
+
+
