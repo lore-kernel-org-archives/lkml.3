@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab3A2CFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 21:05:38 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:35447 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755953Ab3A2CFe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 21:05:34 -0500
-Date: Tue, 29 Jan 2013 03:05:32 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        rjw@sisk.pl, lenb@kernel.org
-Subject: Re: [RFC PATCH 1/3] PM: Introduce suspend state PM_SUSPEND_FREEZE
-Message-ID: <20130129020532.GA22941@rhlx01.hs-esslingen.de>
+	id S1756041Ab3A2CGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 21:06:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48478 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755388Ab3A2CGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 21:06:05 -0500
+Message-ID: <51072E84.4080509@zytor.com>
+Date: Mon, 28 Jan 2013 18:05:56 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359300060-2967-1-git-send-email-rui.zhang@intel.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 0/2] Secure Boot: More controversial changes
+References: <1359391662-26120-1-git-send-email-matthew.garrett@nebula.com>
+In-Reply-To: <1359391662-26120-1-git-send-email-matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/28/2013 08:47 AM, Matthew Garrett wrote:
+> These patches break functionality that people rely on without providing
+> any functional equivalent, so I'm not suggesting that they be merged
+> as-is. kexec allows trivial circumvention of the trust model (it's
+> trivially equivalent to permitting module loading, for instance) and
+> hibernation allows similar attacks (disable swap, write a pre-formed resume
+> image to swap, reboot). The hibernation patch also shows up a different
+> issue - some userspace drops all capabilities, resulting in things that
+> userspace expects to work no longer working. This seems like an
+> unsurprising result, but breaking userspace is bad and so it'd be nice to
+> figure out if there's another way to handle this.
 
-first, thanks a lot for advancing PM infrastructure!
+These at the very least need some kind of CONFIG_WEAK_SECURE_BOOT option 
+or something like that.
 
->  #define PM_SUSPEND_ON		((__force suspend_state_t) 0)
-> -#define PM_SUSPEND_STANDBY	((__force suspend_state_t) 1)
-> +#define PM_SUSPEND_FREEZE	((__force suspend_state_t) 1)
-> +#define PM_SUSPEND_STANDBY	((__force suspend_state_t) 2)
->  #define PM_SUSPEND_MEM		((__force suspend_state_t) 3)
-> +#define PM_SUSPEND_MIN		PM_SUSPEND_FREEZE
->  #define PM_SUSPEND_MAX		((__force suspend_state_t) 4)
+	-hpa
 
-I'll just pretend to be hopeful that you managed to hunt down all
-relevant code sites (possibly even splattered around drivers?)
-which may have made illegally hard-coded assumptions
-about the number of PM_SUSPEND state "enum"s ;)
-(e.g. comparisons - such as "==", "<=" etc. - come into mind)
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-
-Review of your patch was all fine, nothing to object about.
-
-Thanks,
-
-Andreas Mohr
