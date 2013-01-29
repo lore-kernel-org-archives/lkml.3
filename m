@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab3A2Oxy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:53:54 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:52241 "HELO
+	id S1757192Ab3A2Ox7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:53:59 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:52274 "HELO
 	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754224Ab3A2Oxx (ORCPT
+	by vger.kernel.org with SMTP id S1757100Ab3A2Ox5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:53:53 -0500
+	Tue, 29 Jan 2013 09:53:57 -0500
 From: Andreas Larsson <andreas@gaisler.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <rob.herring@calxeda.com>,
@@ -14,53 +14,75 @@ Cc: Rob Herring <rob.herring@calxeda.com>,
         devicetree-discuss@lists.ozlabs.org,
         spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         software@gaisler.com
-Subject: [PATCH v2 0/6] of, of_gpio, of_spi: Bugfix and improve of_parse_phandle_with_args, of_gpio_named_count and of_spi_register_master
-Date: Tue, 29 Jan 2013 15:53:37 +0100
-Message-Id: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
+Subject: [PATCH v2 6/6] of_spi: Initialize cs_gpios and cs_gpio with -EEXIST
+Date: Tue, 29 Jan 2013 15:53:43 +0100
+Message-Id: <1359471223-4794-7-git-send-email-andreas@gaisler.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
+References: <1359471223-4794-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series fixes a bug where of_gpio_named count relied upon a return
-value that was no longer returned from of_parse_phandle_with_args and adds the
-possibility for of_gpio_named_count to return error values.
+Holes in the cs-gpios DT phandle list is supposed to mark that native
+chipselects is to be used. The value returned from of_get_named_gpio_flags in
+this case is -EEXIST. By initializing cs_gpios and cs_gpio with -EEXIST, this
+and only this errno will indicate to a spi controller driver that a native
+chipselect is to be used.
 
-In addition, for of_spi_register_master it fixes a bug, adds documentation,
-adds fetching of gpio flags and initializes gpio values to be consistent with
-return values from of_parse_phandle_with_args.
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
+ drivers/spi/spi.c       |    4 ++--
+ include/linux/spi/spi.h |    7 +++++--
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
-Tested on sparc (excluding the changes to drivers gpio-fan, i2c-mux-gpio,
-matrix_keypad, mdio-mux-gpio, spi-mpc52xx, spi-oc-tiny, spi-ppc4xx, selftest). 
-Compile tested on x86, arm and ppc (all changed source files, when appropriate
-for platform)
-
-Changes since v1:
-- PATCH 2/6: Handle error return values from calls to of_gpio_count
-
-Andreas Larsson (6):
-  of: Return -EEXIST from of_parse_phandle_with_args for holes in
-    phandle list
-  of: Return -ENXIO from of_parse_phandle_with_args for too large index
-    and return errors from of_gpio_named_count
-  of_spi: Initialize cs_gpios properly
-  of_spi: Document cs_gpios and cs_gpio in kernel-doc
-  of_spi: Add fetching of of_gpio flags to of_spi_register_master
-  of_spi: Initialize cs_gpios and cs_gpio with -EEXIST
-
- Documentation/devicetree/bindings/spi/spi-bus.txt |    3 +-
- drivers/gpio/gpiolib-of.c                         |    8 +++--
- drivers/hwmon/gpio-fan.c                          |    6 ++--
- drivers/i2c/muxes/i2c-mux-gpio.c                  |    3 +-
- drivers/input/keyboard/matrix_keypad.c            |    2 +-
- drivers/net/phy/mdio-mux-gpio.c                   |    2 +-
- drivers/of/base.c                                 |    9 +++--
- drivers/of/selftest.c                             |    2 +-
- drivers/spi/spi-fsl-spi.c                         |    4 ++-
- drivers/spi/spi-mpc52xx.c                         |    5 +++
- drivers/spi/spi-oc-tiny.c                         |    4 ++-
- drivers/spi/spi-ppc4xx.c                          |    6 +++-
- drivers/spi/spi.c                                 |   40 ++++++++++++++++-----
- include/linux/spi/spi.h                           |   10 +++++
- 14 files changed, 78 insertions(+), 26 deletions(-)
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 6f1b717..7494bad 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -334,7 +334,7 @@ struct spi_device *spi_alloc_device(struct spi_master *master)
+ 	spi->dev.parent = &master->dev;
+ 	spi->dev.bus = &spi_bus_type;
+ 	spi->dev.release = spidev_release;
+-	spi->cs_gpio = -EINVAL;
++	spi->cs_gpio = -EEXIST;
+ 	device_initialize(&spi->dev);
+ 	return spi;
+ }
+@@ -1097,7 +1097,7 @@ static int of_spi_register_master(struct spi_master *master)
+ 	}
+ 
+ 	for (i = 0; i < master->num_chipselect; i++)
+-		cs[i] = -EINVAL;
++		cs[i] = -EEXIST;
+ 
+ 	for (i = 0; i < nb; i++)
+ 		cs[i] = of_get_named_gpio_flags(np, "cs-gpios", i, &flags[i]);
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index 96b1055..0701882 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -58,7 +58,8 @@ extern struct bus_type spi_bus_type;
+  * @modalias: Name of the driver to use with this device, or an alias
+  *	for that name.  This appears in the sysfs "modalias" attribute
+  *	for driver coldplugging, and in uevents used for hotplugging
+- * @cs_gpio: Negative or gpio for chip select.
++ * @cs_gpio: Negative or gpio for chip select.  Set to -EEXIST when chipselect
++ *	should be handled natively by the controller driver
+  * @cs_gpio_flags: of_gpio_flags corresponding to cs_gpio
+  *
+  * A @spi_device is used to interchange data between an SPI slave
+@@ -262,7 +263,9 @@ static inline void spi_unregister_driver(struct spi_driver *sdrv)
+  * @unprepare_transfer_hardware: there are currently no more messages on the
+  *	queue so the subsystem notifies the driver that it may relax the
+  *	hardware by issuing this call
+- * @cs_gpios: possible array of negative values or gpios for chip selects
++ * @cs_gpios: possible array of negative values or gpios for chip selects.  A
++ *	chipselect that should be handled natively by the controller driver is
++ *	set to -EEXIST.
+  * @cs_gpio_flags: possible array of of_gpio_flags corresponding to cs_gpios
+  *
+  * Each SPI master controller can communicate with one or more @spi_device
+-- 
+1.7.0.4
 
