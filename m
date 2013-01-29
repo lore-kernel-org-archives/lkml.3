@@ -1,49 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756348Ab3A2DfF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 22:35:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49222 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752326Ab3A2DfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 22:35:03 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQUDP9x+6CZKyW8CVq7YWy+zQwSTqm67G-AuX0=LYgqf6A@mail.gmail.com>
-References: <1358868049-19884-1-git-send-email-trenn@suse.de> <CAE9FiQWJqWQJhoJb2dBn=iAsKjxuf3MJro-jz+6k+WNZor8-xQ@mail.gmail.com> <CAE9FiQWXcwagEb0jdFfdHvNcByNxtaLbvvoRC-jAppQmiGS22w@mail.gmail.com> <6950516.1uefDuthAH@hammer82.arch.suse.de> <510721C6.6080705@zytor.com> <CAE9FiQWDcFR+6L-GiR6rk60TC0zH=xewyH_h1Rx_QB+8PTiU3Q@mail.gmail.com> <51072FEF.50000@zytor.com> <CAE9FiQVG4ShGKSdjzYhQaXNNhS=MVNJg=QqG1yW-mAUscErXMA@mail.gmail.com> <4302d59f-5c87-4b82-af16-9f54625fc9ce@email.android.com> <CAE9FiQUDP9x+6CZKyW8CVq7YWy+zQwSTqm67G-AuX0=LYgqf6A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 2/2] x86 e820: Introduce memmap=resetusablemap for kdump usage
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 28 Jan 2013 19:33:52 -0800
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Renninger <trenn@suse.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        vgoyal@redhat.com, horms@verge.net.au
-Message-ID: <5ea70988-10fb-4153-9482-75507efe0b07@email.android.com>
+	id S1756444Ab3A2Dfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 22:35:33 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:34344 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756320Ab3A2Dfb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 22:35:31 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 01/11] staging/fwserial: Only reset port status for attached peers
+Date: Mon, 28 Jan 2013 22:34:35 -0500
+Message-Id: <1359430485-5301-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.1
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I guess that very limited use might make sense.
+When a port has been reserved in an attempt to connect to a peer
+but that attempt does not succeed, releasing the port should not
+reset the port line status. Although resetting is functionally
+harmless, it can appear as if a remote peer dropped carrier to a
+port it was not attached to (which can be confusing).
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/staging/fwserial/fwserial.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
->On Mon, Jan 28, 2013 at 6:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> To be more clear: the max_pfn stuff seems like a relic of the past,
->and I am wondering what it would take to get rid of it.
->>
->> It clearly has the wrong semantics, except perhaps in the most
->trivial allocator models.
->>
->one thing i think could be : use that decide if we need iommu/swiotlb.
->like in
->arch/x86/kernel/amd_gart_64.c
->arch/x86/kernel/pci-swiotlb.c
->drivers/iommu/amd_iommu.c
->...
->
->Yinghai
-
+diff --git a/drivers/staging/fwserial/fwserial.c b/drivers/staging/fwserial/fwserial.c
+index 48523eb..b1482ef 100644
+--- a/drivers/staging/fwserial/fwserial.c
++++ b/drivers/staging/fwserial/fwserial.c
+@@ -1774,10 +1774,11 @@ static struct fwtty_port *fwserial_find_port(struct fwtty_peer *peer)
+ 	return NULL;
+ }
+ 
+-static void fwserial_release_port(struct fwtty_port *port)
++static void fwserial_release_port(struct fwtty_port *port, bool reset)
+ {
+ 	/* drop carrier (and all other line status) */
+-	fwtty_update_port_status(port, 0);
++	if (reset)
++		fwtty_update_port_status(port, 0);
+ 
+ 	spin_lock_bh(&port->lock);
+ 
+@@ -1807,7 +1808,7 @@ static void fwserial_plug_timeout(unsigned long data)
+ 	spin_unlock_bh(&peer->lock);
+ 
+ 	if (port)
+-		fwserial_release_port(port);
++		fwserial_release_port(port, false);
+ }
+ 
+ /**
+@@ -1870,7 +1871,7 @@ cancel_timer:
+ 	peer_revert_state(peer);
+ release_port:
+ 	spin_unlock_bh(&peer->lock);
+-	fwserial_release_port(port);
++	fwserial_release_port(port, false);
+ free_pkt:
+ 	kfree(pkt);
+ 	return err;
+@@ -2148,7 +2149,7 @@ static void fwserial_remove_peer(struct fwtty_peer *peer)
+ 	spin_unlock_bh(&peer->lock);
+ 
+ 	if (port)
+-		fwserial_release_port(port);
++		fwserial_release_port(port, true);
+ 
+ 	synchronize_rcu();
+ 	kfree(peer);
+@@ -2608,7 +2609,7 @@ static void fwserial_handle_plug_req(struct work_struct *work)
+ 
+ 	spin_unlock_bh(&peer->lock);
+ 	if (port)
+-		fwserial_release_port(port);
++		fwserial_release_port(port, false);
+ 
+ 	rcode = fwserial_send_mgmt_sync(peer, pkt);
+ 
+@@ -2630,7 +2631,7 @@ static void fwserial_handle_plug_req(struct work_struct *work)
+ cleanup:
+ 	spin_unlock_bh(&peer->lock);
+ 	if (port)
+-		fwserial_release_port(port);
++		fwserial_release_port(port, false);
+ 	kfree(pkt);
+ 	return;
+ }
+@@ -2682,7 +2683,7 @@ static void fwserial_handle_unplug_req(struct work_struct *work)
+ cleanup:
+ 	spin_unlock_bh(&peer->lock);
+ 	if (port)
+-		fwserial_release_port(port);
++		fwserial_release_port(port, true);
+ 	kfree(pkt);
+ 	return;
+ }
+@@ -2693,6 +2694,7 @@ static int fwserial_parse_mgmt_write(struct fwtty_peer *peer,
+ 				     size_t len)
+ {
+ 	struct fwtty_port *port = NULL;
++	bool reset = false;
+ 	int rcode;
+ 
+ 	if (addr != fwserial_mgmt_addr_handler.offset || len < sizeof(pkt->hdr))
+@@ -2768,6 +2770,7 @@ static int fwserial_parse_mgmt_write(struct fwtty_peer *peer,
+ 			if (be16_to_cpu(pkt->hdr.code) & FWSC_RSP_NACK)
+ 				fwtty_notice(&peer->unit, "NACK unplug?");
+ 			port = peer_revert_state(peer);
++			reset = true;
+ 		}
+ 		break;
+ 
+@@ -2779,7 +2782,7 @@ static int fwserial_parse_mgmt_write(struct fwtty_peer *peer,
+ 	spin_unlock_bh(&peer->lock);
+ 
+ 	if (port)
+-		fwserial_release_port(port);
++		fwserial_release_port(port, reset);
+ 
+ 	return rcode;
+ }
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+1.8.1.1
+
