@@ -1,130 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab3A2N2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 08:28:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:24920 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab3A2N2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 08:28:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,559,1355126400"; 
-   d="scan'208";a="196248744"
-Date: Tue, 29 Jan 2013 15:14:58 +0200
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <5107cb52e07b1_376199eb7059997@blue.mail>
-In-Reply-To: <alpine.LNX.2.00.1301282041280.27186@eggly.anvils>
-References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com> <alpine.LNX.2.00.1301282041280.27186@eggly.anvils>
-Subject: Re: [PATCH, RFC 00/16] Transparent huge page cache
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1756841Ab3A2Nbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 08:31:48 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:36672 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3A2Nbp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 08:31:45 -0500
+Date: Tue, 29 Jan 2013 13:31:40 +0000
+From: Andrew Murray <andrew.murray@arm.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Message-ID: <20130129133140.GA24193@arm.com>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130115154038.GA11241@arm.com>
+ <20130115211441.GA13139@avionic-0098.adnet.avionic-design.de>
+ <201301161400.26587.arnd@arndb.de>
+ <20130116161716.GA10630@arm.com>
+ <20130116183101.GA28660@avionic-0098.adnet.avionic-design.de>
+ <20130117154236.GA25943@arm.com>
+ <20130117160501.GC2186@avionic-0098.adnet.avionic-design.de>
+ <20130117162218.GA29016@arm.com>
+ <20130122192901.GE30647@obsidianresearch.com>
+MIME-Version: 1.0
+In-Reply-To: <20130122192901.GE30647@obsidianresearch.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 29 Jan 2013 13:31:41.0174 (UTC) FILETIME=[F8E66960:01CDFE24]
+X-MC-Unique: 113012913314309301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Mon, 28 Jan 2013, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > 
-> > Here's first steps towards huge pages in page cache.
-> > 
-> > The intend of the work is get code ready to enable transparent huge page
-> > cache for the most simple fs -- ramfs.
-> > 
-> > It's not yet near feature-complete. It only provides basic infrastructure.
-> > At the moment we can read, write and truncate file on ramfs with huge pages in
-> > page cache. The most interesting part, mmap(), is not yet there. For now
-> > we split huge page on mmap() attempt.
-> > 
-> > I can't say that I see whole picture. I'm not sure if I understand locking
-> > model around split_huge_page(). Probably, not.
-> > Andrea, could you check if it looks correct?
-> > 
-> > Next steps (not necessary in this order):
-> >  - mmap();
-> >  - migration (?);
-> >  - collapse;
-> >  - stats, knobs, etc.;
-> >  - tmpfs/shmem enabling;
-> >  - ...
-> > 
-> > Kirill A. Shutemov (16):
-> >   block: implement add_bdi_stat()
-> >   mm: implement zero_huge_user_segment and friends
-> >   mm: drop actor argument of do_generic_file_read()
-> >   radix-tree: implement preload for multiple contiguous elements
-> >   thp, mm: basic defines for transparent huge page cache
-> >   thp, mm: rewrite add_to_page_cache_locked() to support huge pages
-> >   thp, mm: rewrite delete_from_page_cache() to support huge pages
-> >   thp, mm: locking tail page is a bug
-> >   thp, mm: handle tail pages in page_cache_get_speculative()
-> >   thp, mm: implement grab_cache_huge_page_write_begin()
-> >   thp, mm: naive support of thp in generic read/write routines
-> >   thp, libfs: initial support of thp in
-> >     simple_read/write_begin/write_end
-> >   thp: handle file pages in split_huge_page()
-> >   thp, mm: truncate support for transparent huge page cache
-> >   thp, mm: split huge page on mmap file page
-> >   ramfs: enable transparent huge page cache
-> > 
-> >  fs/libfs.c                  |   54 +++++++++---
-> >  fs/ramfs/inode.c            |    6 +-
-> >  include/linux/backing-dev.h |   10 +++
-> >  include/linux/huge_mm.h     |    8 ++
-> >  include/linux/mm.h          |   15 ++++
-> >  include/linux/pagemap.h     |   14 ++-
-> >  include/linux/radix-tree.h  |    3 +
-> >  lib/radix-tree.c            |   32 +++++--
-> >  mm/filemap.c                |  204 +++++++++++++++++++++++++++++++++++--------
-> >  mm/huge_memory.c            |   62 +++++++++++--
-> >  mm/memory.c                 |   22 +++++
-> >  mm/truncate.c               |   12 +++
-> >  12 files changed, 375 insertions(+), 67 deletions(-)
+On Tue, Jan 22, 2013 at 07:29:01PM +0000, Jason Gunthorpe wrote:
+> On Thu, Jan 17, 2013 at 04:22:18PM +0000, Andrew Murray wrote:
 > 
-> Interesting.
+> > > In either of those cases, does it make sense to use the MSI support
+> > > outside the scope of the PCI infrastructure? That is, would devices
+> > > other than PCI devices be able to generate an MSI?
+> > 
+> > I've come around to your way of thinking. Your approach sounds good for
+> > registration of MSI ops - let the RC host driver do it (it probably has its
+> > own), or use a helper for following a phandle to get ops that are not part
+> > of the driver. MSIs won't be used outside of PCI devices.
 > 
-> I was starting to think about Transparent Huge Pagecache a few
-> months ago, but then got washed away by incoming waves as usual.
+> Here is a bit of additional info on some MSI stuff..
 > 
-> Certainly I don't have a line of code to show for it; but my first
-> impression of your patches is that we have very different ideas of
-> where to start.
+> This can be pretty complex. For instance on hyper transport systems
+> the PCI to HT bridge has an MSI controller that maps between PCI and
+> HT MSI formats, that mapping is configurable, so technically each
+> brige could be considered a MSI controller. Typically the mapping
+> controllers are all setup the same so there is not much problem with
+> this. However *native* HT devices can (which are super rare) can use a
+> different MSI format than PCI devices. From a linux perspective HT is
+> just a variant of PCI.
+>  
+> On x86 the MSI is delivered to the CPU APIC complex which converts it
+> into a vectored interrupt - part of the value of MSI is that the MSI
+> data can vector the interrupt to a specific CPU, or group of CPUs or
+> whatever.
 > 
-> Perhaps that's good complementarity, or perhaps I'll disagree with
-> your approach.  I'll be taking a look at yours in the coming days,
-> and trying to summon back up my own ideas to summarize them for you.
+> Presumably SMP ARMs will evolve similar MSI based interrupt vectoring
+> capabilities, and presumably on-chip, non-PCI peripherals will evolve
+> options to use MSI as well (ie multi-queue ethernet). So it might be
+> worth giving some thought to how things could migrate in that
+> direction someday.
+> 
+> I have a bit hacky MSI driver for Kirkwood, this work you have to
+> generalize the interface could let me actually upstream it :) The MSI
+> is built using the Host2CPU doorbell registers, so it is entirely
+> unrelated to the PCI-E RC driver.
+> 
+> However, my use of the MSI driver on kirkwood is to assign MSIs to a
+> PCI-E device via non-standard registers, more like an on chip
+> peripheral. This is because the Host2CPU doorbell doesn't fit 100%
+> perfectly with the standard PCI MSI stuff, and the hardware has funny
+> needs.. So an 'allocate a MSI interrupt' API would be snazzy too :)
 
-Yeah, it would be nice to see alternative design ideas. Looking forward.
+Thanks for this. I believe Thierry may be working on improving the MSI
+API - so perhaps we can see where that takes us.
 
-> Perhaps I was naive to imagine it, but I did intend to start out
-> generically, independent of filesystem; but content to narrow down
-> on tmpfs alone where it gets hard to support the others (writeback
-> springs to mind).  khugepaged would be migrating little pages into
-> huge pages, where it saw that the mmaps of the file would benefit
-> (and for testing I would hack mmap alignment choice to favour it).
+Andrew Murray
 
-I don't think all fs at once would fly, but it's wonderful, if I'm
-wrong :)
-
-> I had arrived at a conviction that the first thing to change was
-> the way that tail pages of a THP are refcounted, that it had been a
-> mistake to use the compound page method of holding the THP together.
-> But I'll have to enter a trance now to recall the arguments ;)
-
-THP refcounting looks reasonable for me, if take split_huge_page() in
-account.
-
--- 
- Kirill A. Shutemov
