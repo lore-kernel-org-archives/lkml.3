@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab3A2SUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 13:20:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143Ab3A2SUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 13:20:31 -0500
-Date: Tue, 29 Jan 2013 13:20:12 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, dhowells@redhat.com,
-        jmorris@namei.org, linux-security-module@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
- keys
-Message-ID: <20130129182012.GA21002@redhat.com>
-References: <1358895228.2408.14.camel@falcor1>
- <CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
- <20130125210157.GA13152@redhat.com>
- <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
- <20130128151527.GA5868@redhat.com>
- <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
- <20130128185625.GC5868@redhat.com>
- <1359404149.3906.75.camel@falcor1>
- <20130128202241.GB14405@redhat.com>
- <1359424135.3906.247.camel@falcor1>
+	id S1753147Ab3A2SiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 13:38:24 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:32179
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751143Ab3A2SiV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 13:38:21 -0500
+X-IronPort-AV: E=Sophos;i="4.84,561,1355094000"; 
+   d="scan'208";a="408804"
+Date: Tue, 29 Jan 2013 19:38:19 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Joe Perches <joe@perches.com>
+cc: Valdis.Kletnieks@vt.edu, cocci@systeme.lip6.fr,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: coccinelle and bitmask arithmetic (was: Re: [patch] TTY: synclink,
+ small cleanup in dtr_rts())
+In-Reply-To: <1359475998.4196.26.camel@joe-AO722>
+Message-ID: <alpine.DEB.2.02.1301291937250.3339@hadrien>
+References: <20130127194039.GA18787@elgon.mountain>  <1359317078.14406.12.camel@joe-AO722> <20130127201947.GO16282@mwanda>  <9561.1359474916@turing-police.cc.vt.edu> <1359475998.4196.26.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359424135.3906.247.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 08:48:55PM -0500, Mimi Zohar wrote:
+The following rule looks promising:
 
-[..]
-> > Hi Mimi,
-> > 
-> > By policy you mean ima rules here? So I can either enable default rules
-> > (tcb default rules for appraisal and measurement) by using kernel command
-> > line options or dynamically configure my own rules using /sysfs interface?
-> > 
-> > If yes, AFAIK, existing inputtable policies do not allow this selective
-> > mode where we do appraisal only on signed executable. That means I shall
-> > have to extend the way policies can be specified so that one specify
-> > that appraise only signed files?
-> 
-> We've just added the ability of defining the method for appraising a
-> file and defining rules in terms of the filesystem UUID.  Extending the
-> IMA policy shouldn't be a problem, but I'm not sure how you would go
-> about adding support for only appraising files with digital signatures.
+@r@
+constant c;
+identifier i;
+expression e;
+@@
 
-Hi Mimi,
+(
+e | c@i
+|
+e & c@i
+|
+e |= c@i
+|
+e &= c@i
+)
 
-Can we add another field to ima_rule_entry, say .enforcement to control
-the behavior of .action. Possible values of .enforcement could be, say.
+@@
+constant r.c,c1;
+identifier i1;
+expression e;
+@@
 
-ALL
-SIGNED_ONLY
+*c1@i1 + c
 
-ALL will be default. And with .action= MEASURE, one could possibly use
-.enforcement=SIGNED_ONLY.
+That is, the sum of two constants where at least one of them has been used
+with & or |.
 
-Thanks
-Vivek
+julia
