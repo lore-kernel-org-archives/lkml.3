@@ -1,101 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab3A2SkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 13:40:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40673 "EHLO mx1.redhat.com"
+	id S1753405Ab3A2Sm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 13:42:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3495 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143Ab3A2SkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 13:40:02 -0500
-Date: Tue, 29 Jan 2013 13:39:31 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, dhowells@redhat.com,
-        jmorris@namei.org, linux-security-module@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric
- keys
-Message-ID: <20130129183931.GB21002@redhat.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
- <53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
- <1358895228.2408.14.camel@falcor1>
- <CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
- <20130125210157.GA13152@redhat.com>
- <CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
- <20130128151527.GA5868@redhat.com>
- <CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
- <20130128185242.GB5868@redhat.com>
- <CALLzPKZgbz0zCMHVbcDpHX0vv=qt+T0Gi8p+rUa70LJ0E+xrNA@mail.gmail.com>
+	id S1751647Ab3A2Smz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 13:42:55 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Subject: Re: [PATCH V6 00/30] loop: Issue O_DIRECT aio using bio_vec
+References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 29 Jan 2013 13:42:43 -0500
+In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
+	(Dave Kleikamp's message of "Tue, 29 Jan 2013 10:23:13 -0600")
+Message-ID: <x49obg7omos.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKZgbz0zCMHVbcDpHX0vv=qt+T0Gi8p+rUa70LJ0E+xrNA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 10:48:00AM +0200, Kasatkin, Dmitry wrote:
-> On Mon, Jan 28, 2013 at 8:52 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
-> >
-> > [..]
-> >> > Ok. I am hoping that it will be more than the kernel command line we
-> >> > support. In the sense that for digital signatures one needs to parse
-> >> > the signature, look at what hash algorithm has been used  and then
-> >> > collect the hash accordingly. It is little different then IMA requirement
-> >> > of calculating one pre-determine hash for all files.
-> >>
-> >> Yes... It is obvious. It's coming.
-> >> But in general, signer should be aware of requirements and limitation
-> >> of the platform.
-> >> It is not really a problem...
-> >
-> > Ok, I have another question. I was looking at your slide deck here.
-> >
-> > http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
-> >
-> > Slide 12 mentions that keys are loaded into the kernel from initramfs. If
-> > "root" can load any key, what are we protecting against.
-> >
-> > IOW, what good ima_appraise_tcb policy, which tries to appraise any root
-> > owned file.  A root can sign all the files using its own key and load its
-> > public key in IMA keyring and then integrity check should pass on all
-> > root files.
-> >
-> > So what's the idea behind digital signature appraisal? By allowing root to
-> > unconditionally load the keys in IMA keyring, it seems to circumvent the
-> > appraisal mechanism.
-> >
-> 
-> I will answer directly to this email first.
-> 'keyctl setperm' command is used to lock keyring from being able to
-> add new keys...
-> Even root is not able to revert locked keyring to original
-> write-permissive mode.
-> 
-> root@ubuntu:~# cat /proc/keys |grep ima
-> 16a4c685 I--Q---     1 perm 3f010000     0     0 keyring   _ima: 2/4
-> root@ubuntu:~# keyctl setperm 379897477  0x0b010000
-> root@ubuntu:~# keyctl add user testkey "testing1" 379897477
-> add_key: Permission denied
-> root@ubuntu:~# keyctl setperm 379897477  0x3f010000
-> keyctl_setperm: Permission denied
-> root@ubuntu:~# cat /proc/keys |grep ima
-> 16a4c685 I--Q---     1 perm 0b010000     0     0 keyring   _ima: 3/4
+Dave Kleikamp <dave.kleikamp@oracle.com> writes:
 
-Hi Dmitry,
+> Al,
+> I'd like to push this patchset to linux-next. Would you like to pull it
+> into your vfs tree, would you rather I submitted it separately, or do
+> you have any issues with it before including it?
 
-Ok, thanks for the clarification. So from initramfs we will load the key in
-IMA keyring and then lock it down.
+I'm still chasing one regression in this patchset.  If you use the ext4
+driver for ext2 file systems, and you run the libaio test harness, then
+you will be able to successfully write beyond the maximum file size in a
+file (see test case 8).
 
-So this boils down to trusting initramfs.  So how do we make sure that
-initramfs is not compromised in secureboot environment.
-
-As initramfs is generated dynamically, we could not sign it (no private
-key on target) hence can not appraise it. So may be we need to lock down
-key loading in IMA keyring in secureboot mode and ship kernel with
-pre-loaded keys? Or there are other ways which have already handled this
-problem.
-
-Thanks
-Vivek
+Cheers,
+Jeff
