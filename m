@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab3A2MOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:14:07 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:59884 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3A2MOG (ORCPT
+	id S1756715Ab3A2MOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:14:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52365 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756553Ab3A2MOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:14:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359365068-10147-7-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1359365068-10147-7-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Tue, 29 Jan 2013 20:14:04 +0800
-Message-ID: <CAJd=RBA2Kr-sKEFdJNQAjgVzesn6Q2Ockci58DsNQ0fa_7qkQw@mail.gmail.com>
-Subject: Re: [PATCH, RFC 06/16] thp, mm: rewrite add_to_page_cache_locked() to
- support huge pages
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 29 Jan 2013 07:14:53 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linx.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: arizona: Support configuring MICBIASes into bypass mode
+Date: Tue, 29 Jan 2013 20:14:29 +0800
+Message-Id: <1359461670-11194-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 5:24 PM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> +       page_cache_get(page);
-> +       spin_lock_irq(&mapping->tree_lock);
-> +       page->mapping = mapping;
-> +       if (PageTransHuge(page)) {
-> +               int i;
-> +               for (i = 0; i < HPAGE_CACHE_NR; i++) {
-> +                       page_cache_get(page + i);
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-core.c        |   12 +++++++++++-
+ include/linux/mfd/arizona/pdata.h |    1 +
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-Page count is raised twice for head page, why?
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index d12f21b..07fc2c1 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -532,10 +532,16 @@ int __devinit arizona_dev_init(struct arizona *arizona)
+ 	}
+ 
+ 	for (i = 0; i < ARIZONA_MAX_MICBIAS; i++) {
+-		if (!arizona->pdata.micbias[i].mV)
++		if (!arizona->pdata.micbias[i].mV &&
++		    !arizona->pdata.micbias[i].bypass)
+ 			continue;
+ 
++		/* Apply default for bypass mode */
++		if (!arizona->pdata.micbias[i].mV)
++			arizona->pdata.micbias[i].mV = 2800;
++
+ 		val = (arizona->pdata.micbias[i].mV - 1500) / 100;
++
+ 		val <<= ARIZONA_MICB1_LVL_SHIFT;
+ 
+ 		if (arizona->pdata.micbias[i].ext_cap)
+@@ -547,10 +553,14 @@ int __devinit arizona_dev_init(struct arizona *arizona)
+ 		if (arizona->pdata.micbias[i].fast_start)
+ 			val |= ARIZONA_MICB1_RATE;
+ 
++		if (arizona->pdata.micbias[i].bypass)
++			val |= ARIZONA_MICB1_BYPASS;
++
+ 		regmap_update_bits(arizona->regmap,
+ 				   ARIZONA_MIC_BIAS_CTRL_1 + i,
+ 				   ARIZONA_MICB1_LVL_MASK |
+ 				   ARIZONA_MICB1_DISCH |
++				   ARIZONA_MICB1_BYPASS |
+ 				   ARIZONA_MICB1_RATE, val);
+ 	}
+ 
+diff --git a/include/linux/mfd/arizona/pdata.h b/include/linux/mfd/arizona/pdata.h
+index fdfa170..0673da0 100644
+--- a/include/linux/mfd/arizona/pdata.h
++++ b/include/linux/mfd/arizona/pdata.h
+@@ -85,6 +85,7 @@ struct arizona_micbias {
+ 	unsigned int ext_cap:1;    /** External capacitor fitted */
+ 	unsigned int discharge:1;  /** Actively discharge */
+ 	unsigned int fast_start:1; /** Enable aggressive startup ramp rate */
++	unsigned int bypass:1;     /** Use bypass mode */
+ };
+ 
+ struct arizona_micd_config {
+-- 
+1.7.10.4
 
-> +                       page[i].index = offset + i;
-> +                       error = radix_tree_insert(&mapping->page_tree,
-> +                                       offset + i, page + i);
-> +                       if (error) {
-> +                               page_cache_release(page + i);
-> +                               break;
-> +                       }
