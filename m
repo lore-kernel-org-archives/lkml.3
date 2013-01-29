@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab3A2Pcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 10:32:52 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:35183 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab3A2Pcu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 10:32:50 -0500
-Date: Tue, 29 Jan 2013 16:32:42 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: davem@davemloft.net, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/5] net: mvmdio: unmap base register address at driver
- removal
-Message-ID: <20130129163242.1df2caf5@skate>
-In-Reply-To: <1359473048-26551-2-git-send-email-florian@openwrt.org>
-References: <1359473048-26551-1-git-send-email-florian@openwrt.org>
-	<1359473048-26551-2-git-send-email-florian@openwrt.org>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757358Ab3A2Pdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 10:33:54 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36136 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757305Ab3A2Pdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 10:33:51 -0500
+Message-ID: <5107EBCD.8000406@ti.com>
+Date: Tue, 29 Jan 2013 17:33:33 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 10/30] USB: ehci-omap: Use PHY APIs to get the PHY
+ device and put it out of suspend
+References: <Pine.LNX.4.44L0.1301291026020.1507-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1301291026020.1507-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Florian Fainelli,
-
-On Tue, 29 Jan 2013 16:24:04 +0100, Florian Fainelli wrote:
-> Fix the driver remove callback to unmap the base register address and
-> not leak this mapping after the driver has been removed.
+On 01/29/2013 05:30 PM, Alan Stern wrote:
+> On Tue, 29 Jan 2013, Roger Quadros wrote:
 > 
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+>> For each port that is in PHY mode we obtain a PHY device using the USB PHY
+>> library and put it out of suspend.
+>>
+>> It is up to platform code to associate the PHY to the controller's
+>> port and it is upto the PHY driver to manage the PHY's resources.
+> 
+> s/upto/up to/
+> 
+>> Also remove wired spacing around declarations we come across.
+> 
+> s/wired/weird/ -- not that people care about misspellings in the 
+> Changelog.  You don't have to resubmit the patch just to fix these two 
+> items.
+> 
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> 
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> 
 
-What about using devm_request_and_ioremap() instead, in order to get
-automatic unmap on error and in the ->remove() path?
+Thanks Alan. I'll fix them in the pull request.
 
-But maybe it won't work because this memory range is claimed both by
-the MDIO driver and the Ethernet driver itself. In that case, you could
-use devm_ioremap().
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+cheers,
+-roger
