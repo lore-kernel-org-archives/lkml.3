@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab3A2Gu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 01:50:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949Ab3A2Guy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 01:50:54 -0500
-Date: Tue, 29 Jan 2013 08:50:49 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] kvm: IOMMU read-only mapping support
-Message-ID: <20130129065049.GF22871@redhat.com>
-References: <20130124220027.11061.76400.stgit@bling.home>
- <20130125101704.b76b049d.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <5101FBE8.9000206@linux.vnet.ibm.com>
- <20130128105903.GA22871@redhat.com>
- <51073CC3.8030105@linux.vnet.ibm.com>
+	id S1751298Ab3A2G45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 01:56:57 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46101 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab3A2G4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 01:56:55 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-bd-510772b52663
+Date: Tue, 29 Jan 2013 15:56:56 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/3] introduce static_vm for ARM-specific static
+ mapped area
+Message-ID: <20130129065656.GC5131@lge.com>
+References: <1358990934-4893-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130128175106.GI23470@mudshark.cambridge.arm.com>
+ <alpine.LFD.2.02.1301281300250.6300@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51073CC3.8030105@linux.vnet.ibm.com>
+In-Reply-To: <alpine.LFD.2.02.1301281300250.6300@xanadu.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 11:06:43AM +0800, Xiao Guangrong wrote:
-> On 01/28/2013 06:59 PM, Gleb Natapov wrote:
-> > On Fri, Jan 25, 2013 at 11:28:40AM +0800, Xiao Guangrong wrote:
-> >> On 01/25/2013 09:17 AM, Takuya Yoshikawa wrote:
-> >>> On Thu, 24 Jan 2013 15:03:57 -0700
-> >>> Alex Williamson <alex.williamson@redhat.com> wrote:
-> >>>
-> >>>> A couple patches to make KVM IOMMU support honor read-only mappings.
-> >>>> This causes an un-map, re-map when the read-only flag changes and
-> >>>> makes use of it when setting IOMMU attributes.  Thanks,
-> >>>
-> >>> Looks good to me.
-> >>>
-> >>> I think I can naturally update my patch after this gets merged.
-> >>>
-> >>
-> >> Please wait.
-> >>
-> >> The commit c972f3b1 changed the write-protect behaviour - it does
-> >> wirte-protection only when dirty flag is set.
-> >> [ I did not see this commit when we discussed the problem before. ]
-> >>
-> >> Further more, i notice that write-protect is not enough, when do sync
-> >> shadow page:
-> >>
-> >> FNAME(sync_page):
-> >>
-> >> 		host_writable = sp->spt[i] & SPTE_HOST_WRITEABLE;
-> >>
-> >> 		set_spte(vcpu, &sp->spt[i], pte_access,
-> >> 			 PT_PAGE_TABLE_LEVEL, gfn,
-> >> 			 spte_to_pfn(sp->spt[i]), true, false,
-> >> 			 host_writable);
-> >>
-> >> It sets spte based on the old value that means the readonly flag check
-> >> is missed. We need to call kvm_arch_flush_shadow_all under this case.
-> > Why not just disallow changing memory region KVM_MEM_READONLY flag
-> > without deleting the region?
+On Mon, Jan 28, 2013 at 01:04:24PM -0500, Nicolas Pitre wrote:
+> On Mon, 28 Jan 2013, Will Deacon wrote:
 > 
-> It will introduce some restriction when VM-sharing-mem is being implemented,
-> but we need to do some optimization for it, at least, properly write-protect
-> readonly pages (fix sync_page()) instead of zap_all_page.
+> > Hello,
+> > 
+> > On Thu, Jan 24, 2013 at 01:28:51AM +0000, Joonsoo Kim wrote:
+> > > In current implementation, we used ARM-specific flag, that is,
+> > > VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+> > > The purpose of static mapped area is to re-use static mapped area when
+> > > entire physical address range of the ioremap request can be covered
+> > > by this area.
+> > > 
+> > > This implementation causes needless overhead for some cases.
+> > > For example, assume that there is only one static mapped area and
+> > > vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+> > > deciding whether it is matched or not. Moreover, even if there is
+> > > no static mapped area and vmlist has 300 areas, every time we call
+> > > ioremap, we check 300 areas in now.
+> > > 
+> > > If we construct a extra list for static mapped area, we can eliminate
+> > > above mentioned overhead.
+> > > With a extra list, if there is one static mapped area,
+> > > we just check only one area and proceed next operation quickly.
+> > > 
+> > > In fact, it is not a critical problem, because ioremap is not frequently
+> > > used. But reducing overhead is better idea.
+> > > 
+> > > Another reason for doing this work is for removing vm_struct list management,
+> > > entirely. For more information, look at the following link.
+> > > http://lkml.org/lkml/2012/12/6/184
+> > 
+> > First patch looks good (removing the unused vmregion stuff) but I'm not so
+> > sure about the rest of it. If you really care about ioremap performance,
+> > perhaps it would be better to have a container struct around the vm_struct
+> > for static mappings and then stick them in an augmented rbtree so you can
+> > efficiently find the mapping encompassing a particular physical address?
 > 
-What is VM-sharing-mem?
+> How can ioremap performance be a problem is the question I had since the 
+> beginning.
+> 
+> Firstly, ioremap is _not_ meant to be used in performance critical 
+> paths.
+> 
+> Secondly, there shouldn't be _that_ many entries on the vmlist such as 
+> 300.  That sounds a bit excessive.
+> 
+> So please, can we discuss the reasons that motivated those patches in 
+> the first place?  Maybe that's where the actual problem is.
 
-> So, i guess we can do the simple fix first.
-> 
-By simple fix you mean calling kvm_arch_flush_shadow_all() on READONLY
-flag change?
+Hello, Wiil and Nicolas.
+First of all, thanks for reviewing.
 
---
-			Gleb.
+There is another reason for doing this work.
+As mentioned above, I try to remove list management for vm_struct(vmlist),
+entirely. For that purpose, removing architecture dependency against vmlist
+is needed. Below link is for my RFC patch trying to remove list management
+for vm_struct.
+
+http://lkml.org/lkml/2012/12/6/184
+
+Removing dependency for other architectures is rather trivial, but for ARM,
+it is not trivial case. So I prepared this patchset.
+My description makes you missleading possibly.
+Sorry for this.
+
+Answer for your other questions is below.
+
+I know ioremap is _not_ meant to be used in performance critical paths, and
+I mentioned it earlier.
+"In fact, it is not a critical problem, because ioremap is not frequently used.
+But reducing overhead is better idea."
+
+And, there are many entries on the vmlist for my test devices(Android phone).
+I saw more than 300 entries in former days, but today, I re-check it and
+find 230~250 entries.
+
+Thanks.
