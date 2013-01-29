@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab3A2T3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 14:29:14 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:52597 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab3A2T3L (ORCPT
+	id S1753422Ab3A2TfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 14:35:21 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:63008 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3A2TfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 14:29:11 -0500
-Date: Tue, 29 Jan 2013 11:29:04 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic dynamic per cpu refcounting
-Message-ID: <20130129192904.GA6824@mtj.dyndns.org>
-References: <20130128185552.GD22465@mtj.dyndns.org>
- <20130128202214.GD26407@google.com>
- <CAOS58YOQNs9RcNAXHKfkwaxMeDeSzOczNC=-WS5uvsas168T+A@mail.gmail.com>
- <20130128205540.GE26407@google.com>
- <20130128211832.GK22465@mtj.dyndns.org>
- <20130128212407.GF26407@google.com>
- <20130128212814.GL22465@mtj.dyndns.org>
- <20130128214506.GG26407@google.com>
- <20130128215042.GN22465@mtj.dyndns.org>
- <20130129163942.GI26407@google.com>
+	Tue, 29 Jan 2013 14:35:20 -0500
+Message-ID: <51082470.2070601@suse.cz>
+Date: Tue, 29 Jan 2013 20:35:12 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130129163942.GI26407@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lingzhu Xiang <lxiang@redhat.com>, Roman Rakus <rrakus@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] tty: set_termios/set_termiox should not return -EINTR
+References: <20130129190720.GA28000@redhat.com> <20130129190741.GA28004@redhat.com>
+In-Reply-To: <20130129190741.GA28004@redhat.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Kent.
+On 01/29/2013 08:07 PM, Oleg Nesterov wrote:
+> See https://bugzilla.redhat.com/show_bug.cgi?id=904907
+> read command causes bash to abort with double free or corruption (out).
+> 
+> A simple test-case from Roman:
+> 
+> 	// Compile the reproducer and send sigchld ti that process.
+> 	// EINTR occurs even if SA_RESTART flag is set.
+> 
+> 	void handler(int sig)
+> 	{
+> 	}
+> 
+> 	main()
+> 	{
+> 	  struct sigaction act;
+> 	  act.sa_handler = handler;
+> 	  act.sa_flags = SA_RESTART;
+> 	  sigaction (SIGCHLD, &act, 0);
+> 	  struct termio ttp;
+> 	  ioctl(0, TCGETA, &ttp);
+> 	  while(1)
+> 	  {
+> 	    if (ioctl(0, TCSETAW, ttp) < 0)
+> 	      {
+> 		if (errno == EINTR)
+> 		{
+> 		  fprintf(stderr, "BUG!"); return(1);
+> 		}
+> 	      }
+> 	  }
+> 	}
+> 
+> Change set_termios/set_termiox to return -ERESTARTSYS to fix this
+> particular problem.
 
-On Tue, Jan 29, 2013 at 08:39:42AM -0800, Kent Overstreet wrote:
-> Oh, if this is going to be widely used I should probably have a
-> different implementation for archs that don't have atomic64_t in
-> hardware. Don't suppose you know the CONFIG_ macro to test against? I
-> couldn't find it when I was looking recently.
-
-!CONFIG_GENERIC_ATOMIC64, I think.  I don't think it's worthwhile to
-worry about tho.  Reverting to simple atomic_t ops on !CONFIG_SMP
-should cover most relevant cases.
-
-Very tentative review follows.
-
-> +#define PCPU_REF_PTR		0
-> +#define PCPU_REF_NONE		1
-> +#define PCPU_REF_DEAD		2
-
-Do we still need to distinguish between NONE and DEAD?  It would be
-nice if we can just test against NULL.
-
-> +/**
-> + * percpu_ref_get - increment a dynamic percpu refcount
-> + *
-> + * Analagous to atomic_inc().
-> +  */
-> +static inline void percpu_ref_get(struct percpu_ref *ref)
-> +{
-> +	unsigned long pcpu_count;
-> +
-> +	preempt_disable();
-> +
-> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-> +
-> +	if (REF_STATUS(pcpu_count) == PCPU_REF_PTR) {
-> +		/* for rcu - we're not using rcu_dereference() */
-> +		smp_read_barrier_depends();
-
-Let's explain more. :)
-
-> +		__this_cpu_inc(*((unsigned __percpu *) pcpu_count));
-
-What about overflow?  Note that we can have systemetic cases where ref
-is gotten on one cpu and put on another transferring counts in a
-specific direction.
-
-> +#define PCPU_COUNT_BITS		50
-> +#define PCPU_COUNT_MASK		((1LL << PCPU_COUNT_BITS) - 1)
-> +
-> +#define PCPU_COUNT_BIAS		(1ULL << 32)
-
-I really don't get this.  Why use 1<<32 for bias which isn't too
-difficult to overflow especially if you have many cpu threads and some
-systemetic drift in percpu refs?  What's the point of not using the
-higher bits?  Is it to encode count usage statistics into the same
-counter?  If so, just add another field.  24bytes is fine.
-
-I'd really like to see just basic percpu refcnt with async and sync
-interfaces w/o dynamic allocation.  At this point, we aren't really
-sure if there are gonna be enough benefits or use cases from dynamic
-allocation, so I don't really see the point in the added complexity.
-Let's start with basic stuff and add on dynamic alloc if it actually
-is necessary.
-
-Thanks.
+This looks reasonable. However given the link above says:
+ You are not authorized to access bug #904907.
+the description above is poor. What problem exactly does this fix? Why
+this should go to stable at all?
 
 -- 
-tejun
+js
+suse labs
