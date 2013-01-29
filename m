@@ -1,121 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab3A2P20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 10:28:26 -0500
-Received: from zmc.proxad.net ([212.27.53.206]:49631 "EHLO zmc.proxad.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757190Ab3A2P1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 10:27:11 -0500
-From: Florian Fainelli <florian@openwrt.org>
-To: davem@davemloft.net
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
-Subject: [PATCH 2/5] net: mvmdio: rename base register cookie from smireg to regs
-Date: Tue, 29 Jan 2013 16:24:05 +0100
-Message-Id: <1359473048-26551-3-git-send-email-florian@openwrt.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1359473048-26551-1-git-send-email-florian@openwrt.org>
-References: <1359473048-26551-1-git-send-email-florian@openwrt.org>
+	id S1757290Ab3A2P3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 10:29:24 -0500
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:47232 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756600Ab3A2P3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 10:29:21 -0500
+X-Greylist: delayed 5374 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 10:29:20 EST
+Message-ID: <1359467977.8924.0.camel@infinity>
+Subject: Re: [PATCH 1/2] ACPI / scan: Make namespace scanning and trimming
+ mutually exclusive
+From: Steven Newbury <steve@snewbury.org.uk>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Date: Tue, 29 Jan 2013 13:59:37 +0000
+In-Reply-To: <CAE9FiQV+DDb0ap=sipQjUWCdz8Qsfs2dYDVrb0FmKL4F1BjhOw@mail.gmail.com>
+References: <1581701.fnbebHrKch@vostro.rjw.lan>
+	 <3032117.IcK9I7rYQT@vostro.rjw.lan>
+	 <CAE9FiQV+DDb0ap=sipQjUWCdz8Qsfs2dYDVrb0FmKL4F1BjhOw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=AUhbpHVS+xhHrj9wLCYAQoYnFLYUZdbP8UM0GmH2jwk= c=1 sm=0 a=aSmuriqxytUA:10 a=IkcTkHD0fZMA:10 a=xqWC_Br6kY4A:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=UAOgjMSbS-LR0liV_TYA:9 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=LI9Vle30uBYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch renames the base register cookie in the mvmdio drive from
-"smireg" to "regs" since a subsequent patch is going to use an ioremap()
-cookie whose size is larger than a single register of 4 bytes. No
-functionnal code change introduced.
+On Sat, 2013-01-26 at 15:19 -0800, Yinghai Lu wrote:
+> On Sat, Jan 26, 2013 at 2:41 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > There is no guarantee that acpi_bus_scan() and acpi_bus_trim() will
+> > not be run in parallel for the same scope of the ACPI namespace,
+> > which may lead to a great deal of confusion, so introduce a new mutex
+> > to prevent that from happening.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Acked-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> Steven,
+> 
+> Can you apply this one to for-pci-res-alloc to check if racing with
+> docking hotplug/eject
+> still happen?
+> or wait one or two days after i rebase that branch.
+> 
+Still get the corrupt acpi_handle.
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
----
- drivers/net/ethernet/marvell/mvmdio.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+> Thanks
+> 
+> Yinghai
+> 
+> > ---
+> >  drivers/acpi/scan.c |   16 ++++++++++++----
+> >  1 file changed, 12 insertions(+), 4 deletions(-)
+> >
+> > Index: linux-pm/drivers/acpi/scan.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/scan.c
+> > +++ linux-pm/drivers/acpi/scan.c
+> > @@ -52,6 +52,7 @@ static const struct acpi_device_id acpi_
+> >
+> >  static LIST_HEAD(acpi_device_list);
+> >  static LIST_HEAD(acpi_bus_id_list);
+> > +static DEFINE_MUTEX(acpi_scan_lock);
+> >  DEFINE_MUTEX(acpi_device_lock);
+> >  LIST_HEAD(acpi_wakeup_device_list);
+> >
+> > @@ -1612,19 +1613,22 @@ static acpi_status acpi_bus_device_attac
+> >  int acpi_bus_scan(acpi_handle handle)
+> >  {
+> >         void *device = NULL;
+> > +       int error = 0;
+> > +
+> > +       mutex_lock(&acpi_scan_lock);
+> >
+> >         if (ACPI_SUCCESS(acpi_bus_check_add(handle, 0, NULL, &device)))
+> >                 acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+> >                                     acpi_bus_check_add, NULL, NULL, &device);
+> >
+> >         if (!device)
+> > -               return -ENODEV;
+> > -
+> > -       if (ACPI_SUCCESS(acpi_bus_device_attach(handle, 0, NULL, NULL)))
+> > +               error = -ENODEV;
+> > +       else if (ACPI_SUCCESS(acpi_bus_device_attach(handle, 0, NULL, NULL)))
+> >                 acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+> >                                     acpi_bus_device_attach, NULL, NULL, NULL);
+> >
+> > -       return 0;
+> > +       mutex_unlock(&acpi_scan_lock);
+> > +       return error;
+> >  }
+> >  EXPORT_SYMBOL(acpi_bus_scan);
+> >
+> > @@ -1653,6 +1657,8 @@ static acpi_status acpi_bus_remove(acpi_
+> >
+> >  void acpi_bus_trim(struct acpi_device *start)
+> >  {
+> > +       mutex_lock(&acpi_scan_lock);
+> > +
+> >         /*
+> >          * Execute acpi_bus_device_detach() as a post-order callback to detach
+> >          * all ACPI drivers from the device nodes being removed.
+> > @@ -1667,6 +1673,8 @@ void acpi_bus_trim(struct acpi_device *s
+> >         acpi_walk_namespace(ACPI_TYPE_ANY, start->handle, ACPI_UINT32_MAX, NULL,
+> >                             acpi_bus_remove, NULL, NULL);
+> >         acpi_bus_remove(start->handle, 0, NULL, NULL);
+> > +
+> > +       mutex_unlock(&acpi_scan_lock);
+> >  }
+> >  EXPORT_SYMBOL_GPL(acpi_bus_trim);
+> >
+> >
 
-diff --git a/drivers/net/ethernet/marvell/mvmdio.c b/drivers/net/ethernet/marvell/mvmdio.c
-index be5c690..5ecda58 100644
---- a/drivers/net/ethernet/marvell/mvmdio.c
-+++ b/drivers/net/ethernet/marvell/mvmdio.c
-@@ -39,7 +39,7 @@
- 
- struct orion_mdio_dev {
- 	struct mutex lock;
--	void __iomem *smireg;
-+	void __iomem *regs;
- };
- 
- /* Wait for the SMI unit to be ready for another operation
-@@ -52,7 +52,7 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
- 
- 	count = 0;
- 	while (1) {
--		val = readl(dev->smireg);
-+		val = readl(dev->regs);
- 		if (!(val & MVMDIO_SMI_BUSY))
- 			break;
- 
-@@ -87,12 +87,12 @@ static int orion_mdio_read(struct mii_bus *bus, int mii_id,
- 	writel(((mii_id << MVMDIO_SMI_PHY_ADDR_SHIFT) |
- 		(regnum << MVMDIO_SMI_PHY_REG_SHIFT)  |
- 		MVMDIO_SMI_READ_OPERATION),
--	       dev->smireg);
-+	       dev->regs);
- 
- 	/* Wait for the value to become available */
- 	count = 0;
- 	while (1) {
--		val = readl(dev->smireg);
-+		val = readl(dev->regs);
- 		if (val & MVMDIO_SMI_READ_VALID)
- 			break;
- 
-@@ -129,7 +129,7 @@ static int orion_mdio_write(struct mii_bus *bus, int mii_id,
- 		(regnum << MVMDIO_SMI_PHY_REG_SHIFT)  |
- 		MVMDIO_SMI_WRITE_OPERATION            |
- 		(value << MVMDIO_SMI_DATA_SHIFT)),
--	       dev->smireg);
-+	       dev->regs);
- 
- 	mutex_unlock(&dev->lock);
- 
-@@ -173,8 +173,8 @@ static int orion_mdio_probe(struct platform_device *pdev)
- 		bus->irq[i] = PHY_POLL;
- 
- 	dev = bus->priv;
--	dev->smireg = of_iomap(pdev->dev.of_node, 0);
--	if (!dev->smireg) {
-+	dev->regs = of_iomap(pdev->dev.of_node, 0);
-+	if (!dev->regs) {
- 		dev_err(&pdev->dev, "No SMI register address given in DT\n");
- 		kfree(bus->irq);
- 		mdiobus_free(bus);
-@@ -186,7 +186,7 @@ static int orion_mdio_probe(struct platform_device *pdev)
- 	ret = of_mdiobus_register(bus, np);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Cannot register MDIO bus (%d)\n", ret);
--		iounmap(dev->smireg);
-+		iounmap(dev->regs);
- 		kfree(bus->irq);
- 		mdiobus_free(bus);
- 		return ret;
-@@ -205,7 +205,7 @@ static int orion_mdio_remove(struct platform_device *pdev)
- 	mdiobus_unregister(bus);
- 	kfree(bus->irq);
- 	mdiobus_free(bus);
--	iounmap(dev->smireg);
-+	iounmap(dev->regs);
- 	return 0;
- }
- 
--- 
-1.7.10.4
 
