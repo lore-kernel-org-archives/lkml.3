@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab3A2Mrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:47:51 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:56202 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756692Ab3A2Mrs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:47:48 -0500
-Message-ID: <5107C483.7090503@synopsys.com>
-Date: Tue, 29 Jan 2013 18:15:55 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: ARC Port for linux-next (was Re: [PATCH v3 00/44] Meta Linux Kernel
- Port)
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <5102BB38.3050207@imgtec.com> <201301260025.10020.arnd@arndb.de> <51062460.9060902@synopsys.com>
-In-Reply-To: <51062460.9060902@synopsys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1756690Ab3A2Msr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:48:47 -0500
+Received: from mga03.intel.com ([143.182.124.21]:64169 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457Ab3A2Mso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:48:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,559,1355126400"; 
+   d="scan'208";a="249702128"
+Date: Tue, 29 Jan 2013 14:48:37 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Hillf Danton <dhillf@gmail.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <5107c525eb8d1_f167d78c8425f9@blue.mail>
+In-Reply-To: <CAJd=RBCCmDrS=866SMEezcsCCX3vrfnusUFoyaRQb+c=JCkFEg@mail.gmail.com>
+References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com> <1359365068-10147-7-git-send-email-kirill.shutemov@linux.intel.com> <CAJd=RBCCmDrS=866SMEezcsCCX3vrfnusUFoyaRQb+c=JCkFEg@mail.gmail.com>
+Subject: Re: [PATCH, RFC 06/16] thp, mm: rewrite add_to_page_cache_locked() to
+ support huge pages
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.164]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Monday 28 January 2013 12:40 PM, Vineet Gupta wrote:
-> Hi Arnd / Stephen,
+Hillf Danton wrote:
+> On Mon, Jan 28, 2013 at 5:24 PM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > +       page_cache_get(page);
+> > +       spin_lock_irq(&mapping->tree_lock);
+> > +       page->mapping = mapping;
+> > +       if (PageTransHuge(page)) {
+> > +               int i;
+> > +               for (i = 0; i < HPAGE_CACHE_NR; i++) {
+> > +                       page_cache_get(page + i);
+> > +                       page[i].index = offset + i;
+> > +                       error = radix_tree_insert(&mapping->page_tree,
+> > +                                       offset + i, page + i);
+> > +                       if (error) {
+> > +                               page_cache_release(page + i);
+> > +                               break;
+> > +                       }
 > 
-> On Saturday 26 January 2013 05:55 AM, Arnd Bergmann wrote:
+> Is page count balanced with the following?
 
->> I'd suggest that you both ask Stephen to add the trees to linux-next
->> now (I thought you had done that already, but I don't see them there
->> at the moment).
+It's broken. Last minue changes are evil :(
+
+Thanks for catching it. I'll fix it in next revision.
+
+> @@ -168,6 +180,9 @@ void delete_from_page_cache(struct page *page)
 > 
-> Stephen, can you please add the following branch (rebased off 3.8-rc5) to linux-next
-> 
-> git://github.com/foss-for-synopsys-dwc-arc-processors/linux.git  arc-next
-> 
-> With next-20130125, there's a trivial conflict in init/Kconfig - fixable by
-> accepting both the hunks.
+>         if (freepage)
+>                 freepage(page);
+> +       if (PageTransHuge(page))
+> +               for (i = 1; i < HPAGE_CACHE_NR; i++)
+> +                       page_cache_release(page);
+>         page_cache_release(page);
 
-Please let me know if I'm missing anything before ARC Port could be added to
-linux-next.
-
-Thx,
--Vineet
-
+-- 
+ Kirill A. Shutemov
