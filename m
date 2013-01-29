@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab3A2A42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 19:56:28 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:44708 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab3A2A4Z (ORCPT
+	id S1754166Ab3A2BAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 20:00:34 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:55016 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab3A2BAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 19:56:25 -0500
-Message-ID: <51071E21.9030008@ahsoftware.de>
-Date: Tue, 29 Jan 2013 01:56:01 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Bernie Thompson <bernie@plugable.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/3 v2] fb: udlfb: fix hang at disconnect
-References: <50F2A310.5010006@ahsoftware.de> <1359139768-32294-1-git-send-email-holler@ahsoftware.de> <1359139768-32294-2-git-send-email-holler@ahsoftware.de> <20130128162238.7fba92fe.akpm@linux-foundation.org>
-In-Reply-To: <20130128162238.7fba92fe.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Jan 2013 20:00:32 -0500
+Date: Tue, 29 Jan 2013 02:00:29 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 07/12] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
+Message-ID: <20130129010029.GY30577@one.firstfloor.org>
+References: <1359151245-13179-1-git-send-email-andi@firstfloor.org> <1359151245-13179-8-git-send-email-andi@firstfloor.org> <CABPqkBTM8w_RVrQNiyhBprMBjL5a0Q7Y9KQsKP3Ld62EZPSufQ@mail.gmail.com> <20130128231659.GW30577@one.firstfloor.org> <CABPqkBS=1gQCiWRQYJ8Y0QqFLvmkf0NiRivK-xpFmqwpXwyByA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBS=1gQCiWRQYJ8Y0QqFLvmkf0NiRivK-xpFmqwpXwyByA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.01.2013 01:22, schrieb Andrew Morton:
-> On Fri, 25 Jan 2013 19:49:27 +0100
-> Alexander Holler <holler@ahsoftware.de> wrote:
-> 
->> When a device was disconnected the driver may hang at waiting for urbs it never
->> will get. Fix this by using a timeout while waiting for the used semaphore.
->>
->> There is still a memory leak if a timeout happens, but at least the driver
->> now continues his disconnect routine.
->>
->> ...
->>
->> --- a/drivers/video/udlfb.c
->> +++ b/drivers/video/udlfb.c
->> @@ -1832,8 +1832,9 @@ static void dlfb_free_urb_list(struct dlfb_data *dev)
->>  	/* keep waiting and freeing, until we've got 'em all */
->>  	while (count--) {
->>  
->> -		/* Getting interrupted means a leak, but ok at disconnect */
->> -		ret = down_interruptible(&dev->urbs.limit_sem);
->> +		/* Timeout likely occurs at disconnect (resulting in a leak) */
->> +		ret = down_timeout_killable(&dev->urbs.limit_sem,
->> +						FREE_URB_TIMEOUT);
->>  		if (ret)
->>  			break;
-> 
-> This is rather a hack.  Do you have an understanding of the underlying
-> bug?  Why is the driver waiting for things which will never happen?
+On Tue, Jan 29, 2013 at 01:30:19AM +0100, Stephane Eranian wrote:
+> >> The counter is reinstated to its state before the critical section but
+> >> the PMI cannot be
+> >> cancelled and there is no state left behind to tell what to do with it.
+> >
+> > The PMI is effectively spurious, but we use it to set back. Don't know
+> > what you mean with "cancel". It already happened of course.
+> >
+> But when you do this, it seems you making INT_CP events unusable
+> for sampling, because you're resetting their value under the cover.
+> So what happens when you sample, especially with a fixed period?
 
-It is a hack, but I don't want to rewrite the whole driver. There is
-already an attempt to do so, udl. The hack is a quick solution which
-doesn't make something worse, just better. The only drawback might be
-the few additional bytes for the implementation of
-down_timeout_killable(), but I thought such should be already available,
-and wondered it wasn't.
+Sampling is forbidden for checkpointed events, the setup code
+enforces that. It's unlikely to be useful anyways.
 
-Fixing the underlying problem (including removing the leaks) would just
-end up in another rewrite and I prefer to have a look at udl, maybe
-fixing the current problems to use such a device as console there.
+The main use case for checkpointing is perf stat -T and related
+counting usages.
 
-I've only posted this small patch series, because some (longterm) stable
-kernels don't have udl, and smscufx, which is in large parts identical
-to udlfb might want that patch too.
+> >>
+> >> > +               if (event->attr.sample_period > 0 &&
+> >> > +                   event->attr.sample_period < 0x7fffffff)
+> >> > +                       return -EIO;
+> >> > +       }
+> Explain the 0x7fffffff to me? Is that the max period set by default when you
+> just count?
 
-Just in case: I don't know anything about smscufx and have discovered
-the similarities between those drivers only when I did a git grep to
-search for something I fixed with a previous patch.
+Originally I had just > 0, but then I found that perf stat from the
+guest doesn't work anymore because it sets an very high overflow
+to accumulate counters.
 
-Regards,
+The 0x7fffffff is a somewhat arbitary threshold to detect this case.
 
-Alexander
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
