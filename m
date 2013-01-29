@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab3A2WGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 17:06:49 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:58585 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab3A2WGq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 17:06:46 -0500
-Date: Tue, 29 Jan 2013 14:06:42 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, srivatsa.bhat@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic dynamic per cpu refcounting
-Message-ID: <20130129220642.GL6824@mtj.dyndns.org>
-References: <20130128211832.GK22465@mtj.dyndns.org>
- <20130128212407.GF26407@google.com>
- <20130128212814.GL22465@mtj.dyndns.org>
- <20130128214506.GG26407@google.com>
- <20130128215042.GN22465@mtj.dyndns.org>
- <20130129163942.GI26407@google.com>
- <20130129192904.GA6824@mtj.dyndns.org>
- <20130129195141.GO26407@google.com>
- <20130129200218.GJ6824@mtj.dyndns.org>
- <20130129214537.GA18571@localhost>
+	id S1752431Ab3A2WHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 17:07:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59383 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab3A2WHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 17:07:01 -0500
+Date: Tue, 29 Jan 2013 14:08:48 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Roger Quadros <rogerq@ti.com>,
+        tony@atomide.com, sameo@linux.intel.com, balbi@ti.com,
+        eballetbo@gmail.com, javier@dowhile0.org, sshtylyov@mvista.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 09/30] USB: ehci-omap: Use devm_request_and_ioremap()
+Message-ID: <20130129220848.GA11524@kroah.com>
+References: <20130128152010.GN23505@n2100.arm.linux.org.uk>
+ <Pine.LNX.4.44L0.1301291033000.1507-100000@iolanthe.rowland.org>
+ <20130129160134.GC23505@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130129214537.GA18571@localhost>
+In-Reply-To: <20130129160134.GC23505@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Kent.
-
-On Tue, Jan 29, 2013 at 01:45:37PM -0800, Kent Overstreet wrote:
-> It would definitely be cleaner if the global counter was also 32 bits (I
-> probably should've done it that way at first) but it works with it being
-> bigger _provided the sum of the percpu counters is sign extended_ when
-> collecting them up at the end.
+On Tue, Jan 29, 2013 at 04:01:34PM +0000, Russell King - ARM Linux wrote:
+> On Tue, Jan 29, 2013 at 10:34:53AM -0500, Alan Stern wrote:
+> > On Mon, 28 Jan 2013, Russell King - ARM Linux wrote:
+> > 
+> > > On Mon, Jan 28, 2013 at 10:17:33AM -0500, Alan Stern wrote:
+> > > > On Mon, 28 Jan 2013, Roger Quadros wrote:
+> > > > 
+> > > > > Make use of devm_request_and_ioremap() and correct comment.
+> > > > 
+> > > > Didn't a big patch come through recently converting all usages of 
+> > > > devm_request_and_ioremap() to another function (I forget the name) that 
+> > > > does its own error reporting and returns an ERR_PTR value?
+> > > > 
+> > > > (Checks the mailing list archive...)  Ah, here it is:
+> > > > 
+> > > > 	http://marc.info/?l=linux-usb&m=135876311801537&w=2
+> > > > 
+> > > > And the new function is devm_ioremap_resource().  We should avoid 
+> > > > adding new usages of an old interface.
+> > > 
+> > > Maybe... if devm_ioremap_resource() was already in the kernel.  The
+> > > problem at the moment is it isn't, and it'll probably be rather
+> > > horrid for everyone to deal with especially when it comes to testing.
+> > 
+> > Not in the kernel yet?  I didn't realize that.  Looks like Thierry 
+> > Reding will have some clean-up work to do when it does get in.
 > 
-> With the bias though we kind of want the global counter to be bigger...
-> the bias needs to fit in the global counter.
-
-Yeah, the size being 64bit is fine as long as the summation and the
-result is done in 32bits.
-
-> > I don't know.  I think it's a correctness issue.  If you
-> > over/underflow into global counter, you need buffer space to be
-> > (practically) correct. 
+> It may be in linux-next, but it isn't in Linus' yet... (of course, it's
+> probably scheduled for the upcoming merge window).  Certainly:
 > 
-> Not quite sure what you mean... 
-
-If you compute w/o sign extension, it becomes buggy.
-
-> It doesn't really make sense to use more than 32 bits for the global sum
-> (ignoring the bias value... that complicates it) but it does work, with
-> the sign extending. I haven't figured out a good way of explaining why
-> though... I should probably look at what happens without it again. (I
-> missed the sign extending when I first coded it, had to debug that).
-
-I think it would be easier to understand if we use only the lower
-32bits for the actual counting.
-
-> > There really is no point in adding complexity which isn't needed.  It
-> > slows down the code unnecessarily (however minute) and adds
-> > maintenance overhead.  Why do that when there's no need?
+> $ grep -r devm_ioremap_resource include
 > 
-> Well, like I said I want this to be a drop in replacement for atomic_t
-> anyone can use without having to think about the potential overhead.
-> 
-> If it really does turn out there aren't enough uses for it to be worth
-> it I'll be ok with ripping out the dynamic alloc... but the slowdown is
-> pretty damn minute (one instruction in the fast path) and the additional
-> complexity is fairly minor and quite self contained so I'm just not
-> seeing the urgency.
+> against Linus' tree (6abb7c2) still turns up nothing.
 
-I really don't think this can be drop-in replacement given the
-significant overhead on base ref put and you build up complexity with
-use cases not the other way around.  When you're looking at each
-specific implementation, it might not look like much but it really
-sucks to have a lot of unneeded / unused complexities around.  It
-raises maintenance overhead for no good reason.  Like you said, it's
-not like extending the design is difficult if we find out that the
-dynamic allocation is actually useful, and there just is no reason to
-do it the other way around.
+It's in my driver-core-next tree and will be going to Linus for 3.9-rc1.
 
-Thanks.
+thanks,
 
--- 
-tejun
+greg k-h
