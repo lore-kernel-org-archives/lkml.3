@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab3A2SqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 13:46:00 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22182 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab3A2Sp4 (ORCPT
+	id S1753607Ab3A2Sqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 13:46:47 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40541 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705Ab3A2Sqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 13:45:56 -0500
-Message-ID: <510818D9.3050303@oracle.com>
-Date: Tue, 29 Jan 2013 12:45:45 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	Tue, 29 Jan 2013 13:46:45 -0500
+Message-ID: <51081911.9070604@wwwdotorg.org>
+Date: Tue, 29 Jan 2013 11:46:41 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH V6 00/30] loop: Issue O_DIRECT aio using bio_vec
-References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com> <x49obg7omos.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49obg7omos.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.5
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Axel Lin <axel.lin@ingics.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        AnilKumar Ch <anilkumar@ti.com>
+Subject: Re: [PATCH 2/2] regulator: tps65910: Fix using wrong dev argument
+ for calling of_regulator_match
+References: <1358994450.20257.1.camel@phoenix> <1358994705.20257.4.camel@phoenix> <510711D1.3090205@wwwdotorg.org> <20130129033918.GA6878@opensource.wolfsonmicro.com>
+In-Reply-To: <20130129033918.GA6878@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 12:42 PM, Jeff Moyer wrote:
-> Dave Kleikamp <dave.kleikamp@oracle.com> writes:
+On 01/28/2013 08:39 PM, Mark Brown wrote:
+> On Mon, Jan 28, 2013 at 05:03:29PM -0700, Stephen Warren wrote:
+>> On 01/23/2013 07:31 PM, Axel Lin wrote:
+>>> The dev parameter is the device requesting the data. In this
+>>> case it should be &pdev->dev rather than pdev->dev.parent.
 > 
->> Al,
->> I'd like to push this patchset to linux-next. Would you like to pull it
->> into your vfs tree, would you rather I submitted it separately, or do
->> you have any issues with it before including it?
+>>> The dev parameter is used to call devm_kzalloc in
+>>> of_get_regulator_init_data(), which means this fixes a memory
+>>> leak because the memory is allocated every time probe() is
+>>> called, thus it should be freed when this driver is unloaded.
 > 
-> I'm still chasing one regression in this patchset.  If you use the ext4
-> driver for ext2 file systems, and you run the libaio test harness, then
-> you will be able to successfully write beyond the maximum file size in a
-> file (see test case 8).
+>> With this patch as part of next-20130128, I see a crash when
+>> booting my system. Reverting this patch solves the problem.
+> 
+> Hrm, there's nothing obviously wrong with the code here - all we do
+> with dev is call devm_kzalloc().  Can you decode where the crash is
+> actually occurring, that might give a clue as to what's getting
+> upset?  In the backtrace it's in regulator_register() but that's a
+> pretty big function.
 
-I'll take a look at that one too.
-
-Thanks,
-Shaggy
-
-> 
-> Cheers,
-> Jeff
-> 
+It looks like there's a bug in of_regulator_match() that this exposes.
+I'll send a patch shortly.
