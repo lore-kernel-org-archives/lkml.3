@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab3A2Hhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:37:36 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:41558 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab3A2Hhe (ORCPT
+	id S1754329Ab3A2HiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:38:23 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38235 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab3A2HiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:37:34 -0500
-Message-ID: <51077C33.60402@linux.vnet.ibm.com>
-Date: Tue, 29 Jan 2013 15:37:23 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 29 Jan 2013 02:38:21 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+CC: <anilkumar@ti.com>, <tony@atomide.com>, <hs@denx.de>,
+        <broonie@opensource.wolfsonmicro.com>, <sameo@linux.intel.com>,
+        <khilman@deeprootsystems.com>, <nsekhar@ti.com>,
+        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
+        <rob@landley.net>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <manishv.b@ti.com>
+Subject: [PATCH V2 0/6] davinci: DT support for i2c0 and tps6507x
+Date: Tue, 29 Jan 2013 13:08:48 +0530
+Message-ID: <1359445134-13323-1-git-send-email-manishv.b@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] kvm: IOMMU read-only mapping support
-References: <20130124220027.11061.76400.stgit@bling.home> <20130125101704.b76b049d.yoshikawa_takuya_b1@lab.ntt.co.jp> <5101FBE8.9000206@linux.vnet.ibm.com> <20130128105903.GA22871@redhat.com> <51073CC3.8030105@linux.vnet.ibm.com> <20130129065049.GF22871@redhat.com>
-In-Reply-To: <20130129065049.GF22871@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13012907-1396-0000-0000-000002798C25
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 02:50 PM, Gleb Natapov wrote:
-> On Tue, Jan 29, 2013 at 11:06:43AM +0800, Xiao Guangrong wrote:
->> On 01/28/2013 06:59 PM, Gleb Natapov wrote:
->>> On Fri, Jan 25, 2013 at 11:28:40AM +0800, Xiao Guangrong wrote:
->>>> On 01/25/2013 09:17 AM, Takuya Yoshikawa wrote:
->>>>> On Thu, 24 Jan 2013 15:03:57 -0700
->>>>> Alex Williamson <alex.williamson@redhat.com> wrote:
->>>>>
->>>>>> A couple patches to make KVM IOMMU support honor read-only mappings.
->>>>>> This causes an un-map, re-map when the read-only flag changes and
->>>>>> makes use of it when setting IOMMU attributes.  Thanks,
->>>>>
->>>>> Looks good to me.
->>>>>
->>>>> I think I can naturally update my patch after this gets merged.
->>>>>
->>>>
->>>> Please wait.
->>>>
->>>> The commit c972f3b1 changed the write-protect behaviour - it does
->>>> wirte-protection only when dirty flag is set.
->>>> [ I did not see this commit when we discussed the problem before. ]
->>>>
->>>> Further more, i notice that write-protect is not enough, when do sync
->>>> shadow page:
->>>>
->>>> FNAME(sync_page):
->>>>
->>>> 		host_writable = sp->spt[i] & SPTE_HOST_WRITEABLE;
->>>>
->>>> 		set_spte(vcpu, &sp->spt[i], pte_access,
->>>> 			 PT_PAGE_TABLE_LEVEL, gfn,
->>>> 			 spte_to_pfn(sp->spt[i]), true, false,
->>>> 			 host_writable);
->>>>
->>>> It sets spte based on the old value that means the readonly flag check
->>>> is missed. We need to call kvm_arch_flush_shadow_all under this case.
->>> Why not just disallow changing memory region KVM_MEM_READONLY flag
->>> without deleting the region?
->>
->> It will introduce some restriction when VM-sharing-mem is being implemented,
->> but we need to do some optimization for it, at least, properly write-protect
->> readonly pages (fix sync_page()) instead of zap_all_page.
->>
-> What is VM-sharing-mem?
+This patch series enables device tree support for I2C0
+and for regulator via tps6507x mfd device on da850-evm.
 
-Sharing memory between different guests.
+Applies on top of v3.8-rc5 of linus tree.
 
-> 
->> So, i guess we can do the simple fix first.
->>
-> By simple fix you mean calling kvm_arch_flush_shadow_all() on READONLY
-> flag change?
+Tested on da850-evm device.
 
-Simply disallow READONLY flag changing.
+Test procedure followed as below:
+Once device boots up, issue command as:
+
+$for reg in /sys/class/regulator/*; do echo $reg `cat $reg/name`
+ `cat $reg/state` `cat $reg/microvolts`; done
+
+Depends on:
+ - ARM: davinci: da850: add interrupt-parent property in soc node
+   https://patchwork.kernel.org/patch/2044101/
+ - ARM: davinci: da850: add pinctrl support
+   http://comments.gmane.org/gmane.linux.davinci/25993
+
+Changes since V1:
+ - Updated i2c0 node name in da850 dts and dtsi file.
+ - Removed interrupt parent from i2c0 node.
+ - Updated name for da850 auxdata lookup.
+ - Added a patch in series to update pin control driver
+   registration.
+
+Vishwanathrao Badarkhe, Manish (6):
+  pinctrl: pinctrl-single: use arch_initcall and module_exit
+  ARM: davinci: da850: add OF_DEV_AUXDATA entry for I2C0
+  ARM: davinci: da850: add DT node for I2C0
+  mfd: tps6507x: add device-tree support.
+  ARM: regulator: add tps6507x device tree data
+  ARM: davinci: da850: add tps6507x regulator DT data
+
+ arch/arm/boot/dts/da850-evm.dts  |   68 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/da850.dtsi     |   15 ++++++++
+ arch/arm/boot/dts/tps6507x.dtsi  |   47 ++++++++++++++++++++++++++
+ arch/arm/mach-davinci/da8xx-dt.c |    8 ++++-
+ drivers/mfd/tps6507x.c           |    9 +++++
+ drivers/pinctrl/pinctrl-single.c |   12 ++++++-
+ 6 files changed, 157 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm/boot/dts/tps6507x.dtsi
+
+-- 
+1.7.4.1
 
