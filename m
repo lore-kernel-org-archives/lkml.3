@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab3A2Val (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:30:41 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:52304 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab3A2Vai (ORCPT
+	id S1751646Ab3A2VcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:32:23 -0500
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:17992 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750972Ab3A2VcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:30:38 -0500
+	Tue, 29 Jan 2013 16:32:21 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz32i87h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0MHEP58-02-B0T-02
+X-M-MSG: 
+From: Boris Ostrovsky <ostr@amd64.org>
+To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>
+CC: <Jacob.Shin@amd.com>, <bp@alien8.de>, <linux-kernel@vger.kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>
+Subject: [PATCH 0/2] Enable WC+ memory type on AMD family 10h processors
+Date: Tue, 29 Jan 2013 16:31:55 -0500
+Message-ID: <1359495115-23181-1-git-send-email-ostr@amd64.org>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <20130129084914.GB5350@gmail.com>
-References: <1358214636-4801-1-git-send-email-song-bo.wang@hp.com>
-	<FE3E8B88161FFE48B03E3B93408433EC671016E2@G9W0754.americas.hpqcorp.net>
-	<CAE9FiQW75eP_exufb1gd7jQuu98WnkyGX23EBXktUCSyZX9Jvg@mail.gmail.com>
-	<20130128101135.GD7168@gmail.com>
-	<CAE9FiQUtQ4uaBZxndV+acHW55JL5-nb0EnuXHhwiB-mK8Swtag@mail.gmail.com>
-	<20130129074746.GA594@gmail.com>
-	<FE3E8B88161FFE48B03E3B93408433EC671027BC@G9W0754.americas.hpqcorp.net>
-	<20130129084914.GB5350@gmail.com>
-Date: Tue, 29 Jan 2013 13:30:37 -0800
-X-Google-Sender-Auth: 5s4zdyu8sxKDlLfYuSjBmkcCPig
-Message-ID: <CAE9FiQXfmRMeqboa4PEQ3nKd4POmSqJhj9oc69EC3u+xzk0gdA@mail.gmail.com>
-Subject: Re: [PATCH] x86/apic: check FADT settings after enable x2apic
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>,
-        "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>
-Cc: "mingo.kernel.org@gmail.com" <mingo.kernel.org@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
-        "Pearson, Greg" <greg.pearson@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 12:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Wang, Song-Bo (Stoney) <song-bo.wang@hp.com> wrote:
->
->> [...] Due to this mode mismatch, with specific HW
->> configurations, there will be intermittent lost interrupts,
->> which could result in a hang or data loss.
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-Wang,
+Enable WC+ memory type on AMD family 10h processors if BIOS doesn't do
+this. WC+ is used only in in virtualized scenarios and never in bare metal
+cases (see AMD APM v2).
 
-Maybe off topic, You should never ship those kind of system before you
-fix that in BIOS, as user will have problem with current distribution.
+Also clean up init_amd() a little.
 
-You need to ask your BIOS guys (or OEM's BIOS guys) to check with Intel
-to set one bit in IIO configure space to enable x2apic cluster.
+Boris Ostrovsky (2):
+  AMD,x86: Clean up init_amd()
+  x86,AMD: Enable WC+ memory type on family 10 processors
 
-Thanks
+ arch/x86/include/uapi/asm/msr-index.h |    1 +
+ arch/x86/kernel/cpu/amd.c             |   49 ++++++++++++++++++---------------
+ 2 files changed, 28 insertions(+), 22 deletions(-)
 
-Yinghai
+
