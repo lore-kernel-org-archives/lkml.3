@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab3A2CnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 21:43:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23616 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751709Ab3A2CnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 21:43:16 -0500
-Message-ID: <51073429.10503@redhat.com>
-Date: Tue, 29 Jan 2013 10:30:01 +0800
-From: Lingzhu Xiang <lxiang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>
-Subject: Re: [RFC] efivars write(2) races
-References: <20130125002552.GC4503@ZenIV.linux.org.uk>   <51020120.5000500@redhat.com>  <1359119883.2496.156.camel@mfleming-mobl1.ger.corp.intel.com>  <5105E4A3.9040102@redhat.com> <1359376730.8282.20.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1359376730.8282.20.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756221Ab3A2Cng (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 21:43:36 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:9264 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331Ab3A2Cnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 21:43:32 -0500
+Message-ID: <1359426808.15120.33.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/4] ACPI scan handlers
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Jan 2013 19:33:28 -0700
+In-Reply-To: <4311642.nDd2RCVeDc@vostro.rjw.lan>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan>
+	 <4311642.nDd2RCVeDc@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 08:38 PM, Matt Fleming wrote:
-> On Mon, 2013-01-28 at 10:38 +0800, Lingzhu Xiang wrote:
->> On 01/25/2013 09:18 PM, Matt Fleming wrote:
->>>> 4. EFI_VARIABLE_APPEND_WRITE with EFI_OUT_OF_RESOURCES truncates size but you
->>>>      can still read its content.
->>>
->>> I'm not sure what you mean by this. Could you please explain?
->>
->> Oops, this one is incorrect. I was testing EFI_VARIABLE_APPEND_WRITE
->> using this:
->>
->> printf "\x47\x00\x00\x00\x00" >test-1-$guid
->>
->> So it truncates the file before writing, but efivarfs figures out the right
->> size afterwards. The size remains zero if the write fails.
->>
->> I should be using this for appending:
->>
->> printf "\x47\x00\x00\x00\x00" >>test-1-$guid
+On Mon, 2013-01-28 at 13:58 +0100, Rafael J. Wysocki wrote:
+> On Thursday, January 24, 2013 01:26:56 AM Rafael J. Wysocki wrote:
+> > Hi All,
+> > 
+> > There is a considerable amount of confusion in the ACPI subsystem about what
+> > ACPI drivers are used for.  Namely, some of them are used as "normal" device
+> > drivers that bind to devices and handle them using ACPI control methods (like
+> > the fan or battery drivers), but some of them are just used for handling
+> > namespace events, such as the creation or removal of device nodes (I guess it
+> > would be fair to call that an abuse of the driver core).  These two roles are
+> > quite distinct, which is particularly visible from the confusion about the role
+> > of the .remove() callback.
+> > 
+> > For the "normal" drivers this callback is simply used to handle situations in
+> > which the driver needs to be unbound from the device, because one of them
+> > (either the device or the driver) is going away.  That operation can't really
+> > fail, it just needs to do the necessary cleanup.
+> > 
+> > However, for the namespace events handling "drivers" .remove() means that not
+> > only the device node in question, but generally also the whole subtree below it
+> > needs to be prepared for removal, which may involve deleting multiple device
+> > objects belonging to different bus types and so on and which very well may fail
+> > (for example, those devices may be used for such things like swap or they may be
+> > memory banks used by the kernel and it may not be safe to remove them at the
+> > moment etc.).  Moreover, for these things the removal of the "driver" doesn't
+> > really make sense, because it has to be there to handle the namespace events it
+> > is designed to handle or else things will go remarkably awry in some places.
+> > 
+> > To resolve all that mess I'd like to do the following, which in part is inspired
+> > by the recent Toshi Kani's hotplug framework proposal and in part is based on
+> > some discussions I had with Bjorn and others (the code references made below are
+> > based on the current contens of linux-pm.git/linux-next).
+> > 
+> > 1) Introduce a special data type for "ACPI namespace event handlers" like:
+> > 
+> > struct acpi_scan_handler {
+> > 	const struct acpi_device_id *ids;
+> > 	struct list_head list_node;
+> > 	int (*attach)(struct acpi_device *adev);
+> > 	int (*untie)(struct acpi_device *adev);
+> > 	int (*reclaim)(struct acpi_device *adev);
+> > 	void (*detach)(struct acpi_device *adev);
+> > };
 > 
-> Does this mean that these two test cases work as expected?
+> After some reconsideration I think that the "untie" and "reclaim" things won't
+> be really useful at this level.  This means that I only need ACPI scan handlers
+> to do .attach() and .detach() and all of that becomes really simple, so I don't
+> see reason to wait with that change.
 
-Mostly yes.
+That's great.  I agree with you.  The name of attach/detach() also
+clarifies the purpose of the interfaces well.  
 
-printf "\x47\x00\x00\x00\x00" >test-1-$guid
+Thanks,
+-Toshi
 
-still shows unexpected truncate behavior. But this is the same one
-already noted previously (truncate doesn't actually work). 
+ps.
+I am tied up this week and will be somewhat slow to respond...
+
+
+> 
+> The following patches introduce ACPI scan handlers and make some use of them.
+> 
+> [1/4] Introduce struct acpi_scan_handler for configuration tasks depending on
+>       device IDs.
+> 
+> [2/4] Make ACPI PCI root driver use struct acpi_scan_handler.
+> 
+> [3/4] Make ACPI PCI IRQ link driver use struct acpi_scan_handler.
+> 
+> [4/4] Use struct acpi_scan_handler for creating platform devices enumerated via ACPI.
+> 
+> Thanks,
+> Rafael
+> 
+> 
+
+
