@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab3A2Icl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:32:41 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:50760 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753446Ab3A2Ici (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:32:38 -0500
-Date: Tue, 29 Jan 2013 09:35:22 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] arm: use built-in byte swap function
-Message-ID: <20130129083522.GA14302@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Kim Phillips <kim.phillips@freescale.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Daniel Santos <daniel.santos@pobox.com>,
-	David Rientjes <rientjes@google.com>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	David Woodhouse <David.Woodhouse@intel.com>,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754787Ab3A2IgB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:36:01 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37232 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab3A2If6 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Tue, 29 Jan 2013 03:35:58 -0500
+Message-Id: <510797FA02000078000BA4B8@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Tue, 29 Jan 2013 08:35:54 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "KY Srinivasan" <kys@microsoft.com>
+Cc: "Olaf Hering" <olaf@aepfle.de>, "Greg KH" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] x86: Hyper-V: register clocksource only if its
+ advertised
+References: <1359121036-16309-1-git-send-email-olaf@aepfle.de>
+ <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com>
+ <20130125165443.GA15833@aepfle.de>
+ <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
+ <20130125171923.GA19306@aepfle.de>
+ <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com>
+ <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 07:30:33PM -0600, Kim Phillips wrote:
-> Enable the compiler intrinsic for byte swapping on arch ARM.  This
-> allows the compiler to detect and be able to optimize out byte
-> swappings, e.g. in big endian to big endian moves.
+>>> On 28.01.13 at 18:44, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> I think that Olaf made his point very clear: a feature A should only be
+> enabled if the corresponding flag A is set.
+> In fact it seems to me that this patch is correct on its own merits,
+> regardless of Xen does or does not.
 > 
-> AFAICT, arm gcc got __builtin_bswap{32,64} support in 4.6,
-> and for the 16-bit version in 4.8.
+> The Xen tools might or might not know whether a guest is going to be
+> Linux, Windows, FreeBSD or whatever else people use nowadays.  Setting
+> viridian=1 is the safe choice, given that it shouldn't create any
+> issues: after all guests are supposed to check for feature flags before
+> using them.
 > 
-> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
-> ---
-> akin to: http://comments.gmane.org/gmane.linux.kernel.cross-arch/16016
-> 
-> based on linux-next.  Depends on commit "compiler-gcc{3,4}.h: Use
-> GCC_VERSION macro" by Daniel Santos <daniel.santos@pobox.com>,
-> currently in the akpm branch.
-> 
-> RFC because of unfamiliarity with arch ARM, and that at91sam9rl,
-> at91rm9200, and lpd270 (so far, at least) builds fail with:
-> 
-> include/uapi/linux/swab.h:60: undefined reference to `__bswapsi2'
-> 
-> I'm using eldk-5.2.1/armv7a's arm-linux-gnueabi-gcc (GCC) 4.6.4
-> 20120303 (prerelease)
-> 
->  arch/arm/Kconfig              |    1 +
->  include/linux/compiler-gcc4.h |    3 ++-
->  2 files changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index eda8711..437d11a 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -3,6 +3,7 @@ config ARM
->  	default y
->  	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
->  	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-> +	select ARCH_USE_BUILTIN_BSWAP
->  	select ARCH_HAVE_CUSTOM_GPIO_H
->  	select ARCH_WANT_IPC_PARSE_VERSION
->  	select BUILDTIME_EXTABLE_SORT if MMU
-> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> index 68b162d..da5f728 100644
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -67,7 +67,8 @@
->  
->  
->  #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
-> -#if GCC_VERSION >= 40400
-> +#if (!defined(__arm__) && GCC_VERSION >= 40400) || \
-> +    (defined(__arm__) && GCC_VERSION >= 40600)
+> If Xen is going to implement "Partition Reference Counter", it is also
+> going to set the corresponding flag, so the guest OS (Windows, Linux,
+> my pet OS) can check whether the feature is available and decide whether
+> it wants to use it.
 
-There should be no arch-specific stuff in a generic header. I guess
-you probably need to select ARCH_USE_BUILTIN_BSWAP in an arm-specific
-compiler.h header after checking compiler version...
+While I agree in general, the specific case of the callback vector
+seems a little more difficult: As KY says, there's no feature flag
+for this (or perhaps more precisely for it being deliverable across
+all CPUs), and hence there's both the problem of detection and
+the problem of disambiguation (as otherwise both the Hyper-V
+code and the Xen code in Linux could be trying to use the same
+vector).
 
-Thanks.
+Jan
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
