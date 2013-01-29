@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab3A2Irl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:47:41 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:15700
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753514Ab3A2Irk (ORCPT
+	id S1755008Ab3A2IsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:48:07 -0500
+Received: from mga12.intel.com ([143.182.124.36]:49005 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754827Ab3A2IsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:47:40 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(zcb8kzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1155h)
-From: Gary Zhang <b13634@freescale.com>
-To: <shawn.guo@linaro.org>, <kernel@pengutronix.de>, <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/4] ARM: imx: set CKO1 parent clock source in imx6q sabresd
-Date: Tue, 29 Jan 2013 15:49:39 +0800
-Message-ID: <1359445779-2038-1-git-send-email-b13634@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 29 Jan 2013 03:48:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20130128185242.GB5868@redhat.com>
+References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
+	<53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
+	<1358895228.2408.14.camel@falcor1>
+	<CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
+	<20130125210157.GA13152@redhat.com>
+	<CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
+	<20130128151527.GA5868@redhat.com>
+	<CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
+	<20130128185242.GB5868@redhat.com>
+Date: Tue, 29 Jan 2013 10:48:00 +0200
+Message-ID: <CALLzPKZgbz0zCMHVbcDpHX0vv=qt+T0Gi8p+rUa70LJ0E+xrNA@mail.gmail.com>
+Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric keys
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, dhowells@redhat.com,
+        jmorris@namei.org, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-in imx6q sabresd board, wm8962 uses CKO1 as MCLK. set ahb as CKO1
-parent clock source
+On Mon, Jan 28, 2013 at 8:52 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
+>
+> [..]
+>> > Ok. I am hoping that it will be more than the kernel command line we
+>> > support. In the sense that for digital signatures one needs to parse
+>> > the signature, look at what hash algorithm has been used  and then
+>> > collect the hash accordingly. It is little different then IMA requirement
+>> > of calculating one pre-determine hash for all files.
+>>
+>> Yes... It is obvious. It's coming.
+>> But in general, signer should be aware of requirements and limitation
+>> of the platform.
+>> It is not really a problem...
+>
+> Ok, I have another question. I was looking at your slide deck here.
+>
+> http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
+>
+> Slide 12 mentions that keys are loaded into the kernel from initramfs. If
+> "root" can load any key, what are we protecting against.
+>
+> IOW, what good ima_appraise_tcb policy, which tries to appraise any root
+> owned file.  A root can sign all the files using its own key and load its
+> public key in IMA keyring and then integrity check should pass on all
+> root files.
+>
+> So what's the idea behind digital signature appraisal? By allowing root to
+> unconditionally load the keys in IMA keyring, it seems to circumvent the
+> appraisal mechanism.
+>
 
-Signed-off-by: Gary Zhang <b13634@freescale.com>
----
- arch/arm/mach-imx/mach-imx6q.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+I will answer directly to this email first.
+'keyctl setperm' command is used to lock keyring from being able to
+add new keys...
+Even root is not able to revert locked keyring to original
+write-permissive mode.
 
-diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-index 4eb1b3a..ee3f357 100644
---- a/arch/arm/mach-imx/mach-imx6q.c
-+++ b/arch/arm/mach-imx/mach-imx6q.c
-@@ -151,6 +151,36 @@ static void __init imx6q_sabrelite_init(void)
- 	imx6q_sabrelite_cko1_setup();
- }
- 
-+static void __init imx6q_sabresd_cko1_setup(void)
-+{
-+	struct clk *cko1_sel, *ahb, *cko1;
-+	unsigned long rate;
-+
-+	cko1_sel = clk_get_sys(NULL, "cko1_sel");
-+	ahb = clk_get_sys(NULL, "ahb");
-+	cko1 = clk_get_sys(NULL, "cko1");
-+	if (IS_ERR(cko1_sel) || IS_ERR(ahb) || IS_ERR(cko1)) {
-+		pr_err("cko1 setup failed!\n");
-+		goto put_clk;
-+	}
-+	clk_set_parent(cko1_sel, ahb);
-+	rate = clk_round_rate(cko1, 24000000);
-+	clk_set_rate(cko1, rate);
-+
-+	return;
-+put_clk:
-+	if (!IS_ERR(cko1_sel))
-+		clk_put(cko1_sel);
-+	if (!IS_ERR(ahb))
-+		clk_put(ahb);
-+	if (!IS_ERR(cko1))
-+		clk_put(cko1);
-+}
-+static void __init imx6q_sabresd_init(void)
-+{
-+	imx6q_sabresd_cko1_setup();
-+}
-+
- static void __init imx6q_1588_init(void)
- {
- 	struct regmap *gpr;
-@@ -193,6 +223,8 @@ static void __init imx6q_init_machine(void)
- {
- 	if (of_machine_is_compatible("fsl,imx6q-sabrelite"))
- 		imx6q_sabrelite_init();
-+	else if (of_machine_is_compatible("fsl,imx6q-sabresd"))
-+		imx6q_sabresd_init();
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- 
--- 
-1.7.0.4
+root@ubuntu:~# cat /proc/keys |grep ima
+16a4c685 I--Q---     1 perm 3f010000     0     0 keyring   _ima: 2/4
+root@ubuntu:~# keyctl setperm 379897477  0x0b010000
+root@ubuntu:~# keyctl add user testkey "testing1" 379897477
+add_key: Permission denied
+root@ubuntu:~# keyctl setperm 379897477  0x3f010000
+keyctl_setperm: Permission denied
+root@ubuntu:~# cat /proc/keys |grep ima
+16a4c685 I--Q---     1 perm 0b010000     0     0 keyring   _ima: 3/4
 
 
+- Dmitry
+
+> Thanks
+> Vivek
