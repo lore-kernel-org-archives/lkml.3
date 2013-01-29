@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab3A2PwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 10:52:04 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:47368 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab3A2PwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 10:52:00 -0500
-Message-ID: <5107F014.4030704@ahsoftware.de>
-Date: Tue, 29 Jan 2013 16:51:48 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755578Ab3A2Pyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 10:54:41 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37274 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752027Ab3A2Pyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 10:54:35 -0500
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>
+Subject: [RFC PATCH 1/2] ARM: kernel: update cpuinfo to print CPU model name
+Date: Tue, 29 Jan 2013 17:54:24 +0200
+Message-ID: <1359474865-15408-2-git-send-email-ruslan.bilovol@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1359474865-15408-1-git-send-email-ruslan.bilovol@ti.com>
+References: <1359474865-15408-1-git-send-email-ruslan.bilovol@ti.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Bernie Thompson <bernie@plugable.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/3 v2] fb: udlfb: fix hang at disconnect
-References: <50F2A310.5010006@ahsoftware.de> <1359139768-32294-1-git-send-email-holler@ahsoftware.de> <1359139768-32294-2-git-send-email-holler@ahsoftware.de> <20130128162238.7fba92fe.akpm@linux-foundation.org> <51071E21.9030008@ahsoftware.de> <5107A5ED.7020009@ahsoftware.de> <5107AE4F.9000809@ahsoftware.de>
-In-Reply-To: <5107AE4F.9000809@ahsoftware.de>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.01.2013 12:11, schrieb Alexander Holler:
+Currently, reading /proc/cpuinfo provides userspace with CPU ID of
+the CPU carrying out the read from the file.
+Userspace using this information may decide what module
+to load or how to configure some specific (and processor-depended)
+settings or so.
+However, since really different SoCs can share same ARM core,
+this information currently is not so useful.
+For example, TI OMAP4460 and OMAP4470 SoCs show the same
+information in the /proc/cpuinfo whereas they are different.
+The "cpuinfo" file looks like exactly that place, where
+This information have to be displayed.
 
->
-> To explain the problem on shutdown a bit further, I think the following
-> happens (usb and driver are statically linked and started by the kernel):
->
-> shutdown -> kill signal -> usb stack shuts down -> udlfb waits (forever)
-> for a kill or an urb which it doesn't get.
+So added new line "CPU name" in the "cpuinfo" output for CPU model name
 
-Having a second look at what I've written above, I'm not even sure if 
-the kernel sends one or more fatal signals on shutdown at all. I've just 
-assumed it because otherwise down_interruptible() wouldn't have worked 
-before (it would have stalled on shutdown too (if an urb got missed), 
-not only on disconnect).
+Example:
 
-Sounds like an interesting question I should read about (if/when fatal 
-signals are issued by the kernel). ;)
+/ # cat proc/cpuinfo
+processor       : 0
+model name      : ARMv7 Processor rev 10 (v7l)
+BogoMIPS        : 1590.23
+Features        : swp half thumb fastmult vfp edsp thumbee neon vfpv3 tls
+CPU implementer : 0x41
+CPU name        : OMAP4470 ES1.0 HS
+CPU architecture: 7
+CPU variant     : 0x2
+CPU part        : 0xc09
+CPU revision    : 10
+[...]
 
-> Maybe the sequence is different if the usb-stack and udlfb are used as a
-> module and/or udlfb is used only for X/fb. I'm not sure what actually
-> does shut down the usb-stack in such a case, but maybe more than one
-> kill signal might be thrown around.
+Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
+---
+ arch/arm/include/asm/setup.h |    1 +
+ arch/arm/kernel/setup.c      |   10 ++++++++++
+ 2 files changed, 11 insertions(+)
 
-Regards,
+diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
+index c50f056..f49de38 100644
+--- a/arch/arm/include/asm/setup.h
++++ b/arch/arm/include/asm/setup.h
+@@ -52,5 +52,6 @@ extern struct meminfo meminfo;
+ extern int arm_add_memory(phys_addr_t start, phys_addr_t size);
+ extern void early_print(const char *str, ...);
+ extern void dump_machine_table(void);
++extern void set_cpu_model_name(char *name);
+ 
+ #endif
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 3f6cbb2..6fab2e2 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -134,6 +134,7 @@ char elf_platform[ELF_PLATFORM_SIZE];
+ EXPORT_SYMBOL(elf_platform);
+ 
+ static const char *cpu_name;
++static const char *cpu_model_name;
+ static const char *machine_name;
+ static char __initdata cmd_line[COMMAND_LINE_SIZE];
+ struct machine_desc *machine_desc __initdata;
+@@ -493,6 +494,11 @@ static void __init setup_processor(void)
+ 	cpu_init();
+ }
+ 
++void set_cpu_model_name(char *name)
++{
++	cpu_model_name = name;
++}
++
+ void __init dump_machine_table(void)
+ {
+ 	struct machine_desc *p;
+@@ -880,6 +886,10 @@ static int c_show(struct seq_file *m, void *v)
+ 				seq_printf(m, "%s ", hwcap_str[j]);
+ 
+ 		seq_printf(m, "\nCPU implementer\t: 0x%02x\n", cpuid >> 24);
++
++		if (cpu_model_name)
++			seq_printf(m, "CPU name\t: %s\n", cpu_model_name);
++
+ 		seq_printf(m, "CPU architecture: %s\n",
+ 			   proc_arch[cpu_architecture()]);
+ 
+-- 
+1.7.9.5
 
-Alexander
