@@ -1,135 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab3A2Ixg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:53:36 -0500
-Received: from mga07.intel.com ([143.182.124.22]:11504 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754098Ab3A2Ixc (ORCPT
+	id S1754998Ab3A2IzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:55:25 -0500
+Received: from smtp4.nedap.com ([213.160.213.85]:51993 "EHLO smtp.nedap.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754487Ab3A2IzX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:53:32 -0500
+	Tue, 29 Jan 2013 03:55:23 -0500
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 03:55:22 EST
+From: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 29 Jan 2013 09:49:52 +0100
+Subject: [PATCH] Prevent deadlock in n_gsm driver
+Thread-Topic: [PATCH] Prevent deadlock in n_gsm driver
+Thread-Index: Ac39/ZnD9ivWE5P2SNiS0Vnvbv6bgA==
+Message-ID: <4B03AD17-906A-4FBF-9F00-3F860395B229@nedap.com>
+Accept-Language: en-US, nl-NL
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, nl-NL
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20130128201316.GA14405@redhat.com>
-References: <cover.1358246017.git.dmitry.kasatkin@intel.com>
-	<53febcf9f13e59a1ddd8f8c9826cadbe663f2295.1358246017.git.dmitry.kasatkin@intel.com>
-	<1358895228.2408.14.camel@falcor1>
-	<CALLzPKbNVV+iWzUcsxq0Lk-Hz2BVpCBsEbjHdnRAyjDsF5___g@mail.gmail.com>
-	<20130125210157.GA13152@redhat.com>
-	<CALLzPKY9E8VaFf1GUstTnCeYwLOTm6ozdjJFDwSKWk_JR6QF5w@mail.gmail.com>
-	<20130128151527.GA5868@redhat.com>
-	<CALLzPKbjmoLGMVgY-GygZ9ScV1GNHKaKHGYsHc4=CeoYPL4rmw@mail.gmail.com>
-	<20130128185242.GB5868@redhat.com>
-	<1359402694.3906.53.camel@falcor1>
-	<20130128201316.GA14405@redhat.com>
-Date: Tue, 29 Jan 2013 10:53:30 +0200
-Message-ID: <CALLzPKaFEGB_SKC6RBkU0AWz92DR0PGp-yRAhaHVU55fru+q6g@mail.gmail.com>
-Subject: Re: [RFC 1/1] ima: digital signature verification using asymmetric keys
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, dhowells@redhat.com,
-        jmorris@namei.org, linux-security-module@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 10:13 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Mon, Jan 28, 2013 at 02:51:34PM -0500, Mimi Zohar wrote:
->> On Mon, 2013-01-28 at 13:52 -0500, Vivek Goyal wrote:
->> > On Mon, Jan 28, 2013 at 05:20:20PM +0200, Kasatkin, Dmitry wrote:
->> >
->> > [..]
->> > > > Ok. I am hoping that it will be more than the kernel command line we
->> > > > support. In the sense that for digital signatures one needs to parse
->> > > > the signature, look at what hash algorithm has been used  and then
->> > > > collect the hash accordingly. It is little different then IMA requirement
->> > > > of calculating one pre-determine hash for all files.
->> > >
->> > > Yes... It is obvious. It's coming.
->> > > But in general, signer should be aware of requirements and limitation
->> > > of the platform.
->> > > It is not really a problem...
->> >
->> > Ok, I have another question. I was looking at your slide deck here.
->> >
->> > http://selinuxproject.org/~jmorris/lss2011_slides/IMA_EVM_Digital_Signature_Support.pdf
->> >
->> > Slide 12 mentions that keys are loaded into the kernel from initramfs. If
->> > "root" can load any key, what are we protecting against.
->> >
->> > IOW, what good ima_appraise_tcb policy, which tries to appraise any root
->> > owned file.  A root can sign all the files using its own key and load its
->> > public key in IMA keyring and then integrity check should pass on all
->> > root files.
->>
->> > So what's the idea behind digital signature appraisal? By allowing root to
->> > unconditionally load the keys in IMA keyring, it seems to circumvent the
->> > appraisal mechanism.
->>
->> Vivek, you're asking obvious questions, without understanding that what
->> you want to do is only now possible because of the work that has gone
->> into upstreaming the different components of the linux-integrity
->> subsystem (eg. IMA, trusted/encrypted keys, EVM, (MPI library), and now
->> IMA-appraisal).  In case you weren't aware, Dmitry made the necessary
->> changes so that the MPI library could be upstreamed for
->> EVM/IMA-appraisal digital signature support.
->
-> Hi Mimi,
->
-> Sure. I am just trying to understand that where are we and how can I
-> help improve things so that I can achieve my objectives.
->
-> The problem I am running into is that I can't find a single good
-> documentation here which explains how to use things. There is no
-> single .txt file in Documentation/ directory which explains current
-> state of affiars or which explains how to use any of the IMA/EVM
-> functionality.
->
+This change fixes a deadlock when the multiplexer is closed while there
+are still client side ports open.
 
-There is Wiki page available which contains lots of examples and explanations.
+When the multiplexer is closed and there are active tty's it tries to
+close them with tty_vhangup. This has a problem though, because
+tty_vhangup needs the tty_lock. This patch changes it to unlock the
+tty_lock before attempting the hangup and relocks afterwards. The
+additional call to tty_port_tty_set is needed because otherwise the
+port stays active because of the reference counter.
 
-http://sourceforge.net/p/linux-ima/wiki/Home/
+This change also exposed another problem that other code paths don't
+expect that the multiplexer could have been closed. This patch also adds
+checks for these cases in the gsmtty_ class of function that could be
+called.
 
-This is an Open Source project. Anyone can contribute and improve it.
-If you find that something is unclear or missing in the wiki, you are
-welcome to contribute/
+The documentation explicitly states that "first close all virtual ports
+before closing the physical port" but we've found this to not always
+reality in our field situations. The GPRS / UTMS modem sometimes crashes
+and needs a power cycle in that case which means cleanly shutting down
+everything is not always possible. This change makes it much more robust
+for our situation where at least the system is recoverable with this patch
+and doesn't hang in a deadlock situation inside the kernel.
+
+The patch is against the long term support kernel (3.4.27) and should
+apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
+and Telit HE910 modem.
+
+Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+---
+ drivers/tty/n_gsm.c |   42 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 41 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 90dff82..d9bde03 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1692,6 +1692,8 @@ static inline void dlci_put(struct gsm_dlci *dlci)
+ 	kref_put(&dlci->ref, gsm_dlci_free);
+ }
+ 
++static void gsm_destroy_network(struct gsm_dlci *dlci);
++
+ /**
+  *	gsm_dlci_release		-	release DLCI
+  *	@dlci: DLCI to destroy
+@@ -1705,9 +1707,19 @@ static void gsm_dlci_release(struct gsm_dlci *dlci)
+ {
+ 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
+ 	if (tty) {
++		mutex_lock(&dlci->mutex);
++		gsm_destroy_network(dlci);
++		mutex_unlock(&dlci->mutex);
++
++		/* tty_vhangup needs the tty_lock, so unlock and
++		   relock after doing the hangup. */
++		tty_unlock();
+ 		tty_vhangup(tty);
++		tty_lock();
++		tty_port_tty_set(&dlci->port, NULL);
+ 		tty_kref_put(tty);
+ 	}
++	dlci->state = DLCI_CLOSED;
+ 	dlci_put(dlci);
+ }
+ 
+@@ -2933,6 +2945,8 @@ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
+ 
+ 	if (dlci == NULL)
+ 		return;
++	if (dlci->state != DLCI_OPEN)
++		return;
+ 	mutex_lock(&dlci->mutex);
+ 	gsm_destroy_network(dlci);
+ 	mutex_unlock(&dlci->mutex);
+@@ -2951,6 +2965,8 @@ out:
+ static void gsmtty_hangup(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return;
+ 	tty_port_hangup(&dlci->port);
+ 	gsm_dlci_begin_close(dlci);
+ }
+@@ -2958,9 +2974,12 @@ static void gsmtty_hangup(struct tty_struct *tty)
+ static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
+ 								    int len)
+ {
++	int sent;
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return -EINVAL;
+ 	/* Stuff the bytes into the fifo queue */
+-	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
++	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
+ 	/* Need to kick the channel */
+ 	gsm_dlci_data_kick(dlci);
+ 	return sent;
+@@ -2969,18 +2988,24 @@ static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
+ static int gsmtty_write_room(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return -EINVAL;
+ 	return TX_SIZE - kfifo_len(dlci->fifo);
+ }
+ 
+ static int gsmtty_chars_in_buffer(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return -EINVAL;
+ 	return kfifo_len(dlci->fifo);
+ }
+ 
+ static void gsmtty_flush_buffer(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return;
+ 	/* Caution needed: If we implement reliable transport classes
+ 	   then the data being transmitted can't simply be junked once
+ 	   it has first hit the stack. Until then we can just blow it
+@@ -2999,6 +3024,8 @@ static void gsmtty_wait_until_sent(struct tty_struct *tty, int timeout)
+ static int gsmtty_tiocmget(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return -EINVAL;
+ 	return dlci->modem_rx;
+ }
+ 
+@@ -3008,6 +3035,8 @@ static int gsmtty_tiocmset(struct tty_struct *tty,
+ 	struct gsm_dlci *dlci = tty->driver_data;
+ 	unsigned int modem_tx = dlci->modem_tx;
+ 
++	if (dlci->state != DLCI_OPEN)
++		return -EINVAL;
+ 	modem_tx &= ~clear;
+ 	modem_tx |= set;
+ 
+@@ -3026,6 +3055,8 @@ static int gsmtty_ioctl(struct tty_struct *tty,
+ 	struct gsm_netconfig nc;
+ 	int index;
+ 
++	if (dlci->state != DLCI_OPEN)
++		return -EINVAL;
+ 	switch (cmd) {
+ 	case GSMIOC_ENABLE_NET:
+ 		if (copy_from_user(&nc, (void __user *)arg, sizeof(nc)))
+@@ -3052,6 +3083,9 @@ static int gsmtty_ioctl(struct tty_struct *tty,
+ 
+ static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ {
++	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return;
+ 	/* For the moment its fixed. In actual fact the speed information
+ 	   for the virtual channel can be propogated in both directions by
+ 	   the RPN control message. This however rapidly gets nasty as we
+@@ -3063,6 +3097,8 @@ static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ static void gsmtty_throttle(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return;
+ 	if (tty->termios->c_cflag & CRTSCTS)
+ 		dlci->modem_tx &= ~TIOCM_DTR;
+ 	dlci->throttled = 1;
+@@ -3073,6 +3109,8 @@ static void gsmtty_throttle(struct tty_struct *tty)
+ static void gsmtty_unthrottle(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state != DLCI_OPEN)
++		return;
+ 	if (tty->termios->c_cflag & CRTSCTS)
+ 		dlci->modem_tx |= TIOCM_DTR;
+ 	dlci->throttled = 0;
+@@ -3084,6 +3122,8 @@ static int gsmtty_break_ctl(struct tty_struct *tty, int state)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
+ 	int encode = 0;	/* Off */
++	if (dlci->state != DLCI_OPEN)
++		return -EINVAL;
+ 
+ 	if (state == -1)	/* "On indefinitely" - we can't encode this
+ 				    properly */
+-- 
+1.7.2.5
 
 
-> So I have no way left but to read code and ask obivious questions
-> on mailing list to figure out what components are working, what
-> components are work in progress or what's the intent of components
-> and how they are supposed to be used.
->
-> So are we saying that all the appraisal and digital signature stuff
-> is not useful till we figure a way out to lock down IMA keyring. Or
-> it is useful only when root can load the keyring but we are trying
-> to appraise only non-root files.
->
->>
->> I'm pretty sure that keyrings can be locked, preventing additional keys
->> from being added.  (If it isn't currently supported, it needs to be.)
->> The _evm and _ima keyrings should definitely be locked.  When/how this
->> is done, is yet to be defined.  I'm pretty sure there are a number of
->> people thinking about this, including David Howells, Dmitry Kataskin,
->> David Safford and myself.
->>
->> As I previously said, the next steps are to integrate the
->> EVM/IMA-appraisal public keys in a safe and trusted manner, without
->> breaking the secure boot signature chain.
->
-> In a private conversation David howells mentioned that IMA keyring
-> should allow loading only if new key is trusted by an already loaded
-> key. He has already posted some patches for marking a keyring trusted
-> and loading keys only if it is signed by a trusted key.
->
-> We were wondring that what use case is served by allowing the root
-> to load keys unconditionally. By understanding the use case, atleast
-> one can try not to break it.
 
-Please read my previous email on how to lock down the kernel keyring.
 
-- Dmitry
-
->
-> Thanks
-> Vivek
