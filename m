@@ -1,182 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab3A2Qat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:30:49 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19376 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab3A2QY2 (ORCPT
+	id S1754389Ab3A2Qae (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:30:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35308 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab3A2QYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:24:28 -0500
+	Tue, 29 Jan 2013 11:24:30 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V6 16/30] fs: create file_readable() and file_writable() functions
-Date: Tue, 29 Jan 2013 10:23:29 -0600
-Message-Id: <1359476623-10544-17-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH V6 10/30] dio: add bio_vec support to __blockdev_direct_IO()
+Date: Tue, 29 Jan 2013 10:23:23 -0600
+Message-Id: <1359476623-10544-11-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create functions to simplify if file_ops contain either a read
-or aio_read op, or likewise write or aio_write. We will be adding
-read_iter and write_iter and don't need to be complicating the code
-in multiple places.
+The trick here is to initialize the dio state so that do_direct_IO()
+consumes the pages we provide and never tries to map user pages.  This
+is done by making sure that final_block_in_request covers the page that
+we set in the dio.  do_direct_IO() will return before running out of
+pages.
+
+The caller is responsible for dirtying these pages, if needed.  We add
+an option to the dio struct that makes sure we only dirty pages when
+we're operating on iovecs of user addresses.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
 ---
- drivers/mtd/nand/nandsim.c           |  4 ++--
- drivers/staging/ccg/storage_common.c |  4 ++--
- drivers/usb/gadget/storage_common.c  |  4 ++--
- fs/compat.c                          |  4 ++--
- fs/read_write.c                      |  8 ++++----
- include/linux/fs.h                   | 10 ++++++++++
- 6 files changed, 22 insertions(+), 12 deletions(-)
+ fs/direct-io.c | 206 +++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 148 insertions(+), 58 deletions(-)
 
-diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
-index 818b65c..cb47bdd 100644
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -580,12 +580,12 @@ static int alloc_device(struct nandsim *ns)
- 		cfile = filp_open(cache_file, O_CREAT | O_RDWR | O_LARGEFILE, 0600);
- 		if (IS_ERR(cfile))
- 			return PTR_ERR(cfile);
--		if (!cfile->f_op || (!cfile->f_op->read && !cfile->f_op->aio_read)) {
-+		if (!file_readable(cfile)) {
- 			NS_ERR("alloc_device: cache file not readable\n");
- 			err = -EINVAL;
- 			goto err_close;
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index b97a202..63e5a17 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -126,6 +126,7 @@ struct dio {
+ 	spinlock_t bio_lock;		/* protects BIO fields below */
+ 	int page_errors;		/* errno from get_user_pages() */
+ 	int is_async;			/* is IO async ? */
++	int should_dirty;		/* should we mark read pages dirty? */
+ 	int io_error;			/* IO error in completion path */
+ 	unsigned long refcount;		/* direct_io_worker() and bios */
+ 	struct bio *bio_list;		/* singly linked via bi_private */
+@@ -376,7 +377,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
+ 	dio->refcount++;
+ 	spin_unlock_irqrestore(&dio->bio_lock, flags);
+ 
+-	if (dio->is_async && dio->rw == READ)
++	if (dio->is_async && dio->rw == READ && dio->should_dirty)
+ 		bio_set_pages_dirty(bio);
+ 
+ 	if (sdio->submit_io)
+@@ -447,13 +448,14 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+ 	if (!uptodate)
+ 		dio->io_error = -EIO;
+ 
+-	if (dio->is_async && dio->rw == READ) {
++	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
+ 		bio_check_pages_dirty(bio);	/* transfers ownership */
+ 	} else {
+ 		for (page_no = 0; page_no < bio->bi_vcnt; page_no++) {
+ 			struct page *page = bvec[page_no].bv_page;
+ 
+-			if (dio->rw == READ && !PageCompound(page))
++			if (dio->rw == READ && !PageCompound(page) &&
++			    dio->should_dirty)
+ 				set_page_dirty_lock(page);
+ 			page_cache_release(page);
  		}
--		if (!cfile->f_op->write && !cfile->f_op->aio_write) {
-+		if (!file_writable(cfile)) {
- 			NS_ERR("alloc_device: cache file not writeable\n");
- 			err = -EINVAL;
- 			goto err_close;
-diff --git a/drivers/staging/ccg/storage_common.c b/drivers/staging/ccg/storage_common.c
-index 8d9bcd8..d431eff 100644
---- a/drivers/staging/ccg/storage_common.c
-+++ b/drivers/staging/ccg/storage_common.c
-@@ -666,11 +666,11 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
- 	 * If we can't read the file, it's no good.
- 	 * If we can't write the file, use it read-only.
- 	 */
--	if (!(filp->f_op->read || filp->f_op->aio_read)) {
-+	if (!file_readable(filp)) {
- 		LINFO(curlun, "file not readable: %s\n", filename);
- 		goto out;
- 	}
--	if (!(filp->f_op->write || filp->f_op->aio_write))
-+	if (!file_writable(filp))
- 		ro = 1;
+@@ -1020,6 +1022,101 @@ static inline int drop_refcount(struct dio *dio)
+ 	return ret2;
+ }
  
- 	size = i_size_read(inode->i_mapping->host);
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index 0e3ae43..c9eaa50 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -511,11 +511,11 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
- 	 * If we can't read the file, it's no good.
- 	 * If we can't write the file, use it read-only.
- 	 */
--	if (!(filp->f_op->read || filp->f_op->aio_read)) {
-+	if (!file_readable(filp)) {
- 		LINFO(curlun, "file not readable: %s\n", filename);
- 		goto out;
- 	}
--	if (!(filp->f_op->write || filp->f_op->aio_write))
-+	if (!file_writable(filp))
- 		ro = 1;
- 
- 	size = i_size_read(inode->i_mapping->host);
-diff --git a/fs/compat.c b/fs/compat.c
-index 015e1e1..7411d66 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1132,7 +1132,7 @@ static size_t compat_readv(struct file *file,
- 		goto out;
- 
- 	ret = -EINVAL;
--	if (!file->f_op || (!file->f_op->aio_read && !file->f_op->read))
-+	if (!file_readable(file))
- 		goto out;
- 
- 	ret = compat_do_readv_writev(READ, file, vec, vlen, pos);
-@@ -1198,7 +1198,7 @@ static size_t compat_writev(struct file *file,
- 		goto out;
- 
- 	ret = -EINVAL;
--	if (!file->f_op || (!file->f_op->aio_write && !file->f_op->write))
-+	if (!file_writable(file))
- 		goto out;
- 
- 	ret = compat_do_readv_writev(WRITE, file, vec, vlen, pos);
-diff --git a/fs/read_write.c b/fs/read_write.c
-index bb34af3..b5d0bff 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -360,7 +360,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
- 
- 	if (!(file->f_mode & FMODE_READ))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->read && !file->f_op->aio_read))
-+	if (!file_readable(file))
- 		return -EINVAL;
- 	if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
- 		return -EFAULT;
-@@ -416,7 +416,7 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
- 
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->write && !file->f_op->aio_write))
-+	if (!file_writable(file))
- 		return -EINVAL;
- 	if (unlikely(!access_ok(VERIFY_READ, buf, count)))
- 		return -EFAULT;
-@@ -749,7 +749,7 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
- {
- 	if (!(file->f_mode & FMODE_READ))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->aio_read && !file->f_op->read))
-+	if (!file_readable(file))
- 		return -EINVAL;
- 
- 	return do_readv_writev(READ, file, vec, vlen, pos);
-@@ -762,7 +762,7 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
- {
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
--	if (!file->f_op || (!file->f_op->aio_write && !file->f_op->write))
-+	if (!file_writable(file))
- 		return -EINVAL;
- 
- 	return do_readv_writev(WRITE, file, vec, vlen, pos);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index ee9184e..b893a4f 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1634,6 +1634,16 @@ struct file_operations {
- 	int (*show_fdinfo)(struct seq_file *m, struct file *f);
- };
- 
-+static inline int file_readable(struct file *filp)
++static ssize_t direct_IO_iovec(const struct iovec *iov, unsigned long nr_segs,
++			       struct dio *dio, struct dio_submit *sdio,
++			       unsigned blkbits, struct buffer_head *map_bh)
 +{
-+	return filp && (filp->f_op->read || filp->f_op->aio_read);
++	size_t bytes;
++	ssize_t retval = 0;
++	int seg;
++	unsigned long user_addr;
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		user_addr = (unsigned long)iov[seg].iov_base;
++		sdio->pages_in_io +=
++			((user_addr + iov[seg].iov_len + PAGE_SIZE-1) /
++				PAGE_SIZE - user_addr / PAGE_SIZE);
++	}
++
++	dio->should_dirty = 1;
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		user_addr = (unsigned long)iov[seg].iov_base;
++		sdio->size += bytes = iov[seg].iov_len;
++
++		/* Index into the first page of the first block */
++		sdio->first_block_in_page = (user_addr & ~PAGE_MASK) >> blkbits;
++		sdio->final_block_in_request = sdio->block_in_file +
++						(bytes >> blkbits);
++		/* Page fetching state */
++		sdio->head = 0;
++		sdio->tail = 0;
++		sdio->curr_page = 0;
++
++		sdio->total_pages = 0;
++		if (user_addr & (PAGE_SIZE-1)) {
++			sdio->total_pages++;
++			bytes -= PAGE_SIZE - (user_addr & (PAGE_SIZE - 1));
++		}
++		sdio->total_pages += (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
++		sdio->curr_user_address = user_addr;
++
++		retval = do_direct_IO(dio, sdio, map_bh);
++
++		dio->result += iov[seg].iov_len -
++			((sdio->final_block_in_request - sdio->block_in_file) <<
++					blkbits);
++
++		if (retval) {
++			dio_cleanup(dio, sdio);
++			break;
++		}
++	} /* end iovec loop */
++
++	return retval;
 +}
 +
-+static inline int file_writable(struct file *filp)
++static ssize_t direct_IO_bvec(struct bio_vec *bvec, unsigned long nr_segs,
++			      struct dio *dio, struct dio_submit *sdio,
++			      unsigned blkbits, struct buffer_head *map_bh)
 +{
-+	return filp && (filp->f_op->write || filp->f_op->aio_write);
++	ssize_t retval = 0;
++	int seg;
++
++	sdio->pages_in_io += nr_segs;
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		sdio->size += bvec[seg].bv_len;
++
++		/* Index into the first page of the first block */
++		sdio->first_block_in_page = bvec[seg].bv_offset >> blkbits;
++		sdio->final_block_in_request = sdio->block_in_file +
++						(bvec[seg].bv_len  >> blkbits);
++		/* Page fetching state */
++		sdio->curr_page = 0;
++		page_cache_get(bvec[seg].bv_page);
++		dio->pages[0] = bvec[seg].bv_page;
++		sdio->head = 0;
++		sdio->tail = 1;
++
++		sdio->total_pages = 1;
++		sdio->curr_user_address = 0;
++
++		retval = do_direct_IO(dio, sdio, map_bh);
++
++		dio->result += bvec[seg].bv_len -
++			((sdio->final_block_in_request - sdio->block_in_file) <<
++					blkbits);
++
++		if (retval) {
++			dio_cleanup(dio, sdio);
++			break;
++		}
++	}
++
++	return retval;
 +}
 +
- struct inode_operations {
- 	struct dentry * (*lookup) (struct inode *,struct dentry *, unsigned int);
- 	void * (*follow_link) (struct dentry *, struct nameidata *);
+ /*
+  * This is a library function for use by filesystem drivers.
+  *
+@@ -1061,11 +1158,8 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	loff_t end = offset;
+ 	struct dio *dio;
+ 	struct dio_submit sdio = { 0, };
+-	unsigned long user_addr;
+-	size_t bytes;
+ 	struct buffer_head map_bh = { 0, };
+ 	struct blk_plug plug;
+-	const struct iovec *iov = iov_iter_iovec(iter);
+ 	unsigned long nr_segs = iter->nr_segs;
+ 
+ 	if (rw & WRITE)
+@@ -1085,20 +1179,49 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	}
+ 
+ 	/* Check the memory alignment.  Blocks cannot straddle pages */
+-	for (seg = 0; seg < nr_segs; seg++) {
+-		addr = (unsigned long)iov[seg].iov_base;
+-		size = iov[seg].iov_len;
+-		end += size;
+-		if (unlikely((addr & blocksize_mask) ||
+-			     (size & blocksize_mask))) {
+-			if (bdev)
+-				blkbits = blksize_bits(
+-					 bdev_logical_block_size(bdev));
+-			blocksize_mask = (1 << blkbits) - 1;
+-			if ((addr & blocksize_mask) || (size & blocksize_mask))
+-				goto out;
++	if (iov_iter_has_iovec(iter)) {
++		const struct iovec *iov = iov_iter_iovec(iter);
++
++		for (seg = 0; seg < nr_segs; seg++) {
++			addr = (unsigned long)iov[seg].iov_base;
++			size = iov[seg].iov_len;
++			end += size;
++			if (unlikely((addr & blocksize_mask) ||
++				     (size & blocksize_mask))) {
++				if (bdev)
++					blkbits = blksize_bits(
++						 bdev_logical_block_size(bdev));
++				blocksize_mask = (1 << blkbits) - 1;
++				if ((addr & blocksize_mask) ||
++				    (size & blocksize_mask))
++					goto out;
++			}
+ 		}
+-	}
++	} else if (iov_iter_has_bvec(iter)) {
++		/*
++		 * Is this necessary, or can we trust the in-kernel
++		 * caller? Can we replace this with
++		 *	end += iov_iter_count(iter); ?
++		 */
++		struct bio_vec *bvec = iov_iter_bvec(iter);
++
++		for (seg = 0; seg < nr_segs; seg++) {
++			addr = bvec[seg].bv_offset;
++			size = bvec[seg].bv_len;
++			end += size;
++			if (unlikely((addr & blocksize_mask) ||
++				     (size & blocksize_mask))) {
++				if (bdev)
++					blkbits = blksize_bits(
++						 bdev_logical_block_size(bdev));
++				blocksize_mask = (1 << blkbits) - 1;
++				if ((addr & blocksize_mask) ||
++				    (size & blocksize_mask))
++					goto out;
++			}
++		}
++	} else
++		BUG();
+ 
+ 	/* watch out for a 0 len io from a tricksy fs */
+ 	if (rw == READ && end == offset)
+@@ -1175,47 +1298,14 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	if (unlikely(sdio.blkfactor))
+ 		sdio.pages_in_io = 2;
+ 
+-	for (seg = 0; seg < nr_segs; seg++) {
+-		user_addr = (unsigned long)iov[seg].iov_base;
+-		sdio.pages_in_io +=
+-			((user_addr + iov[seg].iov_len + PAGE_SIZE-1) /
+-				PAGE_SIZE - user_addr / PAGE_SIZE);
+-	}
+-
+ 	blk_start_plug(&plug);
+ 
+-	for (seg = 0; seg < nr_segs; seg++) {
+-		user_addr = (unsigned long)iov[seg].iov_base;
+-		sdio.size += bytes = iov[seg].iov_len;
+-
+-		/* Index into the first page of the first block */
+-		sdio.first_block_in_page = (user_addr & ~PAGE_MASK) >> blkbits;
+-		sdio.final_block_in_request = sdio.block_in_file +
+-						(bytes >> blkbits);
+-		/* Page fetching state */
+-		sdio.head = 0;
+-		sdio.tail = 0;
+-		sdio.curr_page = 0;
+-
+-		sdio.total_pages = 0;
+-		if (user_addr & (PAGE_SIZE-1)) {
+-			sdio.total_pages++;
+-			bytes -= PAGE_SIZE - (user_addr & (PAGE_SIZE - 1));
+-		}
+-		sdio.total_pages += (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
+-		sdio.curr_user_address = user_addr;
+-
+-		retval = do_direct_IO(dio, &sdio, &map_bh);
+-
+-		dio->result += iov[seg].iov_len -
+-			((sdio.final_block_in_request - sdio.block_in_file) <<
+-					blkbits);
+-
+-		if (retval) {
+-			dio_cleanup(dio, &sdio);
+-			break;
+-		}
+-	} /* end iovec loop */
++	if (iov_iter_has_iovec(iter))
++		retval = direct_IO_iovec(iov_iter_iovec(iter), nr_segs, dio,
++					 &sdio, blkbits, &map_bh);
++	else
++		retval = direct_IO_bvec(iov_iter_bvec(iter), nr_segs, dio,
++					&sdio, blkbits, &map_bh);
+ 
+ 	if (retval == -ENOTBLK) {
+ 		/*
 -- 
 1.8.1.1
 
