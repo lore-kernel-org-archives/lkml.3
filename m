@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab3A2IB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:01:26 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51140 "EHLO mga09.intel.com"
+	id S1754574Ab3A2IBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:01:54 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43790 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753759Ab3A2IBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:01:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,557,1355126400"; 
-   d="scan'208";a="254025766"
-Date: Tue, 29 Jan 2013 10:05:09 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] ACPI / platform: Use struct acpi_scan_handler for
- creating devices
-Message-ID: <20130129080509.GK2239@intel.com>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan>
- <4311642.nDd2RCVeDc@vostro.rjw.lan>
- <1540645.4oLGJ3spZ3@vostro.rjw.lan>
+	id S1753879Ab3A2IBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 03:01:52 -0500
+Message-ID: <510781D3.4070807@ti.com>
+Date: Tue, 29 Jan 2013 13:31:23 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1540645.4oLGJ3spZ3@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Katepallewar, Mrugesh" <mrugesh.mk@ti.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>, "hs@denx.de" <hs@denx.de>
+Subject: Re: [PATCH V2] ARM: davinci: da850: add RTC DT entries
+References: <1359359268-9781-1-git-send-email-mrugesh.mk@ti.com> <5106A105.6030004@ti.com> <4232EB8829679242B82E712C3DB3149D42355C@DBDE01.ent.ti.com>
+In-Reply-To: <4232EB8829679242B82E712C3DB3149D42355C@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 02:01:14PM +0100, Rafael J. Wysocki wrote:
-> +/* Flags for acpi_create_platform_device */
-> +#define ACPI_PLATFORM_CLK	BIT(0)
-> +
-> +/*
-> + * The following ACPI IDs are known to be suitable for representing as
-> + * platform devices.
-> + */
-> +static const struct acpi_device_id acpi_platform_device_ids[] = {
-> +
-> +	{ "PNP0D40" },
-> +
-> +	/* Haswell LPSS devices */
-> +	{ "INT33C0", ACPI_PLATFORM_CLK },
-> +	{ "INT33C1", ACPI_PLATFORM_CLK },
-> +	{ "INT33C2", ACPI_PLATFORM_CLK },
-> +	{ "INT33C3", ACPI_PLATFORM_CLK },
-> +	{ "INT33C4", ACPI_PLATFORM_CLK },
-> +	{ "INT33C5", ACPI_PLATFORM_CLK },
-> +	{ "INT33C6", ACPI_PLATFORM_CLK },
-> +	{ "INT33C7", ACPI_PLATFORM_CLK },
-> +
-> +	{ }
-> +};
+On 1/29/2013 1:05 PM, Katepallewar, Mrugesh wrote:
+> On Mon, Jan 28, 2013 at 21:32:13, Nori, Sekhar wrote:
+>> Hi Mrugesh,
+>>
+>> On 1/28/2013 1:17 PM, Mrugesh Katepallewar wrote:
+>>> Add RTC DT entries in da850 dts file.
+>>>
+>>> Signed-off-by: Mrugesh Katepallewar <mrugesh.mk@ti.com>
+>>> ---
+>>> Applies on top of v3.8-rc4 of linus tree.
+>>>
+>>> This patch is depending on
+>>> "ARM: davinci: da850: add interrupt-parent property in soc node"
+>>> https://patchwork.kernel.org/patch/2044101/
+>>
+>>> Tested on da850-evm device.
+>>>
+>>> Test Procedure:
+>>> date 2013.01.28-10:00:00 (usage: date[YYYY.]MM.DD-hh:mm[:ss]) hwclock 
+>>> -w reset board and check system time.
+>>
+>> Queuing this for v3.9. The testing information above is useful and should be part of the changelog. I moved it there while committing.
+>>
+>> It will be nice to check the alarm functionality as well. Can you check that and let me know that works as well?
+> 
+> I tried to test RTC alarm using "rtcwake" command, however it is not working and returning following error 
+> "rtcwake: /dev/rtc0 not enabled for wakeup events"
+> This is coming because we have not registered RTC device as a wakeup source yet.
 
-Now that we have everything the platform support code needs in a single
-file, should we instead of setting flags and comparing strings like
-"INT33C" to find out are we running on Lynxpoint, pass function pointer
-that gets called when corresponding device gets created? Something like:
+rtcwake is too much to use if the purpose is just to test the alarm
+functionality.
 
-	{ "INT33C0", lpt_clks_init },
-	...
+> For checking RTC alarm interrupt, I developed one simple program which opens RTC device, set alarm and exits.
+> Then by entering "cat /proc/interrupts" checked RTC interrupt count.
 
-Or do you think we need to keep the flags still?
+No need of writing your own. Simply use the one in Documentation/rtc.txt
 
-I can prepare a patch if this turns out to be sensible thing to do.
+> Using above test it confirms that RTC alarm functionality is working fine. 
+
+Okay. Thanks for confirming.
+
+Regards,
+Sekhar
