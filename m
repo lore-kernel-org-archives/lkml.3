@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab3A2IDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:03:12 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:34435 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753759Ab3A2IDK (ORCPT
+	id S1754585Ab3A2IK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:10:29 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:33025 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422Ab3A2IK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:03:10 -0500
-Date: Tue, 29 Jan 2013 09:03:05 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/8] perf tools: Add '.' as part of the event 'name' token
-Message-ID: <20130129080305.GB594@gmail.com>
-References: <1359230650-10415-1-git-send-email-jolsa@redhat.com>
- <1359230650-10415-2-git-send-email-jolsa@redhat.com>
- <CABPqkBSH=67hG8VRwHPU3byEancpVqsyetHkSjb4nOScPvcnFA@mail.gmail.com>
- <CABPqkBTPHKf+XTmeyA8PrWReG8Ak6ow9gSwfh4ozK+gvJMze1w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTPHKf+XTmeyA8PrWReG8Ak6ow9gSwfh4ozK+gvJMze1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Jan 2013 03:10:26 -0500
+Date: Tue, 29 Jan 2013 09:10:19 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] one s390 patch for 3.8-rc6
+Message-ID: <20130129091019.0e7c4455@mschwide>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 13012908-5024-0000-0000-0000050F8BB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-* Stephane Eranian <eranian@google.com> wrote:
+please pull from the 'for-linus' branch of
 
-> On Mon, Jan 28, 2013 at 9:52 PM, Stephane Eranian <eranian@google.com> wrote:
-> > Jiri,
-> >
-> > I don't see part 0/8 of this series. Did you send it to me too?
-> >
-> > I have some comments about it. I don't see why create something from scratch
-> > when I have been developing a library (libpfm4) that takes care of that and that
-> > is already used by many tool developers. That library can be linked with perf
-> > and provide full symbolic events + all the modifiers. The library is portable
-> > and supports all existing archs. It can also be used by self-monitoring apps.
-> >
-> >
-> > You're introducing yet another event table to maintain. And believe me this is
-> > a lot of work to maintain this.
-> >
-> > I don't understand why not use this existing library.
-> >
->
-> I meant to add that I think it would be more productive if we 
-> (you and I) were to work on the library to extend it with 
-> external text-based event tables that could be used by perf 
-> either directly or thru the libpfm4 interface.
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
 
-perf is intentionally external file free and does not 
-(fundamentally) depend on external libraries either,
-other than core system libraries.
+to receive the following update:
+Another transparent huge page fix, we need to define a s390 variant
+for pmdp_set_wrprotect to flush the TLB for the huge page correctly.
 
-There are several advantages to that:
+Gerald Schaefer (1):
+      s390/thp: implement pmdp_set_wrprotect()
 
- - there is no version skew and no design/maintenance friction
+ arch/s390/include/asm/pgtable.h |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
- - 'upgrading' perf between similar boxes is as simple as
-   copying the perf binary
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index c1d7930..098adbb 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -1365,6 +1365,18 @@ static inline void pmdp_invalidate(struct vm_area_struct *vma,
+ 	__pmd_idte(address, pmdp);
+ }
+ 
++#define __HAVE_ARCH_PMDP_SET_WRPROTECT
++static inline void pmdp_set_wrprotect(struct mm_struct *mm,
++				      unsigned long address, pmd_t *pmdp)
++{
++	pmd_t pmd = *pmdp;
++
++	if (pmd_write(pmd)) {
++		__pmd_idte(address, pmdp);
++		set_pmd_at(mm, address, pmdp, pmd_wrprotect(pmd));
++	}
++}
++
+ static inline pmd_t mk_pmd_phys(unsigned long physpage, pgprot_t pgprot)
+ {
+ 	pmd_t __pmd;
 
- - it's self-sufficient
-
- - there's no real advantage of external text files versus
-   internal text files (i.e. text tables within the source 
-   code), while there are several disadvantages
-
-So as long as Jiri is happy to maintain these tables I think 
-it's a superior solution (even if the tables start out 
-incomplete), from the perf project's perspective.
-
-Thanks,
-
-	Ingo
