@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab3A2FDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 00:03:47 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:57757 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3A2FDo (ORCPT
+	id S1753110Ab3A2FFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 00:05:55 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:49553 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab3A2FFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 00:03:44 -0500
-Date: Mon, 28 Jan 2013 21:03:41 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC 00/16] Transparent huge page cache
-In-Reply-To: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
-Message-ID: <alpine.LNX.2.00.1301282041280.27186@eggly.anvils>
-References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 29 Jan 2013 00:05:53 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <87wquxpg9h.fsf@devron.myhome.or.jp>
+References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
+	<878v9f5ugn.fsf@devron.myhome.or.jp>
+	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
+	<87k3sy17vk.fsf@devron.myhome.or.jp>
+	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
+	<87txs0x45r.fsf@devron.myhome.or.jp>
+	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
+	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
+	<87623ydnvq.fsf@devron.myhome.or.jp>
+	<CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
+	<CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
+	<877gobn7fy.fsf@devron.myhome.or.jp>
+	<CAKYAXd8SB7tz82Y57TKcngZC8vzvy1S=SAhzurA92jyobaVtNg@mail.gmail.com>
+	<87obhnlmkt.fsf@devron.myhome.or.jp>
+	<87k3sblmj2.fsf@devron.myhome.or.jp>
+	<CAKYAXd-7kq9EoBE7e5sGXBeA8u914moz15-ubFimczGyiznUCA@mail.gmail.com>
+	<87r4lgxgee.fsf@devron.myhome.or.jp>
+	<CAKYAXd_Lg8twC3XVX8S3Ncm0ghicvXD0Q75-8amuO2Lz40v8Rw@mail.gmail.com>
+	<8738xoshed.fsf@devron.myhome.or.jp>
+	<CAKYAXd-pNnnDBeTw4s05vMdmeTcBwMMT7L7=NNUj2vLxwHYWWg@mail.gmail.com>
+	<87wquxpg9h.fsf@devron.myhome.or.jp>
+Date: Tue, 29 Jan 2013 14:05:52 +0900
+Message-ID: <CAKYAXd8yvh3WZ9cT85baLJzDarccJQQi9SHSe_ErJVw8Bkf++Q@mail.gmail.com>
+Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if
+ fat_dget() fails
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jan 2013, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> 
-> Here's first steps towards huge pages in page cache.
-> 
-> The intend of the work is get code ready to enable transparent huge page
-> cache for the most simple fs -- ramfs.
-> 
-> It's not yet near feature-complete. It only provides basic infrastructure.
-> At the moment we can read, write and truncate file on ramfs with huge pages in
-> page cache. The most interesting part, mmap(), is not yet there. For now
-> we split huge page on mmap() attempt.
-> 
-> I can't say that I see whole picture. I'm not sure if I understand locking
-> model around split_huge_page(). Probably, not.
-> Andrea, could you check if it looks correct?
-> 
-> Next steps (not necessary in this order):
->  - mmap();
->  - migration (?);
->  - collapse;
->  - stats, knobs, etc.;
->  - tmpfs/shmem enabling;
->  - ...
-> 
-> Kirill A. Shutemov (16):
->   block: implement add_bdi_stat()
->   mm: implement zero_huge_user_segment and friends
->   mm: drop actor argument of do_generic_file_read()
->   radix-tree: implement preload for multiple contiguous elements
->   thp, mm: basic defines for transparent huge page cache
->   thp, mm: rewrite add_to_page_cache_locked() to support huge pages
->   thp, mm: rewrite delete_from_page_cache() to support huge pages
->   thp, mm: locking tail page is a bug
->   thp, mm: handle tail pages in page_cache_get_speculative()
->   thp, mm: implement grab_cache_huge_page_write_begin()
->   thp, mm: naive support of thp in generic read/write routines
->   thp, libfs: initial support of thp in
->     simple_read/write_begin/write_end
->   thp: handle file pages in split_huge_page()
->   thp, mm: truncate support for transparent huge page cache
->   thp, mm: split huge page on mmap file page
->   ramfs: enable transparent huge page cache
-> 
->  fs/libfs.c                  |   54 +++++++++---
->  fs/ramfs/inode.c            |    6 +-
->  include/linux/backing-dev.h |   10 +++
->  include/linux/huge_mm.h     |    8 ++
->  include/linux/mm.h          |   15 ++++
->  include/linux/pagemap.h     |   14 ++-
->  include/linux/radix-tree.h  |    3 +
->  lib/radix-tree.c            |   32 +++++--
->  mm/filemap.c                |  204 +++++++++++++++++++++++++++++++++++--------
->  mm/huge_memory.c            |   62 +++++++++++--
->  mm/memory.c                 |   22 +++++
->  mm/truncate.c               |   12 +++
->  12 files changed, 375 insertions(+), 67 deletions(-)
+2013/1/28, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>>>> Although checking several routines to check hang case you said, I
+>>>> didn't find anything.
+>>>> And There is no any race on test result also. Am I missing something ?
+>>>> Let me know your opinion.
+>>>
+>>> Hm, it's read-only. So, there may not be race for now, I'm sure there is
+>>> race on write path though.
+>> Yes, right. We checked/tested on read-only.
+>> Maybe have you found race with rename and unlink ?
+>> If yes, I think we can fix this issue with lock like this.
+>>
+>> +                       mutex_lock(&MSDOS_SB(sb)->s_lock);
+>>                          parent_inode = fat_rebuild_parent(sb,
+>> parent_logstart);
+>> +                       mutex_unlock(&MSDOS_SB(sb)->s_lock);
+>
+> It is any changes to directory. ->s_lock is not preferred. We need only
+> per-directory lock (i.e. dir->i_mutex).
+>
+> To do this, we need more bigger changes though. E.g. register temporary
+> inode to central list. Then, find it when building real inode. If found
+> temporary, grab it, and make update it as real inode.
+>
+> Yes, this is a bit complex. But we would need something like this for
+> write support.
 
-Interesting.
+First Thanks for review and help. We will try to fix it as your
+suggestion now for the Write path.
+There is one suggestion. As per discussion before, your suggestion was
+that, we will merge read-only support for FAT exportfs first.
+And the current patch set has no issues for read-only.
+So If you accept, Can I try to re-send current patch-set (read-only)
+first? And we will then additionally start to fix issues related with
+write path step by step.
+Let me know your opinion.
 
-I was starting to think about Transparent Huge Pagecache a few
-months ago, but then got washed away by incoming waves as usual.
-
-Certainly I don't have a line of code to show for it; but my first
-impression of your patches is that we have very different ideas of
-where to start.
-
-Perhaps that's good complementarity, or perhaps I'll disagree with
-your approach.  I'll be taking a look at yours in the coming days,
-and trying to summon back up my own ideas to summarize them for you.
-
-Perhaps I was naive to imagine it, but I did intend to start out
-generically, independent of filesystem; but content to narrow down
-on tmpfs alone where it gets hard to support the others (writeback
-springs to mind).  khugepaged would be migrating little pages into
-huge pages, where it saw that the mmaps of the file would benefit
-(and for testing I would hack mmap alignment choice to favour it).
-
-I had arrived at a conviction that the first thing to change was
-the way that tail pages of a THP are refcounted, that it had been a
-mistake to use the compound page method of holding the THP together.
-But I'll have to enter a trance now to recall the arguments ;)
-
-Hugh
+Thanks OGAWA!
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
