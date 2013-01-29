@@ -1,105 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab3A2HAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:00:10 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54067 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3A2HAI (ORCPT
+	id S1752016Ab3A2HCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:02:18 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:55305 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab3A2HCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:00:08 -0500
-X-AuditID: 9c930179-b7d01ae000004006-c6-51077375c735
-From: Namhyung Kim <namhyung@kernel.org>
-To: Thomas Backlund <tmb@mageia.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        irina.tirdea@intel.com, acme@redhat.com
-Subject: Re: the patch "perf tools: Update Makefile for Android" broke 3.8-rc perf build.
-References: <20121212031346.B5BB366071F@gitolite.kernel.org>
-	<510745D9.9000209@mageia.org>
-Date: Tue, 29 Jan 2013 16:00:04 +0900
-In-Reply-To: <510745D9.9000209@mageia.org> (Thomas Backlund's message of "Tue,
-	29 Jan 2013 05:45:29 +0200")
-Message-ID: <87r4l4v5hn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 29 Jan 2013 02:02:15 -0500
+X-Auth-Info: dthXdD4EdyBhP4m1kE+rfZybi9Eju74wc/tRiCo2d5M=
+Message-ID: <510781FF.7030400@denx.de>
+Date: Tue, 29 Jan 2013 09:02:07 +0100
+From: Heiko Schocher <hs@denx.de>
+Organization: DENX Software Engineering
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: "Kumar, Anil" <anilkumar.v@ti.com>
+CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com, b-cousson@ti.com,
+        tony@atomide.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux@arm.linux.org.uk, nsekhar@ti.com, khilman@deeprootsystems.com,
+        Wolfgang Denk <wd@denx.de>
+Subject: Re: [PATCH 2/2] ARM: davinci: da850: configure CS2(aemif) for norflash
+References: <1359436796-25135-1-git-send-email-anilkumar.v@ti.com> <1359436796-25135-3-git-send-email-anilkumar.v@ti.com>
+In-Reply-To: <1359436796-25135-3-git-send-email-anilkumar.v@ti.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Hello Kumar,
 
-On Tue, 29 Jan 2013 05:45:29 +0200, Thomas Backlund wrote:
-> Linux Kernel Mailing List skrev 12.12.2012 05:13:
->> Gitweb:     http://git.kernel.org/linus/;a=commit;h=d816ec2d1bea55cfeac373f0ab0ab8a3105e49b4
->> Commit:     d816ec2d1bea55cfeac373f0ab0ab8a3105e49b4
->> Parent:     78da39faf7c903bb6e3c20a726fde1bf98d10af8
->> Author:     Irina Tirdea <irina.tirdea@intel.com>
->> AuthorDate: Mon Oct 8 09:43:27 2012 +0300
->> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
->> CommitDate: Mon Oct 8 17:42:16 2012 -0300
->>
->>      perf tools: Update Makefile for Android
->>
->>      For cross-compiling on Android, some specific changes are needed in
->>      the Makefile.
->>
->
-> The above patch broke perf build on i586 and x86_64:
->
-> [tmb@tmb linux-3.8-rc5]$ make -C tools/perf -s V=1
-> HAVE_CPLUS_DEMANGLE=1 prefix=%{_prefix} all
->     CHK -fstack-protector-all
->     CHK -Wstack-protector
->     CHK -Wvolatile-register-var
->     CHK bionic
-> <stdin>:1:31: fatal error: android/api-level.h: No such file or directory
-> compilation terminated.
+On 29.01.2013 06:19, Kumar, Anil wrote:
+> Configure 16 bit data bus width for CS2(aemif) to use the norflash on
+> DA850.
+> 
+> Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
+> ---
+> :100644 100644 37c27af... 540e284... M	arch/arm/mach-davinci/da8xx-dt.c
+>  arch/arm/mach-davinci/da8xx-dt.c |   17 +++++++++++++++++
+>  1 files changed, 17 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+> index 37c27af..540e284 100644
+> --- a/arch/arm/mach-davinci/da8xx-dt.c
+> +++ b/arch/arm/mach-davinci/da8xx-dt.c
+> @@ -38,12 +38,29 @@ static void __init da8xx_init_irq(void)
+>  }
+>  
+>  #ifdef CONFIG_ARCH_DAVINCI_DA850
+> +#define DA8XX_AEMIF_CE2CFG_OFFSET       0x10
+> +#define DA8XX_AEMIF_ASIZE_16BIT         0x1
 
-Are you sure does it break your build?  In my case, it only hid the
-compilation from user and kept the work behind us.  When I run a clean
-build I could see a final perf binary there.
+Hmm... I am not really happy with such defines, because different
+boards need maybe different settings, and this should be catched
+by the device tree ...  Couldn't we add this infos in the
+device tree? I tried such an approach here:
 
-It's because QUIET_{CC,LINK,...} honour the -s option but TRY_CC_MSG not
-and maybe we need something like this:
+First post and some discussion:
+https://lists.ozlabs.org/pipermail/devicetree-discuss/2011-December/010030.html
 
+Nori suggested here
+https://lists.ozlabs.org/pipermail/devicetree-discuss/2011-December/011330.html
+to move such an driver out of arch/arm and IIRC it was
+suggested to move it into the mfd framework. I currently
+not know, if there was such a sort of patches, to get this
+in the mfd subsystem, but I think, this CS settings should be
+done like the pinmux settings ...
 
+My last posted version of this patch:
+https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-March/013036.html
 
->From 5015f5f4961006e31b9298caeb86b3cc0e31bcf7 Mon Sep 17 00:00:00 2001
-From: Namhyung Kim <namhyung.kim@lge.com>
-Date: Tue, 29 Jan 2013 15:48:36 +0900
-Subject: [PATCH] perf tools: Hide feature test result on make -s
+Maybe it is worth to discuss this again?
 
-Other commands like QUIET_CC already honour -s option of make so the
-try-cc should do the same.  Make it really quiet if -s option is given
-and ignore V=1 (it's only meaningful without -s option).
+> +
+> +static void __init da8xx_init_nor(void)
+> +{
+> +	void __iomem *aemif_addr;
+> +
+> +	aemif_addr = ioremap(DA8XX_AEMIF_CTL_BASE, SZ_32K);
+> +
+> +	/* Configure data bus width of CS2 to 16 bit */
+> +	writel(readl(aemif_addr + DA8XX_AEMIF_CE2CFG_OFFSET) |
+> +			DA8XX_AEMIF_ASIZE_16BIT,
+> +			aemif_addr + DA8XX_AEMIF_CE2CFG_OFFSET);
 
-Reported-by: Thomas Backlund <tmb@mageia.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/config/utilities.mak | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+I vote for avoiding such board specific code in a generic
+approach ...
 
-diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
-index e5413125e6bb..9d202fce1306 100644
---- a/tools/perf/config/utilities.mak
-+++ b/tools/perf/config/utilities.mak
-@@ -181,10 +181,13 @@ _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
- 
- # try-cc
- # Usage: option = $(call try-cc, source-to-build, cc-options, msg)
--ifndef V
- TRY_CC_OUTPUT= > /dev/null 2>&1
--endif
-+ifneq ($(findstring $(MAKEFLAGS),s),s)
- TRY_CC_MSG=echo "    CHK $(3)" 1>&2;
-+ifdef V
-+TRY_CC_OUTPUT=
-+endif
-+endif
- 
- try-cc = $(shell sh -c						  \
- 	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
+> +
+> +	iounmap(aemif_addr);
+> +}
+>  
+>  static void __init da850_init_machine(void)
+>  {
+>  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>  
+>  	da8xx_uart_clk_enable();
+> +	da8xx_init_nor();
+>  }
+>  
+>  static const char *da850_boards_compat[] __initdata = {
+> 
+
+bye,
+Heiko
 -- 
-1.7.11.7
-
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
