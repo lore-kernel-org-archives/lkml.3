@@ -1,92 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3A2EDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Jan 2013 23:03:45 -0500
-Received: from mout.gmx.net ([212.227.15.18]:63154 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753058Ab3A2EDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Jan 2013 23:03:42 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19Em3Blqx1Ee2Npb1VRarCwrUW+fyF+Ak1daN2WTI
-	H6B5/rKx8k71CC
-Message-ID: <1359432213.5795.74.camel@marge.simpson.net>
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Date: Tue, 29 Jan 2013 05:03:33 +0100
-In-Reply-To: <510729B1.8070807@intel.com>
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
-	 <20130124094439.GB13463@pd.tnic> <51014E34.60309@intel.com>
-	 <510493E4.8060602@intel.com> <1359261385.5803.46.camel@marge.simpson.net>
-	 <20130127103508.GB8894@pd.tnic> <51052ACB.3070703@intel.com>
-	 <1359301903.5805.11.camel@marge.simpson.net>
-	 <1359350266.5783.39.camel@marge.simpson.net>
-	 <1359388055.5783.164.camel@marge.simpson.net> <510729B1.8070807@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	id S1756571Ab3A2ELD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Jan 2013 23:11:03 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:51642 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753640Ab3A2ELA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Jan 2013 23:11:00 -0500
+Date: Mon, 28 Jan 2013 23:10:57 -0500 (EST)
+Message-Id: <20130128.231057.57111832691623178.davem@davemloft.net>
+To: mark.einon@gmail.com
+Cc: gregkh@linuxfoundation.org, sfr@canb.auug.org.au, netdev@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
+Subject: Re: [RFC PATCH v4 linux-next] et131x: Promote staging et131x
+ driver to drivers/net
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1358958278-3207-1-git-send-email-mark.einon@gmail.com>
+References: <1358945130-3101-1-git-send-email-mark.einon@gmail.com>
+	<1358958278-3207-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-29 at 09:45 +0800, Alex Shi wrote: 
-> On 01/28/2013 11:47 PM, Mike Galbraith wrote:
+From: Mark Einon <mark.einon@gmail.com>
+Date: Wed, 23 Jan 2013 16:24:38 +0000
 
-> > monteverdi:/abuild/mike/:[0]# echo 1 > /sys/devices/system/cpu/cpufreq/boost
-> > monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-> > 014635  00058160
-> > 014633  00058592
-> > 014638  00058592
-> > 014636  00058160
-> > 014632  00058200
-> > 014634  00058704
-> > 014639  00058704
-> > 014641  00058200
-> > 014640  00058560
-> > 014637  00058560
-> > monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-> > 014673  00059504
-> > 014676  00059504
-> > 014674  00059064
-> > 014672  00059064
-> > 014675  00058560
-> > 014671  00058560
-> > 014677  00059248
-> > 014668  00058864
-> > 014669  00059248
-> > 014670  00058864
-> > monteverdi:/abuild/mike/:[0]# massive_intr 10 60
-> > 014686  00043472
-> > 014689  00043472
-> > 014685  00043760
-> > 014690  00043760
-> > 014687  00043528
-> > 014688  00043528  (hmm)
-> > 014683  00043216
-> > 014692  00043208
-> > 014684  00043336
-> > 014691  00043336
-> 
-> I am sorry Mike. does above 3 times testing has a same sched policy? and
-> same question for the following testing.
+> +endif # NET_VENDOR_AGERE
+> +
 
-Yeah, they're back to back repeats.  Using dirt simple massive_intr
-didn't help clarify aim7 oddity.
+Trailing empty line, delete it.
 
-aim7 is fully repeatable, seems to be saying that consolidation of small
-independent jobs is a win, that spreading before fully saturated has its
-price, just as consolidation of large coordinated burst has its price.
+> @@ -0,0 +1,6 @@
+> +#
+> +# Makefile for the Agere ET-131x ethernet driver
+> +#
+> +
+> +obj-$(CONFIG_ET131X) += et131x.o
+> +
 
-Seems to cut both ways.. but why not, everything else does.
+Likewise, get rid of this trailing empty line.
 
--Mike
+> +	/* Spinlocks */
+> +	spinlock_t lock;
+> +
+> +	spinlock_t tcb_send_qlock;
+> +	spinlock_t tcb_ready_qlock;
+> +	spinlock_t send_hw_lock;
+> +
+> +	spinlock_t rcv_lock;
+> +	spinlock_t rcv_pend_lock;
+> +	spinlock_t fbr_lock;
+> +
+> +	spinlock_t phy_lock;
 
+Do you really need _8_ spinlocks in an ethernet driver?  To me that's
+way over the top and excessive.
+
+The most recent driver I've written, for the 10Gbit Sun NIU parts,
+has only one spinlock.
+
+> +	/* Determine if this is a multicast packet coming in */
+
+What in the world are you doing in this huge code block?
+
+Such much complexity, multicast list iteration, etc. just to get some
+statistics correct?  This stuff is going to run on every multicast
+packet receive.
+
+No other driver does crap like this, get rid of this stuff.
+
+> +	skb->dev = adapter->netdev;
+> +	skb->protocol = eth_type_trans(skb, adapter->netdev);
+
+eth_type_trans() sets skb->dev, you don't need to duplicate that.
+
+> +	netif_rx_ni(skb);
+
+Why isn't this driver supporting NAPI?  If you're going to put this
+much time into a driver, use the best interfaces for event processing
+rather than something that might have been appropriate in a new driver
+two decades ago.
+
+> +static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+> +{
+> +	int status = 0;
+> +	struct et131x_adapter *adapter = netdev_priv(netdev);
+> +
+> +	/* stop the queue if it's getting full */
+> +	if (adapter->tx_ring.used >= NUM_TCB - 1 &&
+> +	    !netif_queue_stopped(netdev))
+> +		netif_stop_queue(netdev);
+> +
+> +	/* Save the timestamp for the TX timeout watchdog */
+> +	netdev->trans_start = jiffies;
+> +
+> +	/* Call the device-specific data Tx routine */
+> +	status = et131x_send_packets(skb, netdev);
+> +
+> +	/* Check status and manage the netif queue if necessary */
+> +	if (status != 0) {
+> +		if (status == -ENOMEM)
+> +			status = NETDEV_TX_BUSY;
+> +		else
+> +			status = NETDEV_TX_OK;
+> +	}
+> +	return status;
+> +}
+
+Returning NETDEV_TX_BUSY is an error, no driver should ever return
+that status under normal circumstances.  Some drivers return it
+when internal consistency checks fail, but that indicates a driver
+bug rather than a normal condition.
+
+Memory allocation erorrs do not denote NETDEV_TX_BUSY, simply drop
+the packet silently with kfree_skb() and return NETDEV_TX_OK.
+
+That's about enough for me, this driver still needs a lot of work
+and is far from being ready to move out of staging.
