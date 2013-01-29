@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab3A2QNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:13:13 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:55149 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3A2QNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:13:08 -0500
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] dw_dmac: apply default dma_mask if needed
-Date: Tue, 29 Jan 2013 16:12:58 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-1-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        "spear-devel" <spear-devel@list.st.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <1359471984-26336-1-git-send-email-andriy.shevchenko@linux.intel.com> <CAKohpo=upCjze53v5STZJUz5OSrRqBU+mU3Q-C9BL18sXYAs5Q@mail.gmail.com>
-In-Reply-To: <CAKohpo=upCjze53v5STZJUz5OSrRqBU+mU3Q-C9BL18sXYAs5Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753341Ab3A2QNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:13:23 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:40316 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753058Ab3A2QNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 11:13:19 -0500
+Message-ID: <1359475998.4196.26.camel@joe-AO722>
+Subject: coccinelle and bitmask arithmetic (was: Re: [patch] TTY: synclink,
+ small cleanup in dtr_rts())
+From: Joe Perches <joe@perches.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: cocci@systeme.lip6.fr, Julia Lawall <julia.lawall@lip6.fr>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Date: Tue, 29 Jan 2013 08:13:18 -0800
+In-Reply-To: <9561.1359474916@turing-police.cc.vt.edu>
+References: <20130127194039.GA18787@elgon.mountain>
+	 <1359317078.14406.12.camel@joe-AO722> <20130127201947.GO16282@mwanda>
+	 <9561.1359474916@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301291612.58501.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:9rEkzcm4/+HnSLFmPchkQi6Tj2e9kfW48L2//budmgY
- 0V9S+wCDD09IppCIx7X1kbyg8ehFmCZXLQhWeg/2gpcfMloeIV
- j69ciYl2HrF5rf9kSz1tXjZbp0ln4rerXFqy1kVfOOrQUv3ESX
- uH9rYCQEm6GEQ+BXUM4o8sjhfYeMEjMzzFl24yaKEI/3J2xkMS
- k6ulFbkvJ2m/PhGf48kz4Fq4jLRf3E+cDYpJXnOVk+cxu62Y0y
- B3Vk8KMLojY/BJUTklGUSvpOAvgYkQQQOp+w4WjF9qORf8YPKE
- 4yQLh6aMIvXSwZZPO+AU2aLBQI0bmqyyMcxZBhOtABYUTihUEz
- an0PNxYPIHBh1i8cHHwFtBY+g5w58qFxaGE+S+z88
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 29 January 2013, Viresh Kumar wrote:
-> Adding Arnd in cc.
+On Tue, 2013-01-29 at 10:55 -0500, Valdis.Kletnieks@vt.edu wrote:
+> On Sun, 27 Jan 2013 23:19:47 +0300, Dan Carpenter said:
 > 
-> On 29 January 2013 20:36, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > In some cases we got the device without dma_mask configured. We have to apply
-> > the default value to avoid crashes during memory mapping.
-> >
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> >  drivers/dma/dw_dmac.c |    6 ++++++
-> >  1 file changed, 6 insertions(+)
-> >
-> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> > index e8d0679..a572a1e 100644
-> > --- a/drivers/dma/dw_dmac.c
-> > +++ b/drivers/dma/dw_dmac.c
-> > @@ -1673,6 +1673,12 @@ static int dw_probe(struct platform_device *pdev)
-> >         if (IS_ERR(regs))
-> >                 return PTR_ERR(regs);
-> >
-> > +       /* Apply default dma_mask if needed */
-> > +       if (!pdev->dev.dma_mask) {
-> > +               pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-> > +               pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> > +       }
-> > +
+> > Yeah.  I think it would be, but adding bitflags together instead of
+> > doing bitwise ORs is very common as well.
 > 
-> Hmm... Why is it required for a DMA controller? What kind of crash do you
-> get?
+> The fact it's common doesn't mean it's good programming practice,
+> or even correct.  Consider:
+> 
+> #define F_FOO 0x01
+> #define F_BAR 0x02
+> #define F_BAZ 0x04
+> 
+> unsigned int flags = F_FOO;
+> ...
+>       flags |= F_BAR;
+> 
+> Now some time later, another code path does this:
+> 
+>       flags += F_FOO;
+> 
+> If it was another |, it would be a no harm no foul class of bug.
+> But how long is it going to take you to figure out who set F_BAZ?
+> 
+> I wonder if there's a way to write a coccinelle patch to find places
+> where we do arithmetic operations on bitmasks....
 
-A valid dma mask is required for any device that is passed into dma_map_*
-and other dma-mapping.h interfaces. The question is more about is
-responsible for setting up the mask. Traditionally we'd do that from the
-platform definition in the place where the platform_device is created,
-but this now comes from the device tree, which is a bit inconsistent
-with the DMA masks at the moment.
+Not so far as I know, but maybe someone on the
+cocci lists does. (cc'd)
 
-We do set the dev.coherent_dma_mask to DMA_BIT_MASK(32) for all platform
-devices instatiated from DT, but I cannot find the code that sets the
-dma_mask for a platform_device. For an amba_device, we set both to
-the same value. Maybe Grant can remember if the difference here is
-intentional, or if the dma_mask is set up elsewhere for a platform_device
-coming from DT.
+I could imagine a test for variables that have
+uses of both arithmetic and bit operations but
+not a discriminator for when one type is
+appropriate and the other is not.
 
-> @Arnd: Is this change recommended?
 
-For all I can tell, it cannot hurt to do it this way.
-
-	Arnd
