@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab3A2Imt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 03:42:49 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48536 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab3A2Imr (ORCPT
+	id S1754917Ab3A2In0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 03:43:26 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:34962 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754647Ab3A2InX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 03:42:47 -0500
-Message-ID: <51078B66.9050805@gmail.com>
-Date: Tue, 29 Jan 2013 16:42:14 +0800
-From: Libo Chen <chenlibo.3@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 29 Jan 2013 03:43:23 -0500
+Date: Tue, 29 Jan 2013 09:43:13 +0100
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 3/4] watchdog: add support for ux500_wdt watchdog
+Message-ID: <20130129084313.GA20514@balto.lan>
+References: <1358509214-22407-1-git-send-email-fabio.baltieri@linaro.org>
+ <1358509214-22407-4-git-send-email-fabio.baltieri@linaro.org>
+ <20130128211222.GA3338@spo001.leaseweb.com>
 MIME-Version: 1.0
-To: Kirill Tkhai <tkhai@yandex.ru>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>, lizefan@huawei.com,
-        jovi.zhangwei@huawei.com
-Subject: Re: [PATCH]sched/rt: Do not try to push tasks if pinned task switches
- to RT
-References: <3019251359404630@web18f.yandex.ru>
-In-Reply-To: <3019251359404630@web18f.yandex.ru>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130128211222.GA3338@spo001.leaseweb.com>
+X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Libo Chen <libo.chen@huawei.com>
+Hello Wim,
 
+thanks for the review!
 
-On 2013-1-29 4:23, Kirill Tkhai wrote:
-> Just switched pinned task is not able to be pushed. If the rq had had
-> several RT tasks before they have already been considered as candidates
-> to be pushed (or pulled).
->
-> Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: Ingo Molnar <mingo@kernel.org>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: linux-rt-users <linux-rt-users@vger.kernel.org>
-> ---
->  kernel/sched/rt.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index 4e8f0f4..5f7d92b 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1925,9 +1925,9 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
->  	 */
->  	if (p->on_rq && rq->curr != p) {
->  #ifdef CONFIG_SMP
-> -		if (rq->rt.overloaded && push_rt_task(rq) &&
-> +		if (rq->rt.overloaded && p->nr_cpus_allowed > 1 &&
->  		    /* Don't resched if we changed runqueues */
-> -		    rq != task_rq(p))
-> +		    push_rt_task(rq) && rq != task_rq(p))
+On Mon, Jan 28, 2013 at 10:12:22PM +0100, Wim Van Sebroeck wrote:
+> > +static int timeout = WATCHDOG_TIMEOUT;
+> > +module_param(timeout, int, 0);
+> > +MODULE_PARM_DESC(timeout,
+> > +	"Watchdog timeout in seconds. default="
+> > +				__MODULE_STRING(WATCHDOG_TIMEOUT) ".");
+> 
+> We should go for unsigned int timeout values...
 
-I think you worry about it was excess to call push_rt_task, since the task of p->nr_cpus_allowed=1 can`t be pushed. is that right?
+You're right!  This ends up in an unsigned on the rest of the code
+anyway and I see other drivers using it as unsigned so I'll change it in
+v2 (here and in ux500_wdt_data).
 
-The task of p->nr_cpus_allowed =1 would`t be added to  pushable_tasks list （see the enqueue_task_rt()）and  this push_rt_task() need to push other tasks when rt.overloaded.
+> 
+> > +static int nowayout = WATCHDOG_NOWAYOUT;
+> > +module_param(nowayout, int, 0);
+> > +MODULE_PARM_DESC(nowayout,
+> > +	"Watchdog cannot be stopped once started (default="
+> > +				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> 
+> nowayout is a boolean value so please change this to
+> static bool nowayout = WATCHDOG_NOWAYOUT;
 
-So I don`t agree this patch.  
+Right.
 
+> The rest is OK by me. So if bowayout get's fixed then you have my acked-by.
 
->  			check_resched = 0;
->  #endif /* CONFIG_SMP */
->  		if (check_resched && p->prio < rq->curr->prio)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Ok, I'll send a v2 of this patch soon with both parameters fixed for you
+to ack.
 
+Thanks!
+Fabio
+
+-- 
+Fabio Baltieri
