@@ -1,82 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab3A2O0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:26:24 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:24355 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab3A2O0V (ORCPT
+	id S1756857Ab3A2O1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:27:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16163 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331Ab3A2O1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:26:21 -0500
-Message-ID: <5107DBF3.6000802@siemens.com>
-Date: Tue, 29 Jan 2013 15:25:55 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v5 16/20] scripts/gdb: Add internal helper and convenience
- function for per-cpu lookup
-References: <cover.1359463075.git.jan.kiszka@siemens.com> <04960fa208fbd9c0962eb4f70aa45d28aec59e8d.1359463075.git.jan.kiszka@siemens.com> <20130129135109.GF14302@pd.tnic> <5107D528.2010305@siemens.com> <20130129141202.GH14302@pd.tnic>
-In-Reply-To: <20130129141202.GH14302@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 29 Jan 2013 09:27:44 -0500
+X-Authority-Analysis: v=2.0 cv=QcjkT7nv c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=N0wm57CNQ5UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=y2CyqpC7EpYA:10 a=dIpcJ15s2rXEDLvaY88A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359469661.17639.32.camel@gandalf.local.home>
+Subject: Re: [PATCH] Tracepoint Event: Add 4 tracepoint events for vfs
+ subsystem.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: chenggang <chenggang.qin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chenggang Qin <chenggang.qcg@alibaba-inc.com>
+Date: Tue, 29 Jan 2013 09:27:41 -0500
+In-Reply-To: <1359444308-3780-1-git-send-email-chenggang.qin@gmail.com>
+References: <1359444308-3780-1-git-send-email-chenggang.qin@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-29 15:12, Borislav Petkov wrote:
-> On Tue, Jan 29, 2013 at 02:56:56PM +0100, Jan Kiszka wrote:
->> Let me guess: You are dumping a weird QEMU/KVM CPU, right?
-> 
-> Nah, I actually have the silicon! :-)
-> 
-> Joking, of course. I wish. I'm booting the guest with -cpu phenom (it
-> has been like that since forever in my boot-kernel-in-kvm script) but
-> the host is Intel.
-> 
-> If I do this on an AMD host, all is ok:
-> 
-> (gdb) p $lx_per_cpu("cpu_info").x86_vendor_id
-> $1 = "AuthenticAMD\000\000\000"
-> (gdb) p $lx_per_cpu("cpu_info").x86_model_id
-> $2 = "AMD Phenom(tm) 9550 Quad-Core Processor", '\000' <repeats 24 times>
-> (gdb)
+On Tue, 2013-01-29 at 15:25 +0800, chenggang wrote:
 
-Remains a bug of QEMU, though possibly a minor one.
-
+> ---
+>  include/trace/events/vfs.h |  110 ++++++++++++++++++++++++++++++++++++++++++++
+>  mm/filemap.c               |   18 ++++++++
+>  2 files changed, 128 insertions(+)
+>  create mode 100644 include/trace/events/vfs.h
 > 
-> [ … ]
-> 
->>>> +class PerCpu(gdb.Function):
->>>> +	__doc__ = "Return per-cpu variable.\n" \
->>>> +		  "\n" \
->>>> +		  "$lx_per_cpu(\"VAR\"[, CPU]): Return the per-cpu variable called VAR for the\n" \
->>>> +		  "given CPU number. If CPU is omitted, the CPU of the current context is used.\n" \
->>>> +		  "Note that VAR has to be quoted as string."
->>>
->>>
->>> Ok, seriously now:
->>>
->>> apropos shows the "Return per-cpu... " line above. Have you found out
->>> which gdb command shows the rest? help and info both say "Undefined
->>> command".
->>
->> help function lx_...
->>
->> It took me a while to find this, too.
-> 
-> Maybe worth documenting it then at the end of gdb-kernel-debugging.txt?
-> 
+> diff --git a/include/trace/events/vfs.h b/include/trace/events/vfs.h
+> new file mode 100644
+> index 0000000..33498e1
+> --- /dev/null
+> +++ b/include/trace/events/vfs.h
+> @@ -0,0 +1,110 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM vfs
+> +#define TRACE_INCLUDE_FILE vfs
+> +
+> +#if !defined(_TRACE_EVENTS_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_EVENTS_VFS_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +#include <asm/ptrace.h>
+> +
+> +TRACE_EVENT(generic_file_aio_read,
+> +
+> +	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
+> +
+> +	TP_ARGS(pos, bytes, fname),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	long long,	pos		)
+> +		__field(	unsigned long,	bytes		)
+> +		__array(	unsigned char,	fname,	100	)
 
-Done. Will come with v6 (if needed), otherwise as an add-on patch.
+100 bytes is a big waste of space in the ring buffer. Please use dynamic
+string, unless fname is always a 100 bytes in length:
 
-Thanks,
-Jan
+	__string(	fname,		fname		)
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->pos	= pos;
+> +		__entry->bytes	= bytes;
+> +		strncpy(__entry->fname, fname, 100);
+
+Then here add:
+
+	__assign_str(fname, fname);
+
+> +	),
+> +
+> +	TP_printk("aio read(Filename: %s Pos: %lld Bytes: %lu)",
+> +		  __entry->fname, __entry->pos, __entry->bytes)
+> +);
+> +
+> +TRACE_EVENT_FLAGS(generic_file_aio_read, TRACE_EVENT_FL_CAP_ANY)
+> +
+> +TRACE_EVENT(generic_file_aio_write,
+> +
+> +	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
+> +
+> +	TP_ARGS(pos, bytes, fname),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	long long,	pos		)
+> +		__field(	unsigned long,	bytes		)
+> +		__array(	unsigned char,	fname,	100	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->pos	= pos;
+> +		__entry->bytes	= bytes;
+> +		strncpy(__entry->fname, fname, 100);
+> +	),
+> +
+> +	TP_printk("aio write(Filename: %s Pos: %lld Bytes: %lu)",
+> +		  __entry->fname, __entry->pos, __entry->bytes)
+> +);
+> +
+> +TRACE_EVENT_FLAGS(generic_file_aio_write, TRACE_EVENT_FL_CAP_ANY)
+> +
+> +TRACE_EVENT(direct_io_read,
+> +	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
+> +
+> +	TP_ARGS(pos, bytes, fname),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	long long,	pos		)
+> +		__field(	unsigned long,  bytes		)
+> +		__array(	unsigned char,	fname,  100	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->pos	= pos;
+> +		__entry->bytes  = bytes;
+> +		strncpy(__entry->fname, fname, 100);
+> +	),
+> +
+> +	TP_printk("direct io read(Filename: %s Pos: %lld Bytes: %lu)",
+> +		  __entry->fname, __entry->pos, __entry->bytes)
+> +);
+> +
+> +TRACE_EVENT_FLAGS(direct_io_read, TRACE_EVENT_FL_CAP_ANY)
+> +
+> +TRACE_EVENT(direct_io_write,
+> +	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
+> +
+> +	TP_ARGS(pos, bytes, fname),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	long long,	pos		)
+> +		__field(	unsigned long,  bytes		)
+> +		__array(	unsigned char,	fname,	100	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->pos	= pos;
+> +		__entry->bytes	= bytes;
+> +		strncpy(__entry->fname, fname, 100);
+> +	),
+> +
+> +	TP_printk("direct io write(Filename: %s Pos: %lld Bytes: %lu)",
+> +		  __entry->fname, __entry->pos, __entry->bytes)
+
+All of these are identical, except that you repeat the tracepoint name
+in the TP_printk format, which in unnecessary, as the tracepoint name is
+always printed in the trace. Please create a single
+DECLACE_EVENT_CLASS() and create 4 DEFINE_EVENTS(). Every TRACE_EVENT
+costs about 5k in code. A DECLARE_EVENT_CLASS() costs about 4.5k, and
+each DEFINE_EVENT costs about 250 bytes.
+
+-- Steve
+
+> +);
+> +
+> +TRACE_EVENT_FLAGS(direct_io_write, TRACE_EVENT_FL_CAP_ANY)
+> +
+> +#endif /* _TRACE_EVENTS_SYSCALLS_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> +
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 83efee7..0310e7b 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -42,6 +42,9 @@
+>  
+>  #include <asm/mman.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/vfs.h>
+> +
+>  /*
+
+
