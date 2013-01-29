@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757436Ab3A2Pe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 10:34:56 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:36685 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756720Ab3A2Pey (ORCPT
+	id S1757328Ab3A2Piq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 10:38:46 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:52445 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab3A2Pin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 10:34:54 -0500
-Date: Tue, 29 Jan 2013 10:34:53 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <sameo@linux.intel.com>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 09/30] USB: ehci-omap: Use devm_request_and_ioremap()
-In-Reply-To: <20130128152010.GN23505@n2100.arm.linux.org.uk>
-Message-ID: <Pine.LNX.4.44L0.1301291033000.1507-100000@iolanthe.rowland.org>
+	Tue, 29 Jan 2013 10:38:43 -0500
+Message-ID: <5107EC56.2000703@openwrt.org>
+Date: Tue, 29 Jan 2013 16:35:50 +0100
+From: Florian Fainelli <florian@openwrt.org>
+Organization: OpenWrt
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: davem@davemloft.net, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/5] net: mvmdio: unmap base register address at driver
+ removal
+References: <1359473048-26551-1-git-send-email-florian@openwrt.org> <1359473048-26551-2-git-send-email-florian@openwrt.org> <20130129163242.1df2caf5@skate>
+In-Reply-To: <20130129163242.1df2caf5@skate>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jan 2013, Russell King - ARM Linux wrote:
+On 01/29/2013 04:32 PM, Thomas Petazzoni wrote:
+> Dear Florian Fainelli,
+>
+> On Tue, 29 Jan 2013 16:24:04 +0100, Florian Fainelli wrote:
+>> Fix the driver remove callback to unmap the base register address and
+>> not leak this mapping after the driver has been removed.
+>>
+>> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> What about using devm_request_and_ioremap() instead, in order to get
+> automatic unmap on error and in the ->remove() path?
 
-> On Mon, Jan 28, 2013 at 10:17:33AM -0500, Alan Stern wrote:
-> > On Mon, 28 Jan 2013, Roger Quadros wrote:
-> > 
-> > > Make use of devm_request_and_ioremap() and correct comment.
-> > 
-> > Didn't a big patch come through recently converting all usages of 
-> > devm_request_and_ioremap() to another function (I forget the name) that 
-> > does its own error reporting and returns an ERR_PTR value?
-> > 
-> > (Checks the mailing list archive...)  Ah, here it is:
-> > 
-> > 	http://marc.info/?l=linux-usb&m=135876311801537&w=2
-> > 
-> > And the new function is devm_ioremap_resource().  We should avoid 
-> > adding new usages of an old interface.
-> 
-> Maybe... if devm_ioremap_resource() was already in the kernel.  The
-> problem at the moment is it isn't, and it'll probably be rather
-> horrid for everyone to deal with especially when it comes to testing.
+Right now, you are using of_iomap() which eases the task of fetching the 
+resource and getting an ioremap cookie, which I why I kept that.
 
-Not in the kernel yet?  I didn't realize that.  Looks like Thierry 
-Reding will have some clean-up work to do when it does get in.
+>
+> But maybe it won't work because this memory range is claimed both by
+> the MDIO driver and the Ethernet driver itself. In that case, you could
+> use devm_ioremap().
+Then we would loose the facility of of_iomap(), but fair enough, it can 
+be inserted as a patch in this serie.
 
-Okay, then
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
+Thanks
+--
+Florian
