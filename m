@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab3A2OpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:45:14 -0500
-Received: from forward20.mail.yandex.net ([95.108.253.145]:43647 "EHLO
-	forward20.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595Ab3A2OpL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:45:11 -0500
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re:[PATCH]sched/rt: Do not try to push tasks if pinned task switches to RT
-MIME-Version: 1.0
-Message-Id: <4451359470707@web16g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 29 Jan 2013 18:45:07 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+	id S1757218Ab3A2OrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:47:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59359 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757068Ab3A2Oq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 09:46:59 -0500
+From: Takashi Iwai <tiwai@suse.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] firmware: Ignore abort check when no user-helper is used
+Date: Tue, 29 Jan 2013 15:46:54 +0100
+Message-Id: <1359470814-7993-5-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1359470814-7993-1-git-send-email-tiwai@suse.de>
+References: <1359470814-7993-1-git-send-email-tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, 2013-01-29 at 00:23 +0400, Kirill Tkhai wrote:
-> 
->> Just switched pinned task is not able to be pushed. If the rq had had
->> several RT tasks before they have already been considered as candidates
->> to be pushed (or pulled).
-> 
-> Thanks, but I have one minor nit.
-> 
->> Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
->> CC: Steven Rostedt <rostedt@goodmis.org>
->> CC: Ingo Molnar <mingo@kernel.org>
->> CC: Peter Zijlstra <peterz@infradead.org>
->> CC: linux-rt-users <linux-rt-users@vger.kernel.org>
->> ---
->> kernel/sched/rt.c | 4 ++--
->> 1 file changed, 2 insertions(+), 2 deletions(-)
->> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
->> index 4e8f0f4..5f7d92b 100644
->> --- a/kernel/sched/rt.c
->> +++ b/kernel/sched/rt.c
->> @@ -1925,9 +1925,9 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
->> */
->> if (p->on_rq && rq->curr != p) {
->> #ifdef CONFIG_SMP
->> - if (rq->rt.overloaded && push_rt_task(rq) &&
->> + if (rq->rt.overloaded && p->nr_cpus_allowed > 1 &&
-> 
-> I would swap the order here. That is, check p->nr_cpus_allowed before
-> rq->rt.overloaded. The order doesn't really matter, and even though
-> rq->rt.overloaded is probably more likely to be 0, it is used by other
-> CPUs. And as a micro-optimization, I rather read something that is used
-> by only one CPU than to read something that may be modified by many
-> CPUs.
-> 
-> -- Steve
-> 
+FW_STATUS_ABORT can be set only during the user-helper invocation,
+thus we can ignore the check when CONFIG_HW_LOADER_USER_HELPER is
+disabled.
 
-I corrected. Thanks.
-
-[PATCH]sched/rt: Do not try to push tasks if pinned task switches to RT
-
-Just switched pinned task is not able to be pushed. If the rq had had
-several RT tasks before they have already been considered as candidates
-to be pushed (or pulled).
-
-Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: linux-rt-users <linux-rt-users@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 ---
- kernel/sched/rt.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 4e8f0f4..5aab032 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1925,9 +1925,9 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
- 	 */
- 	if (p->on_rq && rq->curr != p) {
- #ifdef CONFIG_SMP
--		if (rq->rt.overloaded && push_rt_task(rq) &&
-+		if (p->nr_cpus_allowed > 1 && rq->rt.overloaded &&
- 		    /* Don't resched if we changed runqueues */
--		    rq != task_rq(p))
-+		    push_rt_task(rq) && rq != task_rq(p))
- 			check_resched = 0;
- #endif /* CONFIG_SMP */
- 		if (check_resched && p->prio < rq->curr->prio)
+ drivers/base/firmware_class.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8c40257..9753a78 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -447,6 +447,9 @@ static void fw_load_abort(struct firmware_priv *fw_priv)
+ 	complete_all(&buf->completion);
+ }
+ 
++#define is_fw_load_aborted(buf)	\
++	test_bit(FW_STATUS_ABORT, &(buf)->status)
++
+ static int loading_timeout = 60;	/* In seconds */
+ 
+ static inline long firmware_loading_timeout(void)
+@@ -914,6 +917,10 @@ fw_load_from_user_helper(struct firmware *firmware, const char *name,
+ {
+ 	return -ENOENT;
+ }
++
++/* No abort during direct loading */
++#define is_fw_load_aborted(buf) false
++
+ #endif /* CONFIG_FW_LOADER_USER_HELPER */
+ 
+ 
+@@ -924,7 +931,7 @@ static int sync_cached_firmware_buf(struct firmware_buf *buf)
+ 
+ 	mutex_lock(&fw_lock);
+ 	while (!test_bit(FW_STATUS_DONE, &buf->status)) {
+-		if (test_bit(FW_STATUS_ABORT, &buf->status)) {
++		if (is_fw_load_aborted(buf)) {
+ 			ret = -ENOENT;
+ 			break;
+ 		}
+@@ -986,7 +993,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device)
+ 	struct firmware_buf *buf = fw->priv;
+ 
+ 	mutex_lock(&fw_lock);
+-	if (!buf->size || test_bit(FW_STATUS_ABORT, &buf->status)) {
++	if (!buf->size || is_fw_load_aborted(buf)) {
+ 		mutex_unlock(&fw_lock);
+ 		return -ENOENT;
+ 	}
+-- 
+1.8.1.1
+
