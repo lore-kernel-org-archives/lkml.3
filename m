@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab3A2LyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 06:54:16 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:58484 "EHLO hydra.sisk.pl"
+	id S1756106Ab3A2Lzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 06:55:32 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:58497 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754982Ab3A2LyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 06:54:12 -0500
+	id S1755559Ab3A2Lz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 06:55:29 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 1/5] e1000e: fix resuming from runtime-suspend
-Date: Tue, 29 Jan 2013 13:00:21 +0100
-Message-ID: <9460098.jyMkT8TSO0@vostro.rjw.lan>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ACPI / platform: Use struct acpi_scan_handler for creating devices
+Date: Tue, 29 Jan 2013 13:01:38 +0100
+Message-ID: <3303119.WQJONK6L3G@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51076CEE.8050706@openvz.org>
-References: <20130118113019.6698.25941.stgit@zurg> <12263202.uQHxo0zU24@vostro.rjw.lan> <51076CEE.8050706@openvz.org>
+In-Reply-To: <20130129073532.GI2239@intel.com>
+References: <1873429.MS5RQDxTye@vostro.rjw.lan> <1540645.4oLGJ3spZ3@vostro.rjw.lan> <20130129073532.GI2239@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,88 +27,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 29, 2013 10:32:14 AM Konstantin Khlebnikov wrote:
-> Rafael J. Wysocki wrote:
-> > On Monday, January 28, 2013 04:05:33 PM Bjorn Helgaas wrote:
-> >> [+cc Rafael, author of patch you cited]
-> >>
-> >> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
-> >> <khlebnikov@openvz.org>  wrote:
-> >>> Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
-> >>> ("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
-> >>>
-> >>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> >>> Cc: e1000-devel@lists.sourceforge.net
-> >>> Cc: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
-> >>> Cc: Bruce Allan<bruce.w.allan@intel.com>
-> >>> ---
-> >>>   drivers/net/ethernet/intel/e1000e/netdev.c |   13 ++++++++-----
-> >>>   1 file changed, 8 insertions(+), 5 deletions(-)
-> >>>
-> >>> diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-> >>> index fbf75fd..2853c11 100644
-> >>> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
-> >>> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-> >>> @@ -5691,14 +5691,17 @@ static int e1000_runtime_suspend(struct device *dev)
-> >>>          struct pci_dev *pdev = to_pci_dev(dev);
-> >>>          struct net_device *netdev = pci_get_drvdata(pdev);
-> >>>          struct e1000_adapter *adapter = netdev_priv(netdev);
-> >>> +       int retval;
-> >>> +       bool wake;
-> >>>
-> >>> -       if (e1000e_pm_ready(adapter)) {
-> >>> -               bool wake;
-> >>> +       if (!e1000e_pm_ready(adapter))
-> >>> +               return 0;
-> >>>
-> >>> -               __e1000_shutdown(pdev,&wake, true);
-> >>> -       }
-> >>> +       retval = __e1000_shutdown(pdev,&wake, true);
-> >>> +       if (!retval)
-> >>> +               e1000_power_off(pdev, true, wake);
-> >>>
-> >>> -       return 0;
-> >>> +       return retval;
-> >>>   }
-> >>>
-> >>>   static int e1000_idle(struct device *dev)
-> >>>
-> >
-> > I'd like the changelog to say what the bug is and how it is being fixed in
-> > general terms.
+On Tuesday, January 29, 2013 09:35:32 AM Mika Westerberg wrote:
+> On Mon, Jan 28, 2013 at 02:01:14PM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Currently, the ACPI namespace scanning code creates platform device
+> > objects for ACPI device nodes whose IDs match the contents of the
+> > acpi_platform_device_ids[] table.  However, this adds a superfluous
+> > special case into acpi_bus_device_attach() and makes it more
+> > difficult to follow than it has to be.  It also will make it more
+> > difficult to implement removal code for those platform device objects
+> > in the future.
+> > 
+> > For the above reasons, introduce a struct acpi_scan_handler object
+> > for creating platform devices and move the code related to that from
+> > acpi_bus_device_attach() to the .attach() callback of that object.
+> > Also move the acpi_platform_device_ids[] table to acpi_platform.c.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> Ok, my bad.
-> 
-> Problem: ethernet device does not work (no carrier signal).
-> Right after boot it goes to runtime-suspend and never wake up.
-> 
-> Original code (before your commit) calls pci_prepare_to_sleep() and it
-> calls pci_enable_wake() and switches device to one of D3 state.
-> 
-> It seems redundant, because pci_pm_runtime_suspend() do the same thing
-> after calling ->runtime_suspend callback. Or rather it did it before commit
-> 42eca2302146fed51335b95128e949ee6f54478f ("PCI: Don't touch card regs after
-> runtime suspend D3") and third patch aimed fix this damage.
-> 
-> More over seems like calling pci_enable_wake() from e1000e isn't enough for my case,
-> because my enthernet cannot wakeup from runtime-suspend without third patch.
-> Seems like it's because pci_enable_wake() and pci_finish_runtime_suspend()
-> calls different pratform-pm callbacks -- platform_pci_run_wake() /
-> platform_pci_sleep_wake().
-> 
-> All this looks messy and I don't know how it should work.
-> 
-> If you prefer to minimize changes -- I can test how it would work without
-> first (this) patch. Probably fine.
+> I've tested this with Haswell machine and once you fix the problem pointed
+> out by Yasuaki Ishimat (returning always when ACPI_PLATFORM_CLK is set)
 
-OK, I need to have a look at that driver, then.  Please give me some time,
-though, I'm working on something different at the moment.
+Well, yeah.  Fixed now.
 
-And by the way, by sending patches you declare that you know what you're doing.
-If you really don't, it's better to just describe the problem. :-)
+> the platform device creation works well. This is a nice cleanup and localizes
+> the hard coded platform device table in one file making maintenance bit
+> easier.
+> 
+> Feel free to add:
+> 
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Thanks,
-Rafael
+Thanks!
 
 
 -- 
