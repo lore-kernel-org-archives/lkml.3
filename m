@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3A2LsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 06:48:11 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:43540 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755559Ab3A2LsI (ORCPT
+	id S1756074Ab3A2Ls0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 06:48:26 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:44866 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab3A2LsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 06:48:08 -0500
+	Tue, 29 Jan 2013 06:48:09 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v7 0/2] perf stat: add interval counter printing
-Date: Tue, 29 Jan 2013 12:47:42 +0100
-Message-Id: <1359460064-3060-1-git-send-email-eranian@google.com>
+Subject: [PATCH v7 2/2] perf stat: add interval printing
+Date: Tue, 29 Jan 2013 12:47:44 +0100
+Message-Id: <1359460064-3060-3-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359460064-3060-1-git-send-email-eranian@google.com>
+References: <1359460064-3060-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small patchset extends perf stat with the -I option.
+This patch adds a new printing mode for perf stat.
+It allows internval printing. That means perf stat
+can now print event deltas at regular time interval.
+This is useful to detect phases in programs.
 
 The -I option enables interval printing. It expects
 an interval duration in milliseconds. Minimum is
@@ -49,39 +54,348 @@ noploop for 10 seconds
 4.000459115,2390936603,cycles
 5.000565341,2392108173,cycles
 
-The first patch adds the code to keep previous counts. The second
-is the actual extension of perf stat.
-
-In v2, we changed the option from -T to -I based on feedback
-from Andi Kleen (who is using -T in an upcoming patch).
-
-In v3, added compute_deltas() to evsel.c to factorize
-deltas computation based on Jiri's comments.
-
-In v4, we made sure that counts are printed in case
-the run is interrupted by CTRL-C based on Andi Kleen's
-feedback.
-
-In v5, we added the column headings printed every 25 lines.
-Cleaned up the code some more based on Namhyung's comments.
-
-In v6, we simplify print_stat() by dropping the useless
-check for interval as noted by Namhyung Kim. We also
-rebase to 3.8.0-rc4.
-
-In v7, we simply rebased to Arnaldo's perf/core tree.
-
-
-Stephane Eranian (2):
-  perf tools: add evsel prev_raw_count field
-  perf stat: add interval printing
-
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
  tools/perf/Documentation/perf-stat.txt |    4 +
  tools/perf/builtin-stat.c              |  157 +++++++++++++++++++++++++++++---
- tools/perf/util/evsel.c                |   26 ++++++
- tools/perf/util/evsel.h                |    1 +
- 4 files changed, 173 insertions(+), 15 deletions(-)
+ 2 files changed, 146 insertions(+), 15 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index cf0c310..5289da3 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -114,6 +114,10 @@ with it.  --append may be used here.  Examples:
+ 
+ perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- make -s -j64 O=defconfig-build/ bzImage
+ 
++-I msecs::
++--interval-print msecs::
++	print count deltas every N milliseconds (minimum: 100ms)
++	example: perf stat -I 1000 -e cycles -a sleep 5
+ 
+ EXAMPLES
+ --------
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 1c2ac14..493043a 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -65,6 +65,10 @@
+ #define CNTR_NOT_SUPPORTED	"<not supported>"
+ #define CNTR_NOT_COUNTED	"<not counted>"
+ 
++static void print_stat(int argc, const char **argv);
++static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
++static void print_counter(struct perf_evsel *counter, char *prefix);
++
+ static struct perf_evlist	*evsel_list;
+ 
+ static struct perf_target	target = {
+@@ -87,6 +91,8 @@ static FILE			*output				= NULL;
+ static const char		*pre_cmd			= NULL;
+ static const char		*post_cmd			= NULL;
+ static bool			sync_run			= false;
++static unsigned int		interval			= 0;
++static struct timespec		ref_time;
+ 
+ static volatile int done = 0;
+ 
+@@ -94,6 +100,28 @@ struct perf_stat {
+ 	struct stats	  res_stats[3];
+ };
+ 
++static inline void diff_timespec(struct timespec *r, struct timespec *a,
++				 struct timespec *b)
++{
++	r->tv_sec = a->tv_sec - b->tv_sec;
++	if (a->tv_nsec < b->tv_nsec) {
++		r->tv_nsec = a->tv_nsec + 1000000000L - b->tv_nsec;
++		r->tv_sec--;
++	} else {
++		r->tv_nsec = a->tv_nsec - b->tv_nsec ;
++	}
++}
++
++static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
++{
++	return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
++}
++
++static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
++{
++	return perf_evsel__cpus(evsel)->nr;
++}
++
+ static int perf_evsel__alloc_stat_priv(struct perf_evsel *evsel)
+ {
+ 	evsel->priv = zalloc(sizeof(struct perf_stat));
+@@ -106,14 +134,27 @@ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
+ 	evsel->priv = NULL;
+ }
+ 
+-static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
++static int perf_evsel__alloc_prev_raw_counts(struct perf_evsel *evsel)
+ {
+-	return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
++	void *addr;
++	size_t sz;
++
++	sz = sizeof(*evsel->counts) +
++	     (perf_evsel__nr_cpus(evsel) * sizeof(struct perf_counts_values));
++
++	addr = zalloc(sz);
++	if (!addr)
++		return -ENOMEM;
++
++	evsel->prev_raw_counts =  addr;
++
++	return 0;
+ }
+ 
+-static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
++static void perf_evsel__free_prev_raw_counts(struct perf_evsel *evsel)
+ {
+-	return perf_evsel__cpus(evsel)->nr;
++	free(evsel->prev_raw_counts);
++	evsel->prev_raw_counts = NULL;
+ }
+ 
+ static struct stats runtime_nsecs_stats[MAX_NR_CPUS];
+@@ -245,16 +286,69 @@ static int read_counter(struct perf_evsel *counter)
+ 	return 0;
+ }
+ 
++static void print_interval(void)
++{
++	static int num_print_interval;
++	struct perf_evsel *counter;
++	struct perf_stat *ps;
++	struct timespec ts, rs;
++	char prefix[64];
++
++	if (no_aggr) {
++		list_for_each_entry(counter, &evsel_list->entries, node) {
++			ps = counter->priv;
++			memset(ps->res_stats, 0, sizeof(ps->res_stats));
++			read_counter(counter);
++		}
++	} else {
++		list_for_each_entry(counter, &evsel_list->entries, node) {
++			ps = counter->priv;
++			memset(ps->res_stats, 0, sizeof(ps->res_stats));
++			read_counter_aggr(counter);
++		}
++	}
++	clock_gettime(CLOCK_MONOTONIC, &ts);
++	diff_timespec(&rs, &ts, &ref_time);
++	sprintf(prefix, "%6lu.%09lu%s", rs.tv_sec, rs.tv_nsec, csv_sep);
++
++	if (num_print_interval == 0 && !csv_output) {
++		if (no_aggr)
++			fprintf(output, "#           time CPU                 counts events\n");
++		else
++			fprintf(output, "#           time             counts events\n");
++	}
++
++	if (++num_print_interval == 25)
++		num_print_interval = 0;
++
++	if (no_aggr) {
++		list_for_each_entry(counter, &evsel_list->entries, node)
++			print_counter(counter, prefix);
++	} else {
++		list_for_each_entry(counter, &evsel_list->entries, node)
++			print_counter_aggr(counter, prefix);
++	}
++}
++
+ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ {
+ 	char msg[512];
+ 	unsigned long long t0, t1;
+ 	struct perf_evsel *counter;
++	struct timespec ts;
+ 	int status = 0;
+ 	int child_ready_pipe[2], go_pipe[2];
+ 	const bool forks = (argc > 0);
+ 	char buf;
+ 
++	if (interval) {
++		ts.tv_sec  = interval / 1000;
++		ts.tv_nsec = (interval % 1000) * 1000000;
++	} else {
++		ts.tv_sec  = 1;
++		ts.tv_nsec = 0;
++	}
++
+ 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
+ 		perror("failed to create pipes");
+ 		return -1;
+@@ -347,14 +441,25 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ 	 * Enable counters and exec the command:
+ 	 */
+ 	t0 = rdclock();
++	clock_gettime(CLOCK_MONOTONIC, &ref_time);
+ 
+ 	if (forks) {
+ 		close(go_pipe[1]);
++		if (interval) {
++			while (!waitpid(child_pid, &status, WNOHANG)) {
++				nanosleep(&ts, NULL);
++				print_interval();
++			}
++		}
+ 		wait(&status);
+ 		if (WIFSIGNALED(status))
+ 			psignal(WTERMSIG(status), argv[0]);
+ 	} else {
+-		while(!done) sleep(1);
++		while (!done) {
++			nanosleep(&ts, NULL);
++			if (interval)
++				print_interval();
++		}
+ 	}
+ 
+ 	t1 = rdclock();
+@@ -440,7 +545,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	if (evsel->cgrp)
+ 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
+ 
+-	if (csv_output)
++	if (csv_output || interval)
+ 		return;
+ 
+ 	if (perf_evsel__match(evsel, SOFTWARE, SW_TASK_CLOCK))
+@@ -654,12 +759,11 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	if (evsel->cgrp)
+ 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
+ 
+-	if (csv_output)
++	if (csv_output || interval)
+ 		return;
+ 
+ 	if (perf_evsel__match(evsel, HARDWARE, HW_INSTRUCTIONS)) {
+ 		total = avg_stats(&runtime_cycles_stats[cpu]);
+-
+ 		if (total)
+ 			ratio = avg / total;
+ 
+@@ -753,12 +857,15 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+  * Print out the results of a single counter:
+  * aggregated counts in system-wide mode
+  */
+-static void print_counter_aggr(struct perf_evsel *counter)
++static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+ {
+ 	struct perf_stat *ps = counter->priv;
+ 	double avg = avg_stats(&ps->res_stats[0]);
+ 	int scaled = counter->counts->scaled;
+ 
++	if (prefix)
++		fprintf(output, "%s", prefix);
++
+ 	if (scaled == -1) {
+ 		fprintf(output, "%*s%s%*s",
+ 			csv_output ? 0 : 18,
+@@ -801,7 +908,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
+  * Print out the results of a single counter:
+  * does not use aggregated count in system-wide
+  */
+-static void print_counter(struct perf_evsel *counter)
++static void print_counter(struct perf_evsel *counter, char *prefix)
+ {
+ 	u64 ena, run, val;
+ 	int cpu;
+@@ -810,6 +917,10 @@ static void print_counter(struct perf_evsel *counter)
+ 		val = counter->counts->cpu[cpu].val;
+ 		ena = counter->counts->cpu[cpu].ena;
+ 		run = counter->counts->cpu[cpu].run;
++
++		if (prefix)
++			fprintf(output, "%s", prefix);
++
+ 		if (run == 0 || ena == 0) {
+ 			fprintf(output, "CPU%*d%s%*s%s%*s",
+ 				csv_output ? 0 : -4,
+@@ -871,10 +982,10 @@ static void print_stat(int argc, const char **argv)
+ 
+ 	if (no_aggr) {
+ 		list_for_each_entry(counter, &evsel_list->entries, node)
+-			print_counter(counter);
++			print_counter(counter, NULL);
+ 	} else {
+ 		list_for_each_entry(counter, &evsel_list->entries, node)
+-			print_counter_aggr(counter);
++			print_counter_aggr(counter, NULL);
+ 	}
+ 
+ 	if (!csv_output) {
+@@ -895,7 +1006,7 @@ static volatile int signr = -1;
+ 
+ static void skip_signal(int signo)
+ {
+-	if(child_pid == -1)
++	if ((child_pid == -1) || interval)
+ 		done = 1;
+ 
+ 	signr = signo;
+@@ -1115,6 +1226,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			"command to run prior to the measured command"),
+ 	OPT_STRING(0, "post", &post_cmd, "command",
+ 			"command to run after to the measured command"),
++	OPT_UINTEGER('I', "interval-print", &interval,
++		    "print counts at regular interval in ms (>= 100)"),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+@@ -1215,12 +1328,23 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		usage_with_options(stat_usage, options);
+ 		return -1;
+ 	}
++	if (interval && interval < 100) {
++		pr_err("print interval must be >= 100ms\n");
++		usage_with_options(stat_usage, options);
++		return -1;
++	}
+ 
+ 	list_for_each_entry(pos, &evsel_list->entries, node) {
+ 		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
+ 		    perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
+ 			goto out_free_fd;
+ 	}
++	if (interval) {
++		list_for_each_entry(pos, &evsel_list->entries, node) {
++			if (perf_evsel__alloc_prev_raw_counts(pos) < 0)
++				goto out_free_fd;
++		}
++	}
+ 
+ 	/*
+ 	 * We dont want to block the signals - that would cause
+@@ -1230,6 +1354,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	 */
+ 	atexit(sig_atexit);
+ 	signal(SIGINT,  skip_signal);
++	signal(SIGCHLD, skip_signal);
+ 	signal(SIGALRM, skip_signal);
+ 	signal(SIGABRT, skip_signal);
+ 
+@@ -1242,11 +1367,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		status = run_perf_stat(argc, argv);
+ 	}
+ 
+-	if (status != -1)
++	if (status != -1 && !interval)
+ 		print_stat(argc, argv);
+ out_free_fd:
+-	list_for_each_entry(pos, &evsel_list->entries, node)
++	list_for_each_entry(pos, &evsel_list->entries, node) {
+ 		perf_evsel__free_stat_priv(pos);
++		perf_evsel__free_prev_raw_counts(pos);
++	}
+ 	perf_evlist__delete_maps(evsel_list);
+ out:
+ 	perf_evlist__delete(evsel_list);
 -- 
 1.7.10.4
 
