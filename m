@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab3A2XDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 18:03:48 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:59843 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3A2XDq (ORCPT
+	id S1752455Ab3A2XDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 18:03:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51554 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab3A2XDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 18:03:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359047682.21576.154.camel@gandalf.local.home>
-References: <1359047682.21576.154.camel@gandalf.local.home>
-Date: Wed, 30 Jan 2013 00:03:45 +0100
-Message-ID: <CACRpkdZU80XB2GiDtc7nh0hgMpyVYesi+xwhndu50jGS1L=wiw@mail.gmail.com>
-Subject: Re: [BUG] snowball board locks up on boot
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Lee Jones <lee.jones@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 29 Jan 2013 18:03:52 -0500
+Date: Tue, 29 Jan 2013 15:03:50 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv4 6/7] zswap: add flushing support
+Message-Id: <20130129150350.d0b51ca9.akpm@linux-foundation.org>
+In-Reply-To: <1359495627-30285-7-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1359495627-30285-7-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 6:14 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+On Tue, 29 Jan 2013 15:40:26 -0600
+Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
 
-> I tried to get my snowball board working on the latest kernel, but it
-> locks up hard very early on boot up.
->
-> I bisected it down to this commit:
->
-> commit ebc96db7632f987e0b9bffcb782cf5cfb8afb0dd
-> Author: Ulf Hansson <ulf.hansson@linaro.org>
-> Date:   Mon Aug 27 15:45:53 2012 +0200
->
->     ARM: ux500: Switch to use common clock framework
+> This patchset adds support for flush pages out of the compressed
+> pool to the swap device
 
-Yeah the new common clock framework is a bit like a heart
-transplant on the platforms you convert, some fallout is expected.
+I do so hate that word "flush".  Sometimes it means "writeback", other
+times it means "invalidate".  And perhaps it means "copy elsewhere then
+reclaim".
 
-However I thought we had all the clk fixes covered by -rc4 :-(
+Please describe with great specificity what this patch actually does
+with pages, and why it does it.  And where the compression factors into
+this.
 
-I don't have a Snowball right now myself, so have to ask
-for help here (non snowball ux500's work just fine for me).
+The code appears to take a compressed page, decompress it into
+swapcache via some means.  And then, for unexplained reasons, it starts
+writeback of that swapcache page.
 
-Lee, are you still booting the Snowball on new kernels
-everyday, and do you know if some fix is still missing?
+In zswap_flush_entry() there is a comment "page is already in the swap
+cache, ignore for now".  This is very interesting.  How and why does
+this come about?  Does it imply that there are two copies of the same
+data floating around?  If so, how come?
 
-Yours,
-Linus Walleij
+Preferably all the above would be understandable by reading mm/zswap.c.
