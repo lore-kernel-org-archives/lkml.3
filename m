@@ -1,330 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3A2Vlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:41:53 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:65279 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab3A2Vlu (ORCPT
+	id S1753172Ab3A2VmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:42:19 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:59344 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab3A2VlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:41:50 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/2] ARM: dove: split legacy and DT setup
-Date: Tue, 29 Jan 2013 22:41:35 +0100
-Message-Id: <1359495695-29304-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130129212623.GJ7717@titan.lakedaemon.net>
-References: <20130129212623.GJ7717@titan.lakedaemon.net>
+	Tue, 29 Jan 2013 16:41:00 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCHv4 2/7] zsmalloc: promote to lib/
+Date: Tue, 29 Jan 2013 15:40:22 -0600
+Message-Id: <1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13012921-7282-0000-0000-00001393D6E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the beginning of DT for Dove it was reasonable to have it close to
-non-DT code. With improved DT support, it became more and more difficult
-to not break non-DT while changing DT code.
+This patch promotes the slab-based zsmalloc memory allocator
+from the staging tree to lib/
 
-This patch splits up DT board setup and introduces a DOVE_LEGACY config
-to allow to remove legacy code for DT-only kernels.
+zswap depends on this allocator for storing compressed RAM pages
+in an efficient way under system wide memory pressure where
+high-order (greater than 0) page allocation are very likely to
+fail.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+For more information on zsmalloc and its internals, read the
+documentation at the top of the zsmalloc.c file.
+
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+--
+This patch is similar to a patch Minchan has on out on the list
+to promote for use in zram.
 ---
-Changelog:
-[v3]
-- also include new board-dt.c file that was missing in v2 of patch [2/2]
-  (patch [1/2] has not changed and is not resent)
+ drivers/staging/Kconfig                                |  2 --
+ drivers/staging/Makefile                               |  1 -
+ drivers/staging/zcache/zcache-main.c                   |  3 +--
+ drivers/staging/zram/zram_drv.h                        |  3 +--
+ drivers/staging/zsmalloc/Kconfig                       | 10 ----------
+ drivers/staging/zsmalloc/Makefile                      |  3 ---
+ {drivers/staging/zsmalloc => include/linux}/zsmalloc.h |  0
+ lib/Kconfig                                            | 18 ++++++++++++++++++
+ lib/Makefile                                           |  1 +
+ .../staging/zsmalloc/zsmalloc-main.c => lib/zsmalloc.c |  3 +--
+ 10 files changed, 22 insertions(+), 22 deletions(-)
+ delete mode 100644 drivers/staging/zsmalloc/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Makefile
+ rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
+ rename drivers/staging/zsmalloc/zsmalloc-main.c => lib/zsmalloc.c (99%)
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-dove/Kconfig    |    5 ++
- arch/arm/mach-dove/Makefile   |    4 +-
- arch/arm/mach-dove/board-dt.c |  103 +++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-dove/common.c   |   90 -----------------------------------
- arch/arm/mach-dove/common.h   |    1 +
- 5 files changed, 112 insertions(+), 91 deletions(-)
- create mode 100644 arch/arm/mach-dove/board-dt.c
-
-diff --git a/arch/arm/mach-dove/Kconfig b/arch/arm/mach-dove/Kconfig
-index 603c5fd..aedd0ba 100644
---- a/arch/arm/mach-dove/Kconfig
-+++ b/arch/arm/mach-dove/Kconfig
-@@ -2,8 +2,12 @@ if ARCH_DOVE
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 329bdb4..c0a7918 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -76,8 +76,6 @@ source "drivers/staging/zram/Kconfig"
  
- menu "Marvell Dove Implementations"
+ source "drivers/staging/zcache/Kconfig"
  
-+config DOVE_LEGACY
-+	bool
-+
- config MACH_DOVE_DB
- 	bool "Marvell DB-MV88AP510 Development Board"
-+	select DOVE_LEGACY
- 	select I2C_BOARDINFO
- 	help
- 	  Say 'Y' here if you want your kernel to support the
-@@ -11,6 +15,7 @@ config MACH_DOVE_DB
+-source "drivers/staging/zsmalloc/Kconfig"
+-
+ source "drivers/staging/wlags49_h2/Kconfig"
  
- config MACH_CM_A510
- 	bool "CompuLab CM-A510 Board"
-+	select DOVE_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  CompuLab CM-A510 Board.
-diff --git a/arch/arm/mach-dove/Makefile b/arch/arm/mach-dove/Makefile
-index 5e683ba..3f0a858 100644
---- a/arch/arm/mach-dove/Makefile
-+++ b/arch/arm/mach-dove/Makefile
-@@ -1,4 +1,6 @@
--obj-y				+= common.o addr-map.o irq.o mpp.o
-+obj-y				+= common.o addr-map.o irq.o
-+obj-$(CONFIG_DOVE_LEGACY)	+= mpp.o
- obj-$(CONFIG_PCI)		+= pcie.o
- obj-$(CONFIG_MACH_DOVE_DB)	+= dove-db-setup.o
-+obj-$(CONFIG_MACH_DOVE_DT)	+= board-dt.o
- obj-$(CONFIG_MACH_CM_A510)	+= cm-a510.o
-diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-dove/board-dt.c
-new file mode 100644
-index 0000000..c9c274a
---- /dev/null
-+++ b/arch/arm/mach-dove/board-dt.c
-@@ -0,0 +1,103 @@
-+/*
-+ * arch/arm/mach-dove/board-dt.c
-+ *
-+ * Marvell Dove 88AP510 System On Chip FDT Board
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/clk-provider.h>
-+#include <linux/clk/mvebu.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/platform_data/usb-ehci-orion.h>
-+#include <asm/hardware/cache-tauros2.h>
-+#include <asm/mach/arch.h>
-+#include <mach/pm.h>
-+#include <plat/common.h>
-+#include <plat/irq.h>
-+#include "common.h"
-+
-+/*
-+ * There are still devices that doesn't even know about DT,
-+ * get clock gates here and add a clock lookup.
-+ */
-+static void __init dove_legacy_clk_init(void)
-+{
-+	struct device_node *np = of_find_compatible_node(NULL, NULL,
-+					 "marvell,dove-gating-clock");
-+	struct of_phandle_args clkspec;
-+
-+	clkspec.np = np;
-+	clkspec.args_count = 1;
-+
-+	clkspec.args[0] = CLOCK_GATING_BIT_USB0;
-+	orion_clkdev_add(NULL, "orion-ehci.0",
-+			 of_clk_get_from_provider(&clkspec));
-+
-+	clkspec.args[0] = CLOCK_GATING_BIT_USB1;
-+	orion_clkdev_add(NULL, "orion-ehci.1",
-+			 of_clk_get_from_provider(&clkspec));
-+
-+	clkspec.args[0] = CLOCK_GATING_BIT_GBE;
-+	orion_clkdev_add(NULL, "mv643xx_eth_port.0",
-+			 of_clk_get_from_provider(&clkspec));
-+
-+	clkspec.args[0] = CLOCK_GATING_BIT_PCIE0;
-+	orion_clkdev_add("0", "pcie",
-+			 of_clk_get_from_provider(&clkspec));
-+
-+	clkspec.args[0] = CLOCK_GATING_BIT_PCIE1;
-+	orion_clkdev_add("1", "pcie",
-+			 of_clk_get_from_provider(&clkspec));
-+}
-+
-+static void __init dove_of_clk_init(void)
-+{
-+	mvebu_clocks_init();
-+	dove_legacy_clk_init();
-+}
-+
-+static struct mv643xx_eth_platform_data dove_dt_ge00_data = {
-+	.phy_addr = MV643XX_ETH_PHY_ADDR_DEFAULT,
-+};
-+
-+static void __init dove_dt_init(void)
-+{
-+	pr_info("Dove 88AP510 SoC\n");
-+
-+#ifdef CONFIG_CACHE_TAUROS2
-+	tauros2_init(0);
-+#endif
-+	dove_setup_cpu_mbus();
-+
-+	/* Setup root of clk tree */
-+	dove_of_clk_init();
-+
-+	/* Internal devices not ported to DT yet */
-+	dove_rtc_init();
-+	dove_ge00_init(&dove_dt_ge00_data);
-+	dove_ehci0_init();
-+	dove_ehci1_init();
-+	dove_pcie_init(1, 1);
-+
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static const char * const dove_dt_board_compat[] = {
-+	"marvell,dove",
-+	NULL
-+};
-+
-+DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
-+	.map_io		= dove_map_io,
-+	.init_early	= dove_init_early,
-+	.init_irq	= orion_dt_init_irq,
-+	.timer		= &dove_timer,
-+	.init_machine	= dove_dt_init,
-+	.restart	= dove_restart,
-+	.dt_compat	= dove_dt_board_compat,
-+MACHINE_END
-diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
-index be887feea..aea14b4 100644
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -9,22 +9,17 @@
-  */
+ source "drivers/staging/wlags49_h25/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index c7ec486..1572fe5 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -32,7 +32,6 @@ obj-$(CONFIG_DX_SEP)            += sep/
+ obj-$(CONFIG_IIO)		+= iio/
+ obj-$(CONFIG_ZRAM)		+= zram/
+ obj-$(CONFIG_ZCACHE)		+= zcache/
+-obj-$(CONFIG_ZSMALLOC)		+= zsmalloc/
+ obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
+ obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
+ obj-$(CONFIG_FB_SM7XX)		+= sm7xxfb/
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 52b43b7..75c08c5 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -32,10 +32,9 @@
+ #include <linux/crypto.h>
+ #include <linux/string.h>
+ #include <linux/idr.h>
++#include <linux/zsmalloc.h>
+ #include "tmem.h"
  
- #include <linux/clk-provider.h>
--#include <linux/clk/mvebu.h>
- #include <linux/dma-mapping.h>
- #include <linux/init.h>
--#include <linux/of.h>
--#include <linux/of_platform.h>
- #include <linux/platform_data/dma-mv_xor.h>
- #include <linux/platform_data/usb-ehci-orion.h>
- #include <linux/platform_device.h>
- #include <asm/hardware/cache-tauros2.h>
--#include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/mach/time.h>
- #include <mach/bridge-regs.h>
- #include <mach/pm.h>
- #include <plat/common.h>
--#include <plat/irq.h>
- #include <plat/time.h>
- #include "common.h"
+-#include "../zsmalloc/zsmalloc.h"
+-
+ #ifdef CONFIG_CLEANCACHE
+ #include <linux/cleancache.h>
+ #endif
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index df2eec4..1e72965 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -17,8 +17,7 @@
  
-@@ -364,88 +359,3 @@ void dove_restart(char mode, const char *cmd)
- 	while (1)
- 		;
- }
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
 -
--#if defined(CONFIG_MACH_DOVE_DT)
--/*
-- * There are still devices that doesn't even know about DT,
-- * get clock gates here and add a clock lookup.
-- */
--static void __init dove_legacy_clk_init(void)
--{
--	struct device_node *np = of_find_compatible_node(NULL, NULL,
--					 "marvell,dove-gating-clock");
--	struct of_phandle_args clkspec;
+-#include "../zsmalloc/zsmalloc.h"
++#include <linux/zsmalloc.h>
+ 
+ /*
+  * Some arbitrary value. This is just to catch
+diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+deleted file mode 100644
+index 9084565..0000000
+--- a/drivers/staging/zsmalloc/Kconfig
++++ /dev/null
+@@ -1,10 +0,0 @@
+-config ZSMALLOC
+-	tristate "Memory allocator for compressed pages"
+-	default n
+-	help
+-	  zsmalloc is a slab-based memory allocator designed to store
+-	  compressed RAM pages.  zsmalloc uses virtual memory mapping
+-	  in order to reduce fragmentation.  However, this results in a
+-	  non-standard allocator interface where a handle, not a pointer, is
+-	  returned by an alloc().  This handle must be mapped in order to
+-	  access the allocated space.
+diff --git a/drivers/staging/zsmalloc/Makefile b/drivers/staging/zsmalloc/Makefile
+deleted file mode 100644
+index b134848..0000000
+--- a/drivers/staging/zsmalloc/Makefile
++++ /dev/null
+@@ -1,3 +0,0 @@
+-zsmalloc-y 		:= zsmalloc-main.o
 -
--	clkspec.np = np;
--	clkspec.args_count = 1;
+-obj-$(CONFIG_ZSMALLOC)	+= zsmalloc.o
+diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/include/linux/zsmalloc.h
+similarity index 100%
+rename from drivers/staging/zsmalloc/zsmalloc.h
+rename to include/linux/zsmalloc.h
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 75cdb77..fdab273 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -219,6 +219,24 @@ config DECOMPRESS_LZO
+ config GENERIC_ALLOCATOR
+ 	boolean
+ 
++config ZSMALLOC
++	tristate "Memory allocator for compressed pages"
++	default n
++	help
++	  zsmalloc is a slab-based memory allocator designed to store
++	  compressed RAM pages.  zsmalloc uses a memory pool that combines
++	  single pages into higher order pages by linking them together
++	  using the fields of the struct page. Allocations are then
++	  mapped through copy buffers or VM mapping, in order to reduce
++	  memory pool fragmentation and increase allocation success rate under
++	  memory pressure.
++
++	  This results in a non-standard allocator interface where
++	  a handle, not a pointer, is returned by the allocation function.
++	  This handle must be mapped in order to access the allocated space.
++
++	  If unsure, say N.
++
+ #
+ # reed solomon support is select'ed if needed
+ #
+diff --git a/lib/Makefile b/lib/Makefile
+index 02ed6c0..70b0892 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -65,6 +65,7 @@ obj-$(CONFIG_CRC7)	+= crc7.o
+ obj-$(CONFIG_LIBCRC32C)	+= libcrc32c.o
+ obj-$(CONFIG_CRC8)	+= crc8.o
+ obj-$(CONFIG_GENERIC_ALLOCATOR) += genalloc.o
++obj-$(CONFIG_ZSMALLOC) += zsmalloc.o
+ 
+ obj-$(CONFIG_ZLIB_INFLATE) += zlib_inflate/
+ obj-$(CONFIG_ZLIB_DEFLATE) += zlib_deflate/
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/lib/zsmalloc.c
+similarity index 99%
+rename from drivers/staging/zsmalloc/zsmalloc-main.c
+rename to lib/zsmalloc.c
+index 13018b7..d5146c7 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/lib/zsmalloc.c
+@@ -78,8 +78,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
 -
--	clkspec.args[0] = CLOCK_GATING_BIT_USB0;
--	orion_clkdev_add(NULL, "orion-ehci.0",
--			 of_clk_get_from_provider(&clkspec));
--
--	clkspec.args[0] = CLOCK_GATING_BIT_USB1;
--	orion_clkdev_add(NULL, "orion-ehci.1",
--			 of_clk_get_from_provider(&clkspec));
--
--	clkspec.args[0] = CLOCK_GATING_BIT_GBE;
--	orion_clkdev_add(NULL, "mv643xx_eth_port.0",
--			 of_clk_get_from_provider(&clkspec));
--
--	clkspec.args[0] = CLOCK_GATING_BIT_PCIE0;
--	orion_clkdev_add("0", "pcie",
--			 of_clk_get_from_provider(&clkspec));
--
--	clkspec.args[0] = CLOCK_GATING_BIT_PCIE1;
--	orion_clkdev_add("1", "pcie",
--			 of_clk_get_from_provider(&clkspec));
--}
--
--static void __init dove_of_clk_init(void)
--{
--	mvebu_clocks_init();
--	dove_legacy_clk_init();
--}
--
--static struct mv643xx_eth_platform_data dove_dt_ge00_data = {
--	.phy_addr = MV643XX_ETH_PHY_ADDR_DEFAULT,
--};
--
--static void __init dove_dt_init(void)
--{
--	pr_info("Dove 88AP510 SoC, TCLK = %d MHz.\n",
--		(dove_tclk + 499999) / 1000000);
--
--#ifdef CONFIG_CACHE_TAUROS2
--	tauros2_init(0);
--#endif
--	dove_setup_cpu_mbus();
--
--	/* Setup root of clk tree */
--	dove_of_clk_init();
--
--	/* Internal devices not ported to DT yet */
--	dove_rtc_init();
--
--	dove_ge00_init(&dove_dt_ge00_data);
--	dove_ehci0_init();
--	dove_ehci1_init();
--	dove_pcie_init(1, 1);
--
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
--}
--
--static const char * const dove_dt_board_compat[] = {
--	"marvell,dove",
--	NULL
--};
--
--DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
--	.map_io		= dove_map_io,
--	.init_early	= dove_init_early,
--	.init_irq	= orion_dt_init_irq,
--	.timer		= &dove_timer,
--	.init_machine	= dove_dt_init,
--	.restart	= dove_restart,
--	.dt_compat	= dove_dt_board_compat,
--MACHINE_END
--#endif
-diff --git a/arch/arm/mach-dove/common.h b/arch/arm/mach-dove/common.h
-index 1a23340..d17f760 100644
---- a/arch/arm/mach-dove/common.h
-+++ b/arch/arm/mach-dove/common.h
-@@ -25,6 +25,7 @@ void dove_init_early(void);
- void dove_init_irq(void);
- void dove_setup_cpu_mbus(void);
- void dove_ge00_init(struct mv643xx_eth_platform_data *eth_data);
-+void dove_rtc_init(void);
- void dove_sata_init(struct mv_sata_platform_data *sata_data);
- #ifdef CONFIG_PCI
- void dove_pcie_init(int init_port0, int init_port1);
+-#include "zsmalloc.h"
++#include <linux/zsmalloc.h>
+ 
+ /*
+  * This must be power of 2 and greater than of equal to sizeof(link_free).
 -- 
-1.7.10.4
+1.8.1.1
 
