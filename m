@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3A2R56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 12:57:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43178 "EHLO mx1.redhat.com"
+	id S1754729Ab3A2R71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 12:59:27 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:34095 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753485Ab3A2R54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 12:57:56 -0500
-Date: Tue, 29 Jan 2013 11:57:43 -0600
-From: Clark Williams <williams@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] sched: move scheduler sysctl bits into dedicated
- header file
-Message-ID: <20130129115743.0f9e67dc@redhat.com>
-In-Reply-To: <87vcagv808.fsf@sejong.aot.lge.com>
-References: <20130128143120.1b60bfb6@redhat.com>
-	<87vcagv808.fsf@sejong.aot.lge.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Yz7FZG7GmkwN.FCUUB2zFrd"; protocol="application/pgp-signature"
+	id S1751586Ab3A2R7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 12:59:25 -0500
+Date: Tue, 29 Jan 2013 10:59:12 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: davem@davemloft.net,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, linux-doc@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH 4/5] net: mvmdio: allow Device Tree and platform device
+ to coexist
+Message-ID: <20130129175912.GE25646@obsidianresearch.com>
+References: <1359473048-26551-1-git-send-email-florian@openwrt.org>
+ <1359473048-26551-5-git-send-email-florian@openwrt.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359473048-26551-5-git-send-email-florian@openwrt.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Yz7FZG7GmkwN.FCUUB2zFrd
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 29, 2013 at 04:24:07PM +0100, Florian Fainelli wrote:
+  
+> -	dev->err_interrupt = irq_of_parse_and_map(pdev->dev.of_node, 0);
+> +	if (pdev->dev.of_node) {
+> +		dev->regs = of_iomap(pdev->dev.of_node, 0);
+> +		if (!dev->regs) {
+> +			dev_err(&pdev->dev, "No SMI register address given in DT\n");
+> +			ret = -ENODEV;
+> +			goto out_free;
+> +		}
+> +
+> +		dev->err_interrupt = irq_of_parse_and_map(pdev->dev.of_node, 0);
+> +	} else {
+> +		r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+> +		dev->regs = ioremap(r->start, resource_size(r));
+> +		if (!dev->regs) {
+> +			dev_err(&pdev->dev, "No SMI register address given\n");
+> +			ret = -ENODEV;
+> +			goto out_free;
+> +		}
+> +
+> +		dev->err_interrupt = platform_get_irq(pdev, 0);
+> +	}
 
-On Tue, 29 Jan 2013 15:05:43 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+Why do you have these different paths for OF and platform? AFAIK these
+days when a OF device is automatically converted into a platform
+device all the struct resources are created too, so you can't you just
+use platform_get_resource and devm_request_and_ioremap for both flows?
 
-> Hi Clark,
->=20
-> On Mon, 28 Jan 2013 14:31:20 -0600, Clark Williams wrote:
-> > Move all the scheduler sysctl-related bits out of include/linux/sched.h
-> > into a new file include/linux/sched_sysctl.h.
-> >
-> > Signed-off-by: Clark Williams <williams@redhat.com>
-> > ---
-> [snip]
-> > diff --git a/include/linux/sched_sysctl.h b/include/linux/sched_sysctl.h
-> > new file mode 100644
-> > index 0000000..912adab
-> > --- /dev/null
-> > +++ b/include/linux/sched_sysctl.h
-> > @@ -0,0 +1,121 @@
-> > +#ifndef _SCHED_SYSCTL_H
-> > +#define _SCHED_SYSCTL_H
-> > +
-> > +
-> > +/* provide a home for sysctl scheduler tuning knobs */
-> > +
-> > +/*
-> > + * default timeslice is 100 msecs (used only for SCHED_RR tasks).
-> > + * Timeslices get refilled after they expire.
-> > + */
-> > +#define RR_TIMESLICE		(100 * HZ / 1000)
->=20
-> It seems this line came from sched.h but I can't find that part
-> deleted.
->=20
+Ditto for the interrupt - platform_get_irq should work in both cases?
 
-Arggghh! I reorganized the commits and didn't remove RR_TIMESLICE when
-I moved it. I'm surprised it compiled.=20
-
-I can generate a new patchset or let Ingo just remove it from sched.h.
-
-Clark
-
---Sig_/Yz7FZG7GmkwN.FCUUB2zFrd
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlEIDZcACgkQHyuj/+TTEp0xegCdGdem94QcmY6GWU/EDOiXhBdS
-JL4AoIbW3TP/MGsrLR4h/DjEmN5jNqyP
-=NDwX
------END PGP SIGNATURE-----
-
---Sig_/Yz7FZG7GmkwN.FCUUB2zFrd--
+Jason
