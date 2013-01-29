@@ -1,201 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab3A2QaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:30:10 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35318 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab3A2QYb (ORCPT
+	id S1754918Ab3A2Qa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:30:57 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:49416 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3A2Qav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:24:31 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V6 12/30] aio: add aio_kernel_() interface
-Date: Tue, 29 Jan 2013 10:23:25 -0600
-Message-Id: <1359476623-10544-13-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 29 Jan 2013 11:30:51 -0500
+Message-ID: <5107F88C.8030002@openwrt.org>
+Date: Tue, 29 Jan 2013 17:27:56 +0100
+From: Florian Fainelli <florian@openwrt.org>
+Organization: OpenWrt
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: davem@davemloft.net, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 5/5] mv643xx_eth: convert to use the Marvell Orion MDIO
+ driver
+References: <1359473048-26551-1-git-send-email-florian@openwrt.org> <1359473048-26551-6-git-send-email-florian@openwrt.org> <20130129170131.7964a110@skate>
+In-Reply-To: <20130129170131.7964a110@skate>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+On 01/29/2013 05:01 PM, Thomas Petazzoni wrote:
+> Dear Florian Fainelli,
+>
+> On Tue, 29 Jan 2013 16:24:08 +0100, Florian Fainelli wrote:
+>> This patch converts the Marvell MV643XX ethernet driver to use the
+>> Marvell Orion MDIO driver. As a result, PowerPC and ARM platforms
+>> registering the Marvell MV643XX ethernet driver are also updated to
+>> register a Marvell Orion MDIO driver. This driver voluntarily overlaps
+>> with the Marvell Ethernet shared registers because it will use a subset
+>> of this shared register (shared_base + 0x4 - shared_base + 0x84). The
+>> Ethernet driver is also updated to look up for a PHY device using the
+>> Orion MDIO bus driver.
+>>
+>> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+>> ---
+>>   arch/arm/plat-orion/common.c               |   84 +++++++++++--
+> In this file, there was one "MV643XX_ETH_SHARED_NAME" platform_device
+> registered for each network interface. Why? If the driver is shared,
+> isn't the whole idea to register it only once?
+It looks like I introduced two redundant mvmdio instances as ge01 refers 
+to the ge00 smi bus (the same applies to ge11 and ge10). Thanks for 
+spotting this.
 
-This adds an interface that lets kernel callers submit aio iocbs without
-going through the user space syscalls.  This lets kernel callers avoid
-the management limits and overhead of the context.  It will also let us
-integrate aio operations with other kernel apis that the user space
-interface doesn't have access to.
+>
+> In any case, one of the idea of separating the mvmdio driver from the
+> mvneta driver in the first place is that there should be only one
+> instance of the mvmdio device, even if there are multiple network
+> interfaces. The reason is that from a HW point of the view, the MDIO
+> unit is shared between the network interfaces. If you look at
+> armada-370-xp.dtsi, there is only one mvmdio device registered, and two
+> network interfaces (using the mvneta driver) that are registered (and
+> actually up to four network interfaces can exist, they are added by
+> some other .dtsi files depending on the specific SoC).
+>
+> So I don't think there should be one instance of the mvmdio per network
+> interface.
+>
+> Also, I am wondering what's left in this MV643XX_ETH_SHARED_NAME driver
+> once the MDIO stuff has been pulled out in a separate driver? I think
+> the whole point of this work should be to get rid of this
+> MV643XX_ETH_SHARED_NAME driver, no?
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
----
- fs/aio.c            | 92 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/aio.h | 15 +++++++++
- 2 files changed, 107 insertions(+)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 71f613c..9a1a6fc 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -912,6 +912,10 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
- 		iocb->ki_users = 0;
- 		wake_up_process(iocb->ki_obj.tsk);
- 		return 1;
-+	} else if (is_kernel_kiocb(iocb)) {
-+		iocb->ki_obj.complete(iocb->ki_user_data, res);
-+		aio_kernel_free(iocb);
-+		return 0;
- 	}
- 
- 	info = &ctx->ring_info;
-@@ -1504,6 +1508,94 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 	return 0;
- }
- 
-+ /*
-+ * This allocates an iocb that will be used to submit and track completion of
-+ * an IO that is issued from kernel space.
-+ *
-+ * The caller is expected to call the appropriate aio_kernel_init_() functions
-+ * and then call aio_kernel_submit().  From that point forward progress is
-+ * guaranteed by the file system aio method.  Eventually the caller's
-+ * completion callback will be called.
-+ *
-+ * These iocbs are special.  They don't have a context, we don't limit the
-+ * number pending, they can't be canceled, and can't be retried.  In the short
-+ * term callers need to be careful not to call operations which might retry by
-+ * only calling new ops which never add retry support.  In the long term
-+ * retry-based AIO should be removed.
-+ */
-+struct kiocb *aio_kernel_alloc(gfp_t gfp)
-+{
-+	struct kiocb *iocb = kzalloc(sizeof(struct kiocb), gfp);
-+	if (iocb)
-+		iocb->ki_key = KIOCB_KERNEL_KEY;
-+	return iocb;
-+}
-+EXPORT_SYMBOL_GPL(aio_kernel_alloc);
-+
-+void aio_kernel_free(struct kiocb *iocb)
-+{
-+	kfree(iocb);
-+}
-+EXPORT_SYMBOL_GPL(aio_kernel_free);
-+
-+/*
-+ * ptr and count can be a buff and bytes or an iov and segs.
-+ */
-+void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
-+			unsigned short op, void *ptr, size_t nr, loff_t off)
-+{
-+	iocb->ki_filp = filp;
-+	iocb->ki_opcode = op;
-+	iocb->ki_buf = (char __user *)(unsigned long)ptr;
-+	iocb->ki_left = nr;
-+	iocb->ki_nbytes = nr;
-+	iocb->ki_pos = off;
-+}
-+EXPORT_SYMBOL_GPL(aio_kernel_init_rw);
-+
-+void aio_kernel_init_callback(struct kiocb *iocb,
-+			      void (*complete)(u64 user_data, long res),
-+			      u64 user_data)
-+{
-+	iocb->ki_obj.complete = complete;
-+	iocb->ki_user_data = user_data;
-+}
-+EXPORT_SYMBOL_GPL(aio_kernel_init_callback);
-+
-+/*
-+ * The iocb is our responsibility once this is called.  The caller must not
-+ * reference it.  This comes from aio_setup_iocb() modifying the iocb.
-+ *
-+ * Callers must be prepared for their iocb completion callback to be called the
-+ * moment they enter this function.  The completion callback may be called from
-+ * any context.
-+ *
-+ * Returns: 0: the iocb completion callback will be called with the op result
-+ * negative errno: the operation was not submitted and the iocb was freed
-+ */
-+int aio_kernel_submit(struct kiocb *iocb)
-+{
-+	int ret;
-+
-+	BUG_ON(!is_kernel_kiocb(iocb));
-+	BUG_ON(!iocb->ki_obj.complete);
-+	BUG_ON(!iocb->ki_filp);
-+
-+	ret = aio_setup_iocb(iocb, 0);
-+	if (ret) {
-+		aio_kernel_free(iocb);
-+		return ret;
-+	}
-+
-+	ret = iocb->ki_retry(iocb);
-+	BUG_ON(ret == -EIOCBRETRY);
-+	if (ret != -EIOCBQUEUED)
-+		aio_complete(iocb, ret, 0);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(aio_kernel_submit);
-+
- static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 			 struct iocb *iocb, struct kiocb_batch *batch,
- 			 bool compat)
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 31ff6db..f9e0292 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -24,6 +24,7 @@ struct kioctx;
- #define KIOCB_C_COMPLETE	0x02
- 
- #define KIOCB_SYNC_KEY		(~0U)
-+#define KIOCB_KERNEL_KEY		(~1U)
- 
- /* ki_flags bits */
- /*
-@@ -99,6 +100,7 @@ struct kiocb {
- 	union {
- 		void __user		*user;
- 		struct task_struct	*tsk;
-+		void			(*complete)(u64 user_data, long res);
- 	} ki_obj;
- 
- 	__u64			ki_user_data;	/* user's data for completion */
-@@ -131,6 +133,11 @@ static inline bool is_sync_kiocb(struct kiocb *kiocb)
- 	return kiocb->ki_key == KIOCB_SYNC_KEY;
- }
- 
-+static inline bool is_kernel_kiocb(struct kiocb *kiocb)
-+{
-+	return kiocb->ki_key == KIOCB_KERNEL_KEY;
-+}
-+
- static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
- {
- 	*kiocb = (struct kiocb) {
-@@ -218,6 +225,14 @@ struct mm_struct;
- extern void exit_aio(struct mm_struct *mm);
- extern long do_io_submit(aio_context_t ctx_id, long nr,
- 			 struct iocb __user *__user *iocbpp, bool compat);
-+struct kiocb *aio_kernel_alloc(gfp_t gfp);
-+void aio_kernel_free(struct kiocb *iocb);
-+void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
-+			unsigned short op, void *ptr, size_t nr, loff_t off);
-+void aio_kernel_init_callback(struct kiocb *iocb,
-+			      void (*complete)(u64 user_data, long res),
-+			      u64 user_data);
-+int aio_kernel_submit(struct kiocb *iocb);
- #else
- static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
- static inline int aio_put_req(struct kiocb *iocb) { return 0; }
--- 
-1.8.1.1
-
+If you take a closer look at mv643xx_eth you will see that the "shared" 
+driver still handles the mconf bus window configuration, which is not 
+abstracted yet. Besides that, I would rather do it step by step.
+--
+Florian
