@@ -1,99 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab3A2PRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 10:17:17 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:41549 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742Ab3A2PRQ convert rfc822-to-8bit (ORCPT
+	id S1757293Ab3A2PWC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 10:22:02 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:36644 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756633Ab3A2PV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 10:17:16 -0500
-In-Reply-To: <1359443521-24670-9-git-send-email-hare@suse.de>
-References: <1359443521-24670-1-git-send-email-hare@suse.de> <1359443521-24670-9-git-send-email-hare@suse.de>
-To: Hannes Reinecke <hare@suse.de>
-Cc: Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org,
-        mschwid2@linux.vnet.ibm.com
+	Tue, 29 Jan 2013 10:21:59 -0500
+Date: Tue, 29 Jan 2013 10:21:58 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vivek Gautam <gautam.vivek@samsung.com>
+cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <jg1.han@samsung.com>, Doug Anderson <dianders@chromium.org>
+Subject: Re: [PATCH] usb: ehci: s5p: Power-off VBUS during suspend.
+In-Reply-To: <1359456765-7335-1-git-send-email-gautam.vivek@samsung.com>
+Message-ID: <Pine.LNX.4.44L0.1301291017360.1507-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Subject: Re: [PATCH 8/9] dasd: Add 'timeout' attribute
-X-KeepSent: 5B1E9925:8182C1D5-C1257B02:004C182F;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Stefan Weinhuber <WEIN@de.ibm.com>
-Message-ID: <OF5B1E9925.8182C1D5-ONC1257B02.004C182F-C1257B02.0053F88F@de.ibm.com>
-Date: Tue, 29 Jan 2013 16:17:01 +0100
-X-MIMETrack: Serialize by Router on D06ML030/06/M/IBM(Release 8.5.3 ZX853HP5|January 12, 2012) at
- 29/01/2013 16:17:01,
-	Serialize complete at 29/01/2013 16:17:01
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-x-cbid: 13012915-0342-0000-0000-00000410331C
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hannes Reinecke <hare@suse.de> wrote on 2013-01-29 08:12:00:
-[..]
-> +static ssize_t
-> +dasd_timeout_store(struct device *dev, struct device_attribute *attr,
-> +         const char *buf, size_t count)
-> +{
-> +   struct dasd_device *device;
-> +   struct request_queue *q;
-> +   unsigned long val, flags;
-> +
-> +   device = dasd_device_from_cdev(to_ccwdev(dev));
-> +   if (IS_ERR(device))
-> +      return -ENODEV;
-> +
-> +   if ((strict_strtoul(buf, 10, &val) != 0) ||
-> +       val > ULONG_MAX / HZ) {
-> +      dasd_put_device(device);
-> +      return -EINVAL;
-> +   }
-> +   q = device->block->request_queue;
+On Tue, 29 Jan 2013, Vivek Gautam wrote:
 
-You need to check device->block before using it.
-For alias devices the device->block pointer is NULL, as an alias device
-has no fixed association with a block device.
+> This change de-asserts vbus_gpio on suspend and
+> re-asserts on resume in order to save power.
+> NOTE, this change means no USB charging in suspend
+> mode.
 
-> +   if (!q) {
-> +      dasd_put_device(device);
-> +      return -ENODEV;
-> +   }
-> +   spin_lock_irqsave(&device->block->request_queue_lock, flags);
-> +   if (!val)
-> +      blk_queue_rq_timed_out(q, NULL);
-> +   else
-> +      blk_queue_rq_timed_out(q, dasd_times_out);
-> +
-> +   device->blk_timeout = val;
-> +
-> +   blk_queue_rq_timeout(q, device->blk_timeout * HZ);
-> +   spin_unlock_irqrestore(&device->block->request_queue_lock, flags);
-> +
-> +   dasd_put_device(device);
-> +   return count;
-> +}
-> +
-[..]
+Doing this would mean USB devices could not wake up the system.  This 
+would be unacceptable.
 
-Mit freundlichen Grüßen / Kind regards
- 
-Stefan Weinhuber
+However, turning off VBUS power is okay provided:
 
--- 
-Linux for zSeries kernel development
-IBM Systems &Technology Group, Systems Software Development / SW Linux für 
-zSeries Entwicklung
+	no root-hub ports are enabled, and
 
-IBM Deutschland
-Schoenaicher Str. 220
-71032 Boeblingen
-Phone: +49-7031-16-4018
-E-Mail: wein@de.ibm.com
+	the root hub is not enabled for wakeup.
 
-IBM Deutschland Research & Development GmbH / Vorsitzender des 
-Aufsichtsrats: Martina Koederitz
-Geschäftsführung: Dirk Wittkopp
-Sitz der Gesellschaft: Böblingen / Registergericht: Amtsgericht Stuttgart, 
-HRB 243294
+Under those circumstances there can't be any wakeup-enabled USB devices 
+on the bus, and the root hub itself would not need to detect new 
+connections and disconnections.
+
+Alan Stern
 
