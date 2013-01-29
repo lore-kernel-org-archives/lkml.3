@@ -1,316 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab3A2VjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 16:39:21 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:59434 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab3A2VjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 16:39:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: inderpal.singh@linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH V3] cpufreq: Simplify cpufreq_add_dev()
-Date: Tue, 29 Jan 2013 22:45:27 +0100
-Message-ID: <1714110.knKZFeZSOf@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <c7c9f237a91821661bfc0735e390358124953695.1359469932.git.viresh.kumar@linaro.org>
-References: <c7c9f237a91821661bfc0735e390358124953695.1359469932.git.viresh.kumar@linaro.org>
+	id S1752343Ab3A2Vjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 16:39:35 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:62373 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab3A2Vje convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 16:39:34 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DF0A37D@sausexdag04.amd.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+	<CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
+	<CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
+	<CAKocOOPsvh=jOXLahe6ukjpyjOOqt9tRdwELxv8i0_Vi1xqQkA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A37D@sausexdag04.amd.com>
+Date: Tue, 29 Jan 2013 14:39:32 -0700
+Message-ID: <CAKocOOORwoUAStDmFPhW1--WhAJaEzEmG-=tZ1sgkWKsquq=rQ@mail.gmail.com>
+Subject: Re: Linux 3.8-rc4
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 29, 2013 08:09:08 PM Viresh Kumar wrote:
-> Currently cpufreq_add_dev() firsts allocates policy, calls driver->init() and
-> then checks if this cpu is already managed or not. And if it is already managed,
-> free its policy.
-> 
-> We can save all this if we somehow know cpu is managed or not in advance.
-> policy->related_cpus contains list of all valid sibling cpus of policy->cpu. We
-> can check this to know if current cpu is already managed.
-> 
-> From now on, platforms don't really need to set related_cpus from their init()
-> routines, as the same work is done by core too.
-> 
-> If platform driver needs to set the related_cpus mask with some additional cpus,
-> other than cpus present in policy->cpus, they are free to do it as we aren't
-> overriding anything.
->     
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Tested-by: Shawn Guo <shawn.guo@linaro.org>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Tue, Jan 29, 2013 at 1:13 PM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> -----Original Message-----
+>> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>> Sent: Tuesday, January 29, 2013 2:11 PM
+>> To: Deucher, Alexander
+>> Cc: Linus Torvalds; Linux Kernel Mailing List
+>> Subject: Re: Linux 3.8-rc4
+>>
+>> On Tue, Jan 29, 2013 at 6:05 AM, Deucher, Alexander
+>> <Alexander.Deucher@amd.com> wrote:
+>> >> -----Original Message-----
+>> >> I was out sick for a few days and finally picked this bisect backup
+>> >> again. I started at 3.7 tag instead of 3.8-rc1 that I did in the past
+>> >> and also did bisect at drivers/gpu/drm/radeon instead. Here are the
+>> >> results:
+>> >>
+>> >> 6253e4c75d96006c06b9ac8f417eba873de2497b is the first bad commit
+>> >> commit 6253e4c75d96006c06b9ac8f417eba873de2497b
+>> >> Author: Alex Deucher <alexander.deucher@amd.com>
+>> >> Date:   Wed Dec 12 14:30:32 2012 -0500
+>> >>
+>> >>     drm/radeon: improve mc_stop/mc_resume on r5xx-r7xx
+>> >>
+>> >>     Along the same lines of what was done for evergreen+
+>> >>     in the last kernel.
+>> >>
+>> >>     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+>> >>
+>> >> git bisect log attached.
+>> >>
+>> >
+>> > Try the attached patch.  I think it should fix the issue.  I just applied a similar
+>> patch for newer asics.
+>> >
+>> > Alex
+>> >
+>>
+>> I reverted 6253e4c75d96006c06b9ac8f417eba873de2497b and DMAR faults
+>> went away. Undid the revert and applied your new patch. DMAR faults
+>> are back again.
+>>
+>>
+>> [   25.158653] [drm] PCIE GART of 512M enabled (table at
+>> 0x0000000000040000).
+>> [   25.158715] radeon 0000:01:00.0: WB enabled
+>> [   25.158719] radeon 0000:01:00.0: fence driver on ring 0 use gpu
+>> addr 0x0000000008000c00 and cpu addr 0xffff88002f143c00
+>> [   25.158721] radeon 0000:01:00.0: fence driver on ring 3 use gpu
+>> addr 0x0000000008000c0c and cpu addr 0xffff88002f143c0c
+>>
+>> A few observations and questions about r600_startup() code sequence:
+>>
+>> I notice DMAR faults right after
+>>
+>> [drm] Loading RV620 Microcode message which is from
+>> r600_init_microcode(). This routine does a series of
+>> request_firmware() calls. btw. don't see release_firmware() calls in
+>> regular code path, only from error legs in r600_init_microcode().
+>>
+>> However, this routine doesn't do any loading yet. When this routine
+>> returns, I am assuming request_firmware() step isn't complete yet
+>> based on my reading request_firmware() interface. At this point
+>> r600_startup() keeps chugging along, and does r600_mc_program() which
+>> in turn calls rv515_mc_stop() which was changed with the
+>> 6253e4c75d96006c06b9ac8f417eba873de2497b commit.
+>>
+>> I am thinking the changes somehow eliminated a wait or delay that used
+>> be there for request_firmware() step to complete (?)
+>>
+>> I can see from dmesg that the faults occur right after:
+>>
+>> r600_init_microcode(rdev);
+>>
+>> and stop before r600_pcie_gart_enable()
+>
+> r600_init_microcode() doesn't actually touch the hardware it just calls request_firmware() to fetch the microcode images from disk.  The microcode doesn't get loaded onto the hardware until r600_cp_load_microcode() much later in the function.  I don't think the microcode has anything to do with this.
+>
+> rv515_mc_stop() stops GPU memory clients (e.g., the displays) and blacks out the GPU memory controller so that we can change the location of VRAM within the GPU's address space.  If one of the display controllers memory request stop requests takes too long to go through for some reason, it's possible that the display hardware may attempt to read from a GPU memory location no-longer backed by vram (since we changed the location of vram in r600_mc_program()) momentarily until the stop request goes through.  Does the attached updated version of the patch help?  Alternatively, you can try adding delays to the end of rv515_mc_stop() and see if that helps.
+>
+> Alex
+>
 
-Please don't add my sign-offs in advance.  Yes, I have signed off a *previous*
-version of that patch, but that doesn't apply to *this* version automatically.
+This v2 patch didn't help. I added  mdelay(15); at the end of
+rv515_mc_stop() on top of this v2 patch and that fixed the problem.
+mdelay(15) is a bit much I am sure. Shouldn't rv515_mc_wait_for_idle()
+take care of the delay? It waits for idle usec_timeout?
 
-While you can do such things with Acked-by or Reviewed-by tags (that's not very
-polite, but people usually don't mind), sign-off is a bit different, because
-it is a *certificate* that this particular patch (and not some previous version
-of it) has gone through my hands.
-
-I'm going to apply this, but please be more careful in the future.
-
-Thanks,
-Rafael
-
-
-> ---
-> V2->V3:
-> - Set all cpus present in policy->cpus in related_cpus as well.
-> - Remove code to set related_cpus from SPEAr cpufreq driver.
-> 
->  drivers/cpufreq/cpufreq.c       | 158 +++++++++++++++-------------------------
->  drivers/cpufreq/spear-cpufreq.c |   1 -
->  2 files changed, 58 insertions(+), 101 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index f1bb8f8..db81382 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -554,8 +554,6 @@ static ssize_t show_cpus(const struct cpumask *mask, char *buf)
->   */
->  static ssize_t show_related_cpus(struct cpufreq_policy *policy, char *buf)
->  {
-> -	if (cpumask_empty(policy->related_cpus))
-> -		return show_cpus(policy->cpus, buf);
->  	return show_cpus(policy->related_cpus, buf);
->  }
->  
-> @@ -711,92 +709,6 @@ static struct kobj_type ktype_cpufreq = {
->  	.release	= cpufreq_sysfs_release,
->  };
->  
-> -/*
-> - * Returns:
-> - *   Negative: Failure
-> - *   0:        Success
-> - *   Positive: When we have a managed CPU and the sysfs got symlinked
-> - */
-> -static int cpufreq_add_dev_policy(unsigned int cpu,
-> -				  struct cpufreq_policy *policy,
-> -				  struct device *dev)
-> -{
-> -	int ret = 0;
-> -#ifdef CONFIG_SMP
-> -	unsigned long flags;
-> -	unsigned int j;
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -	struct cpufreq_governor *gov;
-> -
-> -	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
-> -	if (gov) {
-> -		policy->governor = gov;
-> -		pr_debug("Restoring governor %s for cpu %d\n",
-> -		       policy->governor->name, cpu);
-> -	}
-> -#endif
-> -
-> -	for_each_cpu(j, policy->cpus) {
-> -		struct cpufreq_policy *managed_policy;
-> -
-> -		if (cpu == j)
-> -			continue;
-> -
-> -		/* Check for existing affected CPUs.
-> -		 * They may not be aware of it due to CPU Hotplug.
-> -		 * cpufreq_cpu_put is called when the device is removed
-> -		 * in __cpufreq_remove_dev()
-> -		 */
-> -		managed_policy = cpufreq_cpu_get(j);
-> -		if (unlikely(managed_policy)) {
-> -
-> -			/* Set proper policy_cpu */
-> -			unlock_policy_rwsem_write(cpu);
-> -			per_cpu(cpufreq_policy_cpu, cpu) = managed_policy->cpu;
-> -
-> -			if (lock_policy_rwsem_write(cpu) < 0) {
-> -				/* Should not go through policy unlock path */
-> -				if (cpufreq_driver->exit)
-> -					cpufreq_driver->exit(policy);
-> -				cpufreq_cpu_put(managed_policy);
-> -				return -EBUSY;
-> -			}
-> -
-> -			__cpufreq_governor(managed_policy, CPUFREQ_GOV_STOP);
-> -
-> -			spin_lock_irqsave(&cpufreq_driver_lock, flags);
-> -			cpumask_copy(managed_policy->cpus, policy->cpus);
-> -			per_cpu(cpufreq_cpu_data, cpu) = managed_policy;
-> -			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> -
-> -			__cpufreq_governor(managed_policy, CPUFREQ_GOV_START);
-> -			__cpufreq_governor(managed_policy, CPUFREQ_GOV_LIMITS);
-> -
-> -			pr_debug("CPU already managed, adding link\n");
-> -			ret = sysfs_create_link(&dev->kobj,
-> -						&managed_policy->kobj,
-> -						"cpufreq");
-> -			if (ret)
-> -				cpufreq_cpu_put(managed_policy);
-> -			/*
-> -			 * Success. We only needed to be added to the mask.
-> -			 * Call driver->exit() because only the cpu parent of
-> -			 * the kobj needed to call init().
-> -			 */
-> -			if (cpufreq_driver->exit)
-> -				cpufreq_driver->exit(policy);
-> -
-> -			if (!ret)
-> -				return 1;
-> -			else
-> -				return ret;
-> -		}
-> -	}
-> -#endif
-> -	return ret;
-> -}
-> -
-> -
->  /* symlink affected CPUs */
->  static int cpufreq_add_dev_symlink(unsigned int cpu,
->  				   struct cpufreq_policy *policy)
-> @@ -901,6 +813,42 @@ err_out_kobj_put:
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
-> +				  struct device *dev)
-> +{
-> +	struct cpufreq_policy *policy;
-> +	int ret = 0;
-> +	unsigned long flags;
-> +
-> +	policy = cpufreq_cpu_get(sibling);
-> +	WARN_ON(!policy);
-> +
-> +	per_cpu(cpufreq_policy_cpu, cpu) = policy->cpu;
-> +
-> +	lock_policy_rwsem_write(cpu);
-> +
-> +	__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-> +
-> +	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-> +	cpumask_set_cpu(cpu, policy->cpus);
-> +	per_cpu(cpufreq_cpu_data, cpu) = policy;
-> +	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> +
-> +	__cpufreq_governor(policy, CPUFREQ_GOV_START);
-> +	__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-> +
-> +	unlock_policy_rwsem_write(cpu);
-> +
-> +	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
-> +	if (ret) {
-> +		cpufreq_cpu_put(policy);
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +#endif
->  
->  /**
->   * cpufreq_add_dev - add a CPU device
-> @@ -913,12 +861,12 @@ err_out_kobj_put:
->   */
->  static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
->  {
-> -	unsigned int cpu = dev->id;
-> -	int ret = 0, found = 0;
-> +	unsigned int j, cpu = dev->id;
-> +	int ret = -ENOMEM, found = 0;
->  	struct cpufreq_policy *policy;
->  	unsigned long flags;
-> -	unsigned int j;
->  #ifdef CONFIG_HOTPLUG_CPU
-> +	struct cpufreq_governor *gov;
->  	int sibling;
->  #endif
->  
-> @@ -935,6 +883,15 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
->  		cpufreq_cpu_put(policy);
->  		return 0;
->  	}
-> +
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +	/* Check if this cpu was hot-unplugged earlier and has siblings */
-> +	for_each_online_cpu(sibling) {
-> +		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
-> +		if (cp && cpumask_test_cpu(cpu, cp->related_cpus))
-> +			return cpufreq_add_policy_cpu(cpu, sibling, dev);
-> +	}
-> +#endif
->  #endif
->  
->  	if (!try_module_get(cpufreq_driver->owner)) {
-> @@ -942,7 +899,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
->  		goto module_out;
->  	}
->  
-> -	ret = -ENOMEM;
->  	policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
->  	if (!policy)
->  		goto nomem_out;
-> @@ -987,6 +943,9 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
->  		goto err_unlock_policy;
->  	}
->  
-> +	/* related cpus should atleast have policy->cpus */
-> +	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
-> +
->  	/*
->  	 * affected cpus must always be the one, which are online. We aren't
->  	 * managing offline cpus here.
-> @@ -1000,14 +959,14 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
->  	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
->  				     CPUFREQ_START, policy);
->  
-> -	ret = cpufreq_add_dev_policy(cpu, policy, dev);
-> -	if (ret) {
-> -		if (ret > 0)
-> -			/* This is a managed cpu, symlink created,
-> -			   exit with 0 */
-> -			ret = 0;
-> -		goto err_unlock_policy;
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +	gov = __find_governor(per_cpu(cpufreq_cpu_governor, cpu));
-> +	if (gov) {
-> +		policy->governor = gov;
-> +		pr_debug("Restoring governor %s for cpu %d\n",
-> +		       policy->governor->name, cpu);
->  	}
-> +#endif
->  
->  	ret = cpufreq_add_dev_interface(cpu, policy, dev);
->  	if (ret)
-> @@ -1021,7 +980,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
->  
->  	return 0;
->  
-> -
->  err_out_unregister:
->  	spin_lock_irqsave(&cpufreq_driver_lock, flags);
->  	for_each_cpu(j, policy->cpus)
-> diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-> index 8ff26af..fc714a6 100644
-> --- a/drivers/cpufreq/spear-cpufreq.c
-> +++ b/drivers/cpufreq/spear-cpufreq.c
-> @@ -189,7 +189,6 @@ static int spear_cpufreq_init(struct cpufreq_policy *policy)
->  	policy->cur = spear_cpufreq_get(0);
->  
->  	cpumask_copy(policy->cpus, topology_core_cpumask(policy->cpu));
-> -	cpumask_copy(policy->related_cpus, policy->cpus);
->  
->  	return 0;
->  }
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-- Shuah
