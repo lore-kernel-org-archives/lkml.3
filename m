@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3A2HEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 02:04:05 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:40022 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741Ab3A2HEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 02:04:01 -0500
-X-IronPort-AV: E=Sophos;i="4.84,558,1355068800"; 
-   d="scan'208";a="6659363"
-Message-ID: <5107744D.2090008@cn.fujitsu.com>
-Date: Tue, 29 Jan 2013 15:03:41 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751675Ab3A2HFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 02:05:04 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:58300 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab3A2HFA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 02:05:00 -0500
+Message-ID: <51077499.90602@openvz.org>
+Date: Tue, 29 Jan 2013 11:04:57 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V7 0/3] handle polling errors in vhost/vhost_net
-References: <1359371119-10208-1-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1359371119-10208-1-git-send-email-jasowang@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/29 15:02:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/29 15:02:54,
-	Serialize complete at 2013/01/29 15:02:54
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend
+ finalization
+References: <20130118113019.6698.25941.stgit@zurg> <20130118114222.6698.7103.stgit@zurg> <CAErSpo4sEv-Qw1iztGn-SsPKZ=Y+st-tPAFOvsp17MUo6X=xrA@mail.gmail.com> <1821500.CRlxLgYU5r@vostro.rjw.lan>
+In-Reply-To: <1821500.CRlxLgYU5r@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 07:05 PM, Jason Wang wrote:
-> This is an update version of last version to fix the handling of polling errors
-> in vhost/vhost_net.
-> 
-> Currently, vhost and vhost_net ignore polling errors which can lead kernel
-> crashing when it tries to remove itself from waitqueue after the polling
-> failure. Fix this by:
-> 
-> - examing the POLLERR when setting backend and report erros to userspace
-> - let tun always add to waitqueue in .poll() after the queue is created even if
->   it was detached.
+Rafael J. Wysocki wrote:
+> On Monday, January 28, 2013 04:17:42 PM Bjorn Helgaas wrote:
+>> [+cc Rafael]
+>>
+>> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
+>> <khlebnikov@openvz.org>  wrote:
+>>> This patch effectively reverts commit 42eca2302146fed51335b95128e949ee6f54478f
+>>> ("PCI: Don't touch card regs after runtime suspend D3")
+>>>
+>>> | This patch checks whether the pci state is saved and doesn't attempt to hit
+>>> | any registers after that point if it is.
+>>>
+>>> This seems completely wrong. Yes, PCI configuration space has been saved by
+>>> driver, but this doesn't means that all job is done and device has been
+>>> suspended and ready for waking up in the future.
+>>>
+>>> For example driver e1000e for ethernet in my thinkpad x220 saves pci-state
+>>> but device cannot wakeup after that, because it needs some ACPI callbacks
+>>> which usually called from pci_finish_runtime_suspend().
+>>>
+>>> | Optimus (dual-gpu) laptops seem to have their own form of D3cold, but
+>>> | unfortunately enter it on normal D3 transitions via the ACPI callback.
+>>>
+>>> Hardware which disappears from the bus unexpectedly is exception, so let's
+>>> handle it as an exception. Its driver should set device state to D3cold and
+>>> the rest code will handle it properly.
+>>
+>> Functions in D3cold don't have power, so it's completely expected that
+>> they would disappear from the bus and not respond to config accesses.
+>> Maybe Dave was referring to D3hot, where functions *should* respond to
+>> config accesses.  I dunno.
+>>
+>> Just to be clear, it sounds like 42eca230 caused a regression on your
+>> e1000e device?  If so, I guess we should revert it unless you and Dave
+>> can figure out a better patch that fixes both your e1000e device and
+>> the Optimus issue.
+>
+> Yes, if there's a regression, let's revert it, but I'd like the regression
+> to be described clearly.
 
-Fixed my kernel oops here, thank you.
+Yep, this is regression.
 
+commit 42eca2302146fed51335b95128e949ee6f54478f ("PCI: Don't touch
+card regs after runtime suspend D3") changes state convention during
+runtime-suspend transaction too much. If PCI configuration space
+has been saved by driver that does not means that all job is done
+and device has been suspended and ready for waking up in the future.
 
-Tested-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+e1000e saves pci-config space itself, but it requires operations which
+pci_finish_runtime_suspend() does: preparing for wake (calling particular
+platform pm-callbacks) and switching to proper sleep state.
 
-
-> 
-> Changes from V6:
-> - don't use RCU to protect the tfile->detached.
-> 
-> Changes from V5:
-> - use rcu_dereference() instead of the wrong rtnl_dereference() in data path
-> - test with CONFIG_PROVE_RCU
-> 
-> Changes from V4:
-> - check the detached state by tfile->detached and protect it by RCU
-> 
-> Changes from V3:
-> - make a smaller patch that doesn't touch the whole polling state and only check
-> the polliner errors in backend setting.
-> - add a patch that allows tuntap to do polling/reading/writing when detached
-> which could simplify the work of its user.
-> 
-> Changes from v2:
-> - check poll->wqh instead of the wrong assumption about POLLERR and waitqueue
-> - drop the whole tx polling state check since it was replaced by the wqh
-> checking
-> - drop the buggy tuntap patch
-> 
-> Changes from v1:
-> - restore the state before the ioctl when vhost_init_used() fails
-> - log the error when meet polling errors in the data path
-> - don't put into waitqueue when tun_chr_poll() return POLLERR
-> 
-> Jason Wang (3):
->   vhost_net: correct error handling in vhost_net_set_backend()
->   vhost_net: handle polling errors when setting backend
->   tuntap: allow polling/writing/reading when detached
-> 
->  drivers/net/tun.c     |   25 ++++++++++++++++---------
->  drivers/vhost/net.c   |   41 ++++++++++++++++++++++++++++-------------
->  drivers/vhost/vhost.c |   18 +++++++++++++++---
->  drivers/vhost/vhost.h |    2 +-
->  4 files changed, 60 insertions(+), 26 deletions(-)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+>
+> Thanks,
+> Rafael
+>
+>
 
