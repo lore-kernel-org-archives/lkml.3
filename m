@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab3A2QNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:13:23 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40316 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753058Ab3A2QNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:13:19 -0500
-Message-ID: <1359475998.4196.26.camel@joe-AO722>
-Subject: coccinelle and bitmask arithmetic (was: Re: [patch] TTY: synclink,
- small cleanup in dtr_rts())
-From: Joe Perches <joe@perches.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: cocci@systeme.lip6.fr, Julia Lawall <julia.lawall@lip6.fr>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Date: Tue, 29 Jan 2013 08:13:18 -0800
-In-Reply-To: <9561.1359474916@turing-police.cc.vt.edu>
-References: <20130127194039.GA18787@elgon.mountain>
-	 <1359317078.14406.12.camel@joe-AO722> <20130127201947.GO16282@mwanda>
-	 <9561.1359474916@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751702Ab3A2QOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:14:46 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:27961 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809Ab3A2QOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 11:14:44 -0500
+X-IronPort-AV: E=Sophos;i="4.84,561,1355097600"; 
+   d="scan'208";a="5486894"
+Date: Tue, 29 Jan 2013 16:14:39 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: KY Srinivasan <kys@microsoft.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Olaf Hering <olaf@aepfle.de>, Jan Beulich <JBeulich@suse.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] x86: Hyper-V: register clocksource only if its
+ advertised
+In-Reply-To: <f4315e27ffc14047b5e2ef61eeeba036@SN2PR03MB061.namprd03.prod.outlook.com>
+Message-ID: <alpine.DEB.2.02.1301291611270.10432@kaball.uk.xensource.com>
+References: <1359121036-16309-1-git-send-email-olaf@aepfle.de> <761b736ff1854810bfe272961248e6d2@BLUPR03MB050.namprd03.prod.outlook.com> <20130125165443.GA15833@aepfle.de> <500ca90f5d3e4d4f80c7fb62c34d36f0@BLUPR03MB050.namprd03.prod.outlook.com>
+ <20130125171923.GA19306@aepfle.de> <542f1d12e3ee46f48a85a143361c113d@SN2PR03MB061.namprd03.prod.outlook.com> <alpine.DEB.2.02.1301281737210.10432@kaball.uk.xensource.com> <510797FA02000078000BA4B8@nat28.tlf.novell.com> <20130129092652.GA9020@aepfle.de>
+ <a23c7fab41444058845badb015b7dc0a@SN2PR03MB061.namprd03.prod.outlook.com> <alpine.DEB.2.02.1301291522460.10432@kaball.uk.xensource.com> <f4315e27ffc14047b5e2ef61eeeba036@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-29 at 10:55 -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Sun, 27 Jan 2013 23:19:47 +0300, Dan Carpenter said:
+On Tue, 29 Jan 2013, KY Srinivasan wrote:
+> > > I agree with you that your patch is valid for making the Hyper-V code more
+> > robust but not for dealing
+> > > with general issue of Xen emulating Hyper-V.
+> > 
+> > What "general issue" would that be?
 > 
-> > Yeah.  I think it would be, but adding bitflags together instead of
-> > doing bitwise ORs is very common as well.
-> 
-> The fact it's common doesn't mean it's good programming practice,
-> or even correct.  Consider:
-> 
-> #define F_FOO 0x01
-> #define F_BAR 0x02
-> #define F_BAZ 0x04
-> 
-> unsigned int flags = F_FOO;
-> ...
->       flags |= F_BAR;
-> 
-> Now some time later, another code path does this:
-> 
->       flags += F_FOO;
-> 
-> If it was another |, it would be a no harm no foul class of bug.
-> But how long is it going to take you to figure out who set F_BAZ?
-> 
-> I wonder if there's a way to write a coccinelle patch to find places
-> where we do arithmetic operations on bitmasks....
+> Not all Hyper-V specific features are advertised via a feature bit. For instance, we need to reserve
+> an IDT entry to have VMBUS interrupts delivered on a per-CPU basis and this reservation is done
+> after confirming that we are running on Hyper-V. With Xen emulating Hyper-V, we have an issue.
+> Since Hyper-V will never emulate Xen, I am going to add a check in the Hyper-V detection code to
+> deal with this issue.
 
-Not so far as I know, but maybe someone on the
-cocci lists does. (cc'd)
-
-I could imagine a test for variables that have
-uses of both arithmetic and bit operations but
-not a discriminator for when one type is
-appropriate and the other is not.
-
-
+I personally think that it would be much nicer to have a feature flag
+somewhere to advertise per-CPU VMBUS interrupts.
+However adding a check in the Hyper-V detection code is OK too for me.
