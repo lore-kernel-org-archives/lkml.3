@@ -1,129 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab3A2Mrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:47:33 -0500
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:64512 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3A2Mra (ORCPT
+	id S1756757Ab3A2Mrv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:47:51 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:56202 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756692Ab3A2Mrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:47:30 -0500
+	Tue, 29 Jan 2013 07:47:48 -0500
+Message-ID: <5107C483.7090503@synopsys.com>
+Date: Tue, 29 Jan 2013 18:15:55 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130128.231057.57111832691623178.davem@davemloft.net>
-References: <1358945130-3101-1-git-send-email-mark.einon@gmail.com>
- <1358958278-3207-1-git-send-email-mark.einon@gmail.com> <20130128.231057.57111832691623178.davem@davemloft.net>
-From: Mark Einon <mark.einon@gmail.com>
-Date: Tue, 29 Jan 2013 12:47:14 +0000
-Message-ID: <CANK3SE2kiV0gPRaM0Y-eHs0cxXs8ZgZK=p=eNZnENOdXir7rNA@mail.gmail.com>
-Subject: Re: [RFC PATCH v4 linux-next] et131x: Promote staging et131x driver
- to drivers/net
-To: David Miller <davem@davemloft.net>
-Cc: gregkh@linuxfoundation.org, sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com
-Content-Type: text/plain; charset=UTF-8
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+Subject: ARC Port for linux-next (was Re: [PATCH v3 00/44] Meta Linux Kernel
+ Port)
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <5102BB38.3050207@imgtec.com> <201301260025.10020.arnd@arndb.de> <51062460.9060902@synopsys.com>
+In-Reply-To: <51062460.9060902@synopsys.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.164]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 January 2013 04:10, David Miller <davem@davemloft.net> wrote:
-> From: Mark Einon <mark.einon@gmail.com>
-> Date: Wed, 23 Jan 2013 16:24:38 +0000
->
->> +endif # NET_VENDOR_AGERE
->> +
->
-> Trailing empty line, delete it.
->
->> @@ -0,0 +1,6 @@
->> +#
->> +# Makefile for the Agere ET-131x ethernet driver
->> +#
->> +
->> +obj-$(CONFIG_ET131X) += et131x.o
->> +
->
-> Likewise, get rid of this trailing empty line.
->
->> +     /* Spinlocks */
->> +     spinlock_t lock;
->> +
->> +     spinlock_t tcb_send_qlock;
->> +     spinlock_t tcb_ready_qlock;
->> +     spinlock_t send_hw_lock;
->> +
->> +     spinlock_t rcv_lock;
->> +     spinlock_t rcv_pend_lock;
->> +     spinlock_t fbr_lock;
->> +
->> +     spinlock_t phy_lock;
->
-> Do you really need _8_ spinlocks in an ethernet driver?  To me that's
-> way over the top and excessive.
->
-> The most recent driver I've written, for the 10Gbit Sun NIU parts,
-> has only one spinlock.
->
->> +     /* Determine if this is a multicast packet coming in */
->
-> What in the world are you doing in this huge code block?
->
-> Such much complexity, multicast list iteration, etc. just to get some
-> statistics correct?  This stuff is going to run on every multicast
-> packet receive.
->
-> No other driver does crap like this, get rid of this stuff.
->
->> +     skb->dev = adapter->netdev;
->> +     skb->protocol = eth_type_trans(skb, adapter->netdev);
->
-> eth_type_trans() sets skb->dev, you don't need to duplicate that.
->
->> +     netif_rx_ni(skb);
->
-> Why isn't this driver supporting NAPI?  If you're going to put this
-> much time into a driver, use the best interfaces for event processing
-> rather than something that might have been appropriate in a new driver
-> two decades ago.
->
->> +static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
->> +{
->> +     int status = 0;
->> +     struct et131x_adapter *adapter = netdev_priv(netdev);
->> +
->> +     /* stop the queue if it's getting full */
->> +     if (adapter->tx_ring.used >= NUM_TCB - 1 &&
->> +         !netif_queue_stopped(netdev))
->> +             netif_stop_queue(netdev);
->> +
->> +     /* Save the timestamp for the TX timeout watchdog */
->> +     netdev->trans_start = jiffies;
->> +
->> +     /* Call the device-specific data Tx routine */
->> +     status = et131x_send_packets(skb, netdev);
->> +
->> +     /* Check status and manage the netif queue if necessary */
->> +     if (status != 0) {
->> +             if (status == -ENOMEM)
->> +                     status = NETDEV_TX_BUSY;
->> +             else
->> +                     status = NETDEV_TX_OK;
->> +     }
->> +     return status;
->> +}
->
-> Returning NETDEV_TX_BUSY is an error, no driver should ever return
-> that status under normal circumstances.  Some drivers return it
-> when internal consistency checks fail, but that indicates a driver
-> bug rather than a normal condition.
->
-> Memory allocation erorrs do not denote NETDEV_TX_BUSY, simply drop
-> the packet silently with kfree_skb() and return NETDEV_TX_OK.
->
-> That's about enough for me, this driver still needs a lot of work
-> and is far from being ready to move out of staging.
+Hi Stephen,
 
-Thanks for taking the time to give feedback. I'll update the TODO list.
+On Monday 28 January 2013 12:40 PM, Vineet Gupta wrote:
+> Hi Arnd / Stephen,
+> 
+> On Saturday 26 January 2013 05:55 AM, Arnd Bergmann wrote:
 
-Cheers,
+>> I'd suggest that you both ask Stephen to add the trees to linux-next
+>> now (I thought you had done that already, but I don't see them there
+>> at the moment).
+> 
+> Stephen, can you please add the following branch (rebased off 3.8-rc5) to linux-next
+> 
+> git://github.com/foss-for-synopsys-dwc-arc-processors/linux.git  arc-next
+> 
+> With next-20130125, there's a trivial conflict in init/Kconfig - fixable by
+> accepting both the hunks.
 
-Mark
+Please let me know if I'm missing anything before ARC Port could be added to
+linux-next.
+
+Thx,
+-Vineet
+
