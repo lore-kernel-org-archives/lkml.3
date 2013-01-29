@@ -1,126 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab3A2LMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 06:12:42 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52609 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab3A2LMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 06:12:39 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-6b-5107aea621c9
-From: Namhyung Kim <namhyung@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, tglx@linutronix.de, peterz@infradead.org,
-        oleg@redhat.com, paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        mingo@kernel.org, akpm@linux-foundation.org, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        walken@google.com
-Subject: Re: [PATCH v5 04/45] percpu_rwlock: Implement the core design of Per-CPU Reader-Writer Locks
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
-	<20130122073347.13822.85876.stgit@srivatsabhat.in.ibm.com>
-	<20130123185522.GG2373@mtj.dyndns.org>
-	<51003B20.2060506@linux.vnet.ibm.com>
-	<20130123195740.GI2373@mtj.dyndns.org>
-	<5100B8CC.4080406@linux.vnet.ibm.com>
-Date: Tue, 29 Jan 2013 20:12:37 +0900
-In-Reply-To: <5100B8CC.4080406@linux.vnet.ibm.com> (Srivatsa S. Bhat's message
-	of "Thu, 24 Jan 2013 10:00:04 +0530")
-Message-ID: <87ip6gutsq.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1755339Ab3A2LOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 06:14:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50221 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752180Ab3A2LOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 06:14:10 -0500
+Date: Mon, 28 Jan 2013 23:07:58 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 06/12] KVM: MMU: introduce a static table to map guest
+ access to spte access
+Message-ID: <20130129010758.GA12132@amt.cnet>
+References: <50FFB5A1.5090708@linux.vnet.ibm.com>
+ <50FFB658.6040205@linux.vnet.ibm.com>
+ <20130125001550.GB22875@amt.cnet>
+ <5101F207.6040603@linux.vnet.ibm.com>
+ <20130129000715.GA10814@amt.cnet>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130129000715.GA10814@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Jan 2013 10:00:04 +0530, Srivatsa S. Bhat wrote:
-> On 01/24/2013 01:27 AM, Tejun Heo wrote:
->> On Thu, Jan 24, 2013 at 01:03:52AM +0530, Srivatsa S. Bhat wrote:
->>> CPU 0                          CPU 1
->>>
->>> read_lock(&rwlock)
->>>
->>>                               write_lock(&rwlock) //spins, because CPU 0
->>>                               //has acquired the lock for read
->>>
->>> read_lock(&rwlock)
->>>    ^^^^^
->>> What happens here? Does CPU 0 start spinning (and hence deadlock) or will
->>> it continue realizing that it already holds the rwlock for read?
->> 
->> I don't think rwlock allows nesting write lock inside read lock.
->> read_lock(); write_lock() will always deadlock.
->> 
->
-> Sure, I understand that :-) My question was, what happens when *two* CPUs
-> are involved, as in, the read_lock() is invoked only on CPU 0 whereas the
-> write_lock() is invoked on CPU 1.
->
-> For example, the same scenario shown above, but with slightly different
-> timing, will NOT result in a deadlock:
->
-> Scenario 2:
->   CPU 0                                CPU 1
->
-> read_lock(&rwlock)
->
->
-> read_lock(&rwlock) //doesn't spin
->
->                                     write_lock(&rwlock) //spins, because CPU 0
->                                     //has acquired the lock for read
->
->
-> So I was wondering whether the "fairness" logic of rwlocks would cause
-> the second read_lock() to spin (in the first scenario shown above) because
-> a writer is already waiting (and hence new readers should spin) and thus
-> cause a deadlock.
+On Mon, Jan 28, 2013 at 10:07:15PM -0200, Marcelo Tosatti wrote:
+> On Fri, Jan 25, 2013 at 10:46:31AM +0800, Xiao Guangrong wrote:
+> > On 01/25/2013 08:15 AM, Marcelo Tosatti wrote:
+> > > On Wed, Jan 23, 2013 at 06:07:20PM +0800, Xiao Guangrong wrote:
+> > >> It makes set_spte more clean and reduces branch prediction
+> > >>
+> > >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> > >> ---
+> > >>  arch/x86/kvm/mmu.c |   37 ++++++++++++++++++++++++++-----------
+> > >>  1 files changed, 26 insertions(+), 11 deletions(-)
+> > > 
+> > > Don't see set_spte as being a performance problem?
+> > > IMO the current code is quite simple.
+> > 
+> > Yes, this is not a performance problem.
+> > 
+> > I just dislike this many continuous "if"-s in the function:
+> > 
+> > if (xxx)
+> > 	xxx
+> > if (xxx)
+> > 	xxx
+> > ....
+> > 
+> > Totally, it has 7 "if"-s before this patch.
+> > 
+> > Okay, if you think this is unnecessary, i will drop this patch. :)
+> 
+> Yes, please (unless you can show set_spte is a performance problem).
 
-In my understanding, current x86 rwlock does basically this (of course,
-in an atomic fashion):
+Same thing for spte fast drop: is it a performance problem? 
 
+Please try to group changes into smaller, less controversial sets with 
+a clear goal:
 
-#define RW_LOCK_BIAS 0x10000
+- Debated performance improvement.
+- Cleanups (eg mmu_set_spte argument removal).
+- Bug fixes.
+- Performance improvements.
 
-rwlock_init(rwlock)
-{
-	rwlock->lock = RW_LOCK_BIAS;
-}
+Thanks.
 
-arch_read_lock(rwlock)
-{
-retry:
-	if (--rwlock->lock >= 0)
-		return;
-
-        rwlock->lock++;
-        while (rwlock->lock < 1)
-        	continue;
-
-        goto retry;
-}
-
-arch_write_lock(rwlock)
-{
-retry:
-	if ((rwlock->lock -= RW_LOCK_BIAS) == 0)
-        	return;
-
-        rwlock->lock += RW_LOCK_BIAS;
-	while (rwlock->lock != RW_LOCK_BIAS)
-		continue;
-
-        goto retry;
-}
-
-
-So I can't find where the 'fairness' logic comes from..
-
-Thanks,
-Namhyung
