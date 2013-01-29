@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab3A2SKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 13:10:23 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47124 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab3A2SKS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 13:10:18 -0500
-Message-ID: <51081087.5040801@wwwdotorg.org>
-Date: Tue, 29 Jan 2013 11:10:15 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754038Ab3A2SKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 13:10:52 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:46667 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143Ab3A2SKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 13:10:49 -0500
+Date: Tue, 29 Jan 2013 19:10:46 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+Cc: Kim Phillips <kim.phillips@freescale.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        David Rientjes <rientjes@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] arm: use built-in byte swap function
+Message-ID: <20130129181046.GC25415@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Woodhouse, David" <david.woodhouse@intel.com>,
+	Kim Phillips <kim.phillips@freescale.com>,
+	Russell King <linux@arm.linux.org.uk>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Daniel Santos <daniel.santos@pobox.com>,
+	David Rientjes <rientjes@google.com>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
+ <20130129083522.GA14302@pd.tnic>
+ <1359478014.3529.157.camel@shinybook.infradead.org>
+ <20130129174249.GB25415@pd.tnic>
+ <1359482147.3529.161.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] ARM: DT: tegra114:add aliases and DMA requestor for
- serial controller
-References: <1359464183-6255-1-git-send-email-ldewangan@nvidia.com> <1359464183-6255-7-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1359464183-6255-7-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1359482147.3529.161.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 05:56 AM, Laxman Dewangan wrote:
-> Add APB DMA requestor and serial aliases for serial controller.
-> There will be two serial driver i.e. 8250 based simple serial driver
-> and APB DMA based serial driver for higher baudrate and performace.
+On Tue, Jan 29, 2013 at 05:55:54PM +0000, Woodhouse, David wrote:
+> That's different though. That's because GCC didn't have a generic
+> __builtin_bswap16() until 4.8, while PowerPC got it in 4.6.
 > 
-> The simple serial driver get enabled with compatible nvidia,tegra20-uart
-> and APB DMA based driver will get enabled with compatible
-> nvidia,tegra30-hsuart.
+> That's a relatively simple and manageable one-off arch-dependency. But
+> once we get into a mass of "well, it wasn't actually *usable* for ARM
+> until 4.9", we start wanting to push it into arch code.
 
-I also can't apply this patch yet since it depends on the APB DMA DT
-node which as I mentioned I'm not apply yet.
+Yeah, and once people see one arch mentioned, all of a sudden they think
+it is ok to add just one more ...
+
+> > But I liked your other suggestion better to get the offending
+> > compilers fixed.
+> 
+> That wasn't an *alternative*. It's required if the compiler is doing
+> something suboptimal, whatever happens. And then we start to *use* the
+> compiler from the first version that's known to be fixed.
+
+So, IMHO it sounds to me like we want to explicitly state for each arch
+separately that it is ok to use the __builtin_bswapXX things. This also
+takes care of the case where the compiler is doing something suboptimal
+by excluding the affected versions.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
