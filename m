@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab3A2MjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:39:20 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:18538 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756897Ab3A2MjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:39:17 -0500
+	id S1756812Ab3A2Mi5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:38:57 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:23300 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756738Ab3A2Miz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 07:38:55 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@alien8.de>, Kay Sievers <kay@vrfy.org>
-Subject: [PATCH v5 10/20] scripts/gdb: Add lx-dmesg command
-Date: Tue, 29 Jan 2013 13:37:53 +0100
-Message-Id: <ce4e3b1a73ddc921edbf9a9f1619b247da609bdb.1359463075.git.jan.kiszka@siemens.com>
+        Borislav Petkov <bp@alien8.de>
+Subject: [PATCH v5 13/20] scripts/gdb: Add is_target_arch helper
+Date: Tue, 29 Jan 2013 13:37:56 +0100
+Message-Id: <ee9f53440ebd93d76655345881d70f4f5b481b19.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
 References: <cover.1359463075.git.jan.kiszka@siemens.com>
@@ -25,96 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pokes into the log buffer of the debugged kernel, dumping it to the
-gdb console. Helping in case the target should or can no longer execute
-dmesg itself.
+This helper caches to result of "show architecture" and matches the
+provided arch (sub-)string against that output.
 
-CC: Kay Sievers <kay@vrfy.org>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/dmesg.py       |   63 ++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |    1 +
- 2 files changed, 64 insertions(+), 0 deletions(-)
- create mode 100644 scripts/gdb/dmesg.py
+ scripts/gdb/utils.py |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/gdb/dmesg.py b/scripts/gdb/dmesg.py
-new file mode 100644
-index 0000000..1bc3368
---- /dev/null
-+++ b/scripts/gdb/dmesg.py
-@@ -0,0 +1,63 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  kernel log buffer dump
-+#
-+# Copyright (c) Siemens AG, 2011, 2012
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
+diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
+index 9b23052..bcf4278 100644
+--- a/scripts/gdb/utils.py
++++ b/scripts/gdb/utils.py
+@@ -112,3 +112,12 @@ def read_u64(buffer):
+ 		return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
+ 	else:
+ 		return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
 +
-+import gdb
-+import string
 +
-+from utils import *
++target_arch = None
 +
-+class LinuxDmesg(gdb.Command):
-+	__doc__ = "Print Linux kernel log buffer."
-+
-+	def __init__(self):
-+		super(LinuxDmesg, self).__init__("lx-dmesg", gdb.COMMAND_DATA)
-+
-+	def invoke(self, arg, from_tty):
-+		log_buf_addr = \
-+			int(str(gdb.parse_and_eval("log_buf")).split()[0], 16)
-+		log_first_idx = int(gdb.parse_and_eval("log_first_idx"))
-+		log_next_idx = int(gdb.parse_and_eval("log_next_idx"))
-+		log_buf_len = int(gdb.parse_and_eval("log_buf_len"))
-+
-+		inf = gdb.inferiors()[0]
-+		start = log_buf_addr + log_first_idx
-+		if log_first_idx < log_next_idx:
-+			log_buf_2nd_half = -1
-+			length = log_next_idx - log_first_idx
-+			log_buf = inf.read_memory(start, length)
-+		else:
-+			log_buf_2nd_half = log_buf_len - log_first_idx
-+			log_buf = inf.read_memory(start, log_buf_2nd_half) + \
-+				  inf.read_memory(log_buf_addr, log_next_idx)
-+
-+		pos = 0
-+		while pos < log_buf.__len__():
-+			length = read_u16(log_buf[pos + 8 : pos + 10])
-+			if length == 0:
-+				if log_buf_2nd_half == -1:
-+					print "Corrupted log buffer!"
-+					break
-+				pos = log_buf_2nd_half
-+				continue
-+
-+			text_len = read_u16(log_buf[pos + 10 : pos + 12])
-+			time_stamp = read_u64(log_buf[pos : pos + 8])
-+
-+			for line in log_buf[pos + 16 :
-+					    pos + 16 + text_len].splitlines():
-+				print "[%13.6f] " % \
-+				      (time_stamp / 1000000000.0) + line
-+
-+			pos += length
-+
-+LinuxDmesg()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 2a466a0..4a5685b 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -24,3 +24,4 @@ else:
- 	import utils
- 	import symbols
- 	import module
-+	import dmesg
++def is_target_arch(arch):
++	global target_arch
++	if target_arch == None:
++		target_arch = gdb.execute("show architecture", False, True)
++	return target_arch.find(arch) >= 0
 -- 
 1.7.3.4
 
