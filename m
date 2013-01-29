@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab3A2Qam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 11:30:42 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35305 "EHLO
+	id S1754742Ab3A2Qaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 11:30:46 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35281 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab3A2QYa (ORCPT
+	with ESMTP id S1752969Ab3A2QY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 11:24:30 -0500
+	Tue, 29 Jan 2013 11:24:28 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V6 17/30] fs: use read_iter and write_iter rather than aio_read and aio_write
-Date: Tue, 29 Jan 2013 10:23:30 -0600
-Message-Id: <1359476623-10544-18-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Subject: [PATCH V6 25/30] xfs: add support for read_iter and write_iter
+Date: Tue, 29 Jan 2013 10:23:38 -0600
+Message-Id: <1359476623-10544-26-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
@@ -24,285 +25,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File systems implementing read_iter & write_iter should not be required
-to keep aio_read and aio_write as well. The vfs should always call
-read/write_iter if they exist. This will make it easier to remove the
-aio_read/write operation in the future.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: xfs@oss.sgi.com
 ---
- fs/aio.c           | 14 +++++++------
- fs/bad_inode.c     | 14 +++++++++++++
- fs/compat.c        |  6 ++++--
- fs/read_write.c    | 58 +++++++++++++++++++++++++++++++++++++++++++++++++-----
- fs/read_write.h    |  4 ++++
- include/linux/fs.h |  6 ++++--
- 6 files changed, 87 insertions(+), 15 deletions(-)
+ fs/xfs/xfs_file.c | 51 ++++++++++++++++++++-------------------------------
+ 1 file changed, 20 insertions(+), 31 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 2c03681..9635e7a 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -39,6 +39,8 @@
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
- 
-+#include "read_write.h"
-+
- #if DEBUG > 1
- #define dprintk		printk
- #else
-@@ -1315,10 +1317,10 @@ static ssize_t aio_rw_vect_retry(struct kiocb *iocb)
- 
- 	if ((iocb->ki_opcode == IOCB_CMD_PREADV) ||
- 		(iocb->ki_opcode == IOCB_CMD_PREAD)) {
--		rw_op = file->f_op->aio_read;
-+		rw_op = do_aio_read;
- 		opcode = IOCB_CMD_PREADV;
- 	} else {
--		rw_op = file->f_op->aio_write;
-+		rw_op = do_aio_write;
- 		opcode = IOCB_CMD_PWRITEV;
- 	}
- 
-@@ -1467,7 +1469,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
--		if (file->f_op->aio_read)
-+		if (file->f_op->read_iter || file->f_op->aio_read)
- 			kiocb->ki_retry = aio_rw_vect_retry;
- 		break;
- 	case IOCB_CMD_PWRITE:
-@@ -1482,7 +1484,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
--		if (file->f_op->aio_write)
-+		if (file->f_op->write_iter || file->f_op->aio_write)
- 			kiocb->ki_retry = aio_rw_vect_retry;
- 		break;
- 	case IOCB_CMD_PREADV:
-@@ -1493,7 +1495,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
--		if (file->f_op->aio_read)
-+		if (file->f_op->read_iter || file->f_op->aio_read)
- 			kiocb->ki_retry = aio_rw_vect_retry;
- 		break;
- 	case IOCB_CMD_PWRITEV:
-@@ -1504,7 +1506,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
--		if (file->f_op->aio_write)
-+		if (file->f_op->write_iter || file->f_op->aio_write)
- 			kiocb->ki_retry = aio_rw_vect_retry;
- 		break;
- 	case IOCB_CMD_READ_ITER:
-diff --git a/fs/bad_inode.c b/fs/bad_inode.c
-index 922ad46..988c04a 100644
---- a/fs/bad_inode.c
-+++ b/fs/bad_inode.c
-@@ -39,12 +39,24 @@ static ssize_t bad_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	return -EIO;
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index 67284ed..c5d74e8 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -225,10 +225,9 @@ xfs_file_fsync(
  }
  
-+static ssize_t bad_file_read_iter(struct kiocb *iocb, struct iov_iter *iter,
-+			loff_t pos)
-+{
-+	return -EIO;
-+}
-+
- static ssize_t bad_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 			unsigned long nr_segs, loff_t pos)
+ STATIC ssize_t
+-xfs_file_aio_read(
++xfs_file_read_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
  {
- 	return -EIO;
- }
+ 	struct file		*file = iocb->ki_filp;
+@@ -249,9 +248,7 @@ xfs_file_aio_read(
+ 	if (file->f_mode & FMODE_NOCMTIME)
+ 		ioflags |= IO_INVIS;
  
-+static ssize_t bad_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-+			loff_t pos)
-+{
-+	return -EIO;
-+}
-+
- static int bad_file_readdir(struct file *filp, void *dirent, filldir_t filldir)
+-	ret = generic_segment_checks(iovp, &nr_segs, &size, VERIFY_WRITE);
+-	if (ret < 0)
+-		return ret;
++	size = iov_iter_count(iter);
+ 
+ 	if (unlikely(ioflags & IO_ISDIRECT)) {
+ 		xfs_buftarg_t	*target =
+@@ -304,7 +301,7 @@ xfs_file_aio_read(
+ 
+ 	trace_xfs_file_read(ip, size, pos, ioflags);
+ 
+-	ret = generic_file_aio_read(iocb, iovp, nr_segs, pos);
++	ret = generic_file_read_iter(iocb, iter, pos);
+ 	if (ret > 0)
+ 		XFS_STATS_ADD(xs_read_bytes, ret);
+ 
+@@ -620,10 +617,9 @@ restart:
+ STATIC ssize_t
+ xfs_file_dio_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
  {
- 	return -EIO;
-@@ -151,7 +163,9 @@ static const struct file_operations bad_file_ops =
- 	.read		= bad_file_read,
- 	.write		= bad_file_write,
- 	.aio_read	= bad_file_aio_read,
-+	.read_iter	= bad_file_read_iter,
- 	.aio_write	= bad_file_aio_write,
-+	.write_iter	= bad_file_write_iter,
- 	.readdir	= bad_file_readdir,
- 	.poll		= bad_file_poll,
- 	.unlocked_ioctl	= bad_file_unlocked_ioctl,
-diff --git a/fs/compat.c b/fs/compat.c
-index 7411d66..545888b 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1098,10 +1098,12 @@ static ssize_t compat_do_readv_writev(int type, struct file *file,
- 	fnv = NULL;
- 	if (type == READ) {
- 		fn = file->f_op->read;
--		fnv = file->f_op->aio_read;
-+		if (file->f_op->aio_read || file->f_op->read_iter)
-+			fnv = do_aio_read;
- 	} else {
- 		fn = (io_fn_t)file->f_op->write;
--		fnv = file->f_op->aio_write;
-+		if (file->f_op->aio_write || file->f_op->write_iter)
-+			fnv = do_aio_write;
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -631,7 +627,6 @@ xfs_file_dio_aio_write(
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	struct xfs_mount	*mp = ip->i_mount;
+ 	ssize_t			ret = 0;
+-	size_t			count = ocount;
+ 	int			unaligned_io = 0;
+ 	int			iolock;
+ 	struct xfs_buftarg	*target = XFS_IS_REALTIME_INODE(ip) ?
+@@ -691,8 +686,8 @@ xfs_file_dio_aio_write(
  	}
  
- 	if (fnv)
-diff --git a/fs/read_write.c b/fs/read_write.c
-index b5d0bff..65c4846 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -23,7 +23,7 @@
- const struct file_operations generic_ro_fops = {
- 	.llseek		= generic_file_llseek,
+ 	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_direct_write(iocb, iovp,
+-			&nr_segs, pos, &iocb->ki_pos, count, ocount);
++	ret = generic_file_direct_write_iter(iocb, iter,
++			pos, &iocb->ki_pos, count);
+ 
+ out:
+ 	xfs_rw_iunlock(ip, iolock);
+@@ -705,10 +700,9 @@ out:
+ STATIC ssize_t
+ xfs_file_buffered_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
+ {
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -717,7 +711,6 @@ xfs_file_buffered_aio_write(
+ 	ssize_t			ret;
+ 	int			enospc = 0;
+ 	int			iolock = XFS_IOLOCK_EXCL;
+-	size_t			count = ocount;
+ 
+ 	xfs_rw_ilock(ip, iolock);
+ 
+@@ -730,7 +723,7 @@ xfs_file_buffered_aio_write(
+ 
+ write_retry:
+ 	trace_xfs_file_buffered_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_buffered_write(iocb, iovp, nr_segs,
++	ret = generic_file_buffered_write_iter(iocb, iter,
+ 			pos, &iocb->ki_pos, count, 0);
+ 
+ 	/*
+@@ -751,10 +744,9 @@ out:
+ }
+ 
+ STATIC ssize_t
+-xfs_file_aio_write(
++xfs_file_write_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
+ {
+ 	struct file		*file = iocb->ki_filp;
+@@ -762,17 +754,15 @@ xfs_file_aio_write(
+ 	struct inode		*inode = mapping->host;
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	ssize_t			ret;
+-	size_t			ocount = 0;
++	size_t			count = 0;
+ 
+ 	XFS_STATS_INC(xs_write_calls);
+ 
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
+-	ret = generic_segment_checks(iovp, &nr_segs, &ocount, VERIFY_READ);
+-	if (ret)
+-		return ret;
++	count = iov_iter_count(iter);
+ 
+-	if (ocount == 0)
++	if (count == 0)
+ 		return 0;
+ 
+ 	sb_start_write(inode->i_sb);
+@@ -783,10 +773,9 @@ xfs_file_aio_write(
+ 	}
+ 
+ 	if (unlikely(file->f_flags & O_DIRECT))
+-		ret = xfs_file_dio_aio_write(iocb, iovp, nr_segs, pos, ocount);
++		ret = xfs_file_dio_aio_write(iocb, iter, pos, count);
+ 	else
+-		ret = xfs_file_buffered_aio_write(iocb, iovp, nr_segs, pos,
+-						  ocount);
++		ret = xfs_file_buffered_aio_write(iocb, iter, pos, count);
+ 
+ 	if (ret > 0) {
+ 		ssize_t err;
+@@ -1416,8 +1405,8 @@ const struct file_operations xfs_file_operations = {
+ 	.llseek		= xfs_file_llseek,
  	.read		= do_sync_read,
--	.aio_read	= generic_file_aio_read,
-+	.read_iter	= generic_file_read_iter,
- 	.mmap		= generic_file_readonly_mmap,
- 	.splice_read	= generic_file_splice_read,
- };
-@@ -328,6 +328,29 @@ static void wait_on_retry_sync_kiocb(struct kiocb *iocb)
- 	__set_current_state(TASK_RUNNING);
- }
- 
-+ssize_t do_aio_read(struct kiocb *kiocb, const struct iovec *iov,
-+		    unsigned long nr_segs, loff_t pos)
-+{
-+	struct file *file = kiocb->ki_filp;
-+
-+	if (file->f_op->read_iter) {
-+		size_t count;
-+		struct iov_iter iter;
-+		int ret;
-+
-+		count = 0;
-+		ret = generic_segment_checks(iov, &nr_segs, &count,
-+					     VERIFY_WRITE);
-+		if (ret)
-+			return ret;
-+
-+		iov_iter_init(&iter, iov, nr_segs, count, 0);
-+		return file->f_op->read_iter(kiocb, &iter, pos);
-+	}
-+
-+	return file->f_op->aio_read(kiocb, iov, nr_segs, pos);
-+}
-+
- ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
- {
- 	struct iovec iov = { .iov_base = buf, .iov_len = len };
-@@ -340,7 +363,7 @@ ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *pp
- 	kiocb.ki_nbytes = len;
- 
- 	for (;;) {
--		ret = filp->f_op->aio_read(&kiocb, &iov, 1, kiocb.ki_pos);
-+		ret = do_aio_read(&kiocb, &iov, 1, kiocb.ki_pos);
- 		if (ret != -EIOCBRETRY)
- 			break;
- 		wait_on_retry_sync_kiocb(&kiocb);
-@@ -384,6 +407,29 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
- 
- EXPORT_SYMBOL(vfs_read);
- 
-+ssize_t do_aio_write(struct kiocb *kiocb, const struct iovec *iov,
-+		     unsigned long nr_segs, loff_t pos)
-+{
-+	struct file *file = kiocb->ki_filp;
-+
-+	if (file->f_op->write_iter) {
-+		size_t count;
-+		struct iov_iter iter;
-+		int ret;
-+
-+		count = 0;
-+		ret = generic_segment_checks(iov, &nr_segs, &count,
-+					     VERIFY_READ);
-+		if (ret)
-+			return ret;
-+
-+		iov_iter_init(&iter, iov, nr_segs, count, 0);
-+		return file->f_op->write_iter(kiocb, &iter, pos);
-+	}
-+
-+	return file->f_op->aio_write(kiocb, iov, nr_segs, pos);
-+}
-+
- ssize_t do_sync_write(struct file *filp, const char __user *buf, size_t len, loff_t *ppos)
- {
- 	struct iovec iov = { .iov_base = (void __user *)buf, .iov_len = len };
-@@ -396,7 +442,7 @@ ssize_t do_sync_write(struct file *filp, const char __user *buf, size_t len, lof
- 	kiocb.ki_nbytes = len;
- 
- 	for (;;) {
--		ret = filp->f_op->aio_write(&kiocb, &iov, 1, kiocb.ki_pos);
-+		ret = do_aio_write(&kiocb, &iov, 1, kiocb.ki_pos);
- 		if (ret != -EIOCBRETRY)
- 			break;
- 		wait_on_retry_sync_kiocb(&kiocb);
-@@ -720,10 +766,12 @@ static ssize_t do_readv_writev(int type, struct file *file,
- 	fnv = NULL;
- 	if (type == READ) {
- 		fn = file->f_op->read;
--		fnv = file->f_op->aio_read;
-+		if (file->f_op->aio_read || file->f_op->read_iter)
-+			fnv = do_aio_read;
- 	} else {
- 		fn = (io_fn_t)file->f_op->write;
--		fnv = file->f_op->aio_write;
-+		if (file->f_op->aio_write || file->f_op->write_iter)
-+			fnv = do_aio_write;
- 	}
- 
- 	if (fnv)
-diff --git a/fs/read_write.h b/fs/read_write.h
-index d3e00ef..4f00eb7 100644
---- a/fs/read_write.h
-+++ b/fs/read_write.h
-@@ -8,6 +8,10 @@ typedef ssize_t (*io_fn_t)(struct file *, char __user *, size_t, loff_t *);
- typedef ssize_t (*iov_fn_t)(struct kiocb *, const struct iovec *,
- 		unsigned long, loff_t);
- 
-+ssize_t do_aio_read(struct kiocb *kiocb, const struct iovec *iov,
-+		unsigned long nr_segs, loff_t pos);
-+ssize_t do_aio_write(struct kiocb *kiocb, const struct iovec *iov,
-+		unsigned long nr_segs, loff_t pos);
- ssize_t do_sync_readv_writev(struct file *filp, const struct iovec *iov,
- 		unsigned long nr_segs, size_t len, loff_t *ppos, iov_fn_t fn);
- ssize_t do_loop_readv_writev(struct file *filp, struct iovec *iov,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b893a4f..31d2e17 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1636,12 +1636,14 @@ struct file_operations {
- 
- static inline int file_readable(struct file *filp)
- {
--	return filp && (filp->f_op->read || filp->f_op->aio_read);
-+	return filp && (filp->f_op->read || filp->f_op->aio_read ||
-+			filp->f_op->read_iter);
- }
- 
- static inline int file_writable(struct file *filp)
- {
--	return filp && (filp->f_op->write || filp->f_op->aio_write);
-+	return filp && (filp->f_op->write || filp->f_op->aio_write ||
-+			filp->f_op->write_iter);
- }
- 
- struct inode_operations {
+ 	.write		= do_sync_write,
+-	.aio_read	= xfs_file_aio_read,
+-	.aio_write	= xfs_file_aio_write,
++	.read_iter	= xfs_file_read_iter,
++	.write_iter	= xfs_file_write_iter,
+ 	.splice_read	= xfs_file_splice_read,
+ 	.splice_write	= xfs_file_splice_write,
+ 	.unlocked_ioctl	= xfs_file_ioctl,
 -- 
 1.8.1.1
 
