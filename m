@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab3A2LpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 06:45:18 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:58459 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732Ab3A2LpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 06:45:14 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: inderpal.singh@linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 1/2] cpufreq: Set policy->related_cpus to atleast policy->cpus
-Date: Tue, 29 Jan 2013 12:51:23 +0100
-Message-ID: <2215618.GPIWS1OcnB@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <d6827976a56d429848ab8ababa2779a21c68d65f.1359434113.git.viresh.kumar@linaro.org>
-References: <d6827976a56d429848ab8ababa2779a21c68d65f.1359434113.git.viresh.kumar@linaro.org>
+	id S1755612Ab3A2Lp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 06:45:57 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:40620 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260Ab3A2Lpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 06:45:55 -0500
+X-AuditID: 85900ec0-d5479b900000152f-6a-5107b6702886
+Message-ID: <5107B670.1000800@hitachi.com>
+Date: Tue, 29 Jan 2013 20:45:52 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
+        fweisbec@gmail.com, rusty@rustcorp.com.au, ananth@in.ibm.com,
+        anil.s.keshavamurthy@intel.com, jbaron@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 3/5] kprobes: constify check_kprobe_address_safe and friends
+References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com> <1357772960-4436-3-git-send-email-sasha.levin@oracle.com> <50FD2B30.20100@hitachi.com> <51020566.6040408@oracle.com>
+In-Reply-To: <51020566.6040408@oracle.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 29, 2013 10:09:59 AM Viresh Kumar wrote:
-> With the addition of following patch, related_cpus is required to be set by
-> cpufreq platform drivers:
+(2013/01/25 13:09), Sasha Levin wrote:
+> As to arch_check_optimized_kprobe() and check_kprobe_address_safe(), this
+> is simply way too confusing. It doesn't make sense that a function named
+> check_[...]() would modify any of it's parameters.
 > 
-> commit c1070fd743533efb54e98142252283583f379190
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Mon Jan 14 13:23:04 2013 +0000
+> For example, that entire block within KPROBES_CAN_USE_FTRACE should be split
+> out and go into update_kprobe_for_ftrace() or something similar.
 > 
->     cpufreq: Simplify cpufreq_add_dev()
-> 
+> If that makes sense, I can send a patch to split out all the parts that
+> modify anything in those two functions out of them.
 
-I've dropped this one in the meantime.
+I see, that makes sense :-)
 
-Can you please fold the $subject patch into "cpufreq: Simplify cpufreq_add_dev()"
-and post the result instead?  That surely will be less confusing?
-
-Rafael
-
+Thank you,
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
