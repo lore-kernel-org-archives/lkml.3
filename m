@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab3A2MjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 07:39:22 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:18530 "EHLO
+	id S1756957Ab3A2Mjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 07:39:31 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:18637 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896Ab3A2MjR (ORCPT
+	with ESMTP id S1756934Ab3A2Mj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 07:39:17 -0500
+	Tue, 29 Jan 2013 07:39:27 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@alien8.de>
-Subject: [PATCH v5 15/20] scripts/gdb: Add get_gdbserver_type helper
-Date: Tue, 29 Jan 2013 13:37:58 +0100
-Message-Id: <17368dae14b7f2e1ea15013990b62f35abf6a5c1.1359463075.git.jan.kiszka@siemens.com>
+        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH v5 14/20] scripts/gdb: Add internal helper and convenience function to retrieve thread_info
+Date: Tue, 29 Jan 2013 13:37:57 +0100
+Message-Id: <c4fb2b8d82932f2e86956bd0bd08caf15855b652.1359463075.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1359463075.git.jan.kiszka@siemens.com>
 References: <cover.1359463075.git.jan.kiszka@siemens.com>
@@ -25,58 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helper probes the type of the gdb server. Supported are QEMU and
-KGDB so far. Knowledge about the gdb server is required e.g. to retrieve
-the current CPU or current task.
+Add the internal helper get_thread_info that calculated the thread_info
+from a given task variable. Also export this service as a convenience
+function.
 
+Note: ia64 version is untested.
+
+CC: Tony Luck <tony.luck@intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: linux-ia64@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/utils.py |   35 +++++++++++++++++++++++++++++++++++
+ scripts/gdb/task.py |   35 +++++++++++++++++++++++++++++++++++
  1 files changed, 35 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-index bcf4278..d381f63 100644
---- a/scripts/gdb/utils.py
-+++ b/scripts/gdb/utils.py
-@@ -121,3 +121,38 @@ def is_target_arch(arch):
- 	if target_arch == None:
- 		target_arch = gdb.execute("show architecture", False, True)
- 	return target_arch.find(arch) >= 0
+diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
+index fe42eb0..8e96238 100644
+--- a/scripts/gdb/task.py
++++ b/scripts/gdb/task.py
+@@ -62,3 +62,38 @@ class LxTaskByPidFunc(gdb.Function):
+ 			raise gdb.GdbError("No task of PID " + str(pid))
+ 
+ LxTaskByPidFunc()
 +
 +
-+GDBSERVER_QEMU = 0
-+GDBSERVER_KGDB = 1
-+gdbserver_type = None
++thread_info_type = CachedType("struct thread_info")
 +
-+def get_gdbserver_type():
-+	def exit_handler(event):
-+		global gdbserver_type
-+		gdbserver_type = None
-+		gdb.events.exited.disconnect(exit_handler)
++ia64_task_size = None
 +
-+	def probe_qemu():
-+		try:
-+			return gdb.execute("monitor info version", False,
-+					   True) != ""
-+		except:
-+			return False
++def get_thread_info(task):
++	global thread_info_type
++	thread_info_ptr_type = thread_info_type.get_type().pointer()
++	if is_target_arch("ia64"):
++		global ia64_task_size
++		if ia64_task_size == None:
++			ia64_task_size = gdb.parse_and_eval(
++						"sizeof(struct task_struct)")
++		thread_info_addr = task.address + ia64_task_size
++		thread_info = thread_info_addr.cast(thread_info_ptr_type)
++	else:
++		thread_info = task['stack'].cast(thread_info_ptr_type)
++	return thread_info.dereference()
 +
-+	def probe_kgdb():
-+		try:
-+			thread_info = gdb.execute("info thread 2", False, True)
-+			return thread_info.find("shadowCPU0") >= 0
-+		except:
-+			return False
 +
-+	global gdbserver_type
-+	if gdbserver_type == None:
-+		if probe_qemu():
-+			gdbserver_type = GDBSERVER_QEMU
-+		elif probe_kgdb():
-+			gdbserver_type = GDBSERVER_KGDB
-+		if gdbserver_type != None:
-+			gdb.events.exited.connect(exit_handler)
-+	return gdbserver_type
++class LxThreadInfoFunc (gdb.Function):
++	# Calculate Linux thread_info from task variable.
++	__doc__ = "Calculate Linux thread_info from task variable.\n" \
++		  "\n" \
++		  "$lx_thread_info(TASK): Given TASK, return the corresponding thread_info\n" \
++		  "variable."
++
++	def __init__(self):
++		super(LxThreadInfoFunc, self).__init__("lx_thread_info")
++
++	def invoke(self, task):
++		return get_thread_info(task)
++
++LxThreadInfoFunc()
 -- 
 1.7.3.4
 
