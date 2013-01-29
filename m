@@ -1,200 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab3A2O1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 09:27:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16163 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab3A2O1o (ORCPT
+	id S1756938Ab3A2Oa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 09:30:26 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:40112 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab3A2OaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 09:27:44 -0500
-X-Authority-Analysis: v=2.0 cv=QcjkT7nv c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=N0wm57CNQ5UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=y2CyqpC7EpYA:10 a=dIpcJ15s2rXEDLvaY88A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359469661.17639.32.camel@gandalf.local.home>
-Subject: Re: [PATCH] Tracepoint Event: Add 4 tracepoint events for vfs
- subsystem.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: chenggang <chenggang.qin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chenggang Qin <chenggang.qcg@alibaba-inc.com>
-Date: Tue, 29 Jan 2013 09:27:41 -0500
-In-Reply-To: <1359444308-3780-1-git-send-email-chenggang.qin@gmail.com>
-References: <1359444308-3780-1-git-send-email-chenggang.qin@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Jan 2013 09:30:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <2215618.GPIWS1OcnB@vostro.rjw.lan>
+References: <d6827976a56d429848ab8ababa2779a21c68d65f.1359434113.git.viresh.kumar@linaro.org>
+	<2215618.GPIWS1OcnB@vostro.rjw.lan>
+Date: Tue, 29 Jan 2013 20:00:23 +0530
+Message-ID: <CAKohpomDtasshcO53eD0kR1c3aO+ePC5pAK_mGjJn1EKAMBf_w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: Set policy->related_cpus to atleast policy->cpus
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: inderpal.singh@linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-29 at 15:25 +0800, chenggang wrote:
+On 29 January 2013 17:21, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, January 29, 2013 10:09:59 AM Viresh Kumar wrote:
+>> With the addition of following patch, related_cpus is required to be set by
+>> cpufreq platform drivers:
+>>
+>> commit c1070fd743533efb54e98142252283583f379190
+>> Author: Viresh Kumar <viresh.kumar@linaro.org>
+>> Date:   Mon Jan 14 13:23:04 2013 +0000
+>>
+>>     cpufreq: Simplify cpufreq_add_dev()
+>>
+>
+> I've dropped this one in the meantime.
+>
+> Can you please fold the $subject patch into "cpufreq: Simplify cpufreq_add_dev()"
+> and post the result instead?  That surely will be less confusing?
 
-> ---
->  include/trace/events/vfs.h |  110 ++++++++++++++++++++++++++++++++++++++++++++
->  mm/filemap.c               |   18 ++++++++
->  2 files changed, 128 insertions(+)
->  create mode 100644 include/trace/events/vfs.h
-> 
-> diff --git a/include/trace/events/vfs.h b/include/trace/events/vfs.h
-> new file mode 100644
-> index 0000000..33498e1
-> --- /dev/null
-> +++ b/include/trace/events/vfs.h
-> @@ -0,0 +1,110 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM vfs
-> +#define TRACE_INCLUDE_FILE vfs
-> +
-> +#if !defined(_TRACE_EVENTS_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_EVENTS_VFS_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +#include <asm/ptrace.h>
-> +
-> +TRACE_EVENT(generic_file_aio_read,
-> +
-> +	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-> +
-> +	TP_ARGS(pos, bytes, fname),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	long long,	pos		)
-> +		__field(	unsigned long,	bytes		)
-> +		__array(	unsigned char,	fname,	100	)
+Okay. I will squash this one with cpufreq_add_dev() one + following line:
 
-100 bytes is a big waste of space in the ring buffer. Please use dynamic
-string, unless fname is always a 100 bytes in length:
+diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
+index 8ff26af..fc714a6 100644
+--- a/drivers/cpufreq/spear-cpufreq.c
++++ b/drivers/cpufreq/spear-cpufreq.c
+@@ -189,7 +189,6 @@ static int spear_cpufreq_init(struct cpufreq_policy *policy)
+        policy->cur = spear_cpufreq_get(0);
 
-	__string(	fname,		fname		)
+        cpumask_copy(policy->cpus, topology_core_cpumask(policy->cpu));
+-       cpumask_copy(policy->related_cpus, policy->cpus);
+
+        return 0;
+ }
 
 
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->pos	= pos;
-> +		__entry->bytes	= bytes;
-> +		strncpy(__entry->fname, fname, 100);
+Also, because you are happy loosing your commit history in linux-next,
+you can drop
+the patch that i have reverted as 2/2 of this set.
 
-Then here add:
-
-	__assign_str(fname, fname);
-
-> +	),
-> +
-> +	TP_printk("aio read(Filename: %s Pos: %lld Bytes: %lu)",
-> +		  __entry->fname, __entry->pos, __entry->bytes)
-> +);
-> +
-> +TRACE_EVENT_FLAGS(generic_file_aio_read, TRACE_EVENT_FL_CAP_ANY)
-> +
-> +TRACE_EVENT(generic_file_aio_write,
-> +
-> +	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-> +
-> +	TP_ARGS(pos, bytes, fname),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	long long,	pos		)
-> +		__field(	unsigned long,	bytes		)
-> +		__array(	unsigned char,	fname,	100	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->pos	= pos;
-> +		__entry->bytes	= bytes;
-> +		strncpy(__entry->fname, fname, 100);
-> +	),
-> +
-> +	TP_printk("aio write(Filename: %s Pos: %lld Bytes: %lu)",
-> +		  __entry->fname, __entry->pos, __entry->bytes)
-> +);
-> +
-> +TRACE_EVENT_FLAGS(generic_file_aio_write, TRACE_EVENT_FL_CAP_ANY)
-> +
-> +TRACE_EVENT(direct_io_read,
-> +	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-> +
-> +	TP_ARGS(pos, bytes, fname),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	long long,	pos		)
-> +		__field(	unsigned long,  bytes		)
-> +		__array(	unsigned char,	fname,  100	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->pos	= pos;
-> +		__entry->bytes  = bytes;
-> +		strncpy(__entry->fname, fname, 100);
-> +	),
-> +
-> +	TP_printk("direct io read(Filename: %s Pos: %lld Bytes: %lu)",
-> +		  __entry->fname, __entry->pos, __entry->bytes)
-> +);
-> +
-> +TRACE_EVENT_FLAGS(direct_io_read, TRACE_EVENT_FL_CAP_ANY)
-> +
-> +TRACE_EVENT(direct_io_write,
-> +	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-> +
-> +	TP_ARGS(pos, bytes, fname),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	long long,	pos		)
-> +		__field(	unsigned long,  bytes		)
-> +		__array(	unsigned char,	fname,	100	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->pos	= pos;
-> +		__entry->bytes	= bytes;
-> +		strncpy(__entry->fname, fname, 100);
-> +	),
-> +
-> +	TP_printk("direct io write(Filename: %s Pos: %lld Bytes: %lu)",
-> +		  __entry->fname, __entry->pos, __entry->bytes)
-
-All of these are identical, except that you repeat the tracepoint name
-in the TP_printk format, which in unnecessary, as the tracepoint name is
-always printed in the trace. Please create a single
-DECLACE_EVENT_CLASS() and create 4 DEFINE_EVENTS(). Every TRACE_EVENT
-costs about 5k in code. A DECLARE_EVENT_CLASS() costs about 4.5k, and
-each DEFINE_EVENT costs about 250 bytes.
-
--- Steve
-
-> +);
-> +
-> +TRACE_EVENT_FLAGS(direct_io_write, TRACE_EVENT_FL_CAP_ANY)
-> +
-> +#endif /* _TRACE_EVENTS_SYSCALLS_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> +
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 83efee7..0310e7b 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -42,6 +42,9 @@
->  
->  #include <asm/mman.h>
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/vfs.h>
-> +
->  /*
-
-
+I will resend the rest again.
