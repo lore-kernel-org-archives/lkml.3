@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab3A3SUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 13:20:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52485 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753856Ab3A3SUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 13:20:44 -0500
-Message-ID: <5109641A.5040707@zytor.com>
-Date: Wed, 30 Jan 2013 10:19:06 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756339Ab3A3SZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 13:25:09 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59288 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab3A3SZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 13:25:06 -0500
+Date: Wed, 30 Jan 2013 18:23:42 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, walter harms <wharms@bfs.de>,
+        Mike Rapoport <mike@compulab.co.il>, Valdis.Kletnieks@vt.edu,
+        cocci@systeme.lip6.fr, Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: coccinelle and bitmask arithmetic
+Message-ID: <20130130182342.GS23505@n2100.arm.linux.org.uk>
+References: <20130127201947.GO16282@mwanda> <9561.1359474916@turing-police.cc.vt.edu> <1359475998.4196.26.camel@joe-AO722> <alpine.DEB.2.02.1301291847070.3339@hadrien> <1359482637.15135.7.camel@joe-AO722> <5108D808.6010405@bfs.de> <20130130111420.GG23505@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1301301220290.1990@hadrien> <20130130113533.GI23505@n2100.arm.linux.org.uk> <1359564809.32305.23.camel@joe-AO722>
 MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>
-CC: Jan Beulich <JBeulich@suse.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "bp@alien8.de" <bp@alien8.de>, "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
-References: <1359507077-26050-1-git-send-email-kys@microsoft.com> <1359507108-26091-1-git-send-email-kys@microsoft.com> <1359507108-26091-2-git-send-email-kys@microsoft.com> <5108ED9702000078000BAA08@nat28.tlf.novell.com> <1db4d98aa3434d4eab7b36bbeb89cd47@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <1db4d98aa3434d4eab7b36bbeb89cd47@SN2PR03MB061.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359564809.32305.23.camel@joe-AO722>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 10:12 AM, KY Srinivasan wrote:
->>
->> I'm not convinced that's the right approach - any hypervisor
->> could do similar emulation, and hence you either want to make
->> sure you run on Hyper-V (by excluding all others), or you
->> tolerate using the emulation (which may require syncing up with
->> the other guest implementations so that shared resources don't
->> get used by two parties).
->>
->> I also wonder whether using the Hyper-V emulation (where
->> useful, there might not be anything right now, but this may
->> change going forward) when no Xen support is configured
->> wouldn't be better than not using anything...
->
-> Jan,
->
-> Presumably, Hyper-V emulation is only to run enlightened Windows. The issue with
-> Xen is not that it emulates Hyper-V, but this emulation is turned on while running Linux.
-> That is the reason I chose to check for Xen. Would you prefer a DMI check for the Hyper-V
-> platform.
->
+On Wed, Jan 30, 2013 at 08:53:29AM -0800, Joe Perches wrote:
+> On Wed, 2013-01-30 at 11:35 +0000, Russell King - ARM Linux wrote:
+> > On Wed, Jan 30, 2013 at 12:21:21PM +0100, Julia Lawall wrote:
+> > > On Wed, 30 Jan 2013, Russell King - ARM Linux wrote:
+> > > > So, _either_ logical OR or addition works.
+> > > >
+> > > > If we _did_ end up with a PHYS_OFFSET with bits less than bit 26 set
+> > > > here, we'd have bigger problems - because the base of RAM in PCI space
+> > > > will not correspond with PHYS_OFFSET and all the DMA mapping stuff breaks.
+> > > 
+> > > The "problem" is that the computation is done inconsistently within the
+> > > same file.  Sometimes with + and sometimes with |.
+> > 
+> > And I say that is not a problem; if it _does_ become a problem, there are
+> > bigger problems that would also need solving, which given a multi-subarch
+> > kernel become a lot lot harder.
+> > 
+> > Sure, we can just change them to all be a bitwise OR (sorry, not logical)
+> > but that's really only half the story.
+> 
+> As far as I can tell, there'd be a lot of +'s to
+> change in arch/arm and only 2 uses of | in it8152.c
+> 
+> $ git grep -P "\(?\s*SZ_\d+[A-Z]\s*-\s*1\s*\)?\s*\|" arch/arm
+> arch/arm/common/it8152.c:                       *dev->dma_mask = (SZ_64M - 1) | PHYS_OFFSET;
+> arch/arm/common/it8152.c:               dev->coherent_dma_mask = (SZ_64M - 1) | PHYS_OFFSET;
+> 
+> $ git grep -P "\+\s*\(?\s*SZ_\d+[A-Z]\b\s*-\s*1\s*\)?" arch/arm | wc -l
+> 460
+> 
+> I think consistently using + would make it simpler
+> for some possible future conversion.
 
-The real issue here is anyone going to run a kernel:
+Respectfully, I really don't care about this at the present time.  There's
+bigger fish (and kernel developers) that need frying - such as fixing the
+ARM kernel so it actually boots on the platforms that it used to before
+all this DT crap and DMA crap came along and sodded things up.
 
-1. which has Xen support *disabled*,
-2. which has HyperV support *enabled*,
-3. on top of Xen,
-4. with Xen HyperV support enabled.
-
-The fundamental problem seems to be that Xen HyperV support is "just 
-good enough to run Windows", but in fact has some serious shortcomings 
-which breaks Linux guests that don't have Xen support (if they do, the 
-Xen support kicks in instead.)
-
-Am I right?
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+The issue you refer to above is petty in comparison; the above works
+fine, which is more than can be said about the platform I've just tried to
+boot.  Sorry.
