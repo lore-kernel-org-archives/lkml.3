@@ -1,70 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab3A3Lx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 06:53:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59759 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884Ab3A3LxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 06:53:24 -0500
-Date: Wed, 30 Jan 2013 12:51:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lingzhu Xiang <lxiang@redhat.com>, Roman Rakus <rrakus@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tty: set_termios/set_termiox should not return
-	-EINTR
-Message-ID: <20130130115153.GA7012@redhat.com>
-References: <20130129190720.GA28000@redhat.com> <20130129190741.GA28004@redhat.com> <51082470.2070601@suse.cz> <20130129194908.GA29480@redhat.com> <510846AB.8010900@suse.cz> <20130130114645.GA6622@redhat.com>
+	id S1752950Ab3A3Lxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:53:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45503 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab3A3LxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 06:53:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130130114645.GA6622@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130128091039.GG6871@arwen.pp.htv.fi>
+References: <20130128091039.GG6871@arwen.pp.htv.fi>
+Date: Wed, 30 Jan 2013 19:53:22 +0800
+Message-ID: <CACVXFVOATzTJq+-5M9j3G3y_WUrWKJt=naPkjkLwGDmT0H8gog@mail.gmail.com>
+Subject: Re: Page allocation failure on v3.8-rc5
+From: Ming Lei <ming.lei@canonical.com>
+To: balbi@ti.com
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30, Oleg Nesterov wrote:
+On Mon, Jan 28, 2013 at 5:10 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
 >
-> On 01/29, Jiri Slaby wrote:
-> >
-> > On 01/29/2013 08:49 PM, Oleg Nesterov wrote:
-> > >
-> > > Perhaps /bin/bash is buggy too, I do not know. Probably Roman and
-> > > Lingzhu can tell more.
-> >
-> > But I really want to hear more details here (the commit log deserves
-> > that). E.g. why it started causing problems right now.
+> The following page allocation failure triggers sometimes when I plug my
+> memory card reader on a USB port.
 >
-> I have no idea, I only saw the test-case yesterday.
+>
+> [850845.928795] usb 1-4: new high-speed USB device number 48 using ehci-pci
+> [850846.300702] usb 1-4: New USB device found, idVendor=0bda, idProduct=0119
+> [850846.300707] usb 1-4: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+> [850846.300711] usb 1-4: Product: USB2.0-CRW
+> [850846.300715] usb 1-4: Manufacturer: Generic
+> [850846.300718] usb 1-4: SerialNumber: 20090815198100000
+> [850846.302733] scsi86 : usb-storage 1-4:1.0
+> [850847.304359] scsi 86:0:0:0: Direct-Access     Generic- SD/MMC           1.00 PQ: 0 ANSI: 0 CCS
+> [850847.305734] sd 86:0:0:0: Attached scsi generic sg4 type 0
+> [850848.456294] sd 86:0:0:0: [sdd] 7911424 512-byte logical blocks: (4.05 GB/3.77 GiB)
+> [850848.457160] sd 86:0:0:0: [sdd] Write Protect is off
+> [850848.457166] sd 86:0:0:0: [sdd] Mode Sense: 03 00 00 00
+> [850848.458054] sd 86:0:0:0: [sdd] No Caching mode page present
+> [850848.458060] sd 86:0:0:0: [sdd] Assuming drive cache: write through
+> [850848.461502] sd 86:0:0:0: [sdd] No Caching mode page present
+> [850848.461507] sd 86:0:0:0: [sdd] Assuming drive cache: write through
+> [850848.461963] kworker/u:0: page allocation failure: order:4, mode:0x2000d0
+> [850848.461969] Pid: 7122, comm: kworker/u:0 Tainted: G        W    3.8.0-rc4+ #206
+> [850848.461972] Call Trace:
+> [850848.461984]  [<ffffffff810d02a8>] ? warn_alloc_failed+0x116/0x128
+> [850848.461991]  [<ffffffff810d31d9>] ? __alloc_pages_nodemask+0x6b5/0x751
+> [850848.462000]  [<ffffffff81106297>] ? kmem_getpages+0x59/0x129
+> [850848.462006]  [<ffffffff81106b88>] ? fallback_alloc+0x12f/0x1fc
+> [850848.462013]  [<ffffffff811071c7>] ? kmem_cache_alloc_trace+0x87/0xf6
+> [850848.462021]  [<ffffffff812a633c>] ? check_partition+0x28/0x1ac
+> [850848.462027]  [<ffffffff812a60bd>] ? rescan_partitions+0xa4/0x27c
+> [850848.462034]  [<ffffffff8113bcfb>] ? __blkdev_get+0x1ac/0x3d2
+> [850848.462040]  [<ffffffff8113c0b1>] ? blkdev_get+0x190/0x2d8
+> [850848.462046]  [<ffffffff8113b23f>] ? bdget+0x3b/0x12b
+> [850848.462052]  [<ffffffff812a41a6>] ? add_disk+0x268/0x3e2
+> [850848.462058]  [<ffffffff81382f3d>] ? sd_probe_async+0x11b/0x1cc
+> [850848.462066]  [<ffffffff81055f74>] ? async_run_entry_fn+0xa2/0x173
+> [850848.462072]  [<ffffffff81055ed2>] ? async_schedule+0x15/0x15
+> [850848.462079]  [<ffffffff8104bb79>] ? process_one_work+0x172/0x2ca
+> [850848.462084]  [<ffffffff8104b88a>] ? manage_workers+0x22a/0x23c
+> [850848.462090]  [<ffffffff81055ed2>] ? async_schedule+0x15/0x15
+> [850848.462096]  [<ffffffff8104bfa4>] ? worker_thread+0x11d/0x1b7
+> [850848.462102]  [<ffffffff8104be87>] ? rescuer_thread+0x18c/0x18c
+> [850848.462109]  [<ffffffff81050421>] ? kthread+0x86/0x8e
+> [850848.462116]  [<ffffffff8105039b>] ? __kthread_parkme+0x60/0x60
+> [850848.462125]  [<ffffffff814a306c>] ? ret_from_fork+0x7c/0xb0
+> [850848.462132]  [<ffffffff8105039b>] ? __kthread_parkme+0x60/0x60
 
-But if you ask how this affects /bin/bash, I can quote the description
-from Lingzhu,
+The allocation failure is caused by the big sizeof(struct parsed_partitions),
+which is 64K in my 32bit box, could you test the blow patch to see
+if it can fix the allocation failure?
 
-	sigchld.sh (reproducer):
+--
+diff --git a/block/partition-generic.c b/block/partition-generic.c
+index f1d1451..043d0bd 100644
+--- a/block/partition-generic.c
++++ b/block/partition-generic.c
+@@ -525,7 +525,7 @@ rescan:
+ 			md_autodetect_dev(part_to_dev(part)->devt);
+ #endif
+ 	}
+-	kfree(state);
++	release_partitions(state);
+ 	return 0;
+ }
 
-	#!/bin/bash
-	( while :; do kill -CHLD $$ 2>&- || break; done ) &
-	while :; do
-		read -p 1 -t 0.3 -d ' '
-		read -p 2
-	done
+diff --git a/block/partitions/check.c b/block/partitions/check.c
+index bc90867..d89eef7 100644
+--- a/block/partitions/check.c
++++ b/block/partitions/check.c
+@@ -14,6 +14,7 @@
+  */
 
-	Double free happens in read_builtin, here
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
+ #include <linux/ctype.h>
+ #include <linux/genhd.h>
 
-	    FREE (tofree);
-	->  xfree (orig_input_string);
+@@ -106,18 +107,43 @@ static int (*check_part[])(struct parsed_partitions *) = {
+ 	NULL
+ };
 
-	    return (retval);
++struct parsed_partitions *allocate_partitions(int nr)
++{
++	struct parsed_partitions *state;
++
++	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
++	if (!state)
++		return NULL;
++
++	state->parts = vzalloc(nr * sizeof(state->parts[0]));
++	if (!state->parts) {
++		kfree(state);
++		return NULL;
++	}
++
++	return state;
++}
++
++void release_partitions(struct parsed_partitions *state)
++{
++	vfree(state->parts);
++	kfree(state);
++}
++
+ struct parsed_partitions *
+ check_partition(struct gendisk *hd, struct block_device *bdev)
+ {
+ 	struct parsed_partitions *state;
+ 	int i, res, err;
 
-result:
+-	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
++	i = disk_max_parts(hd);
++	state = allocate_partitions(i);
+ 	if (!state)
+ 		return NULL;
++	state->limit = i;
+ 	state->pp_buf = (char *)__get_free_page(GFP_KERNEL);
+ 	if (!state->pp_buf) {
+-		kfree(state);
++		release_partitions(state);
+ 		return NULL;
+ 	}
+ 	state->pp_buf[0] = '\0';
+@@ -128,10 +154,9 @@ check_partition(struct gendisk *hd, struct
+block_device *bdev)
+ 	if (isdigit(state->name[strlen(state->name)-1]))
+ 		sprintf(state->name, "p");
 
-	sigchld.sh: line 4: read: error setting terminal attributes: Interrupted system call
-	1
-	*** glibc detected *** ./bash-4.1.2-14.el6/bin/bash: double free or corruption (out): 0x00000000020f45b0 ***
-	======= Backtrace: =========
-	(...)
+-	state->limit = disk_max_parts(hd);
+ 	i = res = err = 0;
+ 	while (!res && check_part[i]) {
+-		memset(&state->parts, 0, sizeof(state->parts));
++		memset(state->parts, 0, state->limit * sizeof(state->parts[0]));
+ 		res = check_part[i++](state);
+ 		if (res < 0) {
+ 			/* We have hit an I/O error which we don't report now.
+@@ -161,6 +186,6 @@ check_partition(struct gendisk *hd, struct
+block_device *bdev)
+ 	printk(KERN_INFO "%s", state->pp_buf);
 
-Oleg.
+ 	free_page((unsigned long)state->pp_buf);
+-	kfree(state);
++	release_partitions(state);
+ 	return ERR_PTR(res);
+ }
+diff --git a/block/partitions/check.h b/block/partitions/check.h
+index 52b1003..8323808 100644
+--- a/block/partitions/check.h
++++ b/block/partitions/check.h
+@@ -15,13 +15,15 @@ struct parsed_partitions {
+ 		int flags;
+ 		bool has_info;
+ 		struct partition_meta_info info;
+-	} parts[DISK_MAX_PARTS];
++	} *parts;
+ 	int next;
+ 	int limit;
+ 	bool access_beyond_eod;
+ 	char *pp_buf;
+ };
 
++extern void release_partitions(struct parsed_partitions *state);
++
+ struct parsed_partitions *
+ check_partition(struct gendisk *, struct block_device *);
+
+
+
+Thanks,
+--
+Ming Lei
