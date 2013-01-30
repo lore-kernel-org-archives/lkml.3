@@ -1,64 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab3A3NBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 08:01:14 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:41411 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab3A3NBJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 08:01:09 -0500
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, swarren@wwwdotorg.org,
-        linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        mathieu.poirier@linaro.org, Joseph Lo <josephl@nvidia.com>,
-        linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH v7 4/4] cpufreq: ondemand: use all CPUs in update_sampling_rate
-Date: Wed, 30 Jan 2013 14:00:03 +0100
-Message-Id: <1359550803-18577-5-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
-References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
+	id S1753884Ab3A3NB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 08:01:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382Ab3A3NB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 08:01:57 -0500
+Message-ID: <51091998.9010704@redhat.com>
+Date: Wed, 30 Jan 2013 14:01:12 +0100
+From: Roman Rakus <rrakus@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lingzhu Xiang <lxiang@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] tty: set_termios/set_termiox should not return -EINTR
+References: <20130129190720.GA28000@redhat.com> <20130129190741.GA28004@redhat.com> <51082470.2070601@suse.cz> <20130129194908.GA29480@redhat.com> <510846AB.8010900@suse.cz>
+In-Reply-To: <510846AB.8010900@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify update_sampling_rate() to check, and eventually immediately
-schedule, all CPU's do_dbs_timer delayed work.
+On 01/29/2013 11:01 PM, Jiri Slaby wrote:
+> E.g. why it started causing problems right now. The code is there
+> like forever.
+Because right now the situation occurs. It's not common to receive 
+signal during syscall. But when it happens, it should work as documented.
 
-This is required in case of software coordinated CPUs, as we now have a
-separate delayed work for each CPU.
-
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
- drivers/cpufreq/cpufreq_ondemand.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index 13ceb3c..1017b90 100644
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -326,7 +326,7 @@ static void update_sampling_rate(unsigned int new_rate)
- 			cpufreq_cpu_put(policy);
- 			continue;
- 		}
--		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
-+		dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
- 		cpufreq_cpu_put(policy);
- 
- 		mutex_lock(&dbs_info->cdbs.timer_mutex);
-@@ -345,8 +345,7 @@ static void update_sampling_rate(unsigned int new_rate)
- 			cancel_delayed_work_sync(&dbs_info->cdbs.work);
- 			mutex_lock(&dbs_info->cdbs.timer_mutex);
- 
--			schedule_delayed_work_on(dbs_info->cdbs.cpu,
--					&dbs_info->cdbs.work,
-+			schedule_delayed_work_on(cpu, &dbs_info->cdbs.work,
- 					usecs_to_jiffies(new_rate));
- 
- 		}
--- 
-1.7.12.1
-
+RR
