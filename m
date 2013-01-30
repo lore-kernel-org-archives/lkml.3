@@ -1,112 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3A3N2D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 08:28:03 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:37603 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753674Ab3A3N2B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 08:28:01 -0500
+	id S1754283Ab3A3N2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 08:28:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49678 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753510Ab3A3N2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 08:28:43 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: Kurachkin Michail <Michail.Kurachkin@promwad.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kuten Ivan <Ivan.Kuten@promwad.com>,
+        "benavi@marvell.com" <benavi@marvell.com>,
+        Palstsiuk Viktar <Viktar.Palstsiuk@promwad.com>
+Subject: Re: TDM bus support in Linux Kernel [PATCH]
+Date: Wed, 30 Jan 2013 14:28:47 +0100
+Message-ID: <1803515.qlJg32fkH4@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <F7F628C32E67B04DAECC5CA53521253E5FAB15CE@sv-exmb01-lo1.promwad.corp>
+References: <F7F628C32E67B04DAECC5CA53521253E5FAB15CE@sv-exmb01-lo1.promwad.corp>
 MIME-Version: 1.0
-In-Reply-To: <20130129233842.GA8024@kahuna>
-References: <1359474865-15408-1-git-send-email-ruslan.bilovol@ti.com>
-	<20130129160243.GA3389@kahuna>
-	<CAB=otbSV6CH4WOrr577bHXFcjEVRGjZxatgy4CJ3cr0M0h4vfw@mail.gmail.com>
-	<20130129233842.GA8024@kahuna>
-Date: Wed, 30 Jan 2013 15:20:31 +0200
-Message-ID: <CAB=otbQLxb26srPckpts6om7Y34oDecogfM_V2+8Bcgixg=LEQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/2] ARM: update cpuinfo to print CPU model name
-From: Ruslan Bilovol <ruslan.bilovol@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
-        eduardo.valentin@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 1:38 AM, Nishanth Menon <nm@ti.com> wrote:
-> On 01:08-20130130, Ruslan Bilovol wrote:
->> Hi,
->>
->> On Tue, Jan 29, 2013 at 6:02 PM, Nishanth Menon <nm@ti.com> wrote:
->> >
->> > On 17:54-20130129, Ruslan Bilovol wrote:
->> > > Hi,
->> > >
->> > > The following patches update cpuinfo to print CPU
->> > > model name for ARM. First patch exactly makes needed
->> > > changes for ARM architecture.
->> > > Second patch adds this ability to OMAP4 SoCs.
->> > >
->> > > This adds a common approach to show SoC name.
->> > >
->> > > Looks like there were few attempts to do similar
->> > > changes to cpuinfo without any luck.
->> > >
->> > > So - comments are welcome
->> > >
->> > > Ruslan Bilovol (2):
->> > >   ARM: kernel: update cpuinfo to print CPU model name
->> > >   ARM: OMAP4: setup CPU model name during ID initialisation
->> >
->> > We had an discussion on similar lines but a generic suggestion:
->> > https://patchwork.kernel.org/patch/98720/
->> > SoCinfo framework which was supposed to introduce this
->> >
->> > Would'nt that be a better approach to take than an OMAP only solution?
->>
->> My goal is only to say what is the SoC model name in the /proc/cpuinfo
->> (And it is not an OMAP-only solution - it is common. Support for OMAP
->> is added in second patch)
->> This is the only type of information that we can apply for any SoC.
->> My point is - any SoC-specific information should go through some other
->> way - like SoCinfo framework mentioned by you.
->> And additional point - in cpuinfo we already have CPU name and Machine name.
->> The SoC name (that is something between these two things) looks also relevant
-> Looking at the sample output in patch #1/2
-> OMAP4470 ES1.0 HS
->
-> OMAP4470 is SoC name
-> ES1.0 is SoC revision
-> HS is SoC type
+On Wednesday 30 January 2013 12:37:25 Kurachkin Michail wrote:
+> Hi Greg,
+> 
+> I followed your recommendations and created a diff using Linux 3.8-rc5 sources. Please review it and give your comments.
 
-Will fix it in next patchseries. Let's leave only only SoC name
+Part #3
 
->
-> We even have SoC features (e.g. at boot NEON etc..)
->
-> Is the intent to put all this inside /proc/cpuinfo?? I bet every SoC has
-> it's own interesting data it'd like to have (like some of the info
-> populated by DT even). I am hardpressed to think this fits inside
-> /proc/cpuinfo. I might even suspect that the list of interesting
-> information might even vary per SoC.
++/*
++ * method "open" for character device
++ */
++static int slic_chr_open(struct inode *inode, struct file *file)
++{
++	struct slic_chr_dev *chr_dev;
++	struct si3226x_slic *slic;
++	struct si3226x_line *line;
++	struct tdm_device *tdm_dev;
++	struct tdm_voice_channel *ch;
++	int status = -ENXIO;
++
++	mutex_lock(&slic_chr_dev_lock);
++
++	list_for_each_entry(chr_dev, &slic_chr_dev_list, list) {
++		switch (chr_dev->type) {
++		case SLIC_CHR_DEV:
++			slic = dev_get_drvdata(chr_dev->dev);
++
++			if (slic->devt != inode->i_rdev)
++				continue;;
++
++			if (slic->file_opened) {
++				status = -EBUSY;
++				goto out;
++			}
++
++			slic->file_opened = 1;
++			status = 0;
++			break;
++
++		case LINE_CHR_DEV:
++			line = dev_get_drvdata(chr_dev->dev);
++			tdm_dev = line->tdm_dev;
++
++			if (line->devt != inode->i_rdev)
++				continue;
++
++			if (line->file_opened) {
++				status = -EBUSY;
++				goto out;
++			}
++
++			line->audio_buffer_size = tdm_get_voice_block_size(tdm_dev);
++
++			line->rx_buffer = kzalloc(line->audio_buffer_size, GFP_KERNEL);
++			if (!line->rx_buffer) {
++				status = -ENOMEM;
++				goto out;
++			}
++
++			line->tx_buffer = kzalloc(line->audio_buffer_size, GFP_KERNEL);
++			if (!line->tx_buffer) {
++				status = -ENOMEM;
 
-No, I don't think we need all these information in cpuinfo - just because
-it will be different for different SoC - so the file structure will be
-very different..
-Let's have only SoC name in cpuinfo.
+memory leak of line->rx_buffer
 
->
-> having machine name is something ARM specific? dumping it on my linux
-> machines (x86[1] and sparc[2]) dont seem to show that.
++				goto out;
++			}
++
++			/* store pointer to transmit wait_queue_head_t for use in poll() */
++			ch = tdm_dev->ch;
++			line->tx_wait_queue = &ch->tx_queue;
++			line->rx_wait_queue = &ch->rx_queue;
++			line->file_opened = 1;
++			status = 0;
++
++			break;
++		}
++
++		file->private_data = chr_dev;
++		status = 0;
++		goto out;
 
-Yes - it's ARM specific.
+a bit pointless
 
->
-> but in the interest of not breaking existing interfaces, new interfaces
-> should potentially belong elsewhere.. my 2 cents.
->
-> [1] http://pastebin.com/CF8HPDAC (Xubuntu 12.04 3.2.0-36)
-> [2] http://pastebin.com/qNwWHwiu (Debian 3.2.35-2)
++	}
++
++out:
++	mutex_unlock(&slic_chr_dev_lock);
++	return status;
++}
 
-Just look at changes in cpuinfo for ARM between kernels:
-3.4 kernel: http://pastebin.com/TfmE7b2b
-3.8-rc3: http://pastebin.com/zvvTGeNt
++/*
++ * method "ioctl" for character device
++ */
++static long
++slic_chr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	struct slic_chr_dev *chr_dev = file->private_data;
++	struct si3226x_slic *slic;
++	struct si3226x_line *line;
++	int status = -ENXIO;
++
++	if (_IOC_TYPE(cmd) != SI3226X_IOC_MAGIC)
++		return -ENOTTY;
++
++	mutex_lock(&slic_chr_dev_lock);
++
++	if (!file->private_data) {
++		status = -EPERM;
 
-The file structure has huge changes
+-EPERM?
 
-> --
-> Regards,
-> Nishanth Menon
++		goto out;
++	}
++
++	switch(chr_dev->type) {
++	case SLIC_CHR_DEV:
++		slic = dev_get_drvdata(chr_dev->dev);
++		if (!slic->file_opened) {
++			status = -ENODEV;
++			goto out;
++		}
++
++		status = slic_control(slic, cmd, arg);
++		break;
++
++	case LINE_CHR_DEV:
++		line = dev_get_drvdata(chr_dev->dev);
++		if (!line->file_opened) {
++			status = -ENODEV;
++			goto out;
++		}
++
++		status = line_control(line, cmd, arg);
++		break;
++	}
++
++out:
++	mutex_unlock(&slic_chr_dev_lock);
++	return status;
++}
+
+
++/*
++ * method "read" for character device
++ */
++static ssize_t
++slic_chr_read(struct file *file, char *buff, size_t count, loff_t *offp)
++{
++	struct slic_chr_dev *chr_dev = file->private_data;
++	struct si3226x_line *line;
++	struct tdm_device *tdm_dev;
++	int rc;
++
++	if (!file->private_data)
++		return -EPERM;
++
++	if(chr_dev->type != LINE_CHR_DEV)
++		return -EPERM;
++
++	mutex_lock(&slic_chr_dev_lock);
++
++	line = dev_get_drvdata(chr_dev->dev);
++	tdm_dev = line->tdm_dev;
++
++	if (count != line->audio_buffer_size) {
++		rc = -ENODATA;
++		goto out;
++	}
++
++	rc = tdm_recv(tdm_dev, line->rx_buffer);
++	if (rc) {
++		rc = -EFAULT;
+
+EFAULT is usually not what you return upon a read error.
+
++		goto out;
++	}
++
++	rc = copy_to_user(buff, line->rx_buffer, count);
++	if (rc) {
++		rc = -EFAULT;
++		goto out;
++	}
++
++	rc = count;
++out:
++	mutex_unlock(&slic_chr_dev_lock);
++	return rc;
++}
