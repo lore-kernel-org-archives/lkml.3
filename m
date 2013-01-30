@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab3A3Pmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 10:42:46 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38345 "EHLO e9.ny.us.ibm.com"
+	id S1754411Ab3A3PpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 10:45:08 -0500
+Received: from mga03.intel.com ([143.182.124.21]:55301 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752422Ab3A3Pmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 10:42:44 -0500
-Message-ID: <51093F43.2090503@linux.vnet.ibm.com>
-Date: Wed, 30 Jan 2013 09:41:55 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1752422Ab3A3PpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 10:45:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,569,1355126400"; 
+   d="scan'208";a="250324489"
+Date: Wed, 30 Jan 2013 16:45:00 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Hongbo Zhang <hongbo.zhang@linaro.org>
+Cc: linux@roeck-us.net, khali@linux-fr.org, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linus.walleij@linaro.org, lee.jones@linaro.org
+Subject: Re: [PATCH 1/2] ARM: ux500: rename ab8500 to abx500 for hwmon driver
+Message-ID: <20130130154500.GD1174@sortiz-mobl>
+References: <1359541288-6657-1-git-send-email-hongbo.zhang@linaro.org>
+ <1359541288-6657-2-git-send-email-hongbo.zhang@linaro.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zsmalloc: remove unused pool name
-References: <1359560212-8818-1-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1359560212-8818-1-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13013015-7182-0000-0000-000004CF0306
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359541288-6657-2-git-send-email-hongbo.zhang@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 09:36 AM, Seth Jennings wrote:> zs_create_pool()
-currently takes a name argument which is
-> never used in any useful way.
->
-> This patch removes it.
->
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Hi Hongbo,
 
-Crud, forgot the Acks...
+On Wed, Jan 30, 2013 at 06:21:27PM +0800, Hongbo Zhang wrote:
+> We are using a generic abx500 hwmon layer, so rename specific ab8500 to generic
+> abx500 for hwmon device and driver matching.
+> 
+> Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
+> ---
+>  drivers/mfd/ab8500-core.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+I'll take it although this patch subject should be prefixed with mfd: and not
+ARM:
 
-Acked-by: Nitin Gupta <ngupta@vflare.org>
-Acked-by: Rik van Riel <riel@redhat.com>
+Cheers,
+Samuel.
 
-Thanks,
-Seth
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
