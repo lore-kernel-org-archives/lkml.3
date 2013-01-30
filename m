@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab3A3Rq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 12:46:27 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:34661 "EHLO
+	id S1756368Ab3A3RqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 12:46:25 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:58635 "EHLO
 	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754841Ab3A3RqV (ORCPT
+	with ESMTP id S1754805Ab3A3RqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 12:46:21 -0500
+	Wed, 30 Jan 2013 12:46:20 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Ilya Zykov <ilya@ilyx.ru>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 0/4] Fix parallel master and slave pty opens
-Date: Wed, 30 Jan 2013 12:43:48 -0500
-Message-Id: <1359567832-25318-1-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 1/4] pty: Fix BUG()s when ptmx_open() errors out
+Date: Wed, 30 Jan 2013 12:43:49 -0500
+Message-Id: <1359567832-25318-2-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1359567832-25318-1-git-send-email-peter@hurleysoftware.com>
+References: <1359567832-25318-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 125194 peter@hurleysoftware.com
 X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
@@ -23,152 +25,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series fixes 2 BUGs and 2 causes of master pty open failure.
+If pmtx_open() fails to get a slave inode or fails the pty_open(),
+the tty is released as part of the error cleanup. As evidenced by the
+first BUG stacktrace below, pty_close() assumes that the linked pty has
+a valid, initialized inode* stored in driver_data.
 
-Much of this could have been avoided by not calling the tty driver
-close() routine if the open() was unsuccessful. Unfortunately, that
-choice appears cast in stone, as many drivers depend on this behavior
-for cleanup.
+Also, as evidenced by the second BUG stacktrace below, pty_unix98_shutdown()
+assumes that the master pty's driver_data has been initialized.
 
-Ilya Zykov's latest test jig "stress_test_tty" (included below) passes
-the parallel open test after applying these patches.
-  peter@kvm:~/src/test$ ./stress_test_tty
-  Thread open has been created.
-  Parent normal exit
-   Normal parent exit 0.
+1) Fix the invalid assumption in pty_close().
+2) Initialize driver_data immediately so proper devpts fs cleanup occurs.
 
-(NB: I did add a minor diagnostic to the test jig in pty_exit() so
-it would print errno on error exit).
+Fixes this BUG:
 
-Peter Hurley (4):
-  pty: Fix BUG()s when ptmx_open() errors out
-  pty: Ignore slave pty close() if never successfully opened
-  tty: Document required behavior of tty driver close()
-  pty: Ignore slave open count for master pty open
+[  815.868844] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+[  815.869018] IP: [<ffffffff81207bcc>] devpts_pty_kill+0x1c/0xa0
+[  815.869190] PGD 7c775067 PUD 79deb067 PMD 0
+[  815.869315] Oops: 0000 [#1] PREEMPT SMP
+[  815.869443] Modules linked in: kvm_intel kvm snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi microcode snd_rawmidi psmouse serio_raw snd_seq_midi_event snd_seq snd_timer$
+[  815.870025] CPU 0
+[  815.870143] Pid: 27819, comm: stress_test_tty Tainted: G        W    3.8.0-next-20130125+ttypatch-2-xeon #2 Bochs Bochs
+[  815.870386] RIP: 0010:[<ffffffff81207bcc>]  [<ffffffff81207bcc>] devpts_pty_kill+0x1c/0xa0
+[  815.870540] RSP: 0018:ffff88007d3e1ac8  EFLAGS: 00010282
+[  815.870661] RAX: ffff880079c20800 RBX: 0000000000000000 RCX: 0000000000000000
+[  815.870804] RDX: ffff880079c209a8 RSI: 0000000000000286 RDI: 0000000000000000
+[  815.870933] RBP: ffff88007d3e1ae8 R08: 0000000000000000 R09: 0000000000000000
+[  815.871078] R10: 0000000000000000 R11: 0000000000000001 R12: ffff88007bfb7e00
+[  815.871209] R13: 0000000000000005 R14: ffff880079c20c00 R15: ffff880079c20c00
+[  815.871343] FS:  00007f2e86206700(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+[  815.871495] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  815.871617] CR2: 0000000000000028 CR3: 000000007ae56000 CR4: 00000000000006f0
+[  815.871752] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  815.871902] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  815.872012] Process stress_test_tty (pid: 27819, threadinfo ffff88007d3e0000, task ffff88007c874530)
+[  815.872012] Stack:
+[  815.872012]  ffff88007bfb7e00 ffff880079c20c00 ffff88007bfb7e00 0000000000000005
+[  815.872012]  ffff88007d3e1b08 ffffffff81417be7 ffff88007caa9bd8 ffff880079c20800
+[  815.872012]  ffff88007d3e1bc8 ffffffff8140e5f8 0000000000000000 0000000000000000
+[  815.872012] Call Trace:
+[  815.872012]  [<ffffffff81417be7>] pty_close+0x157/0x170
+[  815.872012]  [<ffffffff8140e5f8>] tty_release+0x138/0x580
+[  815.872012]  [<ffffffff816d29f3>] ? _raw_spin_lock+0x23/0x30
+[  815.872012]  [<ffffffff816d267a>] ? _raw_spin_unlock+0x1a/0x40
+[  815.872012]  [<ffffffff816d0178>] ? __mutex_unlock_slowpath+0x48/0x60
+[  815.872012]  [<ffffffff81417dff>] ptmx_open+0x11f/0x180
+[  815.872012]  [<ffffffff8119394b>] chrdev_open+0x9b/0x1c0
+[  815.872012]  [<ffffffff8118d643>] do_dentry_open+0x203/0x290
+[  815.872012]  [<ffffffff811938b0>] ? cdev_put+0x30/0x30
+[  815.872012]  [<ffffffff8118d705>] finish_open+0x35/0x50
+[  815.872012]  [<ffffffff8119dcce>] do_last+0x6fe/0xe90
+[  815.872012]  [<ffffffff8119a7af>] ? link_path_walk+0x7f/0x880
+[  815.872012]  [<ffffffff810909d5>] ? cpuacct_charge+0x75/0x80
+[  815.872012]  [<ffffffff8119e51c>] path_openat+0xbc/0x4e0
+[  815.872012]  [<ffffffff816d0fd0>] ? __schedule+0x400/0x7f0
+[  815.872012]  [<ffffffff8140e956>] ? tty_release+0x496/0x580
+[  815.872012]  [<ffffffff8119ec11>] do_filp_open+0x41/0xa0
+[  815.872012]  [<ffffffff816d267a>] ? _raw_spin_unlock+0x1a/0x40
+[  815.872012]  [<ffffffff811abe39>] ? __alloc_fd+0xe9/0x140
+[  815.872012]  [<ffffffff8118ea44>] do_sys_open+0xf4/0x1e0
+[  815.872012]  [<ffffffff8118eb51>] sys_open+0x21/0x30
+[  815.872012]  [<ffffffff816da499>] system_call_fastpath+0x16/0x1b
+[  815.872012] Code: 0f 1f 80 00 00 00 00 45 31 e4 eb d7 0f 0b 90 0f 1f 44 00 00 55 48 89 e5 48 83 ec 20 48 89 5d e8 48 89 fb 4c 89 65 f0 4c 89 6d f8 <48> 8b 47 28 48 81 78 58 d1 1c 0$
+[  815.872012] RIP  [<ffffffff81207bcc>] devpts_pty_kill+0x1c/0xa0
+[  815.872012]  RSP <ffff88007d3e1ac8>
+[  815.872012] CR2: 0000000000000028
+[  815.897036] ---[ end trace eadf50b7f34e47d5 ]---
 
- drivers/tty/pty.c          | 15 +++++++++++----
- include/linux/tty_driver.h |  1 +
- 2 files changed, 12 insertions(+), 4 deletions(-)
+Fixes this BUG also:
 
-/*
- *  stress_test_tty.c
- *
- *  Created on: Dec, 2012
- *  Copyright (C) 2012  Ilya Zykov
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+[  608.366836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+[  608.366948] IP: [<ffffffff812078d8>] devpts_kill_index+0x18/0x70
+[  608.367050] PGD 7c75b067 PUD 7b919067 PMD 0
+[  608.367135] Oops: 0000 [#1] PREEMPT SMP
+[  608.367201] Modules linked in: kvm_intel kvm snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event microcode snd_seq psmouse snd_timer snd_seq_device serio_raw snd mac_hid soundcore snd_page_alloc rfcomm virtio_balloon parport_pc bnep bluetooth ppdev i2c_piix4 lp parport floppy
+[  608.367617] CPU 2
+[  608.367669] Pid: 1918, comm: stress_test_tty Tainted: G        W    3.8.0-next-20130125+ttypatch-2-xeon #2 Bochs Bochs
+[  608.367796] RIP: 0010:[<ffffffff812078d8>]  [<ffffffff812078d8>] devpts_kill_index+0x18/0x70
+[  608.367885] RSP: 0018:ffff88007ae41a88  EFLAGS: 00010286
+[  608.367951] RAX: ffffffff81417e80 RBX: ffff880036472400 RCX: 0000000180400028
+[  608.368010] RDX: ffff880036470004 RSI: 0000000000000004 RDI: 0000000000000000
+[  608.368010] RBP: ffff88007ae41a98 R08: 0000000000000000 R09: 0000000000000001
+[  608.368010] R10: ffffea0001f22e40 R11: ffffffff814151d5 R12: 0000000000000004
+[  608.368010] R13: ffff880036470000 R14: 0000000000000004 R15: ffff880036472400
+[  608.368010] FS:  00007ff7a5268700(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
+[  608.368010] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  608.368010] CR2: 0000000000000028 CR3: 000000007a0fd000 CR4: 00000000000006e0
+[  608.368010] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  608.368010] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  608.368010] Process stress_test_tty (pid: 1918, threadinfo ffff88007ae40000, task ffff88003688dc40)
+[  608.368010] Stack:
+[  608.368010]  ffff880036472400 0000000000000001 ffff88007ae41aa8 ffffffff81417e98
+[  608.368010]  ffff88007ae41ac8 ffffffff8140c42b ffff88007ac73100 ffff88007ac73100
+[  608.368010]  ffff88007ae41b98 ffffffff8140ead5 ffff88007ae41b38 ffff88007ca40e40
+[  608.368010] Call Trace:
+[  608.368010]  [<ffffffff81417e98>] pty_unix98_shutdown+0x18/0x20
+[  608.368010]  [<ffffffff8140c42b>] release_tty+0x3b/0xe0
+[  608.368010]  [<ffffffff8140ead5>] __tty_release+0x575/0x5d0
+[  608.368010]  [<ffffffff816d2c63>] ? _raw_spin_lock+0x23/0x30
+[  608.368010]  [<ffffffff816d28ea>] ? _raw_spin_unlock+0x1a/0x40
+[  608.368010]  [<ffffffff816d03e8>] ? __mutex_unlock_slowpath+0x48/0x60
+[  608.368010]  [<ffffffff8140ef79>] tty_open+0x449/0x5f0
+[  608.368010]  [<ffffffff8119394b>] chrdev_open+0x9b/0x1c0
+[  608.368010]  [<ffffffff8118d643>] do_dentry_open+0x203/0x290
+[  608.368010]  [<ffffffff811938b0>] ? cdev_put+0x30/0x30
+[  608.368010]  [<ffffffff8118d705>] finish_open+0x35/0x50
+[  608.368010]  [<ffffffff8119dcce>] do_last+0x6fe/0xe90
+[  608.368010]  [<ffffffff8119a7af>] ? link_path_walk+0x7f/0x880
+[  608.368010]  [<ffffffff8119e51c>] path_openat+0xbc/0x4e0
+[  608.368010]  [<ffffffff8119ec11>] do_filp_open+0x41/0xa0
+[  608.368010]  [<ffffffff816d28ea>] ? _raw_spin_unlock+0x1a/0x40
+[  608.368010]  [<ffffffff811abe39>] ? __alloc_fd+0xe9/0x140
+[  608.368010]  [<ffffffff8118ea44>] do_sys_open+0xf4/0x1e0
+[  608.368010]  [<ffffffff816d2c63>] ? _raw_spin_lock+0x23/0x30
+[  608.368010]  [<ffffffff8118eb51>] sys_open+0x21/0x30
+[  608.368010]  [<ffffffff816da719>] system_call_fastpath+0x16/0x1b
+[  608.368010] Code: ec 48 83 c4 10 5b 41 5c 5d c3 66 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 89 e5 48 83 ec 10 4c 89 65 f8 41 89 f4 48 89 5d f0 <48> 8b 47 28 48 81 78 58 d1 1c 00 00 74 0b 48 8b 05 4b 66 cf 00
+[  608.368010] RIP  [<ffffffff812078d8>] devpts_kill_index+0x18/0x70
+[  608.368010]  RSP <ffff88007ae41a88>
+[  608.368010] CR2: 0000000000000028
+[  608.394153] ---[ end trace afe83b0fb5fbda93 ]---
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <signal.h>
-#include <errno.h>
+Reported-by: Ilya Zykov <ilya@ilyx.ru>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/pty.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-#define BUF_SIZE 2
-#define ERROR_EXIT_CODE 1
-#define parent child_id
-
-static int
-mfd=-1, sfd=-1, parent=1;
-
-static pthread_t
-pth_id;
-
-static char
-pty_name[24], buf[]={ '1', '\n' };
-
-
-static void
-pty_exit(int ret, char * exit_message){
-	int err = errno;
-        if (sfd >= 0) close(sfd);
-        if (mfd >= 0) close(mfd);
-        printf("%s %s %s exit %d. \n",exit_message?exit_message:"",
-                ret?"Error":"Normal", parent?"parent":"child", ret?err:ret);
-        exit(ret);
-}
-
-static void
-pty_init(void){
-        int ptn;
-        if( (mfd=open("/dev/ptmx", O_RDWR )) < 0 )
-                pty_exit(ERROR_EXIT_CODE,"Couldn't open /dev/ptmx. \n");
-        if (ioctl(mfd, TIOCGPTN, &ptn) < 0 )
-                pty_exit(ERROR_EXIT_CODE,"Couldn't get pty number. \n");
-        snprintf(pty_name, sizeof(pty_name), "/dev/pts/%d", ptn);
-        //printf("Slave pty name = %s.\n",pty_name);
-        ptn=0;
-        if (ioctl(mfd, TIOCSPTLCK, &ptn) < 0 )
-                pty_exit(ERROR_EXIT_CODE,"Couldn't unlock pty slave. \n");
-        if ( (sfd=open(pty_name, O_RDWR )) < 0 )
-                pty_exit(ERROR_EXIT_CODE, "Couldn't open pty slave. \n");
-}
-
-static void *
-pty_thread_open(void * arg) {
-        static char ret[]="Thread open has been created.\n";
-        printf(ret);
-        do {
-                close(open(pty_name, O_RDWR ));
-        } while(1);
-        return ret;
-}
-
-static void *
-pty_thread_read(void * arg) {
-        static char ret[]="Thread read has been created.\n";
-        printf(ret);
-        do {
-                read(sfd, buf, BUF_SIZE);
-        } while(1);
-        return ret;
-}
-
-static void *
-pty_thread_write(void * arg) {
-        static char ret[]="Thread write has been created.\n";
-        printf(ret);
-        do {
-                write(mfd, buf, BUF_SIZE);
-        } while(1);
-        return ret;
-}
-int main(int argc,char *argv[]) {
-        pty_init();
-        child_id=fork();
-        if(parent) {
-                sleep(100);
-                kill(child_id, SIGINT);
-                pty_exit(0,"Parent normal exit\n");
-        }
-        pthread_create(&pth_id, NULL, &pty_thread_open, 0);
-/*	For WARNINGS.
-        pthread_create(&pth_id, NULL, &pty_thread_write, 0);
-        pthread_create(&pth_id, NULL, &pty_thread_read, 0);
-*/
-        do {
-                close(sfd);
-                close(mfd);
-                pty_init();
-        } while(1);
-        return 0;
-}
-
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index 4f57fe4..b4e5769 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -55,7 +55,8 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
+ #ifdef CONFIG_UNIX98_PTYS
+ 		if (tty->driver == ptm_driver) {
+ 			mutex_lock(&devpts_mutex);
+-			devpts_pty_kill(tty->link->driver_data);
++			if (tty->link->driver_data)
++				devpts_pty_kill(tty->link->driver_data);
+ 			mutex_unlock(&devpts_mutex);
+ 		}
+ #endif
+@@ -704,6 +705,7 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+ 	mutex_unlock(&tty_mutex);
+ 
+ 	set_bit(TTY_PTY_LOCK, &tty->flags); /* LOCK THE SLAVE */
++	tty->driver_data = inode;
+ 
+ 	tty_add_file(tty, filp);
+ 
+@@ -714,14 +716,13 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+ 		retval = PTR_ERR(slave_inode);
+ 		goto err_release;
+ 	}
++	tty->link->driver_data = slave_inode;
+ 
+ 	retval = ptm_driver->ops->open(tty, filp);
+ 	if (retval)
+ 		goto err_release;
+ 
+ 	tty_unlock(tty);
+-	tty->driver_data = inode;
+-	tty->link->driver_data = slave_inode;
+ 	return 0;
+ err_release:
+ 	tty_unlock(tty);
 -- 
 1.8.1.1
 
