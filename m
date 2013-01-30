@@ -1,149 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab3A3UcS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 15:32:18 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:38505 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab3A3UcP (ORCPT
+	id S1756914Ab3A3Udf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:33:35 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:40067 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755865Ab3A3Udc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 15:32:15 -0500
-Date: Wed, 30 Jan 2013 12:32:14 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: Rename page struct field helpers
-In-Reply-To: <20130130115833.GB2964@suse.de>
-Message-ID: <alpine.LNX.2.00.1301301226570.22527@eggly.anvils>
-References: <1358874762-19717-1-git-send-email-mgorman@suse.de> <1358874762-19717-6-git-send-email-mgorman@suse.de> <20130122144659.d512e05c.akpm@linux-foundation.org> <20130123142507.GI13304@suse.de> <20130123135612.4b383fa7.akpm@linux-foundation.org>
- <20130124105544.GO13304@suse.de> <alpine.LNX.2.00.1301282014560.27042@eggly.anvils> <20130130115833.GB2964@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 30 Jan 2013 15:33:32 -0500
+Message-ID: <51098397.5040206@suse.cz>
+Date: Wed, 30 Jan 2013 21:33:27 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+References: <20130129202848.GE25415@pd.tnic> <CAErSpo4v473sXvmv3gqkftkiFZtz+gYgd1yzWae=nLJjwJPBug@mail.gmail.com> <20130130034204.GB30965@pd.tnic> <CAErSpo47BvEsDC1o_kYDeyd6j3VUoWHwSMYPyLpZYB1H-sL=7A@mail.gmail.com> <20130130174402.GB23980@pd.tnic> <510977FB.3030707@suse.cz> <20130130200041.GD23895@pd.tnic>
+In-Reply-To: <20130130200041.GD23895@pd.tnic>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/mixed;
+ boundary="------------070205020708010107030003"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jan 2013, Mel Gorman wrote:
-> mm: Rename page_xchg_last_nid
-> 
-> Andrew found the functions names page_xchg_last_nid(), page_last_nid()
-> and reset_page_last_nid() to be inconsistent and were renamed
-> to page_nid_xchg_last(), page_nid_last() and page_nid_reset_last().
-> Hugh found this unhelpful and suggested a rename of page_xchg_last_nid to
-> keep with a verb_struct_field naming pattern.
-> 
-> This patch replaces mm-rename-page-struct-field-helpers.patch.
-> 
-> Suggested-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+This is a multi-part message in MIME format.
+--------------070205020708010107030003
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-FWIW looks just right to me (I don't think I deserve a Suggested-by
-and an Acked-by), thanks.  But we may get a Rejected-by from Andrew.
+On 01/30/2013 09:00 PM, Borislav Petkov wrote:
+> On Wed, Jan 30, 2013 at 08:43:55PM +0100, Jiri Slaby wrote:
+>> On 01/30/2013 06:44 PM, Borislav Petkov wrote:
+>>> On Wed, Jan 30, 2013 at 10:27:42AM -0700, Bjorn Helgaas wrote:
+>>>> You're right, I don't think we're quite ready to merge those patches.
+>>>> But if your NMI is easy to reproduce, it might be worth removing
+>>>> e1000e altogether to see if it still happens.
+>>>
+>>> That's the problem - I've seen it only once so far. I'll watch out for
+>>> it and do the above when I find a reliable way of reproducing it. Will
+>>> keep you posted.
+>>
+>> It happens here too. Dunno what is the root cause. I *think* that it
+>> never happened unless I used ethernet. Other than that I see no pattern.
+>>
+>> Attaching -C 20 grep of messages over the last half year if there is
+>> something that may help somehow.
+> 
+> Cool, so it happens once a day, not every day, everytime during resume,
+> and with e1000e. Can you try Bjorn's suggestion to remove e1000e
+> altogether and see if it still happens?
 
-> ---
->  include/linux/mm.h |    6 +++---
->  mm/huge_memory.c   |    2 +-
->  mm/mempolicy.c     |    2 +-
->  mm/migrate.c       |    4 ++--
->  mm/mmzone.c        |    2 +-
->  5 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 6e4468f..6356db0 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -657,7 +657,7 @@ static inline int page_to_nid(const struct page *page)
->  
->  #ifdef CONFIG_NUMA_BALANCING
->  #ifdef LAST_NID_NOT_IN_PAGE_FLAGS
-> -static inline int page_xchg_last_nid(struct page *page, int nid)
-> +static inline int xchg_page_last_nid(struct page *page, int nid)
->  {
->  	return xchg(&page->_last_nid, nid);
->  }
-> @@ -676,7 +676,7 @@ static inline int page_last_nid(struct page *page)
->  	return (page->flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
->  }
->  
-> -extern int page_xchg_last_nid(struct page *page, int nid);
-> +extern int xchg_page_last_nid(struct page *page, int nid);
->  
->  static inline void reset_page_last_nid(struct page *page)
->  {
-> @@ -687,7 +687,7 @@ static inline void reset_page_last_nid(struct page *page)
->  }
->  #endif /* LAST_NID_NOT_IN_PAGE_FLAGS */
->  #else
-> -static inline int page_xchg_last_nid(struct page *page, int nid)
-> +static inline int xchg_page_last_nid(struct page *page, int nid)
->  {
->  	return page_to_nid(page);
->  }
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 648c102..ed97040 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1642,7 +1642,7 @@ static void __split_huge_page_refcount(struct page *page)
->  		page_tail->mapping = page->mapping;
->  
->  		page_tail->index = page->index + i;
-> -		page_xchg_last_nid(page_tail, page_last_nid(page));
-> +		xchg_page_last_nid(page_tail, page_last_nid(page));
->  
->  		BUG_ON(!PageAnon(page_tail));
->  		BUG_ON(!PageUptodate(page_tail));
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index e2df1c1..61226db 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -2308,7 +2308,7 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
->  		 * it less likely we act on an unlikely task<->page
->  		 * relation.
->  		 */
-> -		last_nid = page_xchg_last_nid(page, polnid);
-> +		last_nid = xchg_page_last_nid(page, polnid);
->  		if (last_nid != polnid)
->  			goto out;
->  	}
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 8ef1cbf..4d9b724 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -1495,7 +1495,7 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
->  					  __GFP_NOWARN) &
->  					 ~GFP_IOFS, 0);
->  	if (newpage)
-> -		page_xchg_last_nid(newpage, page_last_nid(page));
-> +		xchg_page_last_nid(newpage, page_last_nid(page));
->  
->  	return newpage;
->  }
-> @@ -1679,7 +1679,7 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
->  	if (!new_page)
->  		goto out_fail;
->  
-> -	page_xchg_last_nid(new_page, page_last_nid(page));
-> +	xchg_page_last_nid(new_page, page_last_nid(page));
->  
->  	isolated = numamigrate_isolate_page(pgdat, page);
->  	if (!isolated) {
-> diff --git a/mm/mmzone.c b/mm/mmzone.c
-> index bce796e..de2a951 100644
-> --- a/mm/mmzone.c
-> +++ b/mm/mmzone.c
-> @@ -98,7 +98,7 @@ void lruvec_init(struct lruvec *lruvec)
->  }
->  
->  #if defined(CONFIG_NUMA_BALANCING) && !defined(LAST_NID_NOT_IN_PAGE_FLAGS)
-> -int page_xchg_last_nid(struct page *page, int nid)
-> +int xchg_page_last_nid(struct page *page, int nid)
->  {
->  	unsigned long old_flags, flags;
->  	int last_nid;
-> 
+No, e1000e is not to blame at all. I moved e1000e out of /lib/modules
+and it still happens.
+
+What is cool is that I have steps to reproduce:
+1) boot
+2) run the attached script (turn on all possible power savings -- in
+fact everything what powertop suggests)
+3) suspend to _disk_ (mem is not enough, BIOS apparently has to
+interfere here)
+4) resume from disk
+5) boom
+
+I tried to remove also wireless drivers, no change.
+
+-- 
+js
+suse labs
+
+--------------070205020708010107030003
+Content-Type: text/plain; charset=UTF-8;
+ name="power"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="power"
+
+IyEvYmluL2Jhc2gKCkRJUlRZX1dCPTE1MDAKR09WRVJOPWNvbnNlcnZhdGl2ZQpQT1dFUk1P
+REU9YXV0bwpOTUk9MApMSU5LX1BPVz1taW5fcG93ZXIKUE9XX1NBVkU9MQpQT1dfU0FWRV9U
+WFQ9b24KCmlmIFsgIjAkMSIgLWVxIDEgXTsgdGhlbgojCURJUlRZX1dCPTE1MDAKCUdPVkVS
+Tj1wZXJmb3JtYW5jZQoJUE9XRVJNT0RFPW9uCglOTUk9MQoJTElOS19QT1c9bWF4X3BlcmZv
+cm1hbmNlCglQT1dfU0FWRT0wCglQT1dfU0FWRV9UWFQ9b2ZmCmZpCgovYmluL2VjaG8gLW4g
+IiRESVJUWV9XQiIgPiAvcHJvYy9zeXMvdm0vZGlydHlfd3JpdGViYWNrX2NlbnRpc2Vjcwov
+YmluL2VjaG8gLW4gIiROTUkiID4gL3Byb2Mvc3lzL2tlcm5lbC9ubWlfd2F0Y2hkb2cKL2Jp
+bi9lY2hvIC1uICIkUE9XX1NBVkUiID4gL3N5cy9tb2R1bGUvc25kX2hkYV9pbnRlbC9wYXJh
+bWV0ZXJzL3Bvd2VyX3NhdmUKaXcgZGV2IHdsYW4wIHNldCBwb3dlcl9zYXZlICIkUE9XX1NB
+VkVfVFhUIgpldGh0b29sIC1zIGV0aDAgd29sIGQKCmZvciBCVVMgaW4gdXNiIHBjaTsgZG8g
+Cglmb3IgREVWIGluIC9zeXMvYnVzLyRCVVMvZGV2aWNlcy8qL3Bvd2VyL2NvbnRyb2w7IGRv
+CgkJL2Jpbi9lY2hvIC1uICIkUE9XRVJNT0RFIiA+ICRERVYKCWRvbmUKZG9uZQoKZm9yIENQ
+VSBpbiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS8qL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5v
+cjsgZG8KCS9iaW4vZWNobyAtbiAiJEdPVkVSTiIgPiAkQ1BVCmRvbmUKCmZvciBIT1NUIGlu
+IC9zeXMvY2xhc3Mvc2NzaV9ob3N0L2hvc3QqL2xpbmtfcG93ZXJfbWFuYWdlbWVudF9wb2xp
+Y3k7IGRvCgkvYmluL2VjaG8gLW4gIiRMSU5LX1BPVyIgPiAkSE9TVApkb25lCg==
+--------------070205020708010107030003--
