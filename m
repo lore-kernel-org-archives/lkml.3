@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab3A3II4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:08:56 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5649 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3A3IIx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:08:53 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 30 Jan 2013 00:08:24 -0800
-Message-ID: <5108D505.10205@nvidia.com>
-Date: Wed, 30 Jan 2013 16:08:37 +0800
-From: Mark Zhang <markz@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753532Ab3A3IJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:09:07 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44460 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751945Ab3A3IJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:09:00 -0500
+Date: Tue, 29 Jan 2013 23:36:54 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ilya Zykov <ilya@ilyx.ru>
+Cc: Karthik Manamcheri <Karthik.Manamcheri@ni.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew McGregor <andrew.mcgregor@alliedtelesis.co.nz>
+Subject: Re: [PATCH] n_tty: Unthrottle tty when flushing read buffer
+Message-ID: <20130130043654.GA30002@kroah.com>
+References: <1358980578-8811-1-git-send-email-Karthik.Manamcheri@ni.com>
+ <5106F8F6.80101@ilyx.ru>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Alex Courbot <acourbot@nvidia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [RFC 1/4] video: panel: add CLAA101WA01A panel support
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <1359514939-15653-2-git-send-email-acourbot@nvidia.com> <5108C9C1.1090707@gmail.com> <5108CB4F.7000103@nvidia.com> <20130130074852.GB17547@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130130074852.GB17547@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5106F8F6.80101@ilyx.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 03:48 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
+On Tue, Jan 29, 2013 at 02:17:26AM +0400, Ilya Zykov wrote:
+> On 24.01.2013 2:36, Karthik Manamcheri wrote:
+> > When the tty input buffer is full and thereby throttled,
+> > flushing/resetting the read buffer should unthrottle to allow more
+> > data to be received.
+> > 
+> > Signed-off-by: Karthik Manamcheri <Karthik.Manamcheri@ni.com>
+> > ---
+> >  drivers/tty/n_tty.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> > index 19083efa2314660b25e0fb5bc793af6fb7e9af57..d5cea3bb01eaeec61b577de6c58a8000412c0c37 100644
+> > --- a/drivers/tty/n_tty.c
+> > +++ b/drivers/tty/n_tty.c
+> > @@ -229,6 +229,8 @@ static void reset_buffer_flags(struct tty_struct *tty)
+> >  	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
+> >  	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
+> >  	n_tty_set_room(tty);
+> > +
+> > +	check_unthrottle(tty);
+> >  }
+> >  
+> >  /**
+> > 
 > 
-> On Wed, Jan 30, 2013 at 04:27:11PM +0900, Alex Courbot wrote:
->> On 01/30/2013 04:20 PM, Mark Zhang wrote:
-> [...]
->>>> +static int panel_claa101_get_modes(struct display_entity *entity,
->>>> +				   const struct videomode **modes)
->>>> +{
->>>> +	/* TODO get modes from EDID? */
->>>
->>> Why not move the "nvidia,ddc" from encoder's DT to panel's DT? In that
->>> case, you can get EDID here. I know drm has some helpers to fetch EDID
->>> but I recall there are some other functions which has no drm
->>> dependencies which may be suitable for you.
->>
->> I explained this in the cover letter - I'm not sure we want to have
->> a dependency on DRM here, as CDF entities could also be connected to
->> other subsystems. That's something we need to figure out. But yes,
->> ultimately this should be the place where EDID is retrieved.
+> It's revert - tty: fix "IRQ45: nobody cared".
+> commit 7b292b4bf9a9d6098440d85616d6ca4c608b8304
 > 
-> I already said this in another thread. I think we should only be using
-> the CDF .get_modes() for static modes that cannot be obtained from EDID.
-> Thinking about it, I'm not quite sure why EDID would be needed for this
-> kind of panel anyway. Ventana probably has it because it keeps us from
-> having to hardcode things, but if we provide drivers for the panel
-> anyway, we can just as well hard-code the supported mode(s) in those
-> drivers.
+> Please, read these for this subject:
+> https://lkml.org/lkml/2012/11/27/440
+> https://lkml.org/lkml/2012/11/21/568
+> 
+> https://lkml.org/lkml/2012/11/22/686
+> 
+> It's already fixed in the:
+> commit a1bf9584429d61b7096f93ae09325e1ba538e9e8
+> tty: Add driver unthrottle in ioctl(...,TCFLSH,..).
 
-I don't think so. I think it's better that we only have one entry for
-getting video modes. Since CDF already provides ".get_modes" for us, we
-can rely on that. And according to my understanding, get video modes in
-panel driver makes sense than getting it in crtc.
+Sorry about that, I'll go revert this now, my fault.
 
-In this way, panel driver may get video modes from EDID or from
-hard-coded display timing infos, but other modules such as crtc don't
-need to care about that.
-
-Mark
-> 
-> What I'm trying to say is that the existence of EDID is board-specific,
-> so boards other than Ventana may not have an EDID EEPROM. Or perhaps
-> this particular display has the EEPROM integrated? Even in that case,
-> some boards may use this panel and simply not connect the EEPROM to an
-> I2C controller.
-> 
-> Thierry
-> 
-> * Unknown Key
-> * 0x7F3EB3A1
-> 
+greg k-h
