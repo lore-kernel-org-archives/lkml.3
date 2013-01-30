@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab3A3Uul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 15:50:41 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:43147 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755169Ab3A3Uuj (ORCPT
+	id S1755555Ab3A3U6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:58:51 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:57516 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab3A3U6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 15:50:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130130204917.GL17632@redhat.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
-	<20130130171102.253395279@napanee.usersys.redhat.com>
-	<20130130204730.GF8507@mail.hallyn.com>
-	<20130130204917.GL17632@redhat.com>
-Date: Wed, 30 Jan 2013 12:50:38 -0800
-X-Google-Sender-Auth: LUfuZyRxsPot5R17lYTKJYJ2fLM
-Message-ID: <CAOS58YOHkK9xTBPFAXKksrwP7ZxQc_WuGOp39D94Z1pBsFHfjw@mail.gmail.com>
-Subject: Re: [PATCH v4 8/9] devcg: refactor dev_exception_clean()
-From: Tejun Heo <tj@kernel.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 30 Jan 2013 15:58:48 -0500
+Date: Wed, 30 Jan 2013 21:58:47 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 07/12] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
+Message-ID: <20130130205847.GG30577@one.firstfloor.org>
+References: <1359151245-13179-1-git-send-email-andi@firstfloor.org> <1359151245-13179-8-git-send-email-andi@firstfloor.org> <CABPqkBTM8w_RVrQNiyhBprMBjL5a0Q7Y9KQsKP3Ld62EZPSufQ@mail.gmail.com> <20130128231659.GW30577@one.firstfloor.org> <CABPqkBS=1gQCiWRQYJ8Y0QqFLvmkf0NiRivK-xpFmqwpXwyByA@mail.gmail.com> <20130129010029.GY30577@one.firstfloor.org> <CABPqkBTUfwTcG5U_LMAz6MKDHiCbCkTs5yzqYiRBqcWkJDzDew@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTUfwTcG5U_LMAz6MKDHiCbCkTs5yzqYiRBqcWkJDzDew@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> That's a very low sampling rate, yet I think it would be rejected by your code.
 
-On Wed, Jan 30, 2013 at 12:49 PM, Aristeu Rozanski > that's not
-intentional. thanks for catching this
->
-> Tejun, you want me to resubmit the whole series or just the next patch
-> (where I was supposed to move that chunk)?
+You mean allowed? 
 
-If it doesn't affect the next patch, just posting an updated version
-of this patch should be enough, I think. Which tree are these patches
-planned to go through?
+> But if I come in with frequency 0x7fffffff+1, then that's a very high
+> frequency, thus
+> small period, I would pass the test. So I think you need to reinforce the test
+> for freq=1.
 
-Thanks.
+I'm aware that there are some configs that can slip through, but there's
+no other choice if we still allow guest perf stat. The cutoff is
+somewhat arbitary.
 
+It's not a correctness problem, just things can be unexpectedly slower
+and you may see unexpected NMI messages.
+
+-Andi
 -- 
-tejun
+ak@linux.intel.com -- Speaking for myself only.
