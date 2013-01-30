@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3A3J1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 04:27:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37752 "EHLO mx2.suse.de"
+	id S1754350Ab3A3J1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 04:27:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37741 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753431Ab3A3J00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 04:26:26 -0500
+	id S1751856Ab3A3J0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 04:26:24 -0500
 From: Hannes Reinecke <hare@suse.de>
 To: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Cc: linux-kernel@vger.kernel.org, Stefan Weinhuber <wein@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 9/9] dasd: Fail all requests when DASD_FLAG_ABORTIO is set
-Date: Wed, 30 Jan 2013 10:26:19 +0100
-Message-Id: <1359537979-39483-10-git-send-email-hare@suse.de>
+Subject: [PATCH 2/9] dasd: make number of retries configurable
+Date: Wed, 30 Jan 2013 10:26:12 +0100
+Message-Id: <1359537979-39483-3-git-send-email-hare@suse.de>
 X-Mailer: git-send-email 1.7.4.2
 In-Reply-To: <1359537979-39483-1-git-send-email-hare@suse.de>
 References: <1359537979-39483-1-git-send-email-hare@suse.de>
@@ -21,176 +21,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whenever a DASD request encounters a timeout we might
-need to abort all outstanding requests on this or
-even other devices.
-
-This is especially useful if one wants to fail all
-devices on one side of a RAID10 configuration, even
-though only one device exhibited an error.
-
-To handle this I've introduced a new device flag
-DASD_FLAG_ABORTIO.
-This flag is evaluated in __dasd_process_request_queue()
-and will invoke blk_abort_request() for all
-outstanding requests with DASD_CQR_FLAGS_FAILFAST set.
-This will cause any of these requests to be aborted
-immediately if the blk_timeout function is activated.
-
-The DASD_FLAG_ABORTIO is also evaluated in
-__dasd_process_request_queue to abort all
-new request which would have the
-DASD_CQR_FLAGS_FAILFAST bit set.
-
-The flag can be set with the new ioctls 'BIODASDABORTIO'
-and removed with 'BIODASDALLOWIO'.
+Instead of having the number of retries hard-coded in the various
+functions we should be using a default retry value, which can
+be modified via sysfs.
 
 Signed-off-by: Hannes Reinecke <hare@suse.de>
 ---
- arch/s390/include/uapi/asm/dasd.h |    4 ++
- drivers/s390/block/dasd.c         |   13 ++++++--
- drivers/s390/block/dasd_int.h     |    3 ++
- drivers/s390/block/dasd_ioctl.c   |   59 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 76 insertions(+), 3 deletions(-)
+ drivers/s390/block/dasd_devmap.c |   41 ++++++++++++++++++++++++++++++++++++++
+ drivers/s390/block/dasd_diag.c   |    3 +-
+ drivers/s390/block/dasd_eckd.c   |   11 ++++++---
+ drivers/s390/block/dasd_fba.c    |    5 +++-
+ drivers/s390/block/dasd_int.h    |    3 ++
+ 5 files changed, 57 insertions(+), 6 deletions(-)
 
-diff --git a/arch/s390/include/uapi/asm/dasd.h b/arch/s390/include/uapi/asm/dasd.h
-index 38eca3b..a2ea496 100644
---- a/arch/s390/include/uapi/asm/dasd.h
-+++ b/arch/s390/include/uapi/asm/dasd.h
-@@ -261,6 +261,10 @@ struct dasd_snid_ioctl_data {
- #define BIODASDQUIESCE _IO(DASD_IOCTL_LETTER,6) 
- /* Resume IO on device */
- #define BIODASDRESUME  _IO(DASD_IOCTL_LETTER,7) 
-+/* Abort all I/O on a device */
-+#define BIODASDABORTIO _IO(DASD_IOCTL_LETTER,240) 
-+/* Allow I/O on a device */
-+#define BIODASDALLOWIO  _IO(DASD_IOCTL_LETTER,241) 
+diff --git a/drivers/s390/block/dasd_devmap.c b/drivers/s390/block/dasd_devmap.c
+index c196827..d237e31 100644
+--- a/drivers/s390/block/dasd_devmap.c
++++ b/drivers/s390/block/dasd_devmap.c
+@@ -1241,6 +1241,46 @@ dasd_expires_store(struct device *dev, struct device_attribute *attr,
  
+ static DEVICE_ATTR(expires, 0644, dasd_expires_show, dasd_expires_store);
  
- /* retrieve API version number */
-diff --git a/drivers/s390/block/dasd.c b/drivers/s390/block/dasd.c
-index 64b1b81..aa93281 100644
---- a/drivers/s390/block/dasd.c
-+++ b/drivers/s390/block/dasd.c
-@@ -38,9 +38,6 @@
-  */
- #define DASD_CHANQ_MAX_SIZE 4
++static ssize_t
++dasd_retries_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct dasd_device *device;
++	int len;
++
++	device = dasd_device_from_cdev(to_ccwdev(dev));
++	if (IS_ERR(device))
++		return -ENODEV;
++	len = snprintf(buf, PAGE_SIZE, "%lu\n", device->default_retries);
++	dasd_put_device(device);
++	return len;
++}
++
++static ssize_t
++dasd_retries_store(struct device *dev, struct device_attribute *attr,
++		   const char *buf, size_t count)
++{
++	struct dasd_device *device;
++	unsigned long val;
++
++	device = dasd_device_from_cdev(to_ccwdev(dev));
++	if (IS_ERR(device))
++		return -ENODEV;
++
++	if ((strict_strtoul(buf, 10, &val) != 0) ||
++	    (val > DASD_RETRIES_MAX)) {
++		dasd_put_device(device);
++		return -EINVAL;
++	}
++
++	if (val)
++		device->default_retries = val;
++
++	dasd_put_device(device);
++	return count;
++}
++
++static DEVICE_ATTR(retries, 0644, dasd_retries_show, dasd_retries_store);
++
+ static ssize_t dasd_reservation_policy_show(struct device *dev,
+ 					    struct device_attribute *attr,
+ 					    char *buf)
+@@ -1351,6 +1391,7 @@ static struct attribute * dasd_attrs[] = {
+ 	&dev_attr_erplog.attr,
+ 	&dev_attr_failfast.attr,
+ 	&dev_attr_expires.attr,
++	&dev_attr_retries.attr,
+ 	&dev_attr_reservation_policy.attr,
+ 	&dev_attr_last_known_reservation_state.attr,
+ 	&dev_attr_safe_offline.attr,
+diff --git a/drivers/s390/block/dasd_diag.c b/drivers/s390/block/dasd_diag.c
+index 704488d..905b2c0 100644
+--- a/drivers/s390/block/dasd_diag.c
++++ b/drivers/s390/block/dasd_diag.c
+@@ -359,6 +359,7 @@ dasd_diag_check_device(struct dasd_device *device)
+ 	}
  
--#define DASD_SLEEPON_START_TAG	(void *) 1
--#define DASD_SLEEPON_END_TAG	(void *) 2
--
- /*
-  * SECTION: exported variables of dasd.c
-  */
-@@ -2446,6 +2443,16 @@ static void __dasd_process_request_queue(struct dasd_block *block)
- 			__blk_end_request_all(req, -EIO);
- 			continue;
+ 	device->default_expires = DIAG_TIMEOUT;
++	device->default_retries = DIAG_MAX_RETRIES;
+ 
+ 	/* Figure out position of label block */
+ 	switch (private->rdc_data.vdev_class) {
+@@ -555,7 +556,7 @@ static struct dasd_ccw_req *dasd_diag_build_cp(struct dasd_device *memdev,
+ 			recid++;
  		}
-+		if (test_bit(DASD_FLAG_ABORTALL, &basedev->flags) &&
-+		    (basedev->features & DASD_FEATURE_FAILFAST ||
-+		     blk_noretry_request(req))) {
-+			DBF_DEV_EVENT(DBF_ERR, basedev,
-+				      "Rejecting failfast request %p",
-+				      req);
-+			blk_start_request(req);
-+			__blk_end_request_all(req, -ETIMEDOUT);
-+			continue;
-+		}
- 		cqr = basedev->discipline->build_cp(basedev, block, req);
- 		if (IS_ERR(cqr)) {
- 			if (PTR_ERR(cqr) == -EBUSY)
+ 	}
+-	cqr->retries = DIAG_MAX_RETRIES;
++	cqr->retries = memdev->default_retries;
+ 	cqr->buildclk = get_clock();
+ 	if (blk_noretry_request(req) ||
+ 	    block->base->features & DASD_FEATURE_FAILFAST)
+diff --git a/drivers/s390/block/dasd_eckd.c b/drivers/s390/block/dasd_eckd.c
+index e37bc16..5b5b50b 100644
+--- a/drivers/s390/block/dasd_eckd.c
++++ b/drivers/s390/block/dasd_eckd.c
+@@ -1679,6 +1679,9 @@ dasd_eckd_check_characteristics(struct dasd_device *device)
+ 
+ 	/* set default timeout */
+ 	device->default_expires = DASD_EXPIRES;
++	/* set default retry count */
++	device->default_retries = DASD_RETRIES;
++
+ 	if (private->gneq) {
+ 		value = 1;
+ 		for (i = 0; i < private->gneq->timeout.value; i++)
+@@ -2529,7 +2532,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_cmd_single(
+ 	cqr->block = block;
+ 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
+ 	cqr->lpm = startdev->path_data.ppm;
+-	cqr->retries = 256;
++	cqr->retries = startdev->default_retries;
+ 	cqr->buildclk = get_clock();
+ 	cqr->status = DASD_CQR_FILLED;
+ 	return cqr;
+@@ -2704,7 +2707,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_cmd_track(
+ 	cqr->block = block;
+ 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
+ 	cqr->lpm = startdev->path_data.ppm;
+-	cqr->retries = 256;
++	cqr->retries = startdev->default_retries;
+ 	cqr->buildclk = get_clock();
+ 	cqr->status = DASD_CQR_FILLED;
+ 	return cqr;
+@@ -2997,7 +3000,7 @@ static struct dasd_ccw_req *dasd_eckd_build_cp_tpm_track(
+ 	cqr->block = block;
+ 	cqr->expires = startdev->default_expires * HZ;	/* default 5 minutes */
+ 	cqr->lpm = startdev->path_data.ppm;
+-	cqr->retries = 256;
++	cqr->retries = startdev->default_retries;
+ 	cqr->buildclk = get_clock();
+ 	cqr->status = DASD_CQR_FILLED;
+ 	return cqr;
+@@ -3200,7 +3203,7 @@ static struct dasd_ccw_req *dasd_raw_build_cp(struct dasd_device *startdev,
+ 	cqr->block = block;
+ 	cqr->expires = startdev->default_expires * HZ;
+ 	cqr->lpm = startdev->path_data.ppm;
+-	cqr->retries = 256;
++	cqr->retries = startdev->default_retries;
+ 	cqr->buildclk = get_clock();
+ 	cqr->status = DASD_CQR_FILLED;
+ 
+diff --git a/drivers/s390/block/dasd_fba.c b/drivers/s390/block/dasd_fba.c
+index 4146985..3d8dc16 100644
+--- a/drivers/s390/block/dasd_fba.c
++++ b/drivers/s390/block/dasd_fba.c
+@@ -29,6 +29,8 @@
+ #endif				/* PRINTK_HEADER */
+ #define PRINTK_HEADER "dasd(fba):"
+ 
++#define FBA_DEFAULT_RETRIES 32
++
+ #define DASD_FBA_CCW_WRITE 0x41
+ #define DASD_FBA_CCW_READ 0x42
+ #define DASD_FBA_CCW_LOCATE 0x43
+@@ -167,6 +169,7 @@ dasd_fba_check_characteristics(struct dasd_device *device)
+ 	}
+ 
+ 	device->default_expires = DASD_EXPIRES;
++	device->default_retries = FBA_DEFAULT_RETRIES;
+ 	device->path_data.opm = LPM_ANYPATH;
+ 
+ 	readonly = dasd_device_is_ro(device);
+@@ -369,7 +372,7 @@ static struct dasd_ccw_req *dasd_fba_build_cp(struct dasd_device * memdev,
+ 	cqr->memdev = memdev;
+ 	cqr->block = block;
+ 	cqr->expires = memdev->default_expires * HZ;	/* default 5 minutes */
+-	cqr->retries = 32;
++	cqr->retries = memdev->default_retries;
+ 	cqr->buildclk = get_clock();
+ 	cqr->status = DASD_CQR_FILLED;
+ 	return cqr;
 diff --git a/drivers/s390/block/dasd_int.h b/drivers/s390/block/dasd_int.h
-index d00d07a..a4f3050 100644
+index 899e3f5..375ba1f 100644
 --- a/drivers/s390/block/dasd_int.h
 +++ b/drivers/s390/block/dasd_int.h
-@@ -523,7 +523,10 @@ struct dasd_block {
- #define DASD_FLAG_SUSPENDED	9	/* The device was suspended */
- #define DASD_FLAG_SAFE_OFFLINE	10	/* safe offline processing requested*/
- #define DASD_FLAG_SAFE_OFFLINE_RUNNING	11	/* safe offline running */
-+#define DASD_FLAG_ABORTALL	12	/* Abort all noretry requests */
+@@ -224,6 +224,8 @@ struct dasd_ccw_req {
+ /* default expiration time*/
+ #define DASD_EXPIRES	  300
+ #define DASD_EXPIRES_MAX  40000000
++#define DASD_RETRIES	  256
++#define DASD_RETRIES_MAX  32768
  
-+#define DASD_SLEEPON_START_TAG	(void *) 1
-+#define DASD_SLEEPON_END_TAG	(void *) 2
+ /* per dasd_ccw_req flags */
+ #define DASD_CQR_FLAGS_USE_ERP   0	/* use ERP for this request */
+@@ -465,6 +467,7 @@ struct dasd_device {
  
- void dasd_put_device_wake(struct dasd_device *);
+ 	/* default expiration time in s */
+ 	unsigned long default_expires;
++	unsigned long default_retries;
  
-diff --git a/drivers/s390/block/dasd_ioctl.c b/drivers/s390/block/dasd_ioctl.c
-index 03c0e04..d59bdb6 100644
---- a/drivers/s390/block/dasd_ioctl.c
-+++ b/drivers/s390/block/dasd_ioctl.c
-@@ -141,6 +141,59 @@ static int dasd_ioctl_resume(struct dasd_block *block)
- }
- 
- /*
-+ * Abort all failfast I/O on a device.
-+ */
-+static int dasd_ioctl_abortio(struct dasd_block *block)
-+{
-+	unsigned long flags;
-+	struct dasd_device *base;
-+	struct dasd_ccw_req *cqr, *n;
-+
-+	base = block->base;
-+	if (!capable (CAP_SYS_ADMIN))
-+		return -EACCES;
-+
-+	if (test_and_set_bit(DASD_FLAG_ABORTALL, &base->flags))
-+		return 0;
-+	DBF_DEV_EVENT(DBF_NOTICE, base, "%s", "abortall flag set");
-+
-+	spin_lock_irqsave(&block->request_queue_lock, flags);
-+	spin_lock(&block->queue_lock);
-+	list_for_each_entry_safe(cqr, n, &block->ccw_queue, blocklist) {
-+		if (test_bit(DASD_CQR_FLAGS_FAILFAST, &cqr->flags) &&
-+		    cqr->callback_data &&
-+		    cqr->callback_data != DASD_SLEEPON_START_TAG &&
-+		    cqr->callback_data != DASD_SLEEPON_END_TAG ) {
-+			spin_unlock(&block->queue_lock);
-+			blk_abort_request(cqr->callback_data);
-+			spin_lock(&block->queue_lock);
-+		}
-+	}
-+	spin_unlock(&block->queue_lock);
-+	spin_unlock_irqrestore(&block->request_queue_lock, flags);
-+
-+	dasd_schedule_block_bh(block);
-+	return 0;
-+}
-+
-+/*
-+ * Allow I/O on a device
-+ */
-+static int dasd_ioctl_allowio(struct dasd_block *block)
-+{
-+	struct dasd_device *base;
-+
-+	base = block->base;
-+	if (!capable (CAP_SYS_ADMIN))
-+		return -EACCES;
-+
-+	if (test_and_clear_bit(DASD_FLAG_ABORTALL, &base->flags))
-+		DBF_DEV_EVENT(DBF_NOTICE, base, "%s", "abortall flag unset");
-+
-+	return 0;
-+}
-+
-+/*
-  * performs formatting of _device_ according to _fdata_
-  * Note: The discipline's format_function is assumed to deliver formatting
-  * commands to format a single unit of the device. In terms of the ECKD
-@@ -469,6 +522,12 @@ int dasd_ioctl(struct block_device *bdev, fmode_t mode,
- 	case BIODASDRESUME:
- 		rc = dasd_ioctl_resume(block);
- 		break;
-+	case BIODASDABORTIO:
-+		rc = dasd_ioctl_abortio(block);
-+		break;
-+	case BIODASDALLOWIO:
-+		rc = dasd_ioctl_allowio(block);
-+		break;
- 	case BIODASDFMT:
- 		rc = dasd_ioctl_format(bdev, argp);
- 		break;
+ 	struct dentry *debugfs_dentry;
+ 	struct dasd_profile profile;
 -- 
 1.7.4.2
 
