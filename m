@@ -1,160 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab3A3GbL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 01:31:11 -0500
-Received: from mga14.intel.com ([143.182.124.37]:57476 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753519Ab3A3GbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 01:31:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,565,1355126400"; 
-   d="scan'208";a="196543112"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        namhyung@kernel.org, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 3/7] perf, x86: Introduce x86 special perf event context
-Date: Wed, 30 Jan 2013 14:30:53 +0800
-Message-Id: <1359527457-6837-4-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1359527457-6837-1-git-send-email-zheng.z.yan@intel.com>
-References: <1359527457-6837-1-git-send-email-zheng.z.yan@intel.com>
+	id S1753699Ab3A3GbZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 01:31:25 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:43717 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab3A3GbV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 01:31:21 -0500
+From: Huacai Chen <chenhc@lemote.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Subject: [PATCH V9 07/13] MIPS: Loongson 3: Add IRQ init and dispatch support
+Date: Wed, 30 Jan 2013 14:25:00 +0800
+Message-Id: <1359527106-22879-8-git-send-email-chenhc@lemote.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1359527106-22879-1-git-send-email-chenhc@lemote.com>
+References: <1359527106-22879-1-git-send-email-chenhc@lemote.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+IRQ routing path of Loongson-3:
+Devices(most) --> I8259 --> HT Controller --> IRQ Routing Table --> CPU
+                                                  ^
+                                                  |
+Device(legacy devices such as UART) --> Bonito ---|
 
-The x86 special perf event context is named x86_perf_event_context,
-We can enlarge it later to store PMU special data.
+IRQ Routing Table route 32 INTs to CPU's INT0~INT3(IP2~IP5 of CP0), 32
+INTs include 16 HT INTs(mostly), 4 PCI INTs, 1 LPC INT, etc. IP6 is used
+for IPI and IP7 is used for internal MIPS timer. LOONGSON_INT_ROUTER_*
+are IRQ Routing Table registers.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+I8259 IRQs are 1:1 mapped to HT1 INTs. LOONGSON_HT1_* are configuration
+registers of HT1 controller.
+
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Hongliang Tao <taohl@lemote.com>
+Signed-off-by: Hua Yan <yanh@lemote.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 12 ++++++++++++
- arch/x86/kernel/cpu/perf_event.h |  4 ++++
- include/linux/perf_event.h       |  5 +++++
- kernel/events/core.c             | 28 ++++++++++++++++++----------
- 4 files changed, 39 insertions(+), 10 deletions(-)
+ arch/mips/include/asm/mach-loongson/irq.h      |   24 +++++++
+ arch/mips/include/asm/mach-loongson/loongson.h |    9 +++
+ arch/mips/loongson/Makefile                    |    6 ++
+ arch/mips/loongson/loongson-3/Makefile         |    4 +
+ arch/mips/loongson/loongson-3/irq.c            |   87 ++++++++++++++++++++++++
+ 5 files changed, 130 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-loongson/irq.h
+ create mode 100644 arch/mips/loongson/loongson-3/Makefile
+ create mode 100644 arch/mips/loongson/loongson-3/irq.c
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 375498a..7981230 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1742,6 +1742,17 @@ static int x86_pmu_event_idx(struct perf_event *event)
- 	return idx + 1;
- }
+diff --git a/arch/mips/include/asm/mach-loongson/irq.h b/arch/mips/include/asm/mach-loongson/irq.h
+new file mode 100644
+index 0000000..4787cd0
+--- /dev/null
++++ b/arch/mips/include/asm/mach-loongson/irq.h
+@@ -0,0 +1,24 @@
++#ifndef __ASM_MACH_LOONGSON_IRQ_H_
++#define __ASM_MACH_LOONGSON_IRQ_H_
++
++#include <boot_param.h>
++
++/* cpu core interrupt numbers */
++#define MIPS_CPU_IRQ_BASE 56
++
++#ifdef CONFIG_CPU_LOONGSON3
++
++#define LOONGSON_UART_IRQ   (MIPS_CPU_IRQ_BASE + 2) /* uart */
++#define LOONGSON_I8259_IRQ  (MIPS_CPU_IRQ_BASE + 3) /* i8259 */
++#define LOONGSON_TIMER_IRQ  (MIPS_CPU_IRQ_BASE + 7) /* cpu timer */
++
++#define LOONGSON_HT1_CFG_BASE		ht_control_base
++#define LOONGSON_HT1_INT_VECTOR_BASE	LOONGSON_HT1_CFG_BASE + 0x80
++#define LOONGSON_HT1_INT_EN_BASE	LOONGSON_HT1_CFG_BASE + 0xa0
++#define LOONGSON_HT1_INT_VECTOR(n)	LOONGSON3_REG32(LOONGSON_HT1_INT_VECTOR_BASE, 4 * n)
++#define LOONGSON_HT1_INTN_EN(n)		LOONGSON3_REG32(LOONGSON_HT1_INT_EN_BASE, 4 * n)
++
++#endif
++
++#include_next <irq.h>
++#endif /* __ASM_MACH_LOONGSON_IRQ_H_ */
+diff --git a/arch/mips/include/asm/mach-loongson/loongson.h b/arch/mips/include/asm/mach-loongson/loongson.h
+index 960811a..f573e47 100644
+--- a/arch/mips/include/asm/mach-loongson/loongson.h
++++ b/arch/mips/include/asm/mach-loongson/loongson.h
+@@ -62,6 +62,12 @@ extern int mach_i8259_irq(void);
+ #define LOONGSON_REG(x) \
+ 	(*(volatile u32 *)((char *)CKSEG1ADDR(LOONGSON_REG_BASE) + (x)))
  
-+static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
++#define LOONGSON3_REG8(base, x) \
++	(*(volatile u8 *)((char *)TO_UNCAC(base) + (x)))
++
++#define LOONGSON3_REG32(base, x) \
++	(*(volatile u32 *)((char *)TO_UNCAC(base) + (x)))
++
+ #define LOONGSON_IRQ_BASE	32
+ #define LOONGSON2_PERFCNT_IRQ	(MIPS_CPU_IRQ_BASE + 6) /* cpu perf counter */
+ 
+@@ -87,6 +93,9 @@ static inline void do_perfcnt_IRQ(void)
+ #define LOONGSON_REG_BASE 	0x1fe00000
+ #define LOONGSON_REG_SIZE 	0x00100000	/* 256Bytes + 256Bytes + ??? */
+ #define LOONGSON_REG_TOP	(LOONGSON_REG_BASE+LOONGSON_REG_SIZE-1)
++#define LOONGSON3_REG_BASE	0x3ff00000
++#define LOONGSON3_REG_SIZE 	0x00100000	/* 256Bytes + 256Bytes + ??? */
++#define LOONGSON3_REG_TOP	(LOONGSON3_REG_BASE+LOONGSON3_REG_SIZE-1)
+ 
+ #define LOONGSON_LIO1_BASE 	0x1ff00000
+ #define LOONGSON_LIO1_SIZE 	0x00100000	/* 1M */
+diff --git a/arch/mips/loongson/Makefile b/arch/mips/loongson/Makefile
+index 2b76cb0..b1e4f05 100644
+--- a/arch/mips/loongson/Makefile
++++ b/arch/mips/loongson/Makefile
+@@ -15,3 +15,9 @@ obj-$(CONFIG_LEMOTE_FULOONG2E)  += fuloong-2e/
+ #
+ 
+ obj-$(CONFIG_LEMOTE_MACH2F)  += lemote-2f/
++
++#
++# All Loongson-3 family machines
++#
++
++obj-$(CONFIG_CPU_LOONGSON3)  += loongson-3/
+diff --git a/arch/mips/loongson/loongson-3/Makefile b/arch/mips/loongson/loongson-3/Makefile
+new file mode 100644
+index 0000000..b9968cd
+--- /dev/null
++++ b/arch/mips/loongson/loongson-3/Makefile
+@@ -0,0 +1,4 @@
++#
++# Makefile for Loongson-3 family machines
++#
++obj-y			+= irq.o
+diff --git a/arch/mips/loongson/loongson-3/irq.c b/arch/mips/loongson/loongson-3/irq.c
+new file mode 100644
+index 0000000..27aef31
+--- /dev/null
++++ b/arch/mips/loongson/loongson-3/irq.c
+@@ -0,0 +1,87 @@
++#include <loongson.h>
++#include <irq.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++
++#include <asm/irq_cpu.h>
++#include <asm/i8259.h>
++#include <asm/mipsregs.h>
++
++#define LOONGSON_INT_ROUTER_OFFSET	0x1400
++#define LOONGSON_INT_ROUTER_INTEN	LOONGSON3_REG32(LOONGSON3_REG_BASE, LOONGSON_INT_ROUTER_OFFSET + 0x24)
++#define LOONGSON_INT_ROUTER_INTENSET	LOONGSON3_REG32(LOONGSON3_REG_BASE, LOONGSON_INT_ROUTER_OFFSET + 0x28)
++#define LOONGSON_INT_ROUTER_INTENCLR	LOONGSON3_REG32(LOONGSON3_REG_BASE, LOONGSON_INT_ROUTER_OFFSET + 0x2c)
++#define LOONGSON_INT_ROUTER_ENTRY(n)	LOONGSON3_REG8(LOONGSON3_REG_BASE, LOONGSON_INT_ROUTER_OFFSET + n)
++#define LOONGSON_INT_ROUTER_LPC		LOONGSON_INT_ROUTER_ENTRY(0x0a)
++#define LOONGSON_INT_ROUTER_HT1(n)	LOONGSON_INT_ROUTER_ENTRY(n + 0x18)
++
++#define LOONGSON_INT_CORE0_INT0		0x11 /* route to int 0 of core 0 */
++#define LOONGSON_INT_CORE0_INT1		0x21 /* route to int 1 of core 0 */
++
++extern void loongson3_ipi_interrupt(struct pt_regs *regs);
++
++static void ht_irqdispatch(void)
 +{
-+	struct perf_event_context *ctx;
++	unsigned int i, irq;
++	unsigned int ht_irq[] = {1, 3, 4, 5, 6, 7, 8, 12, 14, 15};
 +
-+	ctx = kzalloc(sizeof(struct x86_perf_event_context), GFP_KERNEL);
-+	if (!ctx)
-+		return ERR_PTR(-ENOMEM);
++	irq = LOONGSON_HT1_INT_VECTOR(0);
++	LOONGSON_HT1_INT_VECTOR(0) = irq;
 +
-+	return ctx;
++	for (i = 0; i < (sizeof(ht_irq) / sizeof(*ht_irq)); i++) {
++		if (irq & (0x1 << ht_irq[i]))
++			do_IRQ(ht_irq[i]);
++	}
 +}
 +
- static ssize_t get_attr_rdpmc(struct device *cdev,
- 			      struct device_attribute *attr,
- 			      char *buf)
-@@ -1829,6 +1840,7 @@ static struct pmu pmu = {
- 
- 	.event_idx		= x86_pmu_event_idx,
- 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
-+	.event_context_alloc	= x86_pmu_event_context_alloc,
- };
- 
- void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index ed1e822..3080e10 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -421,6 +421,10 @@ enum {
- 	PERF_SAMPLE_BRANCH_CALL_STACK = 1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
- };
- 
-+struct x86_perf_event_context {
-+	struct perf_event_context ctx;
++void mach_irq_dispatch(unsigned int pending)
++{
++	if (pending & CAUSEF_IP7)
++		do_IRQ(LOONGSON_TIMER_IRQ);
++#if defined(CONFIG_SMP)
++	else if (pending & CAUSEF_IP6)
++		loongson3_ipi_interrupt(NULL);
++#endif
++	else if (pending & CAUSEF_IP3)
++		ht_irqdispatch();
++	else if (pending & CAUSEF_IP2)
++		do_IRQ(LOONGSON_UART_IRQ);
++	else {
++		printk(KERN_ERR "%s : spurious interrupt\n", __func__);
++		spurious_interrupt();
++	}
++}
++
++static struct irqaction cascade_irqaction = {
++	.handler = no_action,
++	.name = "cascade",
 +};
 +
- #define x86_add_quirk(func_)						\
- do {									\
- 	static struct x86_pmu_quirk __quirk __initdata = {		\
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c32fba3..6122b2f 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -264,6 +264,11 @@ struct pmu {
- 	 * flush branch stack on context-switches (needed in cpu-wide mode)
- 	 */
- 	void (*flush_branch_stack)	(void);
++void irq_router_init(void)
++{
++	int i;
 +
-+	/*
-+	 * Allocate PMU special perf event context
-+	 */
-+	void *(*event_context_alloc)	(struct perf_event_context *parent_ctx);
- };
- 
- /**
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b4078a0..908f2ad 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2721,13 +2721,20 @@ static void __perf_event_init_context(struct perf_event_context *ctx)
- }
- 
- static struct perf_event_context *
--alloc_perf_context(struct pmu *pmu, struct task_struct *task)
-+alloc_perf_context(struct pmu *pmu, struct task_struct *task,
-+		   struct perf_event_context *parent_ctx)
- {
- 	struct perf_event_context *ctx;
- 
--	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
--	if (!ctx)
--		return NULL;
-+	if (pmu->event_context_alloc) {
-+		ctx = pmu->event_context_alloc(parent_ctx);
-+		if (IS_ERR(ctx))
-+			return ctx;
-+	} else {
-+		ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
-+		if (!ctx)
-+			return ERR_PTR(-ENOMEM);
-+	}
- 
- 	__perf_event_init_context(ctx);
- 	if (task) {
-@@ -2813,10 +2820,11 @@ retry:
- 		++ctx->pin_count;
- 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
- 	} else {
--		ctx = alloc_perf_context(pmu, task);
--		err = -ENOMEM;
--		if (!ctx)
-+		ctx = alloc_perf_context(pmu, task, NULL);
-+		if (IS_ERR(ctx)) {
-+			err = PTR_ERR(ctx);
- 			goto errout;
-+		}
- 
- 		err = 0;
- 		mutex_lock(&task->perf_event_mutex);
-@@ -7132,9 +7140,9 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
- 		 * child.
- 		 */
- 
--		child_ctx = alloc_perf_context(event->pmu, child);
--		if (!child_ctx)
--			return -ENOMEM;
-+		child_ctx = alloc_perf_context(event->pmu, child, parent_ctx);
-+		if (IS_ERR(child_ctx))
-+			return PTR_ERR(child_ctx);
- 
- 		child->perf_event_ctxp[ctxn] = child_ctx;
- 	}
++	/* route LPC int to cpu core0 int 0 */
++	LOONGSON_INT_ROUTER_LPC = LOONGSON_INT_CORE0_INT0;
++	/* route HT1 int0 ~ int7 to cpu core0 INT1*/
++	for (i = 0; i < 8; i++)
++		LOONGSON_INT_ROUTER_HT1(i) = LOONGSON_INT_CORE0_INT1;
++	/* enable HT1 interrupt */
++	LOONGSON_HT1_INTN_EN(0) = 0xffffffff;
++	/* enable router interrupt intenset */
++	LOONGSON_INT_ROUTER_INTENSET = LOONGSON_INT_ROUTER_INTEN | (0xffff << 16) | 0x1 << 10;
++}
++
++void __init mach_init_irq(void)
++{
++	clear_c0_status(ST0_IM | ST0_BEV);
++
++	irq_router_init();
++	mips_cpu_irq_init();
++	init_i8259_irqs();
++
++	/* setup i8259 irq */
++	setup_irq(LOONGSON_I8259_IRQ, &cascade_irqaction);
++
++	set_c0_status(STATUSF_IP2 | STATUSF_IP6);
++}
 -- 
-1.7.11.7
+1.7.7.3
 
