@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3A3BZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:25:58 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:38622
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751818Ab3A3BZz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:25:55 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzc89bhzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bh8275dhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h906i1155h)
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: <mturquette@linaro.org>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: divider: Use DIV_ROUND_CLOSEST
-Date: Tue, 29 Jan 2013 17:25:44 -0800
-X-Mailer: git-send-email 1.8.1.2
+	id S1753400Ab3A3B0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:26:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43661 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3A3B0H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 20:26:07 -0500
+Date: Tue, 29 Jan 2013 17:25:55 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-fa2bbce985ca97943305cdc81d9626e6810ed7f2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, alexander.h.duyck@intel.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, alexander.h.duyck@intel.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1359058816-7615-9-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-9-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, 64bit: Copy struct boot_params early
+Git-Commit-ID: fa2bbce985ca97943305cdc81d9626e6810ed7f2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-X-OriginalArrivalTime: 30 Jan 2013 01:25:48.0342 (UTC) FILETIME=[BBCD6560:01CDFE88]
-X-RCIS-Action: ALLOW
-Message-ID: <2e77dfe8-8d4f-4b77-bf1b-831ad1572c23@VA3EHSMHS046.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:26:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the DIV_ROUND_CLOSEST macro to calculate divider values and minimize
-rounding errors.
+Commit-ID:  fa2bbce985ca97943305cdc81d9626e6810ed7f2
+Gitweb:     http://git.kernel.org/tip/fa2bbce985ca97943305cdc81d9626e6810ed7f2
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 24 Jan 2013 12:19:49 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 29 Jan 2013 15:12:26 -0800
 
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+x86, 64bit: Copy struct boot_params early
+
+We want to support struct boot_params (formerly known as the
+zero-page, or real-mode data) above the 4 GiB mark.  We will have #PF
+handler to set page table for not accessible ram early, but want to
+limit it before x86_64_start_reservations to limit the code change to
+native path only.
+
+Also we will need the ramdisk info in struct boot_params to access the microcode
+blob in ramdisk in x86_64_start_kernel, so copy struct boot_params early makes
+it accessing ramdisk info simple.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1359058816-7615-9-git-send-email-yinghai@kernel.org
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
-Hi,
+ arch/x86/kernel/head64.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-I just came across this behavior:
-I'm using the clk-divider as cpuclock which can be scaled through cpufreq.
-During boot I create an opp table which in this case holds the frequencies [MHz]
-666, 333 and 222. To make sure those are actually valid frequencies I call
-clk_round_rate().
-I added a debug line in clk-divider.c:clk_divider_bestdiv() before the return
-in line 163 giving me:
-	prate:1333333320, rate:333333330, div:4
-for adding the 333 MHz operating point.
-
-In the running system this gives me:
-zynq:/sys/devices/system/cpu/cpu0/cpufreq # cat scaling_available_frequencies 
-222222 333333 666666 
-zynq:/sys/devices/system/cpu/cpu0/cpufreq # cat scaling_cur_freq 
- 666666
-
- So far, so good. But now, let's scale the frequency:
-zynq:/sys/devices/system/cpu/cpu0/cpufreq # echo 333333 > scaling_setspeed 
-zynq:/sys/devices/system/cpu/cpu0/cpufreq # cat scaling_cur_freq
- 266666
-
-And the corresponding debug line:
-	prate:1333333320, rate:333333000, div:5
-
-So, with DIV_ROUND_UP an actual divider of 4.00000396 becomes 5, resulting in a
-huge error.
-
-	Regards,
-	Sören
-
- drivers/clk/clk-divider.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index a9204c6..32e1b6a 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -157,7 +157,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 849fc9e..7785e668 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -89,6 +89,8 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	}
+ 	load_idt((const struct desc_ptr *)&idt_descr);
  
- 	if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
- 		parent_rate = *best_parent_rate;
--		bestdiv = DIV_ROUND_UP(parent_rate, rate);
-+		bestdiv = DIV_ROUND_CLOSEST(parent_rate, rate);
- 		bestdiv = bestdiv == 0 ? 1 : bestdiv;
- 		bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
- 		return bestdiv;
-@@ -207,7 +207,7 @@ static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
- 	unsigned long flags = 0;
- 	u32 val;
++	copy_bootdata(__va(real_mode_data));
++
+ 	if (console_loglevel == 10)
+ 		early_printk("Kernel alive\n");
  
--	div = parent_rate / rate;
-+	div = DIV_ROUND_CLOSEST(parent_rate, rate);
- 	value = _get_val(divider, div);
+@@ -97,7 +99,9 @@ void __init x86_64_start_kernel(char * real_mode_data)
  
- 	if (value > div_mask(divider))
--- 
-1.8.1.2
-
-
+ void __init x86_64_start_reservations(char *real_mode_data)
+ {
+-	copy_bootdata(__va(real_mode_data));
++	/* version is always not zero if it is copied */
++	if (!boot_params.hdr.version)
++		copy_bootdata(__va(real_mode_data));
+ 
+ 	memblock_reserve(__pa_symbol(&_text),
+ 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
