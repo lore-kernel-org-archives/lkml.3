@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab3A3W6R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 17:58:17 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:55147 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab3A3W6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 17:58:15 -0500
+	id S1757264Ab3A3XBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 18:01:05 -0500
+Received: from fieldses.org ([174.143.236.118]:38581 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756419Ab3A3XBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 18:01:00 -0500
+Date: Wed, 30 Jan 2013 18:00:52 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [RFC PATCH 0/4] SUNRPC: rework cache upcall to avoid NFSd root
+ swapping
+Message-ID: <20130130230052.GB16158@fieldses.org>
+References: <20130115080402.2996.74320.stgit@localhost.localdomain>
 MIME-Version: 1.0
-From: Tristan Schmelcher <tschmelcher@google.com>
-Date: Wed, 30 Jan 2013 14:57:53 -0800
-Message-ID: <CADNZ+wS1yU886b_LosvHnknKZahbn=CSEZoPBUtqtc9odyz6RA@mail.gmail.com>
-Subject: [PATCH] uml: Always use 3_LEVEL_PGTABLES on x86_64
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115080402.2996.74320.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tristan Schmelcher <tschmelcher@google.com>
+On Tue, Jan 15, 2013 at 11:09:23AM +0300, Stanislav Kinsbursky wrote:
+> The main idea of this patch set is to call cache request not on kthread
+> upcall, but on userspace daemon cache_read call. This fixes the problem with
+> gaining of wrong dentry path after calling d_path() in kthread root context
+> (svc_export_request() callback), which always work in init root context, but
+> containers can work in "root jail" - i.e. have it's own nested root.
 
-Use 3_LEVEL_PGTABLES on x86_64 even if EXPERIMENTAL is off, since
-otherwise UML does not work. Applies to 3.7.1.
+Sorry for the delay.  This looks good to me--committing pending some
+testing.
 
-Signed-off-by: Tristan Schmelcher <tschmelcher@google.com>
----
+What's left now for basic containerized nfsd support?
 
---- linux-3.7.1/arch/x86/um/Kconfig.orig        2013-01-23
-15:50:12.671408478 -0800
-+++ linux-3.7.1/arch/x86/um/Kconfig     2013-01-23 15:44:38.321878377 -0800
-@@ -39,7 +39,7 @@ config RWSEM_GENERIC_SPINLOCK
- config 3_LEVEL_PGTABLES
-        bool "Three-level pagetables (EXPERIMENTAL)" if !64BIT
-        default 64BIT
--       depends on EXPERIMENTAL
-+       depends on EXPERIMENTAL || 64BIT
-        help
-        Three-level pagetables will let UML have more than 4G of physical
-        memory.  All the memory that can't be mapped directly will be treated
+--b.
+
+> 
+> The following series implements...
+> 
+> ---
+> 
+> Stanislav Kinsbursky (4):
+>       SUNRPC: introduce cache_detail->cache_request callback
+>       SUNRPC: remove cache_detail->cache_upcall callback
+>       SUNRPC: remove "cache_request" argument in sunrpc_cache_pipe_upcall() function
+>       SUNRPC: move cache_detail->cache_request callback call to cache_read()
+> 
+> 
+>  fs/nfs/dns_resolve.c              |    2 +-
+>  fs/nfsd/export.c                  |   14 ++----------
+>  fs/nfsd/nfs4idmap.c               |   16 ++-----------
+>  include/linux/sunrpc/cache.h      |   11 +++------
+>  net/sunrpc/auth_gss/svcauth_gss.c |    8 +------
+>  net/sunrpc/cache.c                |   44 ++++++++++++++++++++-----------------
+>  net/sunrpc/svcauth_unix.c         |   14 ++----------
+>  7 files changed, 36 insertions(+), 73 deletions(-)
+> 
