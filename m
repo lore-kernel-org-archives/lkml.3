@@ -1,155 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab3A3Bca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:32:30 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61759 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3A3Bc3 (ORCPT
+	id S1753489Ab3A3Bcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:32:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43742 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3A3Bcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:32:29 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-7c-5108782b2d31
-Date: Wed, 30 Jan 2013 10:32:26 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, stable@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: Re: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial write
-Message-ID: <20130130013226.GA2580@blaptop>
-References: <1359333506-13599-1-git-send-email-minchan@kernel.org>
- <CAOJsxLFg_5uhZsvPmVVC0nnsZLGpkJ0W6mHa=aavmguLGuTTnA@mail.gmail.com>
- <20130128232145.GA2666@blaptop>
- <5107760ca0614_5bf811b9fe4132b@golgotha.mail>
+	Tue, 29 Jan 2013 20:32:39 -0500
+Date: Tue, 29 Jan 2013 17:31:42 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-100542306f644fc580857a8ca4896fb12b794d41@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, bp@suse.de,
+        hpa@linux.intel.com
+In-Reply-To: <1359058816-7615-14-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-14-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, 64bit: Don'
+ t set max_pfn_mapped wrong value early on native path
+Git-Commit-ID: 100542306f644fc580857a8ca4896fb12b794d41
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <5107760ca0614_5bf811b9fe4132b@golgotha.mail>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:31:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 09:11:08AM +0200, Pekka Enberg wrote:
-> On Tue, Jan 29, 2013 at 1:21 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > How about this?
-> > ------------------------- >8 -------------------------------
-> > 
-> > From 9f8756ae0b0f2819f93cb94dcd38da372843aa12 Mon Sep 17 00:00:00 2001
-> > From: Minchan Kim <minchan@kernel.org>
-> > Date: Mon, 21 Jan 2013 13:58:52 +0900
-> > Subject: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial read/write
-> > 
-> > Now zram allocates new page with GFP_KERNEL in zram I/O path
-> > if IO is partial. Unfortunately, It may cause deadlock with
-> > reclaim path like below.
-> > 
-> > write_page from fs
-> > fs_lock
-> > allocation(GFP_KERNEL)
-> > reclaim
-> > pageout
-> > 				write_page from fs
-> > 				fs_lock <-- deadlock
-> > 
-> > This patch fixes it by using GFP_ATOMIC and GFP_NOIO.
-> > In read path, we called kmap_atomic so that we need GFP_ATOMIC
-> > while we need GFP_NOIO in write path.
-> 
-> The patch description makes sense now. Thanks!
-> 
-> On Tue, Jan 29, 2013 at 1:21 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > We could use GFP_IO instead of GFP_ATOMIC in zram_bvec_read with
-> > some modification related to buffer allocation in case of partial IO.
-> > But it needs more churn and prevent merge this patch into stable
-> > if we should send this to stable so I'd like to keep it as simple
-> > as possbile. GFP_IO usage could be separate patch after we merge it.
-> 
-> I don't see why something like below couldn't be merged for stable.
-> Going for GFP_ATOMIC might seem like the simplest thing to go for but
-> usually bites you in the end.
+Commit-ID:  100542306f644fc580857a8ca4896fb12b794d41
+Gitweb:     http://git.kernel.org/tip/100542306f644fc580857a8ca4896fb12b794d41
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 24 Jan 2013 12:19:54 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 29 Jan 2013 15:20:16 -0800
 
-Looks good to me. I will resend it.
-Thanks, Pekka.
+x86, 64bit: Don't set max_pfn_mapped wrong value early on native path
 
-> 
-> 			Pekka
-> 
-> ------------------------- >8 -------------------------------
-> 
-> >From 936a12b423c58542628d6fd683e859f752eb3d41 Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Mon, 21 Jan 2013 13:58:52 +0900
-> Subject: [PATCH] zram: Fix deadlock bug in partial read/write
-> 
-> Now zram allocates new page with GFP_KERNEL in zram I/O path
-> if IO is partial. Unfortunately, It may cause deadlock with
-> reclaim path like below.
-> 
-> write_page from fs
-> fs_lock
-> allocation(GFP_KERNEL)
-> reclaim
-> pageout
-> 				write_page from fs
-> 				fs_lock <-- deadlock
-> 
-> This patch fixes it by using GFP_NOIO.  In read path, we
-> reorganize code flow so that kmap_atomic is called after the
-> GFP_NOIO allocation.
-> 
-> Cc: stable@vger.kernel.org
-> Cc: Jerome Marchand <jmarchan@redhat.com>
-> Acked-by: Nitin Gupta <ngupta@vflare.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> [ penberg@kernel.org: don't use GFP_ATOMIC ]
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
-> ---
->  drivers/staging/zram/zram_drv.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index f2a73bd..071e058 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -228,11 +228,12 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
->  		return 0;
->  	}
->  
-> -	user_mem = kmap_atomic(page);
->  	if (is_partial_io(bvec))
->  		/* Use  a temporary buffer to decompress the page */
-> -		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> -	else
-> +		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
-> +
-> +	user_mem = kmap_atomic(page);
-> +	if (!is_partial_io(bvec))
->  		uncmem = user_mem;
->  
->  	if (!uncmem) {
-> @@ -279,7 +280,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  		 * This is a partial IO. We need to read the full page
->  		 * before to write the changes.
->  		 */
-> -		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> +		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
->  		if (!uncmem) {
->  			pr_info("Error allocating temp memory!\n");
->  			ret = -ENOMEM;
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+We are not having max_pfn_mapped set correctly until init_memory_mapping.
+So don't print its initial value for 64bit
 
--- 
-Kind regards,
-Minchan Kim
+Also need to use KERNEL_IMAGE_SIZE directly for highmap cleanup.
+
+-v2: update comments about max_pfn_mapped according to Stefano Stabellini.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1359058816-7615-14-git-send-email-yinghai@kernel.org
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/head64.c |  3 ---
+ arch/x86/kernel/setup.c  |  2 ++
+ arch/x86/mm/init_64.c    | 10 +++++++++-
+ 3 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 816fc85..f3b1968 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -148,9 +148,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	/* clear bss before set_intr_gate with early_idt_handler */
+ 	clear_bss();
+ 
+-	/* XXX - this is wrong... we need to build page tables from scratch */
+-	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+-
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+ #ifdef CONFIG_EARLY_PRINTK
+ 		set_intr_gate(i, &early_idt_handlers[i]);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index db9c41d..d58083a 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -996,8 +996,10 @@ void __init setup_arch(char **cmdline_p)
+ 	setup_bios_corruption_check();
+ #endif
+ 
++#ifdef CONFIG_X86_32
+ 	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
+ 			(max_pfn_mapped<<PAGE_SHIFT) - 1);
++#endif
+ 
+ 	reserve_real_mode();
+ 
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 9fbb85c..dc67337 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -378,10 +378,18 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+ void __init cleanup_highmap(void)
+ {
+ 	unsigned long vaddr = __START_KERNEL_map;
+-	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
++	unsigned long vaddr_end = __START_KERNEL_map + KERNEL_IMAGE_SIZE;
+ 	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
+ 	pmd_t *pmd = level2_kernel_pgt;
+ 
++	/*
++	 * Native path, max_pfn_mapped is not set yet.
++	 * Xen has valid max_pfn_mapped set in
++	 *	arch/x86/xen/mmu.c:xen_setup_kernel_pagetable().
++	 */
++	if (max_pfn_mapped)
++		vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
++
+ 	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
+ 		if (pmd_none(*pmd))
+ 			continue;
