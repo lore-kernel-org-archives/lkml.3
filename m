@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab3A3Bol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:44:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43921 "EHLO
+	id S1753528Ab3A3Bp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:45:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43947 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab3A3Bok (ORCPT
+	with ESMTP id S1751856Ab3A3Bp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:44:40 -0500
-Date: Tue, 29 Jan 2013 17:44:28 -0800
+	Tue, 29 Jan 2013 20:45:56 -0500
+Date: Tue, 29 Jan 2013 17:45:38 -0800
 From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-0e691cf824f76adefb4498fe39c300aba2c2575a@git.kernel.org>
+Message-ID: <tip-8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, alexander.h.duyck@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
+        yinghai@kernel.org, caushik1@gmail.com, matt.fleming@intel.com,
+        jmillenbach@gmail.com, tglx@linutronix.de, josh@joshtriplett.org,
+        hpa@linux.intel.com, rob@landley.net
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, alexander.h.duyck@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1359058816-7615-25-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-25-git-send-email-yinghai@kernel.org>
+        yinghai@kernel.org, caushik1@gmail.com, matt.fleming@intel.com,
+        jmillenbach@gmail.com, tglx@linutronix.de, josh@joshtriplett.org,
+        hpa@linux.intel.com, rob@landley.net
+In-Reply-To: <1359058816-7615-26-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-26-git-send-email-yinghai@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, kexec, 64bit: Only set ident mapping for ram.
-Git-Commit-ID: 0e691cf824f76adefb4498fe39c300aba2c2575a
+Subject: [tip:x86/mm2] x86, boot:
+  enable support load bzImage and ramdisk above 4G
+Git-Commit-ID: 8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,92 +32,156 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:44:34 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:45:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0e691cf824f76adefb4498fe39c300aba2c2575a
-Gitweb:     http://git.kernel.org/tip/0e691cf824f76adefb4498fe39c300aba2c2575a
+Commit-ID:  8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae
+Gitweb:     http://git.kernel.org/tip/8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 24 Jan 2013 12:20:05 -0800
+AuthorDate: Mon, 28 Jan 2013 20:16:44 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 29 Jan 2013 15:26:35 -0800
+CommitDate: Tue, 29 Jan 2013 15:30:22 -0800
 
-x86, kexec, 64bit: Only set ident mapping for ram.
+x86, boot: enable support load bzImage and ramdisk above 4G
 
-We should set mappings only for usable memory ranges under max_pfn
-Otherwise causes same problem that is fixed by
+xloadflags bit 1 indicates that we can load the kernel and all data
+structure above 4G; it is set if kernel is relocatable and 64bit.
 
-	x86, mm: Only direct map addresses that are marked as E820_RAM
+bootloader will check if xloadflags bit1 is set to decicde if
+it could load ramdisk and kernel high above 4G.
 
-This patch exposes pfn_mapped array, and only sets ident mapping for ranges
-in that array.
-
-This patch relies on new kernel_ident_mapping_init that could handle existing
-pgd/pud between different calls.
+bootloader will fill value to ext_ramdisk_image/size for high 32bits
+when it load ramdisk above 4G.
+kernel use get_ramdisk_image/size to use ext_ramdisk_image/size to get
+right positon for ramdisk.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1359058816-7615-25-git-send-email-yinghai@kernel.org
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Gokul Caushik <caushik1@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Joe Millenbach <jmillenbach@gmail.com>
+Link: http://lkml.kernel.org/r/1359058816-7615-26-git-send-email-yinghai@kernel.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/page.h        |  4 ++++
- arch/x86/kernel/machine_kexec_64.c | 13 +++++++++----
- arch/x86/mm/init.c                 |  4 ++--
- 3 files changed, 15 insertions(+), 6 deletions(-)
+ arch/x86/boot/compressed/cmdline.c |  2 ++
+ arch/x86/boot/compressed/misc.c    | 19 +++++++++++++++++++
+ arch/x86/boot/header.S             | 10 +++++++++-
+ arch/x86/kernel/head64.c           |  2 ++
+ arch/x86/kernel/setup.c            |  4 ++++
+ 5 files changed, 36 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-index 8ca8283..100a20c 100644
---- a/arch/x86/include/asm/page.h
-+++ b/arch/x86/include/asm/page.h
-@@ -17,6 +17,10 @@
- 
- struct page;
- 
-+#include <linux/range.h>
-+extern struct range pfn_mapped[];
-+extern int nr_pfn_mapped;
-+
- static inline void clear_user_page(void *page, unsigned long vaddr,
- 				   struct page *pg)
+diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
+index b4c913c..bffd73b 100644
+--- a/arch/x86/boot/compressed/cmdline.c
++++ b/arch/x86/boot/compressed/cmdline.c
+@@ -17,6 +17,8 @@ static unsigned long get_cmd_line_ptr(void)
  {
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index d2d7e02..4eabc16 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -100,10 +100,15 @@ static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
+ 	unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
  
- 	level4p = (pgd_t *)__va(start_pgtable);
- 	clear_page(level4p);
--	result = kernel_ident_mapping_init(&info, level4p,
--						0, max_pfn << PAGE_SHIFT);
--	if (result)
--		return result;
-+	for (i = 0; i < nr_pfn_mapped; i++) {
-+		mstart = pfn_mapped[i].start << PAGE_SHIFT;
-+		mend   = pfn_mapped[i].end << PAGE_SHIFT;
++	cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
 +
-+		result = kernel_ident_mapping_init(&info,
-+						 level4p, mstart, mend);
-+		if (result)
-+			return result;
-+	}
- 
- 	/*
- 	 * segments's mem ranges could be outside 0 ~ max_pfn,
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 3364a76..d418152 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -302,8 +302,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	return nr_range;
+ 	return cmd_line_ptr;
+ }
+ int cmdline_find_option(const char *option, char *buffer, int bufsize)
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 7cb56c6..5d8dc86 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -318,6 +318,23 @@ static void parse_elf(void *output)
+ 	free(phdrs);
  }
  
--static struct range pfn_mapped[E820_X_MAX];
--static int nr_pfn_mapped;
-+struct range pfn_mapped[E820_X_MAX];
-+int nr_pfn_mapped;
++static void sanitize_real_mode(struct boot_params *real_mode)
++{
++	if (real_mode->sentinel) {
++		/*fields in boot_params are not valid, clear them */
++		memset(&real_mode->olpc_ofw_header, 0,
++		       (char *)&real_mode->alt_mem_k -
++			(char *)&real_mode->olpc_ofw_header);
++		memset(&real_mode->_pad7[0], 0,
++		       (char *)&real_mode->edd_mbr_sig_buffer[0] -
++			(char *)&real_mode->_pad7[0]);
++		memset(&real_mode->_pad8[0], 0,
++		       (char *)&real_mode->eddbuf[0] -
++			(char *)&real_mode->_pad8[0]);
++		memset(&real_mode->_pad9[0], 0, sizeof(real_mode->_pad9));
++	}
++}
++
+ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *input_data,
+ 				  unsigned long input_len,
+@@ -327,6 +344,8 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
  
- static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
+ 	sanitize_boot_params(real_mode);
+ 
++	sanitize_real_mode(real_mode);
++
+ 	if (real_mode->screen_info.orig_video_mode == 7) {
+ 		vidmem = (char *) 0xb0000;
+ 		vidport = 0x3b4;
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 944ce59..9ec06a1 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -374,6 +374,14 @@ xloadflags:
+ #else
+ # define XLF0 0
+ #endif
++
++#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64)
++   /* kernel/boot_param/ramdisk could be loaded above 4g */
++# define XLF1 XLF_CAN_BE_LOADED_ABOVE_4G
++#else
++# define XLF1 0
++#endif
++
+ #ifdef CONFIG_EFI_STUB
+ # ifdef CONFIG_X86_64
+ #  define XLF23 XLF_EFI_HANDOVER_64		/* 64-bit EFI handover ok */
+@@ -383,7 +391,7 @@ xloadflags:
+ #else
+ # define XLF23 0
+ #endif
+-			.word XLF0 | XLF23
++			.word XLF0 | XLF1 | XLF23
+ 
+ cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
+                                                 #added with boot protocol
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 62c8ce4..6873b07 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -116,6 +116,8 @@ static unsigned long get_cmd_line_ptr(void)
  {
+ 	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
+ 
++	cmd_line_ptr |= (u64)boot_params.ext_cmd_line_ptr << 32;
++
+ 	return cmd_line_ptr;
+ }
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 83b3861..519f2bc 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -298,12 +298,16 @@ static u64 __init get_ramdisk_image(void)
+ {
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 
++	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
++
+ 	return ramdisk_image;
+ }
+ static u64 __init get_ramdisk_size(void)
+ {
+ 	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
+ 
++	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
++
+ 	return ramdisk_size;
+ }
+ 
