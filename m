@@ -1,165 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3A3KWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:22:23 -0500
-Received: from mga03.intel.com ([143.182.124.21]:58820 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753688Ab3A3KWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:22:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,567,1355126400"; 
-   d="p7s'?scan'208";a="250219117"
-From: "Woodhouse, David" <david.woodhouse@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Kim Phillips <kim.phillips@freescale.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] arm: use built-in byte swap function
-Thread-Topic: [RFC] arm: use built-in byte swap function
-Thread-Index: AQHN/cCsyq8jjbGdz0yFuzpMnvmBrphf+6YAgACZEWKAAAfEI4ABD1qA
-Date: Wed, 30 Jan 2013 10:22:15 +0000
-Message-ID: <1359541333.3529.186.camel@shinybook.infradead.org>
-References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
-	 <20130129083522.GA14302@pd.tnic>
-	 <1359478014.3529.157.camel@shinybook.infradead.org>
-	 <20130129174249.GB25415@pd.tnic>
-	 <1359482147.3529.161.camel@shinybook.infradead.org>
-	 <20130129181046.GC25415@pd.tnic>
-In-Reply-To: <20130129181046.GC25415@pd.tnic>
-Accept-Language: en-GB, en-US
-Content-Language: en-GB
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-Content-Type: multipart/signed; micalg=sha1;
-	protocol="application/x-pkcs7-signature"; boundary="=-t0C2mC6m0xhly1b/KImy"
-MIME-Version: 1.0
+	id S1754717Ab3A3KWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 05:22:31 -0500
+Received: from mail-da0-f53.google.com ([209.85.210.53]:55940 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab3A3KW2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 05:22:28 -0500
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: linux@roeck-us.net, khali@linux-fr.org, lm-sensors@lm-sensors.org,
+        sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linus.walleij@linaro.org, lee.jones@linaro.org,
+        Hongbo Zhang <hongbo.zhang@linaro.org>
+Subject: [PATCH 0/2] Add ST-Ericsson AB8500 HWMON driver
+Date: Wed, 30 Jan 2013 18:21:26 +0800
+Message-Id: <1359541288-6657-1-git-send-email-hongbo.zhang@linaro.org>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-t0C2mC6m0xhly1b/KImy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+These patches are against the v3.8-rc4.
 
-On Tue, 2013-01-29 at 19:10 +0100, Borislav Petkov wrote:
-> So, IMHO it sounds to me like we want to explicitly state for each arch
-> separately that it is ok to use the __builtin_bswapXX things. This also
-> takes care of the case where the compiler is doing something suboptimal
-> by excluding the affected versions.
+Guenter Roeck, Jean Delvare,
+Please help to have a look at this.
 
-Well, if it really does end up being different for every architecture,
-then that means I probably made the wrong decision when I chose to make
-it "generic", and override the __arch_swabXX() macros. I could have just
-pushed all the architectures to use the builtins in their __arch_swabXX
-macros instead, as appropriate.
+Samuel Ortiz,
+Please review 1/2 and leave your Acked-by: if no problem, I think these patches
+should be merged into HWMON tree.
 
-Let's see how many special cases we actually end up with, and perhaps
-we'll end up switching that round. For now, let's just make ARM set
-__HAVE_BUILTIN_BSWAPxx__ for the appropriate sizes in <asm/swab.h>,
-according to whatever criteria it needs.
+Thanks for all.
 
-It's not entirely clear how much of a win it is on ARM anyway; we don't
-have load-and-swap or store-and-swap instructions so there are only a
-few added opportunities for optimisation that we get by letting the
-compiler see what's going on.
+Hongbo Zhang (2):
+  ARM: ux500: rename ab8500 to abx500 for hwmon driver
+  hwmon: add ST-Ericsson ABX500 hwmon driver
 
---=20
-                   Sent with MeeGo's ActiveSync support.
+ drivers/hwmon/Kconfig     |  13 +
+ drivers/hwmon/Makefile    |   1 +
+ drivers/hwmon/ab8500.c    | 160 +++++++++++
+ drivers/hwmon/abx500.c    | 681 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/hwmon/abx500.h    |  88 ++++++
+ drivers/mfd/ab8500-core.c |   6 +-
+ 6 files changed, 946 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/hwmon/ab8500.c
+ create mode 100644 drivers/hwmon/abx500.c
+ create mode 100644 drivers/hwmon/abx500.h
 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+-- 
+1.8.0
 
-
-
-
---=-t0C2mC6m0xhly1b/KImy
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO6jCCAz0w
-ggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UEChMHRXF1
-aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTA2
-MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUludGVs
-IENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kgQ0EwggEi
-MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATDIsV2xDyt
-30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUjZzTZFq2N
-4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZvuSQ0E11y
-YL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4lz36wOdN
-Zn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+iC1HawJd
-AgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0Vgaj7TdU
-DDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3NlY3VyZWNh
-LmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTADAQH/MA0G
-CSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69tOkIP4Sg
-DJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3jMfr900fX
-ZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAAAAAABzAN
-BgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
-JzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI1MTNa
-Fw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlv
-bjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIwDQYJKoZI
-hvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpPZ7CrcIQ+FGa2
-KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx1jM8Z6GZEqbDUS+v
-BuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHEgzO784PgD9pOgBnnAbZH
-mEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1JW7N8pELAFDw0UFBWFgiv1QI
-usdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa1C2oSCmGN0003GMhQWMCAwEAAaOC
-AlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKoWZq+3PVZTYK4Nwu3z7gfLUWB+MAsG
-A1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBTCKwhTx+hdMsKC
-gOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdv
-qNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVsLmNv
-bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBDQS5j
-cmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIw
-RXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYI
-KwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0lu
-dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZgaHR0
-cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwl
-MjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQCU
-Y/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4Jcyna7fpC
-8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZksnDIlTVUv
-bR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPvhYeN7Y+3MKEd
-SMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650RUe3rOXsaV5NyJzB
-wB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIGFzCCBP+gAwIBAgIKEIhPUAABAABfaTANBgkq
-hkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
-BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0EwHhcNMTEwNDEyMTIzMzQx
-WhcNMTQwMzI3MTIzMzQxWjBFMRkwFwYDVQQDExBXb29kaG91c2UsIERhdmlkMSgwJgYJKoZIhvcN
-AQkBFhlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-CgKCAQEAvxW1JMLaZUeM6Cg2OVV1nfsZOt9x/CjVJ7SBlapefSjUoNT48n58zLK+Q00YxPkIxnwl
-m57dAxSUf/Dqg+C6DOdLknVQILrGeWNSZdC8GQ8HlHz+D5ldgTDY9L1vDM65p1wbXW4R5QfMbooZ
-IQKlyUivGkggwBUpTeeXDOfz5f4m2UW5aCnyG8yhiBUHISAQyXLwQg+iVhBpTqsVvvojybQY8lGF
-Z7U+kgbgBY0HCqOuEmT7Iz/tm4W3dpfh8mFluZUn1fMBvCaC+cdKVV/1lpeUdtMNREH+jKUU49lt
-BblH1qXmEViOvMT4itbfkUSWeWgeI9umMOK4eL31LLepCQIDAQABo4IC9jCCAvIwCwYDVR0PBAQD
-AgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4HevTmV
-8EMCAWQCAQgwHQYDVR0OBBYEFMcuq9ocKJ7EbWcVlAWTYVXwOsrHMB8GA1UdIwQYMBaAFKoWZq+3
-PVZTYK4Nwu3z7gfLUWB+MIHPBgNVHR8EgccwgcQwgcGggb6ggbuGV2h0dHA6Ly93d3cuaW50ZWwu
-Y29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBD
-QSUyMDNBKDEpLmNybIZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9D
-UkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0EoMSkuY3JsMIH1
-BggrBgEFBQcBAQSB6DCB5TBsBggrBgEFBQcwAoZgaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3Np
-dG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENB
-JTIwM0EoMSkuY3J0MHUGCCsGAQUFBzAChmlodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9y
-ZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5n
-JTIwQ0ElMjAzQSgxKS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwKQYJKwYB
-BAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMME8GA1UdEQRIMEagKQYKKwYBBAGC
-NxQCA6AbDBlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tgRlkYXZpZC53b29kaG91c2VAaW50ZWwu
-Y29tMA0GCSqGSIb3DQEBBQUAA4IBAQBxLiiAAGnWEDYYtUaje48WjSbMx8O+TsKX2x1sgi/ilnUR
-evhznvvFGx9hRrTtQ4Sz+hU7nWvoxbSLDVx6vDQ7+wyGo6SzE0MYqwB3EzwO/P8MnpgZTlEmgDeP
-GjYX2IFzp5fG7NNvc6byf8pLjXgn+2wqRLUqrh2PZZ5KKIiicVNT+UOlRIbB2T1WuSVHBMQxhQBr
-rzwwYuyoawJCHHo+eKUE51cSSzkT95K+m0Q6XYGC8tQ3i94nBIaLMIg/GM6K2cYKH3vdu/otvGPl
-j9/HEKo+mktp2A2S5sIwCKlw8nYOaYKe1dpmYtXKfVoOIIZ/LaVEB/XEIEC1x/oPbrH/MYIB6jCC
-AeYCAQEwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNV
-BAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0ECChCIT1AAAQAAX2kwCQYFKw4D
-AhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEzMDEzMDEw
-MjIxM1owIwYJKoZIhvcNAQkEMRYEFKQ/miObFVSQcVLtvmTLY8AuRwWDMA0GCSqGSIb3DQEBAQUA
-BIIBAKPKroPBzq01BftZQRlvDZAGhRyemtlkNmirS79vgoDL9CMG8no5J0ZeAk5JWvynhELW3AV0
-lV7xwFFwlNtFhtNSNit+Y1Cjuj/x1HZqA3FQ1oXrOWYoaKmDAluZDovtQkQ5noZde8B5ts4r+BnW
-ChNsfuOre2CPr29JJ/UH7Xg4dfdC+3cw2hpqDFJbtmIek74VUZ2OGUDse+oLOkGLBC9Y0EI0ORkU
-KWU3Ql9hvuIzAp5/b6uIyBhYYM7KNg0eajO4mXiqxPyVW1KPy5CqX0lwrnIcqQ8x2jwqLnS+jIXO
-M5rH5PjaLTTZ1ZeoX6aZfb5ZLLc3Dt47+dYyFvKcPQMAAAAAAAA=
-
-
---=-t0C2mC6m0xhly1b/KImy--
