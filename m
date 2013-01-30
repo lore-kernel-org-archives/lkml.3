@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab3A3SHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 13:07:37 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:45210 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755171Ab3A3SHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 13:07:34 -0500
-Date: Wed, 30 Jan 2013 12:07:32 -0600
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: cpufreq: cpufreq_driver_lock is quite hot on 512p systems
-Message-ID: <20130130180731.GA9449@gulag1.americas.sgi.com>
+	id S1756619Ab3A3SI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 13:08:56 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:42766 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755264Ab3A3SIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 13:08:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20130130170750.GA5217@gmail.com>
+References: <1359563102-5934-1-git-send-email-linus.walleij@stericsson.com>
+	<51094E50.4000302@wwwdotorg.org>
+	<20130130170750.GA5217@gmail.com>
+Date: Wed, 30 Jan 2013 19:08:51 +0100
+Message-ID: <CACRpkdZ_4kaEFHmLvgfrsimg7YSY2gnfsQMVfzcYniVT-oR+jQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] pinctrl: nomadik: Rename Device Tree compatible string
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 30, 2013 at 6:07 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-I am noticing the cpufreq_driver_lock is quite hot.
-Currently on an idle 512 system perf shows me most of the system time is 
-spent on this lock.
+> The preference is to use '-' instead of '_' in compatible strings.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
--  84.18%  [kernel]                 [k] _raw_spin_lock_irqsave
-   - _raw_spin_lock_irqsave
-      - 99.97% __cpufreq_cpu_get
-           cpufreq_cpu_get
-           __cpufreq_driver_getavg
-           dbs_check_cpu
-           od_dbs_timer
-           process_one_work
-           worker_thread
-           kthread
-           ret_from_fork
- 
-The data this lock protects is used in a read mostly situation.
-While exprimenting I found turning the lock to a rwlock fixed the problem.
-It seems like this might be amenable to using the RCU.
+This does not apply to pinctrl devel. (Same as linux-next)
 
-Any other ideas on how to properly resolve the issue?
+This is because the two hunks, as compared to the last patch,
+were already in-tree, they were changed as part of patch:
 
-Thanks,
-Nate
+commit e32af889458837d11a1ec5ec98934a1e711b049d
+Author: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+Date:   Mon Dec 17 15:53:24 2012 +0100
 
+    pinctrl/nomadik: add device tree support
+
+    This implements pin multiplexing and pin configuration for
+    the Nomadik pin controller using the device tree.
+
+    Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+    Reviewed-by: Stephen Warren <swarren@nvidia.com>
+    Reviewed-by: Philippe Langlais <philippe.langlais@stericsson.com>
+    Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+
+Since I don't dare to squash this oneliner into that patch
+for fear of Lee's rage, I leave the old patch as it is.
+
+Yours,
+Linus Walleij
