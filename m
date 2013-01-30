@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab3A3MtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 07:49:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38036 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751851Ab3A3MtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 07:49:07 -0500
-Message-ID: <510916B2.7080509@ti.com>
-Date: Wed, 30 Jan 2013 14:48:50 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1753687Ab3A3Mup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 07:50:45 -0500
+Received: from forward19.mail.yandex.net ([95.108.253.144]:44933 "EHLO
+	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab3A3Mul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 07:50:41 -0500
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: [PATCH]sched/rt: Do not account zero delta_exec in update_curr_rt()
 MIME-Version: 1.0
-To: "Mohammed, Afzal" <afzal@ti.com>
-CC: "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "eballetbo@gmail.com" <eballetbo@gmail.com>,
-        "javier@dowhile0.org" <javier@dowhile0.org>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <robertcnelson@gmail.com>
-Subject: Re: [PATCH v2 00/30] USB: omap-ehci: Move PHY management to PHY driver
-References: <1359372631-8180-1-git-send-email-rogerq@ti.com> <C8443D0743D26F4388EA172BF4E2A7A93EA95DF0@DBDE01.ent.ti.com>
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EA95DF0@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
+Message-Id: <931541359550236@web1g.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 30 Jan 2013 16:50:36 +0400
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 02:08 PM, Mohammed, Afzal wrote:
-> Hi Roger,
-> 
-> On Mon, Jan 28, 2013 at 17:00:01, Quadros, Roger wrote:
-> 
->> NOTE: Tested on 4460ES-B1 Panda and BeagleBoard C4 only. Other boards are only
->> build tested.
-> 
-> Please try to ensure that beagle bone USB0 works with this.
-> 
+There are several places of consecutive calls of dequeue_task_rt()
+and put_prev_task_rt() in the scheduler. For example, function
+rt_mutex_setprio() does it.
 
-Hi Afzal,
+The both calls lead to update_curr_rt(), the second of it receives
+zeroed delta_exec. The only effective action in this case is call of
+sched_rt_avg_update(), which can change rq->age_stamp and rq->rt_avg.
+But it is possible in case of ""floating"" rq->clock. This fact is
+not reasonable to be accounted. Another actions do nothing.
 
-I do not have beaglebone with me and don't seem to find beaglebone
-board support in mainline.
+Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>
+---
+ kernel/sched/rt.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 4e8f0f4..c6d7993 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -925,8 +925,8 @@ static void update_curr_rt(struct rq *rq)
+ 		return;
+ 
+ 	delta_exec = rq->clock_task - curr->se.exec_start;
+-	if (unlikely((s64)delta_exec < 0))
+-		delta_exec = 0;
++	if (unlikely((s64)delta_exec <= 0))
++		return;
+ 
+ 	schedstat_set(curr->se.statistics.exec_max,
+ 		      max(curr->se.statistics.exec_max, delta_exec));
 
-I would appreciate if someone who knows more about beaglebone can help
-with verification.
-
-I could find that Robert C Nelson (now in cc) is maintaining out of tree
-patches for the beaglebone. Maybe he could help with verification?
-
-regards,
--roger
