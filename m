@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab3A3R2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 12:28:07 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:54981 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316Ab3A3R2E (ORCPT
+	id S1756374Ab3A3Ram (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 12:30:42 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:50422 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab3A3Rak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 12:28:04 -0500
+	Wed, 30 Jan 2013 12:30:40 -0500
+Date: Wed, 30 Jan 2013 12:29:57 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] staging: zsmalloc: remove unused pool name
+Message-ID: <20130130172956.GC2217@konrad-lan.dumpdata.com>
+References: <1359560212-8818-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <51093F43.2090503@linux.vnet.ibm.com>
+ <20130130172159.GA24760@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130130034204.GB30965@pd.tnic>
-References: <20130129202848.GE25415@pd.tnic> <CAErSpo4v473sXvmv3gqkftkiFZtz+gYgd1yzWae=nLJjwJPBug@mail.gmail.com>
- <20130130034204.GB30965@pd.tnic>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 30 Jan 2013 10:27:42 -0700
-Message-ID: <CAErSpo47BvEsDC1o_kYDeyd6j3VUoWHwSMYPyLpZYB1H-sL=7A@mail.gmail.com>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-To: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130130172159.GA24760@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 8:42 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Jan 29, 2013 at 02:32:56PM -0700, Bjorn Helgaas wrote:
->> Konstantin has some fixes for an e1000e power management issue related
->> to suspend/resume that he observed on an x220. He didn't see an NMI,
->> and apparently his problem has been around for a long time,
->
-> Yeah, this is one of those issues you don't see *every* s/r cycle and
-> besides, I just got this box and haven't run 3.{6,7} on it yet (maybe
-> never will :-)).
->
->> so no idea whether it could be related. I just noticed the conjunction
->> of thinkpad/e1000e/resume/power saving in both reports.
->>
->> https://lkml.org/lkml/2013/1/18/147
->
-> Yes, thanks Bjorn, that was a good suggestion. Btw, from reading the
-> thread, those patches still need cooking a bit more, AFAICR people's
-> objections/comments. Or should I go ahead and test them?
+On Wed, Jan 30, 2013 at 06:21:59PM +0100, Greg Kroah-Hartman wrote:
+> On Wed, Jan 30, 2013 at 09:41:55AM -0600, Seth Jennings wrote:
+> > On 01/30/2013 09:36 AM, Seth Jennings wrote:> zs_create_pool()
+> > currently takes a name argument which is
+> > > never used in any useful way.
+> > >
+> > > This patch removes it.
+> > >
+> > > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > 
+> > Crud, forgot the Acks...
+> > 
+> > Acked-by: Nitin Gupta <ngupta@vflare.org>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> 
+> {sigh} you just made me have to edit your patch by hand, you now owe me
+> a beer...
+> 
+Should we codify that :-)
 
-You're right, I don't think we're quite ready to merge those patches.
-But if your NMI is easy to reproduce, it might be worth removing
-e1000e altogether to see if it still happens.  I noticed in your
-original log that the NMI occurred 5 seconds after the e1000e message,
-and I could imagine some CPU or PCI response timeout being 5 seconds.
 
-> It's just that I'm overly cautious every time I hear e1000e is involved:
->
-> www.linux-magazine.com/content/download/62169/484085/file/Security_Lessons_Ftrace.pdf
-
-Thanks for the pointer, that was an interesting read :)
-
-Bjorn
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index c379a2a..f879c60 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -94,6 +94,7 @@ includes updates for subsystem X.  Please apply."
+ The maintainer will thank you if you write your patch description in a
+ form which can be easily pulled into Linux's source code management
+ system, git, as a "commit log".  See #15, below.
++If the maintainer has to hand-edit your patch, you owe them a beer.
+ 
+ If your description starts to get long, that's a sign that you probably
+ need to split up your patch.  See #3, next.
