@@ -1,206 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab3A3RNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 12:13:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52360 "EHLO mx1.redhat.com"
+	id S1756005Ab3A3RUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 12:20:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:33689 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796Ab3A3RLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 12:11:06 -0500
-Message-Id: <20130130171101.538945424@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 30 Jan 2013 12:11:04 -0500
-From: aris@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v4 3/9] device_cgroup: keep track of local group settings
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=hierarchy.patch
+	id S1754277Ab3A3RUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 12:20:09 -0500
+Date: Wed, 30 Jan 2013 18:21:59 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] staging: zsmalloc: remove unused pool name
+Message-ID: <20130130172159.GA24760@kroah.com>
+References: <1359560212-8818-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <51093F43.2090503@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51093F43.2090503@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for better hierarchy support, it's needed to retain the local
-settings in order to try to reapply them after a propagated change if they're
-still valid.
+On Wed, Jan 30, 2013 at 09:41:55AM -0600, Seth Jennings wrote:
+> On 01/30/2013 09:36 AM, Seth Jennings wrote:> zs_create_pool()
+> currently takes a name argument which is
+> > never used in any useful way.
+> >
+> > This patch removes it.
+> >
+> > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> 
+> Crud, forgot the Acks...
+> 
+> Acked-by: Nitin Gupta <ngupta@vflare.org>
+> Acked-by: Rik van Riel <riel@redhat.com>
 
-v2: split this patch in two, one to just move dev_exception_rm() before
-    dev_exception_add() while keeping functional changes in this patch as
-    requested by Tejun.
-
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
- 
----
- security/device_cgroup.c |   83 +++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 67 insertions(+), 16 deletions(-)
-
---- github.orig/security/device_cgroup.c	2013-01-29 11:49:14.987661210 -0500
-+++ github/security/device_cgroup.c	2013-01-29 11:49:15.244665037 -0500
-@@ -39,13 +39,27 @@ struct dev_exception_item {
- 	struct rcu_head rcu;
- };
- 
-+enum devcg_behavior {
-+	DEVCG_DEFAULT_NONE,
-+	DEVCG_DEFAULT_ALLOW,
-+	DEVCG_DEFAULT_DENY,
-+};
-+
- struct dev_cgroup {
- 	struct cgroup_subsys_state css;
-+
-+	/* result of merging the parent's rules with local ones */
- 	struct list_head exceptions;
--	enum {
--		DEVCG_DEFAULT_ALLOW,
--		DEVCG_DEFAULT_DENY,
--	} behavior;
-+	enum devcg_behavior behavior;
-+
-+	/*
-+	 * local set rules, saved so when a parent propagates new rules, the
-+	 * local preferences can be preserved
-+	 */
-+	struct {
-+		struct list_head exceptions;
-+		enum devcg_behavior behavior;
-+	} local;
- };
- 
- static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
-@@ -104,8 +118,8 @@ free_and_exit:
- /*
-  * called under devcgroup_mutex
-  */
--static void dev_exception_rm(struct list_head *exceptions,
--			     struct dev_exception_item *ex)
-+static void __dev_exception_rm(struct list_head *exceptions,
-+			       struct dev_exception_item *ex)
- {
- 	struct dev_exception_item *walk, *tmp;
- 
-@@ -127,11 +141,18 @@ static void dev_exception_rm(struct list
- 	}
- }
- 
-+static void dev_exception_rm(struct dev_cgroup *devcgroup,
-+			     struct dev_exception_item *ex)
-+{
-+	__dev_exception_rm(&devcgroup->local.exceptions, ex);
-+	__dev_exception_rm(&devcgroup->exceptions, ex);
-+}
-+
- /*
-  * called under devcgroup_mutex
-  */
--static int dev_exception_add(struct list_head *exceptions,
--			     struct dev_exception_item *ex)
-+static int __dev_exception_add(struct list_head *exceptions,
-+			       struct dev_exception_item *ex)
- {
- 	struct dev_exception_item *excopy, *walk;
- 
-@@ -159,6 +180,28 @@ static int dev_exception_add(struct list
- 	return 0;
- }
- 
-+static int dev_exception_add(struct dev_cgroup *devcgroup,
-+			     struct dev_exception_item *ex)
-+{
-+	int rc;
-+
-+	lockdep_assert_held(&devcgroup_mutex);
-+
-+	/*
-+	 * we add to the local list so we can preserve local preferences if
-+	 * the parent propagates down new rules
-+	 */
-+	rc = __dev_exception_add(&devcgroup->local.exceptions, ex);
-+	if (rc)
-+		return rc;
-+
-+	rc = __dev_exception_add(&devcgroup->exceptions, ex);
-+	if (rc)
-+		__dev_exception_rm(&devcgroup->local.exceptions, ex);
-+
-+	return rc;
-+}
-+
- static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
- {
- 	struct dev_exception_item *ex, *tmp;
-@@ -167,6 +210,11 @@ static void __dev_exception_clean(struct
- 		list_del_rcu(&ex->list);
- 		kfree_rcu(ex, rcu);
- 	}
-+	list_for_each_entry_safe(ex, tmp, &dev_cgroup->local.exceptions,
-+				 list) {
-+		list_del_rcu(&ex->list);
-+		kfree_rcu(ex, rcu);
-+	}
- }
- 
- /**
-@@ -195,6 +243,8 @@ static struct cgroup_subsys_state *devcg
- 	if (!dev_cgroup)
- 		return ERR_PTR(-ENOMEM);
- 	INIT_LIST_HEAD(&dev_cgroup->exceptions);
-+	INIT_LIST_HEAD(&dev_cgroup->local.exceptions);
-+	dev_cgroup->local.behavior = DEVCG_DEFAULT_NONE;
- 	parent_cgroup = cgroup->parent;
- 
- 	if (parent_cgroup == NULL)
-@@ -413,18 +463,19 @@ 	memset(&ex, 0, sizeof(ex));
- 			if (!may_allow_all(parent))
- 				return -EPERM;
- 			dev_exception_clean(devcgroup);
-+			if (parent)
-+				rc = dev_exceptions_copy(&devcgroup->exceptions,
-+							 &parent->exceptions);
- 			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
--			if (!parent)
--				break;
-+			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
- 
--			rc = dev_exceptions_copy(&devcgroup->exceptions,
--						 &parent->exceptions);
- 			if (rc)
- 				return rc;
- 			break;
- 		case DEVCG_DENY:
- 			dev_exception_clean(devcgroup);
- 			devcgroup->behavior = DEVCG_DEFAULT_DENY;
-+			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
- 			break;
- 		default:
- 			return -EINVAL;
-@@ -514,10 +565,10 @@ 		case '\0':
- 		 * don't want to break compatibility
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
--			dev_exception_rm(&devcgroup->exceptions, &ex);
-+			dev_exception_rm(devcgroup, &ex);
- 			return 0;
- 		}
--		return dev_exception_add(&devcgroup->exceptions, &ex);
-+		return dev_exception_add(devcgroup, &ex);
- 	case DEVCG_DENY:
- 		/*
- 		 * If the default policy is to deny by default, try to remove
-@@ -525,10 +576,10 @@ 			return 0;
- 		 * don't want to break compatibility
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
--			dev_exception_rm(&devcgroup->exceptions, &ex);
-+			dev_exception_rm(devcgroup, &ex);
- 			return 0;
- 		}
--		return dev_exception_add(&devcgroup->exceptions, &ex);
-+		return dev_exception_add(devcgroup, &ex);
- 	default:
- 		return -EINVAL;
- 	}
+{sigh} you just made me have to edit your patch by hand, you now owe me
+a beer...
 
