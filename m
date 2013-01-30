@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab3A3LEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 06:04:47 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:37670 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267Ab3A3LEo (ORCPT
+	id S1755182Ab3A3LEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:04:50 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:55939 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755141Ab3A3LEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 06:04:44 -0500
-Date: Wed, 30 Jan 2013 12:04:29 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        linaro-dev@lists.linaro.org
-Subject: Re: [PATCH 1/5] cpufreq: handle SW coordinated CPUs
-Message-ID: <20130130110429.GC32315@balto.lan>
-References: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org>
- <1356620142-8680-2-git-send-email-fabio.baltieri@linaro.org>
- <CAOh2x==SG32h-BbrnLN8gwiYNz7bS-REVcmXN67fdYPqFVmCiA@mail.gmail.com>
- <20130130091453.GA32315@balto.lan>
+	Wed, 30 Jan 2013 06:04:47 -0500
+Message-ID: <5108FE46.1030102@gaisler.com>
+Date: Wed, 30 Jan 2013 12:04:38 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130130091453.GA32315@balto.lan>
-X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        linux-kernel@vger.kernel.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        spi-devel-general@lists.sourceforge.net,
+        Mingkai Hu <Mingkai.hu@freescale.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>, software@gaisler.com
+Subject: Re: [PATCH] spi: spi-fsl-spi: Make spi-fsl-spi usable in cpu mode
+ outside of FSL SOC environments and add a grlib variant normally running
+ on sparc
+References: <1356711368-10437-1-git-send-email-andreas@gaisler.com> <5108F031.1010005@gaisler.com> <20130130103645.GB6229@opensource.wolfsonmicro.com>
+In-Reply-To: <20130130103645.GB6229@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 10:14:53AM +0100, Fabio Baltieri wrote:
-> Hello Viresh,
-> 
-> On Wed, Jan 30, 2013 at 12:33:40PM +0530, Viresh Kumar wrote:
-> > I am starting to follow cpufreq patches religiously now and so have to come
-> > back to this old thread due to some crash we got :)
-> > 
-> > Its still not pushed upstream, so better to get it resolved before 3.9.
-> 
-> Definitely, that's what we have -next for!
-> 
-> > On Thu, Dec 27, 2012 at 8:25 PM, Fabio Baltieri
-> > <fabio.baltieri@linaro.org> wrote:
-> > 
-> > > diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> > 
-> > >  static inline void dbs_timer_init(struct dbs_data *dbs_data,
-> > > -               struct cpu_dbs_common_info *cdbs, unsigned int sampling_rate)
-> > > +                                 struct cpu_dbs_common_info *cdbs,
-> > > +                                 unsigned int sampling_rate,
-> > > +                                 int cpu)
-> > >  {
-> > >         int delay = delay_for_sampling_rate(sampling_rate);
-> > > +       struct cpu_dbs_common_info *cdbs_local = dbs_data->get_cpu_cdbs(cpu);
-> > 
-> > I couldn't understand the real need for this, as it should really give
-> > back the same
-> > pointer pointed out by: cdbs and hence no need of cpu in params too..
+On 2013-01-30 11:36, Mark Brown wrote:
+> On Wed, Jan 30, 2013 at 11:04:33AM +0100, Andreas Larsson wrote:
+>> On 2012-12-28 17:16, Andreas Larsson wrote:
+>
+>>> This makes the cpu mode of the driver available outside of an FSL SOC
+>>> and even powerpc environment. This is accomplished by putting things
+>>> regarding fsl specific code and to cpm specific code within ifdefs.
+>
+>> Any comments anyone?
+>
+>> This patch takes "Approach A" discussed and supported in
+>> http://sourceforge.net/mailarchive/message.php?msg_id=30131080
+>
+> I don't seem to have been CCed on the patch...
 
-Small sidenote, actually what I'm going to drop here i *cdbs, as I need
-cpu for schedule_delayed_work_on and can't use cdbs->cpu for that as
-it's the master's one.
+No, but I thought it might be useful to get you in the loop given the 
+recent maintainerhood status change proposal.
 
-Fabio
+You can find the patch at https://lkml.org/lkml/2012/12/28/83 or 
+http://sourceforge.net/mailarchive/message.php?msg_id=30280254
 
-> > 
-> > I may be wrong here :)
-> 
-> You are actually right.  This comes from the first version of the patch
-> (I basically rewrote it after the common code rafactoring), and cdbs was
-> meant to be always the one for the master CPU while cpu should indicate
-> the one being initialized.  Then the thing turned out as:
-> 
-> A - I dropped the code specific for master cdbs here as it was already
-> there on another code path following the rafactoring.
-> B - I passed j_cdbs = dbs_data->get_cpu_cdbs(j) in the init cycle while
-> it was really meant to be get_cpu_cdbs(cpu).
-> 
-> > >
-> > > -       INIT_DEFERRABLE_WORK(&cdbs->work, dbs_data->gov_dbs_timer);
-> > > -       schedule_delayed_work_on(cdbs->cpu, &cdbs->work, delay);
-> > > +       schedule_delayed_work_on(cpu, &cdbs_local->work, delay);
-> > >  }
+If you would like I'll resend the patch adding you to the CC list.
 
--- 
-Fabio Baltieri
+Cheers,
+Andreas Larsson
+
