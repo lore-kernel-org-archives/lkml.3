@@ -1,113 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab3A3Bx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:53:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44040 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab3A3Bx4 (ORCPT
+	id S1753735Ab3A3Byo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:54:44 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:34465 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab3A3Bym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:53:56 -0500
-Date: Tue, 29 Jan 2013 17:53:45 -0800
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-d27807b9bfd6315a93a051e4e6d9961d6e4467d3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1359058816-7615-33-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-33-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, 64bit, mm: Mark data/bss/brk to nx
-Git-Commit-ID: d27807b9bfd6315a93a051e4e6d9961d6e4467d3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 29 Jan 2013 20:54:42 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:53:50 -0800 (PST)
+In-Reply-To: <tip-8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae@git.kernel.org>
+References: <1359058816-7615-26-git-send-email-yinghai@kernel.org>
+	<tip-8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae@git.kernel.org>
+Date: Tue, 29 Jan 2013 17:54:41 -0800
+X-Google-Sender-Auth: 9UDcVHz7CL_XZ6pgmmU_3dIDqCA
+Message-ID: <CAE9FiQWP-KRAppXUcYm7KYEJG_k5fMVCPgeZKoAEAUfdXuQXNA@mail.gmail.com>
+Subject: Re: [tip:x86/mm2] x86, boot: enable support load bzImage and ramdisk
+ above 4G
+From: Yinghai Lu <yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, caushik1@gmail.com, matt.fleming@intel.com,
+        jmillenbach@gmail.com, tglx@linutronix.de, josh@joshtriplett.org,
+        hpa@linux.intel.com, rob@landley.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d27807b9bfd6315a93a051e4e6d9961d6e4467d3
-Gitweb:     http://git.kernel.org/tip/d27807b9bfd6315a93a051e4e6d9961d6e4467d3
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 24 Jan 2013 12:20:13 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 29 Jan 2013 15:34:36 -0800
+On Tue, Jan 29, 2013 at 5:45 PM, tip-bot for Yinghai Lu
+<yinghai@kernel.org> wrote:
+> Commit-ID:  8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae
+> Gitweb:     http://git.kernel.org/tip/8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae
+> Author:     Yinghai Lu <yinghai@kernel.org>
+> AuthorDate: Mon, 28 Jan 2013 20:16:44 -0800
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Tue, 29 Jan 2013 15:30:22 -0800
+>
+> x86, boot: enable support load bzImage and ramdisk above 4G
+>
+> xloadflags bit 1 indicates that we can load the kernel and all data
+> structure above 4G; it is set if kernel is relocatable and 64bit.
+>
+> bootloader will check if xloadflags bit1 is set to decicde if
+> it could load ramdisk and kernel high above 4G.
+>
+> bootloader will fill value to ext_ramdisk_image/size for high 32bits
+> when it load ramdisk above 4G.
+> kernel use get_ramdisk_image/size to use ext_ramdisk_image/size to get
+> right positon for ramdisk.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Cc: Gokul Caushik <caushik1@gmail.com>
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> Cc: Joe Millenbach <jmillenbach@gmail.com>
+> Link: http://lkml.kernel.org/r/1359058816-7615-26-git-send-email-yinghai@kernel.org
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> ---
+>  arch/x86/boot/compressed/cmdline.c |  2 ++
+>  arch/x86/boot/compressed/misc.c    | 19 +++++++++++++++++++
+>  arch/x86/boot/header.S             | 10 +++++++++-
+>  arch/x86/kernel/head64.c           |  2 ++
+>  arch/x86/kernel/setup.c            |  4 ++++
+>  5 files changed, 36 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
+> index b4c913c..bffd73b 100644
+> --- a/arch/x86/boot/compressed/cmdline.c
+> +++ b/arch/x86/boot/compressed/cmdline.c
+> @@ -17,6 +17,8 @@ static unsigned long get_cmd_line_ptr(void)
+>  {
+>         unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
+>
+> +       cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
+> +
+>         return cmd_line_ptr;
+>  }
+>  int cmdline_find_option(const char *option, char *buffer, int bufsize)
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index 7cb56c6..5d8dc86 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -318,6 +318,23 @@ static void parse_elf(void *output)
+>         free(phdrs);
+>  }
+>
+> +static void sanitize_real_mode(struct boot_params *real_mode)
+> +{
+> +       if (real_mode->sentinel) {
+> +               /*fields in boot_params are not valid, clear them */
+> +               memset(&real_mode->olpc_ofw_header, 0,
+> +                      (char *)&real_mode->alt_mem_k -
+> +                       (char *)&real_mode->olpc_ofw_header);
+> +               memset(&real_mode->_pad7[0], 0,
+> +                      (char *)&real_mode->edd_mbr_sig_buffer[0] -
+> +                       (char *)&real_mode->_pad7[0]);
+> +               memset(&real_mode->_pad8[0], 0,
+> +                      (char *)&real_mode->eddbuf[0] -
+> +                       (char *)&real_mode->_pad8[0]);
+> +               memset(&real_mode->_pad9[0], 0, sizeof(real_mode->_pad9));
+> +       }
+> +}
+> +
+>  asmlinkage void decompress_kernel(void *rmode, memptr heap,
+>                                   unsigned char *input_data,
+>                                   unsigned long input_len,
+> @@ -327,6 +344,8 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+>
+>         sanitize_boot_params(real_mode);
+>
+> +       sanitize_real_mode(real_mode);
+> +
 
-x86, 64bit, mm: Mark data/bss/brk to nx
+Hi, Peter,
 
-HPA said, we should not have RW and +x set at the time.
+sanitize_real_mode() need to be dropped from this patch.
 
-for kernel layout:
-[    0.000000] Kernel Layout:
-[    0.000000]   .text: [0x01000000-0x021434f8]
-[    0.000000] .rodata: [0x02200000-0x02a13fff]
-[    0.000000]   .data: [0x02c00000-0x02dc763f]
-[    0.000000]   .init: [0x02dc9000-0x0312cfff]
-[    0.000000]    .bss: [0x0313b000-0x03dd6fff]
-[    0.000000]    .brk: [0x03dd7000-0x03dfffff]
+You already have complete patch sanitize_boot_params() applied before.
 
-before the patch, we have
----[ High Kernel Mapping ]---
-0xffffffff80000000-0xffffffff81000000          16M                           pmd
-0xffffffff81000000-0xffffffff82200000          18M     ro         PSE GLB x  pmd
-0xffffffff82200000-0xffffffff82c00000          10M     ro         PSE GLB NX pmd
-0xffffffff82c00000-0xffffffff82dc9000        1828K     RW             GLB x  pte
-0xffffffff82dc9000-0xffffffff82e00000         220K     RW             GLB NX pte
-0xffffffff82e00000-0xffffffff83000000           2M     RW         PSE GLB NX pmd
-0xffffffff83000000-0xffffffff8313a000        1256K     RW             GLB NX pte
-0xffffffff8313a000-0xffffffff83200000         792K     RW             GLB x  pte
-0xffffffff83200000-0xffffffff83e00000          12M     RW         PSE GLB x  pmd
-0xffffffff83e00000-0xffffffffa0000000         450M                           pmd
+Thanks
 
-after patch,, we get
----[ High Kernel Mapping ]---
-0xffffffff80000000-0xffffffff81000000          16M                           pmd
-0xffffffff81000000-0xffffffff82200000          18M     ro         PSE GLB x  pmd
-0xffffffff82200000-0xffffffff82c00000          10M     ro         PSE GLB NX pmd
-0xffffffff82c00000-0xffffffff82e00000           2M     RW             GLB NX pte
-0xffffffff82e00000-0xffffffff83000000           2M     RW         PSE GLB NX pmd
-0xffffffff83000000-0xffffffff83200000           2M     RW             GLB NX pte
-0xffffffff83200000-0xffffffff83e00000          12M     RW         PSE GLB NX pmd
-0xffffffff83e00000-0xffffffffa0000000         450M                           pmd
-
-so data, bss, brk get NX ...
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1359058816-7615-33-git-send-email-yinghai@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/init_64.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index dc67337..e2fcbc3 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -810,6 +810,7 @@ void mark_rodata_ro(void)
- 	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
- 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
- 	unsigned long data_start = (unsigned long) &_sdata;
-+	unsigned long all_end = PFN_ALIGN(&_end);
- 
- 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
- 	       (end - start) >> 10);
-@@ -818,10 +819,10 @@ void mark_rodata_ro(void)
- 	kernel_set_to_readonly = 1;
- 
- 	/*
--	 * The rodata section (but not the kernel text!) should also be
--	 * not-executable.
-+	 * The rodata/data/bss/brk section (but not the kernel text!)
-+	 * should also be not-executable.
- 	 */
--	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
-+	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
- 
- 	rodata_test();
- 
+Yinghai
