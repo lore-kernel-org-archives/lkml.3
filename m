@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab3A3LGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 06:06:10 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:51708 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754149Ab3A3LGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 06:06:07 -0500
-Message-ID: <5108FE9B.9000806@mev.co.uk>
-Date: Wed, 30 Jan 2013 11:06:03 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
+	id S1754984Ab3A3LIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:08:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45290 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149Ab3A3LIG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 06:08:06 -0500
 MIME-Version: 1.0
-To: Ian Abbott <ian.abbott@mev.co.uk>
-CC: H Hartley Sweeten <hartleys@visionengravers.com>,
-        "=?ISO-8859-1?Q?Pete?= =?ISO-8859-1?Q?r_H=FCwe?=" <PeterHuewe@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [Q]staging/comedi: Considation of *_find_boardinfo possible?
-References: <201301300041.36064.PeterHuewe@gmx.de> <ADE657CA350FB648AAC2C43247A983F00207A707B3C8@AUSP01VMBX24.collaborationhost.net> <5108FE31.8020107@mev.co.uk>
-In-Reply-To: <5108FE31.8020107@mev.co.uk>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <s5hd2wnrlgl.wl%tiwai@suse.de>
+References: <1359470814-7993-1-git-send-email-tiwai@suse.de>
+	<1359470814-7993-2-git-send-email-tiwai@suse.de>
+	<CACVXFVOf4LZD+qVcqS9yBtvNZCRF=LMpR5BKuXby3Z8dfB+Vzw@mail.gmail.com>
+	<s5hpq0nw35i.wl%tiwai@suse.de>
+	<CACVXFVN9JNe6US655hh3cNpKyJFdWrLEYOOOdnk97_5bFmZYxw@mail.gmail.com>
+	<s5hfw1jrmhn.wl%tiwai@suse.de>
+	<CACVXFVNmhpfHgM4BVMDi3tffN4ajinUqnZD7c3fPvTL26EDDRA@mail.gmail.com>
+	<s5hd2wnrlgl.wl%tiwai@suse.de>
+Date: Wed, 30 Jan 2013 19:08:03 +0800
+Message-ID: <CACVXFVP6U0CmVZNUqh9eiQ0qBqXdqvr0EVr9jajJby+9mqJ3dg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] firmware: Refactoring for splitting user-mode helper code
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-30 11:04, Ian Abbott wrote:
-> static int foobar_auto_attach(struct comedi_device *dev,
-> 			      unsigned long context_bn)
-> {
-> 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
-> 	struct foobar_board *thisboard = &foobar_boards[bn_foo];
+On Wed, Jan 30, 2013 at 6:53 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Wed, 30 Jan 2013 18:50:05 +0800,
+> Ming Lei wrote:
+>>
+>> On Wed, Jan 30, 2013 at 6:31 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> >
+>> > But it's supposed to be cached, no?
+>>
+>> Generally it will be cached, but some crazy devices might come as new
+>> device during resume, so we still need to handle the situation.
+>
+> In that case, shouldn't we simply return an error instead of
+> usermodehelper lock (at least for direct loading)?
 
-Oops, I meant &foobar_boards[context_bn] there!
+The check depends on usermodehelper_read_trylock now, is there
+other simpler way to do the check?
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Thanks,
+--
+Ming Lei
