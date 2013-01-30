@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3A3Pys (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 10:54:48 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:36744 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab3A3Pyq convert rfc822-to-8bit (ORCPT
+	id S1755494Ab3A3Py5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 10:54:57 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:48259 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753883Ab3A3Pyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 10:54:46 -0500
-Message-ID: <1359561282.3094.15.camel@hornet>
-Subject: Re: [PATCH] mfd: vexpress: Add pseudo-GPIO based LEDs
-From: Pawel Moll <pawel.moll@arm.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 30 Jan 2013 15:54:42 +0000
-In-Reply-To: <20130130154923.GE1174@sortiz-mobl>
-References: <1359541996-18127-1-git-send-email-pawel.moll@arm.com>
-	 <20130130154923.GE1174@sortiz-mobl>
-X-Mailer: Evolution 3.6.2-0ubuntu0.1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 30 Jan 2013 15:54:43.0167 (UTC) FILETIME=[1E945EF0:01CDFF02]
-X-MC-Unique: 113013015544401301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Jan 2013 10:54:54 -0500
+Date: Wed, 30 Jan 2013 10:54:53 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v8 2/4] block: add runtime pm helpers
+In-Reply-To: <1359538494-2936-3-git-send-email-aaron.lu@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301301053210.1709-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-30 at 15:49 +0000, Samuel Ortiz wrote:
-> On Wed, Jan 30, 2013 at 10:33:16AM +0000, Pawel Moll wrote:
-> > The LEDs on the Versatile Express motherboard are controlled
-> > through simple memory-mapped register. This patch extends
-> > the pseudo-GPIO controller definition for these lines and
-> > creates generic "leds-gpio" device using them
-> > 
-> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> > ---
-> > 
-> > Hello Samuel,
-> > 
-> > Would you be so kind to take this patch in for 3.9? Or would
-> > you prefer to get it in through arm-soc tree?
-> I'll take it through my MFD tree.
+On Wed, 30 Jan 2013, Aaron Lu wrote:
 
-Great, thanks!
-
+> From: Lin Ming <ming.m.lin@intel.com>
 > 
-> >  drivers/mfd/vexpress-sysreg.c |   73 +++++++++++++++++++++++++++++++----------
-> >  include/linux/vexpress.h      |    8 +++++
-> Hmmm, there is a include/linux/mfd/ directory for kernel MFD drivers, FYI.
+> Add runtime pm helper functions:
+> 
+> void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
+>   - Initialization function for drivers to call.
+> 
+> int blk_pre_runtime_suspend(struct request_queue *q)
+>   - If any requests are in the queue, mark last busy and return -EBUSY.
+>     Otherwise set q->rpm_status to RPM_SUSPENDING and return 0.
+> 
+> void blk_post_runtime_suspend(struct request_queue *q, int err)
+>   - If the suspend succeeded then set q->rpm_status to RPM_SUSPENDED.
+>     Otherwise set it to RPM_ACTIVE.
+> 
+> void blk_pre_runtime_resume(struct request_queue *q)
+>   - Set q->rpm_status to RPM_RESUMING.
+> 
+> void blk_post_runtime_resume(struct request_queue *q, int err)
+>   - If the resume succeeded then set q->rpm_status to RPM_ACTIVE
+>     and call __blk_run_queue, then mark last busy and autosuspend.
+>     Otherwise set q->rpm_status to RPM_SUSPENDED.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 
-Sure, it's just that this header "serves" whole platform, not only the
-mfd drivers (eg. there are power-related declarations there as well). If
-one day it gets divided, I'll make sure that the MFD portions will find
-its way into ../mfd/.
+> +void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
+> +{
+> +	q->dev = dev;
+> +	q->rpm_status = RPM_ACTIVE;
+> +	pm_runtime_set_autosuspend_delay(q->dev, -1);
+> +	pm_runtime_use_autosuspend(q->dev);
+> +	pm_runtime_mark_last_busy(q->dev);
+> +	pm_runtime_autosuspend(q->dev);
 
-Cheers!
+This last line is no longer needed.  It can't do anything useful, since 
+autosuspends are disabled (the delay is -1).
 
-Pawel
-
+Alan Stern
 
