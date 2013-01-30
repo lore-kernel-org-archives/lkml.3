@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab3A3AYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 19:24:45 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33401
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272Ab3A3AYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 19:24:40 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-        JBeulich@suse.com, bp@alien8.de
-Cc: Olaf Hering <"[mailto:olaf@aepfle.de]"@linuxonhyperv.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, stable@kernel.org
-Subject: [PATCH 1/3] x86: Hyper-V: register clocksource only if its advertised
-Date: Tue, 29 Jan 2013 16:51:46 -0800
-Message-Id: <1359507108-26091-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1359507077-26050-1-git-send-email-kys@microsoft.com>
-References: <1359507077-26050-1-git-send-email-kys@microsoft.com>
+	id S1753168Ab3A3Agw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 19:36:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51915 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab3A3Agt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 19:36:49 -0500
+Date: Tue, 29 Jan 2013 16:36:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: fli24 <fei.li@intel.com>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: Re: [PATCH] suspend: enable freeze timeout configuration through
+ sysctl
+Message-Id: <20130129163647.47ca83fa.akpm@linux-foundation.org>
+In-Reply-To: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olaf Hering <[mailto:olaf@aepfle.de]>
+On Tue, 29 Jan 2013 10:58:20 +0800
+fli24 <fei.li@intel.com> wrote:
 
-Enable hyperv_clocksource only if its advertised as a feature.
-XenServer 6 returns the signature which is checked in
-ms_hyperv_platform(), but it does not offer all features. Currently the
-clocksource is enabled unconditionally in ms_hyperv_init_platform(), and
-the result is a hanging guest.
+> At present, the timeout value for freezing tasks is fixed as 20s,
+> which is too long for handheld device usage, especially for mobile
+> phone.
+> 
+> In order to improve user experience, we enable freeze timeout
+> configuration through sysctl, so that we can tune the value easily
+> for concrete usage, such as smaller value for handheld device such
+> as mobile phone.
+> 
+> ...
+>
 
-Hyper-V spec Bit 1 indicates the availability of Partition Reference
-Counter.  Register the clocksource only if this bit is set.
+The patch looks nice - it does everything right in places where things
+are frequently done wrongly.  Except..
 
-The guest in question prints this in dmesg:
- [    0.000000] Hypervisor detected: Microsoft HyperV
- [    0.000000] HyperV: features 0x70, hints 0x0
+It forgot to document the sysctl.  Documentation/sysctl/kernel.txt, I
+guess.
 
-This bug can be reproduced easily be setting 'viridian=1' in a HVM domU
-.cfg file. A workaround without this patch is to boot the HVM guest with
-'clocksource=jiffies'.
+Is /proc/sys/kernel the most appropriate place for this?  Perhaps a
+PM-specific place would be better.  Maybe not.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: stable@kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>
----
- arch/x86/kernel/cpu/mshyperv.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect */
+>  extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
+>  
+>  /*
+> + * Timeout for stopping processes
+> + */
+> +extern unsigned int sysctl_freeze_process_timeout_secs;
 
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 0a630dd..646d192 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -68,7 +68,8 @@ static void __init ms_hyperv_init_platform(void)
- 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
- 	       ms_hyperv.features, ms_hyperv.hints);
- 
--	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
-+		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
- }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
--- 
-1.7.4.1
+I suggest the use of milliseconds here.  Someone might want a
+half-second timeout and it's pretty pointless to design the interface
+in a way which rules that out.
 
