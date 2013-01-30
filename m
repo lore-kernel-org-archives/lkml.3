@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab3A3FmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 00:42:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48624 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab3A3FmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 00:42:05 -0500
-Date: Wed, 30 Jan 2013 06:42:00 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Thomas Backlund <tmb@mageia.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: perf 3.8-rc build failure:  undefined reference to `strlcpy'
-Message-ID: <20130130054200.GK30965@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Namhyung Kim <namhyung@kernel.org>,
-	Thomas Backlund <tmb@mageia.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Arnaldo Carvalho de Melo <acme@redhat.com>,
-	Jiri Olsa <jolsa@redhat.com>
-References: <51074E9D.3040803@mageia.org>
- <20130129103722.GE14444@pd.tnic>
- <87ehh3v2jo.fsf@sejong.aot.lge.com>
- <20130130032831.GA30965@pd.tnic>
- <87a9rruv3x.fsf@sejong.aot.lge.com>
+	id S1752183Ab3A3Fm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 00:42:28 -0500
+Received: from relay.parallels.com ([195.214.232.42]:43358 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3A3FmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 00:42:25 -0500
+Message-ID: <5108B2B6.7010807@parallels.com>
+Date: Wed, 30 Jan 2013 09:42:14 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <87a9rruv3x.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <Trond.Myklebust@netapp.com>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [RFC PATCH] SUNRPC: protect transport processing with rw sem
+References: <20130129110317.29541.51920.stgit@localhost.localdomain> <20130129225736.GC6219@fieldses.org>
+In-Reply-To: <20130129225736.GC6219@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 01:56:34PM +0900, Namhyung Kim wrote:
-> That's because the toplevel Makefile resets MAKEFLAGS in the middle:
-
-That was me: ea01fa9f63aef
-
-> 
-> Makefile:1330
->   # Clear a bunch of variables before executing the submake
-
-and I added this because there was a problem AFAICR. And why I added it,
-is not documented in the patch commit message, crap.
-
->   tools/: FORCE
->   	$(Q)mkdir -p $(objtree)/tools
->   	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/
->   
->   tools/%: FORCE
->   	$(Q)mkdir -p $(objtree)/tools
->   	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/ $*
+30.01.2013 02:57, J. Bruce Fields пишет:
+> On Tue, Jan 29, 2013 at 02:03:30PM +0300, Stanislav Kinsbursky wrote:
+>> There could be a service transport, which is processed by service thread and
+>> racing in the same time with per-net service shutdown like listed below:
+>>
+>> CPU#0:                            CPU#1:
+>>
+>> svc_recv                        svc_close_net
+>> svc_get_next_xprt (list_del_init(xpt_ready))
+>>                              svc_close_list (set XPT_BUSY and XPT_CLOSE)
+>>                              svc_clear_pools(xprt was gained on CPU#0 already)
+>>                              svc_delete_xprt (set XPT_DEAD)
+>> svc_handle_xprt (is XPT_CLOSE => svc_delete_xprt()
+>> BUG()
+>>
+>> There could be different solutions of the problem.
+>> Probably, the patch doesn't implement the best one, but I hope the simple one.
+>> IOW, it protects critical section (dequeuing of pending transport and
+>> enqueuing  it back to the pool) by per-service rw semaphore,
 >
-> So why should it be reset in the first place?
+> It's actually per-thread (per-struct svc_rqst) here.
+>
 
-Oh yeah, it was some interaction with the toplevel Makefile that caused
-issues. Here's one, if you remove MAKEFLAGS= above and dump it in the
-target, here's what you get:
+Yes, sure.
 
-$ make -j9 tools/perf_clean
-MAKEFLAGS: --no-print-directory -Rr --jobserver-fds=5,7 -j -I /w/kernel/linux-2.6
-    DESCEND perf
-make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
-    SUBDIR ../lib/traceevent/
-*.o *~ libtraceevent.a libtraceevent.so *.a *.so ep_version.h .*.d
-/bin/sh: 1: *.o: not found
-make[4]: *** [clean] Error 127
-make[3]: *** [sub-make] Error 2
-make[2]: *** [/w/kernel/linux-2.6/tools/perf/libtraceevent.a-clean] Error 2
-make[1]: *** [perf_clean] Error 2
-make: *** [tools/perf_clean] Error 2
+>> taken for read.
+>> On per-net transports shutdown, this semaphore have to be taken for write.
+>
+> There's no down_write in this patch.  Did you forget this part?
+>
 
-The "rm -f" is missing at the beginning of the line because kbuild does
-remove build files differently.
+See "fs/nfs/callback.c" part
 
-If you leave it in, it works fine:
+> The server rpc code goes to some care not to write to any global
+> structure, to prevent server threads running on multiple cores from
+> bouncing cache lines between them.
+>
 
-    DESCEND perf
-    SUBDIR ../lib/traceevent/
-rm -f *.o *~ libtraceevent.a libtraceevent.so *.a *.so ep_version.h .*.d
-...
+This is just an idea. I.e. I wasn't trying to polish the patch - just to share the vision.
 
-> > Oh, and one more thing, there's tools/scripts/Makefile.include which
-> > looks at -s already and perf/Makefile includes it so you probably want
-> > to put your change there so that all tools use it.
-> 
-> Are you suggesting that moving "try-cc" to the Makefile.include?
+> But my understanding is that even down_read() does modify the semaphore.
+> So we might want something like the percpu semaphore describe in
+> Documentation/percpu-rw-semaphore.txt.
+>
 
-Forget it, I got confused with the QUIET_* thingies in
-<tools/scripts/Makefile.include>
+Sure, I'll have a look.
 
-Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Best regards,
+Stanislav Kinsbursky
