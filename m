@@ -1,123 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab3A3RM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 12:12:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756050Ab3A3RLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 12:11:08 -0500
-Message-Id: <20130130171101.812377398@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 30 Jan 2013 12:11:06 -0500
-From: aris@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v4 5/9] devcg: prepare may_access() for hierarchy support
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=strengthen-may_access.patch
+	id S1756425Ab3A3RMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 12:12:37 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:57510 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756321Ab3A3RMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 12:12:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130130165321.GD30559@balto.lan>
+References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
+	<1359550803-18577-4-git-send-email-fabio.baltieri@linaro.org>
+	<CAKohpompi7mzd+XmrUzJ4T=apzpmUcryHaBfQWUoO5G3+4y=_Q@mail.gmail.com>
+	<20130130165321.GD30559@balto.lan>
+Date: Wed, 30 Jan 2013 22:42:29 +0530
+Message-ID: <CAKohpokzBsEQBAPSFTxcC52QmGxst1T-=pzk-E4+dgvyTsiM6g@mail.gmail.com>
+Subject: Re: [PATCH v7 3/4] cpufreq: conservative: call dbs_check_cpu only
+ when necessary
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
+        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently may_access() is only able to verify if an exception is valid for the
-current cgroup, which has the same behavior. With hierarchy, it'll be also used
-to verify if a cgroup local exception is valid towards its cgroup parent, which
-might have different behavior.
+On 30 January 2013 22:23, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
+> On Wed, Jan 30, 2013 at 09:23:22PM +0530, Viresh Kumar wrote:
 
-v2:
-- updated patch description
-- rebased on top of a new patch to expand the may_access() logic to make it
-  more clear
-- fixed argument description order in may_access()
+> Can't argue with this, but the two had some subdle differences (namely
+> th two dbs_info structures) and I opted to not mess up forcing some
+> non-obvious common code.
+>
+> Feel free to suggest a strategy.
 
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
----
- security/device_cgroup.c |   38 ++++++++++++++++++++++++--------------
- 1 file changed, 24 insertions(+), 14 deletions(-)
-
---- github.orig/security/device_cgroup.c	2013-01-30 08:58:02.000000000 -0500
-+++ github/security/device_cgroup.c	2013-01-30 09:00:09.435351867 -0500
-@@ -354,9 +354,11 @@ 	return 0;
-  *		verify if a certain access is allowed.
-  * @dev_cgroup: dev cgroup to be tested against
-  * @refex: new exception
-+ * @behavior: behavior of the exception
-  */
- static bool may_access(struct dev_cgroup *dev_cgroup,
--		       struct dev_exception_item *refex)
-+		       struct dev_exception_item *refex,
-+		       enum devcg_behavior behavior)
- {
- 	struct dev_exception_item *ex;
- 	bool match = false;
-@@ -380,19 +382,27 @@ 		if (ex->minor != ~0 && ex->minor != re
- 		break;
- 	}
- 
--	/*
--	 * In two cases we'll consider this new exception valid:
--	 * - the dev cgroup has its default policy to deny + exception list:
--	 *   the new exception *should* match the exceptions
--	 * - the dev cgroup has its default policy to allow + exception list:
--	 *   the new exception should *not* match any of the exceptions
--	 */
--	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
--		if (match)
-+	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-+		if (behavior == DEVCG_DEFAULT_ALLOW) {
-+			/* the exception will deny access to certain devices */
- 			return true;
-+		} else {
-+			/* the exception will allow access to certain devices */
-+			if (match)
-+				/*
-+				 * a new exception allowing access shouldn't
-+				 * match an parent's exception
-+				 */
-+				return false;
-+			return true;
-+		}
- 	} else {
--		if (!match)
-+		/* only behavior == DEVCG_DEFAULT_DENY allowed here */
-+		if (match)
-+			/* parent has an exception that matches the proposed */
- 			return true;
-+		else
-+			return false;
- 	}
- 	return false;
- }
-@@ -411,7 +421,7 @@ static int parent_has_perm(struct dev_cg
- 	if (!pcg)
- 		return 1;
- 	parent = cgroup_to_devcgroup(pcg);
--	return may_access(parent, ex);
-+	return may_access(parent, ex, childcg->behavior);
- }
- 
- /**
-@@ -445,7 +455,7 @@ static int devcgroup_update_access(struc
- {
- 	const char *b;
- 	char temp[12];		/* 11 + 1 characters needed for a u32 */
--	int count, rc;
-+	int count, rc = 0;
- 	struct dev_exception_item ex;
- 	struct cgroup *p = devcgroup->css.cgroup;
- 	struct dev_cgroup *parent = NULL;
-@@ -663,7 +673,7 @@ 	memset(&ex, 0, sizeof(ex));
- 
- 	rcu_read_lock();
- 	dev_cgroup = task_devcgroup(current);
--	rc = may_access(dev_cgroup, &ex);
-+	rc = may_access(dev_cgroup, &ex, dev_cgroup->behavior);
- 	rcu_read_unlock();
- 
- 	if (!rc)
-
+Just check the patch i mentioned, go ahead with something similar. There
+is a lot of code in my original patch which removed redundancy to a big level.
