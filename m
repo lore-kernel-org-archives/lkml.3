@@ -1,173 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab3A3JeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 04:34:09 -0500
-Received: from mga03.intel.com ([143.182.124.21]:33289 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab3A3JeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 04:34:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,567,1355126400"; 
-   d="scan'208";a="250205277"
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
-        Aaron Lu <aaron.lu@intel.com>, Shane Huang <shane.huang@amd.com>
-Subject: [PATCH v8 0/4] block layer runtime pm
-Date: Wed, 30 Jan 2013 17:34:50 +0800
-Message-Id: <1359538494-2936-1-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.8.1
+	id S1754402Ab3A3Jg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 04:36:27 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:37898 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752552Ab3A3JgZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 04:36:25 -0500
+Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <5108E1C6.9020201@ti.com>
+Date: Wed, 30 Jan 2013 11:36:20 +0200
+Cc: Richard Cochran <richardcochran@gmail.com>, Matt Porter <mporter@ti.com>,
+        Chase Maupin <chase.maupin@ti.com>, Jason Kridner <jdk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com>
+References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com> <5107B650.5090901@ti.com> <3DE2C638-6AE8-4BC9-AD68-3AAA40CD6233@antoniou-consulting.com> <5108E1C6.9020201@ti.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In August 2010, Jens and Alan discussed about "Runtime PM and the block
-layer". http://marc.info/?t=128259108400001&r=1&w=2
-And then Alan has given a detailed implementation guide:
-http://marc.info/?l=linux-scsi&m=133727953625963&w=2
+Hi,
 
-To test:
-# ls -l /sys/block/sda
-/sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
+On Jan 30, 2013, at 11:03 AM, Mugunthan V N wrote:
 
-# echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
-# echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
-Then you'll see sda is suspended after 10secs idle.
+> On 1/30/2013 2:06 PM, Pantelis Antoniou wrote:
+>> Hi Mugunthan,
+>> 
+>> On Jan 29, 2013, at 1:45 PM, Mugunthan V N wrote:
+>> 
+>>> On 1/28/2013 6:41 PM, Pantelis Antoniou wrote:
+>>>> Fix interrupt storm on bone A4 cause by non-by-the-book interrupt handling.
+>>>> While at it, added a non-NAPI mode (which is easier to debug), plus
+>>>> some general fixes.
+>>>> 
+>>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+>>>> ---
+>>>>  Documentation/devicetree/bindings/net/cpsw.txt |   1 +
+>>>>  drivers/net/ethernet/ti/cpsw.c                 | 222 +++++++++++++++++++++----
+>>>>  drivers/net/ethernet/ti/davinci_cpdma.c        |   4 +-
+>>>>  drivers/net/ethernet/ti/davinci_cpdma.h        |   2 +-
+>>>>  include/linux/platform_data/cpsw.h             |   1 +
+>>>>  5 files changed, 194 insertions(+), 36 deletions(-)
+>>> I have tested CPSW on AM335x EVM 1.5A with flood ping and i am not
+>>> seeing any interrupt storm.
+>>> Can you provide more details on how to reproduce the issue.
+>>> 
+>> A beaglebone prototype with the new silicon version, with the ethernet errata
+>> fixed displays this. You can't trigger it on old silicon.
+>> 
+>> The TI people on the CC list can confirm.
+> But i have the same silicon revision (PG2.0) in my EVM and I am not seeing any issues. Can you
+> point me to the ethernet errata which you are mentioning?
+> 
+> Regards
+> Mugunthan V N
 
-[ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
-[ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
+What kernel version are you using? This is only triggered on the mainline driver.
 
-And if you do some IO, it will resume immediately.
-[ 1791.052438] sd 2:0:0:0: [sda] Starting disk
+The advisory in question: From http://www.ti.com/lit/er/sprz360c/sprz360c.pdf 
 
-For test, I often set the autosuspend time to 1 second. If you are using
-a GUI, the 10 seconds delay may be too long that the disk can not enter
-runtime suspended state.
+Advisory 1.0.9: "Ethernet Media Access Controller and Switch Subsystem: C0_TX_PEND 
+and C0_RX_PEND Interrupts Not Connected to ARM Cortex-A8"
 
-Note that sd's runtime suspend callback will dump some kernel messages
-and the syslog daemon will write kernel message to /var/log/messages,
-making the disk instantly resume after suspended. So for test, the
-syslog daemon should better be temporarily stopped.
+I bet you're using an old kernel driver with the workarounds with the timers.
 
-A git repo for it, on top of libata/upstream, scsi/for-next and
-block/for-next:
-https://github.com/aaronlu/linux.git blockpm
+If I had to guess (although I didn't use a probe or anything) is that the
+interrupts are now proper level interrupts, instead of working in edge
+triggered mode due to the workaround. 
 
-v8:
-- Set default autosuspend delay to -1 to avoid suspend till an updated
-  value is set as suggested by Alan Stern;
-- Always check the dev field of the queue structure, as it is incorrect
-  and meaningless to do any operation on devices that do not use block
-  layer runtime PM as reminded by Alan Stern;
-- Update scsi bus level runtime PM callback to take care of scsi devices
-  that use block layer runtime PM and that don't.
+Apparently the interrupt was never acked properly in the original driver 
+(the sequence described in the TRM is not followed).
 
-v7:
-- Add kernel doc for block layer runtime PM API as suggested by
-  Alan Stern;
+Looking at the TRM (spruh73g.pdf) 14.3.1.3 Interrupts in particular, the
+the status registers are not read, and more damning the proper values to the 
+CPDMA_EOI_VECTOR register are not written.
 
-- Add back check for q->dev, as that serves as a flag if driver
-  is using block layer runtime PM;
+The original driver blindly wrote zero (cpdma_ctlr_eoi), while you have to
+write different values according to the interrupt you ack.
 
-- Do not auto suspend when last request is finished, as that's a hot
-  path and auto suspend is not a trivial function. Instead, mark last
-  busy in pre_suspend so that runtim PM core will retry suspend some
-  time later to solve the 1st problem demostrated in v6, suggested by
-  Alan Stern.
+What happened was that on the first interrupt, the interrupt was never acked,
+and we had an irq storm...
 
-- Move block layer runtime PM strtegy functions to where they are
-  needed instead of in include/linux/blkdev.h as suggested by Alan
-  Stern since clients of block layer do not need to know those
-  functions.
+Regards
 
-v6:
-Take over from Lin Ming.
+-- Pantelis
 
-- Instead of put the device into autosuspend state in
-  blk_post_runtime_suspend, do it when the last request is finished.
-  This can also solve the problem illustrated below:
 
-      thread A				      thread B
-|suspend timer expired			|
-|  ... ...				|a new request comes in,
-|  ... ...				|blk_pm_add_request
-|  ... ...				|skip request_resume due to
-|  ... ...				|q->status is still RPM_ACTIVE
-|  rpm_suspend				|  ... ...
-|    scsi_runtime_suspend		|  ... ...
-|      blk_pre_runtime_suspend		|  ... ...
-|      return -EBUSY due to nr_pending	|  ... ...
-|  rpm_suspend done			|  ... ...
-|					|    blk_pm_put_request, mark last busy
 
-But no more trigger point, and the device will stay at RPM_ACTIVE state.
-Run pm_runtime_autosuspend after the last request is finished solved
-this problem.
-
-- Requests which have the REQ_PM flag should not involve nr_pending
-  counting, or we may lose the condition to resume the device:
-  Suppose queue is active and nr_pending is 0. Then a REQ_PM request
-  comes and nr_pending will be increased to 1, but since the request has
-  REQ_PM flag, it will not cause resume. Before it is finished, a normal
-  request comes in, and since nr_pending is 1 now, it will not trigger
-  the resume of the device either. Bug.
-
-- Do not quiesce the device in scsi bus level runtime suspend callback.
-  Since the only reason the device is to be runtime suspended is due to
-  no more requests pending for it, quiesce it is pointless.
-
-- Remove scsi_autopm_* from sd_check_events as we are request driven.
-
-- Call blk_pm_runtime_init in scsi_sysfs_initialize_dev, so that we do
-  not need to check queue's device in blk_pm_add/put_request.
-
-- Do not mark last busy and initiate an autosuspend for the device in
-  blk_pm_runtime_init function.
-
-- Do not mark last busy and initiate an autosuspend for the device in
-  block_post_runtime_resume, as when the request that triggered the
-  resume finished, the blk_pm_put_request will mark last busy and
-  initiate an autosuspend.
-
-v5:
-- rename scsi_execute_req to scsi_execute_req_flags
-  and wrap scsi_execute_req around it.
-- add detail function descriptions in patch 2 log
-- define static helper functions to do runtime pm work on block layer
-  and put the definitions inside a #ifdef block
-
-v4:
-- add CONFIG_PM_RUNTIME check
-- update queue runtime pm status after system resume
-- use pm_runtime_autosuspend instead of pm_request_autosuspend in scsi_runtime_idle
-- always count PM request
-
-v3:
-- remove block layer suspend/resume callbacks
-- add block layer runtime pm helper functions
-
-v2:
-- remove queue idle timer, use runtime pm core's auto suspend
-
-Lin Ming (4):
-  block: add a flag to identify PM request
-  block: add runtime pm helpers
-  block: implement runtime pm strategy
-  sd: change to auto suspend mode
-
- block/blk-core.c           | 182 +++++++++++++++++++++++++++++++++++++++++++++
- block/elevator.c           |  26 +++++++
- drivers/scsi/scsi_lib.c    |   9 +--
- drivers/scsi/scsi_pm.c     |  79 +++++++++++++++++---
- drivers/scsi/sd.c          |  21 ++----
- include/linux/blk_types.h  |   2 +
- include/linux/blkdev.h     |  27 +++++++
- include/scsi/scsi_device.h |  16 +++-
- 8 files changed, 325 insertions(+), 37 deletions(-)
-
--- 
-1.8.1
 
