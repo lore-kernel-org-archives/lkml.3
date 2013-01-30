@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab3A3Qxc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 11:53:32 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:53644 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753737Ab3A3Qxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 11:53:30 -0500
-Message-ID: <1359564809.32305.23.camel@joe-AO722>
-Subject: Re: coccinelle and bitmask arithmetic
-From: Joe Perches <joe@perches.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, walter harms <wharms@bfs.de>,
-        Mike Rapoport <mike@compulab.co.il>, Valdis.Kletnieks@vt.edu,
-        cocci@systeme.lip6.fr, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Date: Wed, 30 Jan 2013 08:53:29 -0800
-In-Reply-To: <20130130113533.GI23505@n2100.arm.linux.org.uk>
-References: <20130127194039.GA18787@elgon.mountain>
-	 <1359317078.14406.12.camel@joe-AO722> <20130127201947.GO16282@mwanda>
-	 <9561.1359474916@turing-police.cc.vt.edu>
-	 <1359475998.4196.26.camel@joe-AO722>
-	 <alpine.DEB.2.02.1301291847070.3339@hadrien>
-	 <1359482637.15135.7.camel@joe-AO722> <5108D808.6010405@bfs.de>
-	 <20130130111420.GG23505@n2100.arm.linux.org.uk>
-	 <alpine.DEB.2.02.1301301220290.1990@hadrien>
-	 <20130130113533.GI23505@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756025Ab3A3Qxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 11:53:39 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:34146 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755988Ab3A3Qxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 11:53:34 -0500
+Date: Wed, 30 Jan 2013 17:53:21 +0100
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
+        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 3/4] cpufreq: conservative: call dbs_check_cpu only
+ when necessary
+Message-ID: <20130130165321.GD30559@balto.lan>
+References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
+ <1359550803-18577-4-git-send-email-fabio.baltieri@linaro.org>
+ <CAKohpompi7mzd+XmrUzJ4T=apzpmUcryHaBfQWUoO5G3+4y=_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpompi7mzd+XmrUzJ4T=apzpmUcryHaBfQWUoO5G3+4y=_Q@mail.gmail.com>
+X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-30 at 11:35 +0000, Russell King - ARM Linux wrote:
-> On Wed, Jan 30, 2013 at 12:21:21PM +0100, Julia Lawall wrote:
-> > On Wed, 30 Jan 2013, Russell King - ARM Linux wrote:
-> > > So, _either_ logical OR or addition works.
-> > >
-> > > If we _did_ end up with a PHYS_OFFSET with bits less than bit 26 set
-> > > here, we'd have bigger problems - because the base of RAM in PCI space
-> > > will not correspond with PHYS_OFFSET and all the DMA mapping stuff breaks.
-> > 
-> > The "problem" is that the computation is done inconsistently within the
-> > same file.  Sometimes with + and sometimes with |.
+On Wed, Jan 30, 2013 at 09:23:22PM +0530, Viresh Kumar wrote:
+> On 30 January 2013 18:30, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
+> > Modify conservative timer to not resample CPU utilization if recently
+> > sampled from another SW coordinated core.
+> >
+> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 > 
-> And I say that is not a problem; if it _does_ become a problem, there are
-> bigger problems that would also need solving, which given a multi-subarch
-> kernel become a lot lot harder.
+> We are again doing the same mistake which i fixed with:
 > 
-> Sure, we can just change them to all be a bitwise OR (sorry, not logical)
-> but that's really only half the story.
+> commit 4471a34f9a1f2da220272e823bdb8e8fa83a7661
+> Author: Viresh Kumar <viresh.kumar@linaro.org>
+> Date:   Fri Oct 26 00:47:42 2012 +0200
+> 
+>     cpufreq: governors: remove redundant code
 
-As far as I can tell, there'd be a lot of +'s to
-change in arch/arm and only 2 uses of | in it8152.c
+Can't argue with this, but the two had some subdle differences (namely
+th two dbs_info structures) and I opted to not mess up forcing some
+non-obvious common code.
 
-$ git grep -P "\(?\s*SZ_\d+[A-Z]\s*-\s*1\s*\)?\s*\|" arch/arm
-arch/arm/common/it8152.c:                       *dev->dma_mask = (SZ_64M - 1) | PHYS_OFFSET;
-arch/arm/common/it8152.c:               dev->coherent_dma_mask = (SZ_64M - 1) | PHYS_OFFSET;
+Feel free to suggest a strategy.
 
-$ git grep -P "\+\s*\(?\s*SZ_\d+[A-Z]\b\s*-\s*1\s*\)?" arch/arm | wc -l
-460
+Thanks,
+Fabio
 
-I think consistently using + would make it simpler
-for some possible future conversion.
-
+-- 
+Fabio Baltieri
