@@ -1,174 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab3A3GuM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 01:50:12 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:61419 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3A3GuK (ORCPT
+	id S1753506Ab3A3Gyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 01:54:33 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:34973 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3A3Gyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 01:50:10 -0500
-Message-ID: <5108C298.1000500@gmail.com>
-Date: Wed, 30 Jan 2013 14:50:00 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-tegra@vger.kernel.org, gnurou@gmail.com
-Subject: Re: [RFC 3/4] drm: tegra: use the Common Display Framework
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <1359514939-15653-4-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1359514939-15653-4-git-send-email-acourbot@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Jan 2013 01:54:31 -0500
+X-AuditID: cbfee61b-b7fb06d000000f28-51-5108c3a595d7
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautamvivek1987@gmail.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>
+Cc: "'Vivek Gautam'" <gautam.vivek@samsung.com>, jg1.han@samsung.com,
+        devicetree-discuss@lists.ozlabs.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+References: <1358257112-19595-1-git-send-email-gautam.vivek@samsung.com>
+ <1358257112-19595-4-git-send-email-gautam.vivek@samsung.com>
+ <3963234.Gb249i4a6U@flatron>
+ <CAFp+6iHd66_dvj_M5zOpJZ7sEy-pYa-CdWKUZBYc3Dfn3JHtfg@mail.gmail.com>
+ <CAFp+6iE+WvQz_rbKY2L4N2KoUeTTZYhwc3v3wU5iua_bEPN1ng@mail.gmail.com>
+In-reply-to: <CAFp+6iE+WvQz_rbKY2L4N2KoUeTTZYhwc3v3wU5iua_bEPN1ng@mail.gmail.com>
+Subject: RE: [PATCH v4 3/4] ARM: Exynos5250: Add clock information for
+ dwc3-exynos
+Date: Tue, 29 Jan 2013 22:54:23 -0800
+Message-id: <079201cdfeb6$a4a96400$edfc2c00$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJEIxpz/CmB/m1IOaI9mgyw8JBKXgMGUbHmAoDMNPsB9MibzQGE6fj+ly0c/KA=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zfd2lhzkCDe5fNbO4vGsOm8WM8/uY
+	LBYta2V2YPb4vEkugDGKyyYlNSezLLVI3y6BK2Pa5DtMBZM4KuZ/nMvcwDiZrYuRk0NCwETi
+	W8NZVghbTOLCvfVgcSGBZYwS6x/XwNTc+vuMsYuRCyg+nVHi+dFtLBDOX0aJN80LmUCq2AQ0
+	JA6/f8YOYosIhEtMvD2NHaSIWeA4o8Tpd7eg2rcwSfx618UIUsUpECxxuOMHC4gtLBAisfTW
+	bmYQm0VAVeLjqwlgN/EKWEr8W90BZQtK/Jh8D6yeWUBLYv3O40wQtrzE5jVvmSFuVZDYcfY1
+	I8QVfhIbJ79lh6gRl5j04CE7RM0mdonPF2IhdglIfJt8CGgmB1BcVmLTAagxkhIHV9xgmcAo
+	MQvJ5llINs9CsnkWkg0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYoREnPQOxlUNFocY
+	BTgYlXh4F7xgDxRiTSwrrsw9xCjBwawkwqugxhEoxJuSWFmVWpQfX1Sak1p8iDEZ6NiJzFKi
+	yfnAZJBXEm9obGxiZmJqYm5pam5KmrCSOC/jqScBQgLpiSWp2ampBalFMFuYODilGhjFRLbE
+	FPy7dcnrqaPpi7ft1uIGXe/k1mX2bX5ZeeWO0UVZvxNPfW9GHe4+Hf9HiU8tI1/1RWN9bdsP
+	yZOOves35O6Knm3CdmmWZ9Qv73CvSOWGKeUL3lftj7kSs+KgaKdDtlKjRVvnVOW/wlI2Rs8j
+	JdQN4lw2Bqu9+8J9/uPD61lG63a+PqHEUpyRaKjFXFScCACTd9IP/AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jQd2lhzkCDVavMbK4vGsOm8WM8/uY
+	LBYta2V2YPb4vEkugDGqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
+	1VbJxSdA1y0zB2i+kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjFj2uQ7
+	TAWTOCrmf5zL3MA4ma2LkZNDQsBE4tbfZ4wQtpjEhXvrgeJcHEIC0xklnh/dxgLh/GWUeNO8
+	kAmkik1AQ+Lw+2fsILaIQLjExNvT2EGKmAWOM0qcfneLEaJjC5PEr3ddYHM5BYIlDnf8YAGx
+	hQVCJJbe2s0MYrMIqEp8fDWBFcTmFbCU+Le6A8oWlPgx+R5YPbOAlsT6nceZIGx5ic1r3jJD
+	3KogsePsa0aIK/wkNk5+yw5RIy4x6cFD9gmMQrOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgp
+	PddIrzgxt7g0L10vOT93EyM4pp9J72Bc1WBxiFGAg1GJh3fBC/ZAIdbEsuLK3EOMEhzMSiK8
+	CmocgUK8KYmVValF+fFFpTmpxYcYk4E+ncgsJZqcD0w3eSXxhsYmZkaWRmYWRibm5qQJK4nz
+	Mp56EiAkkJ5YkpqdmlqQWgSzhYmDU6qBke2KiHH5rJzP39jzle3Eo1eKZZ1ov30w4datfLfG
+	8GtdHo3L57t6OnkefbYrnTd+zV6XuwuNa4Snei0K+5OkvvzBtSblaccnTJFc7mQjELrxQ/GK
+	IHW+g6Zrf3bKNrS+imQx/VVxsaFArGj9U0GuEvkriz9pMls01DG9mJCedNr1S8PV9buvKLEU
+	ZyQaajEXFScCABp5WmctAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 11:02 AM, Alexandre Courbot wrote:
-> Make the tegra-drm driver use the Common Display Framework, letting it
-> control the panel state according to the DPMS status.
+Vivek Gautam wrote:
 > 
-> A "nvidia,panel" property is added to the output node of the Tegra DC
-> that references the panel connected to a given output.
+> Hi Tomasz,
 > 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-[...]
-> diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
-> index 741b5dc..5e63c56 100644
-> --- a/drivers/gpu/drm/tegra/drm.h
-> +++ b/drivers/gpu/drm/tegra/drm.h
-> @@ -17,6 +17,7 @@
->  #include <drm/drm_gem_cma_helper.h>
->  #include <drm/drm_fb_cma_helper.h>
->  #include <drm/drm_fixed.h>
-> +#include <video/display.h>
->  
->  struct tegra_framebuffer {
->  	struct drm_framebuffer base;
-> @@ -147,6 +148,9 @@ struct tegra_output {
->  
->  	struct drm_encoder encoder;
->  	struct drm_connector connector;
-> +	struct display_entity this;
-> +	struct display_entity *output;
-
-Could you pick up a somewhat meaningful name? You know, there are too
-many variables with name "drm/connector/output/encoder"... :)
-
-> +	struct display_entity_notifier display_notifier;
->  };
->  
-[...]
-> +static int display_notify_callback(struct display_entity_notifier *notifier,
-> +				   struct display_entity *entity, int event)
-> +{
-> +	struct tegra_output *output = display_notifier_to_output(notifier);
-> +	struct device_node *pnode;
-> +
-> +	switch (event) {
-> +	case DISPLAY_ENTITY_NOTIFIER_CONNECT:
-> +		if (output->output)
-> +			break;
-> +
-> +		pnode = of_parse_phandle(output->of_node, "nvidia,panel", 0);
-> +		if (!pnode)
-> +			break;
-> +
-> +		if (entity->dev && entity->dev->of_node == pnode) {
-> +			dev_dbg(output->dev, "connecting panel\n");
-> +			output->output = display_entity_get(entity);
-> +			display_entity_connect(&output->this, output->output);
-> +		}
-> +		of_node_put(pnode);
-> +
-> +		break;
-> +
-> +	case DISPLAY_ENTITY_NOTIFIER_DISCONNECT:
-> +		if (!output->output || output->output != entity)
-> +			break;
-> +
-> +		dev_dbg(output->dev, "disconnecting panel\n");
-> +		display_entity_disconnect(&output->this, output->output);
-> +		output->output = NULL;
-> +		display_entity_put(&output->this);
-
-No "display_entity_get" for "output->this", so I don't think we need
-"display_entity_put" here. If you register this entity with "release"
-callback and you wanna release "output->this", call the "release"
-function manually.
-
-Only when you have "display_entity_get", use "display_entity_put" to
-release.
-
-> +
-> +		break;
-> +
-> +	default:
-> +		dev_dbg(output->dev, "unhandled display event\n");
-> +		break;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-[...]
->  int tegra_output_init(struct drm_device *drm, struct tegra_output *output)
->  {
->  	int connector, encoder, err;
-> @@ -250,6 +341,23 @@ int tegra_output_init(struct drm_device *drm, struct tegra_output *output)
->  
->  	output->encoder.possible_crtcs = 0x3;
->  
-> +	/* register display entity */
-> +	memset(&output->this, 0, sizeof(output->this));
-> +	output->this.dev = drm->dev;
-
-Use "output->dev" here. Actually the device you wanna register it to
-display entity is the "encoder"(in drm terms), not "drm->dev". If we use
-"drm->dev" here, we will have all same device for all encoders(HDMI,
-DSI...).
-
-> +	output->this.ops.video = &tegra_output_video_ops;
-> +	err = display_entity_register(&output->this);
-> +	if (err) {
-> +		dev_err(output->dev, "cannot register display entity\n");
-> +		return err;
-> +	}
-> +
-> +	/* register display notifier */
-> +	output->display_notifier.dev = NULL;
-
-Set "display_notifier.dev" to NULL makes we have to compare with every
-display entity, just like what you do in "display_notify_callback":
-
-entity->dev && entity->dev->of_node == pnode
-
-So can we get the "struct device *" of panel here? Seems currently the
-"of" framework doesn't allow "device_node -> device".
-
-> +	output->display_notifier.notify = display_notify_callback;
-> +	err = display_entity_register_notifier(&output->display_notifier);
-> +	if (err)
-> +		return err;
-> +
->  	return 0;
->  
->  free_hpd:
-> @@ -260,6 +368,12 @@ free_hpd:
->  
->  int tegra_output_exit(struct tegra_output *output)
->  {
-> +	if (output->output)
-> +		display_entity_put(output->output);
-> +
-> +	display_entity_unregister_notifier(&output->display_notifier);
-> +	display_entity_unregister(&output->this);
-> +
->  	if (gpio_is_valid(output->hpd_gpio)) {
->  		free_irq(output->hpd_irq, output);
->  		gpio_free(output->hpd_gpio);
 > 
+> On Wed, Jan 16, 2013 at 8:35 PM, Vivek Gautam
+> <gautamvivek1987@gmail.com> wrote:
+> > Hi Tomasz,
+> >
+> >
+> > On Wed, Jan 16, 2013 at 1:19 PM, Tomasz Figa <tomasz.figa@gmail.com>
+> wrote:
+> >> Hi Vivek,
+> >>
+> >> Don't you need also some clkdev lookup entry to make the clock
+available
+> >> in the driver?
+> >>
+> >
+> > This clock source we added with a motive of completion, however it's
+> > not being used as of now.
+> > As far as i could see the lookup structure contains clocks for devices
+> > having multiple instances.
+> > Do you feel that i should be adding an entry in clk_lookup structure ?
+> > May be i am missing here something. Can you please elaborate on the
+> > use-case of clk_lookup
+> > entries.
+> >
+> 
+> Any suggestions on this please ?
+> 
+Just note, I think you can do it based on Samsung common clock is for all of
+exynos stuff which will be done in a couple of days. Sorry for late it,
+because there were some problems.
+
+Thanks.
+
+- Kukjin
+
