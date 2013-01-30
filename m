@@ -1,142 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab3A3Urc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 15:47:32 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40900 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab3A3Ura (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 15:47:30 -0500
-Date: Wed, 30 Jan 2013 20:47:30 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: aris@redhat.com
+	id S1756957Ab3A3UtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:49:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31270 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755169Ab3A3UtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 15:49:22 -0500
+Date: Wed, 30 Jan 2013 15:49:18 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
 Subject: Re: [PATCH v4 8/9] devcg: refactor dev_exception_clean()
-Message-ID: <20130130204730.GF8507@mail.hallyn.com>
+Message-ID: <20130130204917.GL17632@redhat.com>
 References: <20130130171101.060853036@napanee.usersys.redhat.com>
  <20130130171102.253395279@napanee.usersys.redhat.com>
+ <20130130204730.GF8507@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130130171102.253395279@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130130204730.GF8507@mail.hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting aris@redhat.com (aris@redhat.com):
-> This patch is in preparation for hierarchy support.
+On Wed, Jan 30, 2013 at 08:47:30PM +0000, Serge E. Hallyn wrote:
+> Quoting aris@redhat.com (aris@redhat.com):
+> > -
+> > -			if (rc)
+> > -				return rc;
 > 
-> This patch doesn't introduce any functional changes.
+> Was this intentional?
 > 
-> Acked-by: Tejun Heo <tj@kernel.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> I see that you next add
 > 
-> ---
->  security/device_cgroup.c |   34 ++++++++++++++++------------------
->  1 file changed, 16 insertions(+), 18 deletions(-)
+> 	rc = propagate_behavior(devcgroup);
 > 
-> --- github.orig/security/device_cgroup.c	2013-01-29 11:49:16.374681863 -0500
-> +++ github/security/device_cgroup.c	2013-01-29 11:49:16.653686016 -0500
-> @@ -212,32 +212,33 @@ static int dev_exception_add(struct dev_
->  	return rc;
->  }
->  
-> -static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
-> +static void dev_exception_clean(struct list_head *exceptions)
->  {
->  	struct dev_exception_item *ex, *tmp;
->  
-> -	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
-> -		list_del_rcu(&ex->list);
-> -		kfree_rcu(ex, rcu);
-> -	}
-> -	list_for_each_entry_safe(ex, tmp, &dev_cgroup->local.exceptions,
-> -				 list) {
-> +	list_for_each_entry_safe(ex, tmp, exceptions, list) {
->  		list_del_rcu(&ex->list);
->  		kfree_rcu(ex, rcu);
->  	}
->  }
->  
-> +static void __dev_exception_clean_all(struct dev_cgroup *dev_cgroup)
-> +{
-> +	dev_exception_clean(&dev_cgroup->exceptions);
-> +	dev_exception_clean(&dev_cgroup->local.exceptions);
-> +}
-> +
->  /**
-> - * dev_exception_clean - frees all entries of the exception list
-> + * dev_exception_clean_all - frees all entries of the exception list
->   * @dev_cgroup: dev_cgroup with the exception list to be cleaned
->   *
->   * called under devcgroup_mutex
->   */
-> -static void dev_exception_clean(struct dev_cgroup *dev_cgroup)
-> +static void dev_exception_clean_all(struct dev_cgroup *dev_cgroup)
->  {
->  	lockdep_assert_held(&devcgroup_mutex);
->  
-> -	__dev_exception_clean(dev_cgroup);
-> +	__dev_exception_clean_all(dev_cgroup);
->  }
->  
->  /**
-> @@ -303,7 +304,7 @@ static void devcgroup_css_free(struct cg
->  	struct dev_cgroup *dev_cgroup;
->  
->  	dev_cgroup = cgroup_to_devcgroup(cgroup);
-> -	__dev_exception_clean(dev_cgroup);
-> +	__dev_exception_clean_all(dev_cgroup);
->  	kfree(dev_cgroup);
->  }
->  
-> @@ -508,25 +509,22 @@ 	memset(&ex, 0, sizeof(ex));
->  		case DEVCG_ALLOW:
->  			if (!may_allow_all(parent))
->  				return -EPERM;
-> -			dev_exception_clean(devcgroup);
-> +			dev_exception_clean_all(devcgroup);
->  			if (parent)
->  				rc = dev_exceptions_copy(&devcgroup->exceptions,
->  							 &parent->exceptions);
->  			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
->  			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
-> -
-> -			if (rc)
-> -				return rc;
+> right here, but this means you're ignoring failure in the
+> dev_exceptions_copy() call above.
 
-Was this intentional?
+that's not intentional. thanks for catching this
 
-I see that you next add
+Tejun, you want me to resubmit the whole series or just the next patch
+(where I was supposed to move that chunk)?
 
-	rc = propagate_behavior(devcgroup);
+-- 
+Aristeu
 
-right here, but this means you're ignoring failure in the
-dev_exceptions_copy() call above.
-
->  			break;
->  		case DEVCG_DENY:
-> -			dev_exception_clean(devcgroup);
-> +			dev_exception_clean_all(devcgroup);
->  			devcgroup->behavior = DEVCG_DEFAULT_DENY;
->  			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
->  			break;
->  		default:
-> -			return -EINVAL;
-> +			rc = -EINVAL;
->  		}
-> -		return 0;
-> +		return rc;
->  	case 'b':
->  		ex.type = DEV_BLOCK;
->  		break;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
