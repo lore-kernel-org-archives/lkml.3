@@ -1,92 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3A3Nvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 08:51:38 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:54539 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753598Ab3A3Nvf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 08:51:35 -0500
-Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433ED041A8@DBDE01.ent.ti.com>
-Date: Wed, 30 Jan 2013 15:51:30 +0200
-Cc: "N, Mugunthan V" <mugunthanvnm@ti.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        "Porter, Matt" <mporter@ti.com>, "Maupin, Chase" <chase.maupin@ti.com>,
-        "Kridner, Jason" <jdk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <60C298DC-2DE8-4A44-B00C-E3B09ABE701E@antoniou-consulting.com>
-References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com> <5107B650.5090901@ti.com> <3DE2C638-6AE8-4BC9-AD68-3AAA40CD6233@antoniou-consulting.com> <5108E1C6.9020201@ti.com> <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com> <5108FC31.3000507@ti.com> <27A3106E-3FDB-43DB-AAC9-DC2DA768AF9E@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED03FE1@DBDE01.ent.ti.com> <0422CC2C-3D0D-4BB5-A90D-D3D337E44DD0@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED04134@DBDE01.ent.ti.com> <F3F6248B-4DF4-418E-AD1F-F41E14CC85B2@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED041A8@DBDE01.ent.ti.com>
-To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-X-Mailer: Apple Mail (2.1085)
+	id S1754604Ab3A3Nwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 08:52:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43255 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753598Ab3A3Nwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 08:52:33 -0500
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH] regmap: debugfs: Add a registers `range' file
+Date: Wed, 30 Jan 2013 13:50:23 +0000
+Message-Id: <1359553823-12827-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vaibhav,
+This file lists the register ranges in the register map.  The condition
+to split the range is based on the actual register attributes.  A range
+is a contiguous block of registers with the same register attributes.
 
-On Jan 30, 2013, at 3:47 PM, Bedia, Vaibhav wrote:
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-debugfs.c | 179 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 179 insertions(+)
 
-> Hi Antoniou,
-> 
-> On Wed, Jan 30, 2013 at 19:07:19, Pantelis Antoniou wrote:
->> Hi Vaibhav,
->> 
->> On Jan 30, 2013, at 3:29 PM, Bedia, Vaibhav wrote:
->> 
->>> On Wed, Jan 30, 2013 at 18:14:30, Pantelis Antoniou wrote:
->>>> Hi Vaibhav,
->>>> 
->>>> On Jan 30, 2013, at 2:38 PM, Bedia, Vaibhav wrote:
->>>> 
->>>>> On Wed, Jan 30, 2013 at 16:38:50, Pantelis Antoniou wrote:
->>>>> [...]
->>>>>> 
->>>>>> TBH I haven't found a simple way to print out the silicon revision number.
->>>>>> Anyone on the list know a quick and dirty method? 
->>>>>> 
->>>>> 
->>>>> You can dump the DEVICE_ID register @ 0x44e10600.
->>>>> Bits 31:28 should be 0 for PG1.0 and 1 for PG2.0.
->>>>> 
->>>> 
->>>> Thanks this works perfectly:
->>>> 
->>>> original-bone:
->>>> root@beaglebone:~# devmem2 0x44e10600 w
->>>> Read at address  0x44E10600 (0xb6ff4600): 0x0B94402E
->>>> 
->>>> bone-black:
->>>> root@beaglebone:~# devmem2 0x44e10600 w
->>>> Read at address  0x44E10600 (0xb6fcc600): 0x1B94402E
->>>> 
->>> 
->>> I just re-read the mail-chain and I am confused here.
->>> So the patch in question is meant for Bone-A4 which has
->>> PG1.0?
->>> 
->> 
->> It is a general bug fix. The problem was discovered only on 
->> the bone black which has PG2.0 silicon. The driver has been
->> tested and it works on the original bone with PG1.0 as well.
->> 
-> 
-> But Mugunthan mentioned that he doesn't see this on an EVM
-> with PG2.0 silicon... is there any board dependency here?
-> 
-
-I don't know, but I doubt it. How about we wait for Mugunthan to
-send us what are the DEVICE_ID contents for his board.
-
-> Regards,
-> Vaibhav
-
-Regards
-
--- Pantelis
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index faa93cc..4ed7503 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -295,6 +295,182 @@ static const struct file_operations regmap_range_fops = {
+ 	.llseek = default_llseek,
+ };
+ 
++enum reg_attributes {
++	READABLE = 0x1,
++	WRITEABLE = 0x2,
++	VOLATILE = 0x4,
++};
++
++static inline unsigned int regmap_attr_bitmap(struct regmap *map,
++					      unsigned int reg)
++{
++	unsigned int reg_attr = 0;
++
++	if (regmap_readable(map, reg))
++		reg_attr |= READABLE;
++	if (regmap_writeable(map, reg))
++		reg_attr |= WRITEABLE;
++	if (regmap_volatile(map, reg))
++		reg_attr |= VOLATILE;
++	return reg_attr;
++}
++
++enum range_state {
++	RANGE_START,
++	RANGE_END,
++	RANGE_WITHIN,
++	RANGE_DONE,
++};
++
++struct regmap_reg_range  {
++	unsigned int start;
++	unsigned int end;
++	unsigned int attr;
++};
++
++static void regmap_range_format_line(struct regmap *map,
++				     struct regmap_reg_range *r,
++				     char *buf, size_t len)
++{
++	int reg_len;
++	ssize_t buf_offset;
++
++	reg_len = regmap_calc_reg_len(map->max_register, buf, len);
++
++	buf_offset = snprintf(buf, PAGE_SIZE, "%.*x-%.*x ",
++			      reg_len, r->start,
++			      reg_len, r->end);
++	buf_offset += snprintf(buf + buf_offset,
++			       PAGE_SIZE - buf_offset, "(");
++	if (r->attr & READABLE)
++		buf_offset += snprintf(buf + buf_offset,
++				       PAGE_SIZE - buf_offset,
++				       "read, ");
++	if (r->attr & WRITEABLE)
++		buf_offset += snprintf(buf + buf_offset,
++				       PAGE_SIZE - buf_offset,
++				       "write, ");
++	if (r->attr & VOLATILE)
++		buf_offset += snprintf(buf + buf_offset,
++				       PAGE_SIZE - buf_offset,
++				       "volatile, ");
++	/* Rewind the last ", " as well */
++	buf_offset += snprintf(buf + buf_offset - 2,
++			       PAGE_SIZE - buf_offset, ")");
++}
++
++static ssize_t regmap_range_read_file(struct file *file,
++				      char __user *user_buf, size_t count,
++				      loff_t *ppos)
++{
++	struct regmap *map = file->private_data;
++	int ret;
++	char *buf;
++	size_t buf_pos = 0;
++	loff_t p = 0;
++	unsigned int start_reg;
++	int i;
++	unsigned int reg_attr;
++	unsigned int block_start, block_end, block_attr;
++	enum range_state state;
++	struct list_head range_head;
++	struct regmap_reg_range r;
++	char *entry;
++	bool scanning = true;
++
++	if (*ppos < 0 || !count)
++		return -EINVAL;
++
++	buf = kmalloc(count, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	entry = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	if (!entry) {
++		kfree(buf);
++		return -ENOMEM;
++	}
++
++	INIT_LIST_HEAD(&range_head);
++
++	start_reg = 0;
++	block_attr = regmap_attr_bitmap(map, start_reg);
++	block_start = block_end = start_reg;
++	state = RANGE_START;
++
++	i = start_reg;
++	while (i <= map->max_register && scanning) {
++		reg_attr = regmap_attr_bitmap(map, i);
++		switch (state) {
++		case RANGE_START:
++			block_start = i;
++			block_attr = reg_attr;
++			state = RANGE_WITHIN;
++			break;
++		case RANGE_END:
++			r.start = block_start;
++			r.end = block_end;
++			r.attr = block_attr;
++			/* Only care about regions with any of the 3 register
++			   attributes */
++			if (r.attr) {
++				regmap_range_format_line(map, &r, entry, PAGE_SIZE);
++				if (p >= *ppos) {
++					if (buf_pos + 1 + strlen(entry) >= count)
++						break;
++					snprintf(buf + buf_pos, count - buf_pos,
++						 "%s", entry);
++					buf_pos += strlen(entry);
++					buf[buf_pos] = '\n';
++					buf_pos++;
++				}
++			}
++			p += strlen(entry) + 1;
++			if (i + 1 > map->max_register)
++				state = RANGE_DONE;
++			else
++				state = RANGE_START;
++			break;
++		case RANGE_WITHIN:
++			if (reg_attr != block_attr) {
++				block_end = i - 1;
++				state = RANGE_END;
++			} else {
++				if (i + 1 > map->max_register) {
++					state = RANGE_END;
++					block_end = map->max_register;
++				}
++				else {
++					i++;
++				}
++			}
++			break;
++		case RANGE_DONE:
++			scanning = false;
++			break;
++		}
++	}
++
++	kfree(entry);
++	ret = buf_pos;
++
++	if (copy_to_user(user_buf, buf, buf_pos)) {
++		ret = -EFAULT;
++		goto out;
++	}
++
++	*ppos += buf_pos;
++out:
++	kfree(buf);
++	return ret;
++}
++
++static const struct file_operations regmap_range_fops = {
++	.open = simple_open,
++	.read = regmap_range_read_file,
++	.llseek = default_llseek,
++};
++
+ static ssize_t regmap_access_read_file(struct file *file,
+ 				       char __user *user_buf, size_t count,
+ 				       loff_t *ppos)
+@@ -387,6 +563,9 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
+ 	debugfs_create_file("name", 0400, map->debugfs,
+ 			    map, &regmap_name_fops);
+ 
++	debugfs_create_file("range", 0400, map->debugfs,
++			    map, &regmap_range_fops);
++
+ 	if (map->max_register) {
+ 		debugfs_create_file("registers", 0400, map->debugfs,
+ 				    map, &regmap_map_fops);
+-- 
+1.8.1.2
 
