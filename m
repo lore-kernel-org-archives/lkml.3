@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3A3Ta0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 14:30:26 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:50726 "EHLO
+	id S1756839Ab3A3Tap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 14:30:45 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:50727 "EHLO
 	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768Ab3A3TaW (ORCPT
+	with ESMTP id S1756772Ab3A3TaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 14:30:22 -0500
-Date: Wed, 30 Jan 2013 14:21:47 -0500
+	Wed, 30 Jan 2013 14:30:24 -0500
+Date: Wed, 30 Jan 2013 14:27:00 -0500
 From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2013-01-24
-Message-ID: <20130130192147.GC2167@tuxdriver.com>
-References: <20130124031052.GE1632@joana>
+To: Bing Zhao <bzhao@marvell.com>
+Cc: Lubomir Rintel <lkundrak@v3.sk>, Harro Haan <hrhaan@gmail.com>,
+        Dan Williams <dcbw@redhat.com>,
+        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] libertas sdio: remove CMD_FUNC_INIT call
+Message-ID: <20130130192700.GF2167@tuxdriver.com>
+References: <1358493883-28433-1-git-send-email-lkundrak@v3.sk>
+ <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130124031052.GE1632@joana>
+In-Reply-To: <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 24, 2013 at 01:10:52AM -0200, Gustavo Padovan wrote:
-> Hi John,
+On Fri, Jan 18, 2013 at 12:28:17PM -0800, Bing Zhao wrote:
+> Hi Lubomir,
 > 
-> This is my first pull request to 3.9. The biggest changes here are from Johan
-> Hedberg who made a lot of fixes in the Management interface. The issues arose
-> due to a new test tool we wrote and the usage of the Management interface as
-> default in BlueZ 5. The rest of the patches are more clean ups and small
-> fixes.
+> > It actually times out on a 8688 present in GuruPlug with sd8688.bin
+> > (md5=7233401e9687f8c880da547beed4324e) firmware (that's present in
+> > linux-firmware tree), but the adapter works fine.
+> > 
+> > For that firmware times out with libertas_uap [1] as well, though it succeeds
+> > with sd8688_ap.bin (md5=52cd8f8296b9a7e1d3835d57416256b2) that was originally
+> > shipped with GuruPlug. That firmware is not in linux-firmware tree and btmrvl
+> > driver might win the race programming the 8688 with sd8688.bin anyway.
+> > 
+> > [1] https://github.com/lkundrak/linux/tree/libertas_uap
+> > ---
+> >  drivers/net/wireless/libertas/if_sdio.c |   14 --------------
+> >  1 files changed, 0 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
+> > index 2ecab49..3c4c555 100644
+> > --- a/drivers/net/wireless/libertas/if_sdio.c
+> > +++ b/drivers/net/wireless/libertas/if_sdio.c
+> > @@ -825,20 +825,6 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
+> > 
+> >  	sdio_release_host(func);
+> > 
+> > -	/*
+> > -	 * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
+> > -	 */
+> > -	if (card->model == MODEL_8688) {
+> > -		struct cmd_header cmd;
+> > -
+> > -		memset(&cmd, 0, sizeof(cmd));
+> > -
+> > -		lbs_deb_sdio("send function INIT command\n");
+> > -		if (__lbs_cmd(priv, CMD_FUNC_INIT, &cmd, sizeof(cmd),
+> > -				lbs_cmd_copyback, (unsigned long) &cmd))
+> > -			netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
+> > -	}
+> > -
 > 
-> Please pull! Thanks!
+> Removing FUNC_INIT could break things in some scenarios.
+> Could you please test the following case?
 > 
+> 1. insmod liberates -> download firmware, send FUNC_INIT, ...
+> 2. rmmod libertas -> send FUNC_SHUTDOWN command to firmware; BT is still working.
+> 3. insmod libertas -> skip firmware downloading, send FUNC_INIT, ...
 > 
-> 	Gustavo
-> ---
-> The following changes since commit e7f767a7d9f809c494bfffffeda2bbdbfec110b4:
+> If FUNC_INIT is removed, I don't expect step 3 to work.
 > 
->   mwifiex: use map/unmap APIs in TX and RX to reduce memcpy (2013-01-07 15:18:30 -0500)
+> Thanks,
+> Bing
 > 
-> are available in the git repository at:
+> >  	priv->fw_ready = 1;
+> >  	wake_up(&card->pwron_waitq);
+> > 
+> > --
+> > 1.7.1
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next for-upstream
-> 
-> for you to fetch changes up to 9b008c0457e583e10e62d1215bed6ab26ee54906:
-> 
->   Bluetooth: Add support for reading LE supported states (2013-01-23 02:09:16 -0200)
 
-Pulling now...
+Lubomir, any reply?  Should I drop this one?
 
 -- 
 John W. Linville		Someday the world will need a hero, and you
