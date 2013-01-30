@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab3A3MiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 07:38:12 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38687 "EHLO bear.ext.ti.com"
+	id S1753534Ab3A3Mmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 07:42:40 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:60981 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359Ab3A3MiJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 07:38:09 -0500
-From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "N, Mugunthan V" <mugunthanvnm@ti.com>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        "Porter, Matt" <mporter@ti.com>, "Maupin, Chase" <chase.maupin@ti.com>,
-        "Kridner, Jason" <jdk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] cpsw: Fix interrupt storm among other things
-Thread-Topic: [PATCH] cpsw: Fix interrupt storm among other things
-Thread-Index: AQHN/VkLC7cBWM1SeUOPLhpObgalgphf1VUAgAFdd4CAAAeFAIAACU4AgAAWMICAAAOoAIAAc54A
-Date: Wed, 30 Jan 2013 12:38:02 +0000
-Message-ID: <B5906170F1614E41A8A28DE3B8D121433ED03FE1@DBDE01.ent.ti.com>
-References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com>
- <5107B650.5090901@ti.com>
- <3DE2C638-6AE8-4BC9-AD68-3AAA40CD6233@antoniou-consulting.com>
- <5108E1C6.9020201@ti.com>
- <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com>
- <5108FC31.3000507@ti.com>
- <27A3106E-3FDB-43DB-AAC9-DC2DA768AF9E@antoniou-consulting.com>
-In-Reply-To: <27A3106E-3FDB-43DB-AAC9-DC2DA768AF9E@antoniou-consulting.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.119]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751153Ab3A3Mmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 07:42:38 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: linux-next: manual merge of the pm tree with the pci tree
+Date: Wed, 30 Jan 2013 13:48:47 +0100
+Message-ID: <5316945.RWkDAdU9QW@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130130193551.075bfa10acd39aec315a7787@canb.auug.org.au>
+References: <20130130193551.075bfa10acd39aec315a7787@canb.auug.org.au>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 16:38:50, Pantelis Antoniou wrote:
-[...]
+Hi,
+
+On Wednesday, January 30, 2013 07:35:51 PM Stephen Rothwell wrote:
+> Hi Rafael,
 > 
-> TBH I haven't found a simple way to print out the silicon revision number.
-> Anyone on the list know a quick and dirty method? 
+> Today's linux-next merge of the pm tree got a conflict in
+> drivers/acpi/internal.h between commit 668192b67820 ("PCI: acpiphp: Move
+> host bridge hotplug to pci_root.c") from the pci tree and commit
+> 2c545601d933 ("ACPI / PCI: Make PCI root driver use struct
+> acpi_scan_handler") from the pm tree.
 > 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-You can dump the DEVICE_ID register @ 0x44e10600.
-Bits 31:28 should be 0 for PG1.0 and 1 for PG2.0.
+Thanks for resolving the conflict, that's the right fix.
 
-Regards,
-Vaibhav 
+Rafael
 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
