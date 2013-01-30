@@ -1,18 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3A3K1C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:27:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41444 "EHLO mx2.suse.de"
+	id S1754517Ab3A3KbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 05:31:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41588 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754209Ab3A3K1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:27:00 -0500
-Date: Wed, 30 Jan 2013 11:26:59 +0100
-Message-ID: <s5hhalzrmoc.wl%tiwai@suse.de>
+	id S1753726Ab3A3KbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 05:31:01 -0500
+Date: Wed, 30 Jan 2013 11:31:00 +0100
+Message-ID: <s5hfw1jrmhn.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Sound fixes for 3.8-rc6
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] firmware: Refactoring for splitting user-mode helper code
+In-Reply-To: <CACVXFVN9JNe6US655hh3cNpKyJFdWrLEYOOOdnk97_5bFmZYxw@mail.gmail.com>
+References: <1359470814-7993-1-git-send-email-tiwai@suse.de>
+	<1359470814-7993-2-git-send-email-tiwai@suse.de>
+	<CACVXFVOf4LZD+qVcqS9yBtvNZCRF=LMpR5BKuXby3Z8dfB+Vzw@mail.gmail.com>
+	<s5hpq0nw35i.wl%tiwai@suse.de>
+	<CACVXFVN9JNe6US655hh3cNpKyJFdWrLEYOOOdnk97_5bFmZYxw@mail.gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -22,70 +27,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+At Wed, 30 Jan 2013 18:25:20 +0800,
+Ming Lei wrote:
+> 
+> On Wed, Jan 30, 2013 at 3:17 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> >> The above usermodehelper_read_lock thing may be a functional change,
+> >> and looks not what you claimed in commit log, :-). The lock is currently held in
+> >> direct loading case, but your patch change the rule. Without holding the lock,
+> >> request_firmware() may touch filesystem / storage too early during
+> >> kernel boot or system resume in direct loading case.
+> >
+> > Does it really happen in a real scenario?
+> 
+> Some crazy drivers might call request_firmware inside resume callback,
+> with usermodehelper_read_lock, we can find the mistake easily and log it.
 
-please pull sound fixes for v3.8-rc6 from:
+But it's supposed to be cached, no?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git tags/sound-3.8
+> > If so, using usermode helper lock for that purpose sounds like an
+> > abuse to be fixed differently or replaced with a better one.
+> 
+> Might be, but looks not good to introduce this change in a code
+> refactoring patch. Or you can do it in another patch for discussion
+> if you have better way to handle the situation.
 
-The topmost commit is 9ddf1aeb2134e72275c97a2c6ff2e3eb04f2f27a
+Yes, I already modified the code again.
+Will resubmit them soon.
 
-----------------------------------------------------------------
 
-Sound fixes for 3.8-rc6
-
-- A collection of small ASoC driver fixes (error path fixes, register
-  correction, regulator bypass mode fix, etc)
-- A few regression fixes and quirks of HD-audio (wrong page attributes
-  for SG-buffer, Poulsbo/Oaktrail controller fix, digital mic fix for
-  Acer, etc)
-- A fix for USB-audio UAC2 devices wrt FU length check
-
-----------------------------------------------------------------
-
-Charles Keepax (2):
-      ASoC: arizona: Disable free-running mode on FLL1
-      ASoC: wm_adsp: Release firmware on error
-
-Chris Rattray (1):
-      ASoC: wm2200: correct mixer values and text
-
-Clemens Ladisch (1):
-      ALSA: usb-audio: fix invalid length check for RME and other UAC 2 devices
-
-David Henningsson (1):
-      ALSA: hda - fix inverted internal mic on Acer AOA150/ZG5
-
-Liam Girdwood (1):
-      ASoC: MAINTAINERS: Update email address.
-
-Mark Brown (5):
-      ASoC: dapm: Fix sense of regulator bypass mode
-      ASoC: wm5102: Correct AEC loopback mask
-      ASoC: wm5110: Correct AEC loopback mask
-      ASoC: arizona: Use actual rather than desired BCLK when calculating LRCLK
-      ASoC: wm_adsp: Use GFP_DMA for things that may be DMAed
-
-Shawn Guo (1):
-      ASoC: fsl: fix multiple definition of init_module
-
-Takashi Iwai (3):
-      ALSA: hda - Add a fixup for Packard-Bell desktop with ALC880
-      ALSA: hda - Enable LPIB delay count for Poulsbo / Oaktrail
-      ALSA: hda - Fix non-snoop page handling
-
----
- sound/pci/hda/hda_intel.c     | 49 ++++++++++++++++++++++++++-----------------
- sound/pci/hda/patch_realtek.c |  2 ++
- sound/soc/codecs/arizona.c    |  5 ++++-
- sound/soc/codecs/wm2200.c     |  3 ---
- sound/soc/codecs/wm5102.c     |  3 +--
- sound/soc/codecs/wm5110.c     |  3 +--
- sound/soc/codecs/wm_adsp.c    |  6 +++---
- sound/soc/fsl/Kconfig         |  9 ++------
- sound/soc/fsl/Makefile        |  5 ++++-
- sound/soc/fsl/imx-pcm.c       |  3 ---
- sound/soc/soc-dapm.c          | 12 +++++++++--
- sound/usb/mixer.c             | 17 ++++++++++-----
- 12 files changed, 69 insertions(+), 48 deletions(-)
-
+Takashi
