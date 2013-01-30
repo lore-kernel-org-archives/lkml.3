@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab3A3Lmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 06:42:47 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:56246 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab3A3Lmn (ORCPT
+	id S1752432Ab3A3LsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:48:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45475 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab3A3LsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 06:42:43 -0500
-Date: Wed, 30 Jan 2013 12:42:33 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        linaro-dev@lists.linaro.org
-Subject: Re: [PATCH 1/5] cpufreq: handle SW coordinated CPUs
-Message-ID: <20130130114233.GD32315@balto.lan>
-References: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org>
- <1356620142-8680-2-git-send-email-fabio.baltieri@linaro.org>
- <CAOh2x==SG32h-BbrnLN8gwiYNz7bS-REVcmXN67fdYPqFVmCiA@mail.gmail.com>
- <20130130091453.GA32315@balto.lan>
- <20130130110429.GC32315@balto.lan>
- <CAKohpo=_oim1FN+Cu+kMKLRpH1c+6-wuQACEdpVS8yHoANHhcA@mail.gmail.com>
+	Wed, 30 Jan 2013 06:48:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpo=_oim1FN+Cu+kMKLRpH1c+6-wuQACEdpVS8yHoANHhcA@mail.gmail.com>
-X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5h8v7brkqe.wl%tiwai@suse.de>
+References: <1359470814-7993-1-git-send-email-tiwai@suse.de>
+	<1359470814-7993-2-git-send-email-tiwai@suse.de>
+	<CACVXFVOf4LZD+qVcqS9yBtvNZCRF=LMpR5BKuXby3Z8dfB+Vzw@mail.gmail.com>
+	<s5hpq0nw35i.wl%tiwai@suse.de>
+	<CACVXFVN9JNe6US655hh3cNpKyJFdWrLEYOOOdnk97_5bFmZYxw@mail.gmail.com>
+	<s5hfw1jrmhn.wl%tiwai@suse.de>
+	<CACVXFVNmhpfHgM4BVMDi3tffN4ajinUqnZD7c3fPvTL26EDDRA@mail.gmail.com>
+	<s5hd2wnrlgl.wl%tiwai@suse.de>
+	<s5h8v7brkqe.wl%tiwai@suse.de>
+Date: Wed, 30 Jan 2013 19:48:15 +0800
+Message-ID: <CACVXFVMqxrjBKSnRENHYhd5=pfp3L2LchOzo8cLbp4eo1ph6FA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] firmware: Refactoring for splitting user-mode helper code
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 04:47:58PM +0530, Viresh Kumar wrote:
-> On 30 January 2013 16:34, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
-> > Small sidenote, actually what I'm going to drop here i *cdbs, as I need
-> > cpu for schedule_delayed_work_on and can't use cdbs->cpu for that as
-> > it's the master's one.
-> 
-> I can't find code which would do j_cdbs->cpu = j and so j_cdbs->cpu is
-> un-initialized. So, if that's true, you can initialize that and drop
-> cpu param too.
+On Wed, Jan 30, 2013 at 7:08 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Wed, 30 Jan 2013 11:53:14 +0100,
+> Takashi Iwai wrote:
+>>
+>> At Wed, 30 Jan 2013 18:50:05 +0800,
+>> Ming Lei wrote:
+>> >
+>> > On Wed, Jan 30, 2013 at 6:31 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > >
+>> > > But it's supposed to be cached, no?
+>> >
+>> > Generally it will be cached, but some crazy devices might come as new
+>> > device during resume, so we still need to handle the situation.
+>>
+>> In that case, shouldn't we simply return an error instead of
+>> usermodehelper lock (at least for direct loading)?
+>
+> The patch below is what I have in my mind...
+>
+>
+> Takashi
+>
+> ---
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] firmware: Skip usermodehelper_lock for direct loading
+>
+> We don't need a user mode helper lock for the direct fw loading.
+> This also reduces the use of timeout when user mode helper is
+> disabled, thus we can move the code into ifdef block, too.
+>
+> For avoiding the possible call of request_firmware() without caching,
+> add a check of suspend state for the direct loading case, and returns
+> immediately if it's called during suspend/resume.  Then it proceeds to
+> the user mode helper if enabled, or returns the error.
+>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/base/firmware_class.c | 97 ++++++++++++++++++++++++-------------------
+>  1 file changed, 54 insertions(+), 43 deletions(-)
+>
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index f1caad7..c973bb0 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -88,13 +88,6 @@ enum {
+>         FW_STATUS_ABORT,
+>  };
+>
+> -static int loading_timeout = 60;       /* In seconds */
+> -
+> -static inline long firmware_loading_timeout(void)
+> -{
+> -       return loading_timeout > 0 ? loading_timeout * HZ : MAX_SCHEDULE_TIMEOUT;
+> -}
+> -
+>  struct firmware_cache {
+>         /* firmware_buf instance will be added into the below list */
+>         spinlock_t lock;
+> @@ -315,6 +308,9 @@ static bool fw_get_filesystem_firmware(struct device *device,
+>         bool success = false;
+>         char *path = __getname();
+>
+> +       if (device->power.is_suspended)
+> +               return false;
 
-Right, it looks like cdbs->cpu is not really needed anymore.  Anyway I'm
-quite happy with how it came out passing cpu number, code is a bit more
-compact, so I'm sending that version and than we can discuss if recycle
-cdbs->cpu or just drop it.
+The device which is requesting firmware is resumed  does not mean the
+storage device has been resumed, so this check isn't enough.
 
-Fabio
-
--- 
-Fabio Baltieri
+Thanks,
+--
+Ming Lei
