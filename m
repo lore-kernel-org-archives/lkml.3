@@ -1,220 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab3A3JwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 04:52:07 -0500
-Received: from smtp4.nedap.com ([213.160.213.85]:56540 "EHLO smtp.nedap.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754585Ab3A3JwD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754590Ab3A3JwD (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 30 Jan 2013 04:52:03 -0500
-From: Dirkjan Bussink <dirkjan.bussink@nedap.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 30 Jan 2013 10:51:59 +0100
-Subject: [PATCH] tty: Prevent deadlock in n_gsm driver
-Thread-Topic: [PATCH] tty: Prevent deadlock in n_gsm driver
-Thread-Index: Ac3+z3F3B/dz0MeESHSJxil2tx3p0g==
-Message-ID: <0E76C0E9-AC46-42C0-BF43-12DAF0DCE313@nedap.com>
-References: <4B03AD17-906A-4FBF-9F00-3F860395B229@nedap.com>
- <20130130051213.GA26675@kroah.com>
-In-Reply-To: <20130130051213.GA26675@kroah.com>
-Accept-Language: en-US, nl-NL
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, nl-NL
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Received: from [213.199.154.206] ([213.199.154.206]:59686 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754487Ab3A3Jvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 04:51:55 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h1155h)
+From: Anson Huang <b20788@freescale.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>, <paul.liu@linaro.org>,
+        <rob@landley.net>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <shawn.guo@linaro.org>
+Subject: [PATCH] regulators: anatop: add set_voltage_time_sel interface
+Date: Wed, 30 Jan 2013 17:50:14 -0500
+Message-ID: <1359586214-11876-1-git-send-email-b20788@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change fixes a deadlock when the multiplexer is closed while there
-are still client side ports open.
+some of anatop's regulators(vppcpu, vddpu and vddsoc) have
+register settings about LDO's step time, which will impact
+the LDO ramp up speed, need to use set_voltage_time_sel
+interface to add necessary delay everytime LDOs' voltage
+is increased.
 
-When the multiplexer is closed and there are active tty's it tries to
-close them with tty_vhangup. This has a problem though, because
-tty_vhangup needs the tty_lock. This patch changes it to unlock the
-tty_lock before attempting the hangup and relocks afterwards. The
-additional call to tty_port_tty_set is needed because otherwise the
-port stays active because of the reference counter.
+offset 0x170:
+bit [24-25]: vddcpu
+bit [26-27]: vddpu
+bit [28-29]: vddsoc
 
-This change also exposed another problem that other code paths don't
-expect that the multiplexer could have been closed. This patch also adds
-checks for these cases in the gsmtty_ class of function that could be
-called.
+field definition:
+0'b00: 64 cycles of 24M clock;
+0'b01: 128 cycles of 24M clock;
+0'b02: 256 cycles of 24M clock;
+0'b03: 512 cycles of 24M clock;
 
-The documentation explicitly states that "first close all virtual ports
-before closing the physical port" but we've found this to not always
-reality in our field situations. The GPRS / UTMS modem sometimes crashes
-and needs a power cycle in that case which means cleanly shutting down
-everything is not always possible. This change makes it much more robust
-for our situation where at least the system is recoverable with this patch
-and doesn't hang in a deadlock situation inside the kernel.
-
-The patch is against the long term support kernel (3.4.27) and should
-apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
-and Telit HE910 modem.
-
-Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+Signed-off-by: Anson Huang <b20788@freescale.com>
 ---
- drivers/tty/n_gsm.c |   42 +++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 41 insertions(+), 1 deletions(-)
+ .../bindings/regulator/anatop-regulator.txt        |    6 +++
+ drivers/regulator/anatop-regulator.c               |   42 ++++++++++++++++++++
+ 2 files changed, 48 insertions(+)
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index e0f80ce..e2b57fa 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1689,6 +1689,8 @@ static inline void dlci_put(struct gsm_dlci *dlci)
- 	tty_port_put(&dlci->port);
+diff --git a/Documentation/devicetree/bindings/regulator/anatop-regulator.txt b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
+index 357758c..b3a08f8 100644
+--- a/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
+@@ -5,6 +5,9 @@ Required properties:
+ - anatop-reg-offset: Anatop MFD register offset
+ - anatop-vol-bit-shift: Bit shift for the register
+ - anatop-vol-bit-width: Number of bits used in the register
++- anatop-delay-reg-offset: Anatop MFD step time register offset
++- anatop-delay-bit-shift: Bit shift for the step time register
++- anatop-delay-bit-width: Number of bits used in the step time register
+ - anatop-min-bit-val: Minimum value of this register
+ - anatop-min-voltage: Minimum voltage of this regulator
+ - anatop-max-voltage: Maximum voltage of this regulator
+@@ -23,6 +26,9 @@ Example:
+ 		anatop-reg-offset = <0x140>;
+ 		anatop-vol-bit-shift = <9>;
+ 		anatop-vol-bit-width = <5>;
++		anatop-delay-reg-offset = <0x170>;
++		anatop-delay-bit-shift = <24>;
++		anatop-delay-bit-width = <2>;
+ 		anatop-min-bit-val = <1>;
+ 		anatop-min-voltage = <725000>;
+ 		anatop-max-voltage = <1300000>;
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+index 8f39cac..a857b9c 100644
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -31,12 +31,18 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/of_regulator.h>
+ 
++#define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
++#define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
++
+ struct anatop_regulator {
+ 	const char *name;
+ 	u32 control_reg;
+ 	struct regmap *anatop;
+ 	int vol_bit_shift;
+ 	int vol_bit_width;
++	u32 delay_reg;
++	int delay_bit_shift;
++	int delay_bit_width;
+ 	int min_bit_val;
+ 	int min_voltage;
+ 	int max_voltage;
+@@ -55,6 +61,33 @@ static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
+ 	return regulator_set_voltage_sel_regmap(reg, selector);
  }
-
-+static void gsm_destroy_network(struct gsm_dlci *dlci);
+ 
++static int anatop_regmap_set_voltage_time_sel(struct regulator_dev *reg,
++	unsigned int old_sel,
++	unsigned int new_sel)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	u32 val;
++	int ret = 0;
 +
- /**
-  *	gsm_dlci_release		-	release DLCI
-  *	@dlci: DLCI to destroy
-@@ -1702,9 +1704,19 @@ static void gsm_dlci_release(struct gsm_dlci *dlci)
++	/* check whether need to care about LDO ramp up speed */
++	if (anatop_reg->delay_reg) {
++		/*
++		 * the delay for LDO ramp up time is
++		 * based on the register setting, we need
++		 * to calculate how many steps LDO need to
++		 * ramp up, and how much delay needed. (us)
++		 */
++		regmap_read(anatop_reg->anatop, anatop_reg->delay_reg, &val);
++		val = (val >> anatop_reg->delay_bit_shift) &
++			((1 << anatop_reg->delay_bit_width) - 1);
++		ret = new_sel > old_sel ? (new_sel - old_sel) *
++			((LDO_RAMP_UP_UNIT_IN_CYCLES << val) /
++			LDO_RAMP_UP_FREQ_IN_MHZ + 1) : 0;
++	}
++
++	return ret;
++}
++
+ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
  {
- 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
- 	if (tty) {
-+		mutex_lock(&dlci->mutex);
-+		gsm_destroy_network(dlci);
-+		mutex_unlock(&dlci->mutex);
-+
-+		/* tty_vhangup needs the tty_lock, so unlock and
-+		   relock after doing the hangup. */
-+		tty_unlock();
- 		tty_vhangup(tty);
-+		tty_lock();
-+		tty_port_tty_set(&dlci->port, NULL);
- 		tty_kref_put(tty);
+ 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+@@ -67,6 +100,7 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+ 
+ static struct regulator_ops anatop_rops = {
+ 	.set_voltage_sel = anatop_regmap_set_voltage_sel,
++	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
+ 	.get_voltage_sel = anatop_regmap_get_voltage_sel,
+ 	.list_voltage = regulator_list_voltage_linear,
+ 	.map_voltage = regulator_map_voltage_linear,
+@@ -143,6 +177,14 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+ 		goto anatop_probe_end;
  	}
-+	dlci->state = DLCI_CLOSED;
- 	dlci_put(dlci);
- }
+ 
++	/* read LDO ramp up setting, only for core reg */
++	of_property_read_u32(np, "anatop-delay-reg-offset",
++			     &sreg->delay_reg);
++	of_property_read_u32(np, "anatop-delay-bit-width",
++			     &sreg->delay_bit_width);
++	of_property_read_u32(np, "anatop-delay-bit-shift",
++			     &sreg->delay_bit_shift);
++
+ 	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage) / 25000 + 1
+ 			    + sreg->min_bit_val;
+ 	rdesc->min_uV = sreg->min_voltage;
+-- 
+1.7.9.5
 
-@@ -2947,6 +2959,8 @@ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
 
- 	if (dlci == NULL)
- 		return;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	mutex_lock(&dlci->mutex);
- 	gsm_destroy_network(dlci);
- 	mutex_unlock(&dlci->mutex);
-@@ -2965,6 +2979,8 @@ out:
- static void gsmtty_hangup(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	tty_port_hangup(&dlci->port);
- 	gsm_dlci_begin_close(dlci);
- }
-@@ -2972,9 +2988,12 @@ static void gsmtty_hangup(struct tty_struct *tty)
- static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
- 								    int len)
- {
-+	int sent;
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	/* Stuff the bytes into the fifo queue */
--	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
-+	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
- 	/* Need to kick the channel */
- 	gsm_dlci_data_kick(dlci);
- 	return sent;
-@@ -2983,18 +3002,24 @@ static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
- static int gsmtty_write_room(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return TX_SIZE - kfifo_len(dlci->fifo);
- }
-
- static int gsmtty_chars_in_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return kfifo_len(dlci->fifo);
- }
-
- static void gsmtty_flush_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	/* Caution needed: If we implement reliable transport classes
- 	   then the data being transmitted can't simply be junked once
- 	   it has first hit the stack. Until then we can just blow it
-@@ -3013,6 +3038,8 @@ static void gsmtty_wait_until_sent(struct tty_struct *tty, int timeout)
- static int gsmtty_tiocmget(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return dlci->modem_rx;
- }
-
-@@ -3022,6 +3049,8 @@ static int gsmtty_tiocmset(struct tty_struct *tty,
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	unsigned int modem_tx = dlci->modem_tx;
-
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	modem_tx &= ~clear;
- 	modem_tx |= set;
-
-@@ -3040,6 +3069,8 @@ static int gsmtty_ioctl(struct tty_struct *tty,
- 	struct gsm_netconfig nc;
- 	int index;
-
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	switch (cmd) {
- 	case GSMIOC_ENABLE_NET:
- 		if (copy_from_user(&nc, (void __user *)arg, sizeof(nc)))
-@@ -3066,6 +3097,9 @@ static int gsmtty_ioctl(struct tty_struct *tty,
-
- static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
- {
-+	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	/* For the moment its fixed. In actual fact the speed information
- 	   for the virtual channel can be propogated in both directions by
- 	   the RPN control message. This however rapidly gets nasty as we
-@@ -3077,6 +3111,8 @@ static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
- static void gsmtty_throttle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	if (tty->termios.c_cflag & CRTSCTS)
- 		dlci->modem_tx &= ~TIOCM_DTR;
- 	dlci->throttled = 1;
-@@ -3087,6 +3123,8 @@ static void gsmtty_throttle(struct tty_struct *tty)
- static void gsmtty_unthrottle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	if (tty->termios.c_cflag & CRTSCTS)
- 		dlci->modem_tx |= TIOCM_DTR;
- 	dlci->throttled = 0;
-@@ -3098,6 +3136,8 @@ static int gsmtty_break_ctl(struct tty_struct *tty, int state)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	int encode = 0;	/* Off */
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
-
- 	if (state == -1)	/* "On indefinitely" - we can't encode this
- 				    properly */
---
-1.7.2.5
