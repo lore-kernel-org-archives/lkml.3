@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3A3BUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:20:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43587 "EHLO
+	id S1753013Ab3A3BVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:21:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43601 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab3A3BUa (ORCPT
+	with ESMTP id S1751626Ab3A3BVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:20:30 -0500
-Date: Tue, 29 Jan 2013 17:20:07 -0800
+	Tue, 29 Jan 2013 20:21:32 -0500
+Date: Tue, 29 Jan 2013 17:21:17 -0800
 From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-c9b3234a6abadaa12684083d39552939baaed1f4@git.kernel.org>
+Message-ID: <tip-b422a3091748c38b68052e8ba021652590b1f25c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        stefano.stabellini@eu.citrix.com
+        yinghai@kernel.org, jacob.shin@amd.com, tglx@linutronix.de,
+        hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        stefano.stabellini@eu.citrix.com
-In-Reply-To: <1359058816-7615-2-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-2-git-send-email-yinghai@kernel.org>
+        yinghai@kernel.org, jacob.shin@amd.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1359058816-7615-5-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-5-git-send-email-yinghai@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, mm:
-  Fix page table early allocation offset checking
-Git-Commit-ID: c9b3234a6abadaa12684083d39552939baaed1f4
+Subject: [tip:x86/mm2] x86: Factor out e820_add_kernel_range()
+Git-Commit-ID: b422a3091748c38b68052e8ba021652590b1f25c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,88 +29,86 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:20:13 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:21:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c9b3234a6abadaa12684083d39552939baaed1f4
-Gitweb:     http://git.kernel.org/tip/c9b3234a6abadaa12684083d39552939baaed1f4
+Commit-ID:  b422a3091748c38b68052e8ba021652590b1f25c
+Gitweb:     http://git.kernel.org/tip/b422a3091748c38b68052e8ba021652590b1f25c
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 24 Jan 2013 12:19:42 -0800
+AuthorDate: Thu, 24 Jan 2013 12:19:45 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 29 Jan 2013 15:12:23 -0800
+CommitDate: Tue, 29 Jan 2013 15:12:24 -0800
 
-x86, mm: Fix page table early allocation offset checking
+x86: Factor out e820_add_kernel_range()
 
-During debugging loading kernel above 4G, found that one page is not used
-in pre-allocated BRK area for early page allocation.
-pgt_buf_top is address that can not be used, so should check if that new
-end is above that top, otherwise last page will not be used.
+Separate out the reservation of the kernel static memory areas into a
+separate function.
 
-Fix that checking and also add print out for allocation from pre-allocated
-BRK area to catch possible bugs later.
-
-But after we get back that page for pgt, it tiggers one bug in pgt allocation
-with xen: We need to avoid to use page as pgt to map range that is
-overlapping with that pgt page.
-
-Add checking about overlapping, when it happens, use memblock allocation
-instead.  That fixes crash on Xen PV guest with 2G that Stefan found.
+Also add support for case when memmap=xxM$yyM is used without exactmap.
+Need to remove reserved range at first before we add E820_RAM
+range, otherwise added E820_RAM range will be ignored.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1359058816-7615-2-git-send-email-yinghai@kernel.org
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Tested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Link: http://lkml.kernel.org/r/1359058816-7615-5-git-send-email-yinghai@kernel.org
+Cc: Jacob Shin <jacob.shin@amd.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/init.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ arch/x86/kernel/setup.c | 36 ++++++++++++++++++++++--------------
+ 1 file changed, 22 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 6f85de8..78d1ef3 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -25,6 +25,8 @@ static unsigned long __initdata pgt_buf_top;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 2681937..5552d04 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -702,6 +702,27 @@ static void __init trim_bios_range(void)
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
  
- static unsigned long min_pfn_mapped;
- 
-+static bool __initdata can_use_brk_pgt = true;
++/* called before trim_bios_range() to spare extra sanitize */
++static void __init e820_add_kernel_range(void)
++{
++	u64 start = __pa_symbol(_text);
++	u64 size = __pa_symbol(_end) - start;
 +
- /*
-  * Pages returned are already directly mapped.
-  *
-@@ -47,7 +49,7 @@ __ref void *alloc_low_pages(unsigned int num)
- 						__GFP_ZERO, order);
- 	}
++	/*
++	 * Complain if .text .data and .bss are not marked as E820_RAM and
++	 * attempt to fix it by adding the range. We may have a confused BIOS,
++	 * or the user may have used memmap=exactmap or memmap=xxM$yyM to
++	 * exclude kernel range. If we really are running on top non-RAM,
++	 * we will crash later anyways.
++	 */
++	if (e820_all_mapped(start, start + size, E820_RAM))
++		return;
++
++	pr_warn(".text .data .bss are not marked as E820_RAM!\n");
++	e820_remove_range(start, size, E820_RAM, 0);
++	e820_add_region(start, size, E820_RAM);
++}
++
+ static int __init parse_reservelow(char *p)
+ {
+ 	unsigned long long size;
+@@ -897,20 +918,7 @@ void __init setup_arch(char **cmdline_p)
+ 	insert_resource(&iomem_resource, &data_resource);
+ 	insert_resource(&iomem_resource, &bss_resource);
  
--	if ((pgt_buf_end + num) >= pgt_buf_top) {
-+	if ((pgt_buf_end + num) > pgt_buf_top || !can_use_brk_pgt) {
- 		unsigned long ret;
- 		if (min_pfn_mapped >= max_pfn_mapped)
- 			panic("alloc_low_page: ran out of memory");
-@@ -61,6 +63,8 @@ __ref void *alloc_low_pages(unsigned int num)
- 	} else {
- 		pfn = pgt_buf_end;
- 		pgt_buf_end += num;
-+		printk(KERN_DEBUG "BRK [%#010lx, %#010lx] PGTABLE\n",
-+			pfn << PAGE_SHIFT, (pgt_buf_end << PAGE_SHIFT) - 1);
- 	}
- 
- 	for (i = 0; i < num; i++) {
-@@ -370,8 +374,15 @@ static unsigned long __init init_range_memory_mapping(
- 		if (start >= end)
- 			continue;
- 
-+		/*
-+		 * if it is overlapping with brk pgt, we need to
-+		 * alloc pgt buf from memblock instead.
-+		 */
-+		can_use_brk_pgt = max(start, (u64)pgt_buf_end<<PAGE_SHIFT) >=
-+				    min(end, (u64)pgt_buf_top<<PAGE_SHIFT);
- 		init_memory_mapping(start, end);
- 		mapped_ram_size += end - start;
-+		can_use_brk_pgt = true;
- 	}
- 
- 	return mapped_ram_size;
+-	/*
+-	 * Complain if .text .data and .bss are not marked as E820_RAM and
+-	 * attempt to fix it by adding the range. We may have a confused BIOS,
+-	 * or the user may have incorrectly supplied it via memmap=exactmap. If
+-	 * we really are running on top non-RAM, we will crash later anyways.
+-	 */
+-	if (!e820_all_mapped(code_resource.start, __pa(__brk_limit), E820_RAM)) {
+-		pr_warn(".text .data .bss are not marked as E820_RAM!\n");
+-
+-		e820_add_region(code_resource.start,
+-				__pa(__brk_limit) - code_resource.start + 1,
+-				E820_RAM);
+-	}
+-
++	e820_add_kernel_range();
+ 	trim_bios_range();
+ #ifdef CONFIG_X86_32
+ 	if (ppro_with_ram_bug()) {
