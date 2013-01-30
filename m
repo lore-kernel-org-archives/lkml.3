@@ -1,113 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab3A3K40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:56:26 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34919 "EHLO bear.ext.ti.com"
+	id S1755008Ab3A3LE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:04:27 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:51696 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753704Ab3A3K4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:56:23 -0500
-Message-ID: <5108FC31.3000507@ti.com>
-Date: Wed, 30 Jan 2013 16:25:45 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1754199Ab3A3LEY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 06:04:24 -0500
+Message-ID: <5108FE31.8020107@mev.co.uk>
+Date: Wed, 30 Jan 2013 11:04:17 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: Richard Cochran <richardcochran@gmail.com>, Matt Porter <mporter@ti.com>,
-        Chase Maupin <chase.maupin@ti.com>, Jason Kridner <jdk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
-References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com> <5107B650.5090901@ti.com> <3DE2C638-6AE8-4BC9-AD68-3AAA40CD6233@antoniou-consulting.com> <5108E1C6.9020201@ti.com> <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com>
-In-Reply-To: <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [Q]staging/comedi: Considation of *_find_boardinfo possible?
+References: <201301300041.36064.PeterHuewe@gmx.de> <ADE657CA350FB648AAC2C43247A983F00207A707B3C8@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00207A707B3C8@AUSP01VMBX24.collaborationhost.net>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/30/2013 3:06 PM, Pantelis Antoniou wrote:
-> Hi,
->
-> On Jan 30, 2013, at 11:03 AM, Mugunthan V N wrote:
->
->> On 1/30/2013 2:06 PM, Pantelis Antoniou wrote:
->>> Hi Mugunthan,
->>>
->>> On Jan 29, 2013, at 1:45 PM, Mugunthan V N wrote:
->>>
->>>> On 1/28/2013 6:41 PM, Pantelis Antoniou wrote:
->>>>> Fix interrupt storm on bone A4 cause by non-by-the-book interrupt handling.
->>>>> While at it, added a non-NAPI mode (which is easier to debug), plus
->>>>> some general fixes.
->>>>>
->>>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->>>>> ---
->>>>>   Documentation/devicetree/bindings/net/cpsw.txt |   1 +
->>>>>   drivers/net/ethernet/ti/cpsw.c                 | 222 +++++++++++++++++++++----
->>>>>   drivers/net/ethernet/ti/davinci_cpdma.c        |   4 +-
->>>>>   drivers/net/ethernet/ti/davinci_cpdma.h        |   2 +-
->>>>>   include/linux/platform_data/cpsw.h             |   1 +
->>>>>   5 files changed, 194 insertions(+), 36 deletions(-)
->>>> I have tested CPSW on AM335x EVM 1.5A with flood ping and i am not
->>>> seeing any interrupt storm.
->>>> Can you provide more details on how to reproduce the issue.
->>>>
->>> A beaglebone prototype with the new silicon version, with the ethernet errata
->>> fixed displays this. You can't trigger it on old silicon.
->>>
->>> The TI people on the CC list can confirm.
->> But i have the same silicon revision (PG2.0) in my EVM and I am not seeing any issues. Can you
->> point me to the ethernet errata which you are mentioning?
+On 2013-01-29 23:56, H Hartley Sweeten wrote:
+> On Tuesday, January 29, 2013 4:42 PM, Peter Hüwe wrote:
+>> Hi,
 >>
->> Regards
->> Mugunthan V N
-> What kernel version are you using? This is only triggered on the mainline driver.
+>> while analyzing the comedi drivers, I noticed that quite a lot of them use a
+>> more or less similar find_boardinfo function.
 >
-> The advisory in question: From http://www.ti.com/lit/er/sprz360c/sprz360c.pdf
+> <snip>
 >
-> Advisory 1.0.9: "Ethernet Media Access Controller and Switch Subsystem: C0_TX_PEND
-> and C0_RX_PEND Interrupts Not Connected to ARM Cortex-A8"
+>> The names and the exact implementation differ slightly, but in most cases it
+>> boils down to:
+>> 	unsigned int i;
+>>
+>> 	for (i = 0; i < ARRAY_SIZE(__BOARD_ARRAY__); i++)
+>> 		if (pcidev->device == __BOARD_ARRAY__[i].device_id)
+>> 			return &__BOARD_ARRAY__[i];
+>> 	return NULL;
+>>
+>> unfortunately the __BOARD_ARRAY__ is always of a different type (but all
+>> contain the device_id field) and size.
+>>
+>>
+>> ---> is there a way to consolidate these functions into one function (which
+>> can operate on the different types) ?  It's almost a bit like 'templates'.
+>> Maybe with some gcc extensions or kernel magic functions ?
+>>
+>> I already thought about passing a void pointer to the __BOARD_ARRAY__ and the
+>> size of one element of the __BOARD_ARRAY__ and doing pointer calculations -
+>> but I guess there must be a better way.
+>>
+>> Or is the only option to write a macro ?
 >
-> I bet you're using an old kernel driver with the workarounds with the timers.
+> As you noticed, the problem is the driver specific definition of the struct used
+> to hold the boardinfo.
 >
-> If I had to guess (although I didn't use a probe or anything) is that the
-> interrupts are now proper level interrupts, instead of working in edge
-> triggered mode due to the workaround.
+> In drivers.c, the comedi_recognize() function actually access the boardinfo
+> in order to support the COMEDI_DEVCONFIG ioctl. There is a comment above
+> it giving a description of how it works.
 >
-> Apparently the interrupt was never acked properly in the original driver
-> (the sequence described in the TRM is not followed).
+> There might be a way to do this in a generic way. The problem is that the
+> drivers use different names for "common" information and the data is
+> packed in the structs differently so accessing it generically is a bit difficult,
+> if not impossible.
 >
-> Looking at the TRM (spruh73g.pdf) 14.3.1.3 Interrupts in particular, the
-> the status registers are not read, and more damning the proper values to the
-> CPDMA_EOI_VECTOR register are not written.
+> I have been trying to remove as much of this boardinfo stuff from the drivers
+> as possible. For now I think the current implementation is fairly clean.
 >
-> The original driver blindly wrote zero (cpdma_ctlr_eoi), while you have to
-> write different values according to the interrupt you ack.
+> For the PnP bus drivers that use the auto_attach mechanism I have some ideas
+> to get rid of the find_boardinfo functions but I need to work out the kinks first.
 >
-> What happened was that on the first interrupt, the interrupt was never acked,
-> and we had an irq storm...
->
-> Regards
->
-> -- Pantelis
-The above mentioned advisory is for PG1.0 and not for PG2.0
-I am booting net-next kernel.
+> Please wait on "fixing" any of this until a good solution is worked out.
 
-[    0.000000] Booting Linux on physical CPU 0x0
-[    0.000000] Linux version 3.8.0-rc5-01248-gd2ed273 
-(a0131834@a0131834-linux) (gcc version 4.5.3 20110311 (prerelease) (GCC) 
-) #21 SMP Wed Jan 30 163
-[    0.000000] CPU: ARMv7 Processor [413fc082] revision 2 (ARMv7), 
-cr=10c53c7d
-[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing 
-instruction cache
+One way is to enumerate the possible indices of the custom board array 
+as a set of enum constants, initialize the custom board array using 
+designated element initializers (indexed by the enum constants) and 
+include the same enum constant in the 'driver_data' member of the struct 
+pci_device_id elements of the module's PCI device table.  Then the 
+module's PCI driver's probe function can index directly into the custom 
+board array without searching.
 
-[root@arago /]# uname -a
-Linux arago 3.8.0-rc5-01248-gd2ed273 #21 SMP Wed Jan 30 16:13:26 IST 
-2013 armv7l GNU/Linux
+The missing link in the above is passing the index from the 
+'driver_data' through to the modules' comedi_driver's 'auto_attach' 
+function. The 'comedi_pci_auto_config()' function does not currently 
+have a parameter for passing this information, but the underlying 
+'comedi_auto_config()' function does.  Either the existing 
+'comedi_pci_auto_config()' function could be extended, or a separate 
+extended version of the function could be added (maybe as an inline 
+function in comedidev.h), or the modules could call 
+'comedi_auto_config()' directly.
 
-In theory what you are mentioning is correct. I have a beagle bone black 
-and yet to try it.
+We have posted patches to add extra context to 
+'comedi_pci_auto_config()' before, but they weren't applied because we 
+didn't have a clear use case for them.  Now we have, but I wouldn't mind 
+leaving the existing function alone and adding a new one.
 
-Regards
-Mugunthan V N
+The nice thing is that it's all under the control of the individual drivers.
+
+Here's some code to illustrate what I'm on about in the above description:
+
+struct foobar_board {
+	const char *name;
+	unsigned int ai_chans;
+	unsigned int ai_bits;
+};
+
+enum foobar_board_nums {
+	bn_foo,
+	bn_bar,
+	bn_baz
+};
+
+static const struct foobar_board foobar_boards[] = {
+	[bn_foo] = {
+		.name = "foo",
+		.ai_chans = 4,
+		.ai_bits = 12,
+	},
+	[bn_bar] = {
+		.name = "bar",
+		.ai_chans = 4,
+		.ai_bits = 16,
+	},
+	[bn_baz] = {
+		.name = "baz",
+		.ai_chans = 8,
+		.ai_bits = 16,
+	},
+};
+
+static int foobar_auto_attach(struct comedi_device *dev,
+			      unsigned long context_bn)
+{
+	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+	struct foobar_board *thisboard = &foobar_boards[bn_foo];
+
+	dev->board_ptr = thisboard;	/* no searching! */
+
+	/* just return error for now */
+	return -ENODEV;
+}
+
+static void foobar_detach(struct comedi_device *dev)
+{
+	/* nothing to do for now */
+}
+
+static struct comedi_driver foobar_comedi_driver = {
+	.driver_name	= "foobar",
+	.module		= THIS_MODULE,
+	.auto_attach	= foobar_auto_attach,
+	.detach		= foobar_detach,
+};
+
+static DEFINE_PCI_DEVICE_TABLE(foobar_pci_table) = {
+	{
+		PCI_DEVICE(PCI_VENDOR_ID_FOOBAR,
+			   PCI_DEVICE_ID_FOOBAR_FOO),
+		.driver_data = bn_foo,
+	},
+	{
+		PCI_DEVICE(PCI_VENDOR_ID_FOOBAR,
+			   PCI_DEVICE_ID_FOOBAR_BAR),
+		.driver_data = bn_bar,
+	},
+	{
+		PCI_DEVICE(PCI_VENDOR_ID_FOOBAR,
+			   PCI_DEVICE_ID_FOOBAR_BAZ),
+		.driver_data = bn_baz,
+	},
+	{ 0 }
+};
+MODULE_DEVICE_TABLE(pci, foobar_pci_table);
+
+static int foobar_pci_probe(struct pci_dev *pdev,
+			    const struct pci_device_id *ent)
+{
+	/* could use a variant of comedi_pci_auto_config() here */
+	return comedi_auto_config(&pdev->dev, &foobar_comedi_driver,
+				  ent->driver_data);
+}
+
+static struct pci_driver foobar_pci_driver = {
+	.name		= "foobar",
+	.id_table	= foobar_pci_table,
+	.probe		= foobar_pci_probe,
+	.remove		= comedi_pci_auto_unconfig,
+};
+module_comedi_pci_driver(foobar_comedi_driver, foobar_pci_driver);
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+
