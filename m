@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3A3Mdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 07:33:33 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:60168 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3A3Mdb (ORCPT
+	id S1753541Ab3A3Mgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 07:36:39 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40290 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359Ab3A3Mgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 07:33:31 -0500
-Message-ID: <51091318.6000001@monstr.eu>
-Date: Wed, 30 Jan 2013 13:33:28 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 30 Jan 2013 07:36:37 -0500
+Date: Wed, 30 Jan 2013 13:36:34 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Amit Kale <akale@stec-inc.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Announcement: STEC EnhanceIO SSD caching software for Linux
+ kernel
+Message-ID: <20130130123630.GA19069@amd.pavel.ucw.cz>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-arch@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Hinds <dahinds@users.sourceforge.net>
-Subject: Re: Using IO functions across ARM, PPC and Microblaze architectures
-References: <CAHTX3d+VNDVQjnTnAB=Ywxo7odvNmCPu=wGZ03-xWLecSMsS9A@mail.gmail.com> <20121207211606.6c5d5bc8@pyramind.ukuu.org.uk> <CAMuHMdVNszTFRjqiUoZ42+noaOcGjLZyZ9O30c5UVNNJhp0LMw@mail.gmail.com>
-In-Reply-To: <CAMuHMdVNszTFRjqiUoZ42+noaOcGjLZyZ9O30c5UVNNJhp0LMw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2012 11:57 AM, Geert Uytterhoeven wrote:
-> On Fri, Dec 7, 2012 at 10:16 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->>> Because I need to use IO functions which will behave
->>> on arm as little endian and on powerpc as big endian
->>> and on microblaze depends on endian setting.
->>> I haven't found any IO function which I could use by 3 architectures
->>> without using preprocessor macros or runtime detection
->>
->> Its a rather weird mix. We can do "always big" and "always little"
->>
->>> 1. Using helper function + preprocessor macros
->>> (using static inline function also possible)
->>
->> Then someone comes along and sticks a daughterboard into the system with
->> the same device the other way around and there are years
->>
->>> 2. Using function pointers
->>
->> Probably smarter. 8250.c works this way and it has to handle some
->> extremely bizarre mappings.
->>
->>> b) Runtime initialization - here is the question if there is
->>> any standard function which I could use.
->>
->> Set the pointers up and pass them as data with your platform device, that
->> way the function definitions are buried in your platform code where they
->> depend.
->
-> Or embed a struct io_ops * in struct device, to be set up by the bus driver?
->
-> Wasn't David Hinds working on something like this in the context of PCMCIA
-> a few decades ago?
+Hi!
 
+> EnhanceIO driver is based on EnhanceIO SSD caching software product developed by STEC Inc. EnhanceIO was derived from Facebook's open source Flashcache project. EnhanceIO uses SSDs as cache devices for traditional rotating hard disk drives (referred to as source volumes throughout this document).
+> 
+> EnhanceIO can work with any block device, be it an entire physical disk, an individual disk partition,  a RAIDed DAS device, a SAN volume, a device mapper volume or a software RAID (md) device.
+> 
+> The source volume to SSD mapping is a set-associative mapping based on the source volume sector number with a default set size (aka associativity) of 512 blocks and a default block size of 4 KB.  Partial cache blocks are not used.
+> The default value of 4 KB is chosen because it is the common I/O block size of most storage systems.  With these default values, each cache set is 2 MB (512 *
+> 4 KB).  Therefore, a 400 GB SSD will have a little less than 200,000 cache sets because a little space is used for storing the meta data on the SSD.
+> 
+> EnhanceIO supports three caching modes: read-only, write-through, and write-back and three cache replacement policies: random, FIFO, and LRU.
+> 
+> Read-only caching mode causes EnhanceIO to direct write IO requests
+> only to HDD. Read IO requests are issued to HDD and the data read
+> from HDD is stored on SSD. Subsequent Read requests for the same
+> blocks are carried out from SSD, thus reducing their latency by a
+> substantial amount. 
 
-Do you have any link on that?
+What are the requirements for the SSD? I have 500GB 2.5" HDD in the
+notebook... and it starts to be slightly slow for git. Would cheap 8GB
+USB stick be useful thing to cache at? (USB sticks have reasonably
+fast "seek", but reads are in 20MB/sec range and writes are very
+slow.)
 
-Thanks,
-Michal
-
-
+								Pavel  
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
