@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab3A3Bwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:52:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44029 "EHLO
+	id S1753681Ab3A3Bx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:53:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44040 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab3A3Bwq (ORCPT
+	with ESMTP id S1753157Ab3A3Bx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:52:46 -0500
-Date: Tue, 29 Jan 2013 17:52:35 -0800
+	Tue, 29 Jan 2013 20:53:56 -0500
+Date: Tue, 29 Jan 2013 17:53:45 -0800
 From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-37e2fc42c2164c785261e83ea2f21fbeb7c46638@git.kernel.org>
+Message-ID: <tip-d27807b9bfd6315a93a051e4e6d9961d6e4467d3@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, alexander.h.duyck@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, alexander.h.duyck@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1359058816-7615-32-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-32-git-send-email-yinghai@kernel.org>
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1359058816-7615-33-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-33-git-send-email-yinghai@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86: Merge early kernel reserve for 32bit and 64bit
-Git-Commit-ID: 37e2fc42c2164c785261e83ea2f21fbeb7c46638
+Subject: [tip:x86/mm2] x86, 64bit, mm: Mark data/bss/brk to nx
+Git-Commit-ID: d27807b9bfd6315a93a051e4e6d9961d6e4467d3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,103 +27,87 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:52:41 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:53:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  37e2fc42c2164c785261e83ea2f21fbeb7c46638
-Gitweb:     http://git.kernel.org/tip/37e2fc42c2164c785261e83ea2f21fbeb7c46638
+Commit-ID:  d27807b9bfd6315a93a051e4e6d9961d6e4467d3
+Gitweb:     http://git.kernel.org/tip/d27807b9bfd6315a93a051e4e6d9961d6e4467d3
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 24 Jan 2013 12:20:12 -0800
+AuthorDate: Thu, 24 Jan 2013 12:20:13 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 29 Jan 2013 15:33:07 -0800
+CommitDate: Tue, 29 Jan 2013 15:34:36 -0800
 
-x86: Merge early kernel reserve for 32bit and 64bit
+x86, 64bit, mm: Mark data/bss/brk to nx
 
-They are the same, and we could move them out from head32/64.c to setup.c.
+HPA said, we should not have RW and +x set at the time.
 
-We are using memblock, and it could handle overlapping properly, so
-we don't need to reserve some at first to hold the location, and just
-need to make sure we reserve them before we are using memblock to find
-free mem to use.
+for kernel layout:
+[    0.000000] Kernel Layout:
+[    0.000000]   .text: [0x01000000-0x021434f8]
+[    0.000000] .rodata: [0x02200000-0x02a13fff]
+[    0.000000]   .data: [0x02c00000-0x02dc763f]
+[    0.000000]   .init: [0x02dc9000-0x0312cfff]
+[    0.000000]    .bss: [0x0313b000-0x03dd6fff]
+[    0.000000]    .brk: [0x03dd7000-0x03dfffff]
+
+before the patch, we have
+---[ High Kernel Mapping ]---
+0xffffffff80000000-0xffffffff81000000          16M                           pmd
+0xffffffff81000000-0xffffffff82200000          18M     ro         PSE GLB x  pmd
+0xffffffff82200000-0xffffffff82c00000          10M     ro         PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82dc9000        1828K     RW             GLB x  pte
+0xffffffff82dc9000-0xffffffff82e00000         220K     RW             GLB NX pte
+0xffffffff82e00000-0xffffffff83000000           2M     RW         PSE GLB NX pmd
+0xffffffff83000000-0xffffffff8313a000        1256K     RW             GLB NX pte
+0xffffffff8313a000-0xffffffff83200000         792K     RW             GLB x  pte
+0xffffffff83200000-0xffffffff83e00000          12M     RW         PSE GLB x  pmd
+0xffffffff83e00000-0xffffffffa0000000         450M                           pmd
+
+after patch,, we get
+---[ High Kernel Mapping ]---
+0xffffffff80000000-0xffffffff81000000          16M                           pmd
+0xffffffff81000000-0xffffffff82200000          18M     ro         PSE GLB x  pmd
+0xffffffff82200000-0xffffffff82c00000          10M     ro         PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82e00000           2M     RW             GLB NX pte
+0xffffffff82e00000-0xffffffff83000000           2M     RW         PSE GLB NX pmd
+0xffffffff83000000-0xffffffff83200000           2M     RW             GLB NX pte
+0xffffffff83200000-0xffffffff83e00000          12M     RW         PSE GLB NX pmd
+0xffffffff83e00000-0xffffffffa0000000         450M                           pmd
+
+so data, bss, brk get NX ...
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1359058816-7615-32-git-send-email-yinghai@kernel.org
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Link: http://lkml.kernel.org/r/1359058816-7615-33-git-send-email-yinghai@kernel.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/head32.c | 9 ---------
- arch/x86/kernel/head64.c | 9 ---------
- arch/x86/kernel/setup.c  | 9 +++++++++
- 3 files changed, 9 insertions(+), 18 deletions(-)
+ arch/x86/mm/init_64.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index a795b54..138463a 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -33,9 +33,6 @@ void __init i386_start_kernel(void)
- {
- 	sanitize_boot_params(&boot_params);
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index dc67337..e2fcbc3 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -810,6 +810,7 @@ void mark_rodata_ro(void)
+ 	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
+ 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
+ 	unsigned long data_start = (unsigned long) &_sdata;
++	unsigned long all_end = PFN_ALIGN(&_end);
  
--	memblock_reserve(__pa_symbol(&_text),
--			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
--
- 	/* Call the subarch specific early setup function */
- 	switch (boot_params.hdr.hardware_subarch) {
- 	case X86_SUBARCH_MRST:
-@@ -49,11 +46,5 @@ void __init i386_start_kernel(void)
- 		break;
- 	}
+ 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
+ 	       (end - start) >> 10);
+@@ -818,10 +819,10 @@ void mark_rodata_ro(void)
+ 	kernel_set_to_readonly = 1;
  
--	/*
--	 * At this point everything still needed from the boot loader
--	 * or BIOS or kernel text should be early reserved or marked not
--	 * RAM in e820. All other memory is free game.
--	 */
--
- 	start_kernel();
- }
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 6873b07..57334f4 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -186,16 +186,7 @@ void __init x86_64_start_reservations(char *real_mode_data)
- 	if (!boot_params.hdr.version)
- 		copy_bootdata(__va(real_mode_data));
+ 	/*
+-	 * The rodata section (but not the kernel text!) should also be
+-	 * not-executable.
++	 * The rodata/data/bss/brk section (but not the kernel text!)
++	 * should also be not-executable.
+ 	 */
+-	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
++	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
  
--	memblock_reserve(__pa_symbol(&_text),
--			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
--
- 	reserve_ebda_region();
+ 	rodata_test();
  
--	/*
--	 * At this point everything still needed from the boot loader
--	 * or BIOS or kernel text should be early reserved or marked not
--	 * RAM in e820. All other memory is free game.
--	 */
--
- 	start_kernel();
- }
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 5dc47c3..a74701a 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -805,8 +805,17 @@ early_param("reservelow", parse_reservelow);
- 
- void __init setup_arch(char **cmdline_p)
- {
-+	memblock_reserve(__pa_symbol(_text),
-+			 (unsigned long)__bss_stop - (unsigned long)_text);
-+
- 	early_reserve_initrd();
- 
-+	/*
-+	 * At this point everything still needed from the boot loader
-+	 * or BIOS or kernel text should be early reserved or marked not
-+	 * RAM in e820. All other memory is free game.
-+	 */
-+
- #ifdef CONFIG_X86_32
- 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
- 	visws_early_detect();
