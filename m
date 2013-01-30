@@ -1,98 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab3A3Hgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 02:36:40 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:53750 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab3A3Hgj (ORCPT
+	id S1754036Ab3A3Hk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 02:40:27 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:58760 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab3A3HkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 02:36:39 -0500
-Subject: Re: [PATCH] ata: Fix DVD not dectected at some Haswell platforms
-From: joeyli <jlee@suse.com>
-To: Youquan Song <youquan.song@intel.com>
-Cc: htejun@gmail.com, ming.lei@canonical.com, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, seth.heasley@intel.com,
-        james.d.ralston@intel.com, Youquan Song <youquan.song@linux.intel.com>
-In-Reply-To: <1359566374-27286-1-git-send-email-youquan.song@intel.com>
-References: <1359566374-27286-1-git-send-email-youquan.song@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Jan 2013 15:32:52 +0800
-Message-ID: <1359531172.15258.1.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 30 Jan 2013 02:40:25 -0500
+Date: Wed, 30 Jan 2013 08:40:20 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-tegra@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [RFC 0/4] Use the Common Display Framework in tegra-drm
+Message-ID: <20130130074020.GA17547@avionic-0098.mockup.avionic-design.de>
+References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
+Content-Disposition: inline
+In-Reply-To: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:TvWNhG7YhXFwOh0opLJlAEcgFX7UibT9H1RJHRfIJhC
+ nYvxWRjxD5fgGjzJilT3+bVX9ANiRku9aCM4GDiQGa8RCXnumc
+ +bHbodEDcSfvf00o+B6MeHv9xkSqBBlbUjWsZoCbiUETnM6ZrF
+ tU6430dq1fFOgJ6eqJX4ASfzArDdan2O2zIkhR2Zucj2Xlv39J
+ gMxu7Hv5kBY+8x+Zk4GotraCquv2EmzhC76cIEcAOdXShY+KfU
+ ZsSR6jnV8HfleKa1Z+Cw5OMOcncO35X1euyRqg/wbDTSp+Kpgx
+ t1wTTGgdR6VYwqW7EnKNwzax923ZVRjx9GqoyVsQi1FPgchzkP
+ 3FoT2VbiMYj3CiCGVjjxFMCgXa6cwM1CL9LiM49tj/JQ9VLA4+
+ LllNGf7J9v9DK2t0fvt7S3JTls4cSCjTdA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 三，2013-01-30 於 12:19 -0500，Youquan Song 提到：
-> There is a quirk patch 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d fix the 4 ports
-> IDE controller 32bit PIO mode. 
-> Recently, the problem was showed at Haswell platform which includes 2 ports 
-> IDE controller.
-> 
-> So introduce a qurik patch to disable 32bit PIO at this IDE controller. 
-> 
-> Signed-off-by: Youquan Song <youquan.song@intel.com>
 
-Patch works to me for avoid DVD detection on Intel Shark Bay development
-machine.
+--lrZ03NoBR/3+SXJZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Tested-by: Lee, Chun-Yi <jlee@suse.com>
+On Wed, Jan 30, 2013 at 12:02:15PM +0900, Alexandre Courbot wrote:
+> This series leverages the (still work-in-progress) Common Display Framewo=
+rk to
+> add panel support to the tegra-drm driver. It also adds a driver for the
+> CLAA101WA01A panel used on the Ventana board.
+>=20
+> The CDF is a moving target but Tegra needs some sort of display framework=
+ and
+> even in its current state the CDF seems to be the best candidate. Besides=
+, by
+> using the CDF from now on we hope to provide useful feedback to Laurent a=
+nd the
+> other CDF designers.
+>=20
+> The changes to tegra-drm are rather minimal. Panels are referenced from T=
+egra DC
+> output nodes through the "nvidia,panel" property. This property is looked=
+ up
+> when a display connect notification is received in order to see if it poi=
+nts to
+> the connected display entity. If it does, the entity is then used for out=
+put.
+>=20
+> The DPMS states are then propagated to the output entity, which is then s=
+upposed
+> to call back into the set_stream() hook in order to enable/disable the ou=
+tput
+> stream as needed.
 
+Thanks *a lot* for taking care of this Alexandre! From a quick look at
+the patches they seem generally fine. I'll go over them in a bit more
+detail though.
 
-Thanks a lot!
-Joey Lee
+> Although the overall design seems to work ok, a few specific issues need =
+to be
+> addressed:
+>=20
+> 1) The CDF has a get_modes() hook, but this is already implemented by
+> tegra_connector_get_modes(). Ideally everything should be moved to the CD=
+F hook,
+> but Tegra's implementation uses DRM functions to retrieve the EDID and CDF
+> should, AFAIK, remain DRM-agnostic.
 
-> ---
->  drivers/ata/ata_piix.c |   14 +++++++++++++-
->  1 files changed, 13 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-> index ef773e1..1993e52 100644
-> --- a/drivers/ata/ata_piix.c
-> +++ b/drivers/ata/ata_piix.c
-> @@ -150,6 +150,7 @@ enum piix_controller_ids {
->  	tolapai_sata,
->  	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
->  	ich8_sata_snb,
-> +	ich8_2port_sata_snb,
->  };
->  
->  struct piix_map_db {
-> @@ -326,7 +327,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
->  	/* SATA Controller IDE (Lynx Point) */
->  	{ 0x8086, 0x8c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
->  	/* SATA Controller IDE (Lynx Point) */
-> -	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-> +	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
->  	/* SATA Controller IDE (Lynx Point) */
->  	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
->  	/* SATA Controller IDE (Lynx Point-LP) */
-> @@ -502,6 +503,7 @@ static const struct piix_map_db *piix_map_db_table[] = {
->  	[ich8m_apple_sata]	= &ich8m_apple_map_db,
->  	[tolapai_sata]		= &tolapai_map_db,
->  	[ich8_sata_snb]		= &ich8_map_db,
-> +	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
->  };
->  
->  static struct ata_port_info piix_port_info[] = {
-> @@ -643,6 +645,16 @@ static struct ata_port_info piix_port_info[] = {
->  		.port_ops	= &piix_sata_ops,
->  	},
->  
-> +	[ich8_2port_sata_snb] =
-> +	{
-> +		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
-> +		.pio_mask	= ATA_PIO4,
-> +		.mwdma_mask	= ATA_MWDMA2,
-> +		.udma_mask	= ATA_UDMA6,
-> +		.port_ops	= &piix_sata_ops,
-> +	},
-> +
-> +
->  };
->  
->  static struct pci_bits piix_enable_bits[] = {
+Maybe a good option would be to just not implement get_modes() if the
+same information can be retrieved via EDID. That is, the DRM driver
+could just go and fetch EDID when the nvidia,ddc-i2c-bus is available
+(or parse the nvidia,edid blob) and only rely on CDF otherwise.
 
+So for Ventana the only reason why we need CDF is basically the power
+sequencing, right?
 
+> 2) There is currently no panel/backlight interaction, e.g. backlight stat=
+us is
+> controlled through FB events, independantly from the panel state. It coul=
+d make
+> sense to have the panel DT node reference the backlight and control it as=
+ part
+> of its own power on/off sequence. Right now however, a backlight device c=
+annot
+> ignore FB events.
+
+I definitely think that we should aim for correct panel and backlight
+interaction. Perhaps this could work by looking up the real backlight
+via it's phandle and have the CDF driver use the backlight API to
+disable or enable the backlight as part of the power sequencing.
+
+I'm not sure what you mean by "cannot ignore FB events"? Can you provide
+a concrete problematic use-case?
+
+> 3) Probably related to 2), now the backlight's power controls are part of=
+ the
+> panel driver, because the pwm-backlight driver cannot control the power
+> regulator and enable GPIO. This means that the backlight power is not tur=
+ned off
+> when its brightness is set to 0 through sysfs. Once again this speaks in =
+favor
+> of having stronger panel/backlight interaction: for instance, the panel d=
+river
+> could reference the backlight and hijack its update_status() op to replac=
+e it by
+> one that does the correct power sequencing before calling the original fu=
+nction.
+> This would require some extra infrastructure though. Another possibility =
+would
+> be to have a dedicated backlight driver for each panel, with its own
+> "compatible" string.
+
+Hijacking .update_status() sounds a bit risky. But perhaps you could
+wrap the real backlight in a CDF backlight to receive notifications.
+Obviously you'd get two backlight devices in sysfs, but that turn out
+not to be a problem.
+
+Thierry
+
+--lrZ03NoBR/3+SXJZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRCM5kAAoJEN0jrNd/PrOhuJgP/R2V+SnteE1iaXV7AhLyiFpW
+tqcu6IPC7fqwrgQWISoCJecdJ/0ycB2ZLIJeDwdw0VHnhejt+NJmvS+J25Th5M5q
+tmq8ZNEjUyNybQIHaUpASZDuTocfefuM9LJDKb5RlpiortyrhvVyySqrBxX/PFwn
+8NRKh+y0DRNj1wOyhTnnBID8Xh5UrAx9oWMQklGKS9npGW9IFrZKr0WU457bOG/7
+Fp3M9eauQ1NsiHsfXZcRXz7QNRn08AOksfLiS3/eIONEx2bVzQrCcN6Bq/nr7zLz
+/zFAql6X6hKf0rURogA5hN2A8jiPoW8LAs63YdeaCC8PtcF35tHjmOcWTweFs7bp
+ZIvTmFPVHp4L46T7Q2toGOgm9s0wD/HEgvIAVCc+eBQkvnbP6bbfkpAmeH7cpTh/
+ENsDPririsVHZHoAZXynn9R0Jf4rb/hQGdw42p8fODu6K/tiaQJ4UgnZpAbmD6sS
+gPTbWZBra8L0YQ7/7a1WBcgjJ9Mv0r4btlucQ4yyPnW5HKqtmabyYn95bkhLLlGj
+wsE5TYUXUq4GFCqrLXT6+uQxA1ir5eHWGtcW+DsvB1aOrilY8bNlqeIF/4M0HSSX
+cDv5vaHeU4FWDgsIOs5cvxfD87GLmsEKWWBrt6xgiaWG2YEYCowfpEoxnSpZXinY
+MXtGbG4XKz9GkhXHGgDp
+=pq9a
+-----END PGP SIGNATURE-----
+
+--lrZ03NoBR/3+SXJZ--
