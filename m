@@ -1,48 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757127Ab3A3W1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 17:27:08 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:44905 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755927Ab3A3W1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 17:27:05 -0500
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130130221946.GA14801@flint.arm.linux.org.uk>
-References: <20130130200648.GA13298@flint.arm.linux.org.uk>
-	<20130130215211.GA28418@flint.arm.linux.org.uk>
-	<CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
-	<20130130221946.GA14801@flint.arm.linux.org.uk>
-Date: Wed, 30 Jan 2013 23:27:03 +0100
-Message-ID: <CAKMK7uGukLQ31vsg9g-cWuyOiddiEhF0T7j6VgC92i3qpsZ+gw@mail.gmail.com>
-Subject: Re: BUG: circular locking dependency detected
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932068Ab3A3WaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 17:30:10 -0500
+Received: from plane.gmane.org ([80.91.229.3]:59890 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754325Ab3A3WaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 17:30:07 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: rh <richard_hubbe11@lavabit.com>
+Subject: Re: usb storage: FATAL DATA CORRUPTION due to innocuous reboot!?
+Date: Wed, 30 Jan 2013 14:29:48 -0800
+Message-ID: <20130130142948.2c1b30b64497f7a3bf9243f4@lavabit.com>
+References: <20130126132232.GA18715@rhlx01.hs-esslingen.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: ip68-227-87-145.sb.sd.cox.net
+User-Agent: dsodnetnin
+X-Mailer: EZnn0.37p
+X-Newsreader: EZnn0.37p
+X-Gmane-NNTP-Posting-Host: EZnn0.37p
+Original-Received: from slem by 1.1 with local
+X-No-Archive: yes
+Archive: no
+X-Archive: expiry=11
+X-Archive: encrypt
+X-Operating-System: Barebones_6.1
+X-Gmane-NNTP-Posting-Host: 192.168.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 11:19 PM, Russell King <rmk@arm.linux.org.uk> wrote:
-> So... what you seem to be telling me is that 3.9 is going to be a
-> release which issues lockdep complaints when the console blanks, and
-> you think that's acceptable?
->
-> Adding Linus and Andrew so they're aware of this issue...
+On Sat, 26 Jan 2013 14:22:32 +0100
+Andreas Mohr <andi@lisas.de> wrote:
 
-Linus was the guy who shot down the patches for 3.9 since one of the
-earlier iterations caused instant deadlocks - I've been pushing them
-to merge them ;-)
--Daniel
+> Hi,
+> 
+> after my recent tirade of very poor device support of Aspire One,
+> I now experienced something a lot worse (bad karma? ;-P):
+> basically my entire ext4 root partition got blewn into shreds
+> (corruption is so pervasive that I'm afraid recovery will fail).
+> 
+> I am (was) running 3.7.0, and decided to upgrade to current (-rc4+).
+> Thus I did grub-mkconfig and more or less immediately rebooted.
+> Realized that I had failed to copy vmlinuz to /boot's bzImage
+> (i.e. new boot entry was missing), rebooted and redid that,
+> re-ran grub-mkconfig and rebooted more or less immediately.
+> 
+> After the first grub-mkconfig GRUB2 was still fine,
+> being able to boot the existing kernel.
+> Exactly directly after the second reboot (post-grub-mkconfig)
+> all hell broke lose, with GRUB2 complaining about "invalid extent"
+> and a subsequent fsck.ext4 spewing tons of pages of errors.
+> 
+> I'm using the infamous JMF601 SSD controller, USB-connected
+> (root device).
+> Cannot provide details of grub package version since root partition
+> is toast.
+> 
+> Note that the first inode that fsck complained about was 262144, i.e.
+> 0x40000 i.e. 256kB i.e. most certainly directly at a boundary of
+> erase block size. IOW, the corruption is very likely to have been
+> produced by coarse erase block related activity and *not* by any
+> interim merging of *partial* data updates.
+> 
+> 
+> While of course the corruption may have happened due to a questionable
+> device, I now have a hunch that this unspeakable mess has been caused
+> by the reboot happening too early (while the SSD was still writing
+> data, probably by having to actively and painfully erase formerly
+> used blocks, too). If the reboot happened too early, this would
+> probably mean that USB port power during reboot got lost too early,
+> thus the controller lost power during ongoing data updates.
+> If the controller's operation happens to be implemented
+> in a not fully atomic way (as is somewhat likely given JMF601's
+> reputation), then this means data corruption, plenty.
+> 
+> Thus I started to investigate about the kernel's device consistency
+> guarantees upon reboot.
+> Note that reboot(8) says:
+> "
+>        The -h flag puts all hard disks in standby mode  just  before
+> halt  or
+>        power-off.  Right  now  this is only implemented for IDE
+> drives. A side
+>        effect of putting the drive in stand-by mode is that the write
+> cache on
+>        the disk is flushed. This is important for IDE drives, since
+> the kernel
+>        doesn't flush the write cache itself before power-off.
+> "
+> Excuse me!?
+> Why wouldn't the kernel be responsible to take care to flush things
+> prior to power-off?
+> 
+> Also,
+> http://linux.die.net/man/8/sync
+> (a possibly old/irrelevant source) says:
+> "The reboot(8) and halt(8) commands take this into account by sleeping
+> for a few seconds after calling sync(2)"
+> 
+> Please forgive me for a second that I'm *very* puzzled why
+> it would be the reboot binary's job to do a delay to ensure
+> properly completed syncing/flushing of the storage devices.
+> After all it's quite arguably definitely the *kernel*'s job
+> to govern device-specific flush delay requirements (only the kernel
+> knows which particular device may have certain particularly special
+> manual delay requirements, and all that a userspace binary ought
+> to do is to issue a *client request* for a reboot).
+> 
+> 
+> Please note that the sync binary is only about syncing
+> filesystem-related parts, i.e. it does NOT seem to be responsible for
+> the (much more important!!) non-fs parts such as the things updated
+> by GRUB (is this the hole that I'm seeing here?).
+> 
+> So, to have a short list:
+> - I suspect improper sync/flush handling prior to reboot
+>   (which likely eventually leads to the obviously fatal USB port
+> poweroff)
+> - it's possibly the case that sync handling is sufficient to handle
+> FS parts but not the even more critical non-FS parts (bootloader)
+> - kernel might actually do a proper sync/flush of *all* device parts,
+>   but device may fail to obey it
+> 
+> If it in fact is a problem specific to this device,
+> then it might be conceivable to introduce a new USB storage quirk flag
+> for devices with broken flush which would add an arbitrary pre-reboot
+> delay of perhaps 10 seconds.
+> If the kernel has a last-write-at timestamp per block device
+> (which it arguably should maintain), then this could be used to
+> shorten the delay to the time remaining since last write
+> (which also would allow to prolong the total delay to 20 seconds).
+> 
+> Questions:
+> - should I file a kernel bug report about this issue?
+> - did anyone experience anything similar? (research didn't
+> manage to locate much so far)
+> - if my thoughts are correct (about storage quirk), how to implement
+> it?
+> - any other hints/ideas?
+
+I am curious to know if you found anything more about this.
+
+I have seen some strange things lately with USB devices. A 64MB (yes MB)
+SD card was not readable on linux 3.6.7 but was fine on macos. The card
+was created under a previous linux kernel. I also saw flushing issues on
+other usb mem sticks.  
+
+1. copied a large file from disk -> usb stick
+2. cp finished
+3. I umount'd the usb stick
+4. put stick in other pc
+5. file was truncated
+
+Had to redo those steps but also did a bin/sync before unmounting.
+
+> 
+> 
+> I have to admit that all these way too many kernel "features"
+> are really adding up going on my nerves (Alan Cox, anyone?).
+> If this keeps going on, then I *will* be forced to bail out, hard.
+
+I have been looking at alternatives to linux kernel. Is that what you
+mean?
+
+> 
+> Thanks,
+> 
+> Andreas Mohr
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb"
+> in the body of a message to
+> majordomo@vger.kernel.org More majordomo info
+> at  http://vger.kernel.org/majordomo-info.html
+> 
+
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+
+
