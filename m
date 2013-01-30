@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab3A3IiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:38:19 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33508 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab3A3IiQ (ORCPT
+	id S1754053Ab3A3IkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:40:00 -0500
+Received: from mga12.intel.com ([143.182.124.36]:24021 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751303Ab3A3Ijy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:38:16 -0500
-Date: Wed, 30 Jan 2013 09:38:09 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [RFC 0/4] Use the Common Display Framework in tegra-drm
-Message-ID: <20130130083809.GU1906@pengutronix.de>
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
- <20130130074020.GA17547@avionic-0098.mockup.avionic-design.de>
- <5108D865.3070301@nvidia.com>
+	Wed, 30 Jan 2013 03:39:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5108D865.3070301@nvidia.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:26:58 up 220 days, 23:38, 65 users,  load average: 1.50, 2.57,
- 6.07
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <783235259540e27e745f68316b1735e8d4ce9137.1359125652.git.dmitry.kasatkin@intel.com>
+References: <783235259540e27e745f68316b1735e8d4ce9137.1359125652.git.dmitry.kasatkin@intel.com>
+Date: Wed, 30 Jan 2013 10:39:52 +0200
+Message-ID: <CALLzPKai_9SR2pBDe8fU1sGTf+fN=EDGGU1HKQ-LTdWuP0Ti5Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1] digsig: Fix memory leakage in digsig_verify_rsa()
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: James Morris <jmorris@namei.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 05:23:01PM +0900, Alex Courbot wrote:
-> On 01/30/2013 04:40 PM, Thierry Reding wrote:
-> >Thanks *a lot* for taking care of this Alexandre! From a quick look at
-> >the patches they seem generally fine. I'll go over them in a bit more
-> >detail though.
-> 
-> Glad you like it better than my previous attempts at controlling
-> Tegra's panels and backlights. ;)
-> 
-> >>1) The CDF has a get_modes() hook, but this is already implemented by
-> >>tegra_connector_get_modes(). Ideally everything should be moved to the CDF hook,
-> >>but Tegra's implementation uses DRM functions to retrieve the EDID and CDF
-> >>should, AFAIK, remain DRM-agnostic.
-> >
-> >Maybe a good option would be to just not implement get_modes() if the
-> >same information can be retrieved via EDID. That is, the DRM driver
-> >could just go and fetch EDID when the nvidia,ddc-i2c-bus is available
-> >(or parse the nvidia,edid blob) and only rely on CDF otherwise.
-> 
-> Since EDID information is per-panel I'd intuitively say it should be
-> provided by the panel driver.
+On Fri, Jan 25, 2013 at 4:54 PM, Dmitry Kasatkin
+<dmitry.kasatkin@intel.com> wrote:
+> From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+>
+> digsig_verify_rsa() does not free kmalloc'ed buffer returned by
+> mpi_get_buffer().
+>
+> Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  lib/digsig.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/lib/digsig.c b/lib/digsig.c
+> index 8c0e629..dc2be7e 100644
+> --- a/lib/digsig.c
+> +++ b/lib/digsig.c
+> @@ -162,6 +162,8 @@ static int digsig_verify_rsa(struct key *key,
+>         memset(out1, 0, head);
+>         memcpy(out1 + head, p, l);
+>
+> +       kfree(p);
+> +
+>         err = pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
+>         if (err)
+>                 goto err;
+> --
+> 1.7.10.4
+>
 
-Hm. If you know from the devicetree that you have a CLAA101WA01A then
-you won't need EDID data at all. If instead you have EDID data you don't
-have to put the information that this is a CLAA101WA01A into devicetree.
+James, can you please apply this patch.
 
-I think the next thing that will happen is that you want to use the EDID
-data to 1) pick display timings 2) pick the right power sequence that
-fits the panel found in EDID. You can't archieve 2) by hardcoding the
-panel in the devicetree.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+- Dmitry
