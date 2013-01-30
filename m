@@ -1,249 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab3A3Ggz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 01:36:55 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:39876 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab3A3Ggw (ORCPT
+	id S1753577Ab3A3GjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 01:39:18 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:39967 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab3A3GjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 01:36:52 -0500
-From: chenggang <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: chenggang <chenggang.qin@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chenggang Qin <chenggang.qcg@alibaba-inc.com>
-Subject: [PATCH v2] Add 4 tracepoint events for vfs
-Date: Wed, 30 Jan 2013 14:35:06 +0800
-Message-Id: <1359527706-3459-1-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 30 Jan 2013 01:39:16 -0500
+Message-ID: <5108C052.3070604@ti.com>
+Date: Wed, 30 Jan 2013 12:10:18 +0530
+From: Sourav <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Luciano Coelho <coelho@ti.com>
+CC: <b-cousson@ti.com>, <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH] arm: dts: omap4-sdp: Add I2c pinctrl data
+References: <1359371865-27907-1-git-send-email-sourav.poddar@ti.com> <1359527158.14894.37.camel@cumari.coelho.fi>
+In-Reply-To: <1359527158.14894.37.camel@cumari.coelho.fi>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chenggang.qin@gmail.com
-
-If the engineers want to analyze the file access behavior of some applications without source code, perf tools with some appropriate tracepoints events in the VFS subsystem are excellent choice.
-
-The system engineers or developers of server software require to know what files are accessed by the target processes with in a period of time. Then they can find the hot applications and the hot files. For this requirements, we added 2 tracepoint events at the begin of generic_file_aio_read() and generic_file_aio_write().
-
-Many database systems use their own page cache subsystems and use the direct IO to access the disks. Sometimes, the system engineers want to know the misses rate of the database system's page cache. This requirements can be satisfied by recording the database's file access behavior through the way of direct IO. So, we added 2 tracepoint events at the direct IO branch in generic_file_aio_read() and generic_file_aio_write().
-
-Then, we will extend the perf's function by python script to use these new tracepoint events.
-
-The 4 new tracepoint events are:
-1) generic_file_aio_read
-   Format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-	field:int common_padding;	offset:8;	size:4;	signed:1;
-
-	field:long long pos;	offset:16;	size:8;	signed:1;
-	field:unsigned long bytes;	offset:24;	size:8;	signed:0;
-	field:__data_loc char[] fname;	offset:32;	size:4;	signed:1;
-
-2) generic_file_aio_write
-   Format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-	field:int common_padding;	offset:8;	size:4;	signed:1;
-
-	field:long long pos;	offset:16;	size:8;	signed:1;
-	field:unsigned long bytes;	offset:24;	size:8;	signed:0;
-	field:__data_loc char[] fname;	offset:32;	size:4;	signed:1;
-
-3) direct_io_read
-   Format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-	field:int common_padding;	offset:8;	size:4;	signed:1;
-
-	field:long long pos;	offset:16;	size:8;	signed:1;
-	field:unsigned long bytes;	offset:24;	size:8;	signed:0;
-	field:unsigned char fname[100];	offset:32;	size:100;	signed:0;
-
-4) direct_io_write
-   Format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-	field:int common_padding;	offset:8;	size:4;	signed:1;
-
-	field:long long pos;	offset:16;	size:8;	signed:1;
-	field:unsigned long bytes;	offset:24;	size:8;	signed:0;
-	field:unsigned char fname[100];	offset:32;	size:100;	signed:0;
-
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@alibaba-inc.com>
-
----
- include/trace/events/vfs.h |   62 ++++++++++++++++++++++++++++++++++++++++++++
- mm/filemap.c               |   18 +++++++++++++
- 2 files changed, 80 insertions(+)
- create mode 100644 include/trace/events/vfs.h
-
-diff --git a/include/trace/events/vfs.h b/include/trace/events/vfs.h
-new file mode 100644
-index 0000000..384ff29
---- /dev/null
-+++ b/include/trace/events/vfs.h
-@@ -0,0 +1,62 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM vfs
-+#define TRACE_INCLUDE_FILE vfs
-+
-+#if !defined(_TRACE_EVENTS_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_EVENTS_VFS_H
-+
-+#include <linux/tracepoint.h>
-+
-+#include <asm/ptrace.h>
-+
-+DECLARE_EVENT_CLASS(vfs_filerw_template,
-+
-+	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-+
-+	TP_ARGS(pos, bytes, fname),
-+
-+	TP_STRUCT__entry(
-+		__field(        long long,      pos             )
-+		__field(        unsigned long,  bytes           )
-+		__string(       fname,          fname           )
-+	),
-+
-+	TP_fast_assign(
-+		__entry->pos    = pos;
-+		__entry->bytes  = bytes;
-+		__assign_str(fname, fname);
-+	),
-+
-+	TP_printk("Filename: %s Pos: %lld Bytes: %lu",
-+		  __get_str(fname), __entry->pos, __entry->bytes)
-+);
-+
-+DEFINE_EVENT(vfs_filerw_template, generic_file_aio_read,
-+	     TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-+	     TP_ARGS(pos, bytes, fname));
-+
-+TRACE_EVENT_FLAGS(generic_file_aio_read, TRACE_EVENT_FL_CAP_ANY)
-+
-+DEFINE_EVENT(vfs_filerw_template, generic_file_aio_write,
-+	     TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-+	     TP_ARGS(pos, bytes, fname));
-+
-+TRACE_EVENT_FLAGS(generic_file_aio_write, TRACE_EVENT_FL_CAP_ANY)
-+
-+DEFINE_EVENT(vfs_filerw_template, direct_io_read,
-+	     TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-+	     TP_ARGS(pos, bytes, fname));
-+
-+TRACE_EVENT_FLAGS(direct_io_read, TRACE_EVENT_FL_CAP_ANY)
-+
-+DEFINE_EVENT(vfs_filerw_template, direct_io_write,
-+	     TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
-+	     TP_ARGS(pos, bytes, fname));
-+
-+TRACE_EVENT_FLAGS(direct_io_write, TRACE_EVENT_FL_CAP_ANY)
-+
-+#endif /* _TRACE_EVENTS_VFS_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-+
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83efee7..1cf711a 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -42,6 +42,9 @@
- 
- #include <asm/mman.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/vfs.h>
-+
- /*
-  * Shared mappings implemented 30.11.1994. It's not fully working yet,
-  * though.
-@@ -1390,6 +1393,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	ssize_t retval;
- 	unsigned long seg = 0;
- 	size_t count;
-+	unsigned char *f_name;
- 	loff_t *ppos = &iocb->ki_pos;
- 
- 	count = 0;
-@@ -1397,6 +1401,9 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	if (retval)
- 		return retval;
- 
-+	f_name = (unsigned char *)filp->f_path.dentry->d_name.name;
-+	trace_generic_file_aio_read(pos, iov_length(iov, nr_segs), f_name);
-+
- 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
- 	if (filp->f_flags & O_DIRECT) {
- 		loff_t size;
-@@ -1407,6 +1414,9 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 		inode = mapping->host;
- 		if (!count)
- 			goto out; /* skip atime */
-+
-+		trace_direct_io_read(pos, iov_length(iov, nr_segs), f_name);
-+
- 		size = i_size_read(inode);
- 		if (pos < size) {
- 			retval = filemap_write_and_wait_range(mapping, pos,
-@@ -2453,6 +2463,10 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	if (unlikely(file->f_flags & O_DIRECT)) {
- 		loff_t endbyte;
- 		ssize_t written_buffered;
-+		unsigned char *f_name;
-+
-+		f_name = (unsigned char *)file->f_path.dentry->d_name.name;
-+		trace_direct_io_write(pos, iov_length(iov, nr_segs), f_name);
- 
- 		written = generic_file_direct_write(iocb, iov, &nr_segs, pos,
- 							ppos, count, ocount);
-@@ -2524,9 +2538,13 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
- 	ssize_t ret;
-+	unsigned char *f_name;
- 
- 	BUG_ON(iocb->ki_pos != pos);
- 
-+	f_name = (unsigned char *)file->f_path.dentry->d_name.name;
-+	trace_generic_file_aio_write(pos, iov_length(iov, nr_segs), f_name);
-+
- 	sb_start_write(inode->i_sb);
- 	mutex_lock(&inode->i_mutex);
- 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
--- 
-1.7.9.5
-
+Hi Luciano,
+On Wednesday 30 January 2013 11:55 AM, Luciano Coelho wrote:
+> Hi Sourav,
+>
+> On Mon, 2013-01-28 at 16:47 +0530, Sourav Poddar wrote:
+>> Booting 3.8-rc4 om omap 4430sdp results in the following error
+>>
+>> omap_i2c 48070000.i2c: did not get pins for i2c error: -19
+>> [    1.024261] omap_i2c 48070000.i2c: bus 0 rev0.12 at 100 kHz
+>> [    1.030181] omap_i2c 48072000.i2c: did not get pins for i2c error: -19
+>> [    1.037384] omap_i2c 48072000.i2c: bus 1 rev0.12 at 400 kHz
+>> [    1.043762] omap_i2c 48060000.i2c: did not get pins for i2c error: -19
+>> [    1.050964] omap_i2c 48060000.i2c: bus 2 rev0.12 at 100 kHz
+>> [    1.056823] omap_i2c 4807a000.i2c: did not get pins for i2c error: -19
+>> [    1.064025] omap_i2c 4807a000.i2c: bus 3 rev0.12 at 400 kHz
+>>
+>> This happens because omap4 dts file is not adapted to use i2c through pinctrl
+>> framework. Populating i2c pinctrl data to get rid of the error.
+>>
+>> Tested on omap4430 sdp with 3.8-rc4 kernel.
+>>
+>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+>> Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+> Could you do the same thing for panda? I'm getting the same kind of
+> errors with it:
+Sure, I will do that.
+> [    0.000000] Machine: Generic OMAP4 (Flattened Device Tree), model: TI OMAP4 PandaBoard
+> [...]
+> [    2.884826] omap_i2c 48072000.i2c: did not get pins for i2c error: -19
+> [    2.890686] omap_i2c 48072000.i2c: bus 1 rev0.11 at 400 kHz
+> [    2.892028] omap_i2c 48060000.i2c: did not get pins for i2c error: -19
+> [    2.899047] omap_i2c 48060000.i2c: bus 2 rev0.11 at 100 kHz
+> [    2.906677] omap_i2c 48350000.i2c: did not get pins for i2c error: -19
+> [    2.912872] omap_i2c 48350000.i2c: bus 3 rev0.11 at 400 kHz
+>
+> --
+> Cheers,
+> Luca.
+>
+Thanks,
+Sourav
