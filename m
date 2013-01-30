@@ -1,557 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab3A3Eou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 23:44:50 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44756 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab3A3Eot (ORCPT
+	id S1753214Ab3A3Ewn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 23:52:43 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:62620 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab3A3Ewj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 23:44:49 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-81-5108a53f2c39
-Date: Wed, 30 Jan 2013 13:44:47 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv3 5/6] zswap: add to mm/
-Message-ID: <20130130044447.GD2580@blaptop>
-References: <1359409767-30092-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1359409767-30092-6-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130129062756.GH4752@blaptop>
- <51080658.7060709@linux.vnet.ibm.com>
+	Tue, 29 Jan 2013 23:52:39 -0500
+X-Greylist: delayed 85975 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 23:52:39 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51080658.7060709@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1356620142-8680-3-git-send-email-fabio.baltieri@linaro.org>
+References: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org>
+	<1356620142-8680-3-git-send-email-fabio.baltieri@linaro.org>
+Date: Wed, 30 Jan 2013 10:22:37 +0530
+X-Google-Sender-Auth: typXCXYCNJT0L1dcyrxVc5ht5z0
+Message-ID: <CAOh2x=mjNbSbGrirOOddE-Kitj7MqtDXiwb6rSo8UWQK4wzJvw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] cpufreq: star/stop cpufreq timers on cpu hotplug
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        linux-kernel@vger.kernel.org, josephl@nvidia.com,
+        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 11:26:48AM -0600, Seth Jennings wrote:
-> On 01/29/2013 12:27 AM, Minchan Kim wrote:
-> > First feeling is it's simple and nice approach.
-> > Although we have some problems to decide policy, it could solve by later patch
-> > so I hope we make basic infrasture more solid by lots of comment.
-> 
-> Thanks very much for the review!
-> 
-> > 
-> > There are two things to review hard.
-> > 
-> > 1. data structure life - when any data structure is died by whom?
-> >    Please write down it in changelog or header of zswap.c
-> > 
-> > 2. Flush routine - I hope it would be nice to separate it as another
-> >    incremental patches if it is possible. If it's impossible, let's add
-> >    lots of words.
-> 
-> It seems like it would be difficult to break the flushing
-> functionality into it's own patch, but I can start the process and
-> see.  As long as people keep in mind that some of the design rationale
-> in the version without the flush code is dictated by the addition of
-> the flush code.
-> 
-> But yes, more comments.
-> 
-> > On Mon, Jan 28, 2013 at 03:49:26PM -0600, Seth Jennings wrote:
-> >> zswap is a thin compression backend for frontswap. It receives
-> >> pages from frontswap and attempts to store them in a compressed
-> >> memory pool, resulting in an effective partial memory reclaim and
-> >> dramatically reduced swap device I/O.
-> >>
-> >> Additional, in most cases, pages can be retrieved from this
-> >> compressed store much more quickly than reading from tradition
-> >> swap devices resulting in faster performance for many workloads.
-> >>
-> >> This patch adds the zswap driver to mm/
-> >>
-> >> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> >> ---
-> >>  mm/Kconfig  |   15 +
-> >>  mm/Makefile |    1 +
-> >>  mm/zswap.c  | 1073 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 1089 insertions(+)
-> >>  create mode 100644 mm/zswap.c
-> >>
-> >> diff --git a/mm/Kconfig b/mm/Kconfig
-> >> index 278e3ab..14b9acb 100644
-> >> --- a/mm/Kconfig
-> >> +++ b/mm/Kconfig
-> >> @@ -446,3 +446,18 @@ config FRONTSWAP
-> >>  	  and swap data is stored as normal on the matching swap device.
-> >>  
-> >>  	  If unsure, say Y to enable frontswap.
-> >> +
-> >> +config ZSWAP
-> >> +	bool "In-kernel swap page compression"
-> >> +	depends on FRONTSWAP && CRYPTO
-> > 
-> > Couldn't we support CRYPTO optionally?
-> 
-> No.  zswap depends on the cryptographic API for access to the
-> compression modules.
+Hi Fabio,
 
-I meant I don't want to enable CONFIG_CRYPTO for just using zswap.
-In case of zram, we didn't need it.
-Is there any reason we must use encryption for using zswap?
+Sorry for waking up very late :)
 
-> 
-> > 
-> >> +	select CRYPTO_LZO
-> >> +	select ZSMALLOC
-> >> +	default n
-> >> +	help
-> >> +	  Zswap is a backend for the frontswap mechanism in the VMM.
-> >> +	  It receives pages from frontswap and attempts to store them
-> >> +	  in a compressed memory pool, resulting in an effective
-> >> +	  partial memory reclaim.  In addition, pages and be retrieved
-> >> +	  from this compressed store much faster than most tradition
-> >> +	  swap devices resulting in reduced I/O and faster performance
-> >> +	  for many workloads.
-> >> index 3a46287..1b1ed5c 100644
-> >> --- a/mm/Makefile
-> >> +++ b/mm/Makefile
-> >> @@ -32,6 +32,7 @@ obj-$(CONFIG_HAVE_MEMBLOCK) += memblock.o
-> >>  obj-$(CONFIG_BOUNCE)	+= bounce.o
-> >>  obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o
-> >>  obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
-> >> +obj-$(CONFIG_ZSWAP)	+= zswap.o
-> >>  obj-$(CONFIG_HAS_DMA)	+= dmapool.o
-> >>  obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
-> >>  obj-$(CONFIG_NUMA) 	+= mempolicy.o
-> >> diff --git a/mm/zswap.c b/mm/zswap.c
-> >> new file mode 100644
-> >> index 0000000..050b6db
-> >> --- /dev/null
-> >> +++ b/mm/zswap.c
-> >> @@ -0,0 +1,1073 @@
-> >> +/*
-> >> + * zswap-drv.c - zswap driver file
-> >> + *
-> >> + * zswap is a backend for frontswap that takes pages that are in the
-> >> + * process of being swapped out and attempts to compress them and store
-> >> + * them in a RAM-based memory pool.  This results in a significant I/O
-> >> + * reduction on the real swap device and, in the case of a slow swap
-> >> + * device, can also improve workload performance.
-> >> + *
-> >> + * Copyright (C) 2012  Seth Jennings <sjenning@linux.vnet.ibm.com>
-> >> + *
-> >> + * This program is free software; you can redistribute it and/or
-> >> + * modify it under the terms of the GNU General Public License
-> >> + * as published by the Free Software Foundation; either version 2
-> >> + * of the License, or (at your option) any later version.
-> >> + *
-> >> + * This program is distributed in the hope that it will be useful,
-> >> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >> + * GNU General Public License for more details.
-> >> +*/
-> >> +
-> >> +#include <linux/module.h>
-> >> +#include <linux/cpu.h>
-> >> +#include <linux/highmem.h>
-> >> +#include <linux/slab.h>
-> >> +#include <linux/spinlock.h>
-> >> +#include <linux/types.h>
-> >> +#include <linux/atomic.h>
-> >> +#include <linux/frontswap.h>
-> >> +#include <linux/rbtree.h>
-> >> +#include <linux/swap.h>
-> >> +#include <linux/crypto.h>
-> >> +#include <linux/mempool.h>
-> >> +#include <linux/zsmalloc.h>
-> >> +
-> >> +#include <linux/mm_types.h>
-> >> +#include <linux/page-flags.h>
-> >> +#include <linux/swapops.h>
-> >> +#include <linux/writeback.h>
-> >> +#include <linux/pagemap.h>
-> >> +
-> >> +/*********************************
-> >> +* statistics
-> >> +**********************************/
-> >> +/* Number of memory pages used by the compressed pool */
-> >> +static atomic_t zswap_pool_pages = ATOMIC_INIT(0);
-> >> +/* The number of compressed pages currently stored in zswap */
-> >> +static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
-> >> +/* The number of outstanding pages awaiting writeback */
-> >> +static atomic_t zswap_outstanding_flushes = ATOMIC_INIT(0);
-> >> +
-> >> +/*
-> >> + * The statistics below are not protected from concurrent access for
-> >> + * performance reasons so they may not be a 100% accurate.  However,
-> >> + * the do provide useful information on roughly how many times a
-> >> + * certain event is occurring.
-> >> +*/
-> >> +static u64 zswap_flushed_pages;
-> >> +static u64 zswap_reject_compress_poor;
-> >> +static u64 zswap_flush_attempted;
-> >> +static u64 zswap_reject_tmppage_fail;
-> >> +static u64 zswap_reject_flush_fail;
-> >> +static u64 zswap_reject_zsmalloc_fail;
-> >> +static u64 zswap_reject_kmemcache_fail;
-> >> +static u64 zswap_saved_by_flush;
-> >> +static u64 zswap_duplicate_entry;
-> >> +
-> >> +/*********************************
-> >> +* tunables
-> >> +**********************************/
-> >> +/* Enable/disable zswap (enabled by default, fixed at boot for now) */
-> >> +static bool zswap_enabled;
-> >> +module_param_named(enabled, zswap_enabled, bool, 0);
-> > 
-> > It seems default is disable at the moment?
-> 
-> Yes, that's right.  While zswap should be always-on safe (i.e. no
-> impact if swap isn't being used), I thought this would be the safe way
-> for now.
-> 
-> > 
-> >> +
-> >> +/* Compressor to be used by zswap (fixed at boot for now) */
-> >> +#define ZSWAP_COMPRESSOR_DEFAULT "lzo"
-> >> +static char *zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
-> >> +module_param_named(compressor, zswap_compressor, charp, 0);
-> >> +
-> >> +/* The maximum percentage of memory that the compressed pool can occupy */
-> >> +static unsigned int zswap_max_pool_percent = 20;
-> >> +module_param_named(max_pool_percent,
-> >> +			zswap_max_pool_percent, uint, 0644);
-> >> +
-> >> +/*
-> >> + * Maximum compression ratio, as as percentage, for an acceptable
-> >> + * compressed page. Any pages that do not compress by at least
-> >> + * this ratio will be rejected.
-> >> +*/
-> >> +static unsigned int zswap_max_compression_ratio = 80;
-> >> +module_param_named(max_compression_ratio,
-> >> +			zswap_max_compression_ratio, uint, 0644);
-> >> +
-> >> +/*
-> >> + * Maximum number of outstanding flushes allowed at any given time.
-> >> + * This is to prevent decompressing an unbounded number of compressed
-> >> + * pages into the swap cache all at once, and to help with writeback
-> >> + * congestion.
-> >> +*/
-> >> +#define ZSWAP_MAX_OUTSTANDING_FLUSHES 64
-> >> +
-> >> +/*********************************
-> >> +* compression functions
-> >> +**********************************/
-> >> +/* per-cpu compression transforms */
-> >> +static struct crypto_comp * __percpu *zswap_comp_pcpu_tfms;
-> >> +
-> >> +enum comp_op {
-> >> +	ZSWAP_COMPOP_COMPRESS,
-> >> +	ZSWAP_COMPOP_DECOMPRESS
-> >> +};
-> >> +
-> >> +static int zswap_comp_op(enum comp_op op, const u8 *src, unsigned int slen,
-> >> +				u8 *dst, unsigned int *dlen)
-> >> +{
-> >> +	struct crypto_comp *tfm;
-> >> +	int ret;
-> >> +
-> >> +	tfm = *per_cpu_ptr(zswap_comp_pcpu_tfms, get_cpu());
-> >> +	switch (op) {
-> >> +	case ZSWAP_COMPOP_COMPRESS:
-> >> +		ret = crypto_comp_compress(tfm, src, slen, dst, dlen);
-> >> +		break;
-> >> +	case ZSWAP_COMPOP_DECOMPRESS:
-> >> +		ret = crypto_comp_decompress(tfm, src, slen, dst, dlen);
-> >> +		break;
-> >> +	default:
-> >> +		ret = -EINVAL;
-> >> +	}
-> >> +
-> >> +	put_cpu();
-> >> +	return ret;
-> >> +}
-> >> +
-> >> +static int __init zswap_comp_init(void)
-> >> +{
-> >> +	if (!crypto_has_comp(zswap_compressor, 0, 0)) {
-> >> +		pr_info("zswap: %s compressor not available\n",
-> >> +			zswap_compressor);
-> >> +		/* fall back to default compressor */
-> >> +		zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
-> >> +		if (!crypto_has_comp(zswap_compressor, 0, 0))
-> >> +			/* can't even load the default compressor */
-> >> +			return -ENODEV;
-> >> +	}
-> >> +	pr_info("zswap: using %s compressor\n", zswap_compressor);
-> >> +
-> >> +	/* alloc percpu transforms */
-> >> +	zswap_comp_pcpu_tfms = alloc_percpu(struct crypto_comp *);
-> >> +	if (!zswap_comp_pcpu_tfms)
-> >> +		return -ENOMEM;
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static void zswap_comp_exit(void)
-> >> +{
-> >> +	/* free percpu transforms */
-> >> +	if (zswap_comp_pcpu_tfms)
-> >> +		free_percpu(zswap_comp_pcpu_tfms);
-> >> +}
-> >> +
-> >> +/*********************************
-> >> +* data structures
-> >> +**********************************/
-> >> +struct zswap_entry {
-> >> +	struct rb_node rbnode;
-> >> +	struct list_head lru;
-> >> +	int refcount;
-> >> +	unsigned type;
-> >> +	pgoff_t offset;
-> >> +	unsigned long handle;
-> >> +	unsigned int length;
-> >> +};
-> >> +
-> >> +/*
-> >> + * The tree lock in the zswap_tree struct protects a few things:
-> >> + * - the rbtree
-> >> + * - the lru list
-> >> + * - the refcount field of each entry in the tree
-> >> + */
-> >> +struct zswap_tree {
-> >> +	struct rb_root rbroot;
-> >> +	struct list_head lru;
-> >> +	spinlock_t lock;
-> >> +	struct zs_pool *pool;
-> >> +};
-> >> +
-> >> +static struct zswap_tree *zswap_trees[MAX_SWAPFILES];
-> >> +
-> >> +/*********************************
-> >> +* zswap entry functions
-> >> +**********************************/
-> >> +#define ZSWAP_KMEM_CACHE_NAME "zswap_entry_cache"
-> >> +static struct kmem_cache *zswap_entry_cache;
-> >> +
-> >> +static inline int zswap_entry_cache_create(void)
-> >> +{
-> >> +	zswap_entry_cache =
-> >> +		kmem_cache_create(ZSWAP_KMEM_CACHE_NAME,
-> >> +			sizeof(struct zswap_entry), 0, 0, NULL);
-> >> +	return (zswap_entry_cache == NULL);
-> >> +}
-> >> +
-> >> +static inline void zswap_entry_cache_destory(void)
-> >> +{
-> >> +	kmem_cache_destroy(zswap_entry_cache);
-> >> +}
-> >> +
-> >> +static inline struct zswap_entry *zswap_entry_cache_alloc(gfp_t gfp)
-> >> +{
-> >> +	struct zswap_entry *entry;
-> >> +	entry = kmem_cache_alloc(zswap_entry_cache, gfp);
-> >> +	if (!entry)
-> >> +		return NULL;
-> >> +	INIT_LIST_HEAD(&entry->lru);
-> >> +	entry->refcount = 1;
-> >> +	return entry;
-> >> +}
-> >> +
-> >> +static inline void zswap_entry_cache_free(struct zswap_entry *entry)
-> >> +{
-> >> +	kmem_cache_free(zswap_entry_cache, entry);
-> >> +}
-> >> +
-> >> +static inline void zswap_entry_get(struct zswap_entry *entry)
-> >> +{
-> >> +	entry->refcount++;
-> >> +}
-> >> +
-> >> +static inline int zswap_entry_put(struct zswap_entry *entry)
-> >> +{
-> >> +	entry->refcount--;
-> >> +	return entry->refcount;
-> >> +}
-> >> +
-> >> +/*********************************
-> >> +* rbtree functions
-> >> +**********************************/
-> >> +static struct zswap_entry *zswap_rb_search(struct rb_root *root, pgoff_t offset)
-> >> +{
-> >> +	struct rb_node *node = root->rb_node;
-> >> +	struct zswap_entry *entry;
-> >> +
-> >> +	while (node) {
-> >> +		entry = rb_entry(node, struct zswap_entry, rbnode);
-> >> +		if (entry->offset > offset)
-> >> +			node = node->rb_left;
-> >> +		else if (entry->offset < offset)
-> >> +			node = node->rb_right;
-> >> +		else
-> >> +			return entry;
-> >> +	}
-> >> +	return NULL;
-> >> +}
-> >> +
-> >> +/*
-> >> + * In the case that a entry with the same offset is found, it a pointer to
-> >> + * the existing entry is stored in dupentry and the function returns -EEXIST
-> >> +*/
-> >> +static int zswap_rb_insert(struct rb_root *root, struct zswap_entry *entry,
-> >> +			struct zswap_entry **dupentry)
-> >> +{
-> >> +	struct rb_node **link = &root->rb_node, *parent = NULL;
-> >> +	struct zswap_entry *myentry;
-> >> +
-> >> +	while (*link) {
-> >> +		parent = *link;
-> >> +		myentry = rb_entry(parent, struct zswap_entry, rbnode);
-> >> +		if (myentry->offset > entry->offset)
-> >> +			link = &(*link)->rb_left;
-> >> +		else if (myentry->offset < entry->offset)
-> >> +			link = &(*link)->rb_right;
-> >> +		else {
-> >> +			*dupentry = myentry;
-> >> +			return -EEXIST;
-> >> +		}
-> >> +	}
-> >> +	rb_link_node(&entry->rbnode, parent, link);
-> >> +	rb_insert_color(&entry->rbnode, root);
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +/*********************************
-> >> +* per-cpu code
-> >> +**********************************/
-> >> +static DEFINE_PER_CPU(u8 *, zswap_dstmem);
-> >> +
-> >> +static int __zswap_cpu_notifier(unsigned long action, unsigned long cpu)
-> >> +{
-> >> +	struct crypto_comp *tfm;
-> >> +	u8 *dst;
-> >> +
-> >> +	switch (action) {
-> >> +	case CPU_UP_PREPARE:
-> >> +		tfm = crypto_alloc_comp(zswap_compressor, 0, 0);
-> >> +		if (IS_ERR(tfm)) {
-> >> +			pr_err("zswap: can't allocate compressor transform\n");
-> >> +			return NOTIFY_BAD;
-> >> +		}
-> >> +		*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = tfm;
-> >> +		dst = (u8 *)__get_free_pages(GFP_KERNEL, 1);
-> >> +		if (!dst) {
-> >> +			pr_err("zswap: can't allocate compressor buffer\n");
-> >> +			crypto_free_comp(tfm);
-> >> +			*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = NULL;
-> >> +			return NOTIFY_BAD;
-> >> +		}
-> >> +		per_cpu(zswap_dstmem, cpu) = dst;
-> >> +		break;
-> >> +	case CPU_DEAD:
-> >> +	case CPU_UP_CANCELED:
-> >> +		tfm = *per_cpu_ptr(zswap_comp_pcpu_tfms, cpu);
-> >> +		if (tfm) {
-> >> +			crypto_free_comp(tfm);
-> >> +			*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = NULL;
-> >> +		}
-> >> +		dst = per_cpu(zswap_dstmem, cpu);
-> >> +		if (dst) {
-> >> +			free_pages((unsigned long)dst, 1);
-> >> +			per_cpu(zswap_dstmem, cpu) = NULL;
-> >> +		}
-> >> +		break;
-> >> +	default:
-> >> +		break;
-> >> +	}
-> >> +	return NOTIFY_OK;
-> >> +}
-> >> +
-> >> +static int zswap_cpu_notifier(struct notifier_block *nb,
-> >> +				unsigned long action, void *pcpu)
-> >> +{
-> >> +	unsigned long cpu = (unsigned long)pcpu;
-> >> +	return __zswap_cpu_notifier(action, cpu);
-> >> +}
-> >> +
-> >> +static struct notifier_block zswap_cpu_notifier_block = {
-> >> +	.notifier_call = zswap_cpu_notifier
-> >> +};
-> >> +
-> >> +static int zswap_cpu_init(void)
-> >> +{
-> >> +	unsigned long cpu;
-> >> +
-> >> +	get_online_cpus();
-> >> +	for_each_online_cpu(cpu)
-> >> +		if (__zswap_cpu_notifier(CPU_UP_PREPARE, cpu) != NOTIFY_OK)
-> >> +			goto cleanup;
-> >> +	register_cpu_notifier(&zswap_cpu_notifier_block);
-> >> +	put_online_cpus();
-> >> +	return 0;
-> >> +
-> >> +cleanup:
-> >> +	for_each_online_cpu(cpu)
-> >> +		__zswap_cpu_notifier(CPU_UP_CANCELED, cpu);
-> >> +	put_online_cpus();
-> >> +	return -ENOMEM;
-> >> +}
-> >> +
-> >> +/*********************************
-> >> +* zsmalloc callbacks
-> >> +**********************************/
-> >> +static mempool_t *zswap_page_pool;
-> >> +
-> >> +static u64 zswap_pool_limit_hit;
-> >> +
-> >> +static inline unsigned int zswap_max_pool_pages(void)
-> >> +{
-> >> +	return zswap_max_pool_percent * totalram_pages / 100;
-> >> +}
-> >> +
-> >> +static inline int zswap_page_pool_create(void)
-> >> +{
-> >> +	zswap_page_pool = mempool_create_page_pool(256, 0);
-> > 
-> > Could you write down why you select pool to 256?
-> > If you have a plan, please write down it as TODO.
-> > I think it could be a function of zswap_max_pool_pages with min/max.
-> 
-> Yes, that would probably be better.
-> 
-> >
-> > Another question.
-> > 
-> > What's the benefit of using mempool for zsmalloc?
-> > As you know, zsmalloc doesn't use mempool as default.
-> > I guess you see some benefit. if so, zram could be changed.
-> > If we can change zsmalloc's default scheme to use mempool,
-> > all of customer of zsmalloc could be enhanced, too.
-> 
-> In the case of zswap, through experimentation, I found that adding a
-> mempool behind the zsmalloc pool added some elasticity to the pool.
-> Fewer stores failed if we kept a small reserve of pages around instead
-> of having to go back to the buddy allocator who, under memory
-> pressure, is more likely to reject our request.
-> 
-> I don't see this situation being applicable to all zsmalloc users
-> however.  I don't think we want incorporate it directly into zsmalloc
-> for now.  The ability to register custom page alloc/free functions at
-> pool creation time allows users to do something special, like back
-> with a mempool, if they want to do that.
+The reason why i am starting this thread again is due to problem
+reported by Joseph,
+with latest linux-next/master branch (which contains few big patches
+from me :) ):
 
-Okay. I'd like to test this approach with zram later and if it makes sense
-for everything, I will try to change zsmalloc's inside.
+Reboot is giving following to him:
 
-Thanks!
+* Will now halt
+[ 193.756068] Disabling non-boot CPUs...
+[ 193.760088] BUG: scheduling while atomic: halt/780/0x00000002
+[ 193.765845] Modules linked in: brcmfmac brcmutil
+[ 193.770613] [<c0014990>] (unwind_backtrace+0x0/0xf8) from [<c0049510>]
+(__schedule_bug+0x44/0x5c)
+[ 193.779548] [<c0049510>] (__schedule_bug+0x44/0x5c) from [<c04fa320>]
+(__schedule+0x688/0x6ec)
+[ 193.788206] [<c04fa320>] (__schedule+0x688/0x6ec) from [<c04fa75c>]
+(schedule_preempt_disabled+0x24/0x34)
+[ 193.797811] [<c04fa75c>] (schedule_preempt_disabled+0x24/0x34) from
+[<c04f916c>] (__mutex_lock_slowpath+0x170/0x34c)
+[ 193.808367] [<c04f916c>] (__mutex_lock_slowpath+0x170/0x34c) from
+[<c04f9354>] (mutex_lock+0xc/0x24)
+[ 193.817554] [<c04f9354>] (mutex_lock+0xc/0x24) from [<c04f1cdc>]
+(unregister_cpu_notifier+0xc/0x24)
+[ 193.826640] [<c04f1cdc>] (unregister_cpu_notifier+0xc/0x24) from
+[<c033a8a4>] (cpufreq_governor_dbs+0x118/0x614)
+[ 193.836866] [<c033a8a4>] (cpufreq_governor_dbs+0x118/0x614) from
+[<c033747c>] (__cpufreq_governor+0x58/0xc0)
+[ 193.846737] [<c033747c>] (__cpufreq_governor+0x58/0xc0) from
+[<c0339104>] (__cpufreq_remove_dev.clone.7+0x58/0x320)
+[ 193.857207] [<c0339104>] (__cpufreq_remove_dev.clone.7+0x58/0x320)
+from [<c04f7958>] (cpufreq_cpu_callback+0x8c/0x9c)
+[ 193.867850] [<c04f7958>] (cpufreq_cpu_callback+0x8c/0x9c) from
+[<c0044f4c>] (notifier_call_chain+0x44/0x84)
+[ 193.877623] [<c0044f4c>] (notifier_call_chain+0x44/0x84) from
+[<c0026e24>] (__cpu_notify+0x2c/0x48)
+[ 193.886704] [<c0026e24>] (__cpu_notify+0x2c/0x48) from [<c04f1b08>]
+(_cpu_down+0xb0/0x23c)
+[ 193.895004] [<c04f1b08>] (_cpu_down+0xb0/0x23c) from [<c00270ec>]
+(disable_nonboot_cpus+0x68/0x104)
+[ 193.904089] [<c00270ec>] (disable_nonboot_cpus+0x68/0x104) from
+[<c0034fbc>] (kernel_power_off+0x24/0x48)
+[ 193.913688] [<c0034fbc>] (kernel_power_off+0x24/0x48) from
+[<c0035810>] (sys_reboot+0x104/0x1e0)
+[ 193.922517] [<c0035810>] (sys_reboot+0x104/0x1e0) from [<c000e520>]
+(ret_fast_syscall+0x0/0x30)
 
--- 
-Kind regards,
-Minchan Kim
+
+And the crash log show this patch of yours somewhere :)
+
+First question: Is this patch still required? Because following patch from me is
+sending a STOP/START to governors on cpu hot-[un]plug ?
+
+commit dbcb63407c095af73f3464767e00902cdee55e8b
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Sat Jan 12 05:14:39 2013 +0000
+
+    cpufreq: Notify governors when cpus are hot-[un]plugged
+
+
+For me, the answer is NO.
+
+Over that, i tried these patches on ARM bigLITTLE TC2 (3 A7's  and 2 A15's) and
+my system wasn't booting at all for ondemand governor. Reverting your patch does
+fix the issue:
+
+[    2.613573] arm_big_little: bL_cpufreq_init: Initialized, cpu: 0, cluster 0
+[    2.635436] arm_big_little: bL_cpufreq_init: Initialized, cpu: 2, cluster 1
+[   23.650184] INFO: rcu_sched self-detected stall on CPU { 0}
+(t=2100 jiffies g=4294967088 c=4294967087 q=10)
+[   23.679664] Backtrace for cpu 0 (current):
+[   23.680239] INFO: rcu_sched detected stalls on CPUs/tasks: { 0}
+(detected by 2, t=2103 jiffies, g=4294967088, c=4294967087, q=10)
+[   23.726839] [<c0014020>] (unwind_backtrace+0x0/0xf8) from
+[<c0012f60>] (smp_send_all_cpu_backtrace+0x60/0xcc)
+[   23.756545] [<c0012f60>] (smp_send_all_cpu_backtrace+0x60/0xcc)
+from [<c008232c>] (rcu_pending+0x2c8/0x63c)
+[   23.785731] [<c008232c>] (rcu_pending+0x2c8/0x63c) from
+[<c0083854>] (rcu_check_callbacks+0x7c/0x148)
+[   23.813358] [<c0083854>] (rcu_check_callbacks+0x7c/0x148) from
+[<c002d1e0>] (update_process_times+0x38/0x68)
+[   23.842808] [<c002d1e0>] (update_process_times+0x38/0x68) from
+[<c0066b00>] (tick_sched_handle+0x48/0x54)
+[   23.871472] [<c0066b00>] (tick_sched_handle+0x48/0x54) from
+[<c0066d6c>] (tick_sched_timer+0x44/0x74)
+[   23.899098] [<c0066d6c>] (tick_sched_timer+0x44/0x74) from
+[<c00416d8>] (__run_hrtimer+0x84/0x1b4)
+[   23.925940] [<c00416d8>] (__run_hrtimer+0x84/0x1b4) from
+[<c004224c>] (hrtimer_interrupt+0x108/0x2d4)
+[   23.953563] [<c004224c>] (hrtimer_interrupt+0x108/0x2d4) from
+[<c0013990>] (arch_timer_handler_virt+0x30/0x38)
+[   23.983530] [<c0013990>] (arch_timer_handler_virt+0x30/0x38) from
+[<c007e41c>] (handle_percpu_devid_irq+0x74/0x110)
+[   24.014799] [<c007e41c>] (handle_percpu_devid_irq+0x74/0x110) from
+[<c007ac8c>] (generic_handle_irq+0x20/0x30)
+[   24.044765] [<c007ac8c>] (generic_handle_irq+0x20/0x30) from
+[<c000e9f4>] (handle_IRQ+0x38/0x94)
+[   24.071085] [<c000e9f4>] (handle_IRQ+0x38/0x94) from [<c0008570>]
+(gic_handle_irq+0x28/0x5c)
+[   24.096362] [<c0008570>] (gic_handle_irq+0x28/0x5c) from
+[<c000dd80>] (__irq_svc+0x40/0x50)
+[   24.121374] Exception stack(0xef047ec0 to 0xef047f08)
+[   24.136492] 7ec0: 00000000 c0591780 00000000 c0591798 c0591780
+c05d5d60 00000000 c0593280
+[   24.160986] 7ee0: c0552c98 c02b1df4 ef046000 00000000 c059179c
+ef047f08 c03b5f84 c0043698
+[   24.185477] 7f00: a0000113 ffffffff
+[   24.195910] [<c000dd80>] (__irq_svc+0x40/0x50) from [<c0043698>]
+(raw_notifier_chain_register+0x24/0x54)
+[   24.224314] [<c0043698>] (raw_notifier_chain_register+0x24/0x54)
+from [<c03b5f84>] (register_cpu_notifier+0x18/0x2c)
+[   24.255843] [<c03b5f84>] (register_cpu_notifier+0x18/0x2c) from
+[<c02ab1b0>] (cpufreq_register_driver+0x134/0x190)
+[   24.286852] [<c02ab1b0>] (cpufreq_register_driver+0x134/0x190) from
+[<c02b1930>] (bL_cpufreq_register+0x68/0xd4)
+[   24.317337] [<c02b1930>] (bL_cpufreq_register+0x68/0xd4) from
+[<c0008740>] (do_one_initcall+0x110/0x178)
+[   24.345738] [<c0008740>] (do_one_initcall+0x110/0x178) from
+[<c03b5994>] (kernel_init+0x194/0x330)
+[   24.372577] [<c03b5994>] (kernel_init+0x194/0x330) from
+[<c000e1d8>] (ret_from_fork+0x14/0x3c)
+[   24.398371]
+
+
+On Thu, Dec 27, 2012 at 8:25 PM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
+> Add a CPU notifier to start and stop individual core timers on CPU
+> hotplug events when running on CPUs with SW coordinated frequency.
+>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq_governor.c | 51 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 51 insertions(+)
+>
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index b0e4506..e881250 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -25,9 +25,12 @@
+>  #include <linux/tick.h>
+>  #include <linux/types.h>
+>  #include <linux/workqueue.h>
+> +#include <linux/cpu.h>
+>
+>  #include "cpufreq_governor.h"
+>
+> +static DEFINE_PER_CPU(struct dbs_data *, cpu_cur_dbs);
+> +
+>  static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
+>  {
+>         u64 idle_time;
+> @@ -185,6 +188,46 @@ static inline void dbs_timer_exit(struct cpu_dbs_common_info *cdbs)
+>         cancel_delayed_work_sync(&cdbs->work);
+>  }
+>
+> +static int __cpuinit cpu_callback(struct notifier_block *nfb,
+> +               unsigned long action, void *hcpu)
+> +{
+> +       unsigned int cpu = (unsigned long)hcpu;
+> +       struct device *cpu_dev = get_cpu_device(cpu);
+> +       struct dbs_data *dbs_data = per_cpu(cpu_cur_dbs, cpu);
+> +       struct cpu_dbs_common_info *cpu_cdbs = dbs_data->get_cpu_cdbs(cpu);
+> +       unsigned int sampling_rate;
+> +
+> +       if (dbs_data->governor == GOV_CONSERVATIVE) {
+> +               struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
+> +               sampling_rate = cs_tuners->sampling_rate;
+> +       } else {
+> +               struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+> +               sampling_rate = od_tuners->sampling_rate;
+> +       }
+> +
+> +       if (cpu_dev) {
+> +               switch (action) {
+> +               case CPU_ONLINE:
+> +               case CPU_ONLINE_FROZEN:
+> +               case CPU_DOWN_FAILED:
+> +               case CPU_DOWN_FAILED_FROZEN:
+> +                       dbs_timer_init(dbs_data, cpu_cdbs,
+> +                                       sampling_rate, cpu);
+> +                       break;
+> +               case CPU_DOWN_PREPARE:
+> +               case CPU_DOWN_PREPARE_FROZEN:
+> +                       dbs_timer_exit(cpu_cdbs);
+> +                       break;
+> +               }
+> +       }
+> +
+> +       return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block __refdata ondemand_cpu_notifier = {
+
+Over that, why is it called ondemand here ?
+
+> +       .notifier_call = cpu_callback,
+> +};
+> +
+>  int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+>                 struct cpufreq_policy *policy, unsigned int event)
+>  {
+> @@ -296,7 +339,11 @@ second_time:
+>                                 j_cdbs = dbs_data->get_cpu_cdbs(j);
+>                                 dbs_timer_init(dbs_data, j_cdbs,
+>                                                *sampling_rate, j);
+> +
+> +                               per_cpu(cpu_cur_dbs, j) = dbs_data;
+>                         }
+> +
+> +                       register_hotcpu_notifier(&ondemand_cpu_notifier);
+>                 } else {
+>                         dbs_timer_init(dbs_data, cpu_cdbs, *sampling_rate, cpu);
+>                 }
+> @@ -307,11 +354,15 @@ second_time:
+>                         cs_dbs_info->enable = 0;
+>
+>                 if (dbs_sw_coordinated_cpus(cpu_cdbs)) {
+> +                       unregister_hotcpu_notifier(&ondemand_cpu_notifier);
+> +
+>                         for_each_cpu(j, policy->cpus) {
+>                                 struct cpu_dbs_common_info *j_cdbs;
+>
+>                                 j_cdbs = dbs_data->get_cpu_cdbs(j);
+>                                 dbs_timer_exit(j_cdbs);
+> +
+> +                               per_cpu(cpu_cur_dbs, j) = NULL;
+>                         }
+>                 } else {
+>                         dbs_timer_exit(cpu_cdbs);
+
+--
+viresh
