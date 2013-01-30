@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab3A3NrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 08:47:15 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61068 "EHLO
+	id S1754777Ab3A3Nr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 08:47:26 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:47746 "EHLO
 	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab3A3NrL (ORCPT
+	with ESMTP id S1754631Ab3A3NrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 08:47:11 -0500
+	Wed, 30 Jan 2013 08:47:24 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: jaegeuk.kim@samsung.com
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 1/3] f2fs: avoid redundant call to has_not_enough_free_secs in f2fs_gc
-Date: Wed, 30 Jan 2013 22:47:02 +0900
-Message-Id: <1359553622-7449-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH 2/3] f2fs: reorganize code for ra_node_page
+Date: Wed, 30 Jan 2013 22:47:16 +0900
+Message-Id: <1359553636-7483-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,33 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-After doing a write_checkpoint from garbage collection path if there is still
-need to do more garbage collection, gc_more label is used to jump and start
-the process again. And in that process, first step before getting victim is to
-check if there are not enough free sections, which is already done before
-doing a jump to gc_more. We can avoid the redundant call to check free
-sections, by checking the gc_type flag which will remain FG_GC(value 1) under
-this condition.
+We can remove unneeded label unlock_out, avoid unnecessary jump
+and reorganize the returning conditions in this function.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/f2fs/gc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/f2fs/node.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 9b5d0aa..0dfdaa5 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -672,7 +672,7 @@ gc_more:
- 	if (!(sbi->sb->s_flags & MS_ACTIVE))
- 		goto stop;
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 9bda63c..f71dfbb 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -874,15 +874,11 @@ void ra_node_page(struct f2fs_sb_info *sbi, nid_t nid)
+ 		return;
  
--	if (has_not_enough_free_secs(sbi))
-+	if (!gc_type && has_not_enough_free_secs(sbi))
- 		gc_type = FG_GC;
+ 	if (read_node_page(apage, READA))
+-		goto unlock_out;
++		unlock_page(apage);
  
- 	if (!__get_victim(sbi, &segno, gc_type, NO_CHECK_TYPE))
+-	page_cache_release(apage);
+-	return;
+-
+-unlock_out:
+-	unlock_page(apage);
+ release_out:
+ 	page_cache_release(apage);
++	return;
+ }
+ 
+ struct page *get_node_page(struct f2fs_sb_info *sbi, pgoff_t nid)
 -- 
 1.7.9.5
 
