@@ -1,254 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3A3Cdh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 21:33:37 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51178 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751769Ab3A3Cde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 21:33:34 -0500
-X-IronPort-AV: E=Sophos;i="4.84,564,1355068800"; 
-   d="scan'208";a="6662660"
-Message-ID: <5108864B.6040804@cn.fujitsu.com>
-Date: Wed, 30 Jan 2013 10:32:43 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753341Ab3A3Cid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 21:38:33 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:54067 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769Ab3A3Cia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 21:38:30 -0500
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com> <1359463973.1624.15.camel@kernel>
-In-Reply-To: <1359463973.1624.15.camel@kernel>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/30 10:32:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/30 10:32:23,
-	Serialize complete at 2013/01/30 10:32:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/30 10:32:24
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+In-Reply-To: <CAKocOOMxbZXjL_qxQQD+-Z7ocJ1tR7UDEDr+2uSSfjhihik6VA@mail.gmail.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+	<CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
+	<CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
+	<CAKocOOPsvh=jOXLahe6ukjpyjOOqt9tRdwELxv8i0_Vi1xqQkA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A37D@sausexdag04.amd.com>
+	<CAKocOOORwoUAStDmFPhW1--WhAJaEzEmG-=tZ1sgkWKsquq=rQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A3B7@sausexdag04.amd.com>
+	<CAKocOOMxbZXjL_qxQQD+-Z7ocJ1tR7UDEDr+2uSSfjhihik6VA@mail.gmail.com>
+Date: Tue, 29 Jan 2013 19:38:28 -0700
+Message-ID: <CAKocOOOHcaYoUQ6Z1yC9T0o9=qaMas3mVzrD8iEnycLJd3nxVQ@mail.gmail.com>
+Subject: Re: Linux 3.8-rc4
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 08:52 PM, Simon Jeons wrote:
-> Hi Tang,
+On Tue, Jan 29, 2013 at 4:45 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+> On Tue, Jan 29, 2013 at 3:02 PM, Deucher, Alexander
+> <Alexander.Deucher@amd.com> wrote:
+>>> -----Original Message-----
+>>> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>>> Sent: Tuesday, January 29, 2013 4:40 PM
+>>> To: Deucher, Alexander
+>>> Cc: Linus Torvalds; Linux Kernel Mailing List
+>>> Subject: Re: Linux 3.8-rc4
+>>>
+>>> On Tue, Jan 29, 2013 at 1:13 PM, Deucher, Alexander
+>>> <Alexander.Deucher@amd.com> wrote:
+>>> >> -----Original Message-----
+>>> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>>> >> Sent: Tuesday, January 29, 2013 2:11 PM
+>>> >> To: Deucher, Alexander
+>>> >> Cc: Linus Torvalds; Linux Kernel Mailing List
+>>> >> Subject: Re: Linux 3.8-rc4
+>>> >>
+>>> >> On Tue, Jan 29, 2013 at 6:05 AM, Deucher, Alexander
+>>> >> <Alexander.Deucher@amd.com> wrote:
+>>> >> >> -----Original Message-----
+>>> >> >> I was out sick for a few days and finally picked this bisect backup
+>>> >> >> again. I started at 3.7 tag instead of 3.8-rc1 that I did in the past
+>>> >> >> and also did bisect at drivers/gpu/drm/radeon instead. Here are the
+>>> >> >> results:
+>>> >> >>
+>>> >> >> 6253e4c75d96006c06b9ac8f417eba873de2497b is the first bad commit
+>>> >> >> commit 6253e4c75d96006c06b9ac8f417eba873de2497b
+>>> >> >> Author: Alex Deucher <alexander.deucher@amd.com>
+>>> >> >> Date:   Wed Dec 12 14:30:32 2012 -0500
+>>> >> >>
+>>> >> >>     drm/radeon: improve mc_stop/mc_resume on r5xx-r7xx
+>>> >> >>
+>>> >> >>     Along the same lines of what was done for evergreen+
+>>> >> >>     in the last kernel.
+>>> >> >>
+>>> >> >>     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+>>> >> >>
+>>> >> >> git bisect log attached.
+>>> >> >>
+>>> >> >
+>>> >> > Try the attached patch.  I think it should fix the issue.  I just applied a
+>>> similar
+>>> >> patch for newer asics.
+>>> >> >
+>>> >> > Alex
+>>> >> >
+>>> >>
+>>> >> I reverted 6253e4c75d96006c06b9ac8f417eba873de2497b and DMAR
+>>> faults
+>>> >> went away. Undid the revert and applied your new patch. DMAR faults
+>>> >> are back again.
+>>> >>
+>>> >>
+>>> >> [   25.158653] [drm] PCIE GART of 512M enabled (table at
+>>> >> 0x0000000000040000).
+>>> >> [   25.158715] radeon 0000:01:00.0: WB enabled
+>>> >> [   25.158719] radeon 0000:01:00.0: fence driver on ring 0 use gpu
+>>> >> addr 0x0000000008000c00 and cpu addr 0xffff88002f143c00
+>>> >> [   25.158721] radeon 0000:01:00.0: fence driver on ring 3 use gpu
+>>> >> addr 0x0000000008000c0c and cpu addr 0xffff88002f143c0c
+>>> >>
+>>> >> A few observations and questions about r600_startup() code sequence:
+>>> >>
+>>> >> I notice DMAR faults right after
+>>> >>
+>>> >> [drm] Loading RV620 Microcode message which is from
+>>> >> r600_init_microcode(). This routine does a series of
+>>> >> request_firmware() calls. btw. don't see release_firmware() calls in
+>>> >> regular code path, only from error legs in r600_init_microcode().
+>>> >>
+>>> >> However, this routine doesn't do any loading yet. When this routine
+>>> >> returns, I am assuming request_firmware() step isn't complete yet
+>>> >> based on my reading request_firmware() interface. At this point
+>>> >> r600_startup() keeps chugging along, and does r600_mc_program() which
+>>> >> in turn calls rv515_mc_stop() which was changed with the
+>>> >> 6253e4c75d96006c06b9ac8f417eba873de2497b commit.
+>>> >>
+>>> >> I am thinking the changes somehow eliminated a wait or delay that used
+>>> >> be there for request_firmware() step to complete (?)
+>>> >>
+>>> >> I can see from dmesg that the faults occur right after:
+>>> >>
+>>> >> r600_init_microcode(rdev);
+>>> >>
+>>> >> and stop before r600_pcie_gart_enable()
+>>> >
+>>> > r600_init_microcode() doesn't actually touch the hardware it just calls
+>>> request_firmware() to fetch the microcode images from disk.  The microcode
+>>> doesn't get loaded onto the hardware until r600_cp_load_microcode() much
+>>> later in the function.  I don't think the microcode has anything to do with this.
+>>> >
+>>> > rv515_mc_stop() stops GPU memory clients (e.g., the displays) and blacks
+>>> out the GPU memory controller so that we can change the location of VRAM
+>>> within the GPU's address space.  If one of the display controllers memory
+>>> request stop requests takes too long to go through for some reason, it's
+>>> possible that the display hardware may attempt to read from a GPU memory
+>>> location no-longer backed by vram (since we changed the location of vram in
+>>> r600_mc_program()) momentarily until the stop request goes through.  Does
+>>> the attached updated version of the patch help?  Alternatively, you can try
+>>> adding delays to the end of rv515_mc_stop() and see if that helps.
+>>> >
+>>> > Alex
+>>> >
+>>>
+>>> This v2 patch didn't help. I added  mdelay(15); at the end of
+>>> rv515_mc_stop() on top of this v2 patch and that fixed the problem.
+>>> mdelay(15) is a bit much I am sure. Shouldn't rv515_mc_wait_for_idle()
+>>> take care of the delay? It waits for idle usec_timeout?
+>>
+>>
+>>  It only waits that long if the MC never goes idle.  If the MC happens to be idle at the time, it will return immediately.  Does the attached patch fix the issue?  It waits for the update pending bit to clear in addition to waiting for the next frame.
+>>
+>> Alex
+>>
 >
-> On Wed, 2013-01-09 at 17:32 +0800, Tang Chen wrote:
->> Here is the physical memory hot-remove patch-set based on 3.8rc-2.
+> No. This patch didn't fix the problem.
+>
+> -- Shuah
 
-Hi Simon,
+ok. I did more debugging in rv515_mc_stop() and here is what's
+happening. It has two display controllers and one of them is enabled
+and the other is in disabled state when AVIVO_D1CRTC_CONTROL is
+checked. The current code doesn't blank the disabled crtc. However, it
+needs to be blanked to avoid DMAR faults it appears. I think that is
+what the original code prior to
+6253e4c75d96006c06b9ac8f417eba873de2497b commit was doing:
 
-I'll summarize all the info and answer you later. :)
+-       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 1);
+-       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 1);
+-       WREG32(R_006080_D1CRTC_CONTROL, 0);
+-       WREG32(R_006880_D2CRTC_CONTROL, 0);
+-       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 0);
+-       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
+-       WREG32(R_000330_D1VGA_CONTROL, 0);
+-       WREG32(R_000338_D2VGA_CONTROL, 0);
 
-Thanks for asking. :)
+Anyways, here is the diff for the change (by no means a patch) I made
+that fixed the problem:
 
->
-> Some questions ask you, not has relationship with this patchset, but is
-> memory hotplug stuff.
->
-> 1. In function node_states_check_changes_online:
->
-> comments:
-> * If we don't have HIGHMEM nor movable node,
-> * node_states[N_NORMAL_MEMORY] contains nodes which have zones of
-> * 0...ZONE_MOVABLE, set zone_last to ZONE_MOVABLE.
->
-> How to understand it? Why we don't have HIGHMEM nor movable node and
-> node_staes[N_NORMAL_MEMORY] contains 0...ZONE_MOVABLE, IIUC,
-> N_NORMAL_MEMORY only means the node has regular memory.
->
-> * If we don't have movable node, node_states[N_NORMAL_MEMORY]
-> * contains nodes which have zones of 0...ZONE_MOVABLE,
-> * set zone_last to ZONE_MOVABLE.
->
-> How to understand?
->
-> 2. In function move_pfn_range_left, why end<= z2->zone_start_pfn is not
-> correct? The comments said that must include/overlap, why?
->
-> 3. In function online_pages, the normal case(w/o online_kenrel,
-> online_movable), why not check if the new zone is overlap with adjacent
-> zones?
->
-> 4. Could you summarize the difference implementation between hot-add and
-> logic-add, hot-remove and logic-remove?
->
->
->>
->> This patch-set aims to implement physical memory hot-removing.
->>
->> The patches can free/remove the following things:
->>
->>    - /sys/firmware/memmap/X/{end, start, type} : [PATCH 4/15]
->>    - memmap of sparse-vmemmap                  : [PATCH 6,7,8,10/15]
->>    - page table of removed memory              : [RFC PATCH 7,8,10/15]
->>    - node and related sysfs files              : [RFC PATCH 13-15/15]
->>
->>
->> Existing problem:
->> If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
->> when we online pages.
->>
->> For example: there is a memory device on node 1. The address range
->> is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
->> and memory11 under the directory /sys/devices/system/memory/.
->>
->> If CONFIG_MEMCG is selected, when we online memory8, the memory stored page
->> cgroup is not provided by this memory device. But when we online memory9, the
->> memory stored page cgroup may be provided by memory8. So we can't offline
->> memory8 now. We should offline the memory in the reversed order.
->>
->> When the memory device is hotremoved, we will auto offline memory provided
->> by this memory device. But we don't know which memory is onlined first, so
->> offlining memory may fail.
->>
->> In patch1, we provide a solution which is not good enough:
->> Iterate twice to offline the memory.
->> 1st iterate: offline every non primary memory block.
->> 2nd iterate: offline primary (i.e. first added) memory block.
->>
->> And a new idea from Wen Congyang<wency@cn.fujitsu.com>  is:
->> allocate the memory from the memory block they are describing.
->>
->> But we are not sure if it is OK to do so because there is not existing API
->> to do so, and we need to move page_cgroup memory allocation from MEM_GOING_ONLINE
->> to MEM_ONLINE. And also, it may interfere the hugepage.
->>
->>
->>
->> How to test this patchset?
->> 1. apply this patchset and build the kernel. MEMORY_HOTPLUG, MEMORY_HOTREMOVE,
->>     ACPI_HOTPLUG_MEMORY must be selected.
->> 2. load the module acpi_memhotplug
->> 3. hotplug the memory device(it depends on your hardware)
->>     You will see the memory device under the directory /sys/bus/acpi/devices/.
->>     Its name is PNP0C80:XX.
->> 4. online/offline pages provided by this memory device
->>     You can write online/offline to /sys/devices/system/memory/memoryX/state to
->>     online/offline pages provided by this memory device
->> 5. hotremove the memory device
->>     You can hotremove the memory device by the hardware, or writing 1 to
->>     /sys/bus/acpi/devices/PNP0C80:XX/eject.
->
-> Is there a similar knode to hot-add the memory device?
->
->>
->>
->> Note: if the memory provided by the memory device is used by the kernel, it
->> can't be offlined. It is not a bug.
->>
->>
->> Changelogs from v5 to v6:
->>   Patch3: Add some more comments to explain memory hot-remove.
->>   Patch4: Remove bootmem member in struct firmware_map_entry.
->>   Patch6: Repeatedly register bootmem pages when using hugepage.
->>   Patch8: Repeatedly free bootmem pages when using hugepage.
->>   Patch14: Don't free pgdat when offlining a node, just reset it to 0.
->>   Patch15: New patch, pgdat is not freed in patch14, so don't allocate a new
->>            one when online a node.
->>
->> Changelogs from v4 to v5:
->>   Patch7: new patch, move pgdat_resize_lock into sparse_remove_one_section() to
->>           avoid disabling irq because we need flush tlb when free pagetables.
->>   Patch8: new patch, pick up some common APIs that are used to free direct mapping
->>           and vmemmap pagetables.
->>   Patch9: free direct mapping pagetables on x86_64 arch.
->>   Patch10: free vmemmap pagetables.
->>   Patch11: since freeing memmap with vmemmap has been implemented, the config
->>            macro CONFIG_SPARSEMEM_VMEMMAP when defining __remove_section() is
->>            no longer needed.
->>   Patch13: no need to modify acpi_memory_disable_device() since it was removed,
->>            and add nid parameter when calling remove_memory().
->>
->> Changelogs from v3 to v4:
->>   Patch7: remove unused codes.
->>   Patch8: fix nr_pages that is passed to free_map_bootmem()
->>
->> Changelogs from v2 to v3:
->>   Patch9: call sync_global_pgds() if pgd is changed
->>   Patch10: fix a problem int the patch
->>
->> Changelogs from v1 to v2:
->>   Patch1: new patch, offline memory twice. 1st iterate: offline every non primary
->>           memory block. 2nd iterate: offline primary (i.e. first added) memory
->>           block.
->>
->>   Patch3: new patch, no logical change, just remove reduntant codes.
->>
->>   Patch9: merge the patch from wujianguo into this patch. flush tlb on all cpu
->>           after the pagetable is changed.
->>
->>   Patch12: new patch, free node_data when a node is offlined.
->>
->>
->> Tang Chen (6):
->>    memory-hotplug: move pgdat_resize_lock into
->>      sparse_remove_one_section()
->>    memory-hotplug: remove page table of x86_64 architecture
->>    memory-hotplug: remove memmap of sparse-vmemmap
->>    memory-hotplug: Integrated __remove_section() of
->>      CONFIG_SPARSEMEM_VMEMMAP.
->>    memory-hotplug: remove sysfs file of node
->>    memory-hotplug: Do not allocate pdgat if it was not freed when
->>      offline.
->>
->> Wen Congyang (5):
->>    memory-hotplug: try to offline the memory twice to avoid dependence
->>    memory-hotplug: remove redundant codes
->>    memory-hotplug: introduce new function arch_remove_memory() for
->>      removing page table depends on architecture
->>    memory-hotplug: Common APIs to support page tables hot-remove
->>    memory-hotplug: free node_data when a node is offlined
->>
->> Yasuaki Ishimatsu (4):
->>    memory-hotplug: check whether all memory blocks are offlined or not
->>      when removing memory
->>    memory-hotplug: remove /sys/firmware/memmap/X sysfs
->>    memory-hotplug: implement register_page_bootmem_info_section of
->>      sparse-vmemmap
->>    memory-hotplug: memory_hotplug: clear zone when removing the memory
->>
->>   arch/arm64/mm/mmu.c                  |    3 +
->>   arch/ia64/mm/discontig.c             |   10 +
->>   arch/ia64/mm/init.c                  |   18 ++
->>   arch/powerpc/mm/init_64.c            |   10 +
->>   arch/powerpc/mm/mem.c                |   12 +
->>   arch/s390/mm/init.c                  |   12 +
->>   arch/s390/mm/vmem.c                  |   10 +
->>   arch/sh/mm/init.c                    |   17 ++
->>   arch/sparc/mm/init_64.c              |   10 +
->>   arch/tile/mm/init.c                  |    8 +
->>   arch/x86/include/asm/pgtable_types.h |    1 +
->>   arch/x86/mm/init_32.c                |   12 +
->>   arch/x86/mm/init_64.c                |  390 +++++++++++++++++++++++++++++
->>   arch/x86/mm/pageattr.c               |   47 ++--
->>   drivers/acpi/acpi_memhotplug.c       |    8 +-
->>   drivers/base/memory.c                |    6 +
->>   drivers/firmware/memmap.c            |   96 +++++++-
->>   include/linux/bootmem.h              |    1 +
->>   include/linux/firmware-map.h         |    6 +
->>   include/linux/memory_hotplug.h       |   15 +-
->>   include/linux/mm.h                   |    4 +-
->>   mm/memory_hotplug.c                  |  459 +++++++++++++++++++++++++++++++---
->>   mm/sparse.c                          |    8 +-
->>   23 files changed, 1094 insertions(+), 69 deletions(-)
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
->
->
->
+diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
+index 2bb6d0e..29ac184 100644
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -298,6 +298,10 @@ void rv515_mc_stop(struct radeon_device *rdev, struct rv515
+        /* blank the display controllers */
+        for (i = 0; i < rdev->num_crtc; i++) {
+                crtc_enabled = RREG32(AVIVO_D1CRTC_CONTROL + crtc_offsets[i]) &
++               dev_info(rdev->dev, "num_crtc = %d crtc_enabled %d for %d.\n",
++                        rdev->num_crtc, crtc_enabled, i);
++               crtc_enabled = 1;
++
+                if (crtc_enabled) {
+                        save->crtc_enabled[i] = true;
+                        tmp = RREG32(AVIVO_D1CRTC_CONTROL + crtc_offsets[i]);
+
+-- Shuah
