@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab3A3T54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 14:57:56 -0500
-Received: from myspam1.stec-inc.com ([210.19.18.169]:48732 "HELO
-	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756792Ab3A3T5y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 14:57:54 -0500
-X-ASG-Debug-ID: 1359575869-053ea90dcf1dfdd0001-xx1T2L
-X-Barracuda-Envelope-From: akale@stec-inc.com
-X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
-From: Amit Kale <akale@stec-inc.com>
-X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
-X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
-To: Pavel Machek <pavel@ucw.cz>
-CC: LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 31 Jan 2013 03:56:06 +0800
-Subject: RE: Announcement: STEC EnhanceIO SSD caching software for Linux
- kernel
-Thread-Topic: Announcement: STEC EnhanceIO SSD caching software for Linux
- kernel
-X-ASG-Orig-Subj: RE: Announcement: STEC EnhanceIO SSD caching software for Linux
- kernel
-Thread-Index: Ac3+5kvpZIIYZdBSQQae4+p6KWV93AAPRdDg
-Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6329@MYMBX.MY.STEC-INC.AD>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
- <20130130123630.GA19069@amd.pavel.ucw.cz>
-In-Reply-To: <20130130123630.GA19069@amd.pavel.ucw.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756904Ab3A3UAs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:00:48 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34763 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756866Ab3A3UAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 15:00:45 -0500
+Date: Wed, 30 Jan 2013 21:00:41 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+Message-ID: <20130130200041.GD23895@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bhelgaas@google.com>,
+	x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>
+References: <20130129202848.GE25415@pd.tnic>
+ <CAErSpo4v473sXvmv3gqkftkiFZtz+gYgd1yzWae=nLJjwJPBug@mail.gmail.com>
+ <20130130034204.GB30965@pd.tnic>
+ <CAErSpo47BvEsDC1o_kYDeyd6j3VUoWHwSMYPyLpZYB1H-sL=7A@mail.gmail.com>
+ <20130130174402.GB23980@pd.tnic>
+ <510977FB.3030707@suse.cz>
 MIME-Version: 1.0
-X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
-X-Barracuda-Start-Time: 1359575869
-X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.121353
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <510977FB.3030707@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Pavel Machek [mailto:pavel@ucw.cz]
-> Sent: Wednesday, January 30, 2013 4:37 AM
-> To: Amit Kale
-> Cc: LKML
-> Subject: Re: Announcement: STEC EnhanceIO SSD caching software for
-> Linux kernel
+On Wed, Jan 30, 2013 at 08:43:55PM +0100, Jiri Slaby wrote:
+> On 01/30/2013 06:44 PM, Borislav Petkov wrote:
+> > On Wed, Jan 30, 2013 at 10:27:42AM -0700, Bjorn Helgaas wrote:
+> >> You're right, I don't think we're quite ready to merge those patches.
+> >> But if your NMI is easy to reproduce, it might be worth removing
+> >> e1000e altogether to see if it still happens.
+> > 
+> > That's the problem - I've seen it only once so far. I'll watch out for
+> > it and do the above when I find a reliable way of reproducing it. Will
+> > keep you posted.
 > 
-> Hi!
+> It happens here too. Dunno what is the root cause. I *think* that it
+> never happened unless I used ethernet. Other than that I see no pattern.
 > 
-> > EnhanceIO driver is based on EnhanceIO SSD caching software product
-> developed by STEC Inc. EnhanceIO was derived from Facebook's open
-> source Flashcache project. EnhanceIO uses SSDs as cache devices for
-> traditional rotating hard disk drives (referred to as source volumes
-> throughout this document).
-> >
-> > EnhanceIO can work with any block device, be it an entire physical
-> disk, an individual disk partition,  a RAIDed DAS device, a SAN volume,
-> a device mapper volume or a software RAID (md) device.
-> >
-> > The source volume to SSD mapping is a set-associative mapping based
-> on the source volume sector number with a default set size (aka
-> associativity) of 512 blocks and a default block size of 4 KB.  Partial
-> cache blocks are not used.
-> > The default value of 4 KB is chosen because it is the common I/O
-> block
-> > size of most storage systems.  With these default values, each cache
-> > set is 2 MB (512 *
-> > 4 KB).  Therefore, a 400 GB SSD will have a little less than 200,000
-> cache sets because a little space is used for storing the meta data on
-> the SSD.
-> >
-> > EnhanceIO supports three caching modes: read-only, write-through, and
-> write-back and three cache replacement policies: random, FIFO, and LRU.
-> >
-> > Read-only caching mode causes EnhanceIO to direct write IO requests
-> > only to HDD. Read IO requests are issued to HDD and the data read
-> from
-> > HDD is stored on SSD. Subsequent Read requests for the same blocks
-> are
-> > carried out from SSD, thus reducing their latency by a substantial
-> > amount.
-> 
-> What are the requirements for the SSD? I have 500GB 2.5" HDD in the
-> notebook... and it starts to be slightly slow for git. Would cheap 8GB
-> USB stick be useful thing to cache at? (USB sticks have reasonably fast
-> "seek", but reads are in 20MB/sec range and writes are very
-> slow.)
+> Attaching -C 20 grep of messages over the last half year if there is
+> something that may help somehow.
 
-Hi Pavel,
+Cool, so it happens once a day, not every day, everytime during resume,
+and with e1000e. Can you try Bjorn's suggestion to remove e1000e
+altogether and see if it still happens?
 
-Our testing primarily covered 100GB+ SSDs due to our focus on enterprise market. 8GB will work, but 500:8 is about 60times. Our recommendation is to keep SSD:HDD ratio between 1:5 and 1:10. I'll be most interested in knowing your findings.
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks.
--Amit
-
-PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
-
-
-
-This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
+Sent from a fat crate under my desk. Formatting is fine.
+--
