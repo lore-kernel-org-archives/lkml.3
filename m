@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab3A3Bcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:32:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43742 "EHLO
+	id S1753187Ab3A3BdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:33:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43753 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3A3Bcj (ORCPT
+	with ESMTP id S1751626Ab3A3BdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:32:39 -0500
-Date: Tue, 29 Jan 2013 17:31:42 -0800
+	Tue, 29 Jan 2013 20:33:03 -0500
+Date: Tue, 29 Jan 2013 17:32:52 -0800
 From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-100542306f644fc580857a8ca4896fb12b794d41@git.kernel.org>
+Message-ID: <tip-1b8c78be01203e1c95ec5dfef6db307796fe0bc7@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, bp@suse.de,
+        yinghai@kernel.org, penberg@kernel.org, tglx@linutronix.de,
         hpa@linux.intel.com
-In-Reply-To: <1359058816-7615-14-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-14-git-send-email-yinghai@kernel.org>
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, penberg@kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1359058816-7615-15-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-15-git-send-email-yinghai@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, 64bit: Don'
- t set max_pfn_mapped wrong value early on native path
-Git-Commit-ID: 100542306f644fc580857a8ca4896fb12b794d41
+Subject: [tip:x86/mm2] x86: Merge early_reserve_initrd for 32bit and 64bit
+Git-Commit-ID: 1b8c78be01203e1c95ec5dfef6db307796fe0bc7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,87 +29,132 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:31:48 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:32:57 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  100542306f644fc580857a8ca4896fb12b794d41
-Gitweb:     http://git.kernel.org/tip/100542306f644fc580857a8ca4896fb12b794d41
+Commit-ID:  1b8c78be01203e1c95ec5dfef6db307796fe0bc7
+Gitweb:     http://git.kernel.org/tip/1b8c78be01203e1c95ec5dfef6db307796fe0bc7
 Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 24 Jan 2013 12:19:54 -0800
+AuthorDate: Thu, 24 Jan 2013 12:19:55 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 29 Jan 2013 15:20:16 -0800
+CommitDate: Tue, 29 Jan 2013 15:20:41 -0800
 
-x86, 64bit: Don't set max_pfn_mapped wrong value early on native path
+x86: Merge early_reserve_initrd for 32bit and 64bit
 
-We are not having max_pfn_mapped set correctly until init_memory_mapping.
-So don't print its initial value for 64bit
+They are the same, could move them out from head32/64.c to setup.c.
 
-Also need to use KERNEL_IMAGE_SIZE directly for highmap cleanup.
-
--v2: update comments about max_pfn_mapped according to Stefano Stabellini.
+We are using memblock, and it could handle overlapping properly, so
+we don't need to reserve some at first to hold the location, and just
+need to make sure we reserve them before we are using memblock to find
+free mem to use.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1359058816-7615-14-git-send-email-yinghai@kernel.org
-Acked-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1359058816-7615-15-git-send-email-yinghai@kernel.org
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/head64.c |  3 ---
- arch/x86/kernel/setup.c  |  2 ++
- arch/x86/mm/init_64.c    | 10 +++++++++-
- 3 files changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/kernel/head32.c | 11 -----------
+ arch/x86/kernel/head64.c | 11 -----------
+ arch/x86/kernel/setup.c  | 22 ++++++++++++++++++----
+ 3 files changed, 18 insertions(+), 26 deletions(-)
 
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index 6773c91..a795b54 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -36,17 +36,6 @@ void __init i386_start_kernel(void)
+ 	memblock_reserve(__pa_symbol(&_text),
+ 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
+ 
+-#ifdef CONFIG_BLK_DEV_INITRD
+-	/* Reserve INITRD */
+-	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+-		/* Assume only end is not page aligned */
+-		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
+-	}
+-#endif
+-
+ 	/* Call the subarch specific early setup function */
+ 	switch (boot_params.hdr.hardware_subarch) {
+ 	case X86_SUBARCH_MRST:
 diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 816fc85..f3b1968 100644
+index f3b1968..b88a1fa 100644
 --- a/arch/x86/kernel/head64.c
 +++ b/arch/x86/kernel/head64.c
-@@ -148,9 +148,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
- 	/* clear bss before set_intr_gate with early_idt_handler */
- 	clear_bss();
+@@ -178,17 +178,6 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 	memblock_reserve(__pa_symbol(&_text),
+ 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
  
--	/* XXX - this is wrong... we need to build page tables from scratch */
--	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+-#ifdef CONFIG_BLK_DEV_INITRD
+-	/* Reserve INITRD */
+-	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+-		/* Assume only end is not page aligned */
+-		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
+-		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
+-	}
+-#endif
 -
- 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
- #ifdef CONFIG_EARLY_PRINTK
- 		set_intr_gate(i, &early_idt_handlers[i]);
+ 	reserve_ebda_region();
+ 
+ 	/*
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index db9c41d..d58083a 100644
+index d58083a..8e35692 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -996,8 +996,10 @@ void __init setup_arch(char **cmdline_p)
- 	setup_bios_corruption_check();
- #endif
+@@ -360,6 +360,19 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
  
-+#ifdef CONFIG_X86_32
- 	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
- 			(max_pfn_mapped<<PAGE_SHIFT) - 1);
-+#endif
- 
- 	reserve_real_mode();
- 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 9fbb85c..dc67337 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -378,10 +378,18 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
- void __init cleanup_highmap(void)
- {
- 	unsigned long vaddr = __START_KERNEL_map;
--	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
-+	unsigned long vaddr_end = __START_KERNEL_map + KERNEL_IMAGE_SIZE;
- 	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
- 	pmd_t *pmd = level2_kernel_pgt;
- 
-+	/*
-+	 * Native path, max_pfn_mapped is not set yet.
-+	 * Xen has valid max_pfn_mapped set in
-+	 *	arch/x86/xen/mmu.c:xen_setup_kernel_pagetable().
-+	 */
-+	if (max_pfn_mapped)
-+		vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
+ 	return mapped_pages << PAGE_SHIFT;
+ }
++static void __init early_reserve_initrd(void)
++{
++	/* Assume only end is not page aligned */
++	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
 +
- 	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
- 		if (pmd_none(*pmd))
- 			continue;
++	if (!boot_params.hdr.type_of_loader ||
++	    !ramdisk_image || !ramdisk_size)
++		return;		/* No initrd provided by bootloader */
++
++	memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
++}
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+@@ -386,10 +399,6 @@ static void __init reserve_initrd(void)
+ 	if (pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
+ 				PFN_DOWN(ramdisk_end))) {
+ 		/* All are mapped, easy case */
+-		/*
+-		 * don't need to reserve again, already reserved early
+-		 * in i386_start_kernel
+-		 */
+ 		initrd_start = ramdisk_image + PAGE_OFFSET;
+ 		initrd_end = initrd_start + ramdisk_size;
+ 		return;
+@@ -400,6 +409,9 @@ static void __init reserve_initrd(void)
+ 	memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
+ }
+ #else
++static void __init early_reserve_initrd(void)
++{
++}
+ static void __init reserve_initrd(void)
+ {
+ }
+@@ -760,6 +772,8 @@ early_param("reservelow", parse_reservelow);
+ 
+ void __init setup_arch(char **cmdline_p)
+ {
++	early_reserve_initrd();
++
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
