@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab3A3QQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 11:16:11 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:46176 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845Ab3A3QQI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 11:16:08 -0500
-In-Reply-To: <1359537979-39483-1-git-send-email-hare@suse.de>
-References: <1359537979-39483-1-git-send-email-hare@suse.de>
-To: Hannes Reinecke <hare@suse.de>
-Cc: Hannes Reinecke <hare@suse.de>, heicars2@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, mschwid2@linux.vnet.ibm.com
+	id S1755730Ab3A3QXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 11:23:14 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38843 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754325Ab3A3QXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 11:23:12 -0500
+Date: Wed, 30 Jan 2013 11:22:57 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Ying Han <yinghan@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        linux-mm@kvack.org, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] mmotm:
+ memcgvmscan-do-not-break-out-targeted-reclaim-without-reclaimed-pages.patch
+ fix
+Message-ID: <20130130162257.GB21614@cmpxchg.org>
+References: <20130103180901.GA22067@dhcp22.suse.cz>
+ <20130129085104.GA30322@dhcp22.suse.cz>
 MIME-Version: 1.0
-Subject: Re: [PATCH 0/9][v2] dasd: implement block timeout
-X-KeepSent: D72BD141:262FC15D-C1257B03:00583EF8;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Stefan Weinhuber <WEIN@de.ibm.com>
-Message-ID: <OFD72BD141.262FC15D-ONC1257B03.00583EF8-C1257B03.00595C7E@de.ibm.com>
-Date: Wed, 30 Jan 2013 17:15:54 +0100
-X-MIMETrack: Serialize by Router on D06ML030/06/M/IBM(Release 8.5.3 ZX853HP5|January 12, 2012) at
- 30/01/2013 17:15:54,
-	Serialize complete at 30/01/2013 17:15:54
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-x-cbid: 13013016-0542-0000-0000-00000446B879
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130129085104.GA30322@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hannes Reinecke <hare@suse.de> wrote on 2013-01-30 10:26:10:
-> This patch series implements a block timeout handler for
-> DASDs. The main impetus was to allow for a fixed upper
-> timeout value after which a request is aborted.
-> This is required eg when implementing a host-based
-> mirroring system where otherwise the entire mirror
-> would stall under certain circumstances.
+On Tue, Jan 29, 2013 at 09:51:04AM +0100, Michal Hocko wrote:
+> Ying has noticed me (via private email) that the patch is bogus because
+> the break out condition is incorrect. She said she would post a fix
+> but she's been probably too busy. If she doesn't oppose, could you add
+> the follow up fix, please?
 > 
-> Changes since v1:
-> - Fixed lock inversion in dasd_times_out()
-> - Checked for 'device->block' when writing to 'timeout' attribute
-> - Check against 'UINT_MAX' when verifying the 'timeout' value
+> I am really sorry about this mess.
+> ---
+> >From 6d23b59e96b8173fae2d0d397cb5e99f16899874 Mon Sep 17 00:00:00 2001
+> From: Ying Han <yinghan@google.com>
+> Date: Tue, 29 Jan 2013 09:42:28 +0100
+> Subject: [PATCH] mmotm:
+>  memcgvmscan-do-not-break-out-targeted-reclaim-without-reclaimed-pages.patch
+>  fix
 > 
-> Hannes Reinecke (9):
->   dasd: Clarify comment
->   dasd: make number of retries configurable
->   dasd: process all requests in the device tasklet
->   dasd: Implement block timeout handling
->   dasd: Reduce amount of messages for specific errors
->   dasd: detailed I/O errors
->   block: check for timeout function in blk_rq_timed_out()
->   dasd: Add 'timeout' attribute
->   dasd: Fail all requests when DASD_FLAG_ABORTIO is set
+> We should break out of the hierarchy loop only if nr_reclaimed exceeded
+> nr_to_reclaim and not vice-versa. This patch fixes the condition.
 > 
->  arch/s390/include/uapi/asm/dasd.h |    4 +
->  block/blk-core.c                  |    3 +
->  block/blk-timeout.c               |    5 +-
->  drivers/s390/block/dasd.c         |  115 ++++++++++++++++++++++++++
-> +++++++----
->  drivers/s390/block/dasd_devmap.c  |   97 
-+++++++++++++++++++++++++++++++
->  drivers/s390/block/dasd_diag.c    |    8 ++-
->  drivers/s390/block/dasd_eckd.c    |   15 ++++-
->  drivers/s390/block/dasd_erp.c     |    8 +++
->  drivers/s390/block/dasd_fba.c     |   10 +++-
->  drivers/s390/block/dasd_int.h     |   10 +++
->  drivers/s390/block/dasd_ioctl.c   |   59 +++++++++++++++++++
->  11 files changed, 313 insertions(+), 21 deletions(-)
+> Signed-off-by: Ying Han <yinghan@google.com>
+> ---
+>  mm/vmscan.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> -- 
-> 1.7.4.2
-> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index d75c1ec..7528eae 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1985,7 +1985,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+>  			 * whole hierarchy is not sufficient.
+>  			 */
+>  			if (!global_reclaim(sc) &&
+> -					sc->nr_to_reclaim >= sc->nr_reclaimed) {
+> +					sc->nr_to_reclaim <= sc->nr_reclaimed) {
 
-This patch set looks fine to me now. Thanks!
+This is just a really weird ordering of the operands, isn't it?  You
+compare the constant to the variable, like if (42 == foo->nr_pages).
 
-Acked-by: Stefan Weinhuber <wein@de.ibm.com>
+    if (sc->nr_reclaimed >= sc->nr_to_reclaim)
 
-Mit freundlichen Grüßen / Kind regards
- 
-Stefan Weinhuber
-
--- 
-Linux for zSeries kernel development
-IBM Systems &Technology Group, Systems Software Development / SW Linux für 
-zSeries Entwicklung
-
-IBM Deutschland
-Schoenaicher Str. 220
-71032 Boeblingen
-Phone: +49-7031-16-4018
-E-Mail: wein@de.ibm.com
-
-IBM Deutschland Research & Development GmbH / Vorsitzender des 
-Aufsichtsrats: Martina Koederitz
-Geschäftsführung: Dirk Wittkopp
-Sitz der Gesellschaft: Böblingen / Registergericht: Amtsgericht Stuttgart, 
-HRB 243294
-
+would be less surprising.
