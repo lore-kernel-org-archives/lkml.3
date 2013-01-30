@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab3A3IPN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:15:13 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:61788 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab3A3IPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:15:10 -0500
-Date: Wed, 30 Jan 2013 09:14:53 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Florian Vaussard <florian.vaussard@epfl.ch>
-Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] pwm: Add pwm_can_sleep() as exported API to users
-Message-ID: <20130130081453.GA13568@avionic-0098.mockup.avionic-design.de>
-References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch>
- <1359381659-24454-2-git-send-email-florian.vaussard@epfl.ch>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
+	id S1753491Ab3A3ISs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:18:48 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:40531 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380Ab3A3ISp convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Wed, 30 Jan 2013 03:18:45 -0500
+Message-Id: <5108E01902000078000BA9C5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Wed, 30 Jan 2013 07:55:53 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "David Vrabel" <david.vrabel@citrix.com>,
+        "Peter Moody" <pmoody@google.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: [PATCH] x86-64: replace left over sti/cli in ia32 audit exit
+ code
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1359381659-24454-2-git-send-email-florian.vaussard@epfl.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:0xhRM7ZQvve2k6+nD6DIuMcQkNInNeyRsJb3w32cQeK
- +xBRv2fdZf9/9Yo9UPjiQ5qBEqu580bBlxDOfcZ3kMMnOgThTX
- J73gxmKYPyE45riBS0pvg3gzIbz7Lcj3Y3IpPwnPpS/m+xKeQS
- zTv7gaAaUwvLdnDpYram/eGaRbcoyGD3IrUphJrTujHpotFRpf
- gnMky9X0FgHs3UuPQALjdkMqVct994+m73FQHykS5f8weCYrEy
- o7psMmLGDk2kIU+Zw90aRSDtCIU7pEIKWBUR9bi29nOZQcoWBX
- 1Y/aqdKi7mPR+v7WOKAGefWyXLMSZYPf28uRgyw+RuInC5Fm3W
- nKhxuMj9UhlBWysO1er6Mvg6QsnUALTwsuKROjK/YxzZ0p8eRa
- y3JNdbH/NEABiLZJPiU7aG/9rGf5w3oZOU0q1CUH/f8ZrSJMZK
- aFHYn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For some reason they didn't get replaced so far by their paravirt
+equivalents, resulting in code to be run with interrupts disabled that
+doesn't expect so (causing, in the observed case, a BUG_ON() to
+trigger) when syscall auditing is enabled.
 
---ew6BAiZeqk4r7MaW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+David (Cc-ed) came up with an identical fix, so likely this can be
+taken to count as an ack from him.
 
-On Mon, Jan 28, 2013 at 03:00:57PM +0100, Florian Vaussard wrote:
-> Calls to some external PWM chips can sleep. To help users,
-> add pwm_can_sleep() API.
->=20
-> Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-> ---
->  drivers/pwm/core.c  |   12 ++++++++++++
->  include/linux/pwm.h |   10 ++++++++++
->  2 files changed, 22 insertions(+), 0 deletions(-)
+Reported-by: Peter Moody <pmoody@google.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: stable@vger.kernel.org 
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Tested-by: Peter Moody <pmoody@google.com>
 
-Applied (with a minor fixup to the kerneldoc comment), thanks.
+---
+ arch/x86/ia32/ia32entry.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thierry
+--- 3.8-rc5/arch/x86/ia32/ia32entry.S
++++ 3.8-rc5-x86_64-paravirt-ia32-audit-exit/arch/x86/ia32/ia32entry.S
+@@ -207,7 +207,7 @@ sysexit_from_sys_call:
+ 	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	jnz ia32_ret_from_sys_call
+ 	TRACE_IRQS_ON
+-	sti
++	ENABLE_INTERRUPTS(CLBR_NONE)
+ 	movl %eax,%esi		/* second arg, syscall return value */
+ 	cmpl $-MAX_ERRNO,%eax	/* is it an error ? */
+ 	jbe 1f
+@@ -217,7 +217,7 @@ sysexit_from_sys_call:
+ 	call __audit_syscall_exit
+ 	movq RAX-ARGOFFSET(%rsp),%rax	/* reload syscall return value */
+ 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
+-	cli
++	DISABLE_INTERRUPTS(CLBR_NONE)
+ 	TRACE_IRQS_OFF
+ 	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	jz \exit
 
---ew6BAiZeqk4r7MaW
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRCNZ9AAoJEN0jrNd/PrOhdhYP/RGWwASJCyIQCjYJj6EMjxFx
-SCKRtc5OespUcdXibzELdK4PHLgQNwQF4jQ8QqGjhbFg5fLniwX8ZpYTnDQZtoOK
-iLSfBOFT0emPSxO+pdsgQJFb78szguOi4ooWsOB1/rWFSi2WNMBqbW1DSUqFj2OT
-mckbkrVdKpIWaWdVCe48Z1THVqvBOUN43uJrhQKGPtxEFSZSXPiRvf3OGsdajqMn
-dyNEH+qg1G0kJn9ilgUSadO6iPxLnJkat3UcYD/E/phlNjC4ebKI+Nm6GC4nY1vp
-RlE+AbFrSHMnR35O/85BCZg6fPzkJ5g0XZYlF4JyVN8l6Ijl5ZXwlPIjc1yM/33k
-iw1E/+OdkshuBkSgnymKExewtMKNo91fd/dA/fkVqVn0eWzz66anWphmF32Ijy63
-qmRlIE83vFbDls99ZA4RpgSpWCR4IxxgMlShavhHrX9hTEaKCrQIx8zkvMzRC1Fm
-+KuD743LMJ/0J6o8YYJGbv63Vkhk8Qv/1X+CrKWXQ7SUBMOf8jh7V6LOvHJik8f7
-ySFsRxYISN/vm5nVWPqMFmxLUgQ06GxK026ktmtOiFSgul2OOtWBclv+faLTKpF1
-PWJ2LBZoETFaVXOX+BLn8GyNlqsAzmNtnlabf25yX8InosJs/HXyQHFhNihHcUnI
-tTkBz+3q1nIR8H33WPXz
-=cMcC
------END PGP SIGNATURE-----
-
---ew6BAiZeqk4r7MaW--
