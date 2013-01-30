@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab3A3JiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 04:38:14 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:30272
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752552Ab3A3JiL (ORCPT
+	id S1754499Ab3A3Ji0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 04:38:26 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:5559 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754369Ab3A3JiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 04:38:11 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h1155h)
-From: Anson Huang <b20788@freescale.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: <dong.aisheng@linaro.org>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] regulators: anatop: add set_voltage_time_sel interface
-Date: Wed, 30 Jan 2013 17:37:41 -0500
-Message-ID: <1359585461-11377-1-git-send-email-b20788@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 30 Jan 2013 04:38:19 -0500
+Message-ID: <5108EA04.80002@atmel.com>
+Date: Wed, 30 Jan 2013 10:38:12 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Robert Nelson <Robert.Nelson@digikey.com>
+Subject: [GIT PULL] at91: fixes for 3.8-rc6
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-some of anatop's regulators(vppcpu, vddpu and vddsoc) have
-register settings about LDO's step time, which will impact
-the LDO ramp up speed, need to use set_voltage_time_sel
-interface to add necessary delay everytime LDOs' voltage
-is increased.
+Arnd, Olof,
 
-offset 0x170:
-bit [24-25]: vddcpu
-bit [26-27]: vddpu
-bit [28-29]: vddsoc
+Here are two little DT fixes that will fix the use of
+USART3 on at91sam9x5 platforms.
 
-field definition:
-0'b00: 64 cycles of 24M clock;
-0'b01: 128 cycles of 24M clock;
-0'b02: 256 cycles of 24M clock;
-0'b03: 512 cycles of 24M clock;
 
-Signed-off-by: Anson Huang <b20788@freescale.com>
----
- drivers/regulator/anatop-regulator.c |   42 ++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+The following changes since commit 949db153b6466c6f7cad5a427ecea94985927311:
 
-diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-index 8f39cac..a857b9c 100644
---- a/drivers/regulator/anatop-regulator.c
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -31,12 +31,18 @@
- #include <linux/regulator/driver.h>
- #include <linux/regulator/of_regulator.h>
- 
-+#define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
-+#define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
-+
- struct anatop_regulator {
- 	const char *name;
- 	u32 control_reg;
- 	struct regmap *anatop;
- 	int vol_bit_shift;
- 	int vol_bit_width;
-+	u32 delay_reg;
-+	int delay_bit_shift;
-+	int delay_bit_width;
- 	int min_bit_val;
- 	int min_voltage;
- 	int max_voltage;
-@@ -55,6 +61,33 @@ static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
- 	return regulator_set_voltage_sel_regmap(reg, selector);
- }
- 
-+static int anatop_regmap_set_voltage_time_sel(struct regulator_dev *reg,
-+	unsigned int old_sel,
-+	unsigned int new_sel)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	u32 val;
-+	int ret = 0;
-+
-+	/* check whether need to care about LDO ramp up speed */
-+	if (anatop_reg->delay_reg) {
-+		/*
-+		 * the delay for LDO ramp up time is
-+		 * based on the register setting, we need
-+		 * to calculate how many steps LDO need to
-+		 * ramp up, and how much delay needed. (us)
-+		 */
-+		regmap_read(anatop_reg->anatop, anatop_reg->delay_reg, &val);
-+		val = (val >> anatop_reg->delay_bit_shift) &
-+			((1 << anatop_reg->delay_bit_width) - 1);
-+		ret = new_sel > old_sel ? (new_sel - old_sel) *
-+			((LDO_RAMP_UP_UNIT_IN_CYCLES << val) /
-+			LDO_RAMP_UP_FREQ_IN_MHZ + 1) : 0;
-+	}
-+
-+	return ret;
-+}
-+
- static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
- {
- 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-@@ -67,6 +100,7 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
- 
- static struct regulator_ops anatop_rops = {
- 	.set_voltage_sel = anatop_regmap_set_voltage_sel,
-+	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
- 	.get_voltage_sel = anatop_regmap_get_voltage_sel,
- 	.list_voltage = regulator_list_voltage_linear,
- 	.map_voltage = regulator_map_voltage_linear,
-@@ -143,6 +177,14 @@ static int anatop_regulator_probe(struct platform_device *pdev)
- 		goto anatop_probe_end;
- 	}
- 
-+	/* read LDO ramp up setting, only for core reg */
-+	of_property_read_u32(np, "anatop-delay-reg-offset",
-+			     &sreg->delay_reg);
-+	of_property_read_u32(np, "anatop-delay-bit-width",
-+			     &sreg->delay_bit_width);
-+	of_property_read_u32(np, "anatop-delay-bit-shift",
-+			     &sreg->delay_bit_shift);
-+
- 	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage) / 25000 + 1
- 			    + sreg->min_bit_val;
- 	rdesc->min_uV = sreg->min_voltage;
+  Linux 3.8-rc5 (2013-01-25 11:57:28 -0800)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 7d4cfece23f535b60496d88a717a3d7bfca50187:
+
+  ARM: at91/at91sam9x5.dtsi: fix usart3 TXD (2013-01-30 10:09:17 +0100)
+
+----------------------------------------------------------------
+Two little Device Tree fixes for USART on at91sam9x5.
+
+----------------------------------------------------------------
+Douglas Gilbert (1):
+      ARM: at91/at91sam9x5.dtsi: fix usart3 TXD
+
+Robert Nelson (1):
+      ARM: at91: at91sam9x5: fix usart3 pinctrl name
+
+ arch/arm/boot/dts/at91sam9x5.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Thanks, bye,
 -- 
-1.7.9.5
-
-
+Nicolas Ferre
