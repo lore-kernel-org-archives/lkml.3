@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab3A3Ixd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:53:33 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40511 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3A3Ixc convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Wed, 30 Jan 2013 03:53:32 -0500
-Message-Id: <5108ED9702000078000BAA08@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 30 Jan 2013 08:53:27 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: <olaf@aepfle.de>, <bp@alien8.de>, <apw@canonical.com>, <x86@kernel.org>,
-        <tglx@linutronix.de>, <devel@linuxdriverproject.org>,
-        <gregkh@linuxfoundation.org>, <jasowang@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of
- Hyper-V
-References: <1359507077-26050-1-git-send-email-kys@microsoft.com>
- <1359507108-26091-1-git-send-email-kys@microsoft.com>
- <1359507108-26091-2-git-send-email-kys@microsoft.com>
-In-Reply-To: <1359507108-26091-2-git-send-email-kys@microsoft.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754169Ab3A3I4y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:56:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46040 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754016Ab3A3I4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:56:52 -0500
+Date: Wed, 30 Jan 2013 09:09:21 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Joonsoo Kim <js1304@gmail.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Driver core: treat unregistered bus_types as having no
+ devices
+Message-ID: <20130130080921.GA15263@kroah.com>
+References: <20130129234427.23748.83270.stgit@bhelgaas.mtv.corp.google.com>
+ <CAErSpo6B+TWKpP=P6hoNLzziq9Po-OwW2zGBHCc+qSJ2HtTYNQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAErSpo6B+TWKpP=P6hoNLzziq9Po-OwW2zGBHCc+qSJ2HtTYNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.01.13 at 01:51, "K. Y. Srinivasan" <kys@microsoft.com> wrote:
-> Xen emulates Hyper-V to host enlightened Windows. Looks like this
-> emulation may be turned on by default even for Linux guests. Check and
-> fail Hyper-V detection if we are on Xen.
+On Tue, Jan 29, 2013 at 04:47:13PM -0700, Bjorn Helgaas wrote:
+> On Tue, Jan 29, 2013 at 4:44 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > A bus_type has a list of devices (klist_devices), but the list and the
+> > subsys_private structure that contains it are not initialized until the
+> > bus_type is registered with bus_register().
+> >
+> > The panic/reboot path has fixups that look up devices in pci_bus_type.  If
+> > we panic before registering pci_bus_type, the bus_type exists but the list
+> > does not, so mach_reboot_fixups() trips over a null pointer and panics
+> > again:
+> >
+> >     mach_reboot_fixups
+> >       pci_get_device
+> >         ..
+> >           bus_find_device(&pci_bus_type, ...)
+> >             bus->p is NULL
+> >
+> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> > ---
+> >  drivers/base/bus.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+> > index 24eb078..6856303 100644
+> > --- a/drivers/base/bus.c
+> > +++ b/drivers/base/bus.c
+> > @@ -290,7 +290,7 @@ int bus_for_each_dev(struct bus_type *bus, struct device *start,
+> >         struct device *dev;
+> >         int error = 0;
+> >
+> > -       if (!bus)
+> > +       if (!bus || !bus->p)
+> >                 return -EINVAL;
+> >
+> >         klist_iter_init_node(&bus->p->klist_devices, &i,
+> > @@ -324,7 +324,7 @@ struct device *bus_find_device(struct bus_type *bus,
+> >         struct klist_iter i;
+> >         struct device *dev;
+> >
+> > -       if (!bus)
+> > +       if (!bus || !bus->p)
+> >                 return NULL;
+> >
+> >         klist_iter_init_node(&bus->p->klist_devices, &i,
+> >
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  arch/x86/kernel/cpu/mshyperv.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
+> Sorry, I meant to include this in the original post:
 > 
-> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-> index 646d192..4dab317 100644
-> --- a/arch/x86/kernel/cpu/mshyperv.c
-> +++ b/arch/x86/kernel/cpu/mshyperv.c
-> @@ -30,6 +30,13 @@ static bool __init ms_hyperv_platform(void)
->  	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
->  		return false;
->  
-> +	/*
-> +	 * Xen emulates Hyper-V to support enlightened Windows.
-> +	 * Check to see first if we are on a Xen Hypervisor.
-> +	 */
-> +	if (xen_cpuid_base())
-> +		return false;
-> +
->  	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
->  	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
+> Joonsoo reported a problem when panicking before PCI was initialized.
+> I think this patch should be sufficient to replace the patch he posted
+> here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
+> reboot_fixups in early boot phase")
 
-I'm not convinced that's the right approach - any hypervisor
-could do similar emulation, and hence you either want to make
-sure you run on Hyper-V (by excluding all others), or you
-tolerate using the emulation (which may require syncing up with
-the other guest implementations so that shared resources don't
-get used by two parties).
+Don't you think that should be applied as well?  That makes things a bit
+more explicit in the boot process as to exactly what is going on.  The
+driver core changes is good to have if other people mess things up like
+this in the future, don't rely on it to protect you from foolish things.
 
-I also wonder whether using the Hyper-V emulation (where
-useful, there might not be anything right now, but this may
-change going forward) when no Xen support is configured
-wouldn't be better than not using anything...
+thanks,
 
-Jan
-
+greg k-h
