@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab3A3B1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:27:04 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:60406 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3A3B1C (ORCPT
+	id S1753492Ab3A3B1U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:27:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43677 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab3A3B1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:27:02 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Simon Baatz <gmbnomis@gmail.com>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ARM: kirkwood: provide ge clock aliases for shared smi
-Date: Wed, 30 Jan 2013 02:26:40 +0100
-Message-Id: <1359509201-11674-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 29 Jan 2013 20:27:16 -0500
+Date: Tue, 29 Jan 2013 17:27:04 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-9735e91e9c29c0d8fe432aef1152e43e50bdb316@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, jarkko.sakkinen@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, jarkko.sakkinen@intel.com,
+        hpa@linux.intel.com
+In-Reply-To: <1359058816-7615-10-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-10-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, 64bit, realmode:
+  Use init_level4_pgt to set trampoline_pgd directly
+Git-Commit-ID: 9735e91e9c29c0d8fe432aef1152e43e50bdb316
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:27:11 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT support for mv643xx_eth will split smi driver from core gbe driver.
-Although different drivers, both use the same internal device and the
-same (gateable) clock. This patch provides a proper clock alias for
-the smi driver to not break non-DT kernels.
+Commit-ID:  9735e91e9c29c0d8fe432aef1152e43e50bdb316
+Gitweb:     http://git.kernel.org/tip/9735e91e9c29c0d8fe432aef1152e43e50bdb316
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 24 Jan 2013 12:19:50 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 29 Jan 2013 15:12:30 -0800
 
-Reported-by: Simon Baatz <gmbnomis@gmail.com>
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+x86, 64bit, realmode: Use init_level4_pgt to set trampoline_pgd directly
+
+with #PF handler way to set early page table, level3_ident will go away with
+64bit native path.
+
+So just use entries in init_level4_pgt to set them in trampoline_pgd.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1359058816-7615-10-git-send-email-yinghai@kernel.org
+Cc: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Acked-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
-Cc: Simon Baatz <gmbnomis@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-kirkwood/common.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/realmode/init.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-kirkwood/common.c b/arch/arm/mach-kirkwood/common.c
-index bac21a5..502d80d 100644
---- a/arch/arm/mach-kirkwood/common.c
-+++ b/arch/arm/mach-kirkwood/common.c
-@@ -252,7 +252,9 @@ void __init kirkwood_clk_init(void)
- 	orion_clkdev_add(NULL, "orion_spi.0", runit);
- 	orion_clkdev_add(NULL, "orion_spi.1", runit);
- 	orion_clkdev_add(NULL, MV643XX_ETH_NAME ".0", ge0);
-+	orion_clkdev_add(NULL, MV643XX_ETH_SHARED_NAME ".0", ge0);
- 	orion_clkdev_add(NULL, MV643XX_ETH_NAME ".1", ge1);
-+	orion_clkdev_add(NULL, MV643XX_ETH_SHARED_NAME ".1", ge1);
- 	orion_clkdev_add(NULL, "orion_wdt", tclk);
- 	orion_clkdev_add("0", "sata_mv.0", sata0);
- 	orion_clkdev_add("1", "sata_mv.0", sata1);
--- 
-1.7.10.4
-
+diff --git a/arch/x86/realmode/init.c b/arch/x86/realmode/init.c
+index c44ea7c..ffee06a 100644
+--- a/arch/x86/realmode/init.c
++++ b/arch/x86/realmode/init.c
+@@ -78,8 +78,8 @@ void __init setup_real_mode(void)
+ 	*trampoline_cr4_features = read_cr4();
+ 
+ 	trampoline_pgd = (u64 *) __va(real_mode_header->trampoline_pgd);
+-	trampoline_pgd[0] = __pa(level3_ident_pgt) + _KERNPG_TABLE;
+-	trampoline_pgd[511] = __pa(level3_kernel_pgt) + _KERNPG_TABLE;
++	trampoline_pgd[0] = init_level4_pgt[pgd_index(__PAGE_OFFSET)].pgd;
++	trampoline_pgd[511] = init_level4_pgt[511].pgd;
+ #endif
+ }
+ 
