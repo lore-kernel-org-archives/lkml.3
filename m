@@ -1,160 +1,515 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab3A3Hk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 02:40:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:58760 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab3A3HkZ (ORCPT
+	id S1754064Ab3A3Hk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 02:40:58 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:53514 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab3A3Hky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 02:40:25 -0500
-Date: Wed, 30 Jan 2013 08:40:20 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-tegra@vger.kernel.org, gnurou@gmail.com
-Subject: Re: [RFC 0/4] Use the Common Display Framework in tegra-drm
-Message-ID: <20130130074020.GA17547@avionic-0098.mockup.avionic-design.de>
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
+	Wed, 30 Jan 2013 02:40:54 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-In-Reply-To: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:TvWNhG7YhXFwOh0opLJlAEcgFX7UibT9H1RJHRfIJhC
- nYvxWRjxD5fgGjzJilT3+bVX9ANiRku9aCM4GDiQGa8RCXnumc
- +bHbodEDcSfvf00o+B6MeHv9xkSqBBlbUjWsZoCbiUETnM6ZrF
- tU6430dq1fFOgJ6eqJX4ASfzArDdan2O2zIkhR2Zucj2Xlv39J
- gMxu7Hv5kBY+8x+Zk4GotraCquv2EmzhC76cIEcAOdXShY+KfU
- ZsSR6jnV8HfleKa1Z+Cw5OMOcncO35X1euyRqg/wbDTSp+Kpgx
- t1wTTGgdR6VYwqW7EnKNwzax923ZVRjx9GqoyVsQi1FPgchzkP
- 3FoT2VbiMYj3CiCGVjjxFMCgXa6cwM1CL9LiM49tj/JQ9VLA4+
- LllNGf7J9v9DK2t0fvt7S3JTls4cSCjTdA=
+In-Reply-To: <20130130064104.GN5256@beef>
+References: <1358281974-8411-1-git-send-email-mporter@ti.com>
+	<1358281974-8411-4-git-send-email-mporter@ti.com>
+	<CAHp75VeFZ19CCL-4huLNWbsXT-8sGrcvtxN=Dm0s+ojNA3w-3g@mail.gmail.com>
+	<20130130064104.GN5256@beef>
+Date: Wed, 30 Jan 2013 09:40:52 +0200
+Message-ID: <CAHp75Vdbv2tSLKY8OpPD7Y2Bf2dL9qn-gG7w=9KxMqL_zPA6sw@mail.gmail.com>
+Subject: Re: [PATCH v5 03/14] ARM: edma: add AM33XX support to the private
+ EDMA API
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Matt Porter <mporter@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 30, 2013 at 8:41 AM, Matt Porter <mporter@ti.com> wrote:
+> On Mon, Jan 28, 2013 at 09:27:24PM +0200, Andy Shevchenko wrote:
+>> On Tue, Jan 15, 2013 at 10:32 PM, Matt Porter <mporter@ti.com> wrote:
+>> > Adds support for parsing the TI EDMA DT data into the required
+>> > EDMA private API platform data. Enables runtime PM support to
+>> > initialize the EDMA hwmod. Adds AM33XX EMDA crossbar event mux
+>> > support.
+>> >
+>> > Signed-off-by: Matt Porter <mporter@ti.com>
+>> > ---
+>> >  arch/arm/common/edma.c             |  314 ++++++++++++++++++++++++++++++++++--
+>> >  include/linux/platform_data/edma.h |    1 +
+>> >  2 files changed, 306 insertions(+), 9 deletions(-)
+>> >
+>> > diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+>> > index 2dce245..beeb1d2 100644
+>> > --- a/arch/arm/common/edma.c
+>> > +++ b/arch/arm/common/edma.c
+>> > @@ -24,6 +24,13 @@
+>> >  #include <linux/platform_device.h>
+>> >  #include <linux/io.h>
+>> >  #include <linux/slab.h>
+>> > +#include <linux/edma.h>
+>> > +#include <linux/err.h>
+>> > +#include <linux/of_address.h>
+>> > +#include <linux/of_device.h>
+>> > +#include <linux/of_dma.h>
+>> > +#include <linux/of_irq.h>
+>> > +#include <linux/pm_runtime.h>
+>> >
+>> >  #include <linux/platform_data/edma.h>
+>> >
+>> > @@ -723,6 +730,9 @@ EXPORT_SYMBOL(edma_free_channel);
+>> >   */
+>> >  int edma_alloc_slot(unsigned ctlr, int slot)
+>> >  {
+>> > +       if (!edma_cc[ctlr])
+>> > +               return -EINVAL;
+>> > +
+>> >         if (slot >= 0)
+>> >                 slot = EDMA_CHAN_SLOT(slot);
+>> >
+>> > @@ -1366,31 +1376,291 @@ void edma_clear_event(unsigned channel)
+>> >  EXPORT_SYMBOL(edma_clear_event);
+>> >
+>> >  /*-----------------------------------------------------------------------*/
+>> > +static int edma_of_read_u32_to_s8_array(const struct device_node *np,
+>> > +                                        const char *propname, s8 *out_values,
+>> > +                                        size_t sz)
+>>
+>> I'm sorry I didn't get why you couldn't use of_property_read_u8_array() ?
+>> The similar comment to u16 and so on.
+>
+> There's some manipulation of the legacy Davinci platform data
+> structures going on here. The driving reason was to not change any of
+> the davinci platforms pdata which uses s8/s16 tables of mapping values
+> with signed values as terminators. These versions below add the
+> convert to the signed value and terminate the array as needed by the
+> existing driver. This will all go away when the driver is rewritten and
+> merged into drivers/dma/edma.c. At that point I want to throwaway all
+> these legacy data structures. First, there's some more drivers to
+> convert to dmaengine api.
+>
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I mean instead of custom functions you could use existing ones.
+And sign here will be implicitly applied.
 
-On Wed, Jan 30, 2013 at 12:02:15PM +0900, Alexandre Courbot wrote:
-> This series leverages the (still work-in-progress) Common Display Framewo=
-rk to
-> add panel support to the tegra-drm driver. It also adds a driver for the
-> CLAA101WA01A panel used on the Ventana board.
->=20
-> The CDF is a moving target but Tegra needs some sort of display framework=
- and
-> even in its current state the CDF seems to be the best candidate. Besides=
-, by
-> using the CDF from now on we hope to provide useful feedback to Laurent a=
-nd the
-> other CDF designers.
->=20
-> The changes to tegra-drm are rather minimal. Panels are referenced from T=
-egra DC
-> output nodes through the "nvidia,panel" property. This property is looked=
- up
-> when a display connect notification is received in order to see if it poi=
-nts to
-> the connected display entity. If it does, the entity is then used for out=
-put.
->=20
-> The DPMS states are then propagated to the output entity, which is then s=
-upposed
-> to call back into the set_stream() hook in order to enable/disable the ou=
-tput
-> stream as needed.
+So, what I propose is to do something like this
 
-Thanks *a lot* for taking care of this Alexandre! From a quick look at
-the patches they seem generally fine. I'll go over them in a bit more
-detail though.
+static int edma_of_read_u32_to_s8_array(const struct device_node *np,
+                                        const char *propname, s8 *out_values,
+                                        size_t sz)
+{
 
-> Although the overall design seems to work ok, a few specific issues need =
-to be
-> addressed:
->=20
-> 1) The CDF has a get_modes() hook, but this is already implemented by
-> tegra_connector_get_modes(). Ideally everything should be moved to the CD=
-F hook,
-> but Tegra's implementation uses DRM functions to retrieve the EDID and CDF
-> should, AFAIK, remain DRM-agnostic.
+int ret;
+ret = of_property_read_u8_array(np, propname, out_values, sz);
+if (ret)
+ return ret;
 
-Maybe a good option would be to just not implement get_modes() if the
-same information can be retrieved via EDID. That is, the DRM driver
-could just go and fetch EDID when the nvidia,ddc-i2c-bus is available
-(or parse the nvidia,edid blob) and only rely on CDF otherwise.
+       /* Terminate it */
+       *out_values++ = -1;
+       *out_values++ = -1;
+}
 
-So for Ventana the only reason why we need CDF is basically the power
-sequencing, right?
+> -Matt
+>>
+>> > +{
+>> > +       struct property *prop = of_find_property(np, propname, NULL);
+>> > +       const __be32 *val;
+>> > +
+>> > +       if (!prop)
+>> > +               return -EINVAL;
+>> > +       if (!prop->value)
+>> > +               return -ENODATA;
+>> > +       if ((sz * sizeof(u32)) > prop->length)
+>> > +               return -EOVERFLOW;
+>> > +
+>> > +       val = prop->value;
+>> > +
+>> > +       while (sz--)
+>> > +               *out_values++ = (s8)(be32_to_cpup(val++) & 0xff);
+>> > +
+>> > +       /* Terminate it */
+>> > +       *out_values++ = -1;
+>> > +       *out_values++ = -1;
+>> > +
+>> > +       return 0;
+>> > +}
+>> > +
+>> > +static int edma_of_read_u32_to_s16_array(const struct device_node *np,
+>> > +                                        const char *propname, s16 *out_values,
+>> > +                                        size_t sz)
+>> > +{
+>> > +       struct property *prop = of_find_property(np, propname, NULL);
+>> > +       const __be32 *val;
+>> > +
+>> > +       if (!prop)
+>> > +               return -EINVAL;
+>> > +       if (!prop->value)
+>> > +               return -ENODATA;
+>> > +       if ((sz * sizeof(u32)) > prop->length)
+>> > +               return -EOVERFLOW;
+>> > +
+>> > +       val = prop->value;
+>> > +
+>> > +       while (sz--)
+>> > +               *out_values++ = (s16)(be32_to_cpup(val++) & 0xffff);
+>> > +
+>> > +       /* Terminate it */
+>> > +       *out_values++ = -1;
+>> > +       *out_values++ = -1;
+>> > +
+>> > +       return 0;
+>> > +}
+>> > +
+>> > +static int edma_xbar_event_map(struct device *dev,
+>> > +                              struct device_node *node,
+>> > +                              struct edma_soc_info *pdata, int len)
+>> > +{
+>> > +       int ret = 0;
+>> > +       int i;
+>> > +       struct resource res;
+>> > +       void *xbar;
+>> > +       const s16 (*xbar_chans)[2];
+>> > +       u32 shift, offset, mux;
+>> > +
+>> > +       xbar_chans = devm_kzalloc(dev,
+>> > +                                 len/sizeof(s16) + 2*sizeof(s16),
+>> > +                                 GFP_KERNEL);
+>> > +       if (!xbar_chans)
+>> > +               return -ENOMEM;
+>> > +
+>> > +       ret = of_address_to_resource(node, 1, &res);
+>> > +       if (IS_ERR_VALUE(ret))
+>> > +               return -EIO;
+>> > +
+>> > +       xbar = devm_ioremap(dev, res.start, resource_size(&res));
+>> > +       if (!xbar)
+>> > +               return -ENOMEM;
+>> > +
+>> > +       ret = edma_of_read_u32_to_s16_array(node,
+>> > +                                           "ti,edma-xbar-event-map",
+>> > +                                           (s16 *)xbar_chans,
+>> > +                                           len/sizeof(u32));
+>> > +       if (IS_ERR_VALUE(ret))
+>> > +               return -EIO;
+>> > +
+>> > +       for (i = 0; xbar_chans[i][0] != -1; i++) {
+>> > +               shift = (xbar_chans[i][1] % 4) * 8;
+>> > +               offset = xbar_chans[i][1] >> 2;
+>> > +               offset <<= 2;
+>> > +               mux = readl((void *)((u32)xbar + offset));
+>> > +               mux &= ~(0xff << shift);
+>> > +               mux |= xbar_chans[i][0] << shift;
+>> > +               writel(mux, (void *)((u32)xbar + offset));
+>> > +       }
+>> > +
+>> > +       pdata->xbar_chans = xbar_chans;
+>> > +
+>> > +       return 0;
+>> > +}
+>> > +
+>> > +static int edma_of_parse_dt(struct device *dev,
+>> > +                           struct device_node *node,
+>> > +                           struct edma_soc_info *pdata)
+>> > +{
+>> > +       int ret = 0;
+>> > +       u32 value;
+>> > +       struct property *prop;
+>> > +       size_t sz;
+>> > +       struct edma_rsv_info *rsv_info;
+>> > +       const s16 (*rsv_chans)[2], (*rsv_slots)[2];
+>> > +       const s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
+>> > +
+>> > +       memset(pdata, 0, sizeof(struct edma_soc_info));
+>> > +
+>> > +       ret = of_property_read_u32(node, "dma-channels", &value);
+>> > +       if (ret < 0)
+>> > +               return ret;
+>> > +       pdata->n_channel = value;
+>> > +
+>> > +       ret = of_property_read_u32(node, "ti,edma-regions", &value);
+>> > +       if (ret < 0)
+>> > +               return ret;
+>> > +       pdata->n_region = value;
+>> > +
+>> > +       ret = of_property_read_u32(node, "ti,edma-slots", &value);
+>> > +       if (ret < 0)
+>> > +               return ret;
+>> > +       pdata->n_slot = value;
+>> > +
+>> > +       pdata->n_cc = 1;
+>> > +       pdata->n_tc = 3;
+>> > +
+>> > +       rsv_info =
+>> > +               devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
+>> > +       if (!rsv_info)
+>> > +               return -ENOMEM;
+>> > +       pdata->rsv = rsv_info;
+>> > +
+>> > +       /* Build the reserved channel/slots arrays */
+>> > +       prop = of_find_property(node, "ti,edma-reserved-channels", &sz);
+>> > +       if (prop) {
+>> > +               rsv_chans = devm_kzalloc(dev,
+>> > +                                        sz/sizeof(s16) + 2*sizeof(s16),
+>> > +                                        GFP_KERNEL);
+>> > +               if (!rsv_chans)
+>> > +                       return -ENOMEM;
+>> > +               pdata->rsv->rsv_chans = rsv_chans;
+>> > +
+>> > +               ret = edma_of_read_u32_to_s16_array(node,
+>> > +                                                   "ti,edma-reserved-channels",
+>> > +                                                   (s16 *)rsv_chans,
+>> > +                                                   sz/sizeof(u32));
+>> > +               if (ret < 0)
+>> > +                       return ret;
+>> > +       }
+>> > +
+>> > +       prop = of_find_property(node, "ti,edma-reserved-slots", &sz);
+>> > +       if (prop) {
+>> > +               rsv_slots = devm_kzalloc(dev,
+>> > +                                        sz/sizeof(s16) + 2*sizeof(s16),
+>> > +                                        GFP_KERNEL);
+>> > +               if (!rsv_slots)
+>> > +                       return -ENOMEM;
+>> > +               pdata->rsv->rsv_slots = rsv_slots;
+>> > +
+>> > +               ret = edma_of_read_u32_to_s16_array(node,
+>> > +                                                   "ti,edma-reserved-slots",
+>> > +                                                   (s16 *)rsv_slots,
+>> > +                                                   sz/sizeof(u32));
+>> > +               if (ret < 0)
+>> > +                       return ret;
+>> > +       }
+>> > +
+>> > +       prop = of_find_property(node, "ti,edma-queue-tc-map", &sz);
+>> > +       if (!prop)
+>> > +               return -EINVAL;
+>> > +
+>> > +       queue_tc_map = devm_kzalloc(dev,
+>> > +                                   sz/sizeof(s8) + 2*sizeof(s8),
+>> > +                                   GFP_KERNEL);
+>> > +       if (!queue_tc_map)
+>> > +               return -ENOMEM;
+>> > +       pdata->queue_tc_mapping = queue_tc_map;
+>> > +
+>> > +       ret = edma_of_read_u32_to_s8_array(node,
+>> > +                                          "ti,edma-queue-tc-map",
+>> > +                                          (s8 *)queue_tc_map,
+>> > +                                          sz/sizeof(u32));
+>> > +       if (ret < 0)
+>> > +               return ret;
+>> > +
+>> > +       prop = of_find_property(node, "ti,edma-queue-priority-map", &sz);
+>> > +       if (!prop)
+>> > +               return -EINVAL;
+>> > +
+>> > +       queue_priority_map = devm_kzalloc(dev,
+>> > +                                         sz/sizeof(s8) + 2*sizeof(s8),
+>> > +                                         GFP_KERNEL);
+>> > +       if (!queue_priority_map)
+>> > +               return -ENOMEM;
+>> > +       pdata->queue_priority_mapping = queue_priority_map;
+>> > +
+>> > +       ret = edma_of_read_u32_to_s8_array(node,
+>> > +                                          "ti,edma-queue-tc-map",
+>> > +                                          (s8 *)queue_priority_map,
+>> > +                                          sz/sizeof(u32));
+>> > +       if (ret < 0)
+>> > +               return ret;
+>> > +
+>> > +       ret = of_property_read_u32(node, "ti,edma-default-queue", &value);
+>> > +       if (ret < 0)
+>> > +               return ret;
+>> > +       pdata->default_queue = value;
+>> > +
+>> > +       prop = of_find_property(node, "ti,edma-xbar-event-map", &sz);
+>> > +       if (prop)
+>> > +               ret = edma_xbar_event_map(dev, node, pdata, sz);
+>> > +
+>> > +       return ret;
+>> > +}
+>> > +
+>> > +static struct of_dma_filter_info edma_filter_info = {
+>> > +       .filter_fn = edma_filter_fn,
+>> > +};
+>> >
+>> >  static int edma_probe(struct platform_device *pdev)
+>> >  {
+>> >         struct edma_soc_info    **info = pdev->dev.platform_data;
+>> > +       struct edma_soc_info    *ninfo[EDMA_MAX_CC] = {NULL, NULL};
+>> > +       struct edma_soc_info    tmpinfo;
+>> >         const s8                (*queue_priority_mapping)[2];
+>> >         const s8                (*queue_tc_mapping)[2];
+>> >         int                     i, j, off, ln, found = 0;
+>> >         int                     status = -1;
+>> >         const s16               (*rsv_chans)[2];
+>> >         const s16               (*rsv_slots)[2];
+>> > +       const s16               (*xbar_chans)[2];
+>> >         int                     irq[EDMA_MAX_CC] = {0, 0};
+>> >         int                     err_irq[EDMA_MAX_CC] = {0, 0};
+>> > -       struct resource         *r[EDMA_MAX_CC] = {NULL};
+>> > +       struct resource         *r[EDMA_MAX_CC] = {NULL, NULL};
+>> > +       struct resource         res[EDMA_MAX_CC];
+>> >         resource_size_t         len[EDMA_MAX_CC];
+>> >         char                    res_name[10];
+>> >         char                    irq_name[10];
+>> > +       struct device_node      *node = pdev->dev.of_node;
+>> > +       struct device           *dev = &pdev->dev;
+>> > +       int                     ret;
+>> > +
+>> > +       if (node) {
+>> > +               info = ninfo;
+>> > +               edma_of_parse_dt(dev, node, &tmpinfo);
+>> > +               info[0] = &tmpinfo;
+>> > +
+>> > +               dma_cap_set(DMA_SLAVE, edma_filter_info.dma_cap);
+>> > +               of_dma_controller_register(dev->of_node,
+>> > +                                          of_dma_simple_xlate,
+>> > +                                          &edma_filter_info);
+>> > +       }
+>> >
+>> >         if (!info)
+>> >                 return -ENODEV;
+>> >
+>> > +       pm_runtime_enable(dev);
+>> > +       ret = pm_runtime_get_sync(dev);
+>> > +       if (IS_ERR_VALUE(ret)) {
+>> > +               dev_err(dev, "pm_runtime_get_sync() failed\n");
+>> > +               return ret;
+>> > +       }
+>> > +
+>> >         for (j = 0; j < EDMA_MAX_CC; j++) {
+>> > -               sprintf(res_name, "edma_cc%d", j);
+>> > -               r[j] = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+>> > +               if (!info[j]) {
+>> > +                       if (!found)
+>> > +                               return -ENODEV;
+>> > +                       break;
+>> > +               }
+>> > +               if (node) {
+>> > +                       ret = of_address_to_resource(node, j, &res[j]);
+>> > +                       if (!IS_ERR_VALUE(ret))
+>> > +                               r[j] = &res[j];
+>> > +               } else {
+>> > +                       sprintf(res_name, "edma_cc%d", j);
+>> > +                       r[j] = platform_get_resource_byname(pdev,
+>> > +                                               IORESOURCE_MEM,
+>> >                                                 res_name);
+>> > -               if (!r[j] || !info[j]) {
+>> > +               }
+>> > +               if (!r[j]) {
+>> >                         if (found)
+>> >                                 break;
+>> >                         else
+>> > @@ -1465,8 +1735,22 @@ static int edma_probe(struct platform_device *pdev)
+>> >                         }
+>> >                 }
+>> >
+>> > -               sprintf(irq_name, "edma%d", j);
+>> > -               irq[j] = platform_get_irq_byname(pdev, irq_name);
+>> > +               /* Clear the xbar mapped channels in unused list */
+>> > +               xbar_chans = info[j]->xbar_chans;
+>> > +               if (xbar_chans) {
+>> > +                       for (i = 0; xbar_chans[i][1] != -1; i++) {
+>> > +                               off = xbar_chans[i][1];
+>> > +                               clear_bits(off, 1,
+>> > +                                       edma_cc[j]->edma_unused);
+>> > +                       }
+>> > +               }
+>> > +
+>> > +               if (node)
+>> > +                       irq[j] = irq_of_parse_and_map(node, 0);
+>> > +               else {
+>> > +                       sprintf(irq_name, "edma%d", j);
+>> > +                       irq[j] = platform_get_irq_byname(pdev, irq_name);
+>> > +               }
+>> >                 edma_cc[j]->irq_res_start = irq[j];
+>> >                 status = request_irq(irq[j], dma_irq_handler, 0, "edma",
+>> >                                         &pdev->dev);
+>> > @@ -1476,8 +1760,12 @@ static int edma_probe(struct platform_device *pdev)
+>> >                         goto fail;
+>> >                 }
+>> >
+>> > -               sprintf(irq_name, "edma%d_err", j);
+>> > -               err_irq[j] = platform_get_irq_byname(pdev, irq_name);
+>> > +               if (node)
+>> > +                       err_irq[j] = irq_of_parse_and_map(node, 2);
+>> > +               else {
+>> > +                       sprintf(irq_name, "edma%d_err", j);
+>> > +                       err_irq[j] = platform_get_irq_byname(pdev, irq_name);
+>> > +               }
+>> >                 edma_cc[j]->irq_res_end = err_irq[j];
+>> >                 status = request_irq(err_irq[j], dma_ccerr_handler, 0,
+>> >                                         "edma_error", &pdev->dev);
+>> > @@ -1538,9 +1826,17 @@ fail1:
+>> >         return status;
+>> >  }
+>> >
+>> > +static const struct of_device_id edma_of_ids[] = {
+>> > +       { .compatible = "ti,edma3", },
+>> > +       {}
+>> > +};
+>> >
+>> >  static struct platform_driver edma_driver = {
+>> > -       .driver.name    = "edma",
+>> > +       .driver = {
+>> > +               .name   = "edma",
+>> > +               .of_match_table = edma_of_ids,
+>> > +       },
+>> > +       .probe = edma_probe,
+>> >  };
+>> >
+>> >  static int __init edma_init(void)
+>> > diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
+>> > index 2344ea2..ffc1fb2 100644
+>> > --- a/include/linux/platform_data/edma.h
+>> > +++ b/include/linux/platform_data/edma.h
+>> > @@ -177,6 +177,7 @@ struct edma_soc_info {
+>> >
+>> >         const s8        (*queue_tc_mapping)[2];
+>> >         const s8        (*queue_priority_mapping)[2];
+>> > +       const s16       (*xbar_chans)[2];
+>> >  };
+>> >
+>> >  #endif
+>> > --
+>> > 1.7.9.5
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>>
+>> --
+>> With Best Regards,
+>> Andy Shevchenko
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> 2) There is currently no panel/backlight interaction, e.g. backlight stat=
-us is
-> controlled through FB events, independantly from the panel state. It coul=
-d make
-> sense to have the panel DT node reference the backlight and control it as=
- part
-> of its own power on/off sequence. Right now however, a backlight device c=
-annot
-> ignore FB events.
 
-I definitely think that we should aim for correct panel and backlight
-interaction. Perhaps this could work by looking up the real backlight
-via it's phandle and have the CDF driver use the backlight API to
-disable or enable the backlight as part of the power sequencing.
 
-I'm not sure what you mean by "cannot ignore FB events"? Can you provide
-a concrete problematic use-case?
-
-> 3) Probably related to 2), now the backlight's power controls are part of=
- the
-> panel driver, because the pwm-backlight driver cannot control the power
-> regulator and enable GPIO. This means that the backlight power is not tur=
-ned off
-> when its brightness is set to 0 through sysfs. Once again this speaks in =
-favor
-> of having stronger panel/backlight interaction: for instance, the panel d=
-river
-> could reference the backlight and hijack its update_status() op to replac=
-e it by
-> one that does the correct power sequencing before calling the original fu=
-nction.
-> This would require some extra infrastructure though. Another possibility =
-would
-> be to have a dedicated backlight driver for each panel, with its own
-> "compatible" string.
-
-Hijacking .update_status() sounds a bit risky. But perhaps you could
-wrap the real backlight in a CDF backlight to receive notifications.
-Obviously you'd get two backlight devices in sysfs, but that turn out
-not to be a problem.
-
-Thierry
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRCM5kAAoJEN0jrNd/PrOhuJgP/R2V+SnteE1iaXV7AhLyiFpW
-tqcu6IPC7fqwrgQWISoCJecdJ/0ycB2ZLIJeDwdw0VHnhejt+NJmvS+J25Th5M5q
-tmq8ZNEjUyNybQIHaUpASZDuTocfefuM9LJDKb5RlpiortyrhvVyySqrBxX/PFwn
-8NRKh+y0DRNj1wOyhTnnBID8Xh5UrAx9oWMQklGKS9npGW9IFrZKr0WU457bOG/7
-Fp3M9eauQ1NsiHsfXZcRXz7QNRn08AOksfLiS3/eIONEx2bVzQrCcN6Bq/nr7zLz
-/zFAql6X6hKf0rURogA5hN2A8jiPoW8LAs63YdeaCC8PtcF35tHjmOcWTweFs7bp
-ZIvTmFPVHp4L46T7Q2toGOgm9s0wD/HEgvIAVCc+eBQkvnbP6bbfkpAmeH7cpTh/
-ENsDPririsVHZHoAZXynn9R0Jf4rb/hQGdw42p8fODu6K/tiaQJ4UgnZpAbmD6sS
-gPTbWZBra8L0YQ7/7a1WBcgjJ9Mv0r4btlucQ4yyPnW5HKqtmabyYn95bkhLLlGj
-wsE5TYUXUq4GFCqrLXT6+uQxA1ir5eHWGtcW+DsvB1aOrilY8bNlqeIF/4M0HSSX
-cDv5vaHeU4FWDgsIOs5cvxfD87GLmsEKWWBrt6xgiaWG2YEYCowfpEoxnSpZXinY
-MXtGbG4XKz9GkhXHGgDp
-=pq9a
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
+-- 
+With Best Regards,
+Andy Shevchenko
