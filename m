@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3A3Irc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:47:32 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55816 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017Ab3A3Ir3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:47:29 -0500
-Message-ID: <5108DE5F.5090803@ti.com>
-Date: Wed, 30 Jan 2013 14:18:31 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Kumar, Anil" <anilkumar.v@ti.com>
-CC: "Poddar, Sourav" <sourav.poddar@ti.com>, "Coelho, Luciano" <coelho@ti.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-Subject: Re: [PATCH] arm: dts: omap4-sdp: Add I2c pinctrl data
-References: <1359371865-27907-1-git-send-email-sourav.poddar@ti.com> <1359527158.14894.37.camel@cumari.coelho.fi> <5108C052.3070604@ti.com> <F3DBB1B3EF102E4994C89758CFCA32412C16DD@DBDE01.ent.ti.com>
-In-Reply-To: <F3DBB1B3EF102E4994C89758CFCA32412C16DD@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753835Ab3A3Isv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:48:51 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:44152 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab3A3Ist (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:48:49 -0500
+Date: Wed, 30 Jan 2013 19:48:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the pm tree
+Message-Id: <20130130194841.abd832c601b21c3e67aae4f6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__30_Jan_2013_19_48_41_+1100_=c5eQQ0eH1lo0t2B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 January 2013 02:13 PM, Kumar, Anil wrote:
-> Hi Sourav,
->
-> On Wed, Jan 30, 2013 at 12:10:18, Poddar, Sourav wrote:
->> Hi Luciano,
->> On Wednesday 30 January 2013 11:55 AM, Luciano Coelho wrote:
->>> Hi Sourav,
->>>
->>> On Mon, 2013-01-28 at 16:47 +0530, Sourav Poddar wrote:
->>>> Booting 3.8-rc4 om omap 4430sdp results in the following error
->>>>
->>>> omap_i2c 48070000.i2c: did not get pins for i2c error: -19
->>>> [    1.024261] omap_i2c 48070000.i2c: bus 0 rev0.12 at 100 kHz
->>>> [    1.030181] omap_i2c 48072000.i2c: did not get pins for i2c error: -19
->>>> [    1.037384] omap_i2c 48072000.i2c: bus 1 rev0.12 at 400 kHz
->>>> [    1.043762] omap_i2c 48060000.i2c: did not get pins for i2c error: -19
->>>> [    1.050964] omap_i2c 48060000.i2c: bus 2 rev0.12 at 100 kHz
->>>> [    1.056823] omap_i2c 4807a000.i2c: did not get pins for i2c error: -19
->>>> [    1.064025] omap_i2c 4807a000.i2c: bus 3 rev0.12 at 400 kHz
->>>>
->>>> This happens because omap4 dts file is not adapted to use i2c through pinctrl
->>>> framework. Populating i2c pinctrl data to get rid of the error.
->>>>
->>>> Tested on omap4430 sdp with 3.8-rc4 kernel.
->>>>
->>>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
->>>> Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> ---
->>> Could you do the same thing for panda? I'm getting the same kind of
->>> errors with it:
->
-> omap4 uses pinctrl-single driver for pinmux with DT. Currently
-> pinctrl-single driver is getting up after I2C driver. So I2c cannot
-> use pinctrl. The below patch solve this issue
->
-> http://www.gossamer-threads.com/lists/linux/kernel/1669067
->
-> Can you try with this ? it may solve it.
->
-OMAP i2c driver already takes care of -EPROBE_DEFER. The issue
-as you see from the log is not probe failure but missing the
-pin information in DT blob. And thats what patch does.
+--Signature=_Wed__30_Jan_2013_19_48_41_+1100_=c5eQQ0eH1lo0t2B
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards
-santosh
+Hi Rafael,
 
+After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
+
+drivers/built-in.o: In function `ipc_init':
+pl320-ipc.c:(.init.text+0xf96b): undefined reference to `amba_driver_regist=
+er'
+
+Caused by commit 970066f5b269 ("ARM / highbank: add support for pl320 IPC").
+
+I have used the pm tree from next-20130128 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__30_Jan_2013_19_48_41_+1100_=c5eQQ0eH1lo0t2B
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRCN5pAAoJEECxmPOUX5FEbzQP/i2UY056uXn+iI1vZZfxLKMl
+Us25z739Q3RYt0uliAzTXYwMfX8yv9iZ3o1lcbVdcYRqisjZ+4Xm80QSvTWotmDR
+vPHLm4J5XFm1RaIPcZ1WMi2NA7255klgR148o0IzDHQGw3FdG4lFw+x0gaQjpdY8
+x3Fu01oFzdRgmnqbRxslENtZi3Sk61Wd1+LnBIvOG7XXTbWN/NCKeaEJcXJH9JhQ
+yWXxQOqIrW0dCOeWiCe6d8V8ai3gQ+8U6ESa2VnUqHg7syGhj1mjuQkoMwwcPE+r
+r62ZFSh0+dAbspf4WH47t/coRHkou9qCcmLgm9jupa3qVpqs2ZKX4MabkwfT2EbU
+V5CcQDvGalTlnp3EgDkwtXsXOVWRUIP9iYJybvTkaHFWxgktmWs93NsIbpSTR8z4
+ixhIILEMWqTihdGPb4KC+4Sh8lKqaDIQdhIooshPqxmcN4ePJ6EE3pWVb+32x8WA
+TBlfX5WfBTNxkLwOgNc4K66yHdFguNZkaFf/0CWKxzu0K+qsjJ3nUynv9bA08i9g
+pgKSwDuUoTSRIXobZ4Hjs4bWCWhSVA7io4rdtjLEMDY4DF1miQT6GVz1soy7jvuc
+n/HodM92KOlvPfo8h4Bvi/mpyY5Z/26wFUi4yyzpv19bAai52Gequ74aQ9QJY2yc
+w92asj/i5hcedVTMy2GX
+=D/p7
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__30_Jan_2013_19_48_41_+1100_=c5eQQ0eH1lo0t2B--
