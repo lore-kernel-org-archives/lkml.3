@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab3A3VC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 16:02:58 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:62420 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab3A3VC4 (ORCPT
+	id S1755653Ab3A3VMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 16:12:08 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:45797 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab3A3VMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 16:02:56 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 30 Jan 2013 16:02:54 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Ruslan Bilovol <ruslan.bilovol@ti.com>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        tony@atomide.com, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        eduardo.valentin@ti.com
-Subject: Re: [RFC PATCH v3 1/2] ARM: kernel: update cpuinfo to print SoC model
- name
-In-reply-to: <CAKGA1bncYCAwvU1-ZYkAYd_RGUvqq4NCWDeV5EXt4Z6qrgr3Sw@mail.gmail.com>
-Message-id: <alpine.LFD.2.02.1301301602220.6300@xanadu.home>
-References: <1359558091-29251-1-git-send-email-ruslan.bilovol@ti.com>
- <1359558091-29251-2-git-send-email-ruslan.bilovol@ti.com>
- <alpine.LFD.2.02.1301301402330.6300@xanadu.home>
- <CAKGA1bncYCAwvU1-ZYkAYd_RGUvqq4NCWDeV5EXt4Z6qrgr3Sw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 30 Jan 2013 16:12:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DF0AC95@sausexdag04.amd.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+	<CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
+	<CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
+	<CAKocOOPsvh=jOXLahe6ukjpyjOOqt9tRdwELxv8i0_Vi1xqQkA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A37D@sausexdag04.amd.com>
+	<CAKocOOORwoUAStDmFPhW1--WhAJaEzEmG-=tZ1sgkWKsquq=rQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A3B7@sausexdag04.amd.com>
+	<CAKocOOMxbZXjL_qxQQD+-Z7ocJ1tR7UDEDr+2uSSfjhihik6VA@mail.gmail.com>
+	<CAKocOOOHcaYoUQ6Z1yC9T0o9=qaMas3mVzrD8iEnycLJd3nxVQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0ABD0@sausexdag04.amd.com>
+	<CAKocOOMSRZysoKh9Lkgj-3_WsRq9Q6Oo0wJneUStjD+g+WgzAQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0AC95@sausexdag04.amd.com>
+Date: Wed, 30 Jan 2013 14:12:05 -0700
+Message-ID: <CAKocOOPoZ2HqxSz=PB68wpZxd6z8Byv1Yfj3nArt1z+3ViuNNQ@mail.gmail.com>
+Subject: Re: Linux 3.8-rc4
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jan 2013, Matt Sealey wrote:
+On Wed, Jan 30, 2013 at 8:53 AM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> -----Original Message-----
+>> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>> Sent: Wednesday, January 30, 2013 10:35 AM
+>> To: Deucher, Alexander
+>> Cc: Linus Torvalds; Linux Kernel Mailing List
+>> Subject: Re: Linux 3.8-rc4
+>>
+>> On Wed, Jan 30, 2013 at 6:31 AM, Deucher, Alexander
+>> <Alexander.Deucher@amd.com> wrote:
+>>
+>> >>
+>> >> ok. I did more debugging in rv515_mc_stop() and here is what's
+>> >> happening. It has two display controllers and one of them is enabled
+>> >> and the other is in disabled state when AVIVO_D1CRTC_CONTROL is
+>> >> checked. The current code doesn't blank the disabled crtc. However, it
+>> >> needs to be blanked to avoid DMAR faults it appears. I think that is
+>> >> what the original code prior to
+>> >> 6253e4c75d96006c06b9ac8f417eba873de2497b commit was doing:
+>> >>
+>> >> -       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 1);
+>> >> -       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 1);
+>> >> -       WREG32(R_006080_D1CRTC_CONTROL, 0);
+>> >> -       WREG32(R_006880_D2CRTC_CONTROL, 0);
+>> >> -       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 0);
+>> >> -       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
+>> >> -       WREG32(R_000330_D1VGA_CONTROL, 0);
+>> >> -       WREG32(R_000338_D2VGA_CONTROL, 0);
+>> >>
+>> >> Anyways, here is the diff for the change (by no means a patch) I made
+>> >> that fixed the problem:
+>> >
+>> > Unfortunately, that just fixes the problem by causing an additional delay
+>> since the wait_for_vblank() and get_frame_count() loops will timeout since
+>> the secondary display is disabled.  The previous code disabled the displays
+>> completely while the new code just disables the memory request interface
+>> so that the display timing stays on to avoid additional flicker at startup or GPU
+>> reset.  For some reason on your system there seems to be a delay in getting
+>> the memory request interface to stop.
+>> >
+>> > Alex
+>>
+>> Right. That makes sense and yes the annoying flicker went away. :) Can
+>> you think of something that can address systems that would need more
+>> time to get the memory request interface to stop such as mine?
+>
+> Does adding an additional radeon_mc_wait_for_idle(rdev) call at the end of rv515_mc_stop() help?  Can you find out what the minimum delay required for your system is?
+>
+> Alex
 
-> On Wed, Jan 30, 2013 at 1:07 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> > On Wed, 30 Jan 2013, Ruslan Bilovol wrote:
-> >
-> >> Currently, reading /proc/cpuinfo provides userspace with CPU ID of
-> >> the CPU carrying out the read from the file.
-> >> Userspace using this information may decide what module
-> >> to load or how to configure some specific (and processor-depended)
-> >> settings or so.
-> >> However, since really different SoCs can share same ARM core,
-> >> this information currently is not so useful.
-> >> For example, TI OMAP4460 and OMAP4470 SoCs show the same
-> >> information in the /proc/cpuinfo whereas they are different.
-> >> Since in most cases ARM CPU is a part of some system on a chip (SoC),
-> >> the "cpuinfo" file looks like exactly that place, where this
-> >> information have to be displayed.
-> >>
-> >> So added new line "SoC name" in the "cpuinfo" output for system
-> >> on a chip name. It is placed between CPU information and machine
-> >> information, so the file structure looks gracefully (CPU-SoC-Hardware)
-> >>
-> >> Example:
-> >>
-> >> / # cat proc/cpuinfo
-> >> [...]
-> >> CPU variant     : 0x2
-> >> CPU part        : 0xc09
-> >> CPU revision    : 10
-> >>
-> >> SoC name        : OMAP4470
-> >>
-> >> Hardware        : OMAP4 Blaze Tablet
-> >
-> > Please remove that extra blank line between "SoC name" and "Hardware".
-> > The blank line after "CPU revision" is fine.
-> >
-> > Also, please rename this to "System name".  Not all systems are "on
-> > chip".  By using "System name" this is more universally useful.
-> 
-> I can't agree with "System name", it is confusing in common
-> terminology since it's about the same definition as the current
-> "Hardware" line.
-> 
-> If we're just printing out the name of the device surrounding the CPU
-> - be it a Northbridge/Southbridge combination or SoC packaging -
-> "Chipset" might be a better name for it.
+Adding radeon_mc_wait_for_idle(rdev) call at the end of
+rv515_mc_stop() - didn't help.
 
-That suits me as well.
+I tried with adding udelay() with delay values of 1,10, and 50, and
+100 at the end of rv515_mc_stop(). 100 is the minimum that fixed the
+DMAR faults.
 
-
-Nicolas
+-- Shuah
