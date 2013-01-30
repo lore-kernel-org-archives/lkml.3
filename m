@@ -1,59 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab3A3WjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 17:39:17 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34542 "EHLO hydra.sisk.pl"
+	id S1757198Ab3A3WnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 17:43:10 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:51548 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752122Ab3A3WjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 17:39:15 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-Date: Wed, 30 Jan 2013 23:45:27 +0100
-Message-ID: <3120802.QvTiDSHyPj@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51099BE2.5090706@suse.cz>
-References: <20130129202848.GE25415@pd.tnic> <2240511.0oyl5pIt1j@vostro.rjw.lan> <51099BE2.5090706@suse.cz>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754216Ab3A3WnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 17:43:06 -0500
+Message-ID: <1359585759.816.127.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH v2 1/4] ima: added policy support for 'security.ima' type
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-security-module@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        James Morris <jmorris@namei.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 30 Jan 2013 17:42:39 -0500
+In-Reply-To: <20130130215340.GA4918@redhat.com>
+References: <1358892454-25045-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1358892454-25045-2-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20130130215340.GA4918@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13013022-5806-0000-0000-00001EF1AEA4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 30, 2013 11:17:06 PM Jiri Slaby wrote:
-> On 01/30/2013 10:39 PM, Rafael J. Wysocki wrote:
-> >> What is cool is that I have steps to reproduce:
-> >> 1) boot
-> >> 2) run the attached script (turn on all possible power savings -- in
-> >> fact everything what powertop suggests)
-> >> 3) suspend to _disk_ (mem is not enough, BIOS apparently has to
-> >> interfere here)
-> > 
-> > No, I don't think it's the BIOS.  Most likely the boot kernel.
+On Wed, 2013-01-30 at 16:53 -0500, Vivek Goyal wrote:
+> On Tue, Jan 22, 2013 at 05:07:31PM -0500, Mimi Zohar wrote:
 > 
-> Or that...
+> [..]
+> >  /* iint cache flags */
+> > +#define IMA_ACTION_FLAGS	0xff00
+> >  #define IMA_DIGSIG		0x0100
+> > +#define IMA_DIGSIG_REQUIRED	0x0200
 > 
-> >> 4) resume from disk
-> >> 5) boom
-> >>
-> >> I tried to remove also wireless drivers, no change.
-> > 
-> > Is the resume boot kernel the same as the one in the image?
+> Hi Mimi,
 > 
-> Yeah, the same ones: 3.7.5
+> IMA_DIGSIG_REQUIRED state does not really have to be stored in iint I guess.
+> This is needed only if we go on to appraise and then we want to make
+> sure digital signatures are present. Once appraisal is done, IMG_DIGSIG
+> will be set and saved in iint->flags but looks like we don't require
+> IMA_DIGSIG_REQUIRED to be saved.
+> 
+> If yes, will it make sense to not save it in iint. There are still 8
+> bits left unused. We can mark these 8 bits for temporary flags like
+> IMA_DIGSIG_REQUIRED. If that works, I can use same space for defining
+> additional temporary flags like IMA_DIGSIG_SIGNED_ONLY to handle the
+> case of appraise_type=imasig,signed_only. That flag also does not have
+> to be persistent in iint.
 
-Well, I guess that we leak some state from the boot kernel to the image kernel.
-I have no idea what it is, but I suspect something arch-specific.
+Interesting idea.  My only concern would be that we're not leaving room
+for additional hooks (eg. firmware).
 
-I wonder what the affected systems have in common apart from e1000e?
+thanks,
 
-Rafael
+Mimi
+
+> Here is a quick patch compile tested only.
+> 
+> Thanks
+> Vivek
+> 
+> ---
+>  security/integrity/ima/ima.h          |    5 +++--
+>  security/integrity/ima/ima_appraise.c |    5 +++--
+>  security/integrity/ima/ima_main.c     |    8 ++++++--
+>  security/integrity/ima/ima_policy.c   |    2 +-
+>  security/integrity/integrity.h        |    5 ++++-
+>  5 files changed, 17 insertions(+), 8 deletions(-)
+> 
+> Index: linux-integrity/security/integrity/integrity.h
+> ===================================================================
+> --- linux-integrity.orig/security/integrity/integrity.h	2013-01-30 16:22:04.000000000 -0500
+> +++ linux-integrity/security/integrity/integrity.h	2013-01-30 16:25:03.736892034 -0500
+> @@ -28,7 +28,10 @@
+>  /* iint cache flags */
+>  #define IMA_ACTION_FLAGS	0xff000000
+>  #define IMA_DIGSIG		0x01000000
+> -#define IMA_DIGSIG_REQUIRED	0x02000000
+> +
+> +/* Temp flags not stored in iint */
+> +#define IMA_TEMP_FLAGS		0x00ff0000
+> +#define IMA_DIGSIG_REQUIRED	0x00010000
+> 
+>  #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
+>  				 IMA_APPRAISE_SUBMASK)
+> Index: linux-integrity/security/integrity/ima/ima_main.c
+> ===================================================================
+> --- linux-integrity.orig/security/integrity/ima/ima_main.c	2013-01-29 17:13:05.000000000 -0500
+> +++ linux-integrity/security/integrity/ima/ima_main.c	2013-01-30 16:39:09.414918012 -0500
+> @@ -146,7 +146,7 @@ static int process_measurement(struct fi
+>  	struct integrity_iint_cache *iint;
+>  	char *pathbuf = NULL;
+>  	const char *pathname = NULL;
+> -	int rc = -ENOMEM, action, must_appraise, _func;
+> +	int rc = -ENOMEM, action, must_appraise, _func, temp_flags;
+> 
+>  	if (!ima_initialized || !S_ISREG(inode->i_mode))
+>  		return 0;
+> @@ -174,6 +174,9 @@ static int process_measurement(struct fi
+>  	 * (IMA_MEASURE, IMA_MEASURED, IMA_XXXX_APPRAISE, IMA_XXXX_APPRAISED,
+>  	 *  IMA_AUDIT, IMA_AUDITED)
+>  	 */
+> +	/* Temp flags don't have to be stored in iint */
+> +	temp_flags = action & IMA_TEMP_FLAGS;
+> +	action &= ~IMA_TEMP_FLAGS;
+>  	iint->flags |= action;
+>  	action &= IMA_DO_MASK;
+>  	action &= ~((iint->flags & IMA_DONE_MASK) >> 1);
+> @@ -198,7 +201,8 @@ static int process_measurement(struct fi
+>  	if (action & IMA_MEASURE)
+>  		ima_store_measurement(iint, file, pathname);
+>  	if (action & IMA_APPRAISE_SUBMASK)
+> -		rc = ima_appraise_measurement(_func, iint, file, pathname);
+> +		rc = ima_appraise_measurement(_func, iint, file, pathname,
+> +					      temp_flags);
+>  	if (action & IMA_AUDIT)
+>  		ima_audit_measurement(iint, pathname);
+>  	kfree(pathbuf);
+> Index: linux-integrity/security/integrity/ima/ima_appraise.c
+> ===================================================================
+> --- linux-integrity.orig/security/integrity/ima/ima_appraise.c	2013-01-30 16:22:04.000000000 -0500
+> +++ linux-integrity/security/integrity/ima/ima_appraise.c	2013-01-30 16:37:11.667914395 -0500
+> @@ -116,7 +116,8 @@ static void ima_cache_flags(struct integ
+>   * Return 0 on success, error code otherwise
+>   */
+>  int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+> -			     struct file *file, const unsigned char *filename)
+> +			     struct file *file, const unsigned char *filename,
+> +			     int flags)
+>  {
+>  	struct dentry *dentry = file->f_dentry;
+>  	struct inode *inode = dentry->d_inode;
+> @@ -154,7 +155,7 @@ int ima_appraise_measurement(int func, s
+>  	}
+>  	switch (xattr_value->type) {
+>  	case IMA_XATTR_DIGEST:
+> -		if (iint->flags & IMA_DIGSIG_REQUIRED) {
+> +		if (flags & IMA_DIGSIG_REQUIRED) {
+>  			cause = "IMA signature required";
+>  			status = INTEGRITY_FAIL;
+>  			break;
+> Index: linux-integrity/security/integrity/ima/ima.h
+> ===================================================================
+> --- linux-integrity.orig/security/integrity/ima/ima.h	2013-01-30 10:46:32.000000000 -0500
+> +++ linux-integrity/security/integrity/ima/ima.h	2013-01-30 16:38:40.800917133 -0500
+> @@ -143,7 +143,7 @@ void ima_delete_rules(void);
+> 
+>  #ifdef CONFIG_IMA_APPRAISE
+>  int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+> -			     struct file *file, const unsigned char *filename);
+> +		struct file *file, const unsigned char *filename, int flags);
+>  int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func);
+>  void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file);
+>  enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
+> @@ -153,7 +153,8 @@ enum integrity_status ima_get_cache_stat
+>  static inline int ima_appraise_measurement(int func,
+>  					   struct integrity_iint_cache *iint,
+>  					   struct file *file,
+> -					   const unsigned char *filename)
+> +					   const unsigned char *filename,
+> +					   int flags)
+>  {
+>  	return INTEGRITY_UNKNOWN;
+>  }
+> Index: linux-integrity/security/integrity/ima/ima_policy.c
+> ===================================================================
+> --- linux-integrity.orig/security/integrity/ima/ima_policy.c	2013-01-30 16:41:39.000000000 -0500
+> +++ linux-integrity/security/integrity/ima/ima_policy.c	2013-01-30 16:41:56.151923133 -0500
+> @@ -267,7 +267,7 @@ int ima_match_policy(struct inode *inode
+>  		if (!ima_match_rules(entry, inode, func, mask))
+>  			continue;
+> 
+> -		action |= entry->flags & IMA_ACTION_FLAGS;
+> +		action |= entry->flags & IMA_TEMP_FLAGS;
+> 
+>  		action |= entry->action & IMA_DO_MASK;
+>  		if (entry->action & IMA_APPRAISE)
+> 
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
