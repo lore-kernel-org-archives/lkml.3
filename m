@@ -1,70 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3A3AYf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 19:24:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51817 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab3A3AYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 19:24:33 -0500
-Date: Tue, 29 Jan 2013 16:24:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: xtu4 <xiaobing.tu@intel.com>
-Cc: linux-kernel@vger.kernel.org, guifang.tang@intel.com,
-        linX.z.chen@intel.com,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: Avoid high order memory allocating with kmalloc, when read
- large seq file
-Message-Id: <20130129162431.58754538.akpm@linux-foundation.org>
-In-Reply-To: <510768B6.3070000@intel.com>
-References: <510768B6.3070000@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753432Ab3A3AYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 19:24:50 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:47234
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753229Ab3A3AYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 19:24:40 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
+        JBeulich@suse.com, bp@alien8.de
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3/3] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
+Date: Tue, 29 Jan 2013 16:51:48 -0800
+Message-Id: <1359507108-26091-3-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359507108-26091-1-git-send-email-kys@microsoft.com>
+References: <1359507077-26050-1-git-send-email-kys@microsoft.com>
+ <1359507108-26091-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jan 2013 14:14:14 +0800
-xtu4 <xiaobing.tu@intel.com> wrote:
+Starting with win8, vmbus interrupts can be delivered on any VCPU in the guest
+and furthermore can be concurrently active on multiple VCPUs. Support this
+interrupt delivery model by setting up a separate IDT entry for Hyper-V vmbus.
+interrupts. I would like to thank Jan Beulich <JBeulich@suse.com> and
+Thomas Gleixner <tglx@linutronix.de>, for their help.
 
-> @@ -209,8 +209,17 @@ ssize_t seq_read(struct file *file, char __user 
-> *buf, size_t size, loff_t *ppos)
->           if (m->count < m->size)
->               goto Fill;
->           m->op->stop(m, p);
-> -        kfree(m->buf);
-> -        m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
-> +        if (m->size > 2 * PAGE_SIZE) {
-> +            vfree(m->buf);
-> +        } else
-> +            kfree(m->buf);
-> +        m->size <<= 1;
-> +        if (m->size > 2 * PAGE_SIZE) {
-> +            m->buf = vmalloc(m->size);
-> +        } else
-> +            m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
-> +
-> +
->           if (!m->buf)
->               goto Enomem;
->           m->count = 0;
-> @@ -325,7 +334,10 @@ EXPORT_SYMBOL(seq_lseek);
+In this version of the patch, based on the feedback, I have merged the IDT
+vector for Xen and Hyper-V and made the necessary adjustments.
 
-The conventional way of doing this is to attempt the kmalloc with
-__GFP_NOWARN and if that failed, fall back to vmalloc().
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ arch/x86/include/asm/irq_vectors.h |    4 +-
+ arch/x86/include/asm/mshyperv.h    |    4 +++
+ arch/x86/kernel/cpu/mshyperv.c     |   38 ++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/entry_32.S         |    9 +++++++-
+ arch/x86/kernel/entry_64.S         |    7 +++++-
+ drivers/xen/events.c               |    7 +++--
+ 6 files changed, 62 insertions(+), 7 deletions(-)
 
-Using vmalloc is generally not a good thing, mainly because of
-fragmentation issues, but for short-lived allocations like this, that
-shouldn't be too bad.
+diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
+index 1508e51..aac5fa6 100644
+--- a/arch/x86/include/asm/irq_vectors.h
++++ b/arch/x86/include/asm/irq_vectors.h
+@@ -109,8 +109,8 @@
+ 
+ #define UV_BAU_MESSAGE			0xf5
+ 
+-/* Xen vector callback to receive events in a HVM domain */
+-#define XEN_HVM_EVTCHN_CALLBACK		0xf3
++/* Vector on which hypervisor callbacks will be delivered */
++#define HYPERVISOR_CALLBACK_VECTOR	0xf3
+ 
+ /*
+  * Local APIC timer IRQ vector is on a different priority level,
+diff --git a/arch/x86/include/asm/mshyperv.h b/arch/x86/include/asm/mshyperv.h
+index 79ce568..c2934be 100644
+--- a/arch/x86/include/asm/mshyperv.h
++++ b/arch/x86/include/asm/mshyperv.h
+@@ -11,4 +11,8 @@ struct ms_hyperv_info {
+ 
+ extern struct ms_hyperv_info ms_hyperv;
+ 
++void hyperv_callback_vector(void);
++void hyperv_vector_handler(struct pt_regs *regs);
++void hv_register_vmbus_handler(int irq, irq_handler_t handler);
++
+ #endif
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index 4dab317..e48a01cb 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -14,10 +14,15 @@
+ #include <linux/time.h>
+ #include <linux/clocksource.h>
+ #include <linux/module.h>
++#include <linux/hardirq.h>
++#include <linux/interrupt.h>
+ #include <asm/processor.h>
+ #include <asm/hypervisor.h>
+ #include <asm/hyperv.h>
+ #include <asm/mshyperv.h>
++#include <asm/desc.h>
++#include <asm/idle.h>
++#include <asm/irq_regs.h>
+ 
+ struct ms_hyperv_info ms_hyperv;
+ EXPORT_SYMBOL_GPL(ms_hyperv);
+@@ -77,6 +82,12 @@ static void __init ms_hyperv_init_platform(void)
+ 
+ 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
+ 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
++#if IS_ENABLED(CONFIG_HYPERV)
++	/*
++	 * Setup the IDT for hypervisor callback.
++	 */
++	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
++#endif
+ }
+ 
+ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+@@ -85,3 +96,30 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+ 	.init_platform		= ms_hyperv_init_platform,
+ };
+ EXPORT_SYMBOL(x86_hyper_ms_hyperv);
++
++static int vmbus_irq = -1;
++static irq_handler_t vmbus_isr;
++
++void hv_register_vmbus_handler(int irq, irq_handler_t handler)
++{
++	vmbus_irq = irq;
++	vmbus_isr = handler;
++}
++EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
++
++void hyperv_vector_handler(struct pt_regs *regs)
++{
++	struct pt_regs *old_regs = set_irq_regs(regs);
++	struct irq_desc *desc;
++
++	irq_enter();
++	exit_idle();
++
++	desc = irq_to_desc(vmbus_irq);
++
++	if (desc)
++		generic_handle_irq_desc(vmbus_irq, desc);
++
++	irq_exit();
++	set_irq_regs(old_regs);
++}
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 352e5a9..8f3e2de 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1046,11 +1046,18 @@ ENTRY(xen_failsafe_callback)
+ 	_ASM_EXTABLE(4b,9b)
+ ENDPROC(xen_failsafe_callback)
+ 
+-BUILD_INTERRUPT3(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK,
++BUILD_INTERRUPT3(xen_hvm_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
+ 		xen_evtchn_do_upcall)
+ 
+ #endif	/* CONFIG_XEN */
+ 
++#if IS_ENABLED(CONFIG_HYPERV)
++
++BUILD_INTERRUPT3(hyperv_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
++	hyperv_vector_handler)
++
++#endif /* CONFIG_HYPERV */
++
+ #ifdef CONFIG_FUNCTION_TRACER
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index d5113c3..c1d01e6 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1446,11 +1446,16 @@ ENTRY(xen_failsafe_callback)
+ 	CFI_ENDPROC
+ END(xen_failsafe_callback)
+ 
+-apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
++apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
+ 	xen_hvm_callback_vector xen_evtchn_do_upcall
+ 
+ #endif /* CONFIG_XEN */
+ 
++#if IS_ENABLED(CONFIG_HYPERV)
++apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
++	hyperv_callback_vector hyperv_vector_handler
++#endif /* CONFIG_HYPERV */
++
+ /*
+  * Some functions should be protected against kprobes
+  */
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 4293c57..a54401e 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1787,7 +1787,7 @@ void xen_callback_vector(void)
+ 	int rc;
+ 	uint64_t callback_via;
+ 	if (xen_have_vector_callback) {
+-		callback_via = HVM_CALLBACK_VECTOR(XEN_HVM_EVTCHN_CALLBACK);
++		callback_via = HVM_CALLBACK_VECTOR(HYPERVISOR_CALLBACK_VECTOR);
+ 		rc = xen_set_callback_via(callback_via);
+ 		if (rc) {
+ 			printk(KERN_ERR "Request for Xen HVM callback vector"
+@@ -1798,8 +1798,9 @@ void xen_callback_vector(void)
+ 		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
+ 				"enabled\n");
+ 		/* in the restore case the vector has already been allocated */
+-		if (!test_bit(XEN_HVM_EVTCHN_CALLBACK, used_vectors))
+-			alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);
++		if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
++			alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
++					xen_hvm_callback_vector);
+ 	}
+ }
+ #else
+-- 
+1.7.4.1
 
-But really, the binder code is being obnoxious here and it would be
-best to fix it up.  Please identify with some care which part of the
-binder code is causing this problem.  binder_stats_show(), from a
-guess?  It looks like that function's output size is proportional to
-the number of processes on binder_procs?  If so, there is no upper
-bound, is there?  Problem!
-
-btw, binder_debug_no_lock should just go away.  That list needs
-locking.
