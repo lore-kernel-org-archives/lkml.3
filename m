@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab3A3IBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:01:07 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:47990 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab3A3IBF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:01:05 -0500
+	id S1753114Ab3A3IFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:05:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44069 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549Ab3A3IFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:05:37 -0500
+Date: Tue, 29 Jan 2013 23:16:30 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 2/4] staging: zsmalloc: remove unused pool name
+Message-ID: <20130130041630.GA18809@kroah.com>
+References: <1359135978-15119-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1359135978-15119-3-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1359531176.31148.46.camel@smile>
-References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
-	<20130129052247.GH2239@intel.com>
-	<CAOh2x=nTJ1iz9aoR8VrkE5A+iaLMMbvFeebGPsO8KWRpDLw7=A@mail.gmail.com>
-	<1359531176.31148.46.camel@smile>
-Date: Wed, 30 Jan 2013 13:31:04 +0530
-X-Google-Sender-Auth: euyJrwA-De46kDHU0v1g2e86OqI
-Message-ID: <CAOh2x==Ng1=iHOj-55mUTWCwpaJpRXjiQyfxz-a48ALDOW3aiA@mail.gmail.com>
-Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line base
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359135978-15119-3-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 1:02 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> We get a device from the ACPI CSRT table. During enumeration we don't
-> know what kind of the device it is. From the enumeration point of view
-> each device enumerated from CSRT is a platform device (see
-> drivers/acpi/csrt.c for the details).
->
-> That's why we have to pass this info somehow to the DMAC driver. And
-> like Mika already mentioned we have no other generic way except
-> IORESOURCE_DMA. If you have something better in mind, please share. We
-> could adopt our code then.
+On Fri, Jan 25, 2013 at 11:46:16AM -0600, Seth Jennings wrote:
+> zs_create_pool() currently takes a name argument which is
+> never used in any useful way.
+> 
+> This patch removes it.
+> 
+> Acked-by: Nitin Gupta <ngupta@vflare.org>
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> Signed-off-by: Seth Jennnings <sjenning@linux.vnet.ibm.com>
+> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> ---
+>  drivers/staging/zram/zram_drv.c          |    2 +-
+>  drivers/staging/zsmalloc/zsmalloc-main.c |   11 +++--------
+>  drivers/staging/zsmalloc/zsmalloc.h      |    2 +-
+>  3 files changed, 5 insertions(+), 10 deletions(-)
 
-You don't need this in DT case too? Or only for ACPI case?
+As I'm not taking patch 1/4, this patch doesn't apply, sorry.
 
-I think "Yes" is the answer of both the questions. If so, then you
-can keep it this way or add another variable in platform data.
+greg k-h
