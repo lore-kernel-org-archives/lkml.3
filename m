@@ -1,154 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3A3I66 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:58:58 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:55157 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab3A3I64 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Wed, 30 Jan 2013 03:58:56 -0500
-Message-Id: <5108EEDD02000078000BAA22@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 30 Jan 2013 08:58:53 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: <olaf@aepfle.de>, <bp@alien8.de>, <apw@canonical.com>, <x86@kernel.org>,
-        <tglx@linutronix.de>, <devel@linuxdriverproject.org>,
-        <gregkh@linuxfoundation.org>, <jasowang@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH 3/3] X86: Handle Hyper-V vmbus interrupts as
- special hypervisor interrupts
-References: <1359507077-26050-1-git-send-email-kys@microsoft.com>
- <1359507108-26091-1-git-send-email-kys@microsoft.com>
- <1359507108-26091-3-git-send-email-kys@microsoft.com>
-In-Reply-To: <1359507108-26091-3-git-send-email-kys@microsoft.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753547Ab3A3JBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 04:01:42 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:45198 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3A3JBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 04:01:40 -0500
+Date: Wed, 30 Jan 2013 09:01:34 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [BUG] snowball board locks up on boot
+Message-ID: <20130130090134.GR18212@gmail.com>
+References: <1359047682.21576.154.camel@gandalf.local.home>
+ <CACRpkdZU80XB2GiDtc7nh0hgMpyVYesi+xwhndu50jGS1L=wiw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZU80XB2GiDtc7nh0hgMpyVYesi+xwhndu50jGS1L=wiw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.01.13 at 01:51, "K. Y. Srinivasan" <kys@microsoft.com> wrote:
-> --- a/arch/x86/kernel/cpu/mshyperv.c
-> +++ b/arch/x86/kernel/cpu/mshyperv.c
-> @@ -14,10 +14,15 @@
->  #include <linux/time.h>
->  #include <linux/clocksource.h>
->  #include <linux/module.h>
-> +#include <linux/hardirq.h>
-> +#include <linux/interrupt.h>
->  #include <asm/processor.h>
->  #include <asm/hypervisor.h>
->  #include <asm/hyperv.h>
->  #include <asm/mshyperv.h>
-> +#include <asm/desc.h>
-> +#include <asm/idle.h>
-> +#include <asm/irq_regs.h>
->  
->  struct ms_hyperv_info ms_hyperv;
->  EXPORT_SYMBOL_GPL(ms_hyperv);
-> @@ -77,6 +82,12 @@ static void __init ms_hyperv_init_platform(void)
->  
->  	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
->  		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-> +#if IS_ENABLED(CONFIG_HYPERV)
-> +	/*
-> +	 * Setup the IDT for hypervisor callback.
-> +	 */
-> +	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
-> +#endif
->  }
->  
->  const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-> @@ -85,3 +96,30 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
->  	.init_platform		= ms_hyperv_init_platform,
->  };
->  EXPORT_SYMBOL(x86_hyper_ms_hyperv);
-> +
-> +static int vmbus_irq = -1;
-> +static irq_handler_t vmbus_isr;
-> +
-> +void hv_register_vmbus_handler(int irq, irq_handler_t handler)
-> +{
-> +	vmbus_irq = irq;
-> +	vmbus_isr = handler;
-> +}
-> +EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
-> +
-> +void hyperv_vector_handler(struct pt_regs *regs)
-> +{
-> +	struct pt_regs *old_regs = set_irq_regs(regs);
-> +	struct irq_desc *desc;
-> +
-> +	irq_enter();
-> +	exit_idle();
-> +
-> +	desc = irq_to_desc(vmbus_irq);
-> +
-> +	if (desc)
-> +		generic_handle_irq_desc(vmbus_irq, desc);
-> +
-> +	irq_exit();
-> +	set_irq_regs(old_regs);
-> +}
+> > I tried to get my snowball board working on the latest kernel, but it
+> > locks up hard very early on boot up.
+> >
+> > I bisected it down to this commit:
+> >
+> > commit ebc96db7632f987e0b9bffcb782cf5cfb8afb0dd
+> > Author: Ulf Hansson <ulf.hansson@linaro.org>
+> > Date:   Mon Aug 27 15:45:53 2012 +0200
+> >
+> >     ARM: ux500: Switch to use common clock framework
+> 
+> Yeah the new common clock framework is a bit like a heart
+> transplant on the platforms you convert, some fallout is expected.
+> 
+> However I thought we had all the clk fixes covered by -rc4 :-(
+> 
+> I don't have a Snowball right now myself, so have to ask
+> for help here (non snowball ux500's work just fine for me).
+> 
+> Lee, are you still booting the Snowball on new kernels
+> everyday, and do you know if some fix is still missing?
 
-This function appears to be dead code when !CONFIG_HYPERV,
-because ...
+Can you provide your bootlog please Steven?
 
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -1046,11 +1046,18 @@ ENTRY(xen_failsafe_callback)
->  	_ASM_EXTABLE(4b,9b)
->  ENDPROC(xen_failsafe_callback)
->  
-> -BUILD_INTERRUPT3(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK,
-> +BUILD_INTERRUPT3(xen_hvm_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
->  		xen_evtchn_do_upcall)
->  
->  #endif	/* CONFIG_XEN */
->  
-> +#if IS_ENABLED(CONFIG_HYPERV)
-> +
-> +BUILD_INTERRUPT3(hyperv_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
-> +	hyperv_vector_handler)
-> +
-> +#endif /* CONFIG_HYPERV */
-> +
->  #ifdef CONFIG_FUNCTION_TRACER
->  #ifdef CONFIG_DYNAMIC_FTRACE
->  
-
-... the consumers here and below are conditional.
-
-I also wonder why arch/x86/kernel/cpu/mshyperv.c is being built
-at all when !CONFIG_HYPERV (which would eliminate the need
-for the conditional the patch adds to ms_hyperv_init_platform()).
-
-Jan
-
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index d5113c3..c1d01e6 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -1446,11 +1446,16 @@ ENTRY(xen_failsafe_callback)
->  	CFI_ENDPROC
->  END(xen_failsafe_callback)
->  
-> -apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
-> +apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
->  	xen_hvm_callback_vector xen_evtchn_do_upcall
->  
->  #endif /* CONFIG_XEN */
->  
-> +#if IS_ENABLED(CONFIG_HYPERV)
-> +apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
-> +	hyperv_callback_vector hyperv_vector_handler
-> +#endif /* CONFIG_HYPERV */
-> +
->  /*
->   * Some functions should be protected against kprobes
->   */
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
