@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab3A3QtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 11:49:25 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47398 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368Ab3A3QtX (ORCPT
+	id S1755920Ab3A3QvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 11:51:06 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:43267 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab3A3QvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 11:49:23 -0500
-Message-ID: <51094F10.60605@wwwdotorg.org>
-Date: Wed, 30 Jan 2013 09:49:20 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 30 Jan 2013 11:51:04 -0500
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] nl80211: avoid "wdev_id may be used uninitialized"
-References: <1359504662-23561-1-git-send-email-swarren@wwwdotorg.org>  (sfid-20130130_011118_335925_03B80596) <1359532679.8010.1.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1359532679.8010.1.camel@jlt4.sipsolutions.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130130162225.GB30559@balto.lan>
+References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
+	<1359550803-18577-2-git-send-email-fabio.baltieri@linaro.org>
+	<CAKohponwQFFtC3MKh72Z0bqYksV_P6D07VivQUYjai1qPB_J9g@mail.gmail.com>
+	<20130130162225.GB30559@balto.lan>
+Date: Wed, 30 Jan 2013 22:21:03 +0530
+Message-ID: <CAKohpoms9AK+j+Au53cwbLn=ds0AsJn+ApUMgMxe2dVhC7McVw@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] cpufreq: handle SW coordinated CPUs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
+        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org,
+        Rickard Andersson <rickard.andersson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 12:57 AM, Johannes Berg wrote:
-> On Tue, 2013-01-29 at 17:11 -0700, Stephen Warren wrote:
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> Silence the following:
->> net/wireless/nl80211.c: In function '__cfg80211_wdev_from_attrs.clone.119':
->> net/wireless/nl80211.c:57:6: warning: 'wdev_id' may be used uninitialized in this function
->>
->> ... by always initializing wdev_id to zero. I assume that wiphy_idx and
->> ifidx are set to -1 for similar reasons, so this change simply propagates
->> the same workaround.
->>
->> In practice, this warning is false, since wdev_id is both set and used
->> under the condition if (have_wdev_id). However, at least my compiler
->> can't be coerced into realizing this; almost any code between the if
->> blocks that set and use the variable causes this warning.
-> 
-> I don't see this warning? What compiler are you using?
+On 30 January 2013 21:53, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
+> On Wed, Jan 30, 2013 at 08:32:38PM +0530, Viresh Kumar wrote:
 
-I'm using gcc-4.5.3 for ARM. I checked with gcc-4.6.3 and gcc-4.7.2 and
-indeed I don't see the warning there.
+>> I believe this routine should be rather present in cpufreq core code,
+>> as their might
+>> be other users of it. Its really not related to dbs or governors.
+>>
+>> My ideas about the name of routine then:
+>> - policy_is_shared()
+>> - or something better you have :)
+>
+> So you are suggesting to rethink this function to be related to policy
+> rather than dbs... this may as well become an inline in cpufreq.h, as:
+>
+> static inline bool policy_is_shared(struct cpufreq_policy *policy)
+> {
+>         return cpumask_weight(policy->cpus) > 1;
+> }
 
+Perfect.
+
+> I'm not sure about the name through, I like mentioning sw coordination in it
+> because that's the comment in the declaration:
+>
+>         cpumask_var_t           cpus;   /* CPUs requiring sw coordination */
+>         cpumask_var_t           related_cpus; /* CPUs with any coordination */
+>
+> And those two are already confusing as a starting point.
+
+I will fix these comments with a patch of mine.
+
+> Anyway, this sounds fine to me.  If you think this is useful I can send
+> a patch, or feel free to include it in your patches if you plan to do
+> further cleanup work on this code.
+>
+> /me tries to also keep that ->cpu field in mind.
+
+You can make it part of your patchsets v8.
