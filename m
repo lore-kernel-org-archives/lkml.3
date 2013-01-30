@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248Ab3A3FK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 00:10:28 -0500
-Received: from mga01.intel.com ([192.55.52.88]:64179 "EHLO mga01.intel.com"
+	id S1751523Ab3A3FMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 00:12:13 -0500
+Received: from mga14.intel.com ([143.182.124.37]:24012 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732Ab3A3FK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 00:10:26 -0500
+	id S1750769Ab3A3FML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 00:12:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,565,1355126400"; 
-   d="scan'208";a="280181148"
+   d="scan'208";a="250117218"
 From: Youquan Song <youquan.song@intel.com>
-To: htejun@gmail.com, ming.lei@canonical.com,
-        linux-ide.vger.kernel.org@vger.kernel.org,
+To: htejun@gmail.com, ming.lei@canonical.com, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: seth.heasley@intel.com, jlee@suse.com, james.d.ralston@intel.com,
         Youquan Song <youquan.song@linux.intel.com>,
         Youquan Song <youquan.song@intel.com>
 Subject: [PATCH] ata: Fix DVD not dectected at some Haswell platforms
-Date: Wed, 30 Jan 2013 12:17:39 -0500
-Message-Id: <1359566259-27006-1-git-send-email-youquan.song@intel.com>
+Date: Wed, 30 Jan 2013 12:19:33 -0500
+Message-Id: <1359566374-27286-1-git-send-email-youquan.song@intel.com>
 X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
