@@ -1,311 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3A3OHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 09:07:13 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:53800 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab3A3OHJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 09:07:09 -0500
-From: chenggang <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: chenggang <chenggang.qin@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chenggang Qin <chenggang.qcg@alibaba-inc.com>
-Subject: [PATCH 2/2] perf script: add python script to show system's file r/w behavior
-Date: Wed, 30 Jan 2013 22:05:42 +0800
-Message-Id: <1359554742-4705-1-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755141Ab3A3OXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 09:23:16 -0500
+Received: from fieldses.org ([174.143.236.118]:39570 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753098Ab3A3OXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 09:23:13 -0500
+Date: Wed, 30 Jan 2013 09:23:08 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [RFC PATCH] SUNRPC: protect transport processing with rw sem
+Message-ID: <20130130142308.GC12306@fieldses.org>
+References: <20130129110317.29541.51920.stgit@localhost.localdomain>
+ <20130129225736.GC6219@fieldses.org>
+ <5108B2B6.7010807@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5108B2B6.7010807@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chenggang.qin@gmail.com
+On Wed, Jan 30, 2013 at 09:42:14AM +0400, Stanislav Kinsbursky wrote:
+> 30.01.2013 02:57, J. Bruce Fields пишет:
+> >On Tue, Jan 29, 2013 at 02:03:30PM +0300, Stanislav Kinsbursky wrote:
+> >>There could be a service transport, which is processed by service thread and
+> >>racing in the same time with per-net service shutdown like listed below:
+> >>
+> >>CPU#0:                            CPU#1:
+> >>
+> >>svc_recv                        svc_close_net
+> >>svc_get_next_xprt (list_del_init(xpt_ready))
+> >>                             svc_close_list (set XPT_BUSY and XPT_CLOSE)
+> >>                             svc_clear_pools(xprt was gained on CPU#0 already)
+> >>                             svc_delete_xprt (set XPT_DEAD)
+> >>svc_handle_xprt (is XPT_CLOSE => svc_delete_xprt()
+> >>BUG()
+> >>
+> >>There could be different solutions of the problem.
+> >>Probably, the patch doesn't implement the best one, but I hope the simple one.
+> >>IOW, it protects critical section (dequeuing of pending transport and
+> >>enqueuing  it back to the pool) by per-service rw semaphore,
+> >
+> >It's actually per-thread (per-struct svc_rqst) here.
+> >
+> 
+> Yes, sure.
+> 
+> >>taken for read.
+> >>On per-net transports shutdown, this semaphore have to be taken for write.
+> >
+> >There's no down_write in this patch.  Did you forget this part?
+> >
+> 
+> See "fs/nfs/callback.c" part
 
-This patch depends on the other patch: https://lkml.org/lkml/2013/1/29/47
-Because this patch uses 2 tracepoint events are introduced by the patch of the
-above mentioned.
+Whoops, sorry; got it.--b.
 
-If the engineers want to analyze the file access behavior of some applications
-without source code, perf script mechanism with some appropriate tracepoints
-events in the VFS subsystem are excellent choice.
-
-The system engineers or developers of server software require to know what files
-are accessed by the target processes with in a period of time. Then they can
-find the hot applications and the hot files. Based on the two tracepoint events,
-vfs:generic_file_aio_read and vfs:generic_file_aio_write (introduced by the patch:
-https://lkml.org/lkml/2013/1/29/47), the python script are introduced by this patch
-can record the system context and other related infomation while any process access
-a file. Then, this patch can show the details of the file access behavior of every
-processes. The detail information include: process's pid, comm, the number of file
-read/write, and the related file's name.
-
-The usage of this script is:
-perf script record filerw
-perf script report filerw [comm|pid]
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@alibaba-inc.com>
-
----
- tools/perf/scripts/python/bin/filerw-record |    2 +
- tools/perf/scripts/python/bin/filerw-report |   21 +++
- tools/perf/scripts/python/filerw.py         |  189 +++++++++++++++++++++++++++
- 3 files changed, 212 insertions(+)
- create mode 100755 tools/perf/scripts/python/bin/filerw-record
- create mode 100644 tools/perf/scripts/python/bin/filerw-report
- create mode 100644 tools/perf/scripts/python/filerw.py
-
-diff --git a/tools/perf/scripts/python/bin/filerw-record b/tools/perf/scripts/python/bin/filerw-record
-new file mode 100755
-index 0000000..80f358c
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/filerw-record
-@@ -0,0 +1,2 @@
-+#!/bin/bash
-+perf record -e vfs:generic_file_aio_read -e vfs:generic_file_aio_write $@
-diff --git a/tools/perf/scripts/python/bin/filerw-report b/tools/perf/scripts/python/bin/filerw-report
-new file mode 100644
-index 0000000..5a4dac9
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/filerw-report
-@@ -0,0 +1,21 @@
-+#!/bin/bash
-+# description: file read/write operations statistic
-+# args: [comm]
-+n_args=0
-+for i in "$@"
-+do
-+    if expr match "$i" "-" > /dev/null ; then
-+	break
-+    fi
-+    n_args=$(( $n_args + 1 ))
-+done
-+if [ "$n_args" -gt 1 ] ; then
-+    echo "usage: perf script report filerw [comm|pid]"
-+    exit
-+fi
-+
-+if [ "$n_args" -gt 0 ] ; then
-+    comm=$1
-+    shift
-+fi
-+perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/filerw.py $comm
-diff --git a/tools/perf/scripts/python/filerw.py b/tools/perf/scripts/python/filerw.py
-new file mode 100644
-index 0000000..f5bd820
---- /dev/null
-+++ b/tools/perf/scripts/python/filerw.py
-@@ -0,0 +1,189 @@
-+# file read/write counts
-+# (c) 2013, Chenggang Qin <chenggang.qcg@gmail.com>
-+# Licensed under the terms of the GNU GPL License version 2
-+
-+# Displays system-wide file aio read/write behavior.
-+# It helps us to investigate what files are accessed by all
-+# processes or a special process.
-+#
-+# options
-+# comm: show details of the file r/w behavior of a special process.
-+
-+import os, sys
-+
-+sys.path.append(os.environ['PERF_EXEC_PATH'] + \
-+	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
-+
-+from perf_trace_context import *
-+from Core import *
-+from Util import *
-+
-+usage = "perf script record filerw\n" \
-+	"perf script report filerw [comm|pid]\n"
-+
-+for_comm = None
-+for_pid = None
-+pid_2_comm = None
-+
-+if len(sys.argv) > 2:
-+	sys.exit(usage)
-+
-+if len(sys.argv) > 1:
-+	try:
-+		for_pid = int(sys.argv[1])
-+	except:
-+		for_comm = sys.argv[1]
-+
-+file_write = autodict()
-+file_read = autodict()
-+
-+file_write_bytes = autodict()
-+file_read_bytes = autodict()
-+
-+comm_read_info = autodict()
-+comm_write_info = autodict()
-+
-+wevent_count = 0
-+revent_count = 0
-+
-+comm_revent_count = 0;
-+comm_wevent_count = 0;
-+
-+def trace_begin():
-+	print "Press control+C to stop and show the summary"
-+
-+def trace_end():
-+	if (for_comm is not None) or (for_pid is not None):
-+		print_file_event_for_comm()
-+	else:
-+		print_file_event_totals()
-+
-+def vfs__generic_file_aio_write(event_name, context, common_cpu,
-+	common_secs, common_nsecs, common_pid, common_comm,
-+	pos, bytes, fname):
-+	global wevent_count
-+	global comm_wevent_count
-+	global pid_2_comm
-+
-+	if (for_comm is not None) or (for_pid is not None):
-+		if (common_comm != for_comm) and (common_pid != for_pid):
-+			return
-+		else:
-+			if (pid_2_comm is None) and (for_pid is not None):
-+				pid_2_comm = common_comm
-+			comm_write_info[comm_wevent_count] = (common_pid, \
-+					common_cpu, common_secs, common_nsecs, \
-+					fname, pos, bytes)
-+			comm_wevent_count += 1
-+			return
-+
-+	wevent_count += 1
-+	try:
-+		file_write[(common_pid, common_comm, fname)] += 1
-+		file_write_bytes[(common_pid, common_comm, fname)] += bytes
-+	except TypeError:
-+		file_write[(common_pid, common_comm, fname)] = 1
-+		file_write_bytes[(common_pid, common_comm, fname)] = bytes
-+
-+def vfs__generic_file_aio_read(event_name, context, common_cpu,
-+	common_secs, common_nsecs, common_pid, common_comm,
-+	pos, bytes, fname):
-+	global revent_count
-+	global comm_revent_count
-+	global pid_2_comm
-+
-+	if (for_comm is not None) or (for_pid is not None):
-+		if (common_comm != for_comm) and (common_pid != for_pid):
-+			return
-+		else:
-+			if (pid_2_comm is None) and (for_pid is not None):
-+				pid_2_comm = common_comm
-+			comm_read_info[comm_revent_count] = (common_pid, \
-+					common_cpu, common_secs, common_nsecs, \
-+					fname, pos, bytes)
-+			comm_revent_count += 1
-+			return
-+
-+	try:
-+		revent_count += 1
-+		file_read[(common_pid, common_comm, fname)] += 1
-+		file_read_bytes[(common_pid, common_comm, fname)] += bytes
-+	except TypeError:
-+		file_read[(common_pid, common_comm, fname)] = 1
-+		file_read_bytes[(common_pid, common_comm, fname)] = bytes
-+
-+def print_file_event_totals():
-+	clear_term()
-+	if for_comm is not None:
-+		print "\nfile accesses for %s:\n\n" % (for_comm),
-+        else:
-+                print "\nfile accesses:\n\n",
-+
-+        print "All read events: %d\n" % (revent_count)
-+        print "%5s %20s  %40s %10s %10s\n" % ("pid", "comm", "read file", "count", "Bytes"),
-+        print "%5s %20s  %40s %10s %10s\n" % ("-----", "----------",\
-+					       "----------", "----------", \
-+					       "----------"),
-+
-+        for tuple, val in sorted(file_read.iteritems(), key = lambda(k, v): (v, k), \
-+                               reverse = True):
-+                try:
-+                        print "%5d  %20s %40s %10d %10d\n" % \
-+                              (tuple[0], tuple[1], tuple[2][:40], val, \
-+			      file_read_bytes[tuple[0], tuple[1], tuple[2]])
-+                except TypeError:
-+                        pass
-+
-+	print "\n\n"
-+
-+	print "All write events: %d\n" % (wevent_count)
-+	print "%5s %20s  %40s %10s %10s\n" % ("pid", "comm", "write file", "count", "Bytes"),
-+	print "%5s %20s  %40s %10s %10s\n" % ("-----", "----------",\
-+					       "----------", "----------", \
-+					       "----------"),
-+
-+	for tuple, val in sorted(file_write.iteritems(), key = lambda(k, v): (v, k), \
-+				reverse = True):
-+		try:
-+			print "%5d  %20s %40s %10d %10d\n" % \
-+			      (tuple[0], tuple[1], tuple[2][:40], val, \
-+			      file_write_bytes[tuple[0], tuple[1], tuple[2]])
-+		except TypeError:
-+			pass
-+
-+def print_file_event_for_comm():
-+	if for_comm is not None:
-+		print "File r/w record for %s:\n" % (for_comm)
-+	else:
-+		print "File r/w record for %s (pid: %d):\n" % (pid_2_comm, for_pid)
-+	print "Number of read: %d\n" % (comm_revent_count)
-+	print "%5s %3s %16s %40s %10s %10s\n" % ("pid", "cpu", "timestamp", "file name", \
-+						 "position", "Bytes")
-+	print "%5s %3s %16s %40s %10s %10s\n" % ("-----", "---", "----------", \
-+						 "----------", "----------", \
-+						 "----------"),
-+
-+	for i in range(0, comm_revent_count):
-+		try:
-+			print "%5d %3d %6d.%9d %40s %10s %10s\n" % (comm_read_info[i][0], \
-+				comm_read_info[i][1], comm_read_info[i][2], \
-+				comm_read_info[i][3], comm_read_info[i][4], \
-+				comm_read_info[i][5], comm_read_info[i][6])
-+		except TypeError:
-+			pass
-+
-+	print "\nNumber of write: %d\n" % (comm_wevent_count)
-+	print "%5s %3s %16s %40s %10s %10s\n" % ("pid", "cpu", "timestamp", "file name", \
-+						 "position", "Bytes")
-+	print "%5s %3s %16s %40s %10s %10s\n" % ("-----", "---", "----------", \
-+						 "----------", "----------", \
-+						 "----------"),
-+	for i in range(0, comm_wevent_count):
-+		try:
-+			print "%5d %3d %6d.%9d %40s %10s %10s\n" % (comm_write_info[i][0], \
-+				comm_write_info[i][1], comm_write_info[i][2], \
-+				comm_write_info[i][3], comm_write_info[i][4], \
-+				comm_write_info[i][5], comm_write_info[i][6])
-+		except TypeError:
-+			pass
-+
--- 
-1.7.9.5
-
+> 
+> >The server rpc code goes to some care not to write to any global
+> >structure, to prevent server threads running on multiple cores from
+> >bouncing cache lines between them.
+> >
+> 
+> This is just an idea. I.e. I wasn't trying to polish the patch - just to share the vision.
+> 
+> >But my understanding is that even down_read() does modify the semaphore.
+> >So we might want something like the percpu semaphore describe in
+> >Documentation/percpu-rw-semaphore.txt.
+> >
+> 
+> Sure, I'll have a look.
+> 
+> 
+> -- 
+> Best regards,
+> Stanislav Kinsbursky
