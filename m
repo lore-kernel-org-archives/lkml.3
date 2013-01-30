@@ -1,118 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab3A3PhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 10:37:12 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:42687 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab3A3PhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 10:37:09 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: zsmalloc: remove unused pool name
-Date: Wed, 30 Jan 2013 09:36:52 -0600
-Message-Id: <1359560212-8818-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <20130130041630.GA18809@kroah.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13013015-9360-0000-0000-00000FE84AD7
+	id S1753716Ab3A3Pia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 10:38:30 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:48245 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752478Ab3A3Pi1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 10:38:27 -0500
+Date: Wed, 30 Jan 2013 10:38:26 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v8 4/4] sd: change to auto suspend mode
+In-Reply-To: <1359538494-2936-5-git-send-email-aaron.lu@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301301032460.1709-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zs_create_pool() currently takes a name argument which is
-never used in any useful way.
+On Wed, 30 Jan 2013, Aaron Lu wrote:
 
-This patch removes it.
+> From: Lin Ming <ming.m.lin@intel.com>
+> 
+> Uses block layer runtime pm helper functions in
+> scsi_runtime_suspend/resume for devices that take advantage of it.
+> 
+> Remove scsi_autopm_* from sd open/release path and check_events path.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
-Greg, this patch is 2/4 that didn't apply before. It is rebased
-on your staging tree as of this morning.
+A couple of very minor suggestions...
 
- drivers/staging/zram/zram_drv.c          |  2 +-
- drivers/staging/zsmalloc/zsmalloc-main.c | 10 ++--------
- drivers/staging/zsmalloc/zsmalloc.h      |  2 +-
- 3 files changed, 4 insertions(+), 10 deletions(-)
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 77a3f0d..941b7c6 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -575,7 +575,7 @@ int zram_init_device(struct zram *zram)
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
- 
--	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-+	zram->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
- 	if (!zram->mem_pool) {
- 		pr_err("Error creating memory pool\n");
- 		ret = -ENOMEM;
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 4666609..06f73a9 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -207,7 +207,6 @@ struct zs_pool {
- 	struct size_class size_class[ZS_SIZE_CLASSES];
- 
- 	gfp_t flags;	/* allocation flags used when growing pool */
--	const char *name;
- };
- 
- /*
-@@ -798,8 +797,7 @@ fail:
- 
- /**
-  * zs_create_pool - Creates an allocation pool to work from.
-- * @name: name of the pool to be created
-- * @flags: allocation flags used when growing pool
-+ * @flags: allocation flags used to allocate pool metadata
-  *
-  * This function must be called before anything when using
-  * the zsmalloc allocator.
-@@ -807,14 +805,11 @@ fail:
-  * On success, a pointer to the newly created pool is returned,
-  * otherwise NULL.
-  */
--struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
-+struct zs_pool *zs_create_pool(gfp_t flags)
- {
- 	int i, ovhd_size;
- 	struct zs_pool *pool;
- 
--	if (!name)
--		return NULL;
--
- 	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
- 	pool = kzalloc(ovhd_size, GFP_KERNEL);
- 	if (!pool)
-@@ -837,7 +832,6 @@ struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
- 	}
- 
- 	pool->flags = flags;
--	pool->name = name;
- 
- 	return pool;
- }
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-index de2e8bf..46dbd05 100644
---- a/drivers/staging/zsmalloc/zsmalloc.h
-+++ b/drivers/staging/zsmalloc/zsmalloc.h
-@@ -28,7 +28,7 @@ enum zs_mapmode {
- 
- struct zs_pool;
- 
--struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
-+struct zs_pool *zs_create_pool(gfp_t flags);
- void zs_destroy_pool(struct zs_pool *pool);
- 
- unsigned long zs_malloc(struct zs_pool *pool, size_t size);
--- 
-1.8.1.1
+> @@ -144,18 +144,44 @@ static int scsi_bus_restore(struct device *dev)
+>  
+>  #ifdef CONFIG_PM_RUNTIME
+>  
+> +static int scsi_blk_runtime_suspend(struct device *dev)
+> +{
+> +	struct scsi_device *sdev = to_scsi_device(dev);
+
+For this routine and the other new ones, it may be slightly more
+efficient to pass both dev and sdev as arguments (this depends on how
+smart the compiler's optimizer is).  The caller already knows both of
+them, after all.
+
+> +	int err;
+> +
+> +	err = blk_pre_runtime_suspend(sdev->request_queue);
+> +	if (err)
+> +		return err;
+> +	err = pm_generic_runtime_suspend(dev);
+> +	blk_post_runtime_suspend(sdev->request_queue, err);
+> +
+> +	return err;
+> +}
+> +
+> +static int scsi_dev_runtime_suspend(struct device *dev)
+> +{
+> +	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> +	int err;
+> +
+> +	err = scsi_dev_type_suspend(dev, pm ? pm->runtime_suspend : NULL);
+> +	if (err == -EAGAIN)
+> +		pm_schedule_suspend(dev, jiffies_to_msecs(
+> +					round_jiffies_up_relative(HZ/10)));
+> +
+> +	return err;
+> +}
+> +
+>  static int scsi_runtime_suspend(struct device *dev)
+>  {
+>  	int err = 0;
+> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+>  
+>  	dev_dbg(dev, "scsi_runtime_suspend\n");
+>  	if (scsi_is_sdev_device(dev)) {
+> -		err = scsi_dev_type_suspend(dev,
+> -				pm ? pm->runtime_suspend : NULL);
+> -		if (err == -EAGAIN)
+> -			pm_schedule_suspend(dev, jiffies_to_msecs(
+> -				round_jiffies_up_relative(HZ/10)));
+> +		struct scsi_device *sdev = to_scsi_device(dev);
+
+There should be a blank line between the declaration and the
+executable code.
+
+> +		if (sdev->request_queue->dev)
+> +			err = scsi_blk_runtime_suspend(dev);
+> +		else
+> +			err = scsi_dev_runtime_suspend(dev);
+>  	}
+>  
+>  	/* Insert hooks here for targets, hosts, and transport classes */
+> @@ -163,14 +189,36 @@ static int scsi_runtime_suspend(struct device *dev)
+>  	return err;
+>  }
+>  
+> +static int scsi_blk_runtime_resume(struct device *dev)
+> +{
+> +	struct scsi_device *sdev = to_scsi_device(dev);
+> +	int err;
+> +
+> +	blk_pre_runtime_resume(sdev->request_queue);
+> +	err = pm_generic_runtime_resume(dev);
+> +	blk_post_runtime_resume(sdev->request_queue, err);
+> +
+> +	return err;
+> +}
+> +
+> +static int scsi_dev_runtime_resume(struct device *dev)
+> +{
+> +	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+
+Blank line.
+
+> +	return scsi_dev_type_resume(dev, pm ? pm->runtime_resume : NULL);
+> +}
+> +
+>  static int scsi_runtime_resume(struct device *dev)
+>  {
+>  	int err = 0;
+> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+>  
+>  	dev_dbg(dev, "scsi_runtime_resume\n");
+> -	if (scsi_is_sdev_device(dev))
+> -		err = scsi_dev_type_resume(dev, pm ? pm->runtime_resume : NULL);
+> +	if (scsi_is_sdev_device(dev)) {
+> +		struct scsi_device *sdev = to_scsi_device(dev);
+
+Blank line.
+
+> +		if (sdev->request_queue->dev)
+> +			err = scsi_blk_runtime_resume(dev);
+> +		else
+> +			err = scsi_dev_runtime_resume(dev);
+> +	}
+>  
+>  	/* Insert hooks here for targets, hosts, and transport classes */
+>  
+> @@ -185,10 +233,17 @@ static int scsi_runtime_idle(struct device *dev)
+>  
+>  	/* Insert hooks here for targets, hosts, and transport classes */
+>  
+> -	if (scsi_is_sdev_device(dev))
+> -		err = pm_schedule_suspend(dev, 100);
+> -	else
+> +	if (scsi_is_sdev_device(dev)) {
+> +		struct scsi_device *sdev = to_scsi_device(dev);
+
+Blank line.
+
+> +		if (sdev->request_queue->dev) {
+> +			pm_runtime_mark_last_busy(dev);
+> +			err = pm_runtime_autosuspend(dev);
+> +		} else {
+> +			err = pm_schedule_suspend(dev, 100);
+> +		}
+> +	} else {
+>  		err = pm_runtime_suspend(dev);
+> +	}
+>  	return err;
+>  }
+
+Alan Stern
 
