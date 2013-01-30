@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3A3NT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 08:19:29 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39338 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753586Ab3A3NT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 08:19:27 -0500
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: "Balbi, Felipe" <balbi@ti.com>, "Quadros, Roger" <rogerq@ti.com>
-CC: "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "eballetbo@gmail.com" <eballetbo@gmail.com>,
-        "javier@dowhile0.org" <javier@dowhile0.org>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robertcnelson@gmail.com" <robertcnelson@gmail.com>
-Subject: RE: [PATCH v2 00/30] USB: omap-ehci: Move PHY management to PHY
- driver
-Thread-Topic: [PATCH v2 00/30] USB: omap-ehci: Move PHY management to PHY
- driver
-Thread-Index: AQHN/Ur6hep/al+UlEy0NYuQSkHsCphhyDTA//+xUACAAAdUAIAAXITg
-Date: Wed, 30 Jan 2013 13:19:17 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA95E97@DBDE01.ent.ti.com>
-References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
- <C8443D0743D26F4388EA172BF4E2A7A93EA95DF0@DBDE01.ent.ti.com>
- <510916B2.7080509@ti.com> <20130130131504.GU15258@arwen.pp.htv.fi>
-In-Reply-To: <20130130131504.GU15258@arwen.pp.htv.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	id S1754244Ab3A3N2D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 08:28:03 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:37603 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753674Ab3A3N2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 08:28:01 -0500
 MIME-Version: 1.0
+In-Reply-To: <20130129233842.GA8024@kahuna>
+References: <1359474865-15408-1-git-send-email-ruslan.bilovol@ti.com>
+	<20130129160243.GA3389@kahuna>
+	<CAB=otbSV6CH4WOrr577bHXFcjEVRGjZxatgy4CJ3cr0M0h4vfw@mail.gmail.com>
+	<20130129233842.GA8024@kahuna>
+Date: Wed, 30 Jan 2013 15:20:31 +0200
+Message-ID: <CAB=otbQLxb26srPckpts6om7Y34oDecogfM_V2+8Bcgixg=LEQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/2] ARM: update cpuinfo to print CPU model name
+From: Ruslan Bilovol <ruslan.bilovol@gmail.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        eduardo.valentin@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0UDJVwg015059
 
-Hi Felipe,
+On Wed, Jan 30, 2013 at 1:38 AM, Nishanth Menon <nm@ti.com> wrote:
+> On 01:08-20130130, Ruslan Bilovol wrote:
+>> Hi,
+>>
+>> On Tue, Jan 29, 2013 at 6:02 PM, Nishanth Menon <nm@ti.com> wrote:
+>> >
+>> > On 17:54-20130129, Ruslan Bilovol wrote:
+>> > > Hi,
+>> > >
+>> > > The following patches update cpuinfo to print CPU
+>> > > model name for ARM. First patch exactly makes needed
+>> > > changes for ARM architecture.
+>> > > Second patch adds this ability to OMAP4 SoCs.
+>> > >
+>> > > This adds a common approach to show SoC name.
+>> > >
+>> > > Looks like there were few attempts to do similar
+>> > > changes to cpuinfo without any luck.
+>> > >
+>> > > So - comments are welcome
+>> > >
+>> > > Ruslan Bilovol (2):
+>> > >   ARM: kernel: update cpuinfo to print CPU model name
+>> > >   ARM: OMAP4: setup CPU model name during ID initialisation
+>> >
+>> > We had an discussion on similar lines but a generic suggestion:
+>> > https://patchwork.kernel.org/patch/98720/
+>> > SoCinfo framework which was supposed to introduce this
+>> >
+>> > Would'nt that be a better approach to take than an OMAP only solution?
+>>
+>> My goal is only to say what is the SoC model name in the /proc/cpuinfo
+>> (And it is not an OMAP-only solution - it is common. Support for OMAP
+>> is added in second patch)
+>> This is the only type of information that we can apply for any SoC.
+>> My point is - any SoC-specific information should go through some other
+>> way - like SoCinfo framework mentioned by you.
+>> And additional point - in cpuinfo we already have CPU name and Machine name.
+>> The SoC name (that is something between these two things) looks also relevant
+> Looking at the sample output in patch #1/2
+> OMAP4470 ES1.0 HS
+>
+> OMAP4470 is SoC name
+> ES1.0 is SoC revision
+> HS is SoC type
 
-On Wed, Jan 30, 2013 at 18:45:04, Balbi, Felipe wrote:
-> On Wed, Jan 30, 2013 at 02:48:50PM +0200, Roger Quadros wrote:
+Will fix it in next patchseries. Let's leave only only SoC name
 
-> > I would appreciate if someone who knows more about beaglebone can help
-> > with verification.
-> > 
-> > I could find that Robert C Nelson (now in cc) is maintaining out of tree
-> > patches for the beaglebone. Maybe he could help with verification?
-> 
-> Right, Afzal if you have the bone could you help Roger validating ?
+>
+> We even have SoC features (e.g. at boot NEON etc..)
+>
+> Is the intent to put all this inside /proc/cpuinfo?? I bet every SoC has
+> it's own interesting data it'd like to have (like some of the info
+> populated by DT even). I am hardpressed to think this fits inside
+> /proc/cpuinfo. I might even suspect that the list of interesting
+> information might even vary per SoC.
 
-I am not in a position to validate it, in the middle of another task.
+No, I don't think we need all these information in cpuinfo - just because
+it will be different for different SoC - so the file structure will be
+very different..
+Let's have only SoC name in cpuinfo.
 
-Regards
-Afzal
+>
+> having machine name is something ARM specific? dumping it on my linux
+> machines (x86[1] and sparc[2]) dont seem to show that.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Yes - it's ARM specific.
+
+>
+> but in the interest of not breaking existing interfaces, new interfaces
+> should potentially belong elsewhere.. my 2 cents.
+>
+> [1] http://pastebin.com/CF8HPDAC (Xubuntu 12.04 3.2.0-36)
+> [2] http://pastebin.com/qNwWHwiu (Debian 3.2.35-2)
+
+Just look at changes in cpuinfo for ARM between kernels:
+3.4 kernel: http://pastebin.com/TfmE7b2b
+3.8-rc3: http://pastebin.com/zvvTGeNt
+
+The file structure has huge changes
+
+> --
+> Regards,
+> Nishanth Menon
