@@ -1,433 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab3A3Dhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 22:37:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43697 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab3A3Dhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 22:37:33 -0500
+	id S1753184Ab3A3Dj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 22:39:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44767 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752434Ab3A3Djx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 22:39:53 -0500
+Message-ID: <51089523.3080804@zytor.com>
+Date: Tue, 29 Jan 2013 19:36:03 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1359470814-7993-2-git-send-email-tiwai@suse.de>
-References: <1359470814-7993-1-git-send-email-tiwai@suse.de>
-	<1359470814-7993-2-git-send-email-tiwai@suse.de>
-Date: Wed, 30 Jan 2013 11:37:30 +0800
-Message-ID: <CACVXFVOf4LZD+qVcqS9yBtvNZCRF=LMpR5BKuXby3Z8dfB+Vzw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] firmware: Refactoring for splitting user-mode helper code
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Michal Marek <mmarek@suse.cz>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>, hyojun.im@lge.com,
+        chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
+        namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
+        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>
+Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
+References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com> <20130128142510.68092e10.akpm@linux-foundation.org> <20130129101549.GP23505@n2100.arm.linux.org.uk>
+In-Reply-To: <20130129101549.GP23505@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 10:46 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> Since 3.7 kernel, the firmware loader can read the firmware files
-> directly, and the traditional user-mode helper is invoked only as a
-> fallback.  This seems working pretty well, and the next step would be
-> to reduce the redundant user-mode helper stuff in future.
+On 01/29/2013 02:15 AM, Russell King - ARM Linux wrote:
+> On Mon, Jan 28, 2013 at 02:25:10PM -0800, Andrew Morton wrote:
+>> What's this "with enabled unaligned memory access" thing?  You mean "if
+>> the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"?  If so,
+>> that's only x86, which isn't really in the target market for this
+>> patch, yes?
+>>
+>> It's a lot of code for a 50ms boot-time improvement.  Does anyone have
+>> any opinions on whether or not the benefits are worth the cost?
 >
-> This patch is a preparation for that: refactor the code for splitting
-> user-mode helper stuff more easily.  No functional change.
+> Well... when I saw this my immediate reaction was "oh no, yet another
+> decompressor for the kernel".  We have five of these things already.
+> Do we really need a sixth?
 >
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/base/firmware_class.c | 290 +++++++++++++++++++++++-------------------
->  1 file changed, 157 insertions(+), 133 deletions(-)
+> My feeling is that we should have:
+> - one decompressor which is the fastest
+> - one decompressor for the highest compression ratio
+> - one popular decompressor (eg conventional gzip)
 >
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index b392b35..27f2c7c 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -319,7 +319,8 @@ static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf
->         return true;
->  }
+> And if we have a replacement one for one of these, then it should do
+> exactly that: replace it.  I realise that various architectures will
+> behave differently, so we should really be looking at numbers across
+> several arches.
 >
-> -static bool fw_get_filesystem_firmware(struct firmware_buf *buf)
-> +static bool fw_get_filesystem_firmware(struct device *device,
-> +                                      struct firmware_buf *buf)
->  {
->         int i;
->         bool success = false;
-> @@ -343,6 +344,16 @@ static bool fw_get_filesystem_firmware(struct firmware_buf *buf)
->                         break;
->         }
->         __putname(path);
-> +
-> +       if (success) {
-> +               dev_dbg(device, "firmware: direct-loading firmware %s\n",
-> +                       buf->fw_id);
-> +               mutex_lock(&fw_lock);
-> +               set_bit(FW_STATUS_DONE, &buf->status);
-> +               complete_all(&buf->completion);
-> +               mutex_unlock(&fw_lock);
-> +       }
-> +
->         return success;
->  }
+> Otherwise, where do we stop adding new ones?  After we have 6 of these
+> (which is after this one).  After 12?  After the 20th?
 >
-> @@ -796,99 +807,112 @@ static int fw_add_devm_name(struct device *dev, const char *name)
->  }
->  #endif
->
-> -static void _request_firmware_cleanup(const struct firmware **firmware_p)
-> +/* wait until the shared firmware_buf becomes ready (or error) */
-> +static int sync_cached_firmware_buf(struct firmware_buf *buf)
->  {
-> -       release_firmware(*firmware_p);
-> -       *firmware_p = NULL;
-> +       int ret = 0;
-> +
-> +       mutex_lock(&fw_lock);
-> +       while (!test_bit(FW_STATUS_DONE, &buf->status)) {
-> +               if (test_bit(FW_STATUS_ABORT, &buf->status)) {
-> +                       ret = -ENOENT;
-> +                       break;
-> +               }
-> +               mutex_unlock(&fw_lock);
-> +               wait_for_completion(&buf->completion);
-> +               mutex_lock(&fw_lock);
-> +       }
-> +       mutex_unlock(&fw_lock);
-> +       return ret;
->  }
->
-> -static struct firmware_priv *
-> -_request_firmware_prepare(const struct firmware **firmware_p, const char *name,
-> -                         struct device *device, bool uevent, bool nowait)
-> +/* prepare firmware and firmware_buf structs;
-> + * return 0 if a firmware is already assigned, 1 if need to load one,
-> + * or a negative error code
-> + */
-> +static int
-> +_request_firmware_prepare(struct firmware **firmware_p, const char *name,
-> +                         struct device *device)
->  {
->         struct firmware *firmware;
-> -       struct firmware_priv *fw_priv = NULL;
->         struct firmware_buf *buf;
->         int ret;
->
-> -       if (!firmware_p)
-> -               return ERR_PTR(-EINVAL);
-> -
->         *firmware_p = firmware = kzalloc(sizeof(*firmware), GFP_KERNEL);
->         if (!firmware) {
->                 dev_err(device, "%s: kmalloc(struct firmware) failed\n",
->                         __func__);
-> -               return ERR_PTR(-ENOMEM);
-> +               return -ENOMEM;
->         }
->
->         if (fw_get_builtin_firmware(firmware, name)) {
->                 dev_dbg(device, "firmware: using built-in firmware %s\n", name);
-> -               return NULL;
-> +               return 0; /* assigned */
->         }
->
->         ret = fw_lookup_and_allocate_buf(name, &fw_cache, &buf);
-> -       if (!ret)
-> -               fw_priv = fw_create_instance(firmware, name, device,
-> -                               uevent, nowait);
->
-> -       if (IS_ERR(fw_priv) || ret < 0) {
-> -               kfree(firmware);
-> -               *firmware_p = NULL;
-> -               return ERR_PTR(-ENOMEM);
-> -       } else if (fw_priv) {
-> -               fw_priv->buf = buf;
-> +       /*
-> +        * bind with 'buf' now to avoid warning in failure path
-> +        * of requesting firmware.
-> +        */
-> +       firmware->priv = buf;
->
-> -               /*
-> -                * bind with 'buf' now to avoid warning in failure path
-> -                * of requesting firmware.
-> -                */
-> -               firmware->priv = buf;
-> -               return fw_priv;
-> +       if (ret > 0) {
-> +               ret = sync_cached_firmware_buf(buf);
-> +               if (!ret) {
-> +                       fw_set_page_data(buf, firmware);
-> +                       return 0; /* assigned */
-> +               }
->         }
->
-> -       /* share the cached buf, which is inprogessing or completed */
-> - check_status:
-> +       if (ret < 0)
-> +               return ret;
-> +       return 1; /* need to load */
-> +}
-> +
-> +static int assign_firmware_buf(struct firmware *fw, struct device *device)
-> +{
-> +       struct firmware_buf *buf = fw->priv;
-> +
->         mutex_lock(&fw_lock);
-> -       if (test_bit(FW_STATUS_ABORT, &buf->status)) {
-> -               fw_priv = ERR_PTR(-ENOENT);
-> -               firmware->priv = buf;
-> -               _request_firmware_cleanup(firmware_p);
-> -               goto exit;
-> -       } else if (test_bit(FW_STATUS_DONE, &buf->status)) {
-> -               fw_priv = NULL;
-> -               fw_set_page_data(buf, firmware);
-> -               goto exit;
-> +       if (!buf->size || test_bit(FW_STATUS_ABORT, &buf->status)) {
-> +               mutex_unlock(&fw_lock);
-> +               return -ENOENT;
->         }
-> -       mutex_unlock(&fw_lock);
-> -       wait_for_completion(&buf->completion);
-> -       goto check_status;
->
-> -exit:
-> +       /*
-> +        * add firmware name into devres list so that we can auto cache
-> +        * and uncache firmware for device.
-> +        *
-> +        * device may has been deleted already, but the problem
-> +        * should be fixed in devres or driver core.
-> +        */
-> +       if (device)
-> +               fw_add_devm_name(device, buf->fw_id);
-> +
-> +       /*
-> +        * After caching firmware image is started, let it piggyback
-> +        * on request firmware.
-> +        */
-> +       if (buf->fwc->state == FW_LOADER_START_CACHE) {
-> +               if (fw_cache_piggyback_on_request(buf->fw_id))
-> +                       kref_get(&buf->ref);
-> +       }
-> +
-> +       /* pass the pages buffer to driver at the last minute */
-> +       fw_set_page_data(buf, fw);
->         mutex_unlock(&fw_lock);
-> -       return fw_priv;
-> +       return 0;
->  }
->
-> +/* load a firmware via user helper */
->  static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
->                                   long timeout)
->  {
->         int retval = 0;
->         struct device *f_dev = &fw_priv->dev;
->         struct firmware_buf *buf = fw_priv->buf;
-> -       struct firmware_cache *fwc = &fw_cache;
-> -       int direct_load = 0;
-> -
-> -       /* try direct loading from fs first */
-> -       if (fw_get_filesystem_firmware(buf)) {
-> -               dev_dbg(f_dev->parent, "firmware: direct-loading"
-> -                       " firmware %s\n", buf->fw_id);
-> -
-> -               mutex_lock(&fw_lock);
-> -               set_bit(FW_STATUS_DONE, &buf->status);
-> -               mutex_unlock(&fw_lock);
-> -               complete_all(&buf->completion);
-> -               direct_load = 1;
-> -               goto handle_fw;
-> -       }
->
->         /* fall back on userspace loading */
->         buf->fmt = PAGE_BUF;
-> @@ -929,38 +953,7 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
->
->         cancel_delayed_work_sync(&fw_priv->timeout_work);
->
-> -handle_fw:
-> -       mutex_lock(&fw_lock);
-> -       if (!buf->size || test_bit(FW_STATUS_ABORT, &buf->status))
-> -               retval = -ENOENT;
-> -
-> -       /*
-> -        * add firmware name into devres list so that we can auto cache
-> -        * and uncache firmware for device.
-> -        *
-> -        * f_dev->parent may has been deleted already, but the problem
-> -        * should be fixed in devres or driver core.
-> -        */
-> -       if (!retval && f_dev->parent)
-> -               fw_add_devm_name(f_dev->parent, buf->fw_id);
-> -
-> -       /*
-> -        * After caching firmware image is started, let it piggyback
-> -        * on request firmware.
-> -        */
-> -       if (!retval && fwc->state == FW_LOADER_START_CACHE) {
-> -               if (fw_cache_piggyback_on_request(buf->fw_id))
-> -                       kref_get(&buf->ref);
-> -       }
-> -
-> -       /* pass the pages buffer to driver at the last minute */
-> -       fw_set_page_data(buf, fw_priv->fw);
-> -
->         fw_priv->buf = NULL;
-> -       mutex_unlock(&fw_lock);
-> -
-> -       if (direct_load)
-> -               goto err_put_dev;
->
->         device_remove_file(f_dev, &dev_attr_loading);
->  err_del_bin_attr:
-> @@ -972,6 +965,77 @@ err_put_dev:
->         return retval;
->  }
->
-> +static int fw_load_from_user_helper(struct firmware *firmware,
-> +                                   const char *name, struct device *device,
-> +                                   bool uevent, bool nowait)
-> +{
-> +       struct firmware_priv *fw_priv;
-> +       long timeout;
-> +       int ret;
-> +
-> +       fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
-> +       if (IS_ERR(fw_priv))
-> +               return PTR_ERR(fw_priv);
-> +
-> +       fw_priv->buf = firmware->priv;
-> +
-> +       timeout = firmware_loading_timeout();
-> +       if (nowait) {
-> +               timeout = usermodehelper_read_lock_wait(timeout);
-> +               if (!timeout) {
-> +                       dev_dbg(device, "firmware: %s loading timed out\n",
-> +                               name);
-> +                       kfree(fw_priv);
-> +                       return -EAGAIN;
-> +               }
-> +       } else {
-> +               ret = usermodehelper_read_trylock();
-> +               if (WARN_ON(ret)) {
-> +                       dev_err(device, "firmware: %s will not be loaded\n",
-> +                               name);
-> +                       kfree(fw_priv);
-> +                       return ret;
-> +               }
-> +       }
 
-The above usermodehelper_read_lock thing may be a functional change,
-and looks not what you claimed in commit log, :-). The lock is currently held in
-direct loading case, but your patch change the rule. Without holding the lock,
-request_firmware() may touch filesystem / storage too early during
-kernel boot or system resume in direct loading case.
+The only concern I have with that is if someone paints themselves into a 
+corner and absolutely wants, say, LZO.
 
-> +
-> +       ret = _request_firmware_load(fw_priv, uevent, timeout);
-> +       usermodehelper_read_unlock();
-> +       return ret;
-> +}
-> +
-> +/* called from request_firmware() and request_firmware_work_func() */
-> +static int
-> +_request_firmware(const struct firmware **firmware_p, const char *name,
-> +                 struct device *device, bool uevent, bool nowait)
-> +{
-> +       struct firmware *fw;
-> +       int ret;
-> +
-> +       if (!firmware_p)
-> +               return -EINVAL;
-> +
-> +       ret = _request_firmware_prepare(&fw, name, device);
-> +       if (ret <= 0) /* error or already assigned */
-> +               goto out;
-> +
-> +       ret = 0;
-> +       if (!fw_get_filesystem_firmware(device, fw->priv))
-> +               ret = fw_load_from_user_helper(fw, name, device,
-> +                                              uevent, nowait);
-> +
-> +       if (!ret)
-> +               ret = assign_firmware_buf(fw, device);
-> +
-> + out:
-> +       if (ret < 0) {
-> +               release_firmware(fw);
-> +               fw = NULL;
-> +       }
-> +
-> +       *firmware_p = fw;
-> +       return ret;
-> +}
-> +
->  /**
->   * request_firmware: - send firmware request and wait for it
->   * @firmware_p: pointer to firmware image
-> @@ -996,26 +1060,7 @@ int
->  request_firmware(const struct firmware **firmware_p, const char *name,
->                   struct device *device)
->  {
-> -       struct firmware_priv *fw_priv;
-> -       int ret;
-> -
-> -       fw_priv = _request_firmware_prepare(firmware_p, name, device, true,
-> -                                           false);
-> -       if (IS_ERR_OR_NULL(fw_priv))
-> -               return PTR_RET(fw_priv);
-> -
-> -       ret = usermodehelper_read_trylock();
-> -       if (WARN_ON(ret)) {
-> -               dev_err(device, "firmware: %s will not be loaded\n", name);
-> -       } else {
-> -               ret = _request_firmware_load(fw_priv, true,
-> -                                       firmware_loading_timeout());
-> -               usermodehelper_read_unlock();
-> -       }
-> -       if (ret)
-> -               _request_firmware_cleanup(firmware_p);
-> -
-> -       return ret;
-> +       return _request_firmware(firmware_p, name, device, true, false);
->  }
->
->  /**
-> @@ -1046,33 +1091,12 @@ static void request_firmware_work_func(struct work_struct *work)
->  {
->         struct firmware_work *fw_work;
->         const struct firmware *fw;
-> -       struct firmware_priv *fw_priv;
-> -       long timeout;
-> -       int ret;
->
->         fw_work = container_of(work, struct firmware_work, work);
-> -       fw_priv = _request_firmware_prepare(&fw, fw_work->name, fw_work->device,
-> -                       fw_work->uevent, true);
-> -       if (IS_ERR_OR_NULL(fw_priv)) {
-> -               ret = PTR_RET(fw_priv);
-> -               goto out;
-> -       }
->
-> -       timeout = usermodehelper_read_lock_wait(firmware_loading_timeout());
-> -       if (timeout) {
-> -               ret = _request_firmware_load(fw_priv, fw_work->uevent, timeout);
-> -               usermodehelper_read_unlock();
-> -       } else {
-> -               dev_dbg(fw_work->device, "firmware: %s loading timed out\n",
-> -                       fw_work->name);
-> -               ret = -EAGAIN;
-> -       }
-> -       if (ret)
-> -               _request_firmware_cleanup(&fw);
-> -
-> - out:
-> +       _request_firmware(&fw, fw_work->name, fw_work->device,
-> +                         fw_work->uevent, true);
->         fw_work->cont(fw, fw_work->context);
-> -       put_device(fw_work->device);
+Otherwise, per your list it pretty much sounds like we should have lz4, 
+gzip, and xz.
 
-The above put_device is the pair of get_device inside request_firmware_nowait(),
-I am wondering why you think it is not balanced, and to be removed . Did you
-observe a double free?
+	-hpa
 
-Thanks,
---
-Ming Lei
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
