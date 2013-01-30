@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab3A3GbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 01:31:15 -0500
-Received: from mga14.intel.com ([143.182.124.37]:49891 "EHLO mga14.intel.com"
+	id S1753596Ab3A3GbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 01:31:11 -0500
+Received: from mga14.intel.com ([143.182.124.37]:57476 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab3A3GbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 01:31:12 -0500
+	id S1753519Ab3A3GbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 01:31:06 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,565,1355126400"; 
-   d="scan'208";a="196543134"
+   d="scan'208";a="196543112"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         namhyung@kernel.org, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 6/7] perf, x86: Use LBR call stack to get user callchain
-Date: Wed, 30 Jan 2013 14:30:56 +0800
-Message-Id: <1359527457-6837-7-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH 3/7] perf, x86: Introduce x86 special perf event context
+Date: Wed, 30 Jan 2013 14:30:53 +0800
+Message-Id: <1359527457-6837-4-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1359527457-6837-1-git-send-email-zheng.z.yan@intel.com>
 References: <1359527457-6837-1-git-send-email-zheng.z.yan@intel.com>
@@ -26,395 +26,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Try enabling the LBR call stack feature if event request recording
-callchain. Try utilizing the LBR call stack to get user callchain
-in case of there is no frame pointer.
-
-This patch also adds a cpu pmu attribute to enable/disable this
-feature.
+The x86 special perf event context is named x86_perf_event_context,
+We can enlarge it later to store PMU special data.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c           | 127 +++++++++++++++++++++--------
- arch/x86/kernel/cpu/perf_event.h           |   7 ++
- arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
- include/linux/perf_event.h                 |   6 ++
- kernel/events/core.c                       |  11 ++-
- 6 files changed, 126 insertions(+), 48 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 12 ++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |  4 ++++
+ include/linux/perf_event.h       |  5 +++++
+ kernel/events/core.c             | 28 ++++++++++++++++++----------
+ 4 files changed, 39 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 19e7e99..71ace4f 100644
+index 375498a..7981230 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -393,36 +393,49 @@ int x86_pmu_hw_config(struct perf_event *event)
- 
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
-+	}
-+	/*
-+	 * check that PEBS LBR correction does not conflict with
-+	 * whatever the user is asking with attr->branch_sample_type
-+	 */
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
-+		u64 *br_type = &event->attr.branch_sample_type;
-+
-+		if (has_branch_stack(event)) {
-+			if (!precise_br_compat(event))
-+				return -EOPNOTSUPP;
-+
-+			/* branch_sample_type is compatible */
-+
-+		} else {
-+			/*
-+			 * user did not specify  branch_sample_type
-+			 *
-+			 * For PEBS fixups, we capture all
-+			 * the branches at the priv level of the
-+			 * event.
-+			 */
-+			*br_type = PERF_SAMPLE_BRANCH_ANY;
-+
-+			if (!event->attr.exclude_user)
-+				*br_type |= PERF_SAMPLE_BRANCH_USER;
-+
-+			if (!event->attr.exclude_kernel)
-+				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
-+		}
-+	} else if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+		   !has_branch_stack(event) &&
-+		   x86_pmu.attr_lbr_callstack &&
-+		   !event->attr.exclude_user &&
-+		   (event->attach_state & PERF_ATTACH_TASK)) {
- 		/*
--		 * check that PEBS LBR correction does not conflict with
--		 * whatever the user is asking with attr->branch_sample_type
-+		 * user did not specify branch_sample_type,
-+		 * try using the LBR call stack facility to
-+		 * record call chains of user program.
- 		 */
--		if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
--			u64 *br_type = &event->attr.branch_sample_type;
--
--			if (has_branch_stack(event)) {
--				if (!precise_br_compat(event))
--					return -EOPNOTSUPP;
--
--				/* branch_sample_type is compatible */
--
--			} else {
--				/*
--				 * user did not specify  branch_sample_type
--				 *
--				 * For PEBS fixups, we capture all
--				 * the branches at the priv level of the
--				 * event.
--				 */
--				*br_type = PERF_SAMPLE_BRANCH_ANY;
--
--				if (!event->attr.exclude_user)
--					*br_type |= PERF_SAMPLE_BRANCH_USER;
--
--				if (!event->attr.exclude_kernel)
--					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
--			}
--		}
-+		event->attr.branch_sample_type =
-+			PERF_SAMPLE_BRANCH_USER |
-+			PERF_SAMPLE_BRANCH_CALL_STACK;
- 	}
- 
- 	/*
-@@ -1799,10 +1812,34 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- 	return count;
+@@ -1742,6 +1742,17 @@ static int x86_pmu_event_idx(struct perf_event *event)
+ 	return idx + 1;
  }
  
-+static ssize_t get_attr_lbr_callstack(struct device *cdev,
-+				      struct device_attribute *attr, char *buf)
++static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
 +{
-+	return snprintf(buf, 40, "%d\n", x86_pmu.attr_lbr_callstack);
++	struct perf_event_context *ctx;
++
++	ctx = kzalloc(sizeof(struct x86_perf_event_context), GFP_KERNEL);
++	if (!ctx)
++		return ERR_PTR(-ENOMEM);
++
++	return ctx;
 +}
 +
-+static ssize_t set_attr_lbr_callstack(struct device *cdev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count)
-+{
-+	unsigned long val = simple_strtoul(buf, NULL, 0);
-+
-+	if (x86_pmu.attr_lbr_callstack != !!val) {
-+		if (val && !x86_pmu_has_lbr_callstack())
-+			return -EOPNOTSUPP;
-+		x86_pmu.attr_lbr_callstack = !!val;
-+	}
-+	return count;
-+}
-+
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_ATTR(lbr_callstack, S_IRUSR | S_IWUSR,
-+		   get_attr_lbr_callstack, set_attr_lbr_callstack);
-+
+ static ssize_t get_attr_rdpmc(struct device *cdev,
+ 			      struct device_attribute *attr,
+ 			      char *buf)
+@@ -1829,6 +1840,7 @@ static struct pmu pmu = {
  
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_lbr_callstack.attr,
- 	NULL,
+ 	.event_idx		= x86_pmu_event_idx,
+ 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
++	.event_context_alloc	= x86_pmu_event_context_alloc,
  };
  
-@@ -1929,12 +1966,29 @@ static unsigned long get_segment_base(unsigned int segment)
- 	return get_desc_base(desc + idx);
- }
- 
-+static inline void
-+perf_callchain_lbr_callstack(struct perf_callchain_entry *entry,
-+			     struct perf_sample_data *data)
-+{
-+	struct perf_branch_stack *br_stack = data->br_stack;
-+
-+	if (br_stack && br_stack->user_callstack &&
-+	    x86_pmu.attr_lbr_callstack) {
-+		int i = 0;
-+		while (i < br_stack->nr && entry->nr < PERF_MAX_STACK_DEPTH) {
-+			perf_callchain_store(entry, br_stack->entries[i].from);
-+			i++;
-+		}
-+	}
-+}
-+
- #ifdef CONFIG_COMPAT
- 
- #include <asm/compat.h>
- 
- static inline int
--perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
-+perf_callchain_user32(struct perf_callchain_entry *entry,
-+		      struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	/* 32-bit process in 64-bit kernel. */
- 	unsigned long ss_base, cs_base;
-@@ -1963,11 +2017,16 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- 		perf_callchain_store(entry, cs_base + frame.return_address);
- 		fp = compat_ptr(ss_base + frame.next_frame);
- 	}
-+
-+	if (fp == compat_ptr(regs->bp))
-+		perf_callchain_lbr_callstack(entry, data);
-+
- 	return 1;
- }
- #else
- static inline int
--perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
-+perf_callchain_user32(struct perf_callchain_entry *entry,
-+		      struct pt_regs *regs, struct perf_sample_data *data)
- {
-     return 0;
- }
-@@ -1997,12 +2056,12 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- 	if (!current->mm)
- 		return;
- 
--	if (perf_callchain_user32(regs, entry))
-+	if (perf_callchain_user32(entry, regs, data))
- 		return;
- 
- 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
- 		unsigned long bytes;
--		frame.next_frame	     = NULL;
-+		frame.next_frame = NULL;
- 		frame.return_address = 0;
- 
- 		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
-@@ -2015,6 +2074,10 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- 		perf_callchain_store(entry, frame.return_address);
- 		fp = frame.next_frame;
- 	}
-+
-+	/* try LBR callstack if there is no frame pointer */
-+	if (fp == (void __user *)regs->bp)
-+		perf_callchain_lbr_callstack(entry, data);
- }
- 
- /*
+ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index a6547f3..2fe3e77 100644
+index ed1e822..3080e10 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -357,6 +357,7 @@ struct x86_pmu {
- 	 * sysfs attrs
- 	 */
- 	int		attr_rdpmc;
-+	int		attr_lbr_callstack;
- 	struct attribute **format_attrs;
- 
- 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
-@@ -469,6 +470,12 @@ struct perf_pmu_events_attr {
- 
- extern struct x86_pmu x86_pmu __read_mostly;
- 
-+static inline bool x86_pmu_has_lbr_callstack(void)
-+{
-+	return  x86_pmu.lbr_sel_map &&
-+		x86_pmu.lbr_sel_map[PERF_SAMPLE_BRANCH_CALL_STACK] > 0;
-+}
-+
- DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
- 
- int x86_perf_event_set_period(struct perf_event *event);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 61c5c17..8662360 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -820,15 +820,10 @@ static __initconst const u64 atom_hw_cache_event_ids
-  },
+@@ -421,6 +421,10 @@ enum {
+ 	PERF_SAMPLE_BRANCH_CALL_STACK = 1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
  };
  
--static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
-+static inline bool intel_pmu_needs_lbr_callstack(struct perf_event *event)
- {
--	/* user explicitly requested branch sampling */
--	if (has_branch_stack(event))
--		return true;
--
--	/* implicit branch sampling to correct PEBS skid */
--	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
--	    x86_pmu.intel_cap.pebs_format < 2)
-+	if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+	    (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK))
- 		return true;
- 
- 	return false;
-@@ -992,7 +987,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
- 	 * must disable before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_disable(event);
- 
- 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
-@@ -1053,7 +1048,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	 * must enabled before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_enable(event);
- 
- 	if (event->attr.exclude_host)
-@@ -1185,7 +1180,8 @@ again:
- 
- 		perf_sample_data_init(&data, 0, event->hw.last_period);
- 
--		if (has_branch_stack(event))
-+		if (has_branch_stack(event) ||
-+		    (event->ctx->task && intel_pmu_needs_lbr_callstack(event)))
- 			data.br_stack = &cpuc->lbr_stack;
- 
- 		if (perf_event_overflow(event, &data, regs))
-@@ -1510,7 +1506,7 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
- 		x86_pmu.pebs_aliases(event);
- 
--	if (intel_pmu_needs_lbr_smpl(event)) {
-+	if (needs_branch_stack(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
- 		if (ret)
- 			return ret;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index a1fb108..910200b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -691,6 +691,8 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- 	int i, j, type;
- 	bool compress = false;
- 
-+	cpuc->lbr_stack.user_callstack = branch_user_callstack(br_sel);
++struct x86_perf_event_context {
++	struct perf_event_context ctx;
++};
 +
- 	/* if sampling all branches, then nothing to filter */
- 	if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
- 		return;
-@@ -843,6 +845,7 @@ void intel_pmu_lbr_init_hsw(void)
- 
- 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
- 	x86_pmu.lbr_sel_map  = hsw_lbr_sel_map;
-+	x86_pmu.attr_lbr_callstack = 1;
- 
- 	pr_cont("16-deep LBR, ");
- }
+ #define x86_add_quirk(func_)						\
+ do {									\
+ 	static struct x86_pmu_quirk __quirk __initdata = {		\
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index fdf0019..71c5cda 100644
+index c32fba3..6122b2f 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -98,6 +98,7 @@ struct perf_branch_entry {
-  * recent branch.
-  */
- struct perf_branch_stack {
-+	unsigned			user_callstack:1;
- 	__u64				nr;
- 	struct perf_branch_entry	entries[0];
- };
-@@ -757,6 +758,11 @@ static inline bool has_branch_stack(struct perf_event *event)
- 	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
- }
- 
-+static inline bool needs_branch_stack(struct perf_event *event)
-+{
-+	return event->attr.branch_sample_type != 0;
-+}
+@@ -264,6 +264,11 @@ struct pmu {
+ 	 * flush branch stack on context-switches (needed in cpu-wide mode)
+ 	 */
+ 	void (*flush_branch_stack)	(void);
 +
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
- extern void perf_output_end(struct perf_output_handle *handle);
++	/*
++	 * Allocate PMU special perf event context
++	 */
++	void *(*event_context_alloc)	(struct perf_event_context *parent_ctx);
+ };
+ 
+ /**
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 8a0dcb6..4633191 100644
+index b4078a0..908f2ad 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -899,7 +899,7 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 	if (is_cgroup_event(event))
- 		ctx->nr_cgroups++;
+@@ -2721,13 +2721,20 @@ static void __perf_event_init_context(struct perf_event_context *ctx)
+ }
  
--	if (has_branch_stack(event))
-+	if (needs_branch_stack(event))
- 		ctx->nr_branch_stack++;
+ static struct perf_event_context *
+-alloc_perf_context(struct pmu *pmu, struct task_struct *task)
++alloc_perf_context(struct pmu *pmu, struct task_struct *task,
++		   struct perf_event_context *parent_ctx)
+ {
+ 	struct perf_event_context *ctx;
  
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
-@@ -1047,7 +1047,7 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 			cpuctx->cgrp = NULL;
+-	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
+-	if (!ctx)
+-		return NULL;
++	if (pmu->event_context_alloc) {
++		ctx = pmu->event_context_alloc(parent_ctx);
++		if (IS_ERR(ctx))
++			return ctx;
++	} else {
++		ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
++		if (!ctx)
++			return ERR_PTR(-ENOMEM);
++	}
+ 
+ 	__perf_event_init_context(ctx);
+ 	if (task) {
+@@ -2813,10 +2820,11 @@ retry:
+ 		++ctx->pin_count;
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
+ 	} else {
+-		ctx = alloc_perf_context(pmu, task);
+-		err = -ENOMEM;
+-		if (!ctx)
++		ctx = alloc_perf_context(pmu, task, NULL);
++		if (IS_ERR(ctx)) {
++			err = PTR_ERR(ctx);
+ 			goto errout;
++		}
+ 
+ 		err = 0;
+ 		mutex_lock(&task->perf_event_mutex);
+@@ -7132,9 +7140,9 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 		 * child.
+ 		 */
+ 
+-		child_ctx = alloc_perf_context(event->pmu, child);
+-		if (!child_ctx)
+-			return -ENOMEM;
++		child_ctx = alloc_perf_context(event->pmu, child, parent_ctx);
++		if (IS_ERR(child_ctx))
++			return PTR_ERR(child_ctx);
+ 
+ 		child->perf_event_ctxp[ctxn] = child_ctx;
  	}
- 
--	if (has_branch_stack(event)) {
-+	if (needs_branch_stack(event)) {
- 		if (ctx->is_active)
- 			__get_cpu_var(perf_branch_stack_events)--;
- 		ctx->nr_branch_stack--;
-@@ -2914,7 +2914,7 @@ static void free_event(struct perf_event *event)
- 			static_key_slow_dec_deferred(&perf_sched_events);
- 		}
- 
--		if (has_branch_stack(event))
-+		if (needs_branch_stack(event))
- 			static_key_slow_dec_deferred(&perf_sched_events);
- 	}
- 
-@@ -6234,6 +6234,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
- 		goto done;
- 
-+	if (!has_branch_stack(event))
-+		event->attr.branch_sample_type = 0;
-+
- 	pmu = perf_init_event(event);
- 
- done:
-@@ -6266,7 +6269,7 @@ done:
- 				return ERR_PTR(err);
- 			}
- 		}
--		if (has_branch_stack(event))
-+		if (needs_branch_stack(event))
- 			static_key_slow_inc(&perf_sched_events.key);
- 	}
- 
 -- 
 1.7.11.7
 
