@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab3A3KPF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:15:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49010 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753688Ab3A3KPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:15:01 -0500
-Date: Wed, 30 Jan 2013 11:10:58 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dirkjan Bussink <dirkjan.bussink@nedap.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tty: Prevent deadlock in n_gsm driver
-Message-ID: <20130130101058.GA9532@kroah.com>
-References: <4B03AD17-906A-4FBF-9F00-3F860395B229@nedap.com>
- <20130130051213.GA26675@kroah.com>
- <0E76C0E9-AC46-42C0-BF43-12DAF0DCE313@nedap.com>
+	id S1754621Ab3A3KPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 05:15:49 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:49452 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab3A3KPr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 05:15:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <0E76C0E9-AC46-42C0-BF43-12DAF0DCE313@nedap.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdZp8wM+ho9gg51YRx4ScJVw9RnPCpVJXKJgZ=xngi6=Jg@mail.gmail.com>
+References: <CAK9yfHybC6ZgGwxa_i=LrMpU_q9M4aaMraTqK63B+fw11NBqRA@mail.gmail.com>
+	<CACRpkdYj_e6+iT7iAVtA8_t=4e_2Lxo9duozXccfcbKY8fGk7A@mail.gmail.com>
+	<CAK9yfHwav_u3mjVqNdX4kY=LyUW30vr6AMGUExfGKuJn2KH8qQ@mail.gmail.com>
+	<076401cdfe9f$6a0f5fa0$3e2e1ee0$@samsung.com>
+	<CACRpkdZp8wM+ho9gg51YRx4ScJVw9RnPCpVJXKJgZ=xngi6=Jg@mail.gmail.com>
+Date: Wed, 30 Jan 2013 15:45:46 +0530
+Message-ID: <CAK9yfHxhwRXCeqb0YbkP74MXgnOOqTNVvtv0ykHnVBB+aiCbKg@mail.gmail.com>
+Subject: Re: Failure due to missing (Exynos related) pinctrl patch
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 10:51:59AM +0100, Dirkjan Bussink wrote:
-> This change fixes a deadlock when the multiplexer is closed while there
-> are still client side ports open.
-> 
-> When the multiplexer is closed and there are active tty's it tries to
-> close them with tty_vhangup. This has a problem though, because
-> tty_vhangup needs the tty_lock. This patch changes it to unlock the
-> tty_lock before attempting the hangup and relocks afterwards. The
-> additional call to tty_port_tty_set is needed because otherwise the
-> port stays active because of the reference counter.
-> 
-> This change also exposed another problem that other code paths don't
-> expect that the multiplexer could have been closed. This patch also adds
-> checks for these cases in the gsmtty_ class of function that could be
-> called.
-> 
-> The documentation explicitly states that "first close all virtual ports
-> before closing the physical port" but we've found this to not always
-> reality in our field situations. The GPRS / UTMS modem sometimes crashes
-> and needs a power cycle in that case which means cleanly shutting down
-> everything is not always possible. This change makes it much more robust
-> for our situation where at least the system is recoverable with this patch
-> and doesn't hang in a deadlock situation inside the kernel.
-> 
-> The patch is against the long term support kernel (3.4.27) and should
-> apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
-> and Telit HE910 modem.
-> 
-> Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
-> Cc: stable <stable@vger.kernel.org>
+Hi Linus,
 
-This patch breaks the build in the tty-next tree:
+On 30 January 2013 15:18, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Jan 30, 2013 at 5:08 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+>> Sachin Kamat wrote:
+>>>
+>>> >> This patch is required along with the
+>>> >> patch "gpio: samsung: fix pinctrl condition for exynos and exynos5440"
+>>> >> (mainline commit Id: e4a5da51) which has already made it into
+>>> >> mainline. Without the missing patch we get the following boot up
+>>> >> warnings and subsequent failures with dt boot on 4412 based board:
+>>> >
+>>> > Hm I didn't realize there was a dependency between these
+>>> > patches, oh well, better get the pull for the pinctrl tree finished
+>>> > off then...
 
-drivers/tty/n_gsm.c: In function ‘gsm_dlci_release’:
-drivers/tty/n_gsm.c:1713:3: error: too few arguments to function ‘tty_unlock’
-In file included from drivers/tty/n_gsm.c:44:0:
-include/linux/tty.h:596:24: note: declared here
-drivers/tty/n_gsm.c:1715:3: error: too few arguments to function ‘tty_lock’
-In file included from drivers/tty/n_gsm.c:44:0:
-include/linux/tty.h:595:24: note: declared here
+>
+> Torvalds has already pulled it in -> problem solved. :-)
+>
 
-Can you fix this up (get it to build on the linux-next tree) and resend
-it?
+I tested this on Linus T.'s latest tip (2e51b231) and the problem
+still persists :(
 
-thanks,
+You sent the following patch in your pull request to Linus T.:
+Kukjin Kim (1):
+      pinctrl: samsung: removing duplicated condition for PINCTRL_SAMSUNG
 
-greg k-h
+However, the missing dependent patch is:
+
+"pinctrl: exynos: change PINCTRL_EXYNOS option"
+
+-- 
+With warm regards,
+Sachin
