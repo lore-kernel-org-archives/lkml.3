@@ -1,137 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab3A3CTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 21:19:06 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44258 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753611Ab3A3CTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 21:19:03 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQWP-KRAppXUcYm7KYEJG_k5fMVCPgeZKoAEAUfdXuQXNA@mail.gmail.com>
-References: <1359058816-7615-26-git-send-email-yinghai@kernel.org> <tip-8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae@git.kernel.org> <CAE9FiQWP-KRAppXUcYm7KYEJG_k5fMVCPgeZKoAEAUfdXuQXNA@mail.gmail.com>
+	id S1753271Ab3A3CcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 21:32:09 -0500
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:20663
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751818Ab3A3CcI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 21:32:08 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc89bh1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839h93fhe5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h1889i1155h)
+Message-ID: <51088619.5060102@freescale.com>
+Date: Wed, 30 Jan 2013 10:31:53 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [tip:x86/mm2] x86, boot: enable support load bzImage and ramdisk above 4G
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 29 Jan 2013 18:18:38 -0800
-To: Yinghai Lu <yinghai@kernel.org>, linux-tip-commits@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, caushik1@gmail.com,
-        matt.fleming@intel.com, jmillenbach@gmail.com, tglx@linutronix.de,
-        josh@joshtriplett.org, hpa@linux.intel.com, rob@landley.net
-Message-ID: <05f9e465-155b-459f-a7ab-6f4e34b2bd42@email.android.com>
+To: Florian Fainelli <ffainelli@freebox.fr>
+CC: <dwmw2@infradead.org>, <dedekind1@gmail.com>, <matthieu.castet@parrot.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] mtd: fix the wrong timeo for panic_nand_wait()
+References: <CAMiH66HWn5PtjX20=WT7GMMV=J72rg3jx64iACSBiExjoD+X7A@mail.gmail.com> <1358818230-27037-1-git-send-email-b32955@freescale.com> <201301292200.14622.ffainelli@freebox.fr>
+In-Reply-To: <201301292200.14622.ffainelli@freebox.fr>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh.  Too tired.
+于 2013年01月30日 05:00, Florian Fainelli 写道:
+> Hello Huang,
+>
+> Le mardi 22 janvier 2013 02:30:30, Huang Shijie a écrit :
+>> In nand_wait(), the timeo for panic_nand_wait() is assigned with
+>> wrong value(jiffies + some delay). The timeo should be set like the
+>> panic_nand_write() does.
+>>
+>> This patch fixes it, and also uses the msecs_to_jiffies() to make the
+>> code more readable.
+> You are not exactly explaining what is the issue with the current code, and
+> how you are fixing it. If someone needs to backport this patch for whatever
+> reason, it must be clear as to what it fixes.
+ok, i can add more comments.
+thanks for your review.
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+Best Regards
+Huang Shijie
 
->On Tue, Jan 29, 2013 at 5:45 PM, tip-bot for Yinghai Lu
-><yinghai@kernel.org> wrote:
->> Commit-ID:  8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae
->> Gitweb:    
->http://git.kernel.org/tip/8cf52eb755e5c5046d2a5d5d3b64d839677ed8ae
->> Author:     Yinghai Lu <yinghai@kernel.org>
->> AuthorDate: Mon, 28 Jan 2013 20:16:44 -0800
->> Committer:  H. Peter Anvin <hpa@linux.intel.com>
->> CommitDate: Tue, 29 Jan 2013 15:30:22 -0800
->>
->> x86, boot: enable support load bzImage and ramdisk above 4G
->>
->> xloadflags bit 1 indicates that we can load the kernel and all data
->> structure above 4G; it is set if kernel is relocatable and 64bit.
->>
->> bootloader will check if xloadflags bit1 is set to decicde if
->> it could load ramdisk and kernel high above 4G.
->>
->> bootloader will fill value to ext_ramdisk_image/size for high 32bits
->> when it load ramdisk above 4G.
->> kernel use get_ramdisk_image/size to use ext_ramdisk_image/size to
->get
->> right positon for ramdisk.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Rob Landley <rob@landley.net>
->> Cc: Matt Fleming <matt.fleming@intel.com>
->> Cc: Gokul Caushik <caushik1@gmail.com>
->> Cc: Josh Triplett <josh@joshtriplett.org>
->> Cc: Joe Millenbach <jmillenbach@gmail.com>
->> Link:
->http://lkml.kernel.org/r/1359058816-7615-26-git-send-email-yinghai@kernel.org
->> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>> Signed-off-by: Huang Shijie<b32955@freescale.com>
 >> ---
->>  arch/x86/boot/compressed/cmdline.c |  2 ++
->>  arch/x86/boot/compressed/misc.c    | 19 +++++++++++++++++++
->>  arch/x86/boot/header.S             | 10 +++++++++-
->>  arch/x86/kernel/head64.c           |  2 ++
->>  arch/x86/kernel/setup.c            |  4 ++++
->>  5 files changed, 36 insertions(+), 1 deletion(-)
+>> fix the compiler error in version 1, and add some commits.
 >>
->> diff --git a/arch/x86/boot/compressed/cmdline.c
->b/arch/x86/boot/compressed/cmdline.c
->> index b4c913c..bffd73b 100644
->> --- a/arch/x86/boot/compressed/cmdline.c
->> +++ b/arch/x86/boot/compressed/cmdline.c
->> @@ -17,6 +17,8 @@ static unsigned long get_cmd_line_ptr(void)
->>  {
->>         unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
+>> ---
+>>   drivers/mtd/nand/nand_base.c |    8 ++------
+>>   1 files changed, 2 insertions(+), 6 deletions(-)
 >>
->> +       cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
->> +
->>         return cmd_line_ptr;
->>  }
->>  int cmdline_find_option(const char *option, char *buffer, int
->bufsize)
->> diff --git a/arch/x86/boot/compressed/misc.c
->b/arch/x86/boot/compressed/misc.c
->> index 7cb56c6..5d8dc86 100644
->> --- a/arch/x86/boot/compressed/misc.c
->> +++ b/arch/x86/boot/compressed/misc.c
->> @@ -318,6 +318,23 @@ static void parse_elf(void *output)
->>         free(phdrs);
->>  }
+>> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+>> index 8323ac9..a8c1fb4 100644
+>> --- a/drivers/mtd/nand/nand_base.c
+>> +++ b/drivers/mtd/nand/nand_base.c
+>> @@ -825,13 +825,8 @@ static void panic_nand_wait(struct mtd_info *mtd,
+>> struct nand_chip *chip, static int nand_wait(struct mtd_info *mtd, struct
+>> nand_chip *chip) {
 >>
->> +static void sanitize_real_mode(struct boot_params *real_mode)
->> +{
->> +       if (real_mode->sentinel) {
->> +               /*fields in boot_params are not valid, clear them */
->> +               memset(&real_mode->olpc_ofw_header, 0,
->> +                      (char *)&real_mode->alt_mem_k -
->> +                       (char *)&real_mode->olpc_ofw_header);
->> +               memset(&real_mode->_pad7[0], 0,
->> +                      (char *)&real_mode->edd_mbr_sig_buffer[0] -
->> +                       (char *)&real_mode->_pad7[0]);
->> +               memset(&real_mode->_pad8[0], 0,
->> +                      (char *)&real_mode->eddbuf[0] -
->> +                       (char *)&real_mode->_pad8[0]);
->> +               memset(&real_mode->_pad9[0], 0,
->sizeof(real_mode->_pad9));
->> +       }
->> +}
->> +
->>  asmlinkage void decompress_kernel(void *rmode, memptr heap,
->>                                   unsigned char *input_data,
->>                                   unsigned long input_len,
->> @@ -327,6 +344,8 @@ asmlinkage void decompress_kernel(void *rmode,
->memptr heap,
+>> -	unsigned long timeo = jiffies;
+>>   	int status, state = chip->state;
+>> -
+>> -	if (state == FL_ERASING)
+>> -		timeo += (HZ * 400) / 1000;
+>> -	else
+>> -		timeo += (HZ * 20) / 1000;
+>> +	unsigned long timeo = (state == FL_ERASING ? 400 : 20);
 >>
->>         sanitize_boot_params(real_mode);
+>>   	led_trigger_event(nand_led_trigger, LED_FULL);
 >>
->> +       sanitize_real_mode(real_mode);
->> +
->
->Hi, Peter,
->
->sanitize_real_mode() need to be dropped from this patch.
->
->You already have complete patch sanitize_boot_params() applied before.
->
->Thanks
->
->Yinghai
+>> @@ -849,6 +844,7 @@ static int nand_wait(struct mtd_info *mtd, struct
+>> nand_chip *chip) if (in_interrupt() || oops_in_progress)
+>>   		panic_nand_wait(mtd, chip, timeo);
+>>   	else {
+>> +		timeo = jiffies + msecs_to_jiffies(timeo);
+>>   		while (time_before(jiffies, timeo)) {
+>>   			if (chip->dev_ready) {
+>>   				if (chip->dev_ready(mtd))
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+
