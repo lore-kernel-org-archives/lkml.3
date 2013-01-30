@@ -1,101 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab3A3DyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 22:54:00 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:53667 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab3A3Dx7 (ORCPT
+	id S1753574Ab3A3DyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 22:54:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44910 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282Ab3A3DyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 22:53:59 -0500
-Message-ID: <5108994E.6060506@linux.vnet.ibm.com>
-Date: Wed, 30 Jan 2013 11:53:50 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 29 Jan 2013 22:54:11 -0500
+Date: Tue, 29 Jan 2013 19:53:59 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-6c902b656c4a808d9c6f40a387b166455efecd62@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, alexander.h.duyck@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, alexander.h.duyck@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1359058816-7615-32-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-32-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86: Merge early kernel reserve for 32bit and 64bit
+Git-Commit-ID: 6c902b656c4a808d9c6f40a387b166455efecd62
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 06/12] KVM: MMU: introduce a static table to map guest
- access to spte access
-References: <50FFB5A1.5090708@linux.vnet.ibm.com> <50FFB658.6040205@linux.vnet.ibm.com> <20130125001550.GB22875@amt.cnet> <5101F207.6040603@linux.vnet.ibm.com> <20130129000715.GA10814@amt.cnet> <20130129010758.GA12132@amt.cnet>
-In-Reply-To: <20130129010758.GA12132@amt.cnet>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13013003-1618-0000-0000-000003439B24
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 19:54:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 09:07 AM, Marcelo Tosatti wrote:
-> On Mon, Jan 28, 2013 at 10:07:15PM -0200, Marcelo Tosatti wrote:
->> On Fri, Jan 25, 2013 at 10:46:31AM +0800, Xiao Guangrong wrote:
->>> On 01/25/2013 08:15 AM, Marcelo Tosatti wrote:
->>>> On Wed, Jan 23, 2013 at 06:07:20PM +0800, Xiao Guangrong wrote:
->>>>> It makes set_spte more clean and reduces branch prediction
->>>>>
->>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>>> ---
->>>>>  arch/x86/kvm/mmu.c |   37 ++++++++++++++++++++++++++-----------
->>>>>  1 files changed, 26 insertions(+), 11 deletions(-)
->>>>
->>>> Don't see set_spte as being a performance problem?
->>>> IMO the current code is quite simple.
->>>
->>> Yes, this is not a performance problem.
->>>
->>> I just dislike this many continuous "if"-s in the function:
->>>
->>> if (xxx)
->>> 	xxx
->>> if (xxx)
->>> 	xxx
->>> ....
->>>
->>> Totally, it has 7 "if"-s before this patch.
->>>
->>> Okay, if you think this is unnecessary, i will drop this patch. :)
->>
->> Yes, please (unless you can show set_spte is a performance problem).
-> 
-> Same thing for spte fast drop: is it a performance problem? 
+Commit-ID:  6c902b656c4a808d9c6f40a387b166455efecd62
+Gitweb:     http://git.kernel.org/tip/6c902b656c4a808d9c6f40a387b166455efecd62
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 24 Jan 2013 12:20:12 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 29 Jan 2013 19:32:58 -0800
 
-It does not fix a performance problem. The patch does optimization on the
-noncrucial path and cleanup for the previous patch.
+x86: Merge early kernel reserve for 32bit and 64bit
 
-> 
-> Please try to group changes into smaller, less controversial sets with 
-> a clear goal:
+They are the same, and we could move them out from head32/64.c to setup.c.
 
-Ah. I thought they are simple and most of them have been reviewed, so i putted
-them into one group, now i know i made a mistake. ;)
+We are using memblock, and it could handle overlapping properly, so
+we don't need to reserve some at first to hold the location, and just
+need to make sure we reserve them before we are using memblock to find
+free mem to use.
 
-> 
-> - Debated performance improvement.
-> - Cleanups (eg mmu_set_spte argument removal).
-> - Bug fixes.
-> - Performance improvements.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1359058816-7615-32-git-send-email-yinghai@kernel.org
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/head32.c | 9 ---------
+ arch/x86/kernel/head64.c | 9 ---------
+ arch/x86/kernel/setup.c  | 9 +++++++++
+ 3 files changed, 9 insertions(+), 18 deletions(-)
 
-Okay. I will split the long series into these set:
-
-Set 1 for improvement:
-[PATCH v2 01/12] KVM: MMU: lazily drop large spte
-
-Set 2 for cleanups:
-[PATCH v2 02/12] KVM: MMU: cleanup mapping-level
-[PATCH v2 07/12] KVM: MMU: remove pt_access in mmu_set_spte
-[PATCH v2 08/12] KVM: MMU: cleanup __direct_map
-
-Set 3 for simplifying set spte path:
-[PATCH v2 03/12] KVM: MMU: simplify mmu_set_spte
-[PATCH v2 04/12] KVM: MMU: simplify set_spte
-[PATCH v2 05/12] KVM: MMU: introduce vcpu_adjust_access
-
-Set 4 for fixing and unifying rmap walking
-[PATCH v2 11/12] KVM: MMU: fix spte assertion
-[PATCH v2 09/12] KVM: MMU: introduce mmu_spte_establish
-[PATCH v2 10/12] KVM: MMU: unify the code of walking pte list
-[PATCH v2 12/12] KVM: MMU: fast drop all spte on the pte_list
-
-Thanks!
-
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index a795b54..138463a 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -33,9 +33,6 @@ void __init i386_start_kernel(void)
+ {
+ 	sanitize_boot_params(&boot_params);
+ 
+-	memblock_reserve(__pa_symbol(&_text),
+-			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
+-
+ 	/* Call the subarch specific early setup function */
+ 	switch (boot_params.hdr.hardware_subarch) {
+ 	case X86_SUBARCH_MRST:
+@@ -49,11 +46,5 @@ void __init i386_start_kernel(void)
+ 		break;
+ 	}
+ 
+-	/*
+-	 * At this point everything still needed from the boot loader
+-	 * or BIOS or kernel text should be early reserved or marked not
+-	 * RAM in e820. All other memory is free game.
+-	 */
+-
+ 	start_kernel();
+ }
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 6873b07..57334f4 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -186,16 +186,7 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 	if (!boot_params.hdr.version)
+ 		copy_bootdata(__va(real_mode_data));
+ 
+-	memblock_reserve(__pa_symbol(&_text),
+-			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
+-
+ 	reserve_ebda_region();
+ 
+-	/*
+-	 * At this point everything still needed from the boot loader
+-	 * or BIOS or kernel text should be early reserved or marked not
+-	 * RAM in e820. All other memory is free game.
+-	 */
+-
+ 	start_kernel();
+ }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 5dc47c3..a74701a 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -805,8 +805,17 @@ early_param("reservelow", parse_reservelow);
+ 
+ void __init setup_arch(char **cmdline_p)
+ {
++	memblock_reserve(__pa_symbol(_text),
++			 (unsigned long)__bss_stop - (unsigned long)_text);
++
+ 	early_reserve_initrd();
+ 
++	/*
++	 * At this point everything still needed from the boot loader
++	 * or BIOS or kernel text should be early reserved or marked not
++	 * RAM in e820. All other memory is free game.
++	 */
++
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
