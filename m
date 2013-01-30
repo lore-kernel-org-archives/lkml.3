@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab3A3Ots (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 09:49:48 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54429
+	id S1755497Ab3A3Otq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 09:49:46 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54431
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755373Ab3A3OrR (ORCPT
+	by vger.kernel.org with ESMTP id S1755383Ab3A3OrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jan 2013 09:47:17 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/21] perf ui browser: Free browser->helpline() on ui_browser__hide()
-Date: Wed, 30 Jan 2013 11:46:48 -0300
-Message-Id: <1359557222-17547-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/21] perf header: Stop using die() calls when processing tracing data
+Date: Wed, 30 Jan 2013 11:46:47 -0300
+Message-Id: <1359557222-17547-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359557222-17547-1-git-send-email-acme@infradead.org>
 References: <1359557222-17547-1-git-send-email-acme@infradead.org>
@@ -31,8 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-It is allocated at ui_browser__show(), so free it in its counterpart,
-ui_browser__hide().
+The callers of this function (perf_event__process_tracing_data) already
+handles a negative value return as error, so just use pr_err() to log
+the problem and return -1 instead of panic'ing.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -42,25 +43,45 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-g449kvnbcpli4ceyxbe2jp1e@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-eeeljnecpi0zi5s7ux1mzdv9@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browser.c | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/util/header.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index 588bcb2..809ea46 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -273,6 +273,8 @@ void ui_browser__hide(struct ui_browser *browser __maybe_unused)
- {
- 	pthread_mutex_lock(&ui__lock);
- 	ui_helpline__pop();
-+	free(browser->helpline);
-+	browser->helpline = NULL;
- 	pthread_mutex_unlock(&ui__lock);
- }
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index fccd69d..e17a8fe 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2921,16 +2921,22 @@ int perf_event__process_tracing_data(union perf_event *event,
+ 				 session->repipe);
+ 	padding = PERF_ALIGN(size_read, sizeof(u64)) - size_read;
  
+-	if (readn(session->fd, buf, padding) < 0)
+-		die("reading input file");
++	if (readn(session->fd, buf, padding) < 0) {
++		pr_err("%s: reading input file", __func__);
++		return -1;
++	}
+ 	if (session->repipe) {
+ 		int retw = write(STDOUT_FILENO, buf, padding);
+-		if (retw <= 0 || retw != padding)
+-			die("repiping tracing data padding");
++		if (retw <= 0 || retw != padding) {
++			pr_err("%s: repiping tracing data padding", __func__);
++			return -1;
++		}
+ 	}
+ 
+-	if (size_read + padding != size)
+-		die("tracing data size mismatch");
++	if (size_read + padding != size) {
++		pr_err("%s: tracing data size mismatch", __func__);
++		return -1;
++	}
+ 
+ 	perf_evlist__prepare_tracepoint_events(session->evlist,
+ 					       session->pevent);
 -- 
 1.8.1.1.361.gec3ae6e
 
