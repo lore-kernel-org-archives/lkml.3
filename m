@@ -1,108 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab3A3OEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 09:04:12 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42923 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753744Ab3A3OEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 09:04:09 -0500
-Message-ID: <51092833.9050701@ti.com>
-Date: Wed, 30 Jan 2013 19:33:31 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        "Porter, Matt" <mporter@ti.com>, "Maupin, Chase" <chase.maupin@ti.com>,
-        "Kridner, Jason" <jdk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
-References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com> <5107B650.5090901@ti.com> <3DE2C638-6AE8-4BC9-AD68-3AAA40CD6233@antoniou-consulting.com> <5108E1C6.9020201@ti.com> <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com> <5108FC31.3000507@ti.com> <27A3106E-3FDB-43DB-AAC9-DC2DA768AF9E@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED03FE1@DBDE01.ent.ti.com> <0422CC2C-3D0D-4BB5-A90D-D3D337E44DD0@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED04134@DBDE01.ent.ti.com> <F3F6248B-4DF4-418E-AD1F-F41E14CC85B2@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED041A8@DBDE01.ent.ti.com> <60C298DC-2DE8-4A44-B00C-E3B09ABE701E@antoniou-consulting.com> <510925C5.2080601@ti.com> <C6DFFB7E-2A5A-4A4A-ABAB-BF0C2739C44A@antoniou-consulting.com>
-In-Reply-To: <C6DFFB7E-2A5A-4A4A-ABAB-BF0C2739C44A@antoniou-consulting.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754444Ab3A3OHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 09:07:13 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:53800 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab3A3OHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 09:07:09 -0500
+From: chenggang <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: chenggang <chenggang.qin@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chenggang Qin <chenggang.qcg@alibaba-inc.com>
+Subject: [PATCH 2/2] perf script: add python script to show system's file r/w behavior
+Date: Wed, 30 Jan 2013 22:05:42 +0800
+Message-Id: <1359554742-4705-1-git-send-email-chenggang.qin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/30/2013 7:25 PM, Pantelis Antoniou wrote:
-> Hi Mugunthan,
->
-> On Jan 30, 2013, at 3:53 PM, Mugunthan V N wrote:
->
->> On 1/30/2013 7:21 PM, Pantelis Antoniou wrote:
->>> Hi Vaibhav,
->>>
->>> On Jan 30, 2013, at 3:47 PM, Bedia, Vaibhav wrote:
->>>
->>>> Hi Antoniou,
->>>>
->>>> On Wed, Jan 30, 2013 at 19:07:19, Pantelis Antoniou wrote:
->>>>> Hi Vaibhav,
->>>>>
->>>>> On Jan 30, 2013, at 3:29 PM, Bedia, Vaibhav wrote:
->>>>>
->>>>>> On Wed, Jan 30, 2013 at 18:14:30, Pantelis Antoniou wrote:
->>>>>>> Hi Vaibhav,
->>>>>>>
->>>>>>> On Jan 30, 2013, at 2:38 PM, Bedia, Vaibhav wrote:
->>>>>>>
->>>>>>>> On Wed, Jan 30, 2013 at 16:38:50, Pantelis Antoniou wrote:
->>>>>>>> [...]
->>>>>>>>> TBH I haven't found a simple way to print out the silicon revision number.
->>>>>>>>> Anyone on the list know a quick and dirty method?
->>>>>>>>>
->>>>>>>> You can dump the DEVICE_ID register @ 0x44e10600.
->>>>>>>> Bits 31:28 should be 0 for PG1.0 and 1 for PG2.0.
->>>>>>>>
->>>>>>> Thanks this works perfectly:
->>>>>>>
->>>>>>> original-bone:
->>>>>>> root@beaglebone:~# devmem2 0x44e10600 w
->>>>>>> Read at address  0x44E10600 (0xb6ff4600): 0x0B94402E
->>>>>>>
->>>>>>> bone-black:
->>>>>>> root@beaglebone:~# devmem2 0x44e10600 w
->>>>>>> Read at address  0x44E10600 (0xb6fcc600): 0x1B94402E
->>>>>>>
->>>>>> I just re-read the mail-chain and I am confused here.
->>>>>> So the patch in question is meant for Bone-A4 which has
->>>>>> PG1.0?
->>>>>>
->>>>> It is a general bug fix. The problem was discovered only on
->>>>> the bone black which has PG2.0 silicon. The driver has been
->>>>> tested and it works on the original bone with PG1.0 as well.
->>>>>
->>>> But Mugunthan mentioned that he doesn't see this on an EVM
->>>> with PG2.0 silicon... is there any board dependency here?
->>>>
->>> I don't know, but I doubt it. How about we wait for Mugunthan to
->>> send us what are the DEVICE_ID contents for his board.
->>>
->>>> Regards,
->>>> Vaibhav
->>> Regards
->>>
->>> -- Pantelis
->>>
->> This is the device ID which i have
->>
->> [root@arago /]# devmem 0x44e10600
->> 0x1B94402E
->>
-> No clue what's the difference of the black with the EVM, and why this happens.
-> The fix is valid anyway.
->
->> Regards
->> Mugunthan V N
-> Regards
->
-> -- Pantelis
->
-I will try to run overnight ethernet test in EVM and will update by 
-tomorrow.
+From: chenggang.qin@gmail.com
 
-Regards
-Mugunthan V N
+This patch depends on the other patch: https://lkml.org/lkml/2013/1/29/47
+Because this patch uses 2 tracepoint events are introduced by the patch of the
+above mentioned.
+
+If the engineers want to analyze the file access behavior of some applications
+without source code, perf script mechanism with some appropriate tracepoints
+events in the VFS subsystem are excellent choice.
+
+The system engineers or developers of server software require to know what files
+are accessed by the target processes with in a period of time. Then they can
+find the hot applications and the hot files. Based on the two tracepoint events,
+vfs:generic_file_aio_read and vfs:generic_file_aio_write (introduced by the patch:
+https://lkml.org/lkml/2013/1/29/47), the python script are introduced by this patch
+can record the system context and other related infomation while any process access
+a file. Then, this patch can show the details of the file access behavior of every
+processes. The detail information include: process's pid, comm, the number of file
+read/write, and the related file's name.
+
+The usage of this script is:
+perf script record filerw
+perf script report filerw [comm|pid]
+
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@alibaba-inc.com>
+
+---
+ tools/perf/scripts/python/bin/filerw-record |    2 +
+ tools/perf/scripts/python/bin/filerw-report |   21 +++
+ tools/perf/scripts/python/filerw.py         |  189 +++++++++++++++++++++++++++
+ 3 files changed, 212 insertions(+)
+ create mode 100755 tools/perf/scripts/python/bin/filerw-record
+ create mode 100644 tools/perf/scripts/python/bin/filerw-report
+ create mode 100644 tools/perf/scripts/python/filerw.py
+
+diff --git a/tools/perf/scripts/python/bin/filerw-record b/tools/perf/scripts/python/bin/filerw-record
+new file mode 100755
+index 0000000..80f358c
+--- /dev/null
++++ b/tools/perf/scripts/python/bin/filerw-record
+@@ -0,0 +1,2 @@
++#!/bin/bash
++perf record -e vfs:generic_file_aio_read -e vfs:generic_file_aio_write $@
+diff --git a/tools/perf/scripts/python/bin/filerw-report b/tools/perf/scripts/python/bin/filerw-report
+new file mode 100644
+index 0000000..5a4dac9
+--- /dev/null
++++ b/tools/perf/scripts/python/bin/filerw-report
+@@ -0,0 +1,21 @@
++#!/bin/bash
++# description: file read/write operations statistic
++# args: [comm]
++n_args=0
++for i in "$@"
++do
++    if expr match "$i" "-" > /dev/null ; then
++	break
++    fi
++    n_args=$(( $n_args + 1 ))
++done
++if [ "$n_args" -gt 1 ] ; then
++    echo "usage: perf script report filerw [comm|pid]"
++    exit
++fi
++
++if [ "$n_args" -gt 0 ] ; then
++    comm=$1
++    shift
++fi
++perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/filerw.py $comm
+diff --git a/tools/perf/scripts/python/filerw.py b/tools/perf/scripts/python/filerw.py
+new file mode 100644
+index 0000000..f5bd820
+--- /dev/null
++++ b/tools/perf/scripts/python/filerw.py
+@@ -0,0 +1,189 @@
++# file read/write counts
++# (c) 2013, Chenggang Qin <chenggang.qcg@gmail.com>
++# Licensed under the terms of the GNU GPL License version 2
++
++# Displays system-wide file aio read/write behavior.
++# It helps us to investigate what files are accessed by all
++# processes or a special process.
++#
++# options
++# comm: show details of the file r/w behavior of a special process.
++
++import os, sys
++
++sys.path.append(os.environ['PERF_EXEC_PATH'] + \
++	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
++
++from perf_trace_context import *
++from Core import *
++from Util import *
++
++usage = "perf script record filerw\n" \
++	"perf script report filerw [comm|pid]\n"
++
++for_comm = None
++for_pid = None
++pid_2_comm = None
++
++if len(sys.argv) > 2:
++	sys.exit(usage)
++
++if len(sys.argv) > 1:
++	try:
++		for_pid = int(sys.argv[1])
++	except:
++		for_comm = sys.argv[1]
++
++file_write = autodict()
++file_read = autodict()
++
++file_write_bytes = autodict()
++file_read_bytes = autodict()
++
++comm_read_info = autodict()
++comm_write_info = autodict()
++
++wevent_count = 0
++revent_count = 0
++
++comm_revent_count = 0;
++comm_wevent_count = 0;
++
++def trace_begin():
++	print "Press control+C to stop and show the summary"
++
++def trace_end():
++	if (for_comm is not None) or (for_pid is not None):
++		print_file_event_for_comm()
++	else:
++		print_file_event_totals()
++
++def vfs__generic_file_aio_write(event_name, context, common_cpu,
++	common_secs, common_nsecs, common_pid, common_comm,
++	pos, bytes, fname):
++	global wevent_count
++	global comm_wevent_count
++	global pid_2_comm
++
++	if (for_comm is not None) or (for_pid is not None):
++		if (common_comm != for_comm) and (common_pid != for_pid):
++			return
++		else:
++			if (pid_2_comm is None) and (for_pid is not None):
++				pid_2_comm = common_comm
++			comm_write_info[comm_wevent_count] = (common_pid, \
++					common_cpu, common_secs, common_nsecs, \
++					fname, pos, bytes)
++			comm_wevent_count += 1
++			return
++
++	wevent_count += 1
++	try:
++		file_write[(common_pid, common_comm, fname)] += 1
++		file_write_bytes[(common_pid, common_comm, fname)] += bytes
++	except TypeError:
++		file_write[(common_pid, common_comm, fname)] = 1
++		file_write_bytes[(common_pid, common_comm, fname)] = bytes
++
++def vfs__generic_file_aio_read(event_name, context, common_cpu,
++	common_secs, common_nsecs, common_pid, common_comm,
++	pos, bytes, fname):
++	global revent_count
++	global comm_revent_count
++	global pid_2_comm
++
++	if (for_comm is not None) or (for_pid is not None):
++		if (common_comm != for_comm) and (common_pid != for_pid):
++			return
++		else:
++			if (pid_2_comm is None) and (for_pid is not None):
++				pid_2_comm = common_comm
++			comm_read_info[comm_revent_count] = (common_pid, \
++					common_cpu, common_secs, common_nsecs, \
++					fname, pos, bytes)
++			comm_revent_count += 1
++			return
++
++	try:
++		revent_count += 1
++		file_read[(common_pid, common_comm, fname)] += 1
++		file_read_bytes[(common_pid, common_comm, fname)] += bytes
++	except TypeError:
++		file_read[(common_pid, common_comm, fname)] = 1
++		file_read_bytes[(common_pid, common_comm, fname)] = bytes
++
++def print_file_event_totals():
++	clear_term()
++	if for_comm is not None:
++		print "\nfile accesses for %s:\n\n" % (for_comm),
++        else:
++                print "\nfile accesses:\n\n",
++
++        print "All read events: %d\n" % (revent_count)
++        print "%5s %20s  %40s %10s %10s\n" % ("pid", "comm", "read file", "count", "Bytes"),
++        print "%5s %20s  %40s %10s %10s\n" % ("-----", "----------",\
++					       "----------", "----------", \
++					       "----------"),
++
++        for tuple, val in sorted(file_read.iteritems(), key = lambda(k, v): (v, k), \
++                               reverse = True):
++                try:
++                        print "%5d  %20s %40s %10d %10d\n" % \
++                              (tuple[0], tuple[1], tuple[2][:40], val, \
++			      file_read_bytes[tuple[0], tuple[1], tuple[2]])
++                except TypeError:
++                        pass
++
++	print "\n\n"
++
++	print "All write events: %d\n" % (wevent_count)
++	print "%5s %20s  %40s %10s %10s\n" % ("pid", "comm", "write file", "count", "Bytes"),
++	print "%5s %20s  %40s %10s %10s\n" % ("-----", "----------",\
++					       "----------", "----------", \
++					       "----------"),
++
++	for tuple, val in sorted(file_write.iteritems(), key = lambda(k, v): (v, k), \
++				reverse = True):
++		try:
++			print "%5d  %20s %40s %10d %10d\n" % \
++			      (tuple[0], tuple[1], tuple[2][:40], val, \
++			      file_write_bytes[tuple[0], tuple[1], tuple[2]])
++		except TypeError:
++			pass
++
++def print_file_event_for_comm():
++	if for_comm is not None:
++		print "File r/w record for %s:\n" % (for_comm)
++	else:
++		print "File r/w record for %s (pid: %d):\n" % (pid_2_comm, for_pid)
++	print "Number of read: %d\n" % (comm_revent_count)
++	print "%5s %3s %16s %40s %10s %10s\n" % ("pid", "cpu", "timestamp", "file name", \
++						 "position", "Bytes")
++	print "%5s %3s %16s %40s %10s %10s\n" % ("-----", "---", "----------", \
++						 "----------", "----------", \
++						 "----------"),
++
++	for i in range(0, comm_revent_count):
++		try:
++			print "%5d %3d %6d.%9d %40s %10s %10s\n" % (comm_read_info[i][0], \
++				comm_read_info[i][1], comm_read_info[i][2], \
++				comm_read_info[i][3], comm_read_info[i][4], \
++				comm_read_info[i][5], comm_read_info[i][6])
++		except TypeError:
++			pass
++
++	print "\nNumber of write: %d\n" % (comm_wevent_count)
++	print "%5s %3s %16s %40s %10s %10s\n" % ("pid", "cpu", "timestamp", "file name", \
++						 "position", "Bytes")
++	print "%5s %3s %16s %40s %10s %10s\n" % ("-----", "---", "----------", \
++						 "----------", "----------", \
++						 "----------"),
++	for i in range(0, comm_wevent_count):
++		try:
++			print "%5d %3d %6d.%9d %40s %10s %10s\n" % (comm_write_info[i][0], \
++				comm_write_info[i][1], comm_write_info[i][2], \
++				comm_write_info[i][3], comm_write_info[i][4], \
++				comm_write_info[i][5], comm_write_info[i][6])
++		except TypeError:
++			pass
++
+-- 
+1.7.9.5
+
