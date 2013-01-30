@@ -1,227 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab3A3QcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 11:32:13 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57043 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753841Ab3A3QcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 11:32:12 -0500
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH v2] regmap: debugfs: Add a registers `range' file
-Date: Wed, 30 Jan 2013 16:30:02 +0000
-Message-Id: <1359563402-17714-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1755807Ab3A3QiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 11:38:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58045 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753919Ab3A3QiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 11:38:04 -0500
+Date: Wed, 30 Jan 2013 17:37:50 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Ying Han <yinghan@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        linux-mm@kvack.org, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] mmotm:
+ memcgvmscan-do-not-break-out-targeted-reclaim-without-reclaimed-pages.patch
+ fix
+Message-ID: <20130130163750.GB21253@dhcp22.suse.cz>
+References: <20130103180901.GA22067@dhcp22.suse.cz>
+ <20130129085104.GA30322@dhcp22.suse.cz>
+ <20130130162257.GB21614@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130130162257.GB21614@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file lists the register ranges in the register map.  The condition
-to split the range is based on the actual register attributes.  A range
-is a contiguous block of registers with the same register attributes.
+On Wed 30-01-13 11:22:57, Johannes Weiner wrote:
+> On Tue, Jan 29, 2013 at 09:51:04AM +0100, Michal Hocko wrote:
+> > Ying has noticed me (via private email) that the patch is bogus because
+> > the break out condition is incorrect. She said she would post a fix
+> > but she's been probably too busy. If she doesn't oppose, could you add
+> > the follow up fix, please?
+> > 
+> > I am really sorry about this mess.
+> > ---
+> > >From 6d23b59e96b8173fae2d0d397cb5e99f16899874 Mon Sep 17 00:00:00 2001
+> > From: Ying Han <yinghan@google.com>
+> > Date: Tue, 29 Jan 2013 09:42:28 +0100
+> > Subject: [PATCH] mmotm:
+> >  memcgvmscan-do-not-break-out-targeted-reclaim-without-reclaimed-pages.patch
+> >  fix
+> > 
+> > We should break out of the hierarchy loop only if nr_reclaimed exceeded
+> > nr_to_reclaim and not vice-versa. This patch fixes the condition.
+> > 
+> > Signed-off-by: Ying Han <yinghan@google.com>
+> > ---
+> >  mm/vmscan.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index d75c1ec..7528eae 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1985,7 +1985,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> >  			 * whole hierarchy is not sufficient.
+> >  			 */
+> >  			if (!global_reclaim(sc) &&
+> > -					sc->nr_to_reclaim >= sc->nr_reclaimed) {
+> > +					sc->nr_to_reclaim <= sc->nr_reclaimed) {
+> 
+> This is just a really weird ordering of the operands, isn't it?  You
+> compare the constant to the variable, like if (42 == foo->nr_pages).
+> 
+>     if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+> 
+> would be less surprising.
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap-debugfs.c | 177 +++++++++++++++++++++++++++++++++++
- 1 file changed, 177 insertions(+)
-
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 0866c42..00db799 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -240,6 +240,180 @@ static const struct file_operations regmap_map_fops = {
- 	.llseek = default_llseek,
- };
- 
-+enum reg_attributes {
-+	READABLE = 0x1,
-+	WRITEABLE = 0x2,
-+	VOLATILE = 0x4,
-+};
-+
-+static inline unsigned int regmap_attr_bitmap(struct regmap *map,
-+					      unsigned int reg)
-+{
-+	unsigned int reg_attr = 0;
-+
-+	if (regmap_readable(map, reg))
-+		reg_attr |= READABLE;
-+	if (regmap_writeable(map, reg))
-+		reg_attr |= WRITEABLE;
-+	if (regmap_volatile(map, reg))
-+		reg_attr |= VOLATILE;
-+	return reg_attr;
-+}
-+
-+enum range_state {
-+	RANGE_START,
-+	RANGE_END,
-+	RANGE_WITHIN,
-+	RANGE_DONE,
-+};
-+
-+struct regmap_reg_range  {
-+	unsigned int start;
-+	unsigned int end;
-+	unsigned int attr;
-+};
-+
-+static void regmap_range_format_line(struct regmap *map,
-+				     struct regmap_reg_range *r,
-+				     char *buf, size_t len)
-+{
-+	int reg_len;
-+	ssize_t buf_offset;
-+
-+	buf_offset = snprintf(buf, PAGE_SIZE, "%x-%x ",
-+			      r->start, r->end);
-+	buf_offset += snprintf(buf + buf_offset,
-+			       PAGE_SIZE - buf_offset, "(");
-+	if (r->attr & READABLE)
-+		buf_offset += snprintf(buf + buf_offset,
-+				       PAGE_SIZE - buf_offset,
-+				       "read, ");
-+	if (r->attr & WRITEABLE)
-+		buf_offset += snprintf(buf + buf_offset,
-+				       PAGE_SIZE - buf_offset,
-+				       "write, ");
-+	if (r->attr & VOLATILE)
-+		buf_offset += snprintf(buf + buf_offset,
-+				       PAGE_SIZE - buf_offset,
-+				       "volatile, ");
-+	/* Rewind the last ", " as well */
-+	buf_offset += snprintf(buf + buf_offset - 2,
-+			       PAGE_SIZE - buf_offset, ")");
-+}
-+
-+static ssize_t regmap_range_read_file(struct file *file,
-+				      char __user *user_buf, size_t count,
-+				      loff_t *ppos)
-+{
-+	struct regmap *map = file->private_data;
-+	int ret;
-+	char *buf;
-+	size_t buf_pos = 0;
-+	loff_t p = 0;
-+	unsigned int start_reg;
-+	int i;
-+	unsigned int reg_attr;
-+	unsigned int block_start, block_end, block_attr;
-+	enum range_state state;
-+	struct regmap_reg_range r;
-+	char *entry;
-+	bool scanning = true;
-+
-+	if (*ppos < 0 || !count)
-+		return -EINVAL;
-+
-+	buf = kmalloc(count, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	entry = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!entry) {
-+		kfree(buf);
-+		return -ENOMEM;
-+	}
-+
-+	start_reg = 0;
-+	block_attr = regmap_attr_bitmap(map, start_reg);
-+	block_start = block_end = start_reg;
-+	state = RANGE_START;
-+
-+	i = start_reg;
-+	while (i <= map->max_register && scanning) {
-+		reg_attr = regmap_attr_bitmap(map, i);
-+		switch (state) {
-+		case RANGE_START:
-+			block_start = i;
-+			block_attr = reg_attr;
-+			state = RANGE_WITHIN;
-+			break;
-+		case RANGE_END:
-+			r.start = block_start;
-+			r.end = block_end;
-+			r.attr = block_attr;
-+			/* Only care about regions where any of the 3 register
-+			   attributes are set */
-+			if (r.attr) {
-+				regmap_range_format_line(map, &r, entry, PAGE_SIZE);
-+				if (p >= *ppos) {
-+					/* We can't fit any more data into this buf
-+					 * so no use to loop around anymore, just
-+					 * give the data back to user */
-+					if (buf_pos + 1 + strlen(entry) >= count)
-+						goto out_entry;
-+					snprintf(buf + buf_pos, count - buf_pos,
-+						 "%s", entry);
-+					buf_pos += strlen(entry);
-+					buf[buf_pos] = '\n';
-+					buf_pos++;
-+				}
-+				p += strlen(entry) + 1;
-+			}
-+			if (i + 1 > map->max_register)
-+				state = RANGE_DONE;
-+			else
-+				state = RANGE_START;
-+			break;
-+		case RANGE_WITHIN:
-+			if (reg_attr != block_attr) {
-+				block_end = i - 1;
-+				state = RANGE_END;
-+			} else {
-+				if (i + 1 > map->max_register) {
-+					state = RANGE_END;
-+					block_end = map->max_register;
-+				}
-+				else {
-+					i++;
-+				}
-+			}
-+			break;
-+		case RANGE_DONE:
-+			scanning = false;
-+			break;
-+		}
-+	}
-+
-+out_entry:
-+	kfree(entry);
-+	ret = buf_pos;
-+
-+	if (copy_to_user(user_buf, buf, buf_pos)) {
-+		ret = -EFAULT;
-+		goto out_buf;
-+	}
-+
-+	*ppos += buf_pos;
-+out_buf:
-+	kfree(buf);
-+	return ret;
-+}
-+
-+static const struct file_operations regmap_range_fops = {
-+	.open = simple_open,
-+	.read = regmap_range_read_file,
-+	.llseek = default_llseek,
-+};
-+
- static ssize_t regmap_access_read_file(struct file *file,
- 				       char __user *user_buf, size_t count,
- 				       loff_t *ppos)
-@@ -322,6 +496,9 @@ void regmap_debugfs_init(struct regmap *map)
- 	debugfs_create_file("name", 0400, map->debugfs,
- 			    map, &regmap_name_fops);
- 
-+	debugfs_create_file("range", 0400, map->debugfs,
-+			    map, &regmap_range_fops);
-+
- 	if (map->max_register) {
- 		debugfs_create_file("registers", 0400, map->debugfs,
- 				    map, &regmap_map_fops);
+No objections from me.
 -- 
-1.8.1.2
-
+Michal Hocko
+SUSE Labs
