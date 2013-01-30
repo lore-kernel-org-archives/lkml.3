@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab3A3Kfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:35:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38523 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754965Ab3A3Kfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:35:45 -0500
-Date: Wed, 30 Jan 2013 18:35:34 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matt Porter <mporter@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v6 08/10] spi: omap2-mcspi: convert to
- dma_request_slave_channel_compat()
-Message-ID: <20130130103530.GA6229@opensource.wolfsonmicro.com>
-References: <1359529229-22207-1-git-send-email-mporter@ti.com>
- <1359529229-22207-9-git-send-email-mporter@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359529229-22207-9-git-send-email-mporter@ti.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754894Ab3A3Kf0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 05:35:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41751 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754841Ab3A3KfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 05:35:23 -0500
+From: Takashi Iwai <tiwai@suse.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] firmware: Ignore abort check when no user-helper is used
+Date: Wed, 30 Jan 2013 11:35:09 +0100
+Message-Id: <1359542109-3043-5-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1359542109-3043-1-git-send-email-tiwai@suse.de>
+References: <1359542109-3043-1-git-send-email-tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 02:00:27AM -0500, Matt Porter wrote:
-> Convert dmaengine channel requests to use
-> dma_request_slave_channel_compat(). This supports the DT case of
-> platforms requiring channel selection from either the OMAP DMA or
-> the EDMA engine. AM33xx only boots from DT and is the only user
-> implementing EDMA so in the !DT case we can default to the OMAP DMA
-> filter.
+FW_STATUS_ABORT can be set only during the user-helper invocation,
+thus we can ignore the check when CONFIG_HW_LOADER_USER_HELPER is
+disabled.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ drivers/base/firmware_class.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index ff631ef..f1caad7 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -454,6 +454,9 @@ static void fw_load_abort(struct firmware_priv *fw_priv)
+ 	complete_all(&buf->completion);
+ }
+ 
++#define is_fw_load_aborted(buf)	\
++	test_bit(FW_STATUS_ABORT, &(buf)->status)
++
+ static ssize_t firmware_timeout_show(struct class *class,
+ 				     struct class_attribute *attr,
+ 				     char *buf)
+@@ -891,6 +894,10 @@ fw_load_from_user_helper(struct firmware *firmware, const char *name,
+ {
+ 	return -ENOENT;
+ }
++
++/* No abort during direct loading */
++#define is_fw_load_aborted(buf) false
++
+ #endif /* CONFIG_FW_LOADER_USER_HELPER */
+ 
+ 
+@@ -901,7 +908,7 @@ static int sync_cached_firmware_buf(struct firmware_buf *buf)
+ 
+ 	mutex_lock(&fw_lock);
+ 	while (!test_bit(FW_STATUS_DONE, &buf->status)) {
+-		if (test_bit(FW_STATUS_ABORT, &buf->status)) {
++		if (is_fw_load_aborted(buf)) {
+ 			ret = -ENOENT;
+ 			break;
+ 		}
+@@ -963,7 +970,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device)
+ 	struct firmware_buf *buf = fw->priv;
+ 
+ 	mutex_lock(&fw_lock);
+-	if (!buf->size || test_bit(FW_STATUS_ABORT, &buf->status)) {
++	if (!buf->size || is_fw_load_aborted(buf)) {
+ 		mutex_unlock(&fw_lock);
+ 		return -ENOENT;
+ 	}
+-- 
+1.8.1.1
+
