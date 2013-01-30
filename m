@@ -1,34 +1,38 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab3AQTMq (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 17 Jan 2013 14:12:46 -0500
-Received: from outrelay03.libero.it ([212.52.84.103]:60459 "EHLO
-	outrelay03.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab3AQTMp (ORCPT
+	id S1753148Ab3A3Aac (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 29 Jan 2013 19:30:32 -0500
+Received: from mx3.suomi24.fi ([80.76.154.16]:54235 "EHLO
+	s24-maa01.sth.basefarm.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751652Ab3A3Aaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jan 2013 14:12:45 -0500
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0209.50F84CCE.00EB,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1821
-Message-ID: <2387509.2618041358449884044.JavaMail.defaultUser@defaultHost>
-Date: Thu, 17 Jan 2013 20:11:24 +0100 (CET)
-From: juliet dosi <juliet_dosi@yahoo.co.uk>
-Reply-To: juliet dosi <juliet_dosi@yahoo.co.uk>
-To: juliet_dosi@yahoo.co.uk
-Subject: Hello
+	Tue, 29 Jan 2013 19:30:30 -0500
+Message-ID: <30191344.162881359505754005.JavaMail.defaultUser@defaultHost>
+Date: Wed, 30 Jan 2013 01:29:14 +0100 (CET)
+From: beatrice leonard <beatriceleonard@suomi24.fi>
+Subject: HI
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
+Content-Type: text/plain;charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-SenderIP: 41.82.151.160
-X-libjamv: O/BQBdLkRPE=
-X-libjamsun: BKyAe5lwp08yITNhQU60BM7L57+ql9gy
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-from Juliet,
-i looking for relationship
-please contact me back,
-then i will tell you more about myself.
-And i give you picture too.
+
+
+
+--
+Hello dear
+
+How are you doing today, i hope every things is ok with you as its my
+pleasure to contact you after viewing your profile which really interest me in 
+having communication with you, if you will have the
+desire with me so that we can get to know each other better and see what will 
+happen in future. i will be very happy if you can write me back
+and lets know all about each other ok, so that I will send you my
+pictures, I will be waiting to hear from you as I
+wish you all the best for your day.
+yours new friend.
+  Beatrice
+--
 
