@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab3A3WRQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 17:17:16 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:39337 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755893Ab3A3WRM (ORCPT
+	id S1757086Ab3A3WUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 17:20:00 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59440 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab3A3WT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 17:17:12 -0500
-Message-ID: <51099BE2.5090706@suse.cz>
-Date: Wed, 30 Jan 2013 23:17:06 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	Wed, 30 Jan 2013 17:19:58 -0500
+Date: Wed, 30 Jan 2013 22:19:46 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>
+Subject: Re: BUG: circular locking dependency detected
+Message-ID: <20130130221946.GA14801@flint.arm.linux.org.uk>
+References: <20130130200648.GA13298@flint.arm.linux.org.uk> <20130130215211.GA28418@flint.arm.linux.org.uk> <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-References: <20130129202848.GE25415@pd.tnic> <20130130200041.GD23895@pd.tnic> <51098397.5040206@suse.cz> <2240511.0oyl5pIt1j@vostro.rjw.lan>
-In-Reply-To: <2240511.0oyl5pIt1j@vostro.rjw.lan>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 10:39 PM, Rafael J. Wysocki wrote:
->> What is cool is that I have steps to reproduce:
->> 1) boot
->> 2) run the attached script (turn on all possible power savings -- in
->> fact everything what powertop suggests)
->> 3) suspend to _disk_ (mem is not enough, BIOS apparently has to
->> interfere here)
+On Wed, Jan 30, 2013 at 11:07:16PM +0100, Daniel Vetter wrote:
+> On Wed, Jan 30, 2013 at 10:52 PM, Russell King <rmk@arm.linux.org.uk> wrote:
+> > Also adding Greg and Daniel to this as Daniel introduced the lockdep
+> > checking.
+> >
+> > This looks extremely horrid to be to solve - the paths are rather deep
+> > where the dependency occurs.  The two paths between the locks are:
+> >
+> > console_lock+0x5c/0x70
+> > register_con_driver+0x44/0x150
+> > take_over_console+0x24/0x3b4
+> > fbcon_takeover+0x70/0xd4
+> > fbcon_event_notify+0x7c8/0x818
+> > notifier_call_chain+0x4c/0x8c
+> > __blocking_notifier_call_chain+0x50/0x68
+> > blocking_notifier_call_chain+0x20/0x28
+> >
+> > and
+> >
+> > __blocking_notifier_call_chain+0x34/0x68
+> > blocking_notifier_call_chain+0x20/0x28
+> > fb_notifier_call_chain+0x20/0x28
+> > fb_blank+0x40/0xac
+> > fbcon_blank+0x1f4/0x29c
+> > do_blank_screen+0x1b8/0x270
+> > console_callback+0x74/0x138
 > 
-> No, I don't think it's the BIOS.  Most likely the boot kernel.
-
-Or that...
-
->> 4) resume from disk
->> 5) boom
->>
->> I tried to remove also wireless drivers, no change.
+> You want Dave Airlie's pile of locking reworks, which fixes all
+> currently known offenders around console_lock and fb_notifier. Patches
+> won't go into 3.9 since it took a few rounds until they did not cause
+> regression by making these deadlocks easier to hit.
 > 
-> Is the resume boot kernel the same as the one in the image?
+> http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
+> 
+> Long term solution would be to abolish the fb_notifier, at least for
+> the purpose of linking fbdevs up with the fbcon and just replace those
+> with direct function calls. But that requires that we no longer allow
+> fbdev drivers and the fbcon to be loaded in any arbitrary order. Or
+> just force fbcon to be built-in if enabled, imo the sane choice (no
+> one's bothering with config_vt=m either, after all).
 
-Yeah, the same ones: 3.7.5
+So... what you seem to be telling me is that 3.9 is going to be a
+release which issues lockdep complaints when the console blanks, and
+you think that's acceptable?
+
+Adding Linus and Andrew so they're aware of this issue...
 
 -- 
-js
-suse labs
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
