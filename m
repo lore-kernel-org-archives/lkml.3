@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab3A3B4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:56:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44087 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab3A3B4Q (ORCPT
+	id S1753648Ab3A3B53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:57:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39936 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753157Ab3A3B51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:56:16 -0500
-Date: Tue, 29 Jan 2013 17:56:04 -0800
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-7f5de22abaeb993a3f27132449588ed76c5a7938@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1359058816-7615-35-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-35-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] mm: Add alloc_bootmem_low_pages_nopanic()
-Git-Commit-ID: 7f5de22abaeb993a3f27132449588ed76c5a7938
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 29 Jan 2013 20:57:27 -0500
+Date: Wed, 30 Jan 2013 09:57:18 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [GIT PULL][FOR REVIEW] Regulators: Bring the AB8500 into the
+ 20th century
+Message-ID: <20130130015715.GA4945@opensource.wolfsonmicro.com>
+References: <20130129164131.GN18212@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:56:10 -0800 (PST)
+In-Reply-To: <20130129164131.GN18212@gmail.com>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7f5de22abaeb993a3f27132449588ed76c5a7938
-Gitweb:     http://git.kernel.org/tip/7f5de22abaeb993a3f27132449588ed76c5a7938
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 24 Jan 2013 12:20:15 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 29 Jan 2013 15:34:42 -0800
 
-mm: Add alloc_bootmem_low_pages_nopanic()
+--k+w/mQv8wyuph6w0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-We don't need to panic in some case, like for swiotlb preallocating.
+On Tue, Jan 29, 2013 at 04:41:31PM +0000, Lee Jones wrote:
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1359058816-7615-35-git-send-email-yinghai@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- include/linux/bootmem.h | 5 +++++
- mm/bootmem.c            | 8 ++++++++
- mm/nobootmem.c          | 8 ++++++++
- 3 files changed, 21 insertions(+)
+> If you'd like me to sent the patches to the MLs for a better review
+> platform I can do, but I'd like to get permission before I go and
+> start upsetting people.
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index 3f778c2..3cd16ba 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -99,6 +99,9 @@ void *___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
- extern void *__alloc_bootmem_low(unsigned long size,
- 				 unsigned long align,
- 				 unsigned long goal);
-+void *__alloc_bootmem_low_nopanic(unsigned long size,
-+				 unsigned long align,
-+				 unsigned long goal);
- extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
- 				      unsigned long size,
- 				      unsigned long align,
-@@ -132,6 +135,8 @@ extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
- 
- #define alloc_bootmem_low(x) \
- 	__alloc_bootmem_low(x, SMP_CACHE_BYTES, 0)
-+#define alloc_bootmem_low_pages_nopanic(x) \
-+	__alloc_bootmem_low_nopanic(x, PAGE_SIZE, 0)
- #define alloc_bootmem_low_pages(x) \
- 	__alloc_bootmem_low(x, PAGE_SIZE, 0)
- #define alloc_bootmem_low_pages_node(pgdat, x) \
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index b93376c..2b0bcb0 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -833,6 +833,14 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
- 	return ___alloc_bootmem(size, align, goal, ARCH_LOW_ADDRESS_LIMIT);
- }
- 
-+void * __init __alloc_bootmem_low_nopanic(unsigned long size,
-+					  unsigned long align,
-+					  unsigned long goal)
-+{
-+	return ___alloc_bootmem_nopanic(size, align, goal,
-+					ARCH_LOW_ADDRESS_LIMIT);
-+}
-+
- /**
-  * __alloc_bootmem_low_node - allocate low boot memory from a specific node
-  * @pgdat: node to allocate from
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 03d152a..5e07d36 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -391,6 +391,14 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
- 	return ___alloc_bootmem(size, align, goal, ARCH_LOW_ADDRESS_LIMIT);
- }
- 
-+void * __init __alloc_bootmem_low_nopanic(unsigned long size,
-+					  unsigned long align,
-+					  unsigned long goal)
-+{
-+	return ___alloc_bootmem_nopanic(size, align, goal,
-+					ARCH_LOW_ADDRESS_LIMIT);
-+}
-+
- /**
-  * __alloc_bootmem_low_node - allocate low boot memory from a specific node
-  * @pgdat: node to allocate from
+Yes.
+
+>  drivers/regulator/Makefile                         |    2 +
+>  drivers/regulator/ab8500-debug.c                   | 2154
+>  +++++++++++++++
+
+Just looking at the diffstat if you're adding custom diagnostic code
+that's almost as big as the active code itself there's something gone
+seriously wrong.
+
+--k+w/mQv8wyuph6w0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRCH31AAoJELSic+t+oim9SjwQAI7ed/onoXoznhyKPtj2E7Va
+4RFXZDw0yv+ySLc+d2tXDO8jgByFTrsm48W/aXCSSKcg92U/BBQxdp5T8ds4O5z/
+5bGPJDBvH2aB0IUmQqK9N7i4l01zklFiLSEbO6Fd+U+LNp33oIy3Vr1ov6Eqxgn4
+E0cJSsuov/vkTi5jKB1z7b0sBgDrCHaNa5m5dXbxfykf/f083gQa+q5l249n9ojY
+XnCLtD78noetoB82FnF2afy0gM6jWFHUGgjKuwXS1nuA0gKlcRtsDLBFCzH71RMC
+Di0c5bwUG2JeUANpleYYdxn4BUGXgtGncMr7HbkqeLWWhTawAnfhAbq5zVQc/J3h
+iu3CWdvnrNZFUzMxrY9Sj26wtS7vDxdseruo8egfkoeVg2mj65n2tObM5igDMf+f
+Iki8/CqUg3D+U1eZX18G5HpC4jNc9PwZ3lCT/kmaGVHQnHqi0CEINMIIiIb8eT3e
+GEffv0RTbtiplqYOj/0MOCHUhtVNgX8dw4vGcNO9vNOPzUsHjaqW/I35VSDmR7/B
+wj2voowPRrnlOQUdYI1ZnpRgF4DngKJQfpcltS8m2RSMyL2Dz2BPBnyMn+epuxhT
+V3HSld9EVHJ/bZlrf4t1i3cC3ZpuDftQ07J5sDwnGTLedQSyxsCptI7tHEZ9IsMZ
+PsKM0sflNNJpjFlJ07bC
+=wim8
+-----END PGP SIGNATURE-----
+
+--k+w/mQv8wyuph6w0--
