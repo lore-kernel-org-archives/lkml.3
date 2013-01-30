@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3A3Nn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 08:43:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50345 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963Ab3A3NnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 08:43:24 -0500
-From: Oliver Neukum <oneukum@suse.de>
-To: Kurachkin Michail <Michail.Kurachkin@promwad.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kuten Ivan <Ivan.Kuten@promwad.com>,
-        "benavi@marvell.com" <benavi@marvell.com>,
-        Palstsiuk Viktar <Viktar.Palstsiuk@promwad.com>
-Subject: Re: TDM bus support in Linux Kernel [PATCH]
-Date: Wed, 30 Jan 2013 14:43:29 +0100
-Message-ID: <2570275.zfck7HrlM6@linux-5eaq.site>
-Organization: SUSE
-User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <F7F628C32E67B04DAECC5CA53521253E5FAB15CE@sv-exmb01-lo1.promwad.corp>
-References: <F7F628C32E67B04DAECC5CA53521253E5FAB15CE@sv-exmb01-lo1.promwad.corp>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754578Ab3A3NrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 08:47:15 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:61068 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab3A3NrL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 08:47:11 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH 1/3] f2fs: avoid redundant call to has_not_enough_free_secs in f2fs_gc
+Date: Wed, 30 Jan 2013 22:47:02 +0900
+Message-Id: <1359553622-7449-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 January 2013 12:37:25 Kurachkin Michail wrote:
-> Hi Greg,
-> 
-> I followed your recommendations and created a diff using Linux 3.8-rc5 sources. Please review it and give your comments.
-> 
-Part #5
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-+/**
-+ * Reset SLIC
-+ */
-+static int slic_reset(struct si3226x_slic *slic)
-+{
-+	unsigned long timeout;
-+
-+	gpio_set_value(slic->reset_gpio, 0);
-+
-+	timeout = jiffies + MSEC(RESET_SLIC_PERIOD);
-+
-+	while(!(time_after(jiffies, timeout)))
-+		schedule();
+After doing a write_checkpoint from garbage collection path if there is still
+need to do more garbage collection, gc_more label is used to jump and start
+the process again. And in that process, first step before getting victim is to
+check if there are not enough free sections, which is already done before
+doing a jump to gc_more. We can avoid the redundant call to check free
+sections, by checking the gc_type flag which will remain FG_GC(value 1) under
+this condition.
 
-Ouch. We have a delay primitive.
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ fs/f2fs/gc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-+
-+	gpio_set_value(slic->reset_gpio, 1);
-+
-+	return 0;
-+}
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 9b5d0aa..0dfdaa5 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -672,7 +672,7 @@ gc_more:
+ 	if (!(sbi->sb->s_flags & MS_ACTIVE))
+ 		goto stop;
+ 
+-	if (has_not_enough_free_secs(sbi))
++	if (!gc_type && has_not_enough_free_secs(sbi))
+ 		gc_type = FG_GC;
+ 
+ 	if (!__get_victim(sbi, &segno, gc_type, NO_CHECK_TYPE))
+-- 
+1.7.9.5
 
-+/**
-+ * Receive voice data block from TDM voice channel controller.
-+ * @param ch - voice channel attendant to transmit data in TDM frame
-+ * @param data - pointer to read data received by DMA.
-+                 Length data for read equal to value returned by get_tdm_voice_block_size()
-+ *
-+ * Context: can sleep
-+ * @return 0 on success; negative errno on failure
-+ */
-+static int kirkwood_recv(struct tdm_voice_channel *ch, u8 *data)
-+{
-+	struct kirkwood_tdm_voice *onchip_ch = ch->private_data;
-+
-+	wait_event_interruptible(ch->rx_queue,
-+	                         get_rx_latency(onchip_ch) > 1);
-
-If you are waiting interruptably, you need to be able to handle an interruption.
-
-+
-+	memcpy(data, onchip_ch->rx_buf[atomic_read(&onchip_ch->read_rx_buf_num)],
-+	       ch->buffer_len);
-+
-+	atomic_set(&onchip_ch->read_rx_buf_num,
-+	           inc_next_dma_buf_num(atomic_read(&onchip_ch->read_rx_buf_num)));
-+
-+	return 0;
-+}
