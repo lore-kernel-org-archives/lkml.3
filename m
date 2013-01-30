@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab3A3Gdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 01:33:32 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:34668 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab3A3Gda (ORCPT
+	id S1753617Ab3A3Gdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 01:33:35 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:43119 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab3A3GbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 01:33:30 -0500
+	Wed, 30 Jan 2013 01:31:09 -0500
 From: Huacai Chen <chenhc@lemote.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
         Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
         Hua Yan <yanh@lemote.com>
-Subject: [PATCH V9 12/13] MIPS: Loongson 3: Add CPU hotplug support
-Date: Wed, 30 Jan 2013 14:25:05 +0800
-Message-Id: <1359527106-22879-13-git-send-email-chenhc@lemote.com>
+Subject: [PATCH V9 06/13] MIPS: Loongson 3: Add HT-linked PCI support
+Date: Wed, 30 Jan 2013 14:24:59 +0800
+Message-Id: <1359527106-22879-7-git-send-email-chenhc@lemote.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1359527106-22879-1-git-send-email-chenhc@lemote.com>
 References: <1359527106-22879-1-git-send-email-chenhc@lemote.com>
@@ -23,335 +23,263 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tips of Loongson's CPU hotplug:
-1, To fully shutdown a core in Loongson 3, the target core should go to
-   CKSEG1 and flush all L1 cache entries at first. Then, another core
-   (usually Core 0) can safely disable the clock of the target core. So
-   play_dead() call loongson3_play_dead() via CKSEG1 (both uncached and
-   unmmaped).
-2, The default clocksource of Loongson is MIPS. Since clock source is a
-   global device, timekeeping need the CP0' Count registers of each core
-   be synchronous. Thus, when a core is up, we use a SMP_ASK_C0COUNT IPI
-   to ask Core-0's Count.
+Loongson family machines use Hyper-Transport bus for inter-core
+connection and device connection. The PCI bus is a subordinate
+linked at HT1.
+
+With UEFI-like firmware interface, We don't need fixup for PCI irq
+routing.
 
 Signed-off-by: Huacai Chen <chenhc@lemote.com>
 Signed-off-by: Hongliang Tao <taohl@lemote.com>
 Signed-off-by: Hua Yan <yanh@lemote.com>
 ---
- arch/mips/Kconfig                              |    1 +
- arch/mips/include/asm/mach-loongson/loongson.h |    6 +-
- arch/mips/include/asm/smp.h                    |    1 +
- arch/mips/loongson/loongson-3/irq.c            |   10 ++
- arch/mips/loongson/loongson-3/smp.c            |  178 +++++++++++++++++++++++-
- 5 files changed, 190 insertions(+), 6 deletions(-)
+ arch/mips/include/asm/mach-loongson/loongson.h |    7 ++
+ arch/mips/include/asm/mach-loongson/pci.h      |    5 +
+ arch/mips/pci/Makefile                         |    1 +
+ arch/mips/pci/fixup-loongson3.c                |   65 +++++++++++++++
+ arch/mips/pci/ops-loongson3.c                  |  104 ++++++++++++++++++++++++
+ 5 files changed, 182 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/pci/fixup-loongson3.c
+ create mode 100644 arch/mips/pci/ops-loongson3.c
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index bddf029..6f65cfb 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -269,6 +269,7 @@ config LASAT
- config MACH_LOONGSON
- 	bool "Loongson family of machines"
- 	select SYS_SUPPORTS_ZBOOT
-+	select SYS_SUPPORTS_HOTPLUG_CPU
- 	help
- 	  This enables the support of Loongson family of machines.
- 
 diff --git a/arch/mips/include/asm/mach-loongson/loongson.h b/arch/mips/include/asm/mach-loongson/loongson.h
-index f573e47..573eed8 100644
+index 6a1bcf3..960811a 100644
 --- a/arch/mips/include/asm/mach-loongson/loongson.h
 +++ b/arch/mips/include/asm/mach-loongson/loongson.h
-@@ -247,6 +247,9 @@ static inline void do_perfcnt_IRQ(void)
- #define LOONGSON_PXARB_CFG		LOONGSON_REG(LOONGSON_REGBASE + 0x68)
- #define LOONGSON_PXARB_STATUS		LOONGSON_REG(LOONGSON_REGBASE + 0x6c)
+@@ -15,6 +15,7 @@
+ #include <linux/init.h>
+ #include <linux/irq.h>
+ #include <linux/kconfig.h>
++#include <boot_param.h>
  
-+/* Chip Config */
-+#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
+ /* loongson internal northbridge initialization */
+ extern void bonito_irq_init(void);
+@@ -101,7 +102,13 @@ static inline void do_perfcnt_IRQ(void)
+ #define LOONGSON_PCICFG_BASE	0x1fe80000
+ #define LOONGSON_PCICFG_SIZE	0x00000800	/* 2K */
+ #define LOONGSON_PCICFG_TOP	(LOONGSON_PCICFG_BASE+LOONGSON_PCICFG_SIZE-1)
 +
- /* pcimap */
- 
- #define LOONGSON_PCIMAP_PCIMAP_LO0	0x0000003f
-@@ -262,9 +265,6 @@ static inline void do_perfcnt_IRQ(void)
- #ifdef CONFIG_CPU_SUPPORTS_CPUFREQ
- #include <linux/cpufreq.h>
- extern struct cpufreq_frequency_table loongson2_clockmod_table[];
--
--/* Chip Config */
--#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
- #endif
- 
- /*
-diff --git a/arch/mips/include/asm/smp.h b/arch/mips/include/asm/smp.h
-index f33b5fd..4527a41 100644
---- a/arch/mips/include/asm/smp.h
-+++ b/arch/mips/include/asm/smp.h
-@@ -42,6 +42,7 @@ extern int __cpu_logical_map[NR_CPUS];
- #define SMP_ICACHE_FLUSH	0x4
- /* Used by kexec crashdump to save all cpu's state */
- #define SMP_DUMP		0x8
-+#define SMP_ASK_C0COUNT		0x10
- 
- extern volatile cpumask_t cpu_callin_map;
- 
-diff --git a/arch/mips/loongson/loongson-3/irq.c b/arch/mips/loongson/loongson-3/irq.c
-index 27aef31..83f84e6 100644
---- a/arch/mips/loongson/loongson-3/irq.c
-+++ b/arch/mips/loongson/loongson-3/irq.c
-@@ -85,3 +85,13 @@ void __init mach_init_irq(void)
- 
- 	set_c0_status(STATUSF_IP2 | STATUSF_IP6);
- }
++#if defined(CONFIG_HT_PCI)
++#define LOONGSON_PCIIO_BASE	loongson_pciio_base
++#else
+ #define LOONGSON_PCIIO_BASE	0x1fd00000
++#endif
 +
-+#ifdef CONFIG_HOTPLUG_CPU
+ #define LOONGSON_PCIIO_SIZE	0x00100000	/* 1M */
+ #define LOONGSON_PCIIO_TOP	(LOONGSON_PCIIO_BASE+LOONGSON_PCIIO_SIZE-1)
+ 
+diff --git a/arch/mips/include/asm/mach-loongson/pci.h b/arch/mips/include/asm/mach-loongson/pci.h
+index bc99dab..1212774 100644
+--- a/arch/mips/include/asm/mach-loongson/pci.h
++++ b/arch/mips/include/asm/mach-loongson/pci.h
+@@ -40,8 +40,13 @@ extern struct pci_ops loongson_pci_ops;
+ #else	/* loongson2f/32bit & loongson2e */
+ 
+ /* this pci memory space is mapped by pcimap in pci.c */
++#ifdef CONFIG_CPU_LOONGSON3
++#define LOONGSON_PCI_MEM_START	0x40000000UL
++#define LOONGSON_PCI_MEM_END	0x7effffffUL
++#else
+ #define LOONGSON_PCI_MEM_START	LOONGSON_PCILO1_BASE
+ #define LOONGSON_PCI_MEM_END	(LOONGSON_PCILO1_BASE + 0x04000000 * 2)
++#endif
+ /* this is an offset from mips_io_port_base */
+ #define LOONGSON_PCI_IO_START	0x00004000UL
+ 
+diff --git a/arch/mips/pci/Makefile b/arch/mips/pci/Makefile
+index ce995d3..22ab517 100644
+--- a/arch/mips/pci/Makefile
++++ b/arch/mips/pci/Makefile
+@@ -30,6 +30,7 @@ obj-$(CONFIG_MIPS_COBALT)	+= fixup-cobalt.o
+ obj-$(CONFIG_SOC_PNX8550)	+= fixup-pnx8550.o ops-pnx8550.o
+ obj-$(CONFIG_LEMOTE_FULOONG2E)	+= fixup-fuloong2e.o ops-loongson2.o
+ obj-$(CONFIG_LEMOTE_MACH2F)	+= fixup-lemote2f.o ops-loongson2.o
++obj-$(CONFIG_LEMOTE_MACH3A)	+= fixup-loongson3.o ops-loongson3.o
+ obj-$(CONFIG_MIPS_MALTA)	+= fixup-malta.o
+ obj-$(CONFIG_PMC_MSP7120_GW)	+= fixup-pmcmsp.o ops-pmcmsp.o
+ obj-$(CONFIG_PMC_MSP7120_EVAL)	+= fixup-pmcmsp.o ops-pmcmsp.o
+diff --git a/arch/mips/pci/fixup-loongson3.c b/arch/mips/pci/fixup-loongson3.c
+new file mode 100644
+index 0000000..e73a906
+--- /dev/null
++++ b/arch/mips/pci/fixup-loongson3.c
+@@ -0,0 +1,65 @@
++/*
++ * fixup-loongson3.c
++ *
++ * Copyright (C) 2012 Lemote, Inc.
++ * Author: Xiang Yu, xiangy@lemote.com
++ *         Chen Huacai, chenhc@lemote.com
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ * THIS  SOFTWARE  IS PROVIDED   ``AS  IS'' AND   ANY  EXPRESS OR IMPLIED
++ * WARRANTIES,   INCLUDING, BUT NOT  LIMITED  TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN
++ * NO  EVENT  SHALL   THE AUTHOR  BE    LIABLE FOR ANY   DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
++ * NOT LIMITED   TO, PROCUREMENT OF  SUBSTITUTE GOODS  OR SERVICES; LOSS OF
++ * USE, DATA,  OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
++ * ANY THEORY OF LIABILITY, WHETHER IN  CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
++ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
++ * You should have received a copy of the  GNU General Public License along
++ * with this program; if not, write  to the Free Software Foundation, Inc.,
++ * 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
 +
-+void fixup_irqs(void)
++#include <linux/pci.h>
++#include <boot_param.h>
++
++static void print_fixup_info(const struct pci_dev * pdev)
 +{
-+	irq_cpu_offline();
-+	clear_c0_status(ST0_IM);
++	dev_info(&pdev->dev, "Device %x:%x, irq %d\n",
++			pdev->vendor, pdev->device, pdev->irq);
 +}
 +
-+#endif
-diff --git a/arch/mips/loongson/loongson-3/smp.c b/arch/mips/loongson/loongson-3/smp.c
-index cb996d5..7327cb2 100644
---- a/arch/mips/loongson/loongson-3/smp.c
-+++ b/arch/mips/loongson/loongson-3/smp.c
-@@ -30,6 +30,9 @@
- 
- #include "smp.h"
- 
-+DEFINE_PER_CPU(int, cpu_state);
-+DEFINE_PER_CPU(uint32_t, core0_c0count);
-+
- /* read a 64bit value from ipi register */
- uint64_t loongson3_ipi_read64(void * addr)
- {
-@@ -169,8 +172,8 @@ static void loongson3_send_ipi_mask(const struct cpumask *mask, unsigned int act
- 
- void loongson3_ipi_interrupt(struct pt_regs *regs)
- {
--	int cpu = smp_processor_id();
--	unsigned int action;
-+	int i, cpu = smp_processor_id();
-+	unsigned int action, c0count;
- 
- 	/* Load the ipi register to figure out what we're supposed to do */
- 	action = loongson3_ipi_read32(ipi_status0_regs[cpu]);
-@@ -185,14 +188,24 @@ void loongson3_ipi_interrupt(struct pt_regs *regs)
- 	if (action & SMP_CALL_FUNCTION) {
- 		smp_call_function_interrupt();
- 	}
-+
-+	if (action & SMP_ASK_C0COUNT) {
-+		BUG_ON(cpu != 0);
-+		c0count = read_c0_count();
-+		for (i=1; i < nr_cpus_loongson; i++)
-+			per_cpu(core0_c0count, i) = c0count;
-+	}
- }
- 
-+#define MAX_LOOPS 1200
- /*
-  * SMP init and finish on secondary CPUs
-  */
- void __cpuinit loongson3_init_secondary(void)
- {
- 	int i;
-+	uint32_t initcount;
-+	unsigned int cpu = smp_processor_id();
- 	unsigned int imask = STATUSF_IP7 | STATUSF_IP6 |
- 			     STATUSF_IP3 | STATUSF_IP2;
- 
-@@ -202,11 +215,24 @@ void __cpuinit loongson3_init_secondary(void)
- 	for (i = 0; i < nr_cpus_loongson; i++) {
- 		loongson3_ipi_write32(0xffffffff, ipi_en0_regs[i]);
- 	}
-+
-+	per_cpu(cpu_state, cpu) = CPU_ONLINE;
-+
-+	i = 0;
-+	__get_cpu_var(core0_c0count) = 0;
-+	loongson3_send_ipi_single(0, SMP_ASK_C0COUNT);
-+	while (!__get_cpu_var(core0_c0count))
-+		i++;
-+
-+	if (i > MAX_LOOPS)
-+		i = MAX_LOOPS;
-+	initcount = __get_cpu_var(core0_c0count) + i;
-+	write_c0_count(initcount);
-+	write_c0_compare(initcount + mips_hpt_frequency/HZ);
- }
- 
- void __cpuinit loongson3_smp_finish(void)
- {
--	write_c0_compare(read_c0_count() + mips_hpt_frequency/HZ);
- 	local_irq_enable();
- 	loongson3_ipi_write64(0, (void *)(ipi_mailbox_buf[smp_processor_id()]+0x0));
- 	printk(KERN_INFO "CPU#%d finished, CP0_ST=%x\n",
-@@ -235,6 +261,8 @@ void __init loongson3_smp_setup(void)
- 
- void __init loongson3_prepare_cpus(unsigned int max_cpus)
- {
-+	init_cpu_present(cpu_possible_mask);
-+	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
- }
- 
- /*
-@@ -268,6 +296,146 @@ void __init loongson3_cpus_done(void)
- {
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+
-+extern void fixup_irqs(void);
-+extern void (*flush_cache_all)(void);
-+
-+static int loongson3_cpu_disable(void)
++int __init pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
 +{
-+	unsigned long flags;
-+	unsigned int cpu = smp_processor_id();
++	print_fixup_info(dev);
++	return dev->irq;
++}
 +
-+	if (cpu == 0)
-+		return -EBUSY;
++static void pci_fixup_radeon(struct pci_dev *pdev)
++{
++	if (pdev->resource[PCI_ROM_RESOURCE].start)
++		return;
 +
-+	set_cpu_online(cpu, false);
-+	cpu_clear(cpu, cpu_callin_map);
-+	local_irq_save(flags);
-+	fixup_irqs();
-+	local_irq_restore(flags);
-+	flush_cache_all();
-+	local_flush_tlb_all();
++	pdev->resource[PCI_ROM_RESOURCE].start  = vgabios_addr;
++	pdev->resource[PCI_ROM_RESOURCE].end    = vgabios_addr + 256*1024 - 1;
++	pdev->resource[PCI_ROM_RESOURCE].flags |= IORESOURCE_ROM_COPY;
 +
++	dev_info(&pdev->dev, "BAR %d: assigned %pR for Radeon ROM\n",
++			PCI_ROM_RESOURCE, &pdev->resource[PCI_ROM_RESOURCE]);
++}
++
++DECLARE_PCI_FIXUP_CLASS_FINAL(PCI_VENDOR_ID_ATI, PCI_ANY_ID,
++				PCI_CLASS_DISPLAY_VGA, 8, pci_fixup_radeon);
++
++/* Do platform specific device initialization at pci_enable_device() time */
++int pcibios_plat_dev_init(struct pci_dev *dev)
++{
 +	return 0;
 +}
+diff --git a/arch/mips/pci/ops-loongson3.c b/arch/mips/pci/ops-loongson3.c
+new file mode 100644
+index 0000000..b29d333
+--- /dev/null
++++ b/arch/mips/pci/ops-loongson3.c
+@@ -0,0 +1,104 @@
++#include <linux/types.h>
++#include <linux/pci.h>
++#include <linux/kernel.h>
 +
++#include <asm/mips-boards/bonito64.h>
 +
-+static void loongson3_cpu_die(unsigned int cpu)
++#include <loongson.h>
++
++#define PCI_ACCESS_READ  0
++#define PCI_ACCESS_WRITE 1
++
++#define HT1LO_PCICFG_BASE      0x1a000000
++#define HT1LO_PCICFG_BASE_TP1  0x1b000000
++
++static int loongson3_pci_config_access(unsigned char access_type,
++		struct pci_bus *bus, unsigned int devfn,
++		int where, u32 *data)
 +{
-+	while (per_cpu(cpu_state, cpu) != CPU_DEAD)
-+		cpu_relax();
++	unsigned char busnum = bus->number;
++	u_int64_t addr, type;
++	void *addrp;
++	int device = PCI_SLOT(devfn);
++	int function = PCI_FUNC(devfn);
++	int reg = where & ~3;
 +
-+	mb();
-+}
++	if (busnum == 0) {
++		if (device > 31)
++			return PCIBIOS_DEVICE_NOT_FOUND;
++		addr = (device << 11) | (function << 8) | reg;
++	    addrp = (void *)(TO_UNCAC(HT1LO_PCICFG_BASE) | (addr & 0xffff));
++		type = 0;
 +
-+/* To shutdown a core in Loongson 3, the target core should go to CKSEG1 and
-+ * flush all L1 entries at first. Then, another core (usually Core 0) can
-+ * safely disable the clock of the target core. loongson3_play_dead() is
-+ * called via CKSEG1 (uncached and unmmaped) */
-+void loongson3_play_dead(int *state_addr)
-+{
-+	__asm__ __volatile__(
-+		"      .set push                         \n"
-+		"      .set noreorder                    \n"
-+		"      li $t0, 0x80000000                \n" /* KSEG0 */
-+		"      li $t1, 512                       \n" /* num of L1 entries */
-+		"flush_loop:                             \n" /* flush L1 */
-+		"      cache 0, 0($t0)                   \n" /* ICache */
-+		"      cache 0, 1($t0)                   \n"
-+		"      cache 0, 2($t0)                   \n"
-+		"      cache 0, 3($t0)                   \n"
-+		"      cache 1, 0($t0)                   \n" /* DCache */
-+		"      cache 1, 1($t0)                   \n"
-+		"      cache 1, 2($t0)                   \n"
-+		"      cache 1, 3($t0)                   \n"
-+		"      addiu $t0, $t0, 0x20              \n"
-+		"      bnez  $t1, flush_loop             \n"
-+		"      addiu $t1, $t1, -1                \n"
-+		"      li    $t0, 0x7                    \n" /* *state_addr = CPU_DEAD; */
-+		"      sw    $t0, 0($a0)                 \n"
-+		"      sync                              \n"
-+		"      cache 21, 0($a0)                  \n" /* flush entry of *state_addr */
-+		"      .set pop                          \n");
-+
-+	__asm__ __volatile__(
-+		"      .set push                         \n"
-+		"      .set noreorder                    \n"
-+		"      .set mips64                       \n"
-+		"      mfc0  $t2, $15, 1                 \n"
-+		"      andi  $t2, 0x3ff                  \n"
-+		"      .set mips3                        \n"
-+		"      dli   $t0, 0x900000003ff01000     \n"
-+		"      andi  $t3, $t2, 0x3               \n"
-+		"      sll   $t3, 8                      \n"  /* get cpu id */
-+		"      or    $t0, $t0, $t3               \n"
-+		"      andi  $t1, $t2, 0xc               \n"
-+		"      dsll  $t1, 42                     \n"  /* get node id */
-+		"      or    $t0, $t0, $t1               \n"
-+		"wait_for_init:                          \n"
-+		"      li    $a0, 0x100                  \n"
-+		"idle_loop:                              \n"
-+		"      bnez  $a0, idle_loop              \n"
-+		"      addiu $a0, -1                     \n"
-+		"      lw    $v0, 0x20($t0)              \n"  /* get PC via mailbox */
-+		"      nop                               \n"
-+		"      beqz  $v0, wait_for_init          \n"
-+		"      nop                               \n"
-+		"      ld    $sp, 0x28($t0)              \n"  /* get SP via mailbox */
-+		"      nop                               \n"
-+		"      ld    $gp, 0x30($t0)              \n"  /* get GP via mailbox */
-+		"      nop                               \n"
-+		"      ld    $a1, 0x38($t0)              \n"
-+		"      nop                               \n"
-+		"      jr  $v0                           \n"  /* jump to initial PC */
-+		"      nop                               \n"
-+		"      .set pop                          \n");
-+}
-+
-+void play_dead(void)
-+{
-+	int *state_addr;
-+	unsigned int cpu = smp_processor_id();
-+	void (*play_dead_at_ckseg1)(int *);
-+
-+	idle_task_exit();
-+	play_dead_at_ckseg1 = (void *)CKSEG1ADDR((unsigned long)loongson3_play_dead);
-+	state_addr = &per_cpu(cpu_state, cpu);
-+	mb();
-+	play_dead_at_ckseg1(state_addr);
-+}
-+
-+#define CPU_POST_DEAD_FROZEN	(CPU_POST_DEAD | CPU_TASKS_FROZEN)
-+static int __cpuinit loongson3_cpu_callback(struct notifier_block *nfb,
-+	unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu = (unsigned long)hcpu;
-+
-+	switch (action) {
-+	case CPU_POST_DEAD:
-+	case CPU_POST_DEAD_FROZEN:
-+		printk(KERN_INFO "Disable clock for CPU#%d\n", cpu);
-+		LOONGSON_CHIPCFG0 &= ~(1 << (12 + cpu));
-+		break;
-+	case CPU_UP_PREPARE:
-+	case CPU_UP_PREPARE_FROZEN:
-+		printk(KERN_INFO "Enable clock for CPU#%d\n", cpu);
-+		LOONGSON_CHIPCFG0 |= 1 << (12 + cpu);
-+		break;
++	} else {
++		addr = (busnum << 16) | (device << 11) | (function << 8) | reg;
++	    addrp = (void *)(TO_UNCAC(HT1LO_PCICFG_BASE_TP1) | (addr));
++		type = 0x10000;
 +	}
 +
-+	return NOTIFY_OK;
++	if (access_type == PCI_ACCESS_WRITE)
++		*(volatile unsigned int *)addrp = cpu_to_le32(*data);
++	else {
++		*data = le32_to_cpu(*(volatile unsigned int *)addrp);
++		if (*data == 0xffffffff) {
++			*data = -1;
++	        return PCIBIOS_DEVICE_NOT_FOUND;
++		}
++	}
++	return PCIBIOS_SUCCESSFUL;
 +}
 +
-+static int __cpuinit register_loongson3_notifier(void)
++static int loongson3_pci_pcibios_read(struct pci_bus *bus, unsigned int devfn,
++				 int where, int size, u32 * val)
 +{
-+	hotcpu_notifier(loongson3_cpu_callback, 0);
-+	return 0;
++	u32 data = 0;
++	int ret = loongson3_pci_config_access(PCI_ACCESS_READ,
++			bus, devfn, where, &data);
++
++	if (ret != PCIBIOS_SUCCESSFUL)
++		return ret;
++
++	if (size == 1)
++		*val = (data >> ((where & 3) << 3)) & 0xff;
++	else if (size == 2)
++		*val = (data >> ((where & 3) << 3)) & 0xffff;
++	else
++		*val = data;
++
++	return PCIBIOS_SUCCESSFUL;
 +}
-+early_initcall(register_loongson3_notifier);
 +
-+#endif
++static int loongson3_pci_pcibios_write(struct pci_bus *bus, unsigned int devfn,
++				  int where, int size, u32 val)
++{
++	u32 data = 0;
++	int ret;
 +
- struct plat_smp_ops loongson3_smp_ops = {
- 	.send_ipi_single = loongson3_send_ipi_single,
- 	.send_ipi_mask = loongson3_send_ipi_mask,
-@@ -277,4 +445,8 @@ struct plat_smp_ops loongson3_smp_ops = {
- 	.boot_secondary = loongson3_boot_secondary,
- 	.smp_setup = loongson3_smp_setup,
- 	.prepare_cpus = loongson3_prepare_cpus,
-+#ifdef CONFIG_HOTPLUG_CPU
-+	.cpu_disable = loongson3_cpu_disable,
-+	.cpu_die = loongson3_cpu_die,
-+#endif
- };
++	if (size == 4)
++		data = val;
++	else {
++		ret = loongson3_pci_config_access(PCI_ACCESS_READ,
++				bus, devfn, where, &data);
++		if (ret != PCIBIOS_SUCCESSFUL)
++			return ret;
++
++		if (size == 1)
++			data = (data & ~(0xff << ((where & 3) << 3))) |
++			    (val << ((where & 3) << 3));
++		else if (size == 2)
++			data = (data & ~(0xffff << ((where & 3) << 3))) |
++			    (val << ((where & 3) << 3));
++	}
++
++	ret = loongson3_pci_config_access(PCI_ACCESS_WRITE,
++			bus, devfn, where, &data);
++	if (ret != PCIBIOS_SUCCESSFUL)
++		return ret;
++
++	return PCIBIOS_SUCCESSFUL;
++}
++
++struct pci_ops loongson_pci_ops = {
++	.read = loongson3_pci_pcibios_read,
++	.write = loongson3_pci_pcibios_write
++};
 -- 
 1.7.7.3
 
