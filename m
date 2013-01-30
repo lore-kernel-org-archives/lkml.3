@@ -1,371 +1,518 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab3A3Gds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 01:33:48 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:38421 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab3A3Gdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 01:33:45 -0500
-From: Huacai Chen <chenhc@lemote.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Subject: [PATCH V9 13/13] MIPS: Loongson: Add a Loongson-3 default config file
-Date: Wed, 30 Jan 2013 14:25:06 +0800
-Message-Id: <1359527106-22879-14-git-send-email-chenhc@lemote.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1359527106-22879-1-git-send-email-chenhc@lemote.com>
-References: <1359527106-22879-1-git-send-email-chenhc@lemote.com>
+	id S1753922Ab3A3GeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 01:34:19 -0500
+Received: from mga14.intel.com ([143.182.124.37]:19592 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753208Ab3A3GbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 01:31:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,565,1355126400"; 
+   d="scan'208";a="196543120"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
+        namhyung@kernel.org, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 4/7] perf, x86: Save/resotre LBR stack during context switch
+Date: Wed, 30 Jan 2013 14:30:54 +0800
+Message-Id: <1359527457-6837-5-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1359527457-6837-1-git-send-email-zheng.z.yan@intel.com>
+References: <1359527457-6837-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Hongliang Tao <taohl@lemote.com>
-Signed-off-by: Hua Yan <yanh@lemote.com>
----
- arch/mips/configs/loongson3_defconfig |  330 +++++++++++++++++++++++++++++++++
- 1 files changed, 330 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/configs/loongson3_defconfig
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-diff --git a/arch/mips/configs/loongson3_defconfig b/arch/mips/configs/loongson3_defconfig
-new file mode 100644
-index 0000000..3b76056
---- /dev/null
-+++ b/arch/mips/configs/loongson3_defconfig
-@@ -0,0 +1,329 @@
-+CONFIG_MACH_LOONGSON=y
-+CONFIG_LEMOTE_MACH3A=y
-+CONFIG_LOONGSON_BIGMEM=y
-+CONFIG_CPU_LOONGSON3=y
-+CONFIG_64BIT=y
-+CONFIG_PAGE_SIZE_16KB=y
-+CONFIG_SPARSEMEM_MANUAL=y
-+CONFIG_KSM=y
-+CONFIG_SMP=y
-+CONFIG_NR_CPUS=4
-+CONFIG_HZ_256=y
-+CONFIG_PREEMPT=y
-+CONFIG_KEXEC=y
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_KERNEL_LZMA=y
-+CONFIG_SYSVIPC=y
-+CONFIG_POSIX_MQUEUE=y
-+CONFIG_AUDIT=y
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_BSD_PROCESS_ACCT_V3=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_CPUSETS=y
-+CONFIG_RESOURCE_COUNTERS=y
-+CONFIG_MEMCG=y
-+CONFIG_MEMCG_SWAP=y
-+CONFIG_BLK_CGROUP=y
-+CONFIG_SCHED_AUTOGROUP=y
-+CONFIG_SYSFS_DEPRECATED=y
-+CONFIG_RELAY=y
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_RD_BZIP2=y
-+CONFIG_RD_LZMA=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_SYSCTL_SYSCALL=y
-+CONFIG_EMBEDDED=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_FORCE_LOAD=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_MODULE_FORCE_UNLOAD=y
-+CONFIG_MODVERSIONS=y
-+CONFIG_BLK_DEV_INTEGRITY=y
-+CONFIG_PARTITION_ADVANCED=y
-+CONFIG_IOSCHED_DEADLINE=m
-+CONFIG_CFQ_GROUP_IOSCHED=y
-+CONFIG_PCI=y
-+CONFIG_HT_PCI=y
-+CONFIG_PCIEPORTBUS=y
-+CONFIG_HOTPLUG_PCI_PCIE=m
-+# CONFIG_PCIEAER is not set
-+CONFIG_PCIEASPM_PERFORMANCE=y
-+CONFIG_HOTPLUG_PCI=y
-+CONFIG_HOTPLUG_PCI_SHPC=m
-+CONFIG_BINFMT_MISC=m
-+CONFIG_MIPS32_COMPAT=y
-+CONFIG_MIPS32_O32=y
-+CONFIG_MIPS32_N32=y
-+CONFIG_PM_RUNTIME=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_XFRM_USER=y
-+CONFIG_NET_KEY=y
-+CONFIG_INET=y
-+CONFIG_IP_MULTICAST=y
-+CONFIG_IP_ADVANCED_ROUTER=y
-+CONFIG_IP_MULTIPLE_TABLES=y
-+CONFIG_IP_ROUTE_MULTIPATH=y
-+CONFIG_IP_ROUTE_VERBOSE=y
-+CONFIG_NETFILTER=y
-+CONFIG_NETFILTER_NETLINK_LOG=m
-+CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
-+CONFIG_NETFILTER_XT_TARGET_MARK=m
-+CONFIG_NETFILTER_XT_TARGET_NFQUEUE=m
-+CONFIG_NETFILTER_XT_MATCH_COMMENT=m
-+CONFIG_NETFILTER_XT_MATCH_DCCP=m
-+CONFIG_NETFILTER_XT_MATCH_ESP=m
-+CONFIG_NETFILTER_XT_MATCH_LENGTH=m
-+CONFIG_NETFILTER_XT_MATCH_LIMIT=m
-+CONFIG_NETFILTER_XT_MATCH_MAC=m
-+CONFIG_NETFILTER_XT_MATCH_MARK=m
-+CONFIG_NETFILTER_XT_MATCH_MULTIPORT=m
-+CONFIG_NETFILTER_XT_MATCH_PKTTYPE=m
-+CONFIG_NETFILTER_XT_MATCH_QUOTA=m
-+CONFIG_NETFILTER_XT_MATCH_REALM=m
-+CONFIG_NETFILTER_XT_MATCH_STATISTIC=m
-+CONFIG_NETFILTER_XT_MATCH_STRING=m
-+CONFIG_NETFILTER_XT_MATCH_TCPMSS=m
-+CONFIG_IP_VS=m
-+CONFIG_IP_NF_QUEUE=m
-+CONFIG_IP_NF_IPTABLES=m
-+CONFIG_IP_NF_MATCH_AH=m
-+CONFIG_IP_NF_MATCH_ECN=m
-+CONFIG_IP_NF_MATCH_TTL=m
-+CONFIG_IP_NF_FILTER=m
-+CONFIG_IP_NF_TARGET_REJECT=m
-+CONFIG_IP_NF_TARGET_ULOG=m
-+CONFIG_IP_NF_MANGLE=m
-+CONFIG_IP_NF_TARGET_ECN=m
-+CONFIG_IP_NF_TARGET_TTL=m
-+CONFIG_IP_NF_RAW=m
-+CONFIG_IP_NF_ARPTABLES=m
-+CONFIG_IP_NF_ARPFILTER=m
-+CONFIG_IP_NF_ARP_MANGLE=m
-+CONFIG_IP_SCTP=m
-+CONFIG_L2TP=m
-+CONFIG_CFG80211=m
-+CONFIG_CFG80211_WEXT=y
-+CONFIG_MAC80211=m
-+CONFIG_RFKILL=m
-+CONFIG_RFKILL_INPUT=y
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+CONFIG_MTD=m
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_CRYPTOLOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_SIZE=8192
-+CONFIG_RAID_ATTRS=m
-+CONFIG_SCSI_TGT=y
-+CONFIG_BLK_DEV_SD=y
-+CONFIG_BLK_DEV_SR=y
-+CONFIG_CHR_DEV_SG=y
-+CONFIG_CHR_DEV_SCH=m
-+CONFIG_SCSI_MULTI_LUN=y
-+CONFIG_SCSI_CONSTANTS=y
-+CONFIG_SCSI_LOGGING=y
-+CONFIG_SCSI_SPI_ATTRS=m
-+CONFIG_SCSI_FC_ATTRS=m
-+CONFIG_SCSI_ISCSI_ATTRS=m
-+CONFIG_ATA=y
-+CONFIG_SATA_AHCI=y
-+CONFIG_PATA_ATIIXP=y
-+CONFIG_MD=y
-+CONFIG_BLK_DEV_DM=m
-+CONFIG_DM_CRYPT=m
-+CONFIG_DM_SNAPSHOT=m
-+CONFIG_DM_MIRROR=m
-+CONFIG_DM_ZERO=m
-+CONFIG_NETDEVICES=y
-+CONFIG_TUN=m
-+# CONFIG_NET_VENDOR_3COM is not set
-+# CONFIG_NET_VENDOR_ADAPTEC is not set
-+# CONFIG_NET_VENDOR_ALTEON is not set
-+# CONFIG_NET_VENDOR_AMD is not set
-+# CONFIG_NET_VENDOR_ATHEROS is not set
-+# CONFIG_NET_CADENCE is not set
-+# CONFIG_NET_VENDOR_BROADCOM is not set
-+# CONFIG_NET_VENDOR_BROCADE is not set
-+# CONFIG_NET_VENDOR_CHELSIO is not set
-+# CONFIG_NET_VENDOR_CIRRUS is not set
-+# CONFIG_NET_VENDOR_CISCO is not set
-+# CONFIG_NET_VENDOR_DEC is not set
-+# CONFIG_NET_VENDOR_DLINK is not set
-+# CONFIG_NET_VENDOR_EMULEX is not set
-+# CONFIG_NET_VENDOR_EXAR is not set
-+# CONFIG_NET_VENDOR_FUJITSU is not set
-+# CONFIG_NET_VENDOR_HP is not set
-+CONFIG_E1000=y
-+CONFIG_E1000E=y
-+CONFIG_IGB=y
-+# CONFIG_NET_VENDOR_I825XX is not set
-+# CONFIG_NET_VENDOR_MARVELL is not set
-+# CONFIG_NET_VENDOR_MELLANOX is not set
-+# CONFIG_NET_VENDOR_MICREL is not set
-+# CONFIG_NET_VENDOR_MYRI is not set
-+# CONFIG_NET_VENDOR_NATSEMI is not set
-+# CONFIG_NET_VENDOR_NVIDIA is not set
-+# CONFIG_NET_VENDOR_OKI is not set
-+# CONFIG_NET_PACKET_ENGINE is not set
-+# CONFIG_NET_VENDOR_QLOGIC is not set
-+# CONFIG_NET_VENDOR_RACAL is not set
-+CONFIG_R8169=y
-+# CONFIG_NET_VENDOR_RDC is not set
-+# CONFIG_NET_VENDOR_SEEQ is not set
-+# CONFIG_NET_VENDOR_SILAN is not set
-+# CONFIG_NET_VENDOR_SIS is not set
-+# CONFIG_NET_VENDOR_SMSC is not set
-+# CONFIG_NET_VENDOR_STMICRO is not set
-+# CONFIG_NET_VENDOR_SUN is not set
-+# CONFIG_NET_VENDOR_TEHUTI is not set
-+# CONFIG_NET_VENDOR_TI is not set
-+# CONFIG_NET_VENDOR_TOSHIBA is not set
-+# CONFIG_NET_VENDOR_VIA is not set
-+# CONFIG_NET_VENDOR_WIZNET is not set
-+CONFIG_PPP=m
-+CONFIG_PPP_BSDCOMP=m
-+CONFIG_PPP_DEFLATE=m
-+CONFIG_PPP_FILTER=y
-+CONFIG_PPP_MPPE=m
-+CONFIG_PPP_MULTILINK=y
-+CONFIG_PPPOE=m
-+CONFIG_PPPOL2TP=m
-+CONFIG_PPP_ASYNC=m
-+CONFIG_PPP_SYNC_TTY=m
-+CONFIG_ATH_CARDS=m
-+CONFIG_ATH9K=m
-+CONFIG_HOSTAP=m
-+CONFIG_INPUT_POLLDEV=m
-+CONFIG_INPUT_SPARSEKMAP=y
-+CONFIG_INPUT_EVDEV=y
-+CONFIG_KEYBOARD_XTKBD=m
-+CONFIG_MOUSE_PS2_SENTELIC=y
-+CONFIG_MOUSE_SERIAL=m
-+CONFIG_INPUT_MISC=y
-+CONFIG_INPUT_UINPUT=m
-+CONFIG_SERIO_SERPORT=m
-+CONFIG_SERIO_RAW=m
-+CONFIG_LEGACY_PTY_COUNT=16
-+CONFIG_SERIAL_NONSTANDARD=y
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+CONFIG_SERIAL_8250_NR_UARTS=16
-+CONFIG_SERIAL_8250_EXTENDED=y
-+CONFIG_SERIAL_8250_MANY_PORTS=y
-+CONFIG_SERIAL_8250_SHARE_IRQ=y
-+CONFIG_SERIAL_8250_RSA=y
-+CONFIG_HW_RANDOM=y
-+CONFIG_RAW_DRIVER=m
-+CONFIG_I2C_CHARDEV=y
-+CONFIG_I2C_PIIX4=y
-+CONFIG_SENSORS_LM75=m
-+CONFIG_SENSORS_LM93=m
-+CONFIG_MEDIA_SUPPORT=m
-+CONFIG_MEDIA_CAMERA_SUPPORT=y
-+CONFIG_MEDIA_USB_SUPPORT=y
-+CONFIG_USB_VIDEO_CLASS=m
-+CONFIG_DRM=y
-+CONFIG_DRM_RADEON=y
-+CONFIG_DRM_RADEON_KMS=y
-+CONFIG_VIDEO_OUTPUT_CONTROL=y
-+CONFIG_FB_RADEON=y
-+CONFIG_LCD_CLASS_DEVICE=y
-+CONFIG_LCD_PLATFORM=m
-+CONFIG_BACKLIGHT_GENERIC=m
-+# CONFIG_VGA_CONSOLE is not set
-+CONFIG_FRAMEBUFFER_CONSOLE=y
-+CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
-+CONFIG_LOGO=y
-+CONFIG_SOUND=y
-+CONFIG_SND=m
-+CONFIG_SND_SEQUENCER=m
-+CONFIG_SND_SEQ_DUMMY=m
-+# CONFIG_SND_ISA is not set
-+CONFIG_SND_HDA_INTEL=m
-+CONFIG_SND_HDA_PATCH_LOADER=y
-+# CONFIG_SND_USB is not set
-+CONFIG_HID_A4TECH=m
-+CONFIG_HID_SUNPLUS=m
-+CONFIG_USB=y
-+CONFIG_USB_MON=y
-+CONFIG_USB_XHCI_HCD=m
-+CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_ROOT_HUB_TT=y
-+CONFIG_USB_OHCI_HCD=y
-+CONFIG_USB_UHCI_HCD=m
-+CONFIG_USB_STORAGE=m
-+CONFIG_USB_SERIAL=m
-+CONFIG_USB_SERIAL_OPTION=m
-+CONFIG_RTC_CLASS=y
-+CONFIG_RTC_DRV_CMOS=y
-+CONFIG_DMADEVICES=y
-+CONFIG_PM_DEVFREQ=y
-+CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND=y
-+CONFIG_DEVFREQ_GOV_PERFORMANCE=y
-+CONFIG_DEVFREQ_GOV_POWERSAVE=y
-+CONFIG_DEVFREQ_GOV_USERSPACE=y
-+CONFIG_EXT2_FS=y
-+CONFIG_EXT2_FS_XATTR=y
-+CONFIG_EXT2_FS_POSIX_ACL=y
-+CONFIG_EXT2_FS_SECURITY=y
-+CONFIG_EXT3_FS=y
-+CONFIG_EXT3_FS_POSIX_ACL=y
-+CONFIG_EXT3_FS_SECURITY=y
-+CONFIG_EXT4_FS=y
-+CONFIG_EXT4_FS_POSIX_ACL=y
-+CONFIG_EXT4_FS_SECURITY=y
-+CONFIG_QUOTA=y
-+# CONFIG_PRINT_QUOTA_WARNING is not set
-+CONFIG_AUTOFS4_FS=y
-+CONFIG_FUSE_FS=m
-+CONFIG_ISO9660_FS=m
-+CONFIG_JOLIET=y
-+CONFIG_MSDOS_FS=m
-+CONFIG_VFAT_FS=m
-+CONFIG_FAT_DEFAULT_CODEPAGE=936
-+CONFIG_FAT_DEFAULT_IOCHARSET="gb2312"
-+CONFIG_PROC_KCORE=y
-+CONFIG_TMPFS=y
-+CONFIG_TMPFS_POSIX_ACL=y
-+CONFIG_CRAMFS=m
-+CONFIG_SQUASHFS=y
-+CONFIG_SQUASHFS_XATTR=y
-+CONFIG_NFS_FS=m
-+CONFIG_NFS_V3_ACL=y
-+CONFIG_NFS_V4=m
-+CONFIG_NFSD=m
-+CONFIG_NFSD_V3_ACL=y
-+CONFIG_NFSD_V4=y
-+CONFIG_CIFS=m
-+CONFIG_NLS_CODEPAGE_437=y
-+CONFIG_NLS_CODEPAGE_936=y
-+CONFIG_NLS_ASCII=y
-+CONFIG_NLS_UTF8=y
-+CONFIG_PRINTK_TIME=y
-+CONFIG_FRAME_WARN=1024
-+CONFIG_MAGIC_SYSRQ=y
-+CONFIG_STRIP_ASM_SYMS=y
-+# CONFIG_SCHED_DEBUG is not set
-+# CONFIG_DEBUG_PREEMPT is not set
-+# CONFIG_RCU_CPU_STALL_VERBOSE is not set
-+# CONFIG_FTRACE is not set
-+CONFIG_CRYPTO_AUTHENC=m
-+CONFIG_CRYPTO_HMAC=y
-+CONFIG_CRYPTO_MD5=y
-+CONFIG_CRYPTO_SHA512=m
-+CONFIG_CRYPTO_TGR192=m
-+CONFIG_CRYPTO_WP512=m
-+CONFIG_CRYPTO_ANUBIS=m
-+CONFIG_CRYPTO_BLOWFISH=m
-+CONFIG_CRYPTO_CAST5=m
-+CONFIG_CRYPTO_CAST6=m
-+CONFIG_CRYPTO_KHAZAD=m
-+CONFIG_CRYPTO_SERPENT=m
-+CONFIG_CRYPTO_TEA=m
-+CONFIG_CRYPTO_TWOFISH=m
-+CONFIG_CRYPTO_DEFLATE=m
+When the LBR call stack is enabled, it is necessary to save/restore
+the stack on context switch. The solution is saving/restoring the
+stack to/from task's perf event context. If task has no perf event
+context, just flush the stack on context switch.
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.c           |  18 +++--
+ arch/x86/kernel/cpu/perf_event.h           |  13 +++-
+ arch/x86/kernel/cpu/perf_event_intel.c     |  13 ++--
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 108 ++++++++++++++++++++++++++---
+ include/linux/perf_event.h                 |   6 +-
+ kernel/events/core.c                       |  64 ++++++++++-------
+ 6 files changed, 168 insertions(+), 54 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 7981230..8fd8894 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1742,6 +1742,13 @@ static int x86_pmu_event_idx(struct perf_event *event)
+ 	return idx + 1;
+ }
+ 
++static void x86_pmu_branch_stack_sched(struct perf_event_context *ctx,
++					bool sched_in)
++{
++	if (x86_pmu.branch_stack_sched)
++		x86_pmu.branch_stack_sched(ctx, sched_in);
++}
++
+ static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
+ {
+ 	struct perf_event_context *ctx;
+@@ -1750,6 +1757,9 @@ static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
+ 	if (!ctx)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	if (parent_ctx)
++		intel_pmu_lbr_init_context(ctx, parent_ctx);
++
+ 	return ctx;
+ }
+ 
+@@ -1807,12 +1817,6 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
+ 	NULL,
+ };
+ 
+-static void x86_pmu_flush_branch_stack(void)
+-{
+-	if (x86_pmu.flush_branch_stack)
+-		x86_pmu.flush_branch_stack();
+-}
+-
+ void perf_check_microcode(void)
+ {
+ 	if (x86_pmu.check_microcode)
+@@ -1839,7 +1843,7 @@ static struct pmu pmu = {
+ 	.commit_txn		= x86_pmu_commit_txn,
+ 
+ 	.event_idx		= x86_pmu_event_idx,
+-	.flush_branch_stack	= x86_pmu_flush_branch_stack,
++	.branch_stack_sched     = x86_pmu_branch_stack_sched,
+ 	.event_context_alloc	= x86_pmu_event_context_alloc,
+ };
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 3080e10..a6547f3 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -371,7 +371,6 @@ struct x86_pmu {
+ 	void		(*cpu_dead)(int cpu);
+ 
+ 	void		(*check_microcode)(void);
+-	void		(*flush_branch_stack)(void);
+ 
+ 	/*
+ 	 * Intel Arch Perfmon v2+
+@@ -401,6 +400,8 @@ struct x86_pmu {
+ 	int		lbr_nr;			   /* hardware stack size */
+ 	u64		lbr_sel_mask;		   /* LBR_SELECT valid bits */
+ 	const int	*lbr_sel_map;		   /* lbr_select mappings */
++	void		(*branch_stack_sched)(struct perf_event_context *ctx,
++					      bool sched_in);
+ 
+ 	/*
+ 	 * Extra registers for events
+@@ -423,6 +424,12 @@ enum {
+ 
+ struct x86_perf_event_context {
+ 	struct perf_event_context ctx;
++
++	u64 lbr_from[MAX_LBR_ENTRIES];
++	u64 lbr_to[MAX_LBR_ENTRIES];
++	u64 lbr_stack_gen;
++	int lbr_callstack_users;
++	bool lbr_stack_saved;
+ };
+ 
+ #define x86_add_quirk(func_)						\
+@@ -650,8 +657,12 @@ void intel_pmu_pebs_disable_all(void);
+ 
+ void intel_ds_init(void);
+ 
++void intel_pmu_lbr_init_context(struct perf_event_context *child_ctx,
++				struct perf_event_context *parent_ctx);
+ void intel_pmu_lbr_reset(void);
+ 
++void intel_pmu_lbr_sched(struct perf_event_context *ctx, bool sched_in);
++
+ void intel_pmu_lbr_enable(struct perf_event *event);
+ 
+ void intel_pmu_lbr_disable(struct perf_event *event);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index fbb977e..61c5c17 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1807,16 +1807,11 @@ static void intel_pmu_cpu_dying(int cpu)
+ 	fini_debug_store_on_cpu(cpu);
+ }
+ 
+-static void intel_pmu_flush_branch_stack(void)
++static void intel_pmu_branch_stack_sched(struct perf_event_context *ctx,
++					 bool sched_in)
+ {
+-	/*
+-	 * Intel LBR does not tag entries with the
+-	 * PID of the current task, then we need to
+-	 * flush it on ctxsw
+-	 * For now, we simply reset it
+-	 */
+ 	if (x86_pmu.lbr_nr)
+-		intel_pmu_lbr_reset();
++		intel_pmu_lbr_sched(ctx, sched_in);
+ }
+ 
+ PMU_FORMAT_ATTR(offcore_rsp, "config1:0-63");
+@@ -1882,7 +1877,7 @@ static __initconst const struct x86_pmu intel_pmu = {
+ 	.cpu_starting		= intel_pmu_cpu_starting,
+ 	.cpu_dying		= intel_pmu_cpu_dying,
+ 	.guest_get_msrs		= intel_guest_get_msrs,
+-	.flush_branch_stack	= intel_pmu_flush_branch_stack,
++	.branch_stack_sched	= intel_pmu_branch_stack_sched,
+ };
+ 
+ static __init void intel_clovertown_quirk(void)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 88367a2..a1fb108 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -173,6 +173,13 @@ void intel_pmu_lbr_reset(void)
+ 		intel_pmu_lbr_reset_32();
+ 	else
+ 		intel_pmu_lbr_reset_64();
++
++	wrmsrl(x86_pmu.lbr_tos, 0);
++}
++
++static inline bool branch_user_callstack(unsigned br_sel)
++{
++	return (br_sel & X86_BR_USER) && (br_sel & X86_BR_CALL_STACK);
+ }
+ 
+ void intel_pmu_lbr_enable(struct perf_event *event)
+@@ -182,17 +189,23 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+ 
+-	/*
+-	 * Reset the LBR stack if we changed task context to
+-	 * avoid data leaks.
+-	 */
+-	if (event->ctx->task && cpuc->lbr_context != event->ctx) {
+-		intel_pmu_lbr_reset();
+-		cpuc->lbr_context = event->ctx;
+-	}
+ 	cpuc->br_sel = event->hw.branch_reg.reg;
+-
+ 	cpuc->lbr_users++;
++
++	if (event->ctx->task &&
++	    branch_user_callstack(event->hw.branch_reg.reg)) {
++		struct x86_perf_event_context *task_ctx = (void *)event->ctx;
++		/*
++		 * Reset the LBR stack if the call stack is not
++		 * continuous enabled
++		 */
++		if (task_ctx->lbr_callstack_users == 0 &&
++		    task_ctx->lbr_stack_gen + 1 < event->ctx->sched_gen)
++			intel_pmu_lbr_reset();
++
++		task_ctx->lbr_callstack_users++;
++		task_ctx->lbr_stack_gen = event->ctx->sched_gen;
++	}
+ }
+ 
+ void intel_pmu_lbr_disable(struct perf_event *event)
+@@ -202,6 +215,13 @@ void intel_pmu_lbr_disable(struct perf_event *event)
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+ 
++	if (event->ctx->task &&
++	    branch_user_callstack(event->hw.branch_reg.reg)) {
++		struct x86_perf_event_context *task_ctx = (void *)event->ctx;
++
++		task_ctx->lbr_callstack_users--;
++	}
++
+ 	cpuc->lbr_users--;
+ 	WARN_ON_ONCE(cpuc->lbr_users < 0);
+ 
+@@ -325,6 +345,76 @@ void intel_pmu_lbr_read(void)
+ 	intel_pmu_lbr_filter(cpuc);
+ }
+ 
++static void __intel_pmu_lbr_restore(struct x86_perf_event_context *task_ctx)
++{
++	int i;
++	unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
++	u64 tos = intel_pmu_lbr_tos();
++
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		lbr_idx = (tos - i) & mask;
++		wrmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
++		wrmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
++	}
++	task_ctx->lbr_stack_saved = false;
++}
++
++static void __intel_pmu_lbr_save(struct x86_perf_event_context *task_ctx)
++{
++	int i;
++	unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
++	u64 tos = intel_pmu_lbr_tos();
++
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		lbr_idx = (tos - i) & mask;
++		rdmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
++		rdmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
++	}
++	task_ctx->lbr_stack_gen = task_ctx->ctx.sched_gen;
++	task_ctx->lbr_stack_saved = true;
++}
++
++void intel_pmu_lbr_init_context(struct perf_event_context *child_ctx,
++				struct perf_event_context *parent_ctx)
++{
++	struct x86_perf_event_context *task_ctx, *parent_task_ctx;
++
++	if (!x86_pmu.lbr_nr)
++		return;
++
++	task_ctx = (struct x86_perf_event_context *)child_ctx;
++	parent_task_ctx = (struct x86_perf_event_context *)parent_ctx;
++
++	if (parent_task_ctx->lbr_callstack_users)
++		__intel_pmu_lbr_save(task_ctx);
++	else
++		task_ctx->lbr_stack_saved = false;
++}
++
++void intel_pmu_lbr_sched(struct perf_event_context *ctx, bool sched_in)
++{
++	struct x86_perf_event_context *task_ctx;
++
++	if (!x86_pmu.lbr_nr)
++		return;
++
++	if (!ctx) {
++		if (sched_in)
++			intel_pmu_lbr_reset();
++		return;
++	}
++
++	task_ctx = (struct x86_perf_event_context *)ctx;
++	if (sched_in) {
++		if (!task_ctx->lbr_stack_saved)
++			intel_pmu_lbr_reset();
++		else
++			__intel_pmu_lbr_restore(task_ctx);
++	} else {
++		__intel_pmu_lbr_save(task_ctx);
++	}
++}
++
+ /*
+  * SW filter is used:
+  * - in case there is no HW filter
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6122b2f..f130c6c 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -261,9 +261,10 @@ struct pmu {
+ 	int (*event_idx)		(struct perf_event *event); /*optional */
+ 
+ 	/*
+-	 * flush branch stack on context-switches (needed in cpu-wide mode)
++	 * Save/restore LBR stack on context-switches
+ 	 */
+-	void (*flush_branch_stack)	(void);
++	void (*branch_stack_sched)	(struct perf_event_context *ctx,
++					 bool sched_in);
+ 
+ 	/*
+ 	 * Allocate PMU special perf event context
+@@ -501,6 +502,7 @@ struct perf_event_context {
+ 	struct perf_event_context	*parent_ctx;
+ 	u64				parent_gen;
+ 	u64				generation;
++	u64				sched_gen;
+ 	int				pin_count;
+ 	int				nr_cgroups;	 /* cgroup evts */
+ 	int				nr_branch_stack; /* branch_stack evt */
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 908f2ad..e1ea1d5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -138,7 +138,7 @@ enum event_type_t {
+  */
+ struct static_key_deferred perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+-static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
++static DEFINE_PER_CPU(int, perf_branch_stack_events);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -190,6 +190,9 @@ static void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
+ static void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
+ 			     enum event_type_t event_type,
+ 			     struct task_struct *task);
++static void perf_branch_stack_sched(struct task_struct *task1,
++				    struct task_struct *task2,
++				    bool sched_in);
+ 
+ static void update_context_time(struct perf_event_context *ctx);
+ static u64 perf_event_time(struct perf_event *event);
+@@ -1044,8 +1047,11 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 			cpuctx->cgrp = NULL;
+ 	}
+ 
+-	if (has_branch_stack(event))
++	if (has_branch_stack(event)) {
++		if (ctx->is_active)
++			__get_cpu_var(perf_branch_stack_events)--;
+ 		ctx->nr_branch_stack--;
++	}
+ 
+ 	ctx->nr_events--;
+ 	if (event->attr.inherit_stat)
+@@ -1566,8 +1572,10 @@ static void perf_event_sched_in(struct perf_cpu_context *cpuctx,
+ 				struct task_struct *task)
+ {
+ 	cpu_ctx_sched_in(cpuctx, EVENT_PINNED, task);
+-	if (ctx)
++	if (ctx) {
++		ctx->sched_gen++;
+ 		ctx_sched_in(ctx, cpuctx, EVENT_PINNED, task);
++	}
+ 	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE, task);
+ 	if (ctx)
+ 		ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE, task);
+@@ -1870,6 +1878,9 @@ static void ctx_sched_out(struct perf_event_context *ctx,
+ 	if (likely(!ctx->nr_events))
+ 		return;
+ 
++	if (!ctx->is_active && is_active)
++		__get_cpu_var(perf_branch_stack_events) -= ctx->nr_branch_stack;
++
+ 	update_context_time(ctx);
+ 	update_cgrp_time_from_cpuctx(cpuctx);
+ 	if (!ctx->nr_active)
+@@ -2059,6 +2070,10 @@ void __perf_event_task_sched_out(struct task_struct *task,
+ {
+ 	int ctxn;
+ 
++	/* check for branch_stack events running on this cpu */
++	if (__get_cpu_var(perf_branch_stack_events))
++		perf_branch_stack_sched(task, next, false);
++
+ 	for_each_task_context_nr(ctxn)
+ 		perf_event_context_sched_out(task, ctxn, next);
+ 
+@@ -2166,6 +2181,9 @@ ctx_sched_in(struct perf_event_context *ctx,
+ 	if (likely(!ctx->nr_events))
+ 		return;
+ 
++	if (ctx->is_active && !is_active)
++		__get_cpu_var(perf_branch_stack_events) += ctx->nr_branch_stack;
++
+ 	now = perf_clock();
+ 	ctx->timestamp = now;
+ 	perf_cgroup_set_timestamp(task, ctx);
+@@ -2239,15 +2257,17 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+  * layer. It is invoked ONLY when there is at least one system-wide context
+  * with at least one active event using taken branch sampling.
+  */
+-static void perf_branch_stack_sched_in(struct task_struct *prev,
+-				       struct task_struct *task)
++static void perf_branch_stack_sched(struct task_struct *task1,
++				    struct task_struct *task2,
++				    bool sched_in)
+ {
+ 	struct perf_cpu_context *cpuctx;
++	struct perf_event_context *task_ctx;
+ 	struct pmu *pmu;
+ 	unsigned long flags;
+ 
+ 	/* no need to flush branch stack if not changing task */
+-	if (prev == task)
++	if (task1 == task2)
+ 		return;
+ 
+ 	local_irq_save(flags);
+@@ -2256,25 +2276,26 @@ static void perf_branch_stack_sched_in(struct task_struct *prev,
+ 
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		task_ctx = cpuctx->task_ctx;
+ 
+ 		/*
+ 		 * check if the context has at least one
+ 		 * event using PERF_SAMPLE_BRANCH_STACK
+ 		 */
+-		if (cpuctx->ctx.nr_branch_stack > 0
+-		    && pmu->flush_branch_stack) {
+-
++		if (pmu->branch_stack_sched &&
++		    (cpuctx->ctx.nr_branch_stack > 0 ||
++		     (task_ctx && task_ctx->nr_branch_stack > 0))) {
+ 			pmu = cpuctx->ctx.pmu;
+ 
+-			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++			perf_ctx_lock(cpuctx, task_ctx);
+ 
+ 			perf_pmu_disable(pmu);
+ 
+-			pmu->flush_branch_stack();
++			pmu->branch_stack_sched(task_ctx, sched_in);
+ 
+ 			perf_pmu_enable(pmu);
+ 
+-			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
++			perf_ctx_unlock(cpuctx, task_ctx);
+ 		}
+ 	}
+ 
+@@ -2315,9 +2336,9 @@ void __perf_event_task_sched_in(struct task_struct *prev,
+ 	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
+ 		perf_cgroup_sched_in(prev, task);
+ 
+-	/* check for system-wide branch_stack events */
+-	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
+-		perf_branch_stack_sched_in(prev, task);
++	/* check for branch_stack events running on this cpu */
++	if (__get_cpu_var(perf_branch_stack_events))
++		perf_branch_stack_sched(prev, task, true);
+ }
+ 
+ static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
+@@ -2893,13 +2914,8 @@ static void free_event(struct perf_event *event)
+ 			static_key_slow_dec_deferred(&perf_sched_events);
+ 		}
+ 
+-		if (has_branch_stack(event)) {
++		if (has_branch_stack(event))
+ 			static_key_slow_dec_deferred(&perf_sched_events);
+-			/* is system-wide event */
+-			if (!(event->attach_state & PERF_ATTACH_TASK))
+-				atomic_dec(&per_cpu(perf_branch_stack_events,
+-						    event->cpu));
+-		}
+ 	}
+ 
+ 	if (event->rb) {
+@@ -6250,12 +6266,8 @@ done:
+ 				return ERR_PTR(err);
+ 			}
+ 		}
+-		if (has_branch_stack(event)) {
++		if (has_branch_stack(event))
+ 			static_key_slow_inc(&perf_sched_events.key);
+-			if (!(event->attach_state & PERF_ATTACH_TASK))
+-				atomic_inc(&per_cpu(perf_branch_stack_events,
+-						    event->cpu));
+-		}
+ 	}
+ 
+ 	return event;
 -- 
-1.7.7.3
+1.7.11.7
 
