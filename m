@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3A3ISs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:18:48 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40531 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab3A3ISp convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Wed, 30 Jan 2013 03:18:45 -0500
-Message-Id: <5108E01902000078000BA9C5@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 30 Jan 2013 07:55:53 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: "David Vrabel" <david.vrabel@citrix.com>,
-        "Peter Moody" <pmoody@google.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Subject: [PATCH] x86-64: replace left over sti/cli in ia32 audit exit
- code
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753838Ab3A3ITT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:19:19 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:48526 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3A3ITQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:19:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <076f01cdfea7$8e752d90$ab5f88b0$@samsung.com>
+References: <1358868680-5757-1-git-send-email-gautam.vivek@samsung.com>
+	<1358868680-5757-2-git-send-email-gautam.vivek@samsung.com>
+	<076f01cdfea7$8e752d90$ab5f88b0$@samsung.com>
+Date: Wed, 30 Jan 2013 13:49:14 +0530
+Message-ID: <CAFp+6iGfLWpnq5AXjCVieaDUU94bJFaLAkSWPTz0Sj3=ec_56g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] ARM: Exynos5250: Enabling samsung-usbphy driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        p.paneri@samsung.com, devicetree-discuss@lists.ozlabs.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        sylvester.nawrocki@gmail.com, tomasz.figa@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For some reason they didn't get replaced so far by their paravirt
-equivalents, resulting in code to be run with interrupts disabled that
-doesn't expect so (causing, in the observed case, a BUG_ON() to
-trigger) when syscall auditing is enabled.
-
-David (Cc-ed) came up with an identical fix, so likely this can be
-taken to count as an ack from him.
-
-Reported-by: Peter Moody <pmoody@google.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: stable@vger.kernel.org 
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Tested-by: Peter Moody <pmoody@google.com>
-
----
- arch/x86/ia32/ia32entry.S |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- 3.8-rc5/arch/x86/ia32/ia32entry.S
-+++ 3.8-rc5-x86_64-paravirt-ia32-audit-exit/arch/x86/ia32/ia32entry.S
-@@ -207,7 +207,7 @@ sysexit_from_sys_call:
- 	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz ia32_ret_from_sys_call
- 	TRACE_IRQS_ON
--	sti
-+	ENABLE_INTERRUPTS(CLBR_NONE)
- 	movl %eax,%esi		/* second arg, syscall return value */
- 	cmpl $-MAX_ERRNO,%eax	/* is it an error ? */
- 	jbe 1f
-@@ -217,7 +217,7 @@ sysexit_from_sys_call:
- 	call __audit_syscall_exit
- 	movq RAX-ARGOFFSET(%rsp),%rax	/* reload syscall return value */
- 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
--	cli
-+	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
- 	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz \exit
+Hi Kukjin,
 
 
+On Wed, Jan 30, 2013 at 10:36 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Vivek Gautam wrote:
+>>
+>> Adding usbphy node for Exynos5250 along with the
+>> necessary device data to be parsed.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
+>>  arch/arm/boot/dts/exynos5250.dtsi |   15 +++++++++++++++
+>>  1 files changed, 15 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
+>> b/arch/arm/boot/dts/exynos5250.dtsi
+>> index 30485de..610e338 100644
+>> --- a/arch/arm/boot/dts/exynos5250.dtsi
+>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+>> @@ -275,6 +275,21 @@
+>>               #size-cells = <0>;
+>>       };
+>>
+>> +     usbphy@12130000 {
+>
+> Please put above node by order of address.
+>
 
+Sure will do that. Actually thought the listing was as per IPs.
+
+>> +             compatible = "samsung,exynos5250-usbphy";
+>> +             reg = <0x12130000 0x100>;
+>> +             #address-cells = <1>;
+>> +             #size-cells = <1>;
+>> +             ranges;
+>> +
+>> +             usbphy-sys {
+>> +                           /* USB device and host PHY_CONTROL registers
+> */
+>
+> Please add the binding documentation instead of comment here.
+>
+
+Bindings documentation already added at
+"Documentation/devicetree/bindings/usb/samsung-usbphy.txt"
+merged in 'usb-next'.
+
+>> +                     reg = <0x10040704 0x8>,
+>> +                           /* USB2.0 PHY configuration register */
+>> +                           <0x10050230 0x4>;
+>> +             };
+>> +     };
+>> +
+>>       amba {
+>>               #address-cells = <1>;
+>>               #size-cells = <1>;
+>> --
+>> 1.7.6.5
+>
+
+
+
+
+-- 
+Thanks & Regards
+Vivek
