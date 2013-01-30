@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364Ab3A3FBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 00:01:54 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53253 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3A3FBw (ORCPT
+	id S1751401Ab3A3FGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 00:06:33 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:48728 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab3A3FGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 00:01:52 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5108A911.4070902@jp.fujitsu.com>
-Date: Wed, 30 Jan 2013 14:01:05 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: trenn@suse.de
-CC: yinghai@kernel.org, muneda.takahiro@jp.fujitsu.com,
-        linux-pci@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
-        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
-        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org
-Subject: Re: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
- with iommu
-References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <1508535.gXZDAVy6sT@hammer82.arch.suse.de> <51007EF2.3090208@jp.fujitsu.com> <3404772.bJenOLl2bH@hammer82.arch.suse.de>
-In-Reply-To: <3404772.bJenOLl2bH@hammer82.arch.suse.de>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Jan 2013 00:06:31 -0500
+X-AuditID: cbfee61b-b7fb06d000000f28-45-5108aa56f09a
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, grant.likely@secretlab.ca,
+        dianders@chromium.org, balbi@ti.com, thomas.abraham@linaro.org,
+        sylvester.nawrocki@gmail.com, tomasz.figa@gmail.com,
+        p.paneri@samsung.com
+References: <1358868680-5757-1-git-send-email-gautam.vivek@samsung.com>
+ <1358868680-5757-2-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1358868680-5757-2-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v2 1/2] ARM: Exynos5250: Enabling samsung-usbphy driver
+Date: Tue, 29 Jan 2013 21:06:22 -0800
+Message-id: <076f01cdfea7$8e752d90$ab5f88b0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQG7I7HiR5F9lZg6OQOiNsj3cWXGQgK7eW6amHEqqtA=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zfd2wVRyBBj9/cFtc3jWHzWLG+X1M
+	FouWtTI7MHt83iQXwBjFZZOSmpNZllqkb5fAlXHv5SnGgl7Oik+nGlkbGL+zdTFyckgImEjc
+	nvoSyhaTuHBvPZDNxSEksIxR4uPb1+wwRXsmdTJDJBYxSqyfv40JwvnLKPG6fTILSBWbgIbE
+	4ffPwDpEBAIkvt56wQhiMwv0MEmcnBwE0dDKKDG76wpYglPAQ+LonddgtrCAt8TNSY/BbBYB
+	VYkrWyBqeAUsJU6tvM0KYQtK/Jh8jwViqJbE+p3HmSBseYnNa94yQ5yqILHjLMRMEQEriY+d
+	X9ggasQlJj14yA5yhITAKnaJu61v2SGWCUh8m3wIaCgHUEJWYtMBqDmSEgdX3GCZwCgxC8nq
+	WUhWz0KyehaSFQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525ihMSc9A7GVQ0WhxgFOBiV
+	eHgXvGAPFGJNLCuuzD3EKMHBrCTCq6DGESjEm5JYWZValB9fVJqTWnyIMRno2InMUqLJ+cB0
+	kFcSb2hsbGJmYmpibmlqbkqasJI4L+OpJwFCAumJJanZqakFqUUwW5g4OKUaGMU1t2c+uvS5
+	93WDfe4/sVJ/lXyVBSJzOZ+EThea/+Wn5r7b6SZnMntvXZzUN73XOnbGt48/SuqM/DpPJa2x
+	nx687qJozMFr87j335l3IeutSJmx2Oz7Vz9lLrxi3PSOsfvnVLPWE1fm/Jo0oWLPvs+r63Sz
+	pl5/UH+0QJ+Tq/3eIfWvrSpr71xXYinOSDTUYi4qTgQAHQM0O/0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jAd2wVRyBBu2f2S0u75rDZjHj/D4m
+	i0XLWpkdmD0+b5ILYIxqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xN
+	tVVy8QnQdcvMAZqvpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8y49/IU
+	Y0EvZ8WnU42sDYzf2boYOTkkBEwk9kzqZIawxSQu3FsPFOfiEBJYxCixfv42JgjnL6PE6/bJ
+	LCBVbAIaEoffP2MHsUUEAiS+3nrBCGIzC/QwSZycHATR0MooMbvrCliCU8BD4uid12C2sIC3
+	xM1Jj8FsFgFViStbIGp4BSwlTq28zQphC0r8mHyPBWKolsT6nceZIGx5ic1r3kKdqiCx4yzE
+	TBEBK4mPnV/YIGrEJSY9eMg+gVFoFpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YW
+	l+al6yXn525iBEf0M+kdjKsaLA4xCnAwKvHwLnjBHijEmlhWXJl7iFGCg1lJhFdBjSNQiDcl
+	sbIqtSg/vqg0J7X4EGMy0KcTmaVEk/OBySavJN7Q2MTMyNLIzMLIxNycNGElcV7GU08ChATS
+	E0tSs1NTC1KLYLYwcXBKNTA6/9z84Y/d248l/55O+yJUtPloUc/KZvs3FXkSG30vFPc218p0
+	fb1irHdtR77dVPcLlidLuE49yMhv8DTx4Lf9/va7cf/Ey51LnrE9ldvuej+fszzHoFqP21L8
+	8t0NdnzafLvXWFzYfu6G7Mq6ZONV81+XO897svtHTuiFdZlTLqzT9PEPOBCjxFKckWioxVxU
+	nAgAFVE06iwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/01/29 10:14), Thomas Renninger wrote:
-> On Thursday, January 24, 2013 09:23:14 AM Takao Indoh wrote:
->> (2013/01/23 9:47), Thomas Renninger wrote:
->>> On Monday, January 21, 2013 10:11:04 AM Takao Indoh wrote:
->>>> (2013/01/08 4:09), Thomas Renninger wrote:
->>> ...
->>>
->>>>> I tried the provided patches first on 2.6.32, then I verfied with
->>>>> 3.8-rc2
->>>>> and in both cases the disk is not detected anymore in
->>>>> reset_devices (kexec'ed/kdump) case (but things work fine without these
->>>>> patches).
->>>>
->>>> So the problem that the disk is not detected was caused by exactmap
->>>> problem you guys are discussing? Or still not detected even if exactmap
->>>> problem is fixed?
->>>
->>> This problem is related to the 5 PCI resetting patches.
->>> Dumping worked with a 2.6.32 and a 3.8-rc2 kernel, adding the PCI
->>> resetting
->>> patches broke both. I first tried 2.6.32 and verified with 3.8-rc2 to make
->>> sure I didn't mess up the backport adjustings of the patches to 2.6.32.
->> If you have a chance please try again the patches with the latest
->> firmware.
-> Not sure I can update the firmware as this is a reference platform used exactly
-> like this in production.
+Vivek Gautam wrote:
+> 
+> Adding usbphy node for Exynos5250 along with the
+> necessary device data to be parsed.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+>  arch/arm/boot/dts/exynos5250.dtsi |   15 +++++++++++++++
+>  1 files changed, 15 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
+> b/arch/arm/boot/dts/exynos5250.dtsi
+> index 30485de..610e338 100644
+> --- a/arch/arm/boot/dts/exynos5250.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+> @@ -275,6 +275,21 @@
+>  		#size-cells = <0>;
+>  	};
+> 
+> +	usbphy@12130000 {
 
-Anyway it seems that resetting device makes the disks disappear from
-your system. I'm wondering if this reset mechanism should be disabled by
-default and be enabled by boot parameter like
-reset_devices_on_dmar_fault to prevent a regression like your case.
+Please put above node by order of address.
 
-Thanks,
-Takao Indoh
+> +		compatible = "samsung,exynos5250-usbphy";
+> +		reg = <0x12130000 0x100>;
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		ranges;
+> +
+> +		usbphy-sys {
+> +			      /* USB device and host PHY_CONTROL registers
+*/
 
->
-> I also cannot see how this could help.
->
->     Thomas
->
->
+Please add the binding documentation instead of comment here.
 
+> +			reg = <0x10040704 0x8>,
+> +			      /* USB2.0 PHY configuration register */
+> +			      <0x10050230 0x4>;
+> +		};
+> +	};
+> +
+>  	amba {
+>  		#address-cells = <1>;
+>  		#size-cells = <1>;
+> --
+> 1.7.6.5
 
