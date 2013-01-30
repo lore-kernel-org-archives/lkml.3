@@ -1,85 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab3A3Umm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 15:42:42 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:39141 "EHLO
+	id S1756947Ab3A3Urc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:47:32 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40900 "EHLO
 	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab3A3Umk (ORCPT
+	with ESMTP id S1755338Ab3A3Ura (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 15:42:40 -0500
-Date: Wed, 30 Jan 2013 20:42:40 +0000
+	Wed, 30 Jan 2013 15:47:30 -0500
+Date: Wed, 30 Jan 2013 20:47:30 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: aris@redhat.com
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v4 7/9] devcg: split single exception copy from
- dev_exceptions_copy()
-Message-ID: <20130130204240.GE8507@mail.hallyn.com>
+Subject: Re: [PATCH v4 8/9] devcg: refactor dev_exception_clean()
+Message-ID: <20130130204730.GF8507@mail.hallyn.com>
 References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.108794435@napanee.usersys.redhat.com>
+ <20130130171102.253395279@napanee.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130130171102.108794435@napanee.usersys.redhat.com>
+In-Reply-To: <20130130171102.253395279@napanee.usersys.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Quoting aris@redhat.com (aris@redhat.com):
-> This patch is in preparation for hierarchy support
+> This patch is in preparation for hierarchy support.
 > 
 > This patch doesn't introduce any functional changes.
 > 
 > Acked-by: Tejun Heo <tj@kernel.org>
 > Cc: Tejun Heo <tj@kernel.org>
 > Cc: Serge Hallyn <serge.hallyn@canonical.com>
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-
 > Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 > 
 > ---
->  security/device_cgroup.c |   18 ++++++++++++++----
->  1 file changed, 14 insertions(+), 4 deletions(-)
+>  security/device_cgroup.c |   34 ++++++++++++++++------------------
+>  1 file changed, 16 insertions(+), 18 deletions(-)
 > 
-> --- github.orig/security/device_cgroup.c	2013-01-29 11:49:16.076677425 -0500
-> +++ github/security/device_cgroup.c	2013-01-29 11:49:16.374681863 -0500
-> @@ -89,20 +89,30 @@ static int devcgroup_can_attach(struct c
->  	return 0;
+> --- github.orig/security/device_cgroup.c	2013-01-29 11:49:16.374681863 -0500
+> +++ github/security/device_cgroup.c	2013-01-29 11:49:16.653686016 -0500
+> @@ -212,32 +212,33 @@ static int dev_exception_add(struct dev_
+>  	return rc;
 >  }
 >  
-> +static int dev_exception_copy(struct list_head *dest,
-> +			      struct dev_exception_item *ex)
+> -static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
+> +static void dev_exception_clean(struct list_head *exceptions)
+>  {
+>  	struct dev_exception_item *ex, *tmp;
+>  
+> -	list_for_each_entry_safe(ex, tmp, &dev_cgroup->exceptions, list) {
+> -		list_del_rcu(&ex->list);
+> -		kfree_rcu(ex, rcu);
+> -	}
+> -	list_for_each_entry_safe(ex, tmp, &dev_cgroup->local.exceptions,
+> -				 list) {
+> +	list_for_each_entry_safe(ex, tmp, exceptions, list) {
+>  		list_del_rcu(&ex->list);
+>  		kfree_rcu(ex, rcu);
+>  	}
+>  }
+>  
+> +static void __dev_exception_clean_all(struct dev_cgroup *dev_cgroup)
 > +{
-> +	struct dev_exception_item *new;
-> +
-> +	new = kmemdup(ex, sizeof(*ex), GFP_KERNEL);
-> +	if (!new)
-> +		return -ENOMEM;
-> +	list_add_tail(&new->list, dest);
-> +	return 0;
+> +	dev_exception_clean(&dev_cgroup->exceptions);
+> +	dev_exception_clean(&dev_cgroup->local.exceptions);
 > +}
 > +
->  /*
+>  /**
+> - * dev_exception_clean - frees all entries of the exception list
+> + * dev_exception_clean_all - frees all entries of the exception list
+>   * @dev_cgroup: dev_cgroup with the exception list to be cleaned
+>   *
 >   * called under devcgroup_mutex
 >   */
->  static int dev_exceptions_copy(struct list_head *dest, struct list_head *orig)
+> -static void dev_exception_clean(struct dev_cgroup *dev_cgroup)
+> +static void dev_exception_clean_all(struct dev_cgroup *dev_cgroup)
 >  {
-> -	struct dev_exception_item *ex, *tmp, *new;
-> +	struct dev_exception_item *ex, *tmp;
->  
 >  	lockdep_assert_held(&devcgroup_mutex);
 >  
->  	list_for_each_entry(ex, orig, list) {
-> -		new = kmemdup(ex, sizeof(*ex), GFP_KERNEL);
-> -		if (!new)
-> +		if (dev_exception_copy(dest, ex))
->  			goto free_and_exit;
-> -		list_add_tail(&new->list, dest);
->  	}
+> -	__dev_exception_clean(dev_cgroup);
+> +	__dev_exception_clean_all(dev_cgroup);
+>  }
 >  
->  	return 0;
+>  /**
+> @@ -303,7 +304,7 @@ static void devcgroup_css_free(struct cg
+>  	struct dev_cgroup *dev_cgroup;
+>  
+>  	dev_cgroup = cgroup_to_devcgroup(cgroup);
+> -	__dev_exception_clean(dev_cgroup);
+> +	__dev_exception_clean_all(dev_cgroup);
+>  	kfree(dev_cgroup);
+>  }
+>  
+> @@ -508,25 +509,22 @@ 	memset(&ex, 0, sizeof(ex));
+>  		case DEVCG_ALLOW:
+>  			if (!may_allow_all(parent))
+>  				return -EPERM;
+> -			dev_exception_clean(devcgroup);
+> +			dev_exception_clean_all(devcgroup);
+>  			if (parent)
+>  				rc = dev_exceptions_copy(&devcgroup->exceptions,
+>  							 &parent->exceptions);
+>  			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
+>  			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
+> -
+> -			if (rc)
+> -				return rc;
+
+Was this intentional?
+
+I see that you next add
+
+	rc = propagate_behavior(devcgroup);
+
+right here, but this means you're ignoring failure in the
+dev_exceptions_copy() call above.
+
+>  			break;
+>  		case DEVCG_DENY:
+> -			dev_exception_clean(devcgroup);
+> +			dev_exception_clean_all(devcgroup);
+>  			devcgroup->behavior = DEVCG_DEFAULT_DENY;
+>  			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
+>  			break;
+>  		default:
+> -			return -EINVAL;
+> +			rc = -EINVAL;
+>  		}
+> -		return 0;
+> +		return rc;
+>  	case 'b':
+>  		ex.type = DEV_BLOCK;
+>  		break;
 > 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
