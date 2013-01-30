@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab3A3Tap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 14:30:45 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:50727 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772Ab3A3TaY (ORCPT
+	id S1756853Ab3A3TbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 14:31:12 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:61345 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756792Ab3A3TbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 14:30:24 -0500
-Date: Wed, 30 Jan 2013 14:27:00 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Bing Zhao <bzhao@marvell.com>
-Cc: Lubomir Rintel <lkundrak@v3.sk>, Harro Haan <hrhaan@gmail.com>,
-        Dan Williams <dcbw@redhat.com>,
-        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] libertas sdio: remove CMD_FUNC_INIT call
-Message-ID: <20130130192700.GF2167@tuxdriver.com>
-References: <1358493883-28433-1-git-send-email-lkundrak@v3.sk>
- <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
+	Wed, 30 Jan 2013 14:31:09 -0500
+Message-ID: <1359574265.2789.52.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] ptp: PTP_1588_CLOCK_PCH depends on x86
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Jeff Mahoney <jeffm@suse.com>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Wed, 30 Jan 2013 19:31:05 +0000
+In-Reply-To: <20130130190207.GB6283@netboy.at.omicron.at>
+References: <510958D5.7060206@suse.com>
+	 <20130130190207.GB6283@netboy.at.omicron.at>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19598.005
+X-TM-AS-Result: No--29.898500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 12:28:17PM -0800, Bing Zhao wrote:
-> Hi Lubomir,
+On Wed, 2013-01-30 at 20:02 +0100, Richard Cochran wrote:
+> On Wed, Jan 30, 2013 at 12:31:01PM -0500, Jeff Mahoney wrote:
+> > The EG20T PCH is only compatible with Intel Atom processors so it
+> > should depend on x86.
 > 
-> > It actually times out on a 8688 present in GuruPlug with sd8688.bin
-> > (md5=7233401e9687f8c880da547beed4324e) firmware (that's present in
-> > linux-firmware tree), but the adapter works fine.
-> > 
-> > For that firmware times out with libertas_uap [1] as well, though it succeeds
-> > with sd8688_ap.bin (md5=52cd8f8296b9a7e1d3835d57416256b2) that was originally
-> > shipped with GuruPlug. That firmware is not in linux-firmware tree and btmrvl
-> > driver might win the race programming the 8688 with sd8688.bin anyway.
-> > 
-> > [1] https://github.com/lkundrak/linux/tree/libertas_uap
-> > ---
-> >  drivers/net/wireless/libertas/if_sdio.c |   14 --------------
-> >  1 files changed, 0 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
-> > index 2ecab49..3c4c555 100644
-> > --- a/drivers/net/wireless/libertas/if_sdio.c
-> > +++ b/drivers/net/wireless/libertas/if_sdio.c
-> > @@ -825,20 +825,6 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
-> > 
-> >  	sdio_release_host(func);
-> > 
-> > -	/*
-> > -	 * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
-> > -	 */
-> > -	if (card->model == MODEL_8688) {
-> > -		struct cmd_header cmd;
-> > -
-> > -		memset(&cmd, 0, sizeof(cmd));
-> > -
-> > -		lbs_deb_sdio("send function INIT command\n");
-> > -		if (__lbs_cmd(priv, CMD_FUNC_INIT, &cmd, sizeof(cmd),
-> > -				lbs_cmd_copyback, (unsigned long) &cmd))
-> > -			netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
-> > -	}
-> > -
+> Yes, there is something wrong with PTP_1588_CLOCK_PCH. The last
+> several times I did 'make oldconfig' for various configs, it asked me
+> whether to enable this 'new' option. That is really annoying,
+> especially with non-atom and non-x86 builds.
 > 
-> Removing FUNC_INIT could break things in some scenarios.
-> Could you please test the following case?
-> 
-> 1. insmod liberates -> download firmware, send FUNC_INIT, ...
-> 2. rmmod libertas -> send FUNC_SHUTDOWN command to firmware; BT is still working.
-> 3. insmod libertas -> skip firmware downloading, send FUNC_INIT, ...
-> 
-> If FUNC_INIT is removed, I don't expect step 3 to work.
-> 
-> Thanks,
-> Bing
-> 
-> >  	priv->fw_ready = 1;
-> >  	wake_up(&card->pwron_waitq);
-> > 
-> > --
-> > 1.7.1
-> 
+> Ben, you removed the PCH_GBE dependency in 18d359ce. Are you sure that
+> was the right thing to do?
 
-Lubomir, any reply?  Should I drop this one?
+The clock is a separate device and the PHC driver doesn't depend on the
+net driver.  However, since the clock is a PCI device the driver does
+need a dependency on PCI (which was previously an indirect dependency).
+
+> > Cc: Richard Cochran <richardcochran@gmail.com>
+> > Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+> > ---
+> >  drivers/ptp/Kconfig |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > --- a/drivers/ptp/Kconfig
+> > +++ b/drivers/ptp/Kconfig
+> > @@ -72,6 +72,7 @@ config DP83640_PHY
+> >  
+> >  config PTP_1588_CLOCK_PCH
+> >       tristate "Intel PCH EG20T as PTP clock"
+> > +     depends on X86
+> >       select PTP_1588_CLOCK
+> >       help
+> >         This driver adds support for using the PCH EG20T as a PTP
+
+I agree that the driver is only useful on X86, but some people like to
+build-test as many drivers as possible with a single configuration.  The
+only build dependency for this seems to be PCI.
+
+(Putting on my distribution hat for a moment: it is useful to know that
+a driver is practically architecture-specific even though it can be
+built elsewhere.  Perhaps there is a use for a BUILD_TEST or BUILD_ALL
+config symbol, so this could be:
+	depends on X86 || (BUILD_TEST && PCI)
+)
+
+Ben.
 
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
