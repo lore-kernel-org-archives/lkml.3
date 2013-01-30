@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab3A3RLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 12:11:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19086 "EHLO mx1.redhat.com"
+	id S1756226Ab3A3RLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 12:11:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33202 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754508Ab3A3RLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754299Ab3A3RLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Jan 2013 12:11:05 -0500
-Message-Id: <20130130171101.690972553@napanee.usersys.redhat.com>
+Message-Id: <20130130171101.060853036@napanee.usersys.redhat.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 30 Jan 2013 12:11:05 -0500
+Date: Wed, 30 Jan 2013 12:11:01 -0500
 From: aris@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v4 4/9] devcg: expand may_access() logic
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=split_may_access_logic.patch
+Subject: [PATCH v4 0/9] devcg: introduce proper hierarchy support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to make the next patch more clear, expand may_access() logic.
+This patchset implements device cgroup hierarchy. Behaviors and exceptions
+will be propagated down in the tree and local preferences will be re-evaluated
+everytime a change in its parent occours, reapplying them if it's still
+possible.
 
-v2: may_access() returns bool now
+git://github.com/aristeu/linux-2.6.git
+branch: devcg_hierarchy_review
 
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+v4:
+- minor fixes pointed by Tejun
 
----
- security/device_cgroup.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+v3:
+- update documentation
+- move css_online/css_offline changes to a new patch
+- use cgroup_for_each_descendant_pre() instead of own descendant walk
+- move exception_copy rework to a separared patch
+- move exception_clean rework to a separated patch
+- new patch to just move dev_exception_rm() before dev_exception_add()
+  as requested by Tejun.
+- updated patch description for may_access() changes
+- new patch to expand the may_access() logic before changing it
+- fixed argument description order in may_access()
 
---- github.orig/security/device_cgroup.c	2013-01-30 08:56:29.532063723 -0500
-+++ github/security/device_cgroup.c	2013-01-30 08:58:02.934460404 -0500
-@@ -355,8 +355,8 @@ 	return 0;
-  * @dev_cgroup: dev cgroup to be tested against
-  * @refex: new exception
-  */
--static int may_access(struct dev_cgroup *dev_cgroup,
--		      struct dev_exception_item *refex)
-+static bool may_access(struct dev_cgroup *dev_cgroup,
-+		       struct dev_exception_item *refex)
- {
- 	struct dev_exception_item *ex;
- 	bool match = false;
-@@ -382,16 +382,19 @@ 		if (ex->minor != ~0 && ex->minor != re
- 
- 	/*
- 	 * In two cases we'll consider this new exception valid:
--	 * - the dev cgroup has its default policy to allow + exception list:
--	 *   the new exception should *not* match any of the exceptions
--	 *   (behavior == DEVCG_DEFAULT_ALLOW, !match)
- 	 * - the dev cgroup has its default policy to deny + exception list:
- 	 *   the new exception *should* match the exceptions
--	 *   (behavior == DEVCG_DEFAULT_DENY, match)
-+	 * - the dev cgroup has its default policy to allow + exception list:
-+	 *   the new exception should *not* match any of the exceptions
- 	 */
--	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
--		return 1;
--	return 0;
-+	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
-+		if (match)
-+			return true;
-+	} else {
-+		if (!match)
-+			return true;
-+	}
-+	return false;
- }
- 
- /*
+v2:
+- rebase on top "device_cgroup: don't grab mutex in rcu callback"
+- in case parent changes behavior or exceptions and the local exceptions won't
+  apply anymore, remove them instead of keeping them around.
 
+Cc: Tejun Heo <tj@kernel.org>                                                                                               
+Cc: Serge Hallyn <serge.hallyn@canonical.com>                                                                               
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>                                                                           
+
+-- 
+Aristeu
