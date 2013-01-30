@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3A3IXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:23:09 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6443 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489Ab3A3IXG (ORCPT
+	id S1754080Ab3A3IYb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:24:31 -0500
+Received: from canardo.mork.no ([148.122.252.1]:53681 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753489Ab3A3IY3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:23:06 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 30 Jan 2013 00:22:46 -0800
-Message-ID: <5108D865.3070301@nvidia.com>
-Date: Wed, 30 Jan 2013 17:23:01 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	Wed, 30 Jan 2013 03:24:29 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Daniele Palmas <dnlplm@gmail.com>
+Cc: Dan Williams <dcbw@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthias Urlichs <smurf@smurf.noris.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] USB: option: add support for Telit LE920
+Organization: m
+References: <1359388030-2821-1-git-send-email-dnlplm@gmail.com>
+	<1359479958.1635.8.camel@dcbw.foobar.com>
+	<871ud3q4sr.fsf@nemi.mork.no>
+	<CAGRyCJFxe4sg_GhimQjTG+jSb8CYJRP3wGcJDEJSq6Uek0Y_iQ@mail.gmail.com>
+Date: Wed, 30 Jan 2013 09:23:43 +0100
+In-Reply-To: <CAGRyCJFxe4sg_GhimQjTG+jSb8CYJRP3wGcJDEJSq6Uek0Y_iQ@mail.gmail.com>
+	(Daniele Palmas's message of "Wed, 30 Jan 2013 08:13:28 +0100")
+Message-ID: <87txpznkog.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [RFC 0/4] Use the Common Display Framework in tegra-drm
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <20130130074020.GA17547@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130130074020.GA17547@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 04:40 PM, Thierry Reding wrote:
-> Thanks *a lot* for taking care of this Alexandre! From a quick look at
-> the patches they seem generally fine. I'll go over them in a bit more
-> detail though.
+Daniele Palmas <dnlplm@gmail.com> writes:
 
-Glad you like it better than my previous attempts at controlling Tegra's 
-panels and backlights. ;)
-
->> 1) The CDF has a get_modes() hook, but this is already implemented by
->> tegra_connector_get_modes(). Ideally everything should be moved to the CDF hook,
->> but Tegra's implementation uses DRM functions to retrieve the EDID and CDF
->> should, AFAIK, remain DRM-agnostic.
+> The output of lsusb for interface #1 is the following:
 >
-> Maybe a good option would be to just not implement get_modes() if the
-> same information can be retrieved via EDID. That is, the DRM driver
-> could just go and fetch EDID when the nvidia,ddc-i2c-bus is available
-> (or parse the nvidia,edid blob) and only rely on CDF otherwise.
+> Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        1
+>       bAlternateSetting       0
+>       bNumEndpoints           2
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass     66
+>       bInterfaceProtocol      1
+>       iInterface              0
+>
+> It should be an adb device, so probably it is not needed to blacklist
+> it. Should I resend a new patch with only interface #5 reserved?
 
-Since EDID information is per-panel I'd intuitively say it should be 
-provided by the panel driver.
+You could have used USB_DEVICE_AND_INTERFACE_INFO() matching on all
+ff/ff/ff to avoid blacklisting the adb interface, but IMHO the patch is
+fine as it is.
 
-> So for Ventana the only reason why we need CDF is basically the power
-> sequencing, right?
+This being an Android device raises another question though: Are these
+interface numbers static?  I assume you can e.g. disable adb?  What
+happens to the descriptors then?  Does the device change pid, or are the
+interfaces renumbered?
 
-As of now, yes.
 
-> I definitely think that we should aim for correct panel and backlight
-> interaction. Perhaps this could work by looking up the real backlight
-> via it's phandle and have the CDF driver use the backlight API to
-> disable or enable the backlight as part of the power sequencing.
-
-I have just written a bit of code that does that. It works well and 
-seems like a natural way to operate the backlight. However...
-
-> I'm not sure what you mean by "cannot ignore FB events"? Can you provide
-> a concrete problematic use-case?
-
-... that's where thing stop looking nice. The backlight framework 
-forcibly registers a framebuffer notifier callback and switches the 
-backlight on and off on blank/unblank events, effectively duplicating 
-what the panel driver does. There is no way to disable this behavior at 
-the moment.
-
-This could be solved by introducing a new function for controlling the 
-"ownership" of the backlight that would unregister the notifier when the 
-panel driver takes its reference to the backlight.
-
-> Hijacking .update_status() sounds a bit risky. But perhaps you could
-> wrap the real backlight in a CDF backlight to receive notifications.
-> Obviously you'd get two backlight devices in sysfs, but that turn out
-> not to be a problem.
-
-For cosmetic reasons I'd prefer to avoid having two backlight devices 
-(which ended up in that terrible PWM backlight subdriver thing). Maybe 
-we can engineer the backlight framework to make such customizations easier?
-
-Alex.
-
+Bjørn
