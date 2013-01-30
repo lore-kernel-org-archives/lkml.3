@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab3A3Ovw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 09:51:52 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54407
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755330Ab3A3OrO (ORCPT
+	id S1755079Ab3A3OzU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 09:55:20 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58710 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab3A3OzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 09:47:14 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Jarosch <thomas.jarosch@intra2net.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/21] perf sort: Use pclose() instead of fclose() on pipe stream
-Date: Wed, 30 Jan 2013 11:46:59 -0300
-Message-Id: <1359557222-17547-19-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1359557222-17547-1-git-send-email-acme@infradead.org>
-References: <1359557222-17547-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 30 Jan 2013 09:55:19 -0500
+Date: Thu, 31 Jan 2013 01:55:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: <linux-next@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: linux-next: no tree for Jan 30
+Message-Id: <20130131015516.ee80cf921443e92b620ba6fa@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__31_Jan_2013_01_55_16_+1100_r0IQW_7zXI6Rq6AE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+--Signature=_Thu__31_Jan_2013_01_55_16_+1100_r0IQW_7zXI6Rq6AE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-cppcheck message:
-[tools/perf/util/sort.c:277]: (error) Mismatching allocation and deallocation: fp
+Hi all,
 
-Also fix descriptor leak on error and always initialize the "fp" variable.
+There will be no tree for today.
 
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Link: http://lkml.kernel.org/r/1359112354.yZcisNZ4k0@storm
-Link: http://lkml.kernel.org/r/2266358.qvDXKLvJ67@storm
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/sort.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 7ad6239..8333661 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -249,7 +249,7 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
- 					size_t size,
- 					unsigned int width __maybe_unused)
- {
--	FILE *fp;
-+	FILE *fp = NULL;
- 	char cmd[PATH_MAX + 2], *path = self->srcline, *nl;
- 	size_t line_len;
- 
-@@ -270,7 +270,6 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
- 
- 	if (getline(&path, &line_len, fp) < 0 || !line_len)
- 		goto out_ip;
--	fclose(fp);
- 	self->srcline = strdup(path);
- 	if (self->srcline == NULL)
- 		goto out_ip;
-@@ -280,8 +279,12 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
- 		*nl = '\0';
- 	path = self->srcline;
- out_path:
-+	if (fp)
-+		pclose(fp);
- 	return repsep_snprintf(bf, size, "%s", path);
- out_ip:
-+	if (fp)
-+		pclose(fp);
- 	return repsep_snprintf(bf, size, "%-#*llx", BITS_PER_LONG / 4, self->ip);
- }
- 
--- 
-1.8.1.1.361.gec3ae6e
+--Signature=_Thu__31_Jan_2013_01_55_16_+1100_r0IQW_7zXI6Rq6AE
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRCTRUAAoJEECxmPOUX5FEFdMP/j9vJWWJMCX4k+McWWOWjRXA
+dHqqrqw8MSsBmI3iPZ0rD0kbt70R5e5y1IDUkDRt7Yh0qwZLhYezoJUcK92VmYiR
+f86Hq2c3S7WG2sMKCvAQy07Z6n9OeUoL9uRC7dIqe3ZD2v2dOXZfUZTeO6tfnesD
+4EYD4ZyoIr5SvZm99wMLC13y9/O2R5kCd7ZneTJ1BotKfwNBsLn3Sk65l+hlPKZm
+oby7mJ7Ye2p3q3m5dQSjBHgDBCe0Mb1j/ds4UJ1K0JiJguE2dcJqPeLWBgG/35jg
+8SCt5tKfs4w4AHP2uQm8FYSd4Hx2QnhVSs/JBjeeFTv8xVh8lR1QocTFLB79ASb6
+1qBCW2C4nWCFY7u2Oor56YrBSVFmOWuGzR4jQzk4ak5wBGVDQZtE0oSuvubbb6uH
+RXtbJASw2xSsa6w2FtH/BmLb7XP3Ztrp3qA8zTEeQSkR661sTfIExfoDX9GlNC47
+CRJnoKKML4Mi/6qxtlAojnsiiepRT8HIBcazLLWF8kt7WRIPTfW5K8vHmLjqJTZY
+LVPdd1SekJhZDIfuArMoipYGsXsDyJFvuTqU5n43j+WvnxdOUehaEyU5J4ZH4zYK
+ur6Z7X3ONraYzBrkoomtOhsQW13s4ExVNlpskFwMRyD7TCNjmTtOT17ksxpnfj1z
+XK2uoshKrNgf2vmF9ERK
+=Vk7n
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__31_Jan_2013_01_55_16_+1100_r0IQW_7zXI6Rq6AE--
