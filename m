@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3A3LFE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 06:05:04 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:38007 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab3A3LEt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 06:04:49 -0500
-Message-ID: <5108FDEA.20206@synopsys.com>
-Date: Wed, 30 Jan 2013 15:03:06 +0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755014Ab3A3LGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:06:10 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:51708 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754149Ab3A3LGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 06:06:07 -0500
+Message-ID: <5108FE9B.9000806@mev.co.uk>
+Date: Wed, 30 Jan 2013 11:06:03 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd.bergmann@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <Vineet.Gupta1@synopsys.com>, <benh@kernel.crashing.org>,
-        <monstr@monstr.eu>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <201301291627.34913.arnd.bergmann@linaro.org>
-In-Reply-To: <201301291627.34913.arnd.bergmann@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+To: Ian Abbott <ian.abbott@mev.co.uk>
+CC: H Hartley Sweeten <hartleys@visionengravers.com>,
+        "=?ISO-8859-1?Q?Pete?= =?ISO-8859-1?Q?r_H=FCwe?=" <PeterHuewe@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [Q]staging/comedi: Considation of *_find_boardinfo possible?
+References: <201301300041.36064.PeterHuewe@gmx.de> <ADE657CA350FB648AAC2C43247A983F00207A707B3C8@AUSP01VMBX24.collaborationhost.net> <5108FE31.8020107@mev.co.uk>
+In-Reply-To: <5108FE31.8020107@mev.co.uk>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.121.8.102]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 08:27 PM, Arnd Bergmann wrote:
-> On Tuesday 29 January 2013, Alexey Brodkin wrote:
->> in(out)_8/in(out)_be16/in(out)_le16 are very powerpc/microblaze
->> specific. To enable use of Xilinx System ACE driver build for other
->> architectures (for example it's possible to use it on Xilinx ml-509
->> board with ARC700 in FPGA) we need to use generic implementation of
->> accessors.
->>
->> Current implementation was successfully built with Sourcery G++ Lite
->> 2011.03-39 for Power EABI (ppc44x_defconfig).
->>
->> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
->
-> Is this driver used on powerpc64 as well, or just on microblaze
-> and/or 32 bit powerpc?
->
-> On 64 bit powerpc, ioread involves extra overhead because it
-> goes through the PCI error handling implementation, so we should
-> keep using in_le() there.	
->
-> 	Arnd
->
+On 2013-01-30 11:04, Ian Abbott wrote:
+> static int foobar_auto_attach(struct comedi_device *dev,
+> 			      unsigned long context_bn)
+> {
+> 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+> 	struct foobar_board *thisboard = &foobar_boards[bn_foo];
 
-Personally I have no idea about usage of the named device on powerpc64.
-Wondering if anybody may comment on this?
+Oops, I meant &foobar_boards[context_bn] there!
 
-My only intention was to make the driver portable.
-Do you think if there's another generic alternative for originally used 
-accessors?
-
-For example will it be better with "readb/readw/writeb/writew"?
-
--Alexey
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
