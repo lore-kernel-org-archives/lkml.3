@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab3A3COL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 21:14:11 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44880 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751722Ab3A3COJ (ORCPT
+	id S1752877Ab3A3CP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 21:15:58 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63405 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab3A3CP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 21:14:09 -0500
-Date: Wed, 30 Jan 2013 10:13:59 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Axel Lin <axel.lin@ingics.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        AnilKumar Ch <anilkumar@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: clear state each invocation of
- of_regulator_match
-Message-ID: <20130130021357.GD4945@opensource.wolfsonmicro.com>
-References: <1359486073-26504-1-git-send-email-swarren@wwwdotorg.org>
+	Tue, 29 Jan 2013 21:15:56 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-ab-5108825b040f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thomas Backlund <tmb@mageia.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: perf 3.8-rc build failure:  undefined reference to `strlcpy'
+References: <51074E9D.3040803@mageia.org> <20130129103722.GE14444@pd.tnic>
+Date: Wed, 30 Jan 2013 11:15:55 +0900
+In-Reply-To: <20130129103722.GE14444@pd.tnic> (Borislav Petkov's message of
+	"Tue, 29 Jan 2013 11:37:22 +0100")
+Message-ID: <87ehh3v2jo.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RhUH2Ysw6aD5utA4"
-Content-Disposition: inline
-In-Reply-To: <1359486073-26504-1-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Borislav,
 
---RhUH2Ysw6aD5utA4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 29 Jan 2013 11:37:22 +0100, Borislav Petkov wrote:
+> On Tue, Jan 29, 2013 at 06:22:53AM +0200, Thomas Backlund wrote:
+>> 
+>> [tmb@tmb linux-3.8-rc5]$ make -C tools/perf -s V=1
+>> HAVE_CPLUS_DEMANGLE=1 prefix=%{_prefix} all
+>> 
+>> ...
+>> 
+>> /tmp/ccJEJv6m.o: In function `main':
+>> :(.text+0x14): undefined reference to `strlcpy'
+>> collect2: ld returned 1 exit status
+>> 
+>> ...
+>> 
+>> This did not show up in 3.7
+>
+> Ditto here:
+>
+> /tmp/ccC1kLwn.o: In function `main':
+> :(.text+0x14): undefined reference to `strlcpy'
+> collect2: error: ld returned 1 exit status
+>
+> Someone needs to get HAVE_STRLCPY and tools/perf/util/path.c in order so
+> that the linker sees it, IMHO.
 
-On Tue, Jan 29, 2013 at 12:01:13PM -0700, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->=20
-> of_regulator_match() saves some dynamcially allocated state into the
-> match table that's passed to it. By implementation and not contract, for
-> each match table entry, if non-NULL state is already present,
-> of_regulator_match() will not overwrite it. of_regulator_match() is
+Please see my reply on another post from Thomas:
 
-Applied, thanks.
+  https://lkml.org/lkml/2013/1/29/32
 
---RhUH2Ysw6aD5utA4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+It's not like a build failure of perf tools, it's just a result of
+feature test so should not affect the build of perf itself, right?  Why
+it confuses us is that we don't show any compile message if -s option is
+given to make, so I posted a patch to hide CHK and above failure message
+when -s option is specified.
 
-iQIcBAEBAgAGBQJRCIHZAAoJELSic+t+oim9XagP/0QiVe8p6854AGmxE86e3Wi6
-usc9shbjGmZDE99Nuu1nIVjA0iNwvqQGL8Qgug0uhRg1khnvY470Aamox5IN7OGT
-XqQxacq4rAO4KyOPqkrDUhmvAqbACix0wdifx89QsvZMk9D9YOP9syXYwA9Smhvd
-FFA2gie17SS2H3eqn4WIgCXupOXuLIg41RPdyRGT0V/jmWLB7soR/wgC5CsuufWk
-cXmT47j6Ncrod3z1J7Rntr80vPFgotCntVVms15jIOtSEd3XQKmH169yeuoWwgcz
-ERQRXp5oejj8at+C0QbCQ4PPDVAUAQKJ9Oa1kHcd2uDeT2lg6v9y7Sqp1kJFLHVh
-gB4zB/Y1/DEv3FDEeub6aPtJQrVocjn/GEi2GF3vqRUZHjrLYO71WPMkRarLgIKZ
-atP43heXNUcMde6WeKZVzcUoTZ2v0m8KNKpgRKnyZrlOK/nQD9uXCO35UWV2hC5Z
-veNML6QypCyYr6s3bVVcnaBGmMemKrpP7HXHodVLxJOZHmyvNU5s1d2MJvAWwltQ
-e0PSsUZvWY6Uudbd4ZpaENGjkpVLg2gQtdGzlYejmwcnmDBoTiuH07xJJHaArXD/
-TVgRwpOesCtThQ+OZW1IMok3AwL3zGEt/XpmlaDFeJ0OrWhBGoPfkMcHSw1n0qa6
-aygnt4GuIsrdM1l2vE25
-=lhAj
------END PGP SIGNATURE-----
-
---RhUH2Ysw6aD5utA4--
+Thanks,
+Namhyung
