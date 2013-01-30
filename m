@@ -1,60 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab3A3ReD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 12:34:03 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46106 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754162Ab3A3ReA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 12:34:00 -0500
-Message-ID: <51095972.9050908@linux.vnet.ibm.com>
-Date: Wed, 30 Jan 2013 11:33:38 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756437Ab3A3Rhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 12:37:31 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:36803 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744Ab3A3Rh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 12:37:27 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] staging: zsmalloc: remove unused pool name
-References: <1359560212-8818-1-git-send-email-sjenning@linux.vnet.ibm.com> <51093F43.2090503@linux.vnet.ibm.com> <20130130172159.GA24760@kroah.com>
-In-Reply-To: <20130130172159.GA24760@kroah.com>
+X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
+In-Reply-To: <5108EA04.80002@atmel.com>
+References: <5108EA04.80002@atmel.com>
+Date: Wed, 30 Jan 2013 09:37:26 -0800
+Message-ID: <CAOesGMji-AJg1v3M=nHhYdh1dJgPPptU5NsO7j8YqQrAeditrg@mail.gmail.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.8-rc6
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Robert Nelson <Robert.Nelson@digikey.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13013017-7182-0000-0000-000004D04B18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 11:21 AM, Greg Kroah-Hartman wrote:
-> On Wed, Jan 30, 2013 at 09:41:55AM -0600, Seth Jennings wrote:
->> On 01/30/2013 09:36 AM, Seth Jennings wrote:> zs_create_pool()
->> currently takes a name argument which is
->>> never used in any useful way.
->>>
->>> This patch removes it.
->>>
->>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>
->> Crud, forgot the Acks...
->>
->> Acked-by: Nitin Gupta <ngupta@vflare.org>
->> Acked-by: Rik van Riel <riel@redhat.com>
-> 
-> {sigh} you just made me have to edit your patch by hand, you now owe me
-> a beer...
-> 
+On Wed, Jan 30, 2013 at 1:38 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+>   git://github.com/at91linux/linux-at91.git tags/at91-fixes
 
-Now I owe you a beer and a keyboard.
 
-https://plus.google.com/111049168280159033135/posts/YqyTxk3ujZ8
+Pulled, thanks.
 
-I'll try to get my act together.
-
-Thanks,
-Seth
-
+-Olof
