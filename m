@@ -1,66 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab3A3Jdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 04:33:38 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:58158 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab3A3Jde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 04:33:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Matt Porter <mporter@ti.com>
-Subject: Re: [PATCH v6 03/10] ARM: edma: add AM33XX support to the private EDMA API
-Date: Wed, 30 Jan 2013 09:32:58 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-1-generic; KDE/4.3.2; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Dan Williams <djbw@fb.com>, Rob Herring <rob.herring@calxeda.com>,
-        Padma Venkat <padma.kvr@gmail.com>
-References: <1359529229-22207-1-git-send-email-mporter@ti.com> <1359529229-22207-4-git-send-email-mporter@ti.com>
-In-Reply-To: <1359529229-22207-4-git-send-email-mporter@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301300932.58732.arnd@arndb.de>
-X-Provags-ID: V02:K0:Hwa28OO2Dsss6knu5+4+3ZiFaW1pQr3bbAl61JwqUUM
- ec07xmDaftZhsrDFuZaFOR8MJu7mrHQxEpZAjsqMBLEb7RO7/g
- TITZuiXTYzf3X/BsGQFcA+ZVYkkk+aOuF4av6trcP1TvXidAtJ
- 3YNc44PjqsTn4Fso6yJPae0FWKQ6s/llpKqC4ZCyIBnZm3ze1Z
- KKm/MLv72gPr5TMZKt1m9NCooQakzv1Xpzgw3pm2b+wQg/3tEu
- 0f6TrIugoO58Wp7JGqwL+DU6Wztx8LK3o0IjOdiMB91HTkygGu
- NiczXQidtqTAJ2w/HiZTVu3CVHuRb0wIC1ewOUcznQ3+ZmCmtb
- +L7Hy5Bhk9eo9JXi3cWg=
+	id S1754302Ab3A3JeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 04:34:12 -0500
+Received: from mga03.intel.com ([143.182.124.21]:11979 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753147Ab3A3JeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 04:34:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,567,1355126400"; 
+   d="scan'208";a="250205287"
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Aaron Lu <aaron.lu@intel.com>, Shane Huang <shane.huang@amd.com>
+Subject: [PATCH v8 1/4] block: add a flag to identify PM request
+Date: Wed, 30 Jan 2013 17:34:51 +0800
+Message-Id: <1359538494-2936-2-git-send-email-aaron.lu@intel.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1359538494-2936-1-git-send-email-aaron.lu@intel.com>
+References: <1359538494-2936-1-git-send-email-aaron.lu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 January 2013, Matt Porter wrote:
-> +               dma_cap_set(DMA_SLAVE, edma_filter_info.dma_cap);
-> +               of_dma_controller_register(dev->of_node,
-> +                                          of_dma_simple_xlate,
-> +                                          &edma_filter_info);
-> +       }
+From: Lin Ming <ming.m.lin@intel.com>
 
-How do you actually deal with the problem mentioned by Padma, that
-the filter function does not know which edma instance it is looking
-at? If you assume that there can only be a single edma instance in
-the system, that is probably a limitation that should be documented
-somewhere, and ideally the probe() function should check for that.
+Add a flag REQ_PM to identify the request is PM related, such requests
+will not change the device request queue's runtime status. It is
+intended to be used in driver's runtime PM callback, so that driver can
+perform some IO to the device there with the queue's runtime status
+unaffected. e.g. in SCSI disk's runtime suspend callback, the disk will
+be put into stopped power state, and this require sending a command to
+the device. Such command processing should not change the disk's runtime
+status.
 
-	Arnd
+As an example, modify scsi code to use this flag.
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+---
+ drivers/scsi/scsi_lib.c    |  9 ++++-----
+ drivers/scsi/sd.c          |  8 ++++----
+ include/linux/blk_types.h  |  2 ++
+ include/scsi/scsi_device.h | 16 ++++++++++++----
+ 4 files changed, 22 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 765398c..23f795f 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -271,11 +271,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ }
+ EXPORT_SYMBOL(scsi_execute);
+ 
+-
+-int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
++int scsi_execute_req_flags(struct scsi_device *sdev, const unsigned char *cmd,
+ 		     int data_direction, void *buffer, unsigned bufflen,
+ 		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
+-		     int *resid)
++		     int *resid, int flags)
+ {
+ 	char *sense = NULL;
+ 	int result;
+@@ -286,14 +285,14 @@ int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 			return DRIVER_ERROR << 24;
+ 	}
+ 	result = scsi_execute(sdev, cmd, data_direction, buffer, bufflen,
+-			      sense, timeout, retries, 0, resid);
++			      sense, timeout, retries, flags, resid);
+ 	if (sshdr)
+ 		scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, sshdr);
+ 
+ 	kfree(sense);
+ 	return result;
+ }
+-EXPORT_SYMBOL(scsi_execute_req);
++EXPORT_SYMBOL(scsi_execute_req_flags);
+ 
+ /*
+  * Function:    scsi_init_cmd_errh()
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 7992635..698923f 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1424,8 +1424,8 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+ 		 * Leave the rest of the command zero to indicate
+ 		 * flush everything.
+ 		 */
+-		res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL);
++		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
++				SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL, REQ_PM);
+ 		if (res == 0)
+ 			break;
+ 	}
+@@ -3021,8 +3021,8 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
+ 	if (!scsi_device_online(sdp))
+ 		return -ENODEV;
+ 
+-	res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-			       SD_TIMEOUT, SD_MAX_RETRIES, NULL);
++	res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
++			       SD_TIMEOUT, SD_MAX_RETRIES, NULL, REQ_PM);
+ 	if (res) {
+ 		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
+ 		sd_print_result(sdkp, res);
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index cdf1119..fcc1ce2 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -175,6 +175,7 @@ enum rq_flag_bits {
+ 	__REQ_IO_STAT,		/* account I/O stat */
+ 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
+ 	__REQ_KERNEL, 		/* direct IO to kernel pages */
++	__REQ_PM,		/* runtime pm request */
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
+@@ -223,5 +224,6 @@ enum rq_flag_bits {
+ #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+ #define REQ_SECURE		(1 << __REQ_SECURE)
+ #define REQ_KERNEL		(1 << __REQ_KERNEL)
++#define REQ_PM			(1 << __REQ_PM)
+ 
+ #endif /* __LINUX_BLK_TYPES_H */
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index a7f9cba..cc64587 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -394,10 +394,18 @@ extern int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ 			int data_direction, void *buffer, unsigned bufflen,
+ 			unsigned char *sense, int timeout, int retries,
+ 			int flag, int *resid);
+-extern int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+-			    int data_direction, void *buffer, unsigned bufflen,
+-			    struct scsi_sense_hdr *, int timeout, int retries,
+-			    int *resid);
++extern int scsi_execute_req_flags(struct scsi_device *sdev,
++	const unsigned char *cmd, int data_direction, void *buffer,
++	unsigned bufflen, struct scsi_sense_hdr *sshdr, int timeout,
++	int retries, int *resid, int flags);
++static inline int scsi_execute_req(struct scsi_device *sdev,
++	const unsigned char *cmd, int data_direction, void *buffer,
++	unsigned bufflen, struct scsi_sense_hdr *sshdr, int timeout,
++	int retries, int *resid)
++{
++	return scsi_execute_req_flags(sdev, cmd, data_direction, buffer,
++		bufflen, sshdr, timeout, retries, resid, 0);
++}
+ extern void sdev_disable_disk_events(struct scsi_device *sdev);
+ extern void sdev_enable_disk_events(struct scsi_device *sdev);
+ 
+-- 
+1.8.1
+
