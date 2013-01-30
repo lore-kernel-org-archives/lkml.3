@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab3A3AjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 19:39:12 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:53379 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab3A3AjH (ORCPT
+	id S1753401Ab3A3Aj0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 19:39:26 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:41812 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab3A3AjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 19:39:07 -0500
+	Tue, 29 Jan 2013 19:39:11 -0500
 From: Ruslan Bilovol <ruslan.bilovol@ti.com>
 To: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
         eduardo.valentin@ti.com
-Subject: [RFC PATCH v2 1/2] ARM: kernel: update cpuinfo to print SoC model name
-Date: Wed, 30 Jan 2013 02:38:56 +0200
-Message-Id: <1359506337-21619-2-git-send-email-ruslan.bilovol@ti.com>
+Subject: [RFC PATCH v2 2/2] ARM: OMAP4: setup SoC model name during ID initialisation
+Date: Wed, 30 Jan 2013 02:38:57 +0200
+Message-Id: <1359506337-21619-3-git-send-email-ruslan.bilovol@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359506337-21619-1-git-send-email-ruslan.bilovol@ti.com>
 References: <1359506337-21619-1-git-send-email-ruslan.bilovol@ti.com>
@@ -21,24 +21,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, reading /proc/cpuinfo provides userspace with CPU ID of
-the CPU carrying out the read from the file.
-Userspace using this information may decide what module
-to load or how to configure some specific (and processor-depended)
-settings or so.
-However, since really different SoCs can share same ARM core,
-this information currently is not so useful.
-For example, TI OMAP4460 and OMAP4470 SoCs show the same
-information in the /proc/cpuinfo whereas they are different.
-Since in most cases ARM CPU is a part of some system on a chip (SoC),
-the "cpuinfo" file looks like exactly that place, where this
-information have to be displayed.
-
-So added new line "SoC name" in the "cpuinfo" output for system
-on a chip name. It is placed between CPU information and machine
-information, so the file structure looks gracefully (CPU-SoC-Hardware)
-
-Example:
+Set up the SoC model name during OMAP ID initialisation
+so it will be displayed in /proc/cpuinfo:
 
 / # cat proc/cpuinfo
 [...]
@@ -54,55 +38,54 @@ Revision        : 20edb4
 
 Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
 ---
- arch/arm/include/asm/setup.h |    1 +
- arch/arm/kernel/setup.c      |    9 +++++++++
- 2 files changed, 10 insertions(+)
+ arch/arm/mach-omap2/id.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index c50f056..621df40 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -52,5 +52,6 @@ extern struct meminfo meminfo;
- extern int arm_add_memory(phys_addr_t start, phys_addr_t size);
- extern void early_print(const char *str, ...);
- extern void dump_machine_table(void);
-+extern void set_soc_model_name(char *name);
+diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
+index 45cc7ed4..b1fba35 100644
+--- a/arch/arm/mach-omap2/id.c
++++ b/arch/arm/mach-omap2/id.c
+@@ -20,6 +20,7 @@
+ #include <linux/io.h>
  
- #endif
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 3f6cbb2..bb3805f 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -134,6 +134,7 @@ char elf_platform[ELF_PLATFORM_SIZE];
- EXPORT_SYMBOL(elf_platform);
+ #include <asm/cputype.h>
++#include <asm/setup.h>
  
- static const char *cpu_name;
-+static const char *soc_name;
- static const char *machine_name;
- static char __initdata cmd_line[COMMAND_LINE_SIZE];
- struct machine_desc *machine_desc __initdata;
-@@ -493,6 +494,11 @@ static void __init setup_processor(void)
- 	cpu_init();
- }
+ #include "common.h"
  
-+void set_soc_model_name(char *name)
-+{
-+	soc_name = name;
-+}
+@@ -33,8 +34,17 @@
+ 
+ static unsigned int omap_revision;
+ static const char *cpu_rev;
++static char omap_soc_model_name[80];
+ u32 omap_features;
+ 
++static const char const *omap_types[] = {
++	[OMAP2_DEVICE_TYPE_TEST]	= "TST",
++	[OMAP2_DEVICE_TYPE_EMU]		= "EMU",
++	[OMAP2_DEVICE_TYPE_SEC]		= "HS",
++	[OMAP2_DEVICE_TYPE_GP]		= "GP",
++	[OMAP2_DEVICE_TYPE_BAD]		= "BAD",
++};
 +
- void __init dump_machine_table(void)
+ unsigned int omap_rev(void)
  {
- 	struct machine_desc *p;
-@@ -902,6 +908,9 @@ static int c_show(struct seq_file *m, void *v)
- 		seq_printf(m, "CPU revision\t: %d\n\n", cpuid & 15);
+ 	return omap_revision;
+@@ -502,8 +512,12 @@ void __init omap4xxx_check_revision(void)
+ 		omap_revision = OMAP4430_REV_ES2_3;
  	}
  
-+	if (soc_name)
-+		seq_printf(m, "SoC name\t: %s\n\n", soc_name);
+-	pr_info("OMAP%04x ES%d.%d\n", omap_rev() >> 16,
+-		((omap_rev() >> 12) & 0xf), ((omap_rev() >> 8) & 0xf));
++	sprintf(omap_soc_model_name, "OMAP%04x ES%d.%d %s", omap_rev() >> 16,
++			((omap_rev() >> 12) & 0xf), ((omap_rev() >> 8) & 0xf),
++			omap_types[omap_type()]);
++	set_soc_model_name(omap_soc_model_name);
 +
- 	seq_printf(m, "Hardware\t: %s\n", machine_name);
- 	seq_printf(m, "Revision\t: %04x\n", system_rev);
- 	seq_printf(m, "Serial\t\t: %08x%08x\n",
++	pr_info("%s\n", omap_soc_model_name);
+ }
+ 
+ void __init omap5xxx_check_revision(void)
 -- 
 1.7.9.5
 
