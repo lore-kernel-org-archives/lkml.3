@@ -1,567 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab3A3F4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 00:56:41 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:53476 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342Ab3A3F4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 00:56:36 -0500
-X-IronPort-AV: E=Sophos;i="4.84,565,1355068800"; 
-   d="scan'208";a="6664148"
-Message-ID: <5108B5D1.6050600@cn.fujitsu.com>
-Date: Wed, 30 Jan 2013 13:55:29 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 08/15] memory-hotplug: Common APIs to support page
- tables hot-remove
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>   <1357723959-5416-9-git-send-email-tangchen@cn.fujitsu.com>  <1359464694.1624.18.camel@kernel> <51088298.9080302@cn.fujitsu.com> <1359516425.1288.5.camel@kernel>
-In-Reply-To: <1359516425.1288.5.camel@kernel>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/30 13:55:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/30 13:55:11,
-	Serialize complete at 2013/01/30 13:55:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752923Ab3A3F4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 00:56:47 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:23537 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab3A3F4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 00:56:40 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-2c-5108b617bac8
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        balbi@ti.com, grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
+        tomasz.figa@gmail.com, av.tikhomirov@samsung.com,
+        dianders@chromium.org, p.paneri@samsung.com
+References: <1358168377-22919-2-git-send-email-gautam.vivek@samsung.com>
+ <1359368690-30178-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1359368690-30178-1-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v4 1/2] usb: phy: samsung: Common out the generic stuff
+Date: Tue, 29 Jan 2013 21:56:31 -0800
+Message-id: <077e01cdfeae$8fbc2850$af3478f0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQMFL69UuKvZDijit+etR9C4t2XM2wHO+5n1leR6cPA=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t8zY13xbRyBBmsbWS0u75rDZjHj/D4m
+	i0XLWpkdmD0+b5ILYIzisklJzcksSy3St0vgymhb0c5YsEq/4l2rXwPjIrUuRg4OCQETic9X
+	tLsYOYFMMYkL99azdTFycQgJLGOUaNz0iQUiYSIxa+MJNhBbSGA6o8T8F6YQRX8ZJdZMOMsE
+	kmAT0JA4/P4ZO4gtIuAhcffYcnaQImaBTUwS3yd3sEJ0tzNKzPzDDWJzCnhKnJ70FqxZWMBb
+	4uq62UwgF7EIqEr8mW4DEuYVsJRYOPMXO4QtKPFj8j2wg5gFtCTW7zzOBGHLS2xe85YZ4lAF
+	iR1nXzNC3GAlcW7ec0aIGnGJSQ8egt0jIbCOXWLm1fdgQ1kEBCS+TT7EAgkJWYlNB6DmSEoc
+	XHGDZQKjxCwkq2chWT0LyepZSFYsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRESa1I7
+	GFc2WBxiFOBgVOLhXfCCPVCINbGsuDL3EKMEB7OSCK+CGkegEG9KYmVValF+fFFpTmrxIcZk
+	oGMnMkuJJucD00BeSbyhsbGJmYmpibmlqbkpacJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCU
+	amCcdLB83a3z+1JyhV7MnvFq4y/J592prbKxjRc/a01n/jHphsf1ryeWHv6i+XFGj6RFr41z
+	z09R2+qn06adnloV+vNxrvzfpRs0j5u+7gxZtLJzntuDZ9rV+l2Zj5gjIxoVg/lzrD5ND9in
+	HeZqycfHGaagzpUnb1zJaNcu6ZR/9apf/HxLETslluKMREMt5qLiRADWmE5U+QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jQV3xbRyBBotELC7vmsNmMeP8PiaL
+	RctamR2YPT5vkgtgjGpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21
+	VXLxCdB1y8wBGq+kUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzGhb0c5Y
+	sEq/4l2rXwPjIrUuRk4OCQETiVkbT7BB2GISF+6tB7OFBKYzSsx/YdrFyAVk/2WUWDPhLBNI
+	gk1AQ+Lw+2fsILaIgIfE3WPL2UGKmAU2MUl8n9zBCtHdzigx8w83iM0p4ClxetJbsGZhAW+J
+	q+tmA9kcHCwCqhJ/ptuAhHkFLCUWzvzFDmELSvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtmiEMV
+	JHacfc0IcYOVxLl5zxkhasQlJj14yD6BUWgWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca
+	6hUn5haX5qXrJefnbmIER/IzqR2MKxssDjEKcDAq8fAueMEeKMSaWFZcmXuIUYKDWUmEV0GN
+	I1CINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84FJJq8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZT
+	TwKEBNITS1KzU1MLUotgtjBxcEo1MCYJZnh/f6x4v3mj1fogTbX+a2ZFIaxOeXLVi3ouT/SU
+	3XjV5LxDU+72hBDu+lxp/Yux95vmnY+yvB6Qs2bWEc+gRYKb9Hwdt7MtnxMqO+XISV5W/WTP
+	E1Hpi64eWzb3867fr2/p6h4peFfY38Qk++BJ3VzRxfuk5EXbJ01/29L5xTa5dH3INSWW4oxE
+	Qy3mouJEADrViRwoAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 11:27 AM, Simon Jeons wrote:
-> On Wed, 2013-01-30 at 10:16 +0800, Tang Chen wrote:
->> On 01/29/2013 09:04 PM, Simon Jeons wrote:
->>> Hi Tang,
->>> On Wed, 2013-01-09 at 17:32 +0800, Tang Chen wrote:
->>>> From: Wen Congyang<wency@cn.fujitsu.com>
->>>>
->>>> When memory is removed, the corresponding pagetables should alse be removed.
->>>> This patch introduces some common APIs to support vmemmap pagetable and x86_64
->>>> architecture pagetable removing.
->>>
->>> Why don't need to build_all_zonelists like online_pages does during
->>> hot-add path(add_memory)?
->>
->> Hi Simon,
->>
->> As you said, build_all_zonelists is done by online_pages. When the
->> memory device
->> is hot-added, we cannot use it. we can only use is when we online the
->> pages on it.
->
-> Why?
->
-> If a node has just one memory device and memory is small, some zone will
-> not present like zone_highmem, then hot-add another memory device and
-> zone_highmem appear, if you should build_all_zonelists this time?
+Vivek Gautam wrote:
+> 
+> Moving register and structure definitions to header file,
+> and keeping the generic functions to be used across
+> multiple PHYs in common file "samsung-usbphy.c".
+> Also renaming the usb 2.0 phy driver to "samsung-usb2.c"
 
-Hi Simon,
+Just in my opinion, Samsung-usb2phy is more clear?...In addition, I looked
+at using SAMSUNG_USB2PHY as a statement.
 
-We built zone list when the first memory on the node is hot-added.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+> 
+> Changes from v3:
+>  - Using separate config SAMSUNG_USB2PHY dependent on
+>    SAMSUNG_USBPHY for samsung-usb2 type PHY controller.
+> 
+>  drivers/usb/phy/Kconfig          |   14 +-
+>  drivers/usb/phy/Makefile         |    1 +
+>  drivers/usb/phy/samsung-usb2.c   |  511 +++++++++++++++++++++++++++
+>  drivers/usb/phy/samsung-usbphy.c |  714
++-------------------------------------
+>  drivers/usb/phy/samsung-usbphy.h |  247 +++++++++++++
+>  5 files changed, 778 insertions(+), 709 deletions(-)
+>  create mode 100644 drivers/usb/phy/samsung-usb2.c
+>  create mode 100644 drivers/usb/phy/samsung-usbphy.h
+> 
+> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+> index fae4d08..cc0d230 100644
+> --- a/drivers/usb/phy/Kconfig
+> +++ b/drivers/usb/phy/Kconfig
+> @@ -48,8 +48,18 @@ config USB_RCAR_PHY
+> 
+>  config SAMSUNG_USBPHY
+>  	bool "Samsung USB PHY controller Driver"
+> -	depends on USB_S3C_HSOTG || USB_EHCI_S5P ||
+> USB_OHCI_EXYNOS
 
-add_memory()
-  |-->if (!node_online(nid)) hotadd_new_pgdat()
-                              |-->free_area_init_node()
-                              |-->build_all_zonelists()
+So this can be selected without any dependency?
 
-All the zones on the new node will be initialized as empty. So here, we 
-build zone list.
+>  	select USB_OTG_UTILS
+>  	help
+> -	  Enable this to support Samsung USB phy controller for samsung
+> +	  Enable this to support Samsung USB phy controllers for Samsung
+>  	  SoCs.
 
-But actually we did nothing because no page is online, and zones are empty.
-In build_zonelists_node(), populated_zone(zone) will always be false.
+Hmm, according to above comments, this should be enabled under Samsung SoC?
 
-The real work of building zone list is when pages are online. :)
+> +
+> +if SAMSUNG_USBPHY
 
+Why is this needed here?
 
-And in your question, you said some small memory is there, and 
-zone_normal is present.
-OK, when these pages are onlined (not added), the zone list has been 
-rebuilt.
-But pages in zone_highmem is not added, which means not onlined, so we 
-don't need to
-build zone list for it. And later, the zone_highmem pages are added, we 
-still don't
-rebuild the zone list because the real rebuilding work is when the pages 
-are onlined.
+> +
+> +config SAMSUNG_USB2PHY
+> +	bool "Samsung USB 2.0 PHY controller Driver"
+> +	depends on USB_S3C_HSOTG || USB_EHCI_S5P ||
+> USB_OHCI_EXYNOS
+> +	help
+> +	  Enable this to support Samsung USB 2.0 (High Speed) phy controller
+> +	  for Samsung SoCs.
+> +
+> +endif
+> diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+> index ec304f6..7ba9862 100644
+> --- a/drivers/usb/phy/Makefile
+> +++ b/drivers/usb/phy/Makefile
+> @@ -10,3 +10,4 @@ obj-$(CONFIG_MV_U3D_PHY)		+=
+> mv_u3d_phy.o
+>  obj-$(CONFIG_USB_EHCI_TEGRA)	+= tegra_usb_phy.o
+>  obj-$(CONFIG_USB_RCAR_PHY)		+= rcar-phy.o
+>  obj-$(CONFIG_SAMSUNG_USBPHY)		+= samsung-usbphy.o
+> +obj-$(CONFIG_SAMSUNG_USB2PHY)		+= samsung-usb2.o
+> diff --git a/drivers/usb/phy/samsung-usb2.c b/drivers/usb/phy/samsung-
+> usb2.c
+> new file mode 100644
+> index 0000000..9a9d1d0
+> --- /dev/null
+> +++ b/drivers/usb/phy/samsung-usb2.c
+> @@ -0,0 +1,511 @@
+> +/* linux/drivers/usb/phy/samsung-usb2.c
+> + *
+> + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+> + *              http://www.samsung.com
+> + *
+> + * Author: Praveen Paneri <p.paneri@samsung.com>
+> + *
+> + * Samsung USB2.0 PHY transceiver; talks to S3C HS OTG controller,
+EHCI-S5P
+> and
+> + * OHCI-EXYNOS controllers.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/clk.h>
+> +#include <linux/delay.h>
+> +#include <linux/device.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/usb/otg.h>
+> +#include <linux/usb/samsung_usb_phy.h>
+> +#include <linux/platform_data/samsung-usbphy.h>
+> +
+> +#include "samsung-usbphy.h"
+> +
+> +int samsung_usbphy_set_host(struct usb_otg *otg, struct usb_bus *host)
 
-I think this is the current logic. :)
+For naming, if you want to support usb 2.0 phy here, the name of fuction
+should be changed to more clear name such as usb2phy or whatever.
 
-Thanks. :)
+As I'm understanding, the samsung-usbphy.c can be used for common stuff and
+this is for only usb 2.0 phy.
 
->
->>
->> But we can online the pages as different types, kernel or movable (which
->> belongs to
->> different zones), and we can online part of the memory, not all of them.
->> So each time we online some pages, we should check if we need to update
->> the zone list.
->>
->> So I think that is why we do build_all_zonelists when online_pages.
->> (just my opinion)
->>
->> Thanks. :)
->>
->>>
->>>>
->>>> All pages of virtual mapping in removed memory cannot be freedi if some pages
->>>> used as PGD/PUD includes not only removed memory but also other memory. So the
->>>> patch uses the following way to check whether page can be freed or not.
->>>>
->>>>    1. When removing memory, the page structs of the revmoved memory are filled
->>>>       with 0FD.
->>>>    2. All page structs are filled with 0xFD on PT/PMD, PT/PMD can be cleared.
->>>>       In this case, the page used as PT/PMD can be freed.
->>>>
->>>> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
->>>> Signed-off-by: Jianguo Wu<wujianguo@huawei.com>
->>>> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
->>>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->>>> ---
->>>>    arch/x86/include/asm/pgtable_types.h |    1 +
->>>>    arch/x86/mm/init_64.c                |  299 ++++++++++++++++++++++++++++++++++
->>>>    arch/x86/mm/pageattr.c               |   47 +++---
->>>>    include/linux/bootmem.h              |    1 +
->>>>    4 files changed, 326 insertions(+), 22 deletions(-)
->>>>
->>>> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
->>>> index 3c32db8..4b6fd2a 100644
->>>> --- a/arch/x86/include/asm/pgtable_types.h
->>>> +++ b/arch/x86/include/asm/pgtable_types.h
->>>> @@ -352,6 +352,7 @@ static inline void update_page_count(int level, unsigned long pages) { }
->>>>     * as a pte too.
->>>>     */
->>>>    extern pte_t *lookup_address(unsigned long address, unsigned int *level);
->>>> +extern int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase);
->>>>
->>>>    #endif	/* !__ASSEMBLY__ */
->>>>
->>>> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
->>>> index 9ac1723..fe01116 100644
->>>> --- a/arch/x86/mm/init_64.c
->>>> +++ b/arch/x86/mm/init_64.c
->>>> @@ -682,6 +682,305 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>>>    }
->>>>    EXPORT_SYMBOL_GPL(arch_add_memory);
->>>>
->>>> +#define PAGE_INUSE 0xFD
->>>> +
->>>> +static void __meminit free_pagetable(struct page *page, int order)
->>>> +{
->>>> +	struct zone *zone;
->>>> +	bool bootmem = false;
->>>> +	unsigned long magic;
->>>> +	unsigned int nr_pages = 1<<   order;
->>>> +
->>>> +	/* bootmem page has reserved flag */
->>>> +	if (PageReserved(page)) {
->>>> +		__ClearPageReserved(page);
->>>> +		bootmem = true;
->>>> +
->>>> +		magic = (unsigned long)page->lru.next;
->>>> +		if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
->>>> +			while (nr_pages--)
->>>> +				put_page_bootmem(page++);
->>>> +		} else
->>>> +			__free_pages_bootmem(page, order);
->>>> +	} else
->>>> +		free_pages((unsigned long)page_address(page), order);
->>>> +
->>>> +	/*
->>>> +	 * SECTION_INFO pages and MIX_SECTION_INFO pages
->>>> +	 * are all allocated by bootmem.
->>>> +	 */
->>>> +	if (bootmem) {
->>>> +		zone = page_zone(page);
->>>> +		zone_span_writelock(zone);
->>>> +		zone->present_pages += nr_pages;
->>>> +		zone_span_writeunlock(zone);
->>>> +		totalram_pages += nr_pages;
->>>> +	}
->>>> +}
->>>> +
->>>> +static void __meminit free_pte_table(pte_t *pte_start, pmd_t *pmd)
->>>> +{
->>>> +	pte_t *pte;
->>>> +	int i;
->>>> +
->>>> +	for (i = 0; i<   PTRS_PER_PTE; i++) {
->>>> +		pte = pte_start + i;
->>>> +		if (pte_val(*pte))
->>>> +			return;
->>>> +	}
->>>> +
->>>> +	/* free a pte talbe */
->>>> +	free_pagetable(pmd_page(*pmd), 0);
->>>> +	spin_lock(&init_mm.page_table_lock);
->>>> +	pmd_clear(pmd);
->>>> +	spin_unlock(&init_mm.page_table_lock);
->>>> +}
->>>> +
->>>> +static void __meminit free_pmd_table(pmd_t *pmd_start, pud_t *pud)
->>>> +{
->>>> +	pmd_t *pmd;
->>>> +	int i;
->>>> +
->>>> +	for (i = 0; i<   PTRS_PER_PMD; i++) {
->>>> +		pmd = pmd_start + i;
->>>> +		if (pmd_val(*pmd))
->>>> +			return;
->>>> +	}
->>>> +
->>>> +	/* free a pmd talbe */
->>>> +	free_pagetable(pud_page(*pud), 0);
->>>> +	spin_lock(&init_mm.page_table_lock);
->>>> +	pud_clear(pud);
->>>> +	spin_unlock(&init_mm.page_table_lock);
->>>> +}
->>>> +
->>>> +/* Return true if pgd is changed, otherwise return false. */
->>>> +static bool __meminit free_pud_table(pud_t *pud_start, pgd_t *pgd)
->>>> +{
->>>> +	pud_t *pud;
->>>> +	int i;
->>>> +
->>>> +	for (i = 0; i<   PTRS_PER_PUD; i++) {
->>>> +		pud = pud_start + i;
->>>> +		if (pud_val(*pud))
->>>> +			return false;
->>>> +	}
->>>> +
->>>> +	/* free a pud table */
->>>> +	free_pagetable(pgd_page(*pgd), 0);
->>>> +	spin_lock(&init_mm.page_table_lock);
->>>> +	pgd_clear(pgd);
->>>> +	spin_unlock(&init_mm.page_table_lock);
->>>> +
->>>> +	return true;
->>>> +}
->>>> +
->>>> +static void __meminit
->>>> +remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
->>>> +		 bool direct)
->>>> +{
->>>> +	unsigned long next, pages = 0;
->>>> +	pte_t *pte;
->>>> +	void *page_addr;
->>>> +	phys_addr_t phys_addr;
->>>> +
->>>> +	pte = pte_start + pte_index(addr);
->>>> +	for (; addr<   end; addr = next, pte++) {
->>>> +		next = (addr + PAGE_SIZE)&   PAGE_MASK;
->>>> +		if (next>   end)
->>>> +			next = end;
->>>> +
->>>> +		if (!pte_present(*pte))
->>>> +			continue;
->>>> +
->>>> +		/*
->>>> +		 * We mapped [0,1G) memory as identity mapping when
->>>> +		 * initializing, in arch/x86/kernel/head_64.S. These
->>>> +		 * pagetables cannot be removed.
->>>> +		 */
->>>> +		phys_addr = pte_val(*pte) + (addr&   PAGE_MASK);
->>>> +		if (phys_addr<   (phys_addr_t)0x40000000)
->>>> +			return;
->>>> +
->>>> +		if (IS_ALIGNED(addr, PAGE_SIZE)&&
->>>> +		    IS_ALIGNED(next, PAGE_SIZE)) {
->>>> +			if (!direct) {
->>>> +				free_pagetable(pte_page(*pte), 0);
->>>> +				pages++;
->>>> +			}
->>>> +
->>>> +			spin_lock(&init_mm.page_table_lock);
->>>> +			pte_clear(&init_mm, addr, pte);
->>>> +			spin_unlock(&init_mm.page_table_lock);
->>>> +		} else {
->>>> +			/*
->>>> +			 * If we are not removing the whole page, it means
->>>> +			 * other ptes in this page are being used and we canot
->>>> +			 * remove them. So fill the unused ptes with 0xFD, and
->>>> +			 * remove the page when it is wholly filled with 0xFD.
->>>> +			 */
->>>> +			memset((void *)addr, PAGE_INUSE, next - addr);
->>>> +			page_addr = page_address(pte_page(*pte));
->>>> +
->>>> +			if (!memchr_inv(page_addr, PAGE_INUSE, PAGE_SIZE)) {
->>>> +				free_pagetable(pte_page(*pte), 0);
->>>> +				pages++;
->>>> +
->>>> +				spin_lock(&init_mm.page_table_lock);
->>>> +				pte_clear(&init_mm, addr, pte);
->>>> +				spin_unlock(&init_mm.page_table_lock);
->>>> +			}
->>>> +		}
->>>> +	}
->>>> +
->>>> +	/* Call free_pte_table() in remove_pmd_table(). */
->>>> +	flush_tlb_all();
->>>> +	if (direct)
->>>> +		update_page_count(PG_LEVEL_4K, -pages);
->>>> +}
->>>> +
->>>> +static void __meminit
->>>> +remove_pmd_table(pmd_t *pmd_start, unsigned long addr, unsigned long end,
->>>> +		 bool direct)
->>>> +{
->>>> +	unsigned long pte_phys, next, pages = 0;
->>>> +	pte_t *pte_base;
->>>> +	pmd_t *pmd;
->>>> +
->>>> +	pmd = pmd_start + pmd_index(addr);
->>>> +	for (; addr<   end; addr = next, pmd++) {
->>>> +		next = pmd_addr_end(addr, end);
->>>> +
->>>> +		if (!pmd_present(*pmd))
->>>> +			continue;
->>>> +
->>>> +		if (pmd_large(*pmd)) {
->>>> +			if (IS_ALIGNED(addr, PMD_SIZE)&&
->>>> +			    IS_ALIGNED(next, PMD_SIZE)) {
->>>> +				if (!direct) {
->>>> +					free_pagetable(pmd_page(*pmd),
->>>> +						       get_order(PMD_SIZE));
->>>> +					pages++;
->>>> +				}
->>>> +
->>>> +				spin_lock(&init_mm.page_table_lock);
->>>> +				pmd_clear(pmd);
->>>> +				spin_unlock(&init_mm.page_table_lock);
->>>> +				continue;
->>>> +			}
->>>> +
->>>> +			/*
->>>> +			 * We use 2M page, but we need to remove part of them,
->>>> +			 * so split 2M page to 4K page.
->>>> +			 */
->>>> +			pte_base = (pte_t *)alloc_low_page(&pte_phys);
->>>> +			BUG_ON(!pte_base);
->>>> +			__split_large_page((pte_t *)pmd, addr,
->>>> +					   (pte_t *)pte_base);
->>>> +
->>>> +			spin_lock(&init_mm.page_table_lock);
->>>> +			pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
->>>> +			spin_unlock(&init_mm.page_table_lock);
->>>> +
->>>> +			flush_tlb_all();
->>>> +		}
->>>> +
->>>> +		pte_base = (pte_t *)map_low_page((pte_t *)pmd_page_vaddr(*pmd));
->>>> +		remove_pte_table(pte_base, addr, next, direct);
->>>> +		free_pte_table(pte_base, pmd);
->>>> +		unmap_low_page(pte_base);
->>>> +	}
->>>> +
->>>> +	/* Call free_pmd_table() in remove_pud_table(). */
->>>> +	if (direct)
->>>> +		update_page_count(PG_LEVEL_2M, -pages);
->>>> +}
->>>> +
->>>> +static void __meminit
->>>> +remove_pud_table(pud_t *pud_start, unsigned long addr, unsigned long end,
->>>> +		 bool direct)
->>>> +{
->>>> +	unsigned long pmd_phys, next, pages = 0;
->>>> +	pmd_t *pmd_base;
->>>> +	pud_t *pud;
->>>> +
->>>> +	pud = pud_start + pud_index(addr);
->>>> +	for (; addr<   end; addr = next, pud++) {
->>>> +		next = pud_addr_end(addr, end);
->>>> +
->>>> +		if (!pud_present(*pud))
->>>> +			continue;
->>>> +
->>>> +		if (pud_large(*pud)) {
->>>> +			if (IS_ALIGNED(addr, PUD_SIZE)&&
->>>> +			    IS_ALIGNED(next, PUD_SIZE)) {
->>>> +				if (!direct) {
->>>> +					free_pagetable(pud_page(*pud),
->>>> +						       get_order(PUD_SIZE));
->>>> +					pages++;
->>>> +				}
->>>> +
->>>> +				spin_lock(&init_mm.page_table_lock);
->>>> +				pud_clear(pud);
->>>> +				spin_unlock(&init_mm.page_table_lock);
->>>> +				continue;
->>>> +			}
->>>> +
->>>> +			/*
->>>> +			 * We use 1G page, but we need to remove part of them,
->>>> +			 * so split 1G page to 2M page.
->>>> +			 */
->>>> +			pmd_base = (pmd_t *)alloc_low_page(&pmd_phys);
->>>> +			BUG_ON(!pmd_base);
->>>> +			__split_large_page((pte_t *)pud, addr,
->>>> +					   (pte_t *)pmd_base);
->>>> +
->>>> +			spin_lock(&init_mm.page_table_lock);
->>>> +			pud_populate(&init_mm, pud, __va(pmd_phys));
->>>> +			spin_unlock(&init_mm.page_table_lock);
->>>> +
->>>> +			flush_tlb_all();
->>>> +		}
->>>> +
->>>> +		pmd_base = (pmd_t *)map_low_page((pmd_t *)pud_page_vaddr(*pud));
->>>> +		remove_pmd_table(pmd_base, addr, next, direct);
->>>> +		free_pmd_table(pmd_base, pud);
->>>> +		unmap_low_page(pmd_base);
->>>> +	}
->>>> +
->>>> +	if (direct)
->>>> +		update_page_count(PG_LEVEL_1G, -pages);
->>>> +}
->>>> +
->>>> +/* start and end are both virtual address. */
->>>> +static void __meminit
->>>> +remove_pagetable(unsigned long start, unsigned long end, bool direct)
->>>> +{
->>>> +	unsigned long next;
->>>> +	pgd_t *pgd;
->>>> +	pud_t *pud;
->>>> +	bool pgd_changed = false;
->>>> +
->>>> +	for (; start<   end; start = next) {
->>>> +		pgd = pgd_offset_k(start);
->>>> +		if (!pgd_present(*pgd))
->>>> +			continue;
->>>> +
->>>> +		next = pgd_addr_end(start, end);
->>>> +
->>>> +		pud = (pud_t *)map_low_page((pud_t *)pgd_page_vaddr(*pgd));
->>>> +		remove_pud_table(pud, start, next, direct);
->>>> +		if (free_pud_table(pud, pgd))
->>>> +			pgd_changed = true;
->>>> +		unmap_low_page(pud);
->>>> +	}
->>>> +
->>>> +	if (pgd_changed)
->>>> +		sync_global_pgds(start, end - 1);
->>>> +
->>>> +	flush_tlb_all();
->>>> +}
->>>> +
->>>>    #ifdef CONFIG_MEMORY_HOTREMOVE
->>>>    int __ref arch_remove_memory(u64 start, u64 size)
->>>>    {
->>>> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
->>>> index a718e0d..7dcb6f9 100644
->>>> --- a/arch/x86/mm/pageattr.c
->>>> +++ b/arch/x86/mm/pageattr.c
->>>> @@ -501,21 +501,13 @@ out_unlock:
->>>>    	return do_split;
->>>>    }
->>>>
->>>> -static int split_large_page(pte_t *kpte, unsigned long address)
->>>> +int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
->>>>    {
->>>>    	unsigned long pfn, pfninc = 1;
->>>>    	unsigned int i, level;
->>>> -	pte_t *pbase, *tmp;
->>>> +	pte_t *tmp;
->>>>    	pgprot_t ref_prot;
->>>> -	struct page *base;
->>>> -
->>>> -	if (!debug_pagealloc)
->>>> -		spin_unlock(&cpa_lock);
->>>> -	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
->>>> -	if (!debug_pagealloc)
->>>> -		spin_lock(&cpa_lock);
->>>> -	if (!base)
->>>> -		return -ENOMEM;
->>>> +	struct page *base = virt_to_page(pbase);
->>>>
->>>>    	spin_lock(&pgd_lock);
->>>>    	/*
->>>> @@ -523,10 +515,11 @@ static int split_large_page(pte_t *kpte, unsigned long address)
->>>>    	 * up for us already:
->>>>    	 */
->>>>    	tmp = lookup_address(address,&level);
->>>> -	if (tmp != kpte)
->>>> -		goto out_unlock;
->>>> +	if (tmp != kpte) {
->>>> +		spin_unlock(&pgd_lock);
->>>> +		return 1;
->>>> +	}
->>>>
->>>> -	pbase = (pte_t *)page_address(base);
->>>>    	paravirt_alloc_pte(&init_mm, page_to_pfn(base));
->>>>    	ref_prot = pte_pgprot(pte_clrhuge(*kpte));
->>>>    	/*
->>>> @@ -579,17 +572,27 @@ static int split_large_page(pte_t *kpte, unsigned long address)
->>>>    	 * going on.
->>>>    	 */
->>>>    	__flush_tlb_all();
->>>> +	spin_unlock(&pgd_lock);
->>>>
->>>> -	base = NULL;
->>>> +	return 0;
->>>> +}
->>>>
->>>> -out_unlock:
->>>> -	/*
->>>> -	 * If we dropped out via the lookup_address check under
->>>> -	 * pgd_lock then stick the page back into the pool:
->>>> -	 */
->>>> -	if (base)
->>>> +static int split_large_page(pte_t *kpte, unsigned long address)
->>>> +{
->>>> +	pte_t *pbase;
->>>> +	struct page *base;
->>>> +
->>>> +	if (!debug_pagealloc)
->>>> +		spin_unlock(&cpa_lock);
->>>> +	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
->>>> +	if (!debug_pagealloc)
->>>> +		spin_lock(&cpa_lock);
->>>> +	if (!base)
->>>> +		return -ENOMEM;
->>>> +
->>>> +	pbase = (pte_t *)page_address(base);
->>>> +	if (__split_large_page(kpte, address, pbase))
->>>>    		__free_page(base);
->>>> -	spin_unlock(&pgd_lock);
->>>>
->>>>    	return 0;
->>>>    }
->>>> diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
->>>> index 3f778c2..190ff06 100644
->>>> --- a/include/linux/bootmem.h
->>>> +++ b/include/linux/bootmem.h
->>>> @@ -53,6 +53,7 @@ extern void free_bootmem_node(pg_data_t *pgdat,
->>>>    			      unsigned long size);
->>>>    extern void free_bootmem(unsigned long physaddr, unsigned long size);
->>>>    extern void free_bootmem_late(unsigned long physaddr, unsigned long size);
->>>> +extern void __free_pages_bootmem(struct page *page, unsigned int order);
->>>>
->>>>    /*
->>>>     * Flags for reserve_bootmem (also if CONFIG_HAVE_ARCH_BOOTMEM_NODE,
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
->
->
->
+[...]
+
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id samsung_usbphy_dt_match[] = {
+> +	{
+> +		.compatible = "samsung,s3c64xx-usbphy",
+> +		.data = &usbphy_s3c64xx,
+> +	}, {
+> +		.compatible = "samsung,exynos4210-usbphy",
+> +		.data = &usbphy_exynos4,
+> +	}, {
+> +		.compatible = "samsung,exynos5250-usbphy",
+> +		.data = &usbphy_exynos5
+> +	},
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, samsung_usbphy_dt_match);
+> +#endif
+> +
+> +static struct platform_device_id samsung_usbphy_driver_ids[] = {
+> +	{
+> +		.name		= "s3c64xx-usbphy",
+> +		.driver_data	= (unsigned long)&usbphy_s3c64xx,
+> +	}, {
+> +		.name		= "exynos4210-usbphy",
+> +		.driver_data	= (unsigned long)&usbphy_exynos4,
+> +	}, {
+> +		.name		= "exynos5250-usbphy",
+> +		.driver_data	= (unsigned long)&usbphy_exynos5,
+> +	},
+> +	{},
+> +};
+> +
+> +MODULE_DEVICE_TABLE(platform, samsung_usbphy_driver_ids);
+> +
+> +static struct platform_driver samsung_usbphy_driver = {
+> +	.probe		= samsung_usbphy_probe,
+> +	.remove		= samsung_usbphy_remove,
+> +	.id_table	= samsung_usbphy_driver_ids,
+> +	.driver		= {
+> +		.name	= "samsung-usbphy",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table =
+> of_match_ptr(samsung_usbphy_dt_match),
+> +	},
+> +};
+> +
+> +module_platform_driver(samsung_usbphy_driver);
+> +
+> +MODULE_DESCRIPTION("Samsung USB phy controller");
+
+USB 2.0 Phy?
+
+> +MODULE_AUTHOR("Praveen Paneri <p.paneri@samsung.com>");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:samsung-usbphy");
+
+Is this for samsung-usbphy or samsung-usb2/samsung-usb2phy?
+
+[...]
+
+I know why you create separated phy file samsung-usbphy.c and samsung-usb2.c
+here, but I think for that, would be better if you could consider the name
+and so on.
+
+Thanks.
+
+- Kukjin
+
