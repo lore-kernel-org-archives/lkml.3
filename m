@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab3A3TXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 14:23:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755262Ab3A3TX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 14:23:29 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH V6 00/30] loop: Issue O_DIRECT aio using bio_vec
-References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com>
-	<x49obg7omos.fsf@segfault.boston.devel.redhat.com>
-	<510891ED.8090404@oracle.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 30 Jan 2013 14:23:17 -0500
-In-Reply-To: <510891ED.8090404@oracle.com> (Dave Kleikamp's message of "Tue,
-	29 Jan 2013 21:22:21 -0600")
-Message-ID: <x49d2wmqxui.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
+	id S1756780Ab3A3TXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 14:23:42 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:33151 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755262Ab3A3TXj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 14:23:39 -0500
+Date: Wed, 30 Jan 2013 20:23:30 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: da9055_wdt needs to select WATCHDOG_CORE
+Message-ID: <20130130192330.GD20100@spo001.leaseweb.com>
+References: <20130129000610.22f0ebd13431c59c5dc8cf3d@canb.auug.org.au> <5106A77C.2050400@infradead.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5106A77C.2050400@infradead.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Kleikamp <dave.kleikamp@oracle.com> writes:
+Hi Randy,
 
-> On 01/29/2013 12:42 PM, Jeff Moyer wrote:
->> Dave Kleikamp <dave.kleikamp@oracle.com> writes:
->> 
->>> Al,
->>> I'd like to push this patchset to linux-next. Would you like to pull it
->>> into your vfs tree, would you rather I submitted it separately, or do
->>> you have any issues with it before including it?
->> 
->> I'm still chasing one regression in this patchset.  If you use the ext4
->> driver for ext2 file systems, and you run the libaio test harness, then
->> you will be able to successfully write beyond the maximum file size in a
->> file (see test case 8).
->
-> I found the problem. iov_iter_shorten() wasn't setting i->count to the new
-> value.
->
-> This fixes it. I'll fix the patchset tomorrow.
+> From: Randy Dunlap <rdunlap@infradead.org>
+> 
+> DA9055_WATCHDOG needs to select WATCHDOG_CORE so that it will
+> build cleanly.  Fixes these build errors:
+> 
+> da9055_wdt.c:(.text+0xe9bc7): undefined reference to `watchdog_unregister_device'
+> da9055_wdt.c:(.text+0xe9f4b): undefined reference to `watchdog_register_device'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc: David Dajun Chen <dchen@diasemi.com>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
+> Cc: linux-watchdog@vger.kernel.org
+> ---
+>  drivers/watchdog/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> Found in linux-next, but also applies to mainline.
+> 
+> --- linux-next-20130128.orig/drivers/watchdog/Kconfig
+> +++ linux-next-20130128/drivers/watchdog/Kconfig
+> @@ -79,6 +79,7 @@ config DA9052_WATCHDOG
+>  config DA9055_WATCHDOG
+>  	tristate "Dialog Semiconductor DA9055 Watchdog"
+>  	depends on MFD_DA9055
+> +	select WATCHDOG_CORE
+>  	help
+>  	  If you say yes here you get support for watchdog on the Dialog
+>  	  Semiconductor DA9055 PMIC.
 
-I just re-ran the test, and I can confirm it fixed it as well.
+Added to linux-watchdog-next.
 
-Thanks!
-Jeff
+Kind regards,
+Wim.
+
