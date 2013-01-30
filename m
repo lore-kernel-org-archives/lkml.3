@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab3A3IAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:00:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43591 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391Ab3A3IAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:00:12 -0500
-Date: Tue, 29 Jan 2013 23:04:30 -0500
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jake Champlin <jake.champlin.27@gmail.com>
-Cc: abbotti@mev.co.uk, devel@driverdev.osuosl.org,
-        fmhess@users.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: Comedi: amplc_dio200: Fixed Bracing Issue
-Message-ID: <20130130040430.GA17683@kroah.com>
-References: <20130125185404.GA7672@gmail.com>
+	id S1752586Ab3A3IBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:01:07 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:47990 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3A3IBF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:01:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125185404.GA7672@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359531176.31148.46.camel@smile>
+References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
+	<20130129052247.GH2239@intel.com>
+	<CAOh2x=nTJ1iz9aoR8VrkE5A+iaLMMbvFeebGPsO8KWRpDLw7=A@mail.gmail.com>
+	<1359531176.31148.46.camel@smile>
+Date: Wed, 30 Jan 2013 13:31:04 +0530
+X-Google-Sender-Auth: euyJrwA-De46kDHU0v1g2e86OqI
+Message-ID: <CAOh2x==Ng1=iHOj-55mUTWCwpaJpRXjiQyfxz-a48ALDOW3aiA@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line base
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 01:54:08PM -0500, Jake Champlin wrote:
-> Fixed Bracing Issue flagged by checkpatch.pl
-> 
-> Signed-off-by: Jake Champlin <jake.champlin.27@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/amplc_dio200.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/amplc_dio200.c b/drivers/staging/comedi/drivers/amplc_dio200.c
-> index 5f309ba..b09269d 100644
-> --- a/drivers/staging/comedi/drivers/amplc_dio200.c
-> +++ b/drivers/staging/comedi/drivers/amplc_dio200.c
-> @@ -1977,8 +1977,7 @@ static int dio200_auto_attach(struct comedi_device *dev,
->  		devpriv->io.u.iobase = (unsigned long)base;
->  		devpriv->io.regtype = io_regtype;
->  	}
-> -	switch (thisboard->model)
-> -	{
-> +	switch (thisboard->model) {
->  	case pcie215_model:
->  	case pcie236_model:
->  	case pcie296_model:
+On Wed, Jan 30, 2013 at 1:02 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> We get a device from the ACPI CSRT table. During enumeration we don't
+> know what kind of the device it is. From the enumeration point of view
+> each device enumerated from CSRT is a platform device (see
+> drivers/acpi/csrt.c for the details).
+>
+> That's why we have to pass this info somehow to the DMAC driver. And
+> like Mika already mentioned we have no other generic way except
+> IORESOURCE_DMA. If you have something better in mind, please share. We
+> could adopt our code then.
 
-Why did you send me the same patch twice here?  You sent this back on
-January 18th, and I already applied it to the tree, didn't you get an
-email telling you so?
+You don't need this in DT case too? Or only for ACPI case?
 
-greg k-h
+I think "Yes" is the answer of both the questions. If so, then you
+can keep it this way or add another variable in platform data.
