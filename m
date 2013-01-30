@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3A3VY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 16:24:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753733Ab3A3VYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 16:24:24 -0500
-Date: Wed, 30 Jan 2013 16:24:18 -0500
-From: David Teigland <teigland@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        Christine Caulfield <ccaulfie@redhat.com>, cluster-devel@redhat.com
-Subject: Re: [PATCH 10/14] dlm: don't use idr_remove_all()
-Message-ID: <20130130212417.GJ24014@redhat.com>
-References: <1359163872-1949-1-git-send-email-tj@kernel.org>
- <1359163872-1949-11-git-send-email-tj@kernel.org>
- <20130128155723.GC16789@redhat.com>
- <20130129151317.GA11609@redhat.com>
+	id S1756051Ab3A3Vax (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 16:30:53 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:34395 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213Ab3A3Vav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 16:30:51 -0500
+Message-ID: <51099107.3070705@boundarydevices.com>
+Date: Wed, 30 Jan 2013 14:30:47 -0700
+From: Troy Kisky <troy.kisky@boundarydevices.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130129151317.GA11609@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Anson Huang <b20788@freescale.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dong.aisheng@linaro.org, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 2/2] regulators: anatop: add set_voltage_time_sel interface
+References: <1359585461-11377-1-git-send-email-b20788@freescale.com>
+In-Reply-To: <1359585461-11377-1-git-send-email-b20788@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 10:13:17AM -0500, David Teigland wrote:
-> On Mon, Jan 28, 2013 at 10:57:23AM -0500, David Teigland wrote:
-> > On Fri, Jan 25, 2013 at 05:31:08PM -0800, Tejun Heo wrote:
-> > > idr_destroy() can destroy idr by itself and idr_remove_all() is being
-> > > deprecated.
-> > > 
-> > > The conversion isn't completely trivial for recover_idr_clear() as
-> > > it's the only place in kernel which makes legitimate use of
-> > > idr_remove_all() w/o idr_destroy().  Replace it with idr_remove() call
-> > > inside idr_for_each_entry() loop.  It goes on top so that it matches
-> > > the operation order in recover_idr_del().
-> > > 
-> > > Only compile tested.
-> > > 
-> > > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > > Cc: Christine Caulfield <ccaulfie@redhat.com>
-> > > Cc: David Teigland <teigland@redhat.com>
-> > > Cc: cluster-devel@redhat.com
-> > > ---
-> > > This patch depends on an earlier idr patch and given the trivial
-> > > nature of the patch, I think it would be best to route these together
-> > > through -mm.  Please holler if there's any objection.
-> > 
-> > Yes, that's good for me.  I'll grab the set and test the dlm bits.
-> 
-> Hi Tejun,
-> Unfortunately, the list_for_each_entry doesn't seem to be clearing
-> everything.  I've seen "warning: recover_list_count 39" at the end of that
-> function.
+On 1/30/2013 3:37 PM, Anson Huang wrote:
+> some of anatop's regulators(vppcpu, vddpu and vddsoc) have
+> register settings about LDO's step time, which will impact
+> the LDO ramp up speed, need to use set_voltage_time_sel
+> interface to add necessary delay everytime LDOs' voltage
+> is increased.
+>
+> offset 0x170:
+> bit [24-25]: vddcpu
+> bit [26-27]: vddpu
+> bit [28-29]: vddsoc
+>
+> field definition:
+> 0'b00: 64 cycles of 24M clock;
+> 0'b01: 128 cycles of 24M clock;
+> 0'b02: 256 cycles of 24M clock;
+> 0'b03: 512 cycles of 24M clock;
+>
+> Signed-off-by: Anson Huang <b20788@freescale.com>
+> ---
+>   drivers/regulator/anatop-regulator.c |   42 ++++++++++++++++++++++++++++++++++
+>   1 file changed, 42 insertions(+)
+>
+> diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+> index 8f39cac..a857b9c 100644
+> --- a/drivers/regulator/anatop-regulator.c
+> +++ b/drivers/regulator/anatop-regulator.c
+> @@ -31,12 +31,18 @@
+>   #include <linux/regulator/driver.h>
+>   #include <linux/regulator/of_regulator.h>
+>   
+> +#define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
+> +#define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
+> +
+>   struct anatop_regulator {
+>   	const char *name;
+>   	u32 control_reg;
+>   	struct regmap *anatop;
+>   	int vol_bit_shift;
+>   	int vol_bit_width;
+> +	u32 delay_reg;
+> +	int delay_bit_shift;
+> +	int delay_bit_width;
+>   	int min_bit_val;
+>   	int min_voltage;
+>   	int max_voltage;
+> @@ -55,6 +61,33 @@ static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
+>   	return regulator_set_voltage_sel_regmap(reg, selector);
+>   }
+>   
+> +static int anatop_regmap_set_voltage_time_sel(struct regulator_dev *reg,
+> +	unsigned int old_sel,
+> +	unsigned int new_sel)
+> +{
+> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+> +	u32 val;
+> +	int ret = 0;
+> +
+> +	/* check whether need to care about LDO ramp up speed */
+> +	if (anatop_reg->delay_reg) {
+> +		/*
+> +		 * the delay for LDO ramp up time is
+> +		 * based on the register setting, we need
+> +		 * to calculate how many steps LDO need to
+> +		 * ramp up, and how much delay needed. (us)
+> +		 */
+> +		regmap_read(anatop_reg->anatop, anatop_reg->delay_reg, &val);
+> +		val = (val >> anatop_reg->delay_bit_shift) &
+> +			((1 << anatop_reg->delay_bit_width) - 1);
+> +		ret = new_sel > old_sel ? (new_sel - old_sel) *
 
-I don't want to pretend to understand the internals of this idr code, but
-it's not clear that idr_for_each is equivalent to idr_for_each_entry when
-iterating through all id values.  The "++id" in idr_for_each_entry looks
-like it could lead to some missed entries?  The comment about idr_get_next
-returning the "next number to given id" sounds like an entry with an id of
-"++id" would be missed.
+The (new_sel > old_sel) could be part of the above if.
 
-Dave
+if (anatop_reg->delay_reg && new_sel > old_sel)
+
+> +			((LDO_RAMP_UP_UNIT_IN_CYCLES << val) /
+> +			LDO_RAMP_UP_FREQ_IN_MHZ + 1) : 0;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+>   static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+>   {
+>   	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+> @@ -67,6 +100,7 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+>   
+>   static struct regulator_ops anatop_rops = {
+>   	.set_voltage_sel = anatop_regmap_set_voltage_sel,
+> +	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
+>   	.get_voltage_sel = anatop_regmap_get_voltage_sel,
+>   	.list_voltage = regulator_list_voltage_linear,
+>   	.map_voltage = regulator_map_voltage_linear,
+> @@ -143,6 +177,14 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+>   		goto anatop_probe_end;
+>   	}
+>   
+> +	/* read LDO ramp up setting, only for core reg */
+> +	of_property_read_u32(np, "anatop-delay-reg-offset",
+> +			     &sreg->delay_reg);
+> +	of_property_read_u32(np, "anatop-delay-bit-width",
+> +			     &sreg->delay_bit_width);
+> +	of_property_read_u32(np, "anatop-delay-bit-shift",
+> +			     &sreg->delay_bit_shift);
+> +
+>   	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage) / 25000 + 1
+>   			    + sreg->min_bit_val;
+>   	rdesc->min_uV = sreg->min_voltage;
+
