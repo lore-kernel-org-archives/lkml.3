@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab3A3KA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:00:59 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:56067 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab3A3KAv (ORCPT
+	id S1754552Ab3A3KA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 05:00:56 -0500
+Received: from zimbra.linbit.com ([212.69.161.123]:37984 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab3A3KAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:00:51 -0500
-Date: Wed, 30 Jan 2013 17:59:44 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shli@fusionio.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: boot warnings due to swap: make each swap partition have one
- address_space
-Message-ID: <20130130095944.GA11457@kernel.org>
-References: <5101FFF5.6030503@oracle.com>
- <20130125042512.GA32017@kernel.org>
- <alpine.LNX.2.00.1301261754530.7300@eggly.anvils>
- <20130127141253.GA27019@kernel.org>
- <alpine.LNX.2.00.1301271321500.16981@eggly.anvils>
+	Wed, 30 Jan 2013 05:00:39 -0500
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: [GIT PULL] drbd: Fix flushes without data on a diskless primary node
+Date: Wed, 30 Jan 2013 11:00:35 +0100
+Message-ID: <2160183.nbHy6OVnEG@fat-tyre>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-36-lowlatency; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1301271321500.16981@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 27, 2013 at 01:40:40PM -0800, Hugh Dickins wrote:
-> On Sun, 27 Jan 2013, Shaohua Li wrote:
-> > On Sat, Jan 26, 2013 at 06:16:05PM -0800, Hugh Dickins wrote:
-> > > On Fri, 25 Jan 2013, Shaohua Li wrote:
-> > > > On Thu, Jan 24, 2013 at 10:45:57PM -0500, Sasha Levin wrote:
-> > > > 
-> > > > Subject: give-each-swapper-space-separate-backing_dev_info
-> > > > 
-> > > > The backing_dev_info can't be shared by all swapper address space.
-> > > 
-> > > Whyever not?  It's perfectly normal for different inodes/address_spaces
-> > > to share a single backing_dev!  Sasha's trace says that it's wrong to
-> > > initialize it MAX_SWAPFILES times: fair enough.  But why should I now
-> > > want to spend 32kB (not even counting their __percpu counters) on all
-> > > these pseudo-backing_devs?
-> > 
-> > That's correct, silly me. Updated it.
-> 
-> Looks much more to my taste, thank you!
-> 
-> > > 
-> > > p.s. a grand little change would be to move page_cluster and swap_setup()
-> > > from mm/swap.c to mm/swap_state.c: they have nothing to do with the other
-> > > contents of swap.c, and everything to do with the contents of swap_state.c.
-> > > Why swap.c is called swap.c is rather a mystery.
-> > 
-> > Tried, but looks page_cluster is used in sysctl, moving to swap_state.c will
-> > make it optional. don't want to add another #ifdef, so give up.
-> 
-> Good point, thanks for trying, maybe I'll attack it next time it
-> irritates me.
-> 
-> I don't yet know whether I approve of your changes or not, but running
-> with them to see (and I'll send another bugfix separately in a moment).
-> 
-> I was the one who removed the swap_device_lock() which 2.4 used,
-> because it almost always ended up having to take both swap_list_lock()
-> and swap_device_lock(si).  You seem to have done a much better job of
-> separating them usefully, but I need to convince myself that it does
-> end up safely.
-> 
-> My reservations so far would be: how many installations actually have
-> more than one swap area, so is it a good tradeoff to add more overhead
-> to help those at the (slight) expense of everyone else?  The increasingly
-> ugly page_mapping() worries me, and the static array of swapper_spaces
-> annoys me a little.
-> 
-> I'm glad Minchan has now pointed you to Rik's posting of two years ago:
-> I think there are more important changes to be made in that direction.
+Hi Jens,
 
-Not sure how others use multiple swaps, but current lock contention forces us
-to use multiple swaps. I haven't carefully think about Rik's posting, but looks
-it doesn't solve the lock contention problem.
+Please consider to forward this fix for 3.8 to Linus.
 
-Thanks,
-Shaohua
+The following changes since commit 949db153b6466c6f7cad5a427ecea94985927311:
+
+  Linux 3.8-rc5 (2013-01-25 11:57:28 -0800)
+
+are available in the git repository at:
+
+  git://git.drbd.org/linux-drbd.git for-jens-3.8-fix
+
+for you to fetch changes up to d88c3ab963d4cce09b25ef661b871bd7af6dad0d:
+
+  drbd: only fail empty flushes if no good data is reachable (2013-01-30 10:40:33 +0100)
+
+----------------------------------------------------------------
+Lars Ellenberg (1):
+      drbd: only fail empty flushes if no good data is reachable
+
+ drivers/block/drbd/drbd_req.c |   12 ++++++++----
+ drivers/block/drbd/drbd_req.h |    8 ++++++++
+ 2 files changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index f58a4a4..41bb058 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -263,8 +263,7 @@ void drbd_req_complete(struct drbd_request *req, struct bio_and_error *m)
+ 		else
+ 			root = &mdev->read_requests;
+ 		drbd_remove_request_interval(root, req);
+-	} else if (!(s & RQ_POSTPONED))
+-		D_ASSERT((s & (RQ_NET_MASK & ~RQ_NET_DONE)) == 0);
++	}
+ 
+ 	/* Before we can signal completion to the upper layers,
+ 	 * we may need to close the current transfer log epoch.
+@@ -755,6 +754,11 @@ int __req_mod(struct drbd_request *req, enum drbd_req_event what,
+ 		D_ASSERT(req->rq_state & RQ_NET_PENDING);
+ 		mod_rq_state(req, m, RQ_NET_PENDING, RQ_NET_OK|RQ_NET_DONE);
+ 		break;
++
++	case QUEUE_AS_DRBD_BARRIER:
++		start_new_tl_epoch(mdev->tconn);
++		mod_rq_state(req, m, 0, RQ_NET_OK|RQ_NET_DONE);
++		break;
+ 	};
+ 
+ 	return rv;
+@@ -975,8 +979,8 @@ static int drbd_process_write_request(struct drbd_request *req)
+ 		/* The only size==0 bios we expect are empty flushes. */
+ 		D_ASSERT(req->master_bio->bi_rw & REQ_FLUSH);
+ 		if (remote)
+-			start_new_tl_epoch(mdev->tconn);
+-		return 0;
++			_req_mod(req, QUEUE_AS_DRBD_BARRIER);
++		return remote;
+ 	}
+ 
+ 	if (!remote && !send_oos)
+diff --git a/drivers/block/drbd/drbd_req.h b/drivers/block/drbd/drbd_req.h
+index 016de6b..c407f4a 100644
+--- a/drivers/block/drbd/drbd_req.h
++++ b/drivers/block/drbd/drbd_req.h
+@@ -88,6 +88,14 @@ enum drbd_req_event {
+ 	QUEUE_FOR_NET_READ,
+ 	QUEUE_FOR_SEND_OOS,
+ 
++	/* An empty flush is queued as P_BARRIER,
++	 * which will cause it to complete "successfully",
++	 * even if the local disk flush failed.
++	 *
++	 * Just like "real" requests, empty flushes (blkdev_issue_flush()) will
++	 * only see an error if neither local nor remote data is reachable. */
++	QUEUE_AS_DRBD_BARRIER,
++
+ 	SEND_CANCELED,
+ 	SEND_FAILED,
+ 	HANDED_OVER_TO_NETWORK,
+
