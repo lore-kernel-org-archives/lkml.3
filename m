@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3A3LV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 06:21:26 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:9939 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754622Ab3A3LVX (ORCPT
+	id S1755365Ab3A3L1P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:27:15 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:63758 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab3A3L1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 06:21:23 -0500
-X-IronPort-AV: E=Sophos;i="4.84,567,1355094000"; 
-   d="scan'208";a="629919"
-Date: Wed, 30 Jan 2013 12:21:21 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: walter harms <wharms@bfs.de>, Joe Perches <joe@perches.com>,
-        Mike Rapoport <mike@compulab.co.il>, Valdis.Kletnieks@vt.edu,
-        cocci@systeme.lip6.fr, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: coccinelle and bitmask arithmetic
-In-Reply-To: <20130130111420.GG23505@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.02.1301301220290.1990@hadrien>
-References: <20130127194039.GA18787@elgon.mountain> <1359317078.14406.12.camel@joe-AO722> <20130127201947.GO16282@mwanda> <9561.1359474916@turing-police.cc.vt.edu> <1359475998.4196.26.camel@joe-AO722> <alpine.DEB.2.02.1301291847070.3339@hadrien>
- <1359482637.15135.7.camel@joe-AO722> <5108D808.6010405@bfs.de> <20130130111420.GG23505@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 30 Jan 2013 06:27:13 -0500
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Patrice Chotard <patrice.chotard@st.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] pinctrl: Remove newly introduced __dev* annotations
+Date: Wed, 30 Jan 2013 12:27:09 +0100
+Message-Id: <1359545229-14620-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.1.2
+X-Provags-ID: V02:K0:BgdmH7N6YXmMLo3Yvl7a9YehswQhEYUsUuiu7y/EjwW
+ Sq56Ch+ooWz3L3z34BNbbAo1AFMfSBxf8F4bqe7RZ1PhJgfGNS
+ qpqMG6HWnjkPHOcE/zc3lH5wyvmx8C/BDgmp1geU6gK45S4VY5
+ 1P8OF7Mxs34/G+6+DFwK5UoEG1wIWXz+gaj0CoETWntMncHynn
+ OIQ0E524cd9odjB7HW72eWy8t5HRVbQsYioGmZ+spjdcAVL59R
+ dmqYrwMV0Q9CziKAo1j4x+2FvLEbP182jH6hFyuhDycHHWlv/K
+ UztcGr6frnN2S6Fb5Aupvv75kHXfFOhvQiYrc8Rio970z9YU5F
+ ZgV/yzT3BRqtmt7RT78tw1rEEyMtsC5EBldhRmsgm9nErMa+1T
+ TklYz01ruYpXnPQqh4kb7WXiFYF7D09L42bDC/pEb/qQ+VGwf9
+ /Yko+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+__devinit, __devexit and __devexit_p have been removed and should no
+longer be used.
 
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ drivers/pinctrl/pinctrl-ab8500.c | 2 +-
+ drivers/pinctrl/pinctrl-abx500.c | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-On Wed, 30 Jan 2013, Russell King - ARM Linux wrote:
+diff --git a/drivers/pinctrl/pinctrl-ab8500.c b/drivers/pinctrl/pinctrl-ab8500.c
+index 6495390..bb931e7 100644
+--- a/drivers/pinctrl/pinctrl-ab8500.c
++++ b/drivers/pinctrl/pinctrl-ab8500.c
+@@ -478,7 +478,7 @@ static struct abx500_pinctrl_soc_data ab8500_soc = {
+ 	.irq_gpio_factor = 1,
+ };
+ 
+-void __devinit
++void
+ abx500_pinctrl_ab8500_init(struct abx500_pinctrl_soc_data **soc)
+ {
+ 	*soc = &ab8500_soc;
+diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
+index 13ae68f..214d659 100644
+--- a/drivers/pinctrl/pinctrl-abx500.c
++++ b/drivers/pinctrl/pinctrl-abx500.c
+@@ -1080,7 +1080,7 @@ static int abx500_get_gpio_num(struct abx500_pinctrl_soc_data *soc)
+ 	return npins;
+ }
+ 
+-static int __devinit abx500_gpio_probe(struct platform_device *pdev)
++static int abx500_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct ab8500_platform_data *abx500_pdata =
+ 				dev_get_platdata(pdev->dev.parent);
+@@ -1189,7 +1189,7 @@ out_free:
+  * abx500_gpio_remove() - remove Ab8500-gpio driver
+  * @pdev :	Platform device registered
+  */
+-static int __devexit abx500_gpio_remove(struct platform_device *pdev)
++static int abx500_gpio_remove(struct platform_device *pdev)
+ {
+ 	struct abx500_pinctrl *pct = platform_get_drvdata(pdev);
+ 	int ret;
+@@ -1220,7 +1220,7 @@ static struct platform_driver abx500_gpio_driver = {
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe = abx500_gpio_probe,
+-	.remove = __devexit_p(abx500_gpio_remove),
++	.remove = abx500_gpio_remove,
+ 	.id_table = abx500_pinctrl_id,
+ };
+ 
+-- 
+1.8.1.2
 
-> On Wed, Jan 30, 2013 at 09:21:28AM +0100, walter harms wrote:
-> > Great hit Joe :)
-> >
-> > Sometimes i am really surprised what code can be found
-> > in the kernal and it is still working.
-> > Having no clue of the code i suspect somebody tries to
-> > check is mask outside the range it should read
-> > PHYS_OFFSET |( SZ_64M - 1)
-> > maybe someone should tell them that
-> > 1+1=10 while 1|1=1
-> > It does not seem to matter here (or ... ?)
->
-> This PCI host is only used on one platform (ARMCORE).
->
-> For this, PHYS_OFFSET will be a value with only the top few bits of a
-> 32-bit word set (such as 0xc0000000) - it's certainly not going to have
-> any bits set below bit 26 on the platform this driver gets used on.
-> "SZ_64M - 1" is the size of the window that RAM appears.
->
-> So, _either_ logical OR or addition works.
->
-> If we _did_ end up with a PHYS_OFFSET with bits less than bit 26 set
-> here, we'd have bigger problems - because the base of RAM in PCI space
-> will not correspond with PHYS_OFFSET and all the DMA mapping stuff breaks.
-
-The "problem" is that the computation is done inconsistently within the
-same file.  Sometimes with + and sometimes with |.
-
-julia
