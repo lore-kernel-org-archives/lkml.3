@@ -1,203 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab3A3Qqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 11:46:34 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:52788 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755872Ab3A3Qqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 11:46:31 -0500
-Date: Wed, 30 Jan 2013 17:46:14 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
-        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 2/4] cpufreq: ondemand: call dbs_check_cpu only when
- necessary
-Message-ID: <20130130164614.GC30559@balto.lan>
-References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
- <1359550803-18577-3-git-send-email-fabio.baltieri@linaro.org>
- <CAKohpok0iDffNM31W2r97Wtq4DR+TdPwYWTAdJH7AyLqHm0UPA@mail.gmail.com>
+	id S1755908Ab3A3QrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 11:47:04 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58377 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754331Ab3A3QrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 11:47:02 -0500
+Date: Wed, 30 Jan 2013 17:46:58 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Michael Madore <michael.madore@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Opteron 6276 Corrected ECC errors
+Message-ID: <20130130164657.GA23980@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Michael Madore <michael.madore@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <CAO-9seDOX5wPrjPP0y2cFpqu_Lwo73yyGxfMGjYbBXz7gk24_g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAKohpok0iDffNM31W2r97Wtq4DR+TdPwYWTAdJH7AyLqHm0UPA@mail.gmail.com>
-X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
+In-Reply-To: <CAO-9seDOX5wPrjPP0y2cFpqu_Lwo73yyGxfMGjYbBXz7gk24_g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 09:21:41PM +0530, Viresh Kumar wrote:
-> On 30 January 2013 18:30, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
-> > Modify ondemand timer to not resample CPU utilization if recently
-> > sampled from another SW coordinated core.
-> >
-> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+On Wed, Jan 30, 2013 at 11:29:47AM -0500, Michael Madore wrote:
+> Supermicro H8QGi-F server board (AMD SR5690/SR5670/SP5100 Chipset)
+> 4 X AMD Opteron 6276 processors
+> 32 X 8GB (256GB) DDR3-1600 ECC Registered memory
+> Debian with kernel 3.2.35-2
 > 
-> I might be wrong but i have some real concerns over this patch.
+> We have received the following two hardware errors:
 > 
-> This is what i believe is your idea:
-> - because a cpu can sleep, create timer per cpu
-> - then check load again only when no other cpu in policy->cpus has
->   checked load within sampling time interval.
+> 9/10/12
 > 
-> Correct?
-
-Yes.
-
-> > ---
-> >  drivers/cpufreq/cpufreq_governor.c |  3 ++
-> >  drivers/cpufreq/cpufreq_governor.h |  1 +
-> >  drivers/cpufreq/cpufreq_ondemand.c | 58 +++++++++++++++++++++++++++++++-------
-> >  3 files changed, 52 insertions(+), 10 deletions(-)
-> >
-> > diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> > index 8393d6e..46f96a4 100644
-> > --- a/drivers/cpufreq/cpufreq_governor.c
-> > +++ b/drivers/cpufreq/cpufreq_governor.c
-> > @@ -289,6 +289,9 @@ second_time:
-> >                 }
-> >                 mutex_unlock(&dbs_data->mutex);
-> >
-> > +               /* Initiate timer time stamp */
-> > +               cpu_cdbs->time_stamp = ktime_get();
+> [591006.120039] [Hardware Error]: CPU:58
+> MC2_STATUS[-|CE|MiscV|-|-|-|-|CECC]: 0x9842c000000c0176
+> [591006.120048] [Hardware Error]: Combined Unit Error: VB Data/ECC error.
+> [591006.120052] [Hardware Error]: cache level: L2, tx: DATA, mem-tx: EV
 > 
-> We have updated time_stamp only for policy->cpu's cdbs.
-
-Yes, see below.
-
-> >                 for_each_cpu(j, policy->cpus)
-> >                         dbs_timer_init(dbs_data, j, *sampling_rate);
-> >                 break;
+> 1/21/12
 > 
-> > diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> > index 93bb56d..13ceb3c 100644
-> > --- a/drivers/cpufreq/cpufreq_ondemand.c
-> > +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> > @@ -216,23 +216,23 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
-> >         }
-> >  }
-> >
-> > -static void od_dbs_timer(struct work_struct *work)
-> > +static void od_timer_update(struct od_cpu_dbs_info_s *dbs_info, bool sample,
-> > +                           struct delayed_work *dw)
-> >  {
-> > -       struct od_cpu_dbs_info_s *dbs_info =
-> > -               container_of(work, struct od_cpu_dbs_info_s, cdbs.work.work);
-> >         unsigned int cpu = dbs_info->cdbs.cpu;
-> >         int delay, sample_type = dbs_info->sample_type;
-> >
-> > -       mutex_lock(&dbs_info->cdbs.timer_mutex);
-> > -
-> >         /* Common NORMAL_SAMPLE setup */
-> >         dbs_info->sample_type = OD_NORMAL_SAMPLE;
-> >         if (sample_type == OD_SUB_SAMPLE) {
-> >                 delay = dbs_info->freq_lo_jiffies;
-> > -               __cpufreq_driver_target(dbs_info->cdbs.cur_policy,
-> > -                       dbs_info->freq_lo, CPUFREQ_RELATION_H);
-> > +               if (sample)
-> > +                       __cpufreq_driver_target(dbs_info->cdbs.cur_policy,
-> > +                                               dbs_info->freq_lo,
-> > +                                               CPUFREQ_RELATION_H);
-> >         } else {
-> > -               dbs_check_cpu(&od_dbs_data, cpu);
-> > +               if (sample)
-> > +                       dbs_check_cpu(&od_dbs_data, cpu);
-> >                 if (dbs_info->freq_lo) {
-> >                         /* Setup timer for SUB_SAMPLE */
-> >                         dbs_info->sample_type = OD_SUB_SAMPLE;
-> > @@ -243,11 +243,49 @@ static void od_dbs_timer(struct work_struct *work)
-> >                 }
-> >         }
-> >
-> > -       schedule_delayed_work_on(smp_processor_id(), &dbs_info->cdbs.work,
-> > -                       delay);
-> > +       schedule_delayed_work_on(smp_processor_id(), dw, delay);
-> > +}
+> [549004.336097] [Hardware Error]: CPU:40
+> MC4_STATUS[-|CE|MiscV|-|AddrV|-|-|CECC]: 0x9c3444e0001f010b
+> [549004.336111] [Hardware Error]:       MC4_ADDR: 0x000000000000e480
+> [549004.336117] [Hardware Error]: Northbridge Error (node 5): ECC
+> Error in the Probe Filter directory.
+> [549004.336125] [Hardware Error]: cache level: L3/GEN, tx: GEN, mem-tx: GEN
 > 
-> All good until now.
-> 
-> > +
-> > +static void od_timer_coordinated(struct od_cpu_dbs_info_s *dbs_info_local,
-> > +                                struct delayed_work *dw)
-> > +{
-> > +       struct od_cpu_dbs_info_s *dbs_info;
-> > +       ktime_t time_now;
-> > +       s64 delta_us;
-> > +       bool sample = true;
-> > +
-> 
-> --start--
-> 
-> > +       /* use leader CPU's dbs_info */
-> > +       dbs_info = &per_cpu(od_cpu_dbs_info, dbs_info_local->cdbs.cpu);
-> > +       mutex_lock(&dbs_info->cdbs.timer_mutex);
-> > +
-> > +       time_now = ktime_get();
-> > +       delta_us = ktime_us_delta(time_now, dbs_info->cdbs.time_stamp);
-> > +
-> > +       /* Do nothing if we recently have sampled */
-> > +       if (delta_us < (s64)(od_tuners.sampling_rate / 2))
-> > +               sample = false;
-> > +       else
-> > +               dbs_info->cdbs.time_stamp = time_now;
-> > +
-> 
-> --end--
-> 
-> Instead of two routines (this and the one below), we can have one and can
-> put the above code in the if (coordinated cpus case). That will save some
-> redundant code.
+> If I understand correctly, both of these errors represent single bit
+> corrected errors in the CPU cache.
 
-Ok but then you have two dbs_infos mixing up in the same code and it
-start to become harder to read (first version was with a single function
-I think).
+Internal CPU structures, victim buffer the first and the second in the
+probe filter which is part of L3.
 
-> Another issue that i see is: Current routine will be called from timer handler
-> of every cpu and so above calculations will happen for every cpu. Here, you
-> are taking the diff of last timestamp of cpu "x" with cpu "x" current timestamp,
-> but what you should have really done is the diff b/w current timestamp with
-> the timestamp of last change on any cpu in policy->cpus.
+> On both occasions the system continued to function normally after the
+> error was reported.
 
-Isn't that how it works now?  The current cpu ktime is not checked
-against its own, but against the "leader" cpu (dbs_info_local->cdbs.cpu),
-that's why it's initialized only for the first.
+As expected; both are single-bit ECC errors which were corrected and
+system state wasn't influenced.
 
-Maybe I should have used dbs_info_leader/dbs_info instead of
-dbs_info_local/dbs_info.
+> Is receiving two such errors (on different CPUs) over such a time span
+> cause for concern?
 
-> Over that, timestamp for all cpu's isn't initialized early in the code
-> at GOV_START.
-> 
-> Am i correct?
+Not really. I'd say, only if the error rate starts increasing over time
+and the error types keep repeating.
 
-As above.
+> The end user is concerned there is a serious hardware problem. I'm
+> reluctant to start replacing CPUs, however, without seeing a repeated
+> pattern of errors.
 
-Fabio
+Yes, no need to replace, simply watch the error rates. Maybe check the
+temperature of the CPUs, possibly improve cooling are some of the things
+that come to mind.
 
-> > +       od_timer_update(dbs_info, sample, dw);
-> >         mutex_unlock(&dbs_info->cdbs.timer_mutex);
-> >  }
-> >
-> > +static void od_dbs_timer(struct work_struct *work)
-> > +{
-> > +       struct delayed_work *dw = to_delayed_work(work);
-> > +       struct od_cpu_dbs_info_s *dbs_info =
-> > +               container_of(work, struct od_cpu_dbs_info_s, cdbs.work.work);
-> > +
-> > +       if (dbs_sw_coordinated_cpus(&dbs_info->cdbs)) {
-> > +               od_timer_coordinated(dbs_info, dw);
-> > +       } else {
-> > +               mutex_lock(&dbs_info->cdbs.timer_mutex);
-> > +               od_timer_update(dbs_info, true, dw);
-> > +               mutex_unlock(&dbs_info->cdbs.timer_mutex);
-> > +       }
-> > +}
-> > +
+> Any advice or pointers to more appropriate resources would be greatly
+> appreciated.
+
+Search the net for "x86 RAS" and start reading. :-) This could be a good
+start:
+
+http://en.wikipedia.org/wiki/Reliability,_availability_and_serviceability_%28computer_hardware%29
+
+HTH.
 
 -- 
-Fabio Baltieri
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
