@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab3A3TPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 14:15:33 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25069 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755457Ab3A3TPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 14:15:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,569,1355126400"; 
-   d="scan'208";a="250409487"
-Subject: [PATCH] checkpatch: fix USLEEP_RANGE test
-To: linux-kernel@vger.kernel.org
-From: Bruce Allan <bruce.w.allan@intel.com>
-Cc: Andy Whitcroft <apw@canonical.com>
-Date: Wed, 30 Jan 2013 11:15:30 -0800
-Message-ID: <20130130191530.27127.49640.stgit@bwallan-smackover2.jf.intel.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756718Ab3A3TTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 14:19:49 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:33130 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755198Ab3A3TTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 14:19:48 -0500
+Date: Wed, 30 Jan 2013 20:19:45 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Takahisa Tanaka <mc74hc00@gmail.com>
+Cc: linux-watchdog@vger.kernel.org,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Arkadiusz Miskiewicz <arekm@maven.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
+        Florian Mickler <florian@mickler.org>
+Subject: Re: [PATCH 1/2] sp5100_tco: Fix wrong indirect I/O access for getting value of reserved bits
+Message-ID: <20130130191945.GA20100@spo001.leaseweb.com>
+References: <1358128918-4415-1-git-send-email-mc74hc00@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358128918-4415-1-git-send-email-mc74hc00@gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not test udelay() for a value less than 10usec when passed a variable
-instead of a hard-coded number; there is no way for checkpatch to know the
-value of the variable.  As it is today, it will complain about variables
-with alphanumeric characters plus '_', e.g. foo_bar, but not variables with
-other characters, eg. foo->bar.
+Hi,
 
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Cc: Andy Whitcroft <apw@canonical.com>
----
- scripts/checkpatch.pl |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> In case of SB800 or later chipset and re-programming MMIO address(*),
+> sp5100_tco module may read incorrect value of reserved bit, because the module
+> reads a value from an incorrect I/O address. However, this bug doesn't cause
+> a problem, because when re-programming MMIO address, by chance the module
+> writes zero (this is BIOS's default value) to the low three bits of register.
+> * In most cases, PC with SB8x0 or later chipset doesn't need to re-programming
+>   MMIO address, because such PC can enable AcpiMmio and can use 0xfed80b00 for
+>   watchdog register base address.
+> 
+> This patch fixes this bug.
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
+> Signed-off-by: Takahisa Tanaka <mc74hc00@gmail.com>
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 4d2c7df..adfb2f6 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3237,9 +3237,9 @@ sub process {
- 		}
- 
- # prefer usleep_range over udelay
--		if ($line =~ /\budelay\s*\(\s*(\w+)\s*\)/) {
-+		if ($line =~ /\budelay\s*\(\s*(\d+)\s*\)/) {
- 			# ignore udelay's < 10, however
--			if (! (($1 =~ /(\d+)/) && ($1 < 10)) ) {
-+			if (! ($1 < 10) ) {
- 				CHK("USLEEP_RANGE",
- 				    "usleep_range is preferred over udelay; see Documentation/timers/timers-howto.txt\n" . $line);
- 			}
+Added to linux-watchdog-next.
+
+Kind regards,
+Wim.
 
