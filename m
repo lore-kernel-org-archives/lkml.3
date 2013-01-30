@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab3A3UJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 15:09:23 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:45790 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3A3UJT (ORCPT
+	id S1756746Ab3A3UKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:10:37 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59140 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab3A3UKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 15:09:19 -0500
-Date: Wed, 30 Jan 2013 20:09:20 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: aris@redhat.com
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v4 4/9] devcg: expand may_access() logic
-Message-ID: <20130130200920.GB8507@mail.hallyn.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171101.690972553@napanee.usersys.redhat.com>
+	Wed, 30 Jan 2013 15:10:33 -0500
+Message-ID: <51097E35.6080100@wwwdotorg.org>
+Date: Wed, 30 Jan 2013 13:10:29 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130130171101.690972553@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 4/4] pinctrl/abx500: destroy mutex if returning early
+ due to error
+References: <1359574822-15729-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1359574822-15729-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting aris@redhat.com (aris@redhat.com):
-> In order to make the next patch more clear, expand may_access() logic.
+On 01/30/2013 12:40 PM, Linus Walleij wrote:
+> From: Lee Jones <lee.jones@linaro.org>
 > 
-> v2: may_access() returns bool now
-> 
-> Acked-by: Tejun Heo <tj@kernel.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Current failure path neglects to mutex_destroy() before returning
+> an error due to an invalid parameter or an error received from
+> gpiochip_add(). This patch aims to remedy that behaviour.
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
 
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-> 
-> ---
->  security/device_cgroup.c |   21 ++++++++++++---------
->  1 file changed, 12 insertions(+), 9 deletions(-)
-> 
-> --- github.orig/security/device_cgroup.c	2013-01-30 08:56:29.532063723 -0500
-> +++ github/security/device_cgroup.c	2013-01-30 08:58:02.934460404 -0500
-> @@ -355,8 +355,8 @@ 	return 0;
->   * @dev_cgroup: dev cgroup to be tested against
->   * @refex: new exception
->   */
-> -static int may_access(struct dev_cgroup *dev_cgroup,
-> -		      struct dev_exception_item *refex)
-> +static bool may_access(struct dev_cgroup *dev_cgroup,
-> +		       struct dev_exception_item *refex)
->  {
->  	struct dev_exception_item *ex;
->  	bool match = false;
-> @@ -382,16 +382,19 @@ 		if (ex->minor != ~0 && ex->minor != re
+> @@ -1155,11 +1155,13 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+>  	default:
+>  		dev_err(&pdev->dev, "Unsupported pinctrl sub driver (%d)\n",
+>  				(int) platid->driver_data);
+> +		mutex_destroy(&pct->lock);
+>  		return -EINVAL;
+
+Especially given there's already a label out_free which performs this
+mutex_destroy(), those last two lines would be better as:
+
+ret = -EINVAL;
+goto out_free;
+
+>  	}
 >  
->  	/*
->  	 * In two cases we'll consider this new exception valid:
-> -	 * - the dev cgroup has its default policy to allow + exception list:
-> -	 *   the new exception should *not* match any of the exceptions
-> -	 *   (behavior == DEVCG_DEFAULT_ALLOW, !match)
->  	 * - the dev cgroup has its default policy to deny + exception list:
->  	 *   the new exception *should* match the exceptions
-> -	 *   (behavior == DEVCG_DEFAULT_DENY, match)
-> +	 * - the dev cgroup has its default policy to allow + exception list:
-> +	 *   the new exception should *not* match any of the exceptions
->  	 */
-> -	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
-> -		return 1;
-> -	return 0;
-> +	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
-> +		if (match)
-> +			return true;
-> +	} else {
-> +		if (!match)
-> +			return true;
-> +	}
-> +	return false;
->  }
+>  	if (!pct->soc) {
+>  		dev_err(&pdev->dev, "Invalid SOC data\n");
+> +		mutex_destroy(&pct->lock);
+>  		return -EINVAL;
+
+Same there.
+
+>  	}
 >  
->  /*
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> @@ -1176,6 +1178,7 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+>  	ret = gpiochip_add(&pct->chip);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to add gpiochip: %d\n", ret);
+> +		mutex_destroy(&pct->lock);
+>  		goto out_rem_irq;
+
+And here, just change the goto target to out_free rather than adding the
+mutex_destroy() call.
+
