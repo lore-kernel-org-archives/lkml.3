@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab3A3DWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 22:22:38 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46066 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab3A3DWg (ORCPT
+	id S1753132Ab3A3DXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 22:23:09 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41692 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab3A3DXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 22:22:36 -0500
-Message-ID: <510891ED.8090404@oracle.com>
-Date: Tue, 29 Jan 2013 21:22:21 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	Tue, 29 Jan 2013 22:23:07 -0500
+Message-ID: <51089210.2080705@linux.vnet.ibm.com>
+Date: Wed, 30 Jan 2013 11:22:56 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH V6 00/30] loop: Issue O_DIRECT aio using bio_vec
-References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com> <x49obg7omos.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49obg7omos.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 03/12] KVM: MMU: simplify mmu_set_spte
+References: <50FFB5A1.5090708@linux.vnet.ibm.com> <50FFB5E9.2010500@linux.vnet.ibm.com> <20130129002151.GB10814@amt.cnet> <51073A1C.1050600@linux.vnet.ibm.com> <20130129215345.GA27735@amt.cnet>
+In-Reply-To: <20130129215345.GA27735@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13013003-9574-0000-0000-00000664EE8F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 12:42 PM, Jeff Moyer wrote:
-> Dave Kleikamp <dave.kleikamp@oracle.com> writes:
+On 01/30/2013 05:53 AM, Marcelo Tosatti wrote:
+> On Tue, Jan 29, 2013 at 10:55:24AM +0800, Xiao Guangrong wrote:
+>> On 01/29/2013 08:21 AM, Marcelo Tosatti wrote:
+>>> On Wed, Jan 23, 2013 at 06:05:29PM +0800, Xiao Guangrong wrote:
+>>>> In order to detecting spte remapping, we can simply check whether the
+>>>> spte has already been pointing to the pfn even if the spte is not the
+>>>> last spte, for middle spte is pointing to the kernel pfn which can not
+>>>> be mapped to userspace
+>>>
+>>> This check is detecting spte overwrite, when a large spte is replaced by 
+>>> pointer to spte table.
+>>>
+>>> Can't see why check for different pfn is safe: only 'int level' can
+>>> differ, and pfn be equivalent, for example.
+>>
+>> The 'u64 *sptep' must on the "int level" we want to set, that means:
+>>  page_header(__pa(sptep)).role.level == "int level".
 > 
->> Al,
->> I'd like to push this patchset to linux-next. Would you like to pull it
->> into your vfs tree, would you rather I submitted it separately, or do
->> you have any issues with it before including it?
+> Right, then stick a comment there noting which cases that condition handles.
+> Keep the current comment and add more.
 > 
-> I'm still chasing one regression in this patchset.  If you use the ext4
-> driver for ext2 file systems, and you run the libaio test harness, then
-> you will be able to successfully write beyond the maximum file size in a
-> file (see test case 8).
 
-I found the problem. iov_iter_shorten() wasn't setting i->count to the new
-value.
+Okay.
 
-This fixes it. I'll fix the patchset tomorrow.
+>> We discussed this before :), the discussion can be found at:
+>> http://marc.info/?l=kvm&m=135345057329427&w=2.
+> 
+> Note http://marc.info/?l=kvm&m=135345059929436&w=2, please take into
+> account in the future.
 
-Thanks,
-Shaggy
+Okay, i will make that patch more simpler in the next version.
 
-diff --git a/fs/iov-iter.c b/fs/iov-iter.c
-index ac2d96e..ade8c11 100644
---- a/fs/iov-iter.c
-+++ b/fs/iov-iter.c
-@@ -370,6 +370,7 @@ static int ii_iovec_shorten(struct iov_iter *i, size_t count)
- {
- 	struct iovec *iov = (struct iovec *)i->data;
- 	i->nr_segs = iov_shorten(iov, i->nr_segs, count);
-+	i->count = min(i->count, count);
- 	return 0;
- }
- 
+
