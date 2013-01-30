@@ -1,204 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab3A3NDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 08:03:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48687 "EHLO mx2.suse.de"
+	id S1754048Ab3A3NFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 08:05:55 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:32841 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753868Ab3A3NDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 08:03:45 -0500
-From: Oliver Neukum <oneukum@suse.de>
-To: Kurachkin Michail <Michail.Kurachkin@promwad.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kuten Ivan <Ivan.Kuten@promwad.com>,
-        "benavi@marvell.com" <benavi@marvell.com>,
-        Palstsiuk Viktar <Viktar.Palstsiuk@promwad.com>
-Subject: Re: TDM bus support in Linux Kernel [PATCH]
-Date: Wed, 30 Jan 2013 14:03:50 +0100
-Message-ID: <3071962.fRDCyxVGjS@linux-5eaq.site>
-Organization: SUSE
-User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <F7F628C32E67B04DAECC5CA53521253E5FAB15CE@sv-exmb01-lo1.promwad.corp>
-References: <F7F628C32E67B04DAECC5CA53521253E5FAB15CE@sv-exmb01-lo1.promwad.corp>
+	id S1753841Ab3A3NFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 08:05:52 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        linux-kernel@vger.kernel.org, josephl@nvidia.com,
+        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org
+Subject: Re: [PATCH 2/5] cpufreq: star/stop cpufreq timers on cpu hotplug
+Date: Wed, 30 Jan 2013 14:12:02 +0100
+Message-ID: <97137690.TI1kphbZjX@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130130104432.GB32315@balto.lan>
+References: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org> <CAOh2x=mjNbSbGrirOOddE-Kitj7MqtDXiwb6rSo8UWQK4wzJvw@mail.gmail.com> <20130130104432.GB32315@balto.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 January 2013 12:37:25 Kurachkin Michail wrote:
-> Hi Greg,
+On Wednesday, January 30, 2013 11:44:32 AM Fabio Baltieri wrote:
+> Hi Viresh,
 > 
-> I followed your recommendations and created a diff using Linux 3.8-rc5 sources. Please review it and give your comments.
+> On Wed, Jan 30, 2013 at 10:22:37AM +0530, Viresh Kumar wrote:
+> > Hi Fabio,
+> > 
+> > Sorry for waking up very late :)
+> > 
+> > The reason why i am starting this thread again is due to problem
+> > reported by Joseph,
+> > with latest linux-next/master branch (which contains few big patches
+> > from me :) ):
+> > 
+> > Reboot is giving following to him:
+> > 
+> > * Will now halt
+> > [ 193.756068] Disabling non-boot CPUs...
+> > [ 193.760088] BUG: scheduling while atomic: halt/780/0x00000002
+> > [ 193.765845] Modules linked in: brcmfmac brcmutil
+> > [ 193.770613] [<c0014990>] (unwind_backtrace+0x0/0xf8) from [<c0049510>]
+> > (__schedule_bug+0x44/0x5c)
+> > [ 193.779548] [<c0049510>] (__schedule_bug+0x44/0x5c) from [<c04fa320>]
+> > (__schedule+0x688/0x6ec)
+> > [ 193.788206] [<c04fa320>] (__schedule+0x688/0x6ec) from [<c04fa75c>]
+> > (schedule_preempt_disabled+0x24/0x34)
+> > [ 193.797811] [<c04fa75c>] (schedule_preempt_disabled+0x24/0x34) from
+> > [<c04f916c>] (__mutex_lock_slowpath+0x170/0x34c)
+> > [ 193.808367] [<c04f916c>] (__mutex_lock_slowpath+0x170/0x34c) from
+> > [<c04f9354>] (mutex_lock+0xc/0x24)
+> > [ 193.817554] [<c04f9354>] (mutex_lock+0xc/0x24) from [<c04f1cdc>]
+> > (unregister_cpu_notifier+0xc/0x24)
+> > [ 193.826640] [<c04f1cdc>] (unregister_cpu_notifier+0xc/0x24) from
+> > [<c033a8a4>] (cpufreq_governor_dbs+0x118/0x614)
+> > [ 193.836866] [<c033a8a4>] (cpufreq_governor_dbs+0x118/0x614) from
+> > [<c033747c>] (__cpufreq_governor+0x58/0xc0)
+> > [ 193.846737] [<c033747c>] (__cpufreq_governor+0x58/0xc0) from
+> > [<c0339104>] (__cpufreq_remove_dev.clone.7+0x58/0x320)
+> > [ 193.857207] [<c0339104>] (__cpufreq_remove_dev.clone.7+0x58/0x320)
+> > from [<c04f7958>] (cpufreq_cpu_callback+0x8c/0x9c)
+> > [ 193.867850] [<c04f7958>] (cpufreq_cpu_callback+0x8c/0x9c) from
+> > [<c0044f4c>] (notifier_call_chain+0x44/0x84)
+> > [ 193.877623] [<c0044f4c>] (notifier_call_chain+0x44/0x84) from
+> > [<c0026e24>] (__cpu_notify+0x2c/0x48)
+> > [ 193.886704] [<c0026e24>] (__cpu_notify+0x2c/0x48) from [<c04f1b08>]
+> > (_cpu_down+0xb0/0x23c)
+> > [ 193.895004] [<c04f1b08>] (_cpu_down+0xb0/0x23c) from [<c00270ec>]
+> > (disable_nonboot_cpus+0x68/0x104)
+> > [ 193.904089] [<c00270ec>] (disable_nonboot_cpus+0x68/0x104) from
+> > [<c0034fbc>] (kernel_power_off+0x24/0x48)
+> > [ 193.913688] [<c0034fbc>] (kernel_power_off+0x24/0x48) from
+> > [<c0035810>] (sys_reboot+0x104/0x1e0)
+> > [ 193.922517] [<c0035810>] (sys_reboot+0x104/0x1e0) from [<c000e520>]
+> > (ret_fast_syscall+0x0/0x30)
+> > 
+> > 
+> > And the crash log show this patch of yours somewhere :)
+> 
+> It looks like the two patches clashed togher quite badly... :-)
+> 
+> On Wed, Jan 30, 2013 at 10:22:37AM +0530, Viresh Kumar wrote:
+> [...]
+> > First question: Is this patch still required? Because following patch
+> > from me is
+> > sending a STOP/START to governors on cpu hot-[un]plug ?
+> > 
+> > commit dbcb63407c095af73f3464767e00902cdee55e8b
+> > Author: Viresh Kumar <viresh.kumar@linaro.org>
+> > Date:   Sat Jan 12 05:14:39 2013 +0000
+> > 
+> >     cpufreq: Notify governors when cpus are hot-[un]plugged
+> > 
+> > For me, the answer is NO.
+> 
+> I confirm that your patch handles correctly the problem solved by this
+> one so I agree on dropping mine.
+> 
+> Rafael, this is screwing up a bit on bisection for cpu hotplug problems
+> so I'm sending a v7 with the cleanup on first patch and this one
+> dropped if you are ok with rebasing your pm-cpufreq-next.  Let me know
+> if you prefer me to just send a revert + cleanup patch instead.
 
-Part #2
+I've dropped the $subject one already and please post an incremental fix on
+top of the first one in your series.
 
-+/**
-+ * slic controls over ioctl
-+ * @param slic - slic descriptor
-+ * @param cmd - command
-+ * @param arg - argument
-+ * @return 0 - ok
-+ */
-+int slic_control(struct si3226x_slic *slic, unsigned int cmd, unsigned long arg)
-+{
-+	int rc;
-+	struct si3226x_line *line = slic->lines;
-+	int i;
-+
-+	switch(cmd) {
-+	case SI3226X_SET_COMPANDING_MODE:
-+		if(	arg != SI_ALAW && arg !=	SI_MLAW)
-+			return -EINVAL;
-+
-+		for (i = 0; i < SI3226X_MAX_CHANNELS; i++, line++) {
-+			if (line->state == SI_LINE_DISABLE)
-+				continue;
-+
-+			line->companding_mode = arg;
-+
-+			rc = slic_setup_audio(line);
-+			if (rc)
-+				return rc;
+Thanks,
+Rafael
 
-This interface is not well thought out. If you get an error, the command
-has been partially executed, but you have no idea how far.
 
-+		}
-+		break;
-+
-+	case SI3226X_SET_CALLERID_MODE:
-+		if(	arg != SI_FSK_BELLCORE && arg != SI_FSK_ETSI
-+		    && arg != SI_CALLERID_DTMF)
-+			return -EINVAL;
-+
-+		for (i = 0; i < SI3226X_MAX_CHANNELS; i++, line++) {
-+			if (line->state == SI_LINE_DISABLE)
-+				continue;
-+
-+			line->callerid_mode = arg;
-+		}
-+		break;
-+	}
-+
-+	return 0;
-+}
-
-+/**
-+ * slic line controls over ioctl
-+ * @param line - line descriptor
-+ * @param cmd - command
-+ * @param arg - argument
-+ * @return 0 - ok
-+ */
-+int line_control(struct si3226x_line *line, unsigned int cmd, unsigned long arg)
-+{
-+	int rc = 0;
-+	u8 data;
-+	struct si3226x_caller_id caller_id;
-+	u8 callerid_buffer[CALLERID_BUF_SIZE];
-+
-+	switch(cmd) {
-+	case SI3226X_SET_CALLERID_MODE:
-+		if( arg != SI_FSK_BELLCORE && arg != SI_FSK_ETSI
-+		    && arg != SI_CALLERID_DTMF && arg != SI_CALLERID_NONE)
-+			return -EINVAL;
-+
-+		line->callerid_mode = arg;
-+		break;
-+
-+	case SI3226X_SET_ECHO_CANCELATION:
-+		if(arg)
-+			rc = slic_enable_echo(line);
-+		else
-+			rc = slic_disable_echo(line);
-+		break;
-+
-+	case SI3226X_SET_LINE_STATE:
-+		rc = slic_set_line_state(line, arg);
-+		break;
-+
-+	case SI3226X_CALL:
-+		copy_from_user(&caller_id, (__u8 __user *)arg, sizeof caller_id);
-
-must handle errors
-
-+
-+		if(caller_id.size > CALLERID_BUF_SIZE)
-+			caller_id.size = CALLERID_BUF_SIZE;
-+
-+		copy_from_user(callerid_buffer, (__u8 __user *)caller_id.data, caller_id.size);
-
-must handle errors
-
-+		rc = slic_line_call(line, callerid_buffer, caller_id.size);
-+		break;
-+
-+	case SI3226X_SEND_DTMF:
-+		rc = slic_send_dtmf_digit(line, arg);
-+		break;
-+
-+	case SI3226X_GET_HOOK_STATE:
-+		__put_user(line->hook_state, (__u8 __user *)arg);
-
-must handle errors
-
-+		break;
-+
-+	case SI3226X_GET_DTMF_DIGIT:
-+		rc = fifo_pop(&line->dtmf, &data);
-+		if (rc)
-+			return -ENODATA;
-+
-+		__put_user(data, (__u8 __user *)arg);
-
-must handle errors
-
-+		break;
-+
-+	case SI3226X_GET_AUDIO_BLOCK_SIZE:
-+		__put_user(line->audio_buffer_size, (__u8 __user *)arg);
-
-must handle errors
-
-+		break;
-+
-+	case SI3226X_SET_COMPANDING_MODE:
-+		if(	arg != SI_ALAW && arg != SI_MLAW)
-+			return -EINVAL;
-+
-+		line->companding_mode = arg;
-+
-+		rc = slic_setup_audio(line);
-+		if (rc)
-+			return rc;
-
-a bit pointless
-
-+
-+		break;
-+
-+	case SI3226X_ENABLE_AUDIO:
-+		if (line->tdm_dev == NULL)
-+			return -ENODEV;
-+
-+		/* TODO: workaround to fix sound distortion after asterisk restart */
-+		if (!line->audio_start_flag) {
-+			rc = tdm_run_audio(line->tdm_dev);
-+			if (!rc)
-+				line->audio_start_flag = 1;
-+		}
-+
-+		break;
-+
-+	case SI3226X_DISABLE_AUDIO:
-+		if (line->tdm_dev == NULL)
-+			return -ENODEV;
-+
-+		rc = tdm_stop_audio(line->tdm_dev);
-+		break;
-+	}
-+
-+	return rc;
-+}
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
