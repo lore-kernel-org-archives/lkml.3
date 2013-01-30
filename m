@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab3A3Moi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 07:44:38 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:34533 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753646Ab3A3Mog (ORCPT
+	id S1753666Ab3A3MsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 07:48:25 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:50868 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab3A3MsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 07:44:36 -0500
-Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433ED03FE1@DBDE01.ent.ti.com>
-Date: Wed, 30 Jan 2013 14:44:30 +0200
-Cc: "N, Mugunthan V" <mugunthanvnm@ti.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        "Porter, Matt" <mporter@ti.com>, "Maupin, Chase" <chase.maupin@ti.com>,
-        "Kridner, Jason" <jdk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <0422CC2C-3D0D-4BB5-A90D-D3D337E44DD0@antoniou-consulting.com>
-References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com> <5107B650.5090901@ti.com> <3DE2C638-6AE8-4BC9-AD68-3AAA40CD6233@antoniou-consulting.com> <5108E1C6.9020201@ti.com> <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com> <5108FC31.3000507@ti.com> <27A3106E-3FDB-43DB-AAC9-DC2DA768AF9E@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED03FE1@DBDE01.ent.ti.com>
-To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-X-Mailer: Apple Mail (2.1085)
+	Wed, 30 Jan 2013 07:48:21 -0500
+From: Daniele Palmas <dnlplm@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Mork <bjorn@mork.no>
+Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daniele Palmas <dnlplm@gmail.com>
+Subject: [PATCH v2] NET: qmi_wwan: add Telit LE920 support
+Date: Wed, 30 Jan 2013 13:47:06 +0100
+Message-Id: <1359550026-1879-1-git-send-email-dnlplm@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vaibhav,
+Add VID, PID and fixed interface for Telit LE920
 
-On Jan 30, 2013, at 2:38 PM, Bedia, Vaibhav wrote:
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+---
+v2:
+ - rebased against net tree
 
-> On Wed, Jan 30, 2013 at 16:38:50, Pantelis Antoniou wrote:
-> [...]
->> 
->> TBH I haven't found a simple way to print out the silicon revision number.
->> Anyone on the list know a quick and dirty method? 
->> 
-> 
-> You can dump the DEVICE_ID register @ 0x44e10600.
-> Bits 31:28 should be 0 for PG1.0 and 1 for PG2.0.
-> 
+ drivers/net/usb/qmi_wwan.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks this works perfectly:
-
-original-bone:
-root@beaglebone:~# devmem2 0x44e10600 w
-Read at address  0x44E10600 (0xb6ff4600): 0x0B94402E
-
-bone-black:
-root@beaglebone:~# devmem2 0x44e10600 w
-Read at address  0x44E10600 (0xb6fcc600): 0x1B94402E
-
-> Regards,
-> Vaibhav 
-> 
-
-Regards
-
--- Pantelis
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 575a583..2ca7f8e 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -461,6 +461,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x1199, 0x901c, 8)},    /* Sierra Wireless EM7700 */
+ 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
+ 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
++	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+ 
+ 	/* 4. Gobi 1000 devices */
+ 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+-- 
+1.7.4.1
 
