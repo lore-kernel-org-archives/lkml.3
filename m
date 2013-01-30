@@ -1,124 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab3A3PCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 10:02:40 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:55122 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab3A3PCi (ORCPT
+	id S1754925Ab3A3PFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 10:05:54 -0500
+Received: from [65.55.88.15] ([65.55.88.15]:2172 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753129Ab3A3PFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 10:02:38 -0500
+	Wed, 30 Jan 2013 10:05:52 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 30 Jan 2013 23:04:18 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Anson Huang <b20788@freescale.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <broonie@opensource.wolfsonmicro.com>,
+        <lrg@ti.com>, <paul.liu@linaro.org>, <rob@landley.net>,
+        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] regulators: anatop: add set_voltage_time_sel interface
+Message-ID: <20130130150416.GG2757@S2101-09.ap.freescale.net>
+References: <1359586214-11876-1-git-send-email-b20788@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <1359550803-18577-2-git-send-email-fabio.baltieri@linaro.org>
-References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
-	<1359550803-18577-2-git-send-email-fabio.baltieri@linaro.org>
-Date: Wed, 30 Jan 2013 20:32:38 +0530
-Message-ID: <CAKohponwQFFtC3MKh72Z0bqYksV_P6D07VivQUYjai1qPB_J9g@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] cpufreq: handle SW coordinated CPUs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
-        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org,
-        Rickard Andersson <rickard.andersson@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1359586214-11876-1-git-send-email-b20788@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
+On Wed, Jan 30, 2013 at 05:50:14PM -0500, Anson Huang wrote:
+> diff --git a/Documentation/devicetree/bindings/regulator/anatop-regulator.txt b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
+> index 357758c..b3a08f8 100644
+> --- a/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
+> +++ b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
+> @@ -5,6 +5,9 @@ Required properties:
+>  - anatop-reg-offset: Anatop MFD register offset
+>  - anatop-vol-bit-shift: Bit shift for the register
+>  - anatop-vol-bit-width: Number of bits used in the register
+> +- anatop-delay-reg-offset: Anatop MFD step time register offset
+> +- anatop-delay-bit-shift: Bit shift for the step time register
+> +- anatop-delay-bit-width: Number of bits used in the step time register
 
-I know Rafael has asked you to send only the incremental patch, but i
-am interested in reviewing whole series again, as i haven't reviewed
-earlier stuff :)
+These should be documented as optional properties, as regulators 1p1,
+3p0 and 2p5 do not have them.
 
-I believe you are required to send patches to patches@linaro.org too :)
-
-On 30 January 2013 18:30, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
-> From: Rickard Andersson <rickard.andersson@stericsson.com>
->
-> This patch fixes a bug that occurred when we had load on a secondary CPU
-> and the primary CPU was sleeping. Only one sampling timer was spawned
-> and it was spawned as a deferred timer on the primary CPU, so when a
-> secondary CPU had a change in load this was not detected by the cpufreq
-> governor (both ondemand and conservative).
->
-> This patch make sure that deferred timers are run on all CPUs in the
-> case of software controlled CPUs that run on the same frequency.
-
-Its really a good point. I wondered earlier why does interactive governor
-has per-cpu timer. BTW, you can check how interactive governor is handling
-this requirement. That might improve these drivers too.
-
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> +bool dbs_sw_coordinated_cpus(struct cpu_dbs_common_info *cdbs)
+>  - anatop-min-bit-val: Minimum value of this register
+>  - anatop-min-voltage: Minimum voltage of this regulator
+>  - anatop-max-voltage: Maximum voltage of this regulator
+> @@ -23,6 +26,9 @@ Example:
+>  		anatop-reg-offset = <0x140>;
+>  		anatop-vol-bit-shift = <9>;
+>  		anatop-vol-bit-width = <5>;
+> +		anatop-delay-reg-offset = <0x170>;
+> +		anatop-delay-bit-shift = <24>;
+> +		anatop-delay-bit-width = <2>;
+>  		anatop-min-bit-val = <1>;
+>  		anatop-min-voltage = <725000>;
+>  		anatop-max-voltage = <1300000>;
+> diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+> index 8f39cac..a857b9c 100644
+> --- a/drivers/regulator/anatop-regulator.c
+> +++ b/drivers/regulator/anatop-regulator.c
+> @@ -31,12 +31,18 @@
+>  #include <linux/regulator/driver.h>
+>  #include <linux/regulator/of_regulator.h>
+>  
+> +#define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
+> +#define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
+> +
+>  struct anatop_regulator {
+>  	const char *name;
+>  	u32 control_reg;
+>  	struct regmap *anatop;
+>  	int vol_bit_shift;
+>  	int vol_bit_width;
+> +	u32 delay_reg;
+> +	int delay_bit_shift;
+> +	int delay_bit_width;
+>  	int min_bit_val;
+>  	int min_voltage;
+>  	int max_voltage;
+> @@ -55,6 +61,33 @@ static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
+>  	return regulator_set_voltage_sel_regmap(reg, selector);
+>  }
+>  
+> +static int anatop_regmap_set_voltage_time_sel(struct regulator_dev *reg,
+> +	unsigned int old_sel,
+> +	unsigned int new_sel)
 > +{
-> +       struct cpufreq_policy *policy = cdbs->cur_policy;
+> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+> +	u32 val;
+> +	int ret = 0;
 > +
-> +       return cpumask_weight(policy->cpus) > 1;
+> +	/* check whether need to care about LDO ramp up speed */
+> +	if (anatop_reg->delay_reg) {
+
+It might be safer to check if (anatop_reg->delay_bit_width)?
+
+Otherwise,
+
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+
+Shawn
+
+> +		/*
+> +		 * the delay for LDO ramp up time is
+> +		 * based on the register setting, we need
+> +		 * to calculate how many steps LDO need to
+> +		 * ramp up, and how much delay needed. (us)
+> +		 */
+> +		regmap_read(anatop_reg->anatop, anatop_reg->delay_reg, &val);
+> +		val = (val >> anatop_reg->delay_bit_shift) &
+> +			((1 << anatop_reg->delay_bit_width) - 1);
+> +		ret = new_sel > old_sel ? (new_sel - old_sel) *
+> +			((LDO_RAMP_UP_UNIT_IN_CYCLES << val) /
+> +			LDO_RAMP_UP_FREQ_IN_MHZ + 1) : 0;
+> +	}
+> +
+> +	return ret;
 > +}
-> +EXPORT_SYMBOL_GPL(dbs_sw_coordinated_cpus);
-
-I believe this routine should be rather present in cpufreq core code,
-as their might
-be other users of it. Its really not related to dbs or governors.
-
-My ideas about the name of routine then:
-- policy_is_shared()
-- or something better you have :)
-
-> @@ -217,6 +227,10 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
->                         if (ignore_nice)
->                                 j_cdbs->prev_cpu_nice =
->                                         kcpustat_cpu(j).cpustat[CPUTIME_NICE];
 > +
-> +                       mutex_init(&j_cdbs->timer_mutex);
-> +                       INIT_DEFERRABLE_WORK(&j_cdbs->work,
-> +                                            dbs_data->gov_dbs_timer);
+>  static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+>  {
+>  	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+> @@ -67,6 +100,7 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+>  
+>  static struct regulator_ops anatop_rops = {
+>  	.set_voltage_sel = anatop_regmap_set_voltage_sel,
+> +	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
+>  	.get_voltage_sel = anatop_regmap_get_voltage_sel,
+>  	.list_voltage = regulator_list_voltage_linear,
+>  	.map_voltage = regulator_map_voltage_linear,
+> @@ -143,6 +177,14 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+>  		goto anatop_probe_end;
+>  	}
+>  
+> +	/* read LDO ramp up setting, only for core reg */
+> +	of_property_read_u32(np, "anatop-delay-reg-offset",
+> +			     &sreg->delay_reg);
+> +	of_property_read_u32(np, "anatop-delay-bit-width",
+> +			     &sreg->delay_bit_width);
+> +	of_property_read_u32(np, "anatop-delay-bit-shift",
+> +			     &sreg->delay_bit_shift);
+> +
+>  	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage) / 25000 + 1
+>  			    + sreg->min_bit_val;
+>  	rdesc->min_uV = sreg->min_voltage;
+> -- 
+> 1.7.9.5
+> 
+> 
 
-That doesn't look the right place for doing it. With this change we
-will initialize
-mutex and work for all cpus whenever cpufreq_governor_dbs(GOV_START) is
-called. We really want to do it just before second_time: label, which will do
-it only when this is called for the very first time or cpu.
-
-That's what i thought initially :)
-
-Then i looked at my own work and realized something else :).. Now, because
-we stop/start governors on every cpu movement, this routine is called only once.
-
-What you can do:
-- Create a single for_each_cpu() in GOV_START path
-- Get rid of dbs_data->enable routine as we don't need to store the
-number of calls
-  for GOV_START.
-
->                 }
->
->                 /*
-> @@ -275,15 +289,16 @@ second_time:
->                 }
->                 mutex_unlock(&dbs_data->mutex);
->
-> -               mutex_init(&cpu_cdbs->timer_mutex);
-> -               dbs_timer_init(dbs_data, cpu_cdbs, *sampling_rate);
-> +               for_each_cpu(j, policy->cpus)
-> +                       dbs_timer_init(dbs_data, j, *sampling_rate);
-
-Keep this too in the same for_each_cpu() loop and hence get to older
-param types of dbs_timer_init(), i.e. don't pass cpu as we already have
-j_cdbs in our loop.
-
->                 break;
->
->         case CPUFREQ_GOV_STOP:
->                 if (dbs_data->governor == GOV_CONSERVATIVE)
->                         cs_dbs_info->enable = 0;
->
-> -               dbs_timer_exit(cpu_cdbs);
-> +               for_each_cpu(j, policy->cpus)
-> +                       dbs_timer_exit(dbs_data, j);
->
->                 mutex_lock(&dbs_data->mutex);
->                 mutex_destroy(&cpu_cdbs->timer_mutex);
