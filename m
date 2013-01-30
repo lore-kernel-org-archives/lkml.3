@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab3A3IkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:40:00 -0500
-Received: from mga12.intel.com ([143.182.124.36]:24021 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751303Ab3A3Ijy (ORCPT
+	id S1753208Ab3A3IoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:44:03 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:58588 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab3A3IoA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:39:54 -0500
+	Wed, 30 Jan 2013 03:44:00 -0500
+From: "Kumar, Anil" <anilkumar.v@ti.com>
+To: "Poddar, Sourav" <sourav.poddar@ti.com>, "Coelho, Luciano" <coelho@ti.com>
+CC: "Cousson, Benoit" <b-cousson@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+Subject: RE: [PATCH] arm: dts: omap4-sdp: Add I2c pinctrl data
+Thread-Topic: [PATCH] arm: dts: omap4-sdp: Add I2c pinctrl data
+Thread-Index: AQHN/UkIJ7Wq2boU4Uip5G4oxQAW/ZhhDo8AgAAEAQCAAHreAA==
+Date: Wed, 30 Jan 2013 08:43:46 +0000
+Message-ID: <F3DBB1B3EF102E4994C89758CFCA32412C16DD@DBDE01.ent.ti.com>
+References: <1359371865-27907-1-git-send-email-sourav.poddar@ti.com>
+ <1359527158.14894.37.camel@cumari.coelho.fi> <5108C052.3070604@ti.com>
+In-Reply-To: <5108C052.3070604@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <783235259540e27e745f68316b1735e8d4ce9137.1359125652.git.dmitry.kasatkin@intel.com>
-References: <783235259540e27e745f68316b1735e8d4ce9137.1359125652.git.dmitry.kasatkin@intel.com>
-Date: Wed, 30 Jan 2013 10:39:52 +0200
-Message-ID: <CALLzPKai_9SR2pBDe8fU1sGTf+fN=EDGGU1HKQ-LTdWuP0Ti5Q@mail.gmail.com>
-Subject: Re: [PATCH 1/1] digsig: Fix memory leakage in digsig_verify_rsa()
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 4:54 PM, Dmitry Kasatkin
-<dmitry.kasatkin@intel.com> wrote:
-> From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
->
-> digsig_verify_rsa() does not free kmalloc'ed buffer returned by
-> mpi_get_buffer().
->
-> Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> Cc: stable@vger.kernel.org
-> ---
->  lib/digsig.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/lib/digsig.c b/lib/digsig.c
-> index 8c0e629..dc2be7e 100644
-> --- a/lib/digsig.c
-> +++ b/lib/digsig.c
-> @@ -162,6 +162,8 @@ static int digsig_verify_rsa(struct key *key,
->         memset(out1, 0, head);
->         memcpy(out1 + head, p, l);
->
-> +       kfree(p);
-> +
->         err = pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
->         if (err)
->                 goto err;
-> --
-> 1.7.10.4
->
+Hi Sourav,
 
-James, can you please apply this patch.
+On Wed, Jan 30, 2013 at 12:10:18, Poddar, Sourav wrote:
+> Hi Luciano,
+> On Wednesday 30 January 2013 11:55 AM, Luciano Coelho wrote:
+> > Hi Sourav,
+> >
+> > On Mon, 2013-01-28 at 16:47 +0530, Sourav Poddar wrote:
+> >> Booting 3.8-rc4 om omap 4430sdp results in the following error
+> >>
+> >> omap_i2c 48070000.i2c: did not get pins for i2c error: -19
+> >> [    1.024261] omap_i2c 48070000.i2c: bus 0 rev0.12 at 100 kHz
+> >> [    1.030181] omap_i2c 48072000.i2c: did not get pins for i2c error: -19
+> >> [    1.037384] omap_i2c 48072000.i2c: bus 1 rev0.12 at 400 kHz
+> >> [    1.043762] omap_i2c 48060000.i2c: did not get pins for i2c error: -19
+> >> [    1.050964] omap_i2c 48060000.i2c: bus 2 rev0.12 at 100 kHz
+> >> [    1.056823] omap_i2c 4807a000.i2c: did not get pins for i2c error: -19
+> >> [    1.064025] omap_i2c 4807a000.i2c: bus 3 rev0.12 at 400 kHz
+> >>
+> >> This happens because omap4 dts file is not adapted to use i2c through pinctrl
+> >> framework. Populating i2c pinctrl data to get rid of the error.
+> >>
+> >> Tested on omap4430 sdp with 3.8-rc4 kernel.
+> >>
+> >> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> >> Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >> ---
+> > Could you do the same thing for panda? I'm getting the same kind of
+> > errors with it:
 
-- Dmitry
+omap4 uses pinctrl-single driver for pinmux with DT. Currently
+pinctrl-single driver is getting up after I2C driver. So I2c cannot
+use pinctrl. The below patch solve this issue     
+
+http://www.gossamer-threads.com/lists/linux/kernel/1669067
+
+Can you try with this ? it may solve it.
+
+Thanks,
+Anil
+[...]
+
