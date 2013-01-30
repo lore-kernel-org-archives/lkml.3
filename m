@@ -1,77 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3A3UiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 15:38:16 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:43506 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab3A3UiP (ORCPT
+	id S1756924Ab3A3UkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:40:11 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:57427 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab3A3UkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 15:38:15 -0500
+	Wed, 30 Jan 2013 15:40:07 -0500
+Date: Wed, 30 Jan 2013 20:40:07 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: aris@redhat.com
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v4 6/9] devcg: use css_online and css_offline
+Message-ID: <20130130204007.GD8507@mail.hallyn.com>
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+ <20130130171101.947461296@napanee.usersys.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1301301402330.6300@xanadu.home>
-References: <1359558091-29251-1-git-send-email-ruslan.bilovol@ti.com>
- <1359558091-29251-2-git-send-email-ruslan.bilovol@ti.com> <alpine.LFD.2.02.1301301402330.6300@xanadu.home>
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Wed, 30 Jan 2013 14:37:53 -0600
-Message-ID: <CAKGA1bncYCAwvU1-ZYkAYd_RGUvqq4NCWDeV5EXt4Z6qrgr3Sw@mail.gmail.com>
-Subject: Re: [RFC PATCH v3 1/2] ARM: kernel: update cpuinfo to print SoC model name
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Ruslan Bilovol <ruslan.bilovol@ti.com>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        tony@atomide.com, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        eduardo.valentin@ti.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130130171101.947461296@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 1:07 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> On Wed, 30 Jan 2013, Ruslan Bilovol wrote:
->
->> Currently, reading /proc/cpuinfo provides userspace with CPU ID of
->> the CPU carrying out the read from the file.
->> Userspace using this information may decide what module
->> to load or how to configure some specific (and processor-depended)
->> settings or so.
->> However, since really different SoCs can share same ARM core,
->> this information currently is not so useful.
->> For example, TI OMAP4460 and OMAP4470 SoCs show the same
->> information in the /proc/cpuinfo whereas they are different.
->> Since in most cases ARM CPU is a part of some system on a chip (SoC),
->> the "cpuinfo" file looks like exactly that place, where this
->> information have to be displayed.
->>
->> So added new line "SoC name" in the "cpuinfo" output for system
->> on a chip name. It is placed between CPU information and machine
->> information, so the file structure looks gracefully (CPU-SoC-Hardware)
->>
->> Example:
->>
->> / # cat proc/cpuinfo
->> [...]
->> CPU variant     : 0x2
->> CPU part        : 0xc09
->> CPU revision    : 10
->>
->> SoC name        : OMAP4470
->>
->> Hardware        : OMAP4 Blaze Tablet
->
-> Please remove that extra blank line between "SoC name" and "Hardware".
-> The blank line after "CPU revision" is fine.
->
-> Also, please rename this to "System name".  Not all systems are "on
-> chip".  By using "System name" this is more universally useful.
+Quoting aris@redhat.com (aris@redhat.com):
+> Allocate resources and change behavior only when online. This is needed in
+> order to determine if a node is suitable for hierarchy propagation or if it's
+> being removed.
+> 
+> Locking:
+> Both functions take devcgroup_mutex to make changes to device_cgroup structure.
+> Hierarchy propagation will also take devcgroup_mutex before walking the
+> tree while walking the tree itself is protected by rcu lock.
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-I can't agree with "System name", it is confusing in common
-terminology since it's about the same definition as the current
-"Hardware" line.
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-If we're just printing out the name of the device surrounding the CPU
-- be it a Northbridge/Southbridge combination or SoC packaging -
-"Chipset" might be a better name for it.
-
--- 
-Matt Sealey <matt@genesi-usa.com>
-Product Development Analyst, Genesi USA, Inc.
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> 
+> ---
+>  security/device_cgroup.c |   59 +++++++++++++++++++++++++++++++++--------------
+>  1 file changed, 42 insertions(+), 17 deletions(-)
+> 
+> --- github.orig/security/device_cgroup.c	2013-01-30 09:00:09.435351867 -0500
+> +++ github/security/device_cgroup.c	2013-01-30 09:09:12.572464122 -0500
+> @@ -230,14 +230,51 @@ static void dev_exception_clean(struct d
+>  	__dev_exception_clean(dev_cgroup);
+>  }
+>  
+> +/**
+> + * devcgroup_online - initializes devcgroup's behavior and exceptions based on
+> + * 		      parent's
+> + * @cgroup: cgroup getting online
+> + * returns 0 in case of success, error code otherwise
+> + */
+> +static int devcgroup_online(struct cgroup *cgroup)
+> +{
+> +	struct dev_cgroup *dev_cgroup, *parent_dev_cgroup = NULL;
+> +	int ret = 0;
+> +
+> +	mutex_lock(&devcgroup_mutex);
+> +	dev_cgroup = cgroup_to_devcgroup(cgroup);
+> +	if (cgroup->parent)
+> +		parent_dev_cgroup = cgroup_to_devcgroup(cgroup->parent);
+> +
+> +	if (parent_dev_cgroup == NULL)
+> +		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
+> +	else {
+> +		ret = dev_exceptions_copy(&dev_cgroup->exceptions,
+> +					  &parent_dev_cgroup->exceptions);
+> +		if (!ret)
+> +			dev_cgroup->behavior = parent_dev_cgroup->behavior;
+> +	}
+> +	mutex_unlock(&devcgroup_mutex);
+> +
+> +	return ret;
+> +}
+> +
+> +static void devcgroup_offline(struct cgroup *cgroup)
+> +{
+> +	struct dev_cgroup *dev_cgroup = cgroup_to_devcgroup(cgroup);
+> +
+> +	mutex_lock(&devcgroup_mutex);
+> +	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
+> +	mutex_unlock(&devcgroup_mutex);
+> +}
+> +
+>  /*
+>   * called from kernel/cgroup.c with cgroup_lock() held.
+>   */
+>  static struct cgroup_subsys_state *devcgroup_css_alloc(struct cgroup *cgroup)
+>  {
+> -	struct dev_cgroup *dev_cgroup, *parent_dev_cgroup;
+> +	struct dev_cgroup *dev_cgroup;
+>  	struct cgroup *parent_cgroup;
+> -	int ret;
+>  
+>  	dev_cgroup = kzalloc(sizeof(*dev_cgroup), GFP_KERNEL);
+>  	if (!dev_cgroup)
+> @@ -245,23 +282,9 @@ static struct cgroup_subsys_state *devcg
+>  	INIT_LIST_HEAD(&dev_cgroup->exceptions);
+>  	INIT_LIST_HEAD(&dev_cgroup->local.exceptions);
+>  	dev_cgroup->local.behavior = DEVCG_DEFAULT_NONE;
+> +	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
+>  	parent_cgroup = cgroup->parent;
+>  
+> -	if (parent_cgroup == NULL)
+> -		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
+> -	else {
+> -		parent_dev_cgroup = cgroup_to_devcgroup(parent_cgroup);
+> -		mutex_lock(&devcgroup_mutex);
+> -		ret = dev_exceptions_copy(&dev_cgroup->exceptions,
+> -					  &parent_dev_cgroup->exceptions);
+> -		dev_cgroup->behavior = parent_dev_cgroup->behavior;
+> -		mutex_unlock(&devcgroup_mutex);
+> -		if (ret) {
+> -			kfree(dev_cgroup);
+> -			return ERR_PTR(ret);
+> -		}
+> -	}
+> -
+>  	return &dev_cgroup->css;
+>  }
+>  
+> @@ -635,6 +658,8 @@ struct cgroup_subsys devices_subsys = {
+>  	.can_attach = devcgroup_can_attach,
+>  	.css_alloc = devcgroup_css_alloc,
+>  	.css_free = devcgroup_css_free,
+> +	.css_online = devcgroup_online,
+> +	.css_offline = devcgroup_offline,
+>  	.subsys_id = devices_subsys_id,
+>  	.base_cftypes = dev_cgroup_files,
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
