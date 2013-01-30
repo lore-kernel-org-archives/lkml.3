@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab3A3QX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 11:23:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:60014 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753845Ab3A3QX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 11:23:57 -0500
-Date: Wed, 30 Jan 2013 17:25:50 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [PATCH 10/11] staging/fwserial: Fix premature unthrottle
-Message-ID: <20130130162550.GB18435@kroah.com>
-References: <1359430485-5301-1-git-send-email-peter@hurleysoftware.com>
- <1359430485-5301-10-git-send-email-peter@hurleysoftware.com>
- <20130130042947.GA25371@kroah.com>
- <1359551465.3325.14.camel@thor.lan>
- <20130130133240.GA16591@kroah.com>
- <1359553043.3325.18.camel@thor.lan>
+	id S1755685Ab3A3QYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 11:24:44 -0500
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.50]:34010 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753146Ab3A3QYl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 11:24:41 -0500
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-131.messagelabs.com!1359563066!22919801!24
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Received: 
+X-StarScan-Version: 6.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mori Hess <fmhess@users.sourceforge.net>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Date: Wed, 30 Jan 2013 10:24:26 -0600
+Subject: RE: [PATCH -next] staging: comedi: ISA DMA drivers should depend on
+ ISA_DMA_API
+Thread-Topic: [PATCH -next] staging: comedi: ISA DMA drivers should depend
+ on ISA_DMA_API
+Thread-Index: Ac3+4WAH3zD/fYnPSx23T6v8wrriFgAJJxzQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00207A707B4BE@AUSP01VMBX24.collaborationhost.net>
+References: <1359547209-15712-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1359547209-15712-1-git-send-email-geert@linux-m68k.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359553043.3325.18.camel@thor.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0UGOjJb015786
 
-On Wed, Jan 30, 2013 at 08:37:23AM -0500, Peter Hurley wrote:
-> On Wed, 2013-01-30 at 14:32 +0100, Greg Kroah-Hartman wrote:
-> > On Wed, Jan 30, 2013 at 08:11:05AM -0500, Peter Hurley wrote:
-> > > On Tue, 2013-01-29 at 23:29 -0500, Greg Kroah-Hartman wrote:
-> > > > On Mon, Jan 28, 2013 at 10:34:44PM -0500, Peter Hurley wrote:
-> > > > > The unthrottle may restart the writer before the rx push
-> > > > > has a chance to start emptying the rx buffer, resulting in an
-> > > > > overflowed rx buffer and lost data.
-> > > > > 
-> > > > > Perform the actual device unthrottle with the rx push instead.
-> > > > > 
-> > > > > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> > > > > ---
-> > > > >  drivers/staging/fwserial/fwserial.c | 30 ++++++++++++++----------------
-> > > > >  1 file changed, 14 insertions(+), 16 deletions(-)
-> > > > 
-> > > > this patch fails to apply to my tree, but the 9 previous ones were fine,
-> > > > so I'll not apply it, or ght 11/11 patch.  Care to fix it up and resend
-> > > > both of them?
-> > > 
-> > > Hi Greg,
-> > > 
-> > > I can rebase these against your staging-next, if you'd prefer, but it
-> > > will make the -next merge non-trivial.
-> > > 
-> > > Your tty-next tree is carrying patches to this driver from patch series
-> > >   "TTY: switch flipping functions to tty_port"
-> > > which is already in -next.
-> > > 
-> > > Let me know what you'd like me to do.
-> > 
-> > Ugh, that's a mess.
-> > 
-> > Can these wait until after 3.9-rc1 is out?
-> 
-> Ok. Should I plan to resend patches 10 & 11 then (as 1 & 2)?
+On Wednesday, January 30, 2013 5:00 AM, Geert Uytterhoeven wrote:
 
-Yes, please do.
+> m68k allmodconfig:
 
-thanks,
+<snip>
 
-greg k-h
+> Make PCL816, PCL818, DAS16, DAS1800, DT282X, and NI_AT_A2150 depend on
+> ISA_DMA_API to fix this.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Looks like we have the first fallout from Greg's patch to enable comedi for
+all architectures... :-)
+
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
