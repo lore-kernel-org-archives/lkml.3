@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab3A3Q2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 11:28:52 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:41130 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab3A3Q2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 11:28:50 -0500
-Message-ID: <51094A39.8050206@linux.vnet.ibm.com>
-Date: Wed, 30 Jan 2013 10:28:41 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755770Ab3A3Q3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 11:29:55 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:45457 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab3A3Q3w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 11:29:52 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv4 2/7] zsmalloc: promote to lib/
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com> <20130129145134.813672cf.akpm@linux-foundation.org>
-In-Reply-To: <20130129145134.813672cf.akpm@linux-foundation.org>
+Date: Wed, 30 Jan 2013 11:29:47 -0500
+Message-ID: <CAO-9seDOX5wPrjPP0y2cFpqu_Lwo73yyGxfMGjYbBXz7gk24_g@mail.gmail.com>
+Subject: Opteron 6276 Corrected ECC errors
+From: Michael Madore <michael.madore@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13013016-9360-0000-0000-00000FE8E619
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 04:51 PM, Andrew Morton wrote:
-> On Tue, 29 Jan 2013 15:40:22 -0600
-> Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
-> 
->> This patch promotes the slab-based zsmalloc memory allocator
->> from the staging tree to lib/
-> 
-> Hate to rain on the parade, but...  we haven't reviewed zsmalloc
-> yet.  At least, I haven't, and I haven't seen others do so.
-> 
-> So how's about we forget that zsmalloc was previously in staging and
-> send the zsmalloc code out for review?  With a very good changelog
-> explaining why it exists, what problems it solves, etc.
-> 
-> 
-> I peeked.
-> 
-> Don't answer any of the below questions - they are examples of
-> concepts which should be accessible to readers of the
-> hopefully-forthcoming very-good-changelog.
-> 
-> - kmap_atomic() returns a void* - there's no need to cast its return value.
-> 
-> - Remove private MAX(), use the (much better implemented) max().
-> 
-> - It says "This was one of the major issues with its predecessor
->   (xvmalloc)", but drivers/staging/ramster/xvmalloc.c is still in the tree.
-> 
-> - USE_PGTABLE_MAPPING should be done via Kconfig.
-> 
-> - USE_PGTABLE_MAPPING is interesting and the changelog should go into
->   some details.  What are the pros and cons here?  Why do the two
->   options exist?  Can we eliminate one mode or the other?
-> 
-> - Various functions are obscure and would benefit from explanatory
->   comments.  Good comments explain "why it exists", more than "what it
->   does".
-> 
->   These include get_size_class_index, get_fullness_group,
->   insert_zspage, remove_zspage, fix_fullness_group.
-> 
->   Also a description of this handle encoding thing - what do these
->   "handles" refer to?  Why is stuff being encoded into them and how?
-> 
-> - I don't understand how the whole thing works :( If I allocate a
->   16 kbyte object with zs_malloc(), what do I get?  16k of
->   contiguous memory?  How can it do that if
->   USE_PGTABLE_MAPPING=false?  Obviously it can't so it's doing
->   something else.  But what?
-> 
-> - What does zs_create_pool() do and how do I use it?  It appears
->   to create a pool of all possible object sizes.  But why do we need
->   more than one such pool kernel-wide?
-> 
-> - I tried to work out the actual value of ZS_SIZE_CLASSES but it
->   made my head spin.
-> 
-> - We really really don't want to merge zsmalloc!  It would be far
->   better to use an existing allocator (perhaps after modifying it)
->   than to add yet another new one.  The really-good-changelog should
->   be compelling on this point, please.
-> 
-> See, I (and I assume others) are totally on first base here and we need
-> to get through this before we can get onto zswap.  Sorry. 
-> drivers/staging is where code goes to be ignored :(
+Hello,
 
-I've noticed :-/
+I have the following system:
 
-Thank you very much for your review!  I'll work with Nitin and Minchan
-to beef up the documentation so that the answers to your questions are
-more readily apparent in the code/comments.
+Supermicro H8QGi-F server board (AMD SR5690/SR5670/SP5100 Chipset)
+4 X AMD Opteron 6276 processors
+32 X 8GB (256GB) DDR3-1600 ECC Registered memory
+Debian with kernel 3.2.35-2
 
-I'll also convert the zsmalloc promotion patch back into a full-diff
-patch rather than a rename patch so that people can review and comment
-inline.
+We have received the following two hardware errors:
 
-Question, are you saying that you'd like to see the zsmalloc promotion
-in a separate patch?
+9/10/12
 
-My reason for including the zsmalloc promotion inside the zswap
-patches was that it promoted and introduced a user all together.
-However, I don't have an issue with breaking it out.
+[591006.120039] [Hardware Error]: CPU:58
+MC2_STATUS[-|CE|MiscV|-|-|-|-|CECC]: 0x9842c000000c0176
+[591006.120048] [Hardware Error]: Combined Unit Error: VB Data/ECC error.
+[591006.120052] [Hardware Error]: cache level: L2, tx: DATA, mem-tx: EV
+
+1/21/12
+
+[549004.336097] [Hardware Error]: CPU:40
+MC4_STATUS[-|CE|MiscV|-|AddrV|-|-|CECC]: 0x9c3444e0001f010b
+[549004.336111] [Hardware Error]:       MC4_ADDR: 0x000000000000e480
+[549004.336117] [Hardware Error]: Northbridge Error (node 5): ECC
+Error in the Probe Filter directory.
+[549004.336125] [Hardware Error]: cache level: L3/GEN, tx: GEN, mem-tx: GEN
+
+If I understand correctly, both of these errors represent single bit
+corrected errors in the CPU cache.  On both occasions the system
+continued to function normally after the error was reported.
+
+Is receiving two such errors (on different CPUs) over such a time span
+cause for concern?  The end user is concerned there is a serious
+hardware problem.  I'm reluctant to start replacing CPUs, however,
+without seeing a repeated pattern of errors.
+
+Any advice or pointers to more appropriate resources would be greatly
+appreciated.  Please CC: me as I am not currently subscribed to the
+list.
 
 Thanks,
-Seth
 
+Mike
