@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab3A3Bh7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:37:59 -0500
-Received: from vint.altlinux.org ([194.107.17.35]:56188 "EHLO
-	vint.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab3A3Bh5 (ORCPT
+	id S1753728Ab3A3Biz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:38:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43832 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab3A3Biw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:37:57 -0500
-Date: Wed, 30 Jan 2013 05:29:47 +0400
-From: "Dmitry V. Levin" <ldv@altlinux.org>
-To: Rob Landley <rob@landley.net>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] Documentation: update seq_file
-Message-ID: <20130130012946.GB20174@altlinux.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 29 Jan 2013 20:38:52 -0500
+Date: Tue, 29 Jan 2013 17:38:40 -0800
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-187a8a73cee295b9407de0d6bfba65471a1f39d6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        matt.fleming@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, matt.fleming@intel.com,
+        hpa@linux.intel.com
+In-Reply-To: <1359058816-7615-20-git-send-email-yinghai@kernel.org>
+References: <1359058816-7615-20-git-send-email-yinghai@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm2] x86, boot: Move verify_cpu.S and no_longmode down
+Git-Commit-ID: 187a8a73cee295b9407de0d6bfba65471a1f39d6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:38:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting with commit v3.2-rc4-1-g02125a8, seq_path_root() no longer
-changes the value of root.
-Starting with commit v3.2-rc7-104-g8c9379e, some arguments of seq_path()
-and seq_path_root() are const.
+Commit-ID:  187a8a73cee295b9407de0d6bfba65471a1f39d6
+Gitweb:     http://git.kernel.org/tip/187a8a73cee295b9407de0d6bfba65471a1f39d6
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 24 Jan 2013 12:20:00 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 29 Jan 2013 15:26:15 -0800
 
-Signed-off-by: Dmitry V. Levin <ldv@altlinux.org>
+x86, boot: Move verify_cpu.S and no_longmode down
+
+We need to move some code to 32bit section in following patch:
+
+   x86, boot: Move lldt/ltr out of 64bit code section
+
+but that will push startup_64 down from 0x200.
+
+According to hpa, we can not change startup_64 position and that
+is an ABI.
+
+We could move function verify_cpu and no_longmode down, because
+verify_cpu is used via function call and no_longmode will not
+return, then we don't need to add extra code for jumping back.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1359058816-7615-20-git-send-email-yinghai@kernel.org
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- Documentation/filesystems/seq_file.txt | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/boot/compressed/head_64.S | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
-index a1e2e0d..5367f08 100644
---- a/Documentation/filesystems/seq_file.txt
-+++ b/Documentation/filesystems/seq_file.txt
-@@ -189,16 +189,16 @@ which is in the string esc will be represented in octal form in the output.
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 2c4b171..fb984c0 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -176,14 +176,6 @@ ENTRY(startup_32)
+ 	lret
+ ENDPROC(startup_32)
  
- There is also a pair of functions for printing filenames:
+-no_longmode:
+-	/* This isn't an x86-64 CPU so hang */
+-1:
+-	hlt
+-	jmp     1b
+-
+-#include "../../kernel/verify_cpu.S"
+-
+ 	/*
+ 	 * Be careful here startup_64 needs to be at a predictable
+ 	 * address so I can export it in an ELF header.  Bootloaders
+@@ -349,6 +341,15 @@ relocated:
+  */
+ 	jmp	*%rbp
  
--	int seq_path(struct seq_file *m, struct path *path, char *esc);
--	int seq_path_root(struct seq_file *m, struct path *path,
--			  struct path *root, char *esc)
-+	int seq_path(struct seq_file *m, const struct path *path,
-+		     const char *esc);
-+	int seq_path_root(struct seq_file *m, const struct path *path,
-+			  const struct path *root, const char *esc)
- 
- Here, path indicates the file of interest, and esc is a set of characters
- which should be escaped in the output.  A call to seq_path() will output
- the path relative to the current process's filesystem root.  If a different
--root is desired, it can be used with seq_path_root().  Note that, if it
--turns out that path cannot be reached from root, the value of root will be
--changed in seq_file_root() to a root which *does* work.
-+root is desired, it can be used with seq_path_root().  If it turns out that
-+path cannot be reached from root, seq_path_root() returns SEQ_SKIP.
- 
- 
- Making it all work
-
--- 
-ldv
++	.code32
++no_longmode:
++	/* This isn't an x86-64 CPU so hang */
++1:
++	hlt
++	jmp     1b
++
++#include "../../kernel/verify_cpu.S"
++
+ 	.data
+ gdt:
+ 	.word	gdt_end - gdt
