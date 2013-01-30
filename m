@@ -1,87 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab3A3Osc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 09:48:32 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:59845 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389Ab3A3Os2 (ORCPT
+	id S1755651Ab3A3OtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 09:49:05 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54447
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755478Ab3A3OrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 09:48:28 -0500
-Date: Thu, 31 Jan 2013 01:48:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: linux-next: manual merge of the samsung tree with the arm-soc tree
-Message-Id: <20130131014827.09251ece97f74377abada4ac@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_Jan_2013_01_48_27_+1100_B1vb+z.lc=M0+X/+"
+	Wed, 30 Jan 2013 09:47:23 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 14/21] perf stat: Add interval printing
+Date: Wed, 30 Jan 2013 11:46:55 -0300
+Message-Id: <1359557222-17547-15-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1359557222-17547-1-git-send-email-acme@infradead.org>
+References: <1359557222-17547-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_Jan_2013_01_48_27_+1100_B1vb+z.lc=M0+X/+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Stephane Eranian <eranian@google.com>
 
-Hi Kukjin,
+This patch adds a new printing mode for perf stat.  It allows interval
+printing. That means perf stat can now print event deltas at regular
+time interval.  This is useful to detect phases in programs.
 
-Today's linux-next merge of the samsung tree got a conflict in
-arch/arm/mach-exynos/common.c between commit b533c8685b16 ("ARM: dts: fix
-compatible value for exynos pinctrl") from the arm-soc tree and commit
-d28a60d89c83 ("ARM: EXYNOS: skip wakeup interrupt registration for
-exynos5250 if pinctrl is enabled") from the samsung tree.
+The -I option enables interval printing. It expects an interval duration
+in milliseconds. Minimum is 100ms. Once, activated perf stat prints
+events deltas since last printout. All modes are supported.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+$ perf stat -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+ #           time             counts events
+      1.000109853      2,388,560,546 cycles
+      2.000262846      2,393,332,358 cycles
+      3.000354131      2,393,176,537 cycles
+      4.000439503      2,393,203,790 cycles
+      5.000527075      2,393,167,675 cycles
+      6.000609052      2,393,203,670 cycles
+      7.000691082      2,393,175,678 cycles
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The output format makes it easy to feed into a plotting program such as
+gnuplot when the -I option is used in combination with the -x option:
 
-diff --cc arch/arm/mach-exynos/common.c
-index 68c0689,cdaa55f..0000000
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@@ -1035,8 -1112,9 +1116,9 @@@ static int __init exynos_init_irq_eint(
-  	 * interrupt support code here can be completely removed.
-  	 */
-  	static const struct of_device_id exynos_pinctrl_ids[] =3D {
- -		{ .compatible =3D "samsung,pinctrl-exynos4210", },
- -		{ .compatible =3D "samsung,pinctrl-exynos4x12", },
- -		{ .compatible =3D "samsung,pinctrl-exynos5250", },
- +		{ .compatible =3D "samsung,exynos4210-pinctrl", },
- +		{ .compatible =3D "samsung,exynos4x12-pinctrl", },
-++		{ .compatible =3D "samsung,exynos5250-pinctrl", },
-  	};
-  	struct device_node *pctrl_np, *wkup_np;
-  	const char *wkup_compat =3D "samsung,exynos4210-wakeup-eint";
+$ perf stat -x, -I 1000 -e cycles noploop 10
+noploop for 10 seconds
+1.000084113,2378775498,cycles
+2.000245798,2391056897,cycles
+3.000354445,2392089414,cycles
+4.000459115,2390936603,cycles
+5.000565341,2392108173,cycles
 
---Signature=_Thu__31_Jan_2013_01_48_27_+1100_B1vb+z.lc=M0+X/+
-Content-Type: application/pgp-signature
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1359460064-3060-3-git-send-email-eranian@google.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-stat.txt |   4 +
+ tools/perf/builtin-stat.c              | 157 +++++++++++++++++++++++++++++----
+ 2 files changed, 146 insertions(+), 15 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index cf0c310..5289da3 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -114,6 +114,10 @@ with it.  --append may be used here.  Examples:
+ 
+ perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- make -s -j64 O=defconfig-build/ bzImage
+ 
++-I msecs::
++--interval-print msecs::
++	print count deltas every N milliseconds (minimum: 100ms)
++	example: perf stat -I 1000 -e cycles -a sleep 5
+ 
+ EXAMPLES
+ --------
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 1c2ac14..493043a 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -65,6 +65,10 @@
+ #define CNTR_NOT_SUPPORTED	"<not supported>"
+ #define CNTR_NOT_COUNTED	"<not counted>"
+ 
++static void print_stat(int argc, const char **argv);
++static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
++static void print_counter(struct perf_evsel *counter, char *prefix);
++
+ static struct perf_evlist	*evsel_list;
+ 
+ static struct perf_target	target = {
+@@ -87,6 +91,8 @@ static FILE			*output				= NULL;
+ static const char		*pre_cmd			= NULL;
+ static const char		*post_cmd			= NULL;
+ static bool			sync_run			= false;
++static unsigned int		interval			= 0;
++static struct timespec		ref_time;
+ 
+ static volatile int done = 0;
+ 
+@@ -94,6 +100,28 @@ struct perf_stat {
+ 	struct stats	  res_stats[3];
+ };
+ 
++static inline void diff_timespec(struct timespec *r, struct timespec *a,
++				 struct timespec *b)
++{
++	r->tv_sec = a->tv_sec - b->tv_sec;
++	if (a->tv_nsec < b->tv_nsec) {
++		r->tv_nsec = a->tv_nsec + 1000000000L - b->tv_nsec;
++		r->tv_sec--;
++	} else {
++		r->tv_nsec = a->tv_nsec - b->tv_nsec ;
++	}
++}
++
++static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
++{
++	return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
++}
++
++static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
++{
++	return perf_evsel__cpus(evsel)->nr;
++}
++
+ static int perf_evsel__alloc_stat_priv(struct perf_evsel *evsel)
+ {
+ 	evsel->priv = zalloc(sizeof(struct perf_stat));
+@@ -106,14 +134,27 @@ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
+ 	evsel->priv = NULL;
+ }
+ 
+-static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
++static int perf_evsel__alloc_prev_raw_counts(struct perf_evsel *evsel)
+ {
+-	return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
++	void *addr;
++	size_t sz;
++
++	sz = sizeof(*evsel->counts) +
++	     (perf_evsel__nr_cpus(evsel) * sizeof(struct perf_counts_values));
++
++	addr = zalloc(sz);
++	if (!addr)
++		return -ENOMEM;
++
++	evsel->prev_raw_counts =  addr;
++
++	return 0;
+ }
+ 
+-static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
++static void perf_evsel__free_prev_raw_counts(struct perf_evsel *evsel)
+ {
+-	return perf_evsel__cpus(evsel)->nr;
++	free(evsel->prev_raw_counts);
++	evsel->prev_raw_counts = NULL;
+ }
+ 
+ static struct stats runtime_nsecs_stats[MAX_NR_CPUS];
+@@ -245,16 +286,69 @@ static int read_counter(struct perf_evsel *counter)
+ 	return 0;
+ }
+ 
++static void print_interval(void)
++{
++	static int num_print_interval;
++	struct perf_evsel *counter;
++	struct perf_stat *ps;
++	struct timespec ts, rs;
++	char prefix[64];
++
++	if (no_aggr) {
++		list_for_each_entry(counter, &evsel_list->entries, node) {
++			ps = counter->priv;
++			memset(ps->res_stats, 0, sizeof(ps->res_stats));
++			read_counter(counter);
++		}
++	} else {
++		list_for_each_entry(counter, &evsel_list->entries, node) {
++			ps = counter->priv;
++			memset(ps->res_stats, 0, sizeof(ps->res_stats));
++			read_counter_aggr(counter);
++		}
++	}
++	clock_gettime(CLOCK_MONOTONIC, &ts);
++	diff_timespec(&rs, &ts, &ref_time);
++	sprintf(prefix, "%6lu.%09lu%s", rs.tv_sec, rs.tv_nsec, csv_sep);
++
++	if (num_print_interval == 0 && !csv_output) {
++		if (no_aggr)
++			fprintf(output, "#           time CPU                 counts events\n");
++		else
++			fprintf(output, "#           time             counts events\n");
++	}
++
++	if (++num_print_interval == 25)
++		num_print_interval = 0;
++
++	if (no_aggr) {
++		list_for_each_entry(counter, &evsel_list->entries, node)
++			print_counter(counter, prefix);
++	} else {
++		list_for_each_entry(counter, &evsel_list->entries, node)
++			print_counter_aggr(counter, prefix);
++	}
++}
++
+ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ {
+ 	char msg[512];
+ 	unsigned long long t0, t1;
+ 	struct perf_evsel *counter;
++	struct timespec ts;
+ 	int status = 0;
+ 	int child_ready_pipe[2], go_pipe[2];
+ 	const bool forks = (argc > 0);
+ 	char buf;
+ 
++	if (interval) {
++		ts.tv_sec  = interval / 1000;
++		ts.tv_nsec = (interval % 1000) * 1000000;
++	} else {
++		ts.tv_sec  = 1;
++		ts.tv_nsec = 0;
++	}
++
+ 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
+ 		perror("failed to create pipes");
+ 		return -1;
+@@ -347,14 +441,25 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ 	 * Enable counters and exec the command:
+ 	 */
+ 	t0 = rdclock();
++	clock_gettime(CLOCK_MONOTONIC, &ref_time);
+ 
+ 	if (forks) {
+ 		close(go_pipe[1]);
++		if (interval) {
++			while (!waitpid(child_pid, &status, WNOHANG)) {
++				nanosleep(&ts, NULL);
++				print_interval();
++			}
++		}
+ 		wait(&status);
+ 		if (WIFSIGNALED(status))
+ 			psignal(WTERMSIG(status), argv[0]);
+ 	} else {
+-		while(!done) sleep(1);
++		while (!done) {
++			nanosleep(&ts, NULL);
++			if (interval)
++				print_interval();
++		}
+ 	}
+ 
+ 	t1 = rdclock();
+@@ -440,7 +545,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	if (evsel->cgrp)
+ 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
+ 
+-	if (csv_output)
++	if (csv_output || interval)
+ 		return;
+ 
+ 	if (perf_evsel__match(evsel, SOFTWARE, SW_TASK_CLOCK))
+@@ -654,12 +759,11 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	if (evsel->cgrp)
+ 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
+ 
+-	if (csv_output)
++	if (csv_output || interval)
+ 		return;
+ 
+ 	if (perf_evsel__match(evsel, HARDWARE, HW_INSTRUCTIONS)) {
+ 		total = avg_stats(&runtime_cycles_stats[cpu]);
+-
+ 		if (total)
+ 			ratio = avg / total;
+ 
+@@ -753,12 +857,15 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+  * Print out the results of a single counter:
+  * aggregated counts in system-wide mode
+  */
+-static void print_counter_aggr(struct perf_evsel *counter)
++static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+ {
+ 	struct perf_stat *ps = counter->priv;
+ 	double avg = avg_stats(&ps->res_stats[0]);
+ 	int scaled = counter->counts->scaled;
+ 
++	if (prefix)
++		fprintf(output, "%s", prefix);
++
+ 	if (scaled == -1) {
+ 		fprintf(output, "%*s%s%*s",
+ 			csv_output ? 0 : 18,
+@@ -801,7 +908,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
+  * Print out the results of a single counter:
+  * does not use aggregated count in system-wide
+  */
+-static void print_counter(struct perf_evsel *counter)
++static void print_counter(struct perf_evsel *counter, char *prefix)
+ {
+ 	u64 ena, run, val;
+ 	int cpu;
+@@ -810,6 +917,10 @@ static void print_counter(struct perf_evsel *counter)
+ 		val = counter->counts->cpu[cpu].val;
+ 		ena = counter->counts->cpu[cpu].ena;
+ 		run = counter->counts->cpu[cpu].run;
++
++		if (prefix)
++			fprintf(output, "%s", prefix);
++
+ 		if (run == 0 || ena == 0) {
+ 			fprintf(output, "CPU%*d%s%*s%s%*s",
+ 				csv_output ? 0 : -4,
+@@ -871,10 +982,10 @@ static void print_stat(int argc, const char **argv)
+ 
+ 	if (no_aggr) {
+ 		list_for_each_entry(counter, &evsel_list->entries, node)
+-			print_counter(counter);
++			print_counter(counter, NULL);
+ 	} else {
+ 		list_for_each_entry(counter, &evsel_list->entries, node)
+-			print_counter_aggr(counter);
++			print_counter_aggr(counter, NULL);
+ 	}
+ 
+ 	if (!csv_output) {
+@@ -895,7 +1006,7 @@ static volatile int signr = -1;
+ 
+ static void skip_signal(int signo)
+ {
+-	if(child_pid == -1)
++	if ((child_pid == -1) || interval)
+ 		done = 1;
+ 
+ 	signr = signo;
+@@ -1115,6 +1226,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			"command to run prior to the measured command"),
+ 	OPT_STRING(0, "post", &post_cmd, "command",
+ 			"command to run after to the measured command"),
++	OPT_UINTEGER('I', "interval-print", &interval,
++		    "print counts at regular interval in ms (>= 100)"),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+@@ -1215,12 +1328,23 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		usage_with_options(stat_usage, options);
+ 		return -1;
+ 	}
++	if (interval && interval < 100) {
++		pr_err("print interval must be >= 100ms\n");
++		usage_with_options(stat_usage, options);
++		return -1;
++	}
+ 
+ 	list_for_each_entry(pos, &evsel_list->entries, node) {
+ 		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
+ 		    perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
+ 			goto out_free_fd;
+ 	}
++	if (interval) {
++		list_for_each_entry(pos, &evsel_list->entries, node) {
++			if (perf_evsel__alloc_prev_raw_counts(pos) < 0)
++				goto out_free_fd;
++		}
++	}
+ 
+ 	/*
+ 	 * We dont want to block the signals - that would cause
+@@ -1230,6 +1354,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	 */
+ 	atexit(sig_atexit);
+ 	signal(SIGINT,  skip_signal);
++	signal(SIGCHLD, skip_signal);
+ 	signal(SIGALRM, skip_signal);
+ 	signal(SIGABRT, skip_signal);
+ 
+@@ -1242,11 +1367,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		status = run_perf_stat(argc, argv);
+ 	}
+ 
+-	if (status != -1)
++	if (status != -1 && !interval)
+ 		print_stat(argc, argv);
+ out_free_fd:
+-	list_for_each_entry(pos, &evsel_list->entries, node)
++	list_for_each_entry(pos, &evsel_list->entries, node) {
+ 		perf_evsel__free_stat_priv(pos);
++		perf_evsel__free_prev_raw_counts(pos);
++	}
+ 	perf_evlist__delete_maps(evsel_list);
+ out:
+ 	perf_evlist__delete(evsel_list);
+-- 
+1.8.1.1.361.gec3ae6e
 
-iQIcBAEBCAAGBQJRCTK7AAoJEECxmPOUX5FEvLwP/0WMwwq/xc1kehjtPwMVyXHd
-8bQjaWttxlONTMyQntFoncD+8DRfnRmb8fX4H/47YHEzWHo6QXCWg0X4TgP42yB3
-jqT3hyL5ISYt2wzH00oqEZdEjVb28xcgPT/TKMip7IYIxd7cK2Xdgg0ns/SYvF45
-P9XnF++BMtK+88G1rJpKHyOrmZxygi0tXZfkP3gj0tT//FYfSAhl1KLcS8NvI8/K
-i10O2SJtMRGQwHI8ZipkQMJhUAo2oC7gtFsEvLurnyacQ4PPTbuSISs2UfQ1D/Td
-swJmtlOesGJcozQBgxwUD1NRF24Ns1YYezyNfpphLwviXNkKsWj5thVxQvOh5VBm
-vhKsWrHjTxefZfHLUYQlVeBkK0NE5F8T+BZ9vGiN5YrftnxCLUyFWkdrovKcRH8J
-SbXcdXQDaPb0QFjzVlLV9sWx9U7ogXtuxl1IzC10YPVAtlv0FUbgi+I6hRMELajD
-FnRt0TD8Yg7x5AH39qMyCnbIohcmvFQSXc3AAg+t1Zuy1tOMQ1CGGikMYx7zVTU6
-H6ZcYMOd3oXLCpk66PlGX2/8yOoUqe/KTaYy4Oki46PtMSoEYrfFpFGASkZy9/J1
-507XOyePyo9pAc7aIkpNNxJkKkP0EMT1xPiGj3YQs1KF3pRfGHQSt/3P8ZPuj3Fp
-BgSwSYed+Y7pqmsopzLE
-=fKM1
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_Jan_2013_01_48_27_+1100_B1vb+z.lc=M0+X/+--
