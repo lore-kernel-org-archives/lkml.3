@@ -1,63 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab3A3TXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 14:23:42 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:33151 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755262Ab3A3TXj (ORCPT
+	id S1756751Ab3A3T0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 14:26:22 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25224 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab3A3T0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 14:23:39 -0500
-Date: Wed, 30 Jan 2013 20:23:30 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] watchdog: da9055_wdt needs to select WATCHDOG_CORE
-Message-ID: <20130130192330.GD20100@spo001.leaseweb.com>
-References: <20130129000610.22f0ebd13431c59c5dc8cf3d@canb.auug.org.au> <5106A77C.2050400@infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5106A77C.2050400@infradead.org>
-User-Agent: Mutt/1.4.1i
+	Wed, 30 Jan 2013 14:26:20 -0500
+Message-ID: <510973C8.1090209@oracle.com>
+Date: Wed, 30 Jan 2013 13:26:00 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Subject: Re: [PATCH V6 00/30] loop: Issue O_DIRECT aio using bio_vec
+References: <1359476623-10544-1-git-send-email-dave.kleikamp@oracle.com> <x49obg7omos.fsf@segfault.boston.devel.redhat.com> <510891ED.8090404@oracle.com> <x49d2wmqxui.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49d2wmqxui.fsf@segfault.boston.devel.redhat.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+By the way, I have updated the patchset in git. I removed the version
+from the name of the branch and will keep this one updated:
 
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> DA9055_WATCHDOG needs to select WATCHDOG_CORE so that it will
-> build cleanly.  Fixes these build errors:
-> 
-> da9055_wdt.c:(.text+0xe9bc7): undefined reference to `watchdog_unregister_device'
-> da9055_wdt.c:(.text+0xe9f4b): undefined reference to `watchdog_register_device'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: David Dajun Chen <dchen@diasemi.com>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
-> Cc: linux-watchdog@vger.kernel.org
-> ---
->  drivers/watchdog/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> Found in linux-next, but also applies to mainline.
-> 
-> --- linux-next-20130128.orig/drivers/watchdog/Kconfig
-> +++ linux-next-20130128/drivers/watchdog/Kconfig
-> @@ -79,6 +79,7 @@ config DA9052_WATCHDOG
->  config DA9055_WATCHDOG
->  	tristate "Dialog Semiconductor DA9055 Watchdog"
->  	depends on MFD_DA9055
-> +	select WATCHDOG_CORE
->  	help
->  	  If you say yes here you get support for watchdog on the Dialog
->  	  Semiconductor DA9055 PMIC.
-
-Added to linux-watchdog-next.
-
-Kind regards,
-Wim.
-
+git://github.com/kleikamp/linux-shaggy.git aio_loop
