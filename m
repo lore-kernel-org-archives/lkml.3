@@ -1,130 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3A3Gfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 01:35:47 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:56687 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab3A3Gfo (ORCPT
+	id S1753542Ab3A3Ggz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 01:36:55 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:39876 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab3A3Ggw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 01:35:44 -0500
-Date: Wed, 30 Jan 2013 01:36:11 -0500
-From: Matt Porter <mporter@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 07/14] dmaengine: add
- dma_request_slave_channel_compat()
-Message-ID: <20130130063611.GM5256@beef>
-References: <1358281974-8411-1-git-send-email-mporter@ti.com>
- <1358281974-8411-8-git-send-email-mporter@ti.com>
- <201301232228.46716.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201301232228.46716.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Jan 2013 01:36:52 -0500
+From: chenggang <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: chenggang <chenggang.qin@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chenggang Qin <chenggang.qcg@alibaba-inc.com>
+Subject: [PATCH v2] Add 4 tracepoint events for vfs
+Date: Wed, 30 Jan 2013 14:35:06 +0800
+Message-Id: <1359527706-3459-1-git-send-email-chenggang.qin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 10:28:46PM +0000, Arnd Bergmann wrote:
-> On Tuesday 15 January 2013, Matt Porter wrote:
-> > Adds a dma_request_slave_channel_compat() wrapper which accepts
-> > both the arguments from dma_request_channel() and
-> > dma_request_slave_channel(). Based on whether the driver is
-> > instantiated via DT, the appropriate channel request call will be
-> > made.
-> > 
-> > This allows for a much cleaner migration of drivers to the
-> > dmaengine DT API as platforms continue to be mixed between those
-> > that boot using DT and those that do not.
-> 
-> I noticed today some drivers in linux-next that rely on this patch,
-> but the patch itself still missing from -next.
-> 
-> > --- a/include/linux/dmaengine.h
-> > +++ b/include/linux/dmaengine.h
-> > @@ -1047,6 +1047,16 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
-> >  struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
-> >  struct dma_chan *net_dma_find_channel(void);
-> >  #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
-> > +static inline struct dma_chan
-> > +*dma_request_slave_channel_compat(dma_cap_mask_t mask, dma_filter_fn fn,
-> > +                                 void *fn_param, struct device *dev,
-> > +                                 char *name)
-> > +{
-> > +       if (dev->of_node)
-> > +               return dma_request_slave_channel(dev, name);
-> > +       else
-> > +               return dma_request_channel(mask, fn, fn_param);
-> > +}
-> 
-> Hmm, dma_request_channel is actually a macro that passes mask by reference,
-> presumably because it can get modified by the filter function. Also, there
-> may be cases where we do have an of_node but don't use the dma binding
-> yet, or where dma_request_slave_channel doesn't actually use DT information
-> but rather one of the other methods that Vinod was talking about adding.
-> 
-> I think what it should look like instead is the below.
+From: chenggang.qin@gmail.com
 
-Yes, looks correct now, thanks. I've incorporated it into v6.
+If the engineers want to analyze the file access behavior of some applications without source code, perf tools with some appropriate tracepoints events in the VFS subsystem are excellent choice.
 
--Matt
+The system engineers or developers of server software require to know what files are accessed by the target processes with in a period of time. Then they can find the hot applications and the hot files. For this requirements, we added 2 tracepoint events at the begin of generic_file_aio_read() and generic_file_aio_write().
 
-> 
-> 	Arnd
-> 
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index bfcdecb..b6ffd7d 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -993,6 +993,19 @@ static inline void dma_release_channel(struct dma_chan *chan)
->  }
->  #endif
->  
-> +static inline struct dma_chan *__dma_request_slave_channel_compat(dma_cap_mask_t *mask,
-> +				dma_filter_fn fn, void *fn_param, struct device *dev,
-> +				 char *name)
-> +{
-> +	struct dma_chan *chan;
-> +
-> +	chan = dma_request_slave_channel(dev, name);
-> +	if (chan)
-> +		return chan;
-> +
-> +	return __dma_request_channel(mask, fn, fn_param);
-> +}
-> +
->  /* --- DMA device --- */
->  
->  int dma_async_device_register(struct dma_device *device);
-> @@ -1001,6 +1014,8 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
->  struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
->  struct dma_chan *net_dma_find_channel(void);
->  #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
-> +#define dma_request_slave_channel_compat(mask, x, y, dev, name) \
-> +	 __dma_request_slave_channel_compat(&(mask), x, y, dev, name)
->  
->  /* --- Helper iov-locking functions --- */
->  
-> _______________________________________________
-> Davinci-linux-open-source mailing list
-> Davinci-linux-open-source@linux.davincidsp.com
-> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+Many database systems use their own page cache subsystems and use the direct IO to access the disks. Sometimes, the system engineers want to know the misses rate of the database system's page cache. This requirements can be satisfied by recording the database's file access behavior through the way of direct IO. So, we added 2 tracepoint events at the direct IO branch in generic_file_aio_read() and generic_file_aio_write().
+
+Then, we will extend the perf's function by python script to use these new tracepoint events.
+
+The 4 new tracepoint events are:
+1) generic_file_aio_read
+   Format:
+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+	field:int common_pid;	offset:4;	size:4;	signed:1;
+	field:int common_padding;	offset:8;	size:4;	signed:1;
+
+	field:long long pos;	offset:16;	size:8;	signed:1;
+	field:unsigned long bytes;	offset:24;	size:8;	signed:0;
+	field:__data_loc char[] fname;	offset:32;	size:4;	signed:1;
+
+2) generic_file_aio_write
+   Format:
+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+	field:int common_pid;	offset:4;	size:4;	signed:1;
+	field:int common_padding;	offset:8;	size:4;	signed:1;
+
+	field:long long pos;	offset:16;	size:8;	signed:1;
+	field:unsigned long bytes;	offset:24;	size:8;	signed:0;
+	field:__data_loc char[] fname;	offset:32;	size:4;	signed:1;
+
+3) direct_io_read
+   Format:
+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+	field:int common_pid;	offset:4;	size:4;	signed:1;
+	field:int common_padding;	offset:8;	size:4;	signed:1;
+
+	field:long long pos;	offset:16;	size:8;	signed:1;
+	field:unsigned long bytes;	offset:24;	size:8;	signed:0;
+	field:unsigned char fname[100];	offset:32;	size:100;	signed:0;
+
+4) direct_io_write
+   Format:
+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+	field:int common_pid;	offset:4;	size:4;	signed:1;
+	field:int common_padding;	offset:8;	size:4;	signed:1;
+
+	field:long long pos;	offset:16;	size:8;	signed:1;
+	field:unsigned long bytes;	offset:24;	size:8;	signed:0;
+	field:unsigned char fname[100];	offset:32;	size:100;	signed:0;
+
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@alibaba-inc.com>
+
+---
+ include/trace/events/vfs.h |   62 ++++++++++++++++++++++++++++++++++++++++++++
+ mm/filemap.c               |   18 +++++++++++++
+ 2 files changed, 80 insertions(+)
+ create mode 100644 include/trace/events/vfs.h
+
+diff --git a/include/trace/events/vfs.h b/include/trace/events/vfs.h
+new file mode 100644
+index 0000000..384ff29
+--- /dev/null
++++ b/include/trace/events/vfs.h
+@@ -0,0 +1,62 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM vfs
++#define TRACE_INCLUDE_FILE vfs
++
++#if !defined(_TRACE_EVENTS_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_EVENTS_VFS_H
++
++#include <linux/tracepoint.h>
++
++#include <asm/ptrace.h>
++
++DECLARE_EVENT_CLASS(vfs_filerw_template,
++
++	TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
++
++	TP_ARGS(pos, bytes, fname),
++
++	TP_STRUCT__entry(
++		__field(        long long,      pos             )
++		__field(        unsigned long,  bytes           )
++		__string(       fname,          fname           )
++	),
++
++	TP_fast_assign(
++		__entry->pos    = pos;
++		__entry->bytes  = bytes;
++		__assign_str(fname, fname);
++	),
++
++	TP_printk("Filename: %s Pos: %lld Bytes: %lu",
++		  __get_str(fname), __entry->pos, __entry->bytes)
++);
++
++DEFINE_EVENT(vfs_filerw_template, generic_file_aio_read,
++	     TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
++	     TP_ARGS(pos, bytes, fname));
++
++TRACE_EVENT_FLAGS(generic_file_aio_read, TRACE_EVENT_FL_CAP_ANY)
++
++DEFINE_EVENT(vfs_filerw_template, generic_file_aio_write,
++	     TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
++	     TP_ARGS(pos, bytes, fname));
++
++TRACE_EVENT_FLAGS(generic_file_aio_write, TRACE_EVENT_FL_CAP_ANY)
++
++DEFINE_EVENT(vfs_filerw_template, direct_io_read,
++	     TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
++	     TP_ARGS(pos, bytes, fname));
++
++TRACE_EVENT_FLAGS(direct_io_read, TRACE_EVENT_FL_CAP_ANY)
++
++DEFINE_EVENT(vfs_filerw_template, direct_io_write,
++	     TP_PROTO(long long pos, unsigned long bytes, unsigned char *fname),
++	     TP_ARGS(pos, bytes, fname));
++
++TRACE_EVENT_FLAGS(direct_io_write, TRACE_EVENT_FL_CAP_ANY)
++
++#endif /* _TRACE_EVENTS_VFS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
++
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 83efee7..1cf711a 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -42,6 +42,9 @@
+ 
+ #include <asm/mman.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/vfs.h>
++
+ /*
+  * Shared mappings implemented 30.11.1994. It's not fully working yet,
+  * though.
+@@ -1390,6 +1393,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 	ssize_t retval;
+ 	unsigned long seg = 0;
+ 	size_t count;
++	unsigned char *f_name;
+ 	loff_t *ppos = &iocb->ki_pos;
+ 
+ 	count = 0;
+@@ -1397,6 +1401,9 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 	if (retval)
+ 		return retval;
+ 
++	f_name = (unsigned char *)filp->f_path.dentry->d_name.name;
++	trace_generic_file_aio_read(pos, iov_length(iov, nr_segs), f_name);
++
+ 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
+ 	if (filp->f_flags & O_DIRECT) {
+ 		loff_t size;
+@@ -1407,6 +1414,9 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 		inode = mapping->host;
+ 		if (!count)
+ 			goto out; /* skip atime */
++
++		trace_direct_io_read(pos, iov_length(iov, nr_segs), f_name);
++
+ 		size = i_size_read(inode);
+ 		if (pos < size) {
+ 			retval = filemap_write_and_wait_range(mapping, pos,
+@@ -2453,6 +2463,10 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	if (unlikely(file->f_flags & O_DIRECT)) {
+ 		loff_t endbyte;
+ 		ssize_t written_buffered;
++		unsigned char *f_name;
++
++		f_name = (unsigned char *)file->f_path.dentry->d_name.name;
++		trace_direct_io_write(pos, iov_length(iov, nr_segs), f_name);
+ 
+ 		written = generic_file_direct_write(iocb, iov, &nr_segs, pos,
+ 							ppos, count, ocount);
+@@ -2524,9 +2538,13 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
+ 	ssize_t ret;
++	unsigned char *f_name;
+ 
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
++	f_name = (unsigned char *)file->f_path.dentry->d_name.name;
++	trace_generic_file_aio_write(pos, iov_length(iov, nr_segs), f_name);
++
+ 	sb_start_write(inode->i_sb);
+ 	mutex_lock(&inode->i_mutex);
+ 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+-- 
+1.7.9.5
+
