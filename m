@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab3A3ALP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 19:11:15 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51710 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3A3ALM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 19:11:12 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] nl80211: avoid "wdev_id may be used uninitialized"
-Date: Tue, 29 Jan 2013 17:11:02 -0700
-Message-Id: <1359504662-23561-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	id S1753177Ab3A3AYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 19:24:15 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:47234
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752364Ab3A3AYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 19:24:12 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
+        JBeulich@suse.com, bp@alien8.de
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 0/3] X86: Deliver Hyper-V interrupts on a seperate IDT vector
+Date: Tue, 29 Jan 2013 16:51:17 -0800
+Message-Id: <1359507077-26050-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+This patch-set implements the functionality to deliver Hyper-V VMBUS interrupts via
+a special IDT entry. Xen emulates Hyper-V and we have added code in this patch-set to
+properly manage this emulation when Linux is running on Hyper-V.
 
-Silence the following:
-net/wireless/nl80211.c: In function '__cfg80211_wdev_from_attrs.clone.119':
-net/wireless/nl80211.c:57:6: warning: 'wdev_id' may be used uninitialized in this function
+K. Y. Srinivasan (2):
+  X86: Add a check to catch Xen emulation of Hyper-V
+  X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
 
-... by always initializing wdev_id to zero. I assume that wiphy_idx and
-ifidx are set to -1 for similar reasons, so this change simply propagates
-the same workaround.
+Olaf Hering (1):
+  x86: Hyper-V: register clocksource only if its advertised
 
-In practice, this warning is false, since wdev_id is both set and used
-under the condition if (have_wdev_id). However, at least my compiler
-can't be coerced into realizing this; almost any code between the if
-blocks that set and use the variable causes this warning.
+ arch/x86/include/asm/irq_vectors.h |    4 +-
+ arch/x86/include/asm/mshyperv.h    |    4 +++
+ arch/x86/kernel/cpu/mshyperv.c     |   48 +++++++++++++++++++++++++++++++++++-
+ arch/x86/kernel/entry_32.S         |    9 ++++++-
+ arch/x86/kernel/entry_64.S         |    7 ++++-
+ drivers/xen/events.c               |    7 +++--
+ 6 files changed, 71 insertions(+), 8 deletions(-)
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- net/wireless/nl80211.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index 33de803..389e62a 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -54,7 +54,7 @@ __cfg80211_wdev_from_attrs(struct net *netns, struct nlattr **attrs)
- 	struct wireless_dev *result = NULL;
- 	bool have_ifidx = attrs[NL80211_ATTR_IFINDEX];
- 	bool have_wdev_id = attrs[NL80211_ATTR_WDEV];
--	u64 wdev_id;
-+	u64 wdev_id = 0;
- 	int wiphy_idx = -1;
- 	int ifidx = -1;
- 
 -- 
-1.7.10.4
+1.7.4.1
 
