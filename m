@@ -1,265 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab3A3Ewn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 23:52:43 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:62620 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab3A3Ewj (ORCPT
+	id S1753314Ab3A3E4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 23:56:41 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52675 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752281Ab3A3E4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 23:52:39 -0500
-X-Greylist: delayed 85975 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Jan 2013 23:52:39 EST
+	Tue, 29 Jan 2013 23:56:37 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-27-5108a802cd07
+From: Namhyung Kim <namhyung@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thomas Backlund <tmb@mageia.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: perf 3.8-rc build failure:  undefined reference to `strlcpy'
+References: <51074E9D.3040803@mageia.org> <20130129103722.GE14444@pd.tnic>
+	<87ehh3v2jo.fsf@sejong.aot.lge.com> <20130130032831.GA30965@pd.tnic>
+Date: Wed, 30 Jan 2013 13:56:34 +0900
+In-Reply-To: <20130130032831.GA30965@pd.tnic> (Borislav Petkov's message of
+	"Wed, 30 Jan 2013 04:28:31 +0100")
+Message-ID: <87a9rruv3x.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1356620142-8680-3-git-send-email-fabio.baltieri@linaro.org>
-References: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org>
-	<1356620142-8680-3-git-send-email-fabio.baltieri@linaro.org>
-Date: Wed, 30 Jan 2013 10:22:37 +0530
-X-Google-Sender-Auth: typXCXYCNJT0L1dcyrxVc5ht5z0
-Message-ID: <CAOh2x=mjNbSbGrirOOddE-Kitj7MqtDXiwb6rSo8UWQK4wzJvw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] cpufreq: star/stop cpufreq timers on cpu hotplug
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org, josephl@nvidia.com,
-        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
-
-Sorry for waking up very late :)
-
-The reason why i am starting this thread again is due to problem
-reported by Joseph,
-with latest linux-next/master branch (which contains few big patches
-from me :) ):
-
-Reboot is giving following to him:
-
-* Will now halt
-[ 193.756068] Disabling non-boot CPUs...
-[ 193.760088] BUG: scheduling while atomic: halt/780/0x00000002
-[ 193.765845] Modules linked in: brcmfmac brcmutil
-[ 193.770613] [<c0014990>] (unwind_backtrace+0x0/0xf8) from [<c0049510>]
-(__schedule_bug+0x44/0x5c)
-[ 193.779548] [<c0049510>] (__schedule_bug+0x44/0x5c) from [<c04fa320>]
-(__schedule+0x688/0x6ec)
-[ 193.788206] [<c04fa320>] (__schedule+0x688/0x6ec) from [<c04fa75c>]
-(schedule_preempt_disabled+0x24/0x34)
-[ 193.797811] [<c04fa75c>] (schedule_preempt_disabled+0x24/0x34) from
-[<c04f916c>] (__mutex_lock_slowpath+0x170/0x34c)
-[ 193.808367] [<c04f916c>] (__mutex_lock_slowpath+0x170/0x34c) from
-[<c04f9354>] (mutex_lock+0xc/0x24)
-[ 193.817554] [<c04f9354>] (mutex_lock+0xc/0x24) from [<c04f1cdc>]
-(unregister_cpu_notifier+0xc/0x24)
-[ 193.826640] [<c04f1cdc>] (unregister_cpu_notifier+0xc/0x24) from
-[<c033a8a4>] (cpufreq_governor_dbs+0x118/0x614)
-[ 193.836866] [<c033a8a4>] (cpufreq_governor_dbs+0x118/0x614) from
-[<c033747c>] (__cpufreq_governor+0x58/0xc0)
-[ 193.846737] [<c033747c>] (__cpufreq_governor+0x58/0xc0) from
-[<c0339104>] (__cpufreq_remove_dev.clone.7+0x58/0x320)
-[ 193.857207] [<c0339104>] (__cpufreq_remove_dev.clone.7+0x58/0x320)
-from [<c04f7958>] (cpufreq_cpu_callback+0x8c/0x9c)
-[ 193.867850] [<c04f7958>] (cpufreq_cpu_callback+0x8c/0x9c) from
-[<c0044f4c>] (notifier_call_chain+0x44/0x84)
-[ 193.877623] [<c0044f4c>] (notifier_call_chain+0x44/0x84) from
-[<c0026e24>] (__cpu_notify+0x2c/0x48)
-[ 193.886704] [<c0026e24>] (__cpu_notify+0x2c/0x48) from [<c04f1b08>]
-(_cpu_down+0xb0/0x23c)
-[ 193.895004] [<c04f1b08>] (_cpu_down+0xb0/0x23c) from [<c00270ec>]
-(disable_nonboot_cpus+0x68/0x104)
-[ 193.904089] [<c00270ec>] (disable_nonboot_cpus+0x68/0x104) from
-[<c0034fbc>] (kernel_power_off+0x24/0x48)
-[ 193.913688] [<c0034fbc>] (kernel_power_off+0x24/0x48) from
-[<c0035810>] (sys_reboot+0x104/0x1e0)
-[ 193.922517] [<c0035810>] (sys_reboot+0x104/0x1e0) from [<c000e520>]
-(ret_fast_syscall+0x0/0x30)
-
-
-And the crash log show this patch of yours somewhere :)
-
-First question: Is this patch still required? Because following patch from me is
-sending a STOP/START to governors on cpu hot-[un]plug ?
-
-commit dbcb63407c095af73f3464767e00902cdee55e8b
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Sat Jan 12 05:14:39 2013 +0000
-
-    cpufreq: Notify governors when cpus are hot-[un]plugged
-
-
-For me, the answer is NO.
-
-Over that, i tried these patches on ARM bigLITTLE TC2 (3 A7's  and 2 A15's) and
-my system wasn't booting at all for ondemand governor. Reverting your patch does
-fix the issue:
-
-[    2.613573] arm_big_little: bL_cpufreq_init: Initialized, cpu: 0, cluster 0
-[    2.635436] arm_big_little: bL_cpufreq_init: Initialized, cpu: 2, cluster 1
-[   23.650184] INFO: rcu_sched self-detected stall on CPU { 0}
-(t=2100 jiffies g=4294967088 c=4294967087 q=10)
-[   23.679664] Backtrace for cpu 0 (current):
-[   23.680239] INFO: rcu_sched detected stalls on CPUs/tasks: { 0}
-(detected by 2, t=2103 jiffies, g=4294967088, c=4294967087, q=10)
-[   23.726839] [<c0014020>] (unwind_backtrace+0x0/0xf8) from
-[<c0012f60>] (smp_send_all_cpu_backtrace+0x60/0xcc)
-[   23.756545] [<c0012f60>] (smp_send_all_cpu_backtrace+0x60/0xcc)
-from [<c008232c>] (rcu_pending+0x2c8/0x63c)
-[   23.785731] [<c008232c>] (rcu_pending+0x2c8/0x63c) from
-[<c0083854>] (rcu_check_callbacks+0x7c/0x148)
-[   23.813358] [<c0083854>] (rcu_check_callbacks+0x7c/0x148) from
-[<c002d1e0>] (update_process_times+0x38/0x68)
-[   23.842808] [<c002d1e0>] (update_process_times+0x38/0x68) from
-[<c0066b00>] (tick_sched_handle+0x48/0x54)
-[   23.871472] [<c0066b00>] (tick_sched_handle+0x48/0x54) from
-[<c0066d6c>] (tick_sched_timer+0x44/0x74)
-[   23.899098] [<c0066d6c>] (tick_sched_timer+0x44/0x74) from
-[<c00416d8>] (__run_hrtimer+0x84/0x1b4)
-[   23.925940] [<c00416d8>] (__run_hrtimer+0x84/0x1b4) from
-[<c004224c>] (hrtimer_interrupt+0x108/0x2d4)
-[   23.953563] [<c004224c>] (hrtimer_interrupt+0x108/0x2d4) from
-[<c0013990>] (arch_timer_handler_virt+0x30/0x38)
-[   23.983530] [<c0013990>] (arch_timer_handler_virt+0x30/0x38) from
-[<c007e41c>] (handle_percpu_devid_irq+0x74/0x110)
-[   24.014799] [<c007e41c>] (handle_percpu_devid_irq+0x74/0x110) from
-[<c007ac8c>] (generic_handle_irq+0x20/0x30)
-[   24.044765] [<c007ac8c>] (generic_handle_irq+0x20/0x30) from
-[<c000e9f4>] (handle_IRQ+0x38/0x94)
-[   24.071085] [<c000e9f4>] (handle_IRQ+0x38/0x94) from [<c0008570>]
-(gic_handle_irq+0x28/0x5c)
-[   24.096362] [<c0008570>] (gic_handle_irq+0x28/0x5c) from
-[<c000dd80>] (__irq_svc+0x40/0x50)
-[   24.121374] Exception stack(0xef047ec0 to 0xef047f08)
-[   24.136492] 7ec0: 00000000 c0591780 00000000 c0591798 c0591780
-c05d5d60 00000000 c0593280
-[   24.160986] 7ee0: c0552c98 c02b1df4 ef046000 00000000 c059179c
-ef047f08 c03b5f84 c0043698
-[   24.185477] 7f00: a0000113 ffffffff
-[   24.195910] [<c000dd80>] (__irq_svc+0x40/0x50) from [<c0043698>]
-(raw_notifier_chain_register+0x24/0x54)
-[   24.224314] [<c0043698>] (raw_notifier_chain_register+0x24/0x54)
-from [<c03b5f84>] (register_cpu_notifier+0x18/0x2c)
-[   24.255843] [<c03b5f84>] (register_cpu_notifier+0x18/0x2c) from
-[<c02ab1b0>] (cpufreq_register_driver+0x134/0x190)
-[   24.286852] [<c02ab1b0>] (cpufreq_register_driver+0x134/0x190) from
-[<c02b1930>] (bL_cpufreq_register+0x68/0xd4)
-[   24.317337] [<c02b1930>] (bL_cpufreq_register+0x68/0xd4) from
-[<c0008740>] (do_one_initcall+0x110/0x178)
-[   24.345738] [<c0008740>] (do_one_initcall+0x110/0x178) from
-[<c03b5994>] (kernel_init+0x194/0x330)
-[   24.372577] [<c03b5994>] (kernel_init+0x194/0x330) from
-[<c000e1d8>] (ret_from_fork+0x14/0x3c)
-[   24.398371]
-
-
-On Thu, Dec 27, 2012 at 8:25 PM, Fabio Baltieri
-<fabio.baltieri@linaro.org> wrote:
-> Add a CPU notifier to start and stop individual core timers on CPU
-> hotplug events when running on CPUs with SW coordinated frequency.
+On Wed, 30 Jan 2013 04:28:31 +0100, Borislav Petkov wrote:
+> On Wed, Jan 30, 2013 at 11:15:55AM +0900, Namhyung Kim wrote:
+>> Please see my reply on another post from Thomas:
+>> 
+>>   https://lkml.org/lkml/2013/1/29/32
+>> 
+>> It's not like a build failure of perf tools, it's just a result of
+>> feature test so should not affect the build of perf itself, right?
 >
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq_governor.c | 51 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 51 insertions(+)
+> Doh, I see it. It is the -DHAVE_STRLCPY test, of course. And it happens
+> only with a V=1 build, so actually there's not a build problem.
 >
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index b0e4506..e881250 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -25,9 +25,12 @@
->  #include <linux/tick.h>
->  #include <linux/types.h>
->  #include <linux/workqueue.h>
-> +#include <linux/cpu.h>
+>> Why it confuses us is that we don't show any compile message if -s
+>> option is given to make, so I posted a patch to hide CHK and above
+>> failure message when -s option is specified.
 >
->  #include "cpufreq_governor.h"
+> Hm, trying your patch ontop of acme's perf/core still shows CHK stuff
 >
-> +static DEFINE_PER_CPU(struct dbs_data *, cpu_cur_dbs);
-> +
->  static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
->  {
->         u64 idle_time;
-> @@ -185,6 +188,46 @@ static inline void dbs_timer_exit(struct cpu_dbs_common_info *cdbs)
->         cancel_delayed_work_sync(&cdbs->work);
->  }
+> $ make -s tools/perf
+>     DESCEND perf
+>     CHK -fstack-protector-all
+>     CHK -Wstack-protector
+>     CHK -Wvolatile-register-var
+>     CHK bionic
+>     CHK libelf
+>     CHK libdw
+>     ...
 >
-> +static int __cpuinit cpu_callback(struct notifier_block *nfb,
-> +               unsigned long action, void *hcpu)
-> +{
-> +       unsigned int cpu = (unsigned long)hcpu;
-> +       struct device *cpu_dev = get_cpu_device(cpu);
-> +       struct dbs_data *dbs_data = per_cpu(cpu_cur_dbs, cpu);
-> +       struct cpu_dbs_common_info *cpu_cdbs = dbs_data->get_cpu_cdbs(cpu);
-> +       unsigned int sampling_rate;
-> +
-> +       if (dbs_data->governor == GOV_CONSERVATIVE) {
-> +               struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
-> +               sampling_rate = cs_tuners->sampling_rate;
-> +       } else {
-> +               struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-> +               sampling_rate = od_tuners->sampling_rate;
-> +       }
-> +
-> +       if (cpu_dev) {
-> +               switch (action) {
-> +               case CPU_ONLINE:
-> +               case CPU_ONLINE_FROZEN:
-> +               case CPU_DOWN_FAILED:
-> +               case CPU_DOWN_FAILED_FROZEN:
-> +                       dbs_timer_init(dbs_data, cpu_cdbs,
-> +                                       sampling_rate, cpu);
-> +                       break;
-> +               case CPU_DOWN_PREPARE:
-> +               case CPU_DOWN_PREPARE_FROZEN:
-> +                       dbs_timer_exit(cpu_cdbs);
-> +                       break;
-> +               }
-> +       }
-> +
-> +       return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block __refdata ondemand_cpu_notifier = {
+>
+> and that's because I'm doing the build from the toplevel repo and not in
+> perf/. If I switch to perf first, it is silent:
+>
+> $ make -s
+> Makefile:809: No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling
+> Makefile:846: No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev
+> $
 
-Over that, why is it called ondemand here ?
+That's because the toplevel Makefile resets MAKEFLAGS in the middle:
 
-> +       .notifier_call = cpu_callback,
-> +};
-> +
->  int cpufreq_governor_dbs(struct dbs_data *dbs_data,
->                 struct cpufreq_policy *policy, unsigned int event)
->  {
-> @@ -296,7 +339,11 @@ second_time:
->                                 j_cdbs = dbs_data->get_cpu_cdbs(j);
->                                 dbs_timer_init(dbs_data, j_cdbs,
->                                                *sampling_rate, j);
-> +
-> +                               per_cpu(cpu_cur_dbs, j) = dbs_data;
->                         }
-> +
-> +                       register_hotcpu_notifier(&ondemand_cpu_notifier);
->                 } else {
->                         dbs_timer_init(dbs_data, cpu_cdbs, *sampling_rate, cpu);
->                 }
-> @@ -307,11 +354,15 @@ second_time:
->                         cs_dbs_info->enable = 0;
->
->                 if (dbs_sw_coordinated_cpus(cpu_cdbs)) {
-> +                       unregister_hotcpu_notifier(&ondemand_cpu_notifier);
-> +
->                         for_each_cpu(j, policy->cpus) {
->                                 struct cpu_dbs_common_info *j_cdbs;
->
->                                 j_cdbs = dbs_data->get_cpu_cdbs(j);
->                                 dbs_timer_exit(j_cdbs);
-> +
-> +                               per_cpu(cpu_cur_dbs, j) = NULL;
->                         }
->                 } else {
->                         dbs_timer_exit(cpu_cdbs);
+Makefile:1330
+  # Clear a bunch of variables before executing the submake
+  tools/: FORCE
+  	$(Q)mkdir -p $(objtree)/tools
+  	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/
+  
+  tools/%: FORCE
+  	$(Q)mkdir -p $(objtree)/tools
+  	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/ $*
 
---
-viresh
+
+So why should it be reset in the first place?
+
+>
+> Oh, and one more thing, there's tools/scripts/Makefile.include which
+> looks at -s already and perf/Makefile includes it so you probably want
+> to put your change there so that all tools use it.
+
+Are you suggesting that moving "try-cc" to the Makefile.include?
+
+Thanks,
+Namhyung
