@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3A3KWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:22:31 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:55940 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688Ab3A3KW2 (ORCPT
+	id S1754749Ab3A3KWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 05:22:44 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:53663 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab3A3KWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:22:28 -0500
+	Wed, 30 Jan 2013 05:22:39 -0500
 From: Hongbo Zhang <hongbo.zhang@linaro.org>
 To: linux@roeck-us.net, khali@linux-fr.org, lm-sensors@lm-sensors.org,
         sameo@linux.intel.com
@@ -14,40 +14,48 @@ Cc: linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
         linaro-dev@lists.linaro.org, patches@linaro.org,
         linus.walleij@linaro.org, lee.jones@linaro.org,
         Hongbo Zhang <hongbo.zhang@linaro.org>
-Subject: [PATCH 0/2] Add ST-Ericsson AB8500 HWMON driver
-Date: Wed, 30 Jan 2013 18:21:26 +0800
-Message-Id: <1359541288-6657-1-git-send-email-hongbo.zhang@linaro.org>
+Subject: [PATCH 1/2] ARM: ux500: rename ab8500 to abx500 for hwmon driver
+Date: Wed, 30 Jan 2013 18:21:27 +0800
+Message-Id: <1359541288-6657-2-git-send-email-hongbo.zhang@linaro.org>
 X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1359541288-6657-1-git-send-email-hongbo.zhang@linaro.org>
+References: <1359541288-6657-1-git-send-email-hongbo.zhang@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches are against the v3.8-rc4.
+We are using a generic abx500 hwmon layer, so rename specific ab8500 to generic
+abx500 for hwmon device and driver matching.
 
-Guenter Roeck, Jean Delvare,
-Please help to have a look at this.
+Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
+---
+ drivers/mfd/ab8500-core.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Samuel Ortiz,
-Please review 1/2 and leave your Acked-by: if no problem, I think these patches
-should be merged into HWMON tree.
-
-Thanks for all.
-
-Hongbo Zhang (2):
-  ARM: ux500: rename ab8500 to abx500 for hwmon driver
-  hwmon: add ST-Ericsson ABX500 hwmon driver
-
- drivers/hwmon/Kconfig     |  13 +
- drivers/hwmon/Makefile    |   1 +
- drivers/hwmon/ab8500.c    | 160 +++++++++++
- drivers/hwmon/abx500.c    | 681 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/hwmon/abx500.h    |  88 ++++++
- drivers/mfd/ab8500-core.c |   6 +-
- 6 files changed, 946 insertions(+), 3 deletions(-)
- create mode 100644 drivers/hwmon/ab8500.c
- create mode 100644 drivers/hwmon/abx500.c
- create mode 100644 drivers/hwmon/abx500.h
-
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index e1650ba..579753f 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -922,7 +922,7 @@ static struct resource ab8505_iddet_resources[] = {
+ 
+ static struct resource ab8500_temp_resources[] = {
+ 	{
+-		.name  = "AB8500_TEMP_WARM",
++		.name  = "ABX500_TEMP_WARM",
+ 		.start = AB8500_INT_TEMP_WARM,
+ 		.end   = AB8500_INT_TEMP_WARM,
+ 		.flags = IORESOURCE_IRQ,
+@@ -998,8 +998,8 @@ static struct mfd_cell abx500_common_devs[] = {
+ 		.of_compatible = "stericsson,ab8500-denc",
+ 	},
+ 	{
+-		.name = "ab8500-temp",
+-		.of_compatible = "stericsson,ab8500-temp",
++		.name = "abx500-temp",
++		.of_compatible = "stericsson,abx500-temp",
+ 		.num_resources = ARRAY_SIZE(ab8500_temp_resources),
+ 		.resources = ab8500_temp_resources,
+ 	},
 -- 
 1.8.0
 
