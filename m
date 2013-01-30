@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab3A3XqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 18:46:06 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:53714 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756418Ab3A3XqF (ORCPT
+	id S1757307Ab3A3Xrc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 18:47:32 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:36804 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757237Ab3A3Xr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 18:46:05 -0500
+	Wed, 30 Jan 2013 18:47:29 -0500
+Message-ID: <5109B11C.2010400@suse.cz>
+Date: Thu, 31 Jan 2013 00:47:40 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1301291158130.1507-100000@iolanthe.rowland.org>
-References: <20130129170423.0f83cd31@stein> <Pine.LNX.4.44L0.1301291158130.1507-100000@iolanthe.rowland.org>
-From: Mark Einon <mark.einon@gmail.com>
-Date: Wed, 30 Jan 2013 23:45:48 +0000
-Message-ID: <CANK3SE09VqvshdLrV4xp2W8BHZqLmuz-pV9jQVj7tbk1JBX+9g@mail.gmail.com>
-Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+References: <20130129202848.GE25415@pd.tnic> <2240511.0oyl5pIt1j@vostro.rjw.lan> <51099BE2.5090706@suse.cz> <3120802.QvTiDSHyPj@vostro.rjw.lan> <5109A8F1.9040707@suse.cz>
+In-Reply-To: <5109A8F1.9040707@suse.cz>
+X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 January 2013 17:01, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 29 Jan 2013, Stefan Richter wrote:
->
->> Added Cc: linux-pm.
->>
->> On Jan 29 Mark Einon wrote:
->> > On 28 January 2013 23:01, Stefan Richter <stefanr@s5r6.in-berlin.de> wrote:
->> > > On Jan 28 Mark Einon wrote:
->> > >> This patch fixes the kernel warning generated when putting an MSI MS-1727
->> > >> GT740 laptop into suspend mode. The call sequence in this case calls
->> > >> free_irq() twice, once in pci_remove() and once then in pci_suspend().
->> > >
->> > > You mean /first/ in pci_suspend() and /then/ in pci_remove() on the
->> > > already suspended devices, right?
->> >
->> > Yes, I did. The call sequence is suspend then resume. My bad.
->
-> Why does the pci_suspend routine call free_irq() at all?  As far as I
-> know, it's not supposed to do that.  Won't the device continue to use
-> the same IRQ after it is resumed?
+On 01/31/2013 12:12 AM, Jiri Slaby wrote:
+> I think I will start with commenting parts of `power' script to see
+> exactly which of the power savings cause this.
 
-This sounds reasonable to me - I think we could probably get rid of
-the request_irq() call from resume, and use
-disable_irq()/enable_irq()?
-I'll attempt a patch - but unfortunately I don't have a firewire device to test.
+... NMI watchdog. If I remove it from the script, the problem
+disappears. If I try it alone, I have those NMIs.
 
-Cheers,
-
-Mark
+-- 
+js
+suse labs
