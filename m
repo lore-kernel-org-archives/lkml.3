@@ -1,138 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab3A3Bas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:30:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43726 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3A3Bap (ORCPT
+	id S1753371Ab3A3Bca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:32:30 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61759 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3A3Bc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:30:45 -0500
-Date: Tue, 29 Jan 2013 17:30:32 -0800
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-6b9c75aca6cba4d99a6e8d8274b1788d4d4b50d9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, alexander.h.duyck@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, alexander.h.duyck@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1359058816-7615-13-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-13-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, 64bit:
-  #PF handler set page to cover only 2M per #PF
-Git-Commit-ID: 6b9c75aca6cba4d99a6e8d8274b1788d4d4b50d9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 29 Jan 2013 20:32:29 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-7c-5108782b2d31
+Date: Wed, 30 Jan 2013 10:32:26 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, stable@vger.kernel.org,
+        Jerome Marchand <jmarchan@redhat.com>
+Subject: Re: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial write
+Message-ID: <20130130013226.GA2580@blaptop>
+References: <1359333506-13599-1-git-send-email-minchan@kernel.org>
+ <CAOJsxLFg_5uhZsvPmVVC0nnsZLGpkJ0W6mHa=aavmguLGuTTnA@mail.gmail.com>
+ <20130128232145.GA2666@blaptop>
+ <5107760ca0614_5bf811b9fe4132b@golgotha.mail>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 17:30:38 -0800 (PST)
+In-Reply-To: <5107760ca0614_5bf811b9fe4132b@golgotha.mail>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6b9c75aca6cba4d99a6e8d8274b1788d4d4b50d9
-Gitweb:     http://git.kernel.org/tip/6b9c75aca6cba4d99a6e8d8274b1788d4d4b50d9
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 24 Jan 2013 12:19:53 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 29 Jan 2013 15:20:13 -0800
+On Tue, Jan 29, 2013 at 09:11:08AM +0200, Pekka Enberg wrote:
+> On Tue, Jan 29, 2013 at 1:21 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > How about this?
+> > ------------------------- >8 -------------------------------
+> > 
+> > From 9f8756ae0b0f2819f93cb94dcd38da372843aa12 Mon Sep 17 00:00:00 2001
+> > From: Minchan Kim <minchan@kernel.org>
+> > Date: Mon, 21 Jan 2013 13:58:52 +0900
+> > Subject: [RESEND PATCH v5 1/4] zram: Fix deadlock bug in partial read/write
+> > 
+> > Now zram allocates new page with GFP_KERNEL in zram I/O path
+> > if IO is partial. Unfortunately, It may cause deadlock with
+> > reclaim path like below.
+> > 
+> > write_page from fs
+> > fs_lock
+> > allocation(GFP_KERNEL)
+> > reclaim
+> > pageout
+> > 				write_page from fs
+> > 				fs_lock <-- deadlock
+> > 
+> > This patch fixes it by using GFP_ATOMIC and GFP_NOIO.
+> > In read path, we called kmap_atomic so that we need GFP_ATOMIC
+> > while we need GFP_NOIO in write path.
+> 
+> The patch description makes sense now. Thanks!
+> 
+> On Tue, Jan 29, 2013 at 1:21 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > We could use GFP_IO instead of GFP_ATOMIC in zram_bvec_read with
+> > some modification related to buffer allocation in case of partial IO.
+> > But it needs more churn and prevent merge this patch into stable
+> > if we should send this to stable so I'd like to keep it as simple
+> > as possbile. GFP_IO usage could be separate patch after we merge it.
+> 
+> I don't see why something like below couldn't be merged for stable.
+> Going for GFP_ATOMIC might seem like the simplest thing to go for but
+> usually bites you in the end.
 
-x86, 64bit: #PF handler set page to cover only 2M per #PF
+Looks good to me. I will resend it.
+Thanks, Pekka.
 
-We only map a single 2 MiB page per #PF, even though we should be able
-to do this a full gigabyte at a time with no additional memory cost.
-This is a workaround for a broken AMD reference BIOS (and its
-derivatives in shipping system) which maps a large chunk of memory as
-WB in the MTRR system but will #MC if the processor wanders off and
-tries to prefetch that memory, which can happen any time the memory is
-mapped in the TLB.
+> 
+> 			Pekka
+> 
+> ------------------------- >8 -------------------------------
+> 
+> >From 936a12b423c58542628d6fd683e859f752eb3d41 Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Mon, 21 Jan 2013 13:58:52 +0900
+> Subject: [PATCH] zram: Fix deadlock bug in partial read/write
+> 
+> Now zram allocates new page with GFP_KERNEL in zram I/O path
+> if IO is partial. Unfortunately, It may cause deadlock with
+> reclaim path like below.
+> 
+> write_page from fs
+> fs_lock
+> allocation(GFP_KERNEL)
+> reclaim
+> pageout
+> 				write_page from fs
+> 				fs_lock <-- deadlock
+> 
+> This patch fixes it by using GFP_NOIO.  In read path, we
+> reorganize code flow so that kmap_atomic is called after the
+> GFP_NOIO allocation.
+> 
+> Cc: stable@vger.kernel.org
+> Cc: Jerome Marchand <jmarchan@redhat.com>
+> Acked-by: Nitin Gupta <ngupta@vflare.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> [ penberg@kernel.org: don't use GFP_ATOMIC ]
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+> ---
+>  drivers/staging/zram/zram_drv.c | 9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index f2a73bd..071e058 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -228,11 +228,12 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>  		return 0;
+>  	}
+>  
+> -	user_mem = kmap_atomic(page);
+>  	if (is_partial_io(bvec))
+>  		/* Use  a temporary buffer to decompress the page */
+> -		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> -	else
+> +		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+> +
+> +	user_mem = kmap_atomic(page);
+> +	if (!is_partial_io(bvec))
+>  		uncmem = user_mem;
+>  
+>  	if (!uncmem) {
+> @@ -279,7 +280,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  		 * This is a partial IO. We need to read the full page
+>  		 * before to write the changes.
+>  		 */
+> -		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> +		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+>  		if (!uncmem) {
+>  			pr_info("Error allocating temp memory!\n");
+>  			ret = -ENOMEM;
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1359058816-7615-13-git-send-email-yinghai@kernel.org
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>
-[ hpa: rewrote the patch description ]
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/head64.c | 42 +++++++++++++++++++++++++-----------------
- 1 file changed, 25 insertions(+), 17 deletions(-)
-
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index f57df05..816fc85 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -53,15 +53,15 @@ int __init early_make_pgtable(unsigned long address)
- 	unsigned long physaddr = address - __PAGE_OFFSET;
- 	unsigned long i;
- 	pgdval_t pgd, *pgd_p;
--	pudval_t *pud_p;
-+	pudval_t pud, *pud_p;
- 	pmdval_t pmd, *pmd_p;
- 
- 	/* Invalid address or early pgt is done ?  */
- 	if (physaddr >= MAXMEM || read_cr3() != __pa(early_level4_pgt))
- 		return -1;
- 
--	i = (address >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1);
--	pgd_p = &early_level4_pgt[i].pgd;
-+again:
-+	pgd_p = &early_level4_pgt[pgd_index(address)].pgd;
- 	pgd = *pgd_p;
- 
- 	/*
-@@ -69,29 +69,37 @@ int __init early_make_pgtable(unsigned long address)
- 	 * critical -- __PAGE_OFFSET would point us back into the dynamic
- 	 * range and we might end up looping forever...
- 	 */
--	if (pgd && next_early_pgt < EARLY_DYNAMIC_PAGE_TABLES) {
-+	if (pgd)
- 		pud_p = (pudval_t *)((pgd & PTE_PFN_MASK) + __START_KERNEL_map - phys_base);
--	} else {
--		if (next_early_pgt >= EARLY_DYNAMIC_PAGE_TABLES-1)
-+	else {
-+		if (next_early_pgt >= EARLY_DYNAMIC_PAGE_TABLES) {
- 			reset_early_page_tables();
-+			goto again;
-+		}
- 
- 		pud_p = (pudval_t *)early_dynamic_pgts[next_early_pgt++];
- 		for (i = 0; i < PTRS_PER_PUD; i++)
- 			pud_p[i] = 0;
--
- 		*pgd_p = (pgdval_t)pud_p - __START_KERNEL_map + phys_base + _KERNPG_TABLE;
- 	}
--	i = (address >> PUD_SHIFT) & (PTRS_PER_PUD - 1);
--	pud_p += i;
--
--	pmd_p = (pmdval_t *)early_dynamic_pgts[next_early_pgt++];
--	pmd = (physaddr & PUD_MASK) + (__PAGE_KERNEL_LARGE & ~_PAGE_GLOBAL);
--	for (i = 0; i < PTRS_PER_PMD; i++) {
--		pmd_p[i] = pmd;
--		pmd += PMD_SIZE;
--	}
-+	pud_p += pud_index(address);
-+	pud = *pud_p;
- 
--	*pud_p = (pudval_t)pmd_p - __START_KERNEL_map + phys_base + _KERNPG_TABLE;
-+	if (pud)
-+		pmd_p = (pmdval_t *)((pud & PTE_PFN_MASK) + __START_KERNEL_map - phys_base);
-+	else {
-+		if (next_early_pgt >= EARLY_DYNAMIC_PAGE_TABLES) {
-+			reset_early_page_tables();
-+			goto again;
-+		}
-+
-+		pmd_p = (pmdval_t *)early_dynamic_pgts[next_early_pgt++];
-+		for (i = 0; i < PTRS_PER_PMD; i++)
-+			pmd_p[i] = 0;
-+		*pud_p = (pudval_t)pmd_p - __START_KERNEL_map + phys_base + _KERNPG_TABLE;
-+	}
-+	pmd = (physaddr & PMD_MASK) + (__PAGE_KERNEL_LARGE & ~_PAGE_GLOBAL);
-+	pmd_p[pmd_index(address)] = pmd;
- 
- 	return 0;
- }
+-- 
+Kind regards,
+Minchan Kim
