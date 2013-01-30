@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab3A3BBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 20:01:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52014 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab3A3BBJ (ORCPT
+	id S1753393Ab3A3BFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 20:05:05 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37443 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab3A3BE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 20:01:09 -0500
-Date: Tue, 29 Jan 2013 17:01:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Dan Carpenter'" <dan.carpenter@oracle.com>,
-        "'Inki Dae'" <inki.dae@samsung.com>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] backlight: s6e63m0: report ->gamma_table_count
- correctly
-Message-Id: <20130129170107.f27c1ed3.akpm@linux-foundation.org>
-In-Reply-To: <00c601cdfaa2$c52d03c0$4f870b40$%han@samsung.com>
-References: <20130124070524.GD5611@elgon.mountain>
-	<00c601cdfaa2$c52d03c0$4f870b40$%han@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Jan 2013 20:04:59 -0500
+Date: Tue, 29 Jan 2013 17:03:57 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+        martin.petersen@oracle.com, neilb@suse.de,
+        Mark Fasheh <mfasheh@suse.com>, david@fromorbit.com,
+        gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, ocfs2-devel@oss.oracle.com,
+        bharrosh@panasas.com, jlayton@samba.org, akpm@linux-foundation.org,
+        linux-ext4@vger.kernel.org, hirofumi@mail.parknet.co.jp
+Subject: Re: [PATCH 5/6] ocfs2: Wait for page writeback to provide stable
+ pages
+Message-ID: <20130130010356.GL26439@localhost>
+Mail-Followup-To: "Darrick J. Wong" <darrick.wong@oracle.com>,
+	axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+	viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+	martin.petersen@oracle.com, neilb@suse.de,
+	Mark Fasheh <mfasheh@suse.com>, david@fromorbit.com,
+	gnehzuil.liu@gmail.com, linux-kernel@vger.kernel.org,
+	hch@infradead.org, linux-fsdevel@vger.kernel.org,
+	adilger.kernel@dilger.ca, ocfs2-devel@oss.oracle.com,
+	bharrosh@panasas.com, jlayton@samba.org, akpm@linux-foundation.org,
+	linux-ext4@vger.kernel.org, hirofumi@mail.parknet.co.jp
+References: <20130119011231.20902.55954.stgit@blackbox.djwong.org>
+ <20130119011308.20902.44871.stgit@blackbox.djwong.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130119011308.20902.44871.stgit@blackbox.djwong.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Jan 2013 11:22:06 +0900
-Jingoo Han <jg1.han@samsung.com> wrote:
+Acked-by: Joel Becker <jlbec@evilplan.org>
 
-> On Thursday, January 24, 2013 10:45 PM, Dan Carpenter wrote
+On Fri, Jan 18, 2013 at 05:13:08PM -0800, Darrick J. Wong wrote:
+> When stable pages are required, we have to wait if the page is just
+> going to disk and we want to modify it. Add proper callback to
+> ocfs2_grab_pages_for_write().
 > 
-> CC'ed Andrew Morton, Inki Dae.
+> CC: ocfs2-devel@oss.oracle.com
+> CC: Joel Becker <jlbec@evilplan.org>
+> CC: Mark Fasheh <mfasheh@suse.com>
+> From: Jan Kara <jack@suse.cz>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> ---
+>  fs/ocfs2/aops.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> > 
-> > gamma_table has 3 arrays which each hold MAX_GAMMA_LEVEL pointers to
-> > int.
-> > 
-> > The current code sets ->gamma_table_count to 6 on 64bit arches and to 3
-> > on 32 bit arches.  It should be 3 on everything.
 > 
-> Actually, I don't know it is right.
-> However, it is certain that this panel is currently used on 32 bit arches
-> such as ARM SoCs.
+> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+> index 6577432..9796330 100644
+> --- a/fs/ocfs2/aops.c
+> +++ b/fs/ocfs2/aops.c
+> @@ -1194,6 +1194,7 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
+>  				goto out;
+>  			}
+>  		}
+> +		wait_for_stable_page(wc->w_pages[i]);
+>  
+>  		if (index == target_index)
+>  			wc->w_target_page = wc->w_pages[i];
+> 
 
-I don't know what gamma_table_count is supposed to do.  The only place
-it is used is in s6e63m0_sysfs_show_gamma_table().  That function
-doesn't actually show the table - it just prints out gamme_table_count.
-Why is that useful?
+-- 
 
-Ho hum, the patch is clearly correct - the array stores int*'s and the
-sysfs file should display "3" for all architectures.  However I suspect
-we could just remove the whole sysfs file and nobody would care...
+"This is the end, beautiful friend.
+ This is the end, my only friend the end
+ Of our elaborate plans, the end
+ Of everything that stands, the end
+ No safety or surprise, the end
+ I'll never look into your eyes again."
 
+			http://www.jlbec.org/
+			jlbec@evilplan.org
