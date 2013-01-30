@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab3A3Kp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:45:27 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:38630 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754525Ab3A3KpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:45:24 -0500
-Message-ID: <5108F967.8070808@imgtec.com>
-Date: Wed, 30 Jan 2013 10:43:51 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754968Ab3A3Kpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 05:45:33 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34049 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754915Ab3A3Kp3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 05:45:29 -0500
+Date: Wed, 30 Jan 2013 18:45:14 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>,
+        "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6507x: Fix using wrong dev argument for
+ calling of_regulator_match
+Message-ID: <20130130104512.GC6229@opensource.wolfsonmicro.com>
+References: <1359291280.11083.1.camel@phoenix>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>,
-        <linux-arch@vger.kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH v3 43/44] tty/metag_da: Add metag DA TTY driver
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <1357831872-29451-44-git-send-email-james.hogan@imgtec.com> <50F3E3FF.4080803@imgtec.com> <51026E55.80905@imgtec.com> <20130130051418.GB26687@kroah.com>
-In-Reply-To: <20130130051418.GB26687@kroah.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_01_30_10_45_13
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CdrF4e02JqNVZeln"
+Content-Disposition: inline
+In-Reply-To: <1359291280.11083.1.camel@phoenix>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/01/13 05:14, Greg Kroah-Hartman wrote:
-> On Fri, Jan 25, 2013 at 11:36:53AM +0000, James Hogan wrote:
->> Hi,
->>
->> On 14/01/13 10:54, James Hogan wrote:
->>> Here's a new version addressing Jiri's feedback.
->>>
->>> Add a TTY driver for communicating over a Meta DA (Debug Adapter)
->>> channel using the bios channel SWITCH operation.
->>>
->>> Signed-off-by: James Hogan <james.hogan@imgtec.com>
->>> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
->>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> Cc: Jiri Slaby <jslaby@suse.cz>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
->>> Cc: Cesar Eduardo Barros <cesarb@cesarb.net>
->>> Cc: Joe Perches <joe@perches.com>
->>> Cc: "David S. Miller" <davem@davemloft.net>
->>
->> If this looks okay, I'd appreciate if somebody could Ack it.
->>
->> I have some further patches ready to simplify the code around
->> tty_prepare_flip_string and tty_flip_buffer_push to avoid taking a tty
->> kref, after Jiri's changes in that area in linux-next. I guess these can
->> be applied once both sets of changes are merged.
-> 
-> At first glance, it looks good to me:
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
 
-Thanks Greg.
+--CdrF4e02JqNVZeln
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Cheers
-James
+On Sun, Jan 27, 2013 at 08:54:40PM +0800, Axel Lin wrote:
+> The dev parameter is the device requesting the data.
+> In this case it should be &pdev->dev rather than pdev->dev.parent.
 
+Applied, thanks.
+
+--CdrF4e02JqNVZeln
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRCPmoAAoJELSic+t+oim9kswP+gIdj4rD8f6KOyt7RaF/IM4U
+tCou1CTKxL8rsH10+yD4DLuGeQky8iNy2Y4o1zOF6R898JAY9Z7HTa2WVcDnP7sc
+ZNYabTGj5UmCvEwCJVFAGHZ1xQjeOBWVTG7wnIXtUqNSEVITQtY3J4RkEAjhgHAU
+gKW5RBowdVg9OfKF9Yi2GlQN5gRUAGoMxSs/YUdoLYjg7fktjSCTY4JsEOWj0HB6
+bVtH4cZZZHhZTiAMR+T2qxiHW9vOx5mSKjiUa+4k6Uq+nvcCbSGoa+83V0Z71Unt
+AIaPrdRtOxrcl2sGNGx4/R/J8qhMb+cRM2DXcmmzLdyRbD1K7OEMyvCREXeDxS56
+aPQHAH2kRLyinJMAvS0Tj+ebYpQ5rCjmNvq8yXluQfdJkvL3u5oqD3xK3Ohiu2si
+VyFS6Y9lNkGG29hHVlk++6sRjRSKsQnCBFQt6ZHSyq/AM1Mq44bbrfcuSk4zgmXm
+9FxUiOuKGi89207qx+cm1dZmIyEJYje/NeQGVQjkbq7waDtK9vnFhB3rgJjwTNSp
+EQfplBQ7TZqydQjYw7ylPzYy2ztrVBj7ZV1xPh+/Nck311ssdsA3RwG/DDDok+4a
+sSVHU4CsTN/3mWn24jpznn9Z4ZEQ9x3rmTHVezNP9T2q7RfcJQtcl7K2JCjv6fsZ
+QJEnQa9ifTqnniDkICVX
+=Nv5s
+-----END PGP SIGNATURE-----
+
+--CdrF4e02JqNVZeln--
