@@ -1,77 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab3A3U12 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 15:27:28 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54103 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab3A3U1Z (ORCPT
+	id S1755360Ab3A3UaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:30:08 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:44657 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3A3UaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 15:27:25 -0500
-Message-ID: <51098229.7080508@wwwdotorg.org>
-Date: Wed, 30 Jan 2013 13:27:21 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 30 Jan 2013 15:30:06 -0500
+Date: Wed, 30 Jan 2013 20:30:06 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: aris@redhat.com
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v4 5/9] devcg: prepare may_access() for hierarchy
+ support
+Message-ID: <20130130203006.GC8507@mail.hallyn.com>
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+ <20130130171101.812377398@napanee.usersys.redhat.com>
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-tegra@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [RFC 1/4] video: panel: add CLAA101WA01A panel support
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <1359514939-15653-2-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1359514939-15653-2-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130130171101.812377398@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 08:02 PM, Alexandre Courbot wrote:
-> Add support for the Chunghwa CLAA101WA01A display panel.
+Quoting aris@redhat.com (aris@redhat.com):
+> Currently may_access() is only able to verify if an exception is valid for the
+> current cgroup, which has the same behavior. With hierarchy, it'll be also used
+> to verify if a cgroup local exception is valid towards its cgroup parent, which
+> might have different behavior.
+> 
+> v2:
+> - updated patch description
+> - rebased on top of a new patch to expand the may_access() logic to make it
+>   more clear
+> - fixed argument description order in may_access()
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-> diff --git a/Documentation/devicetree/bindings/video/display/chunghwa,claa101wa01a.txt b/Documentation/devicetree/bindings/video/display/chunghwa,claa101wa01a.txt
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-> +Chunghwa CLAA101WA01A Display Panel
-> +
-> +Required properties:
-> +- compatible: "chunghwa,claa101wa01a"
-> +- pnl-supply: regulator controlling power supply to the panel
-> +- bl-supply: regulator controlling power supply to the backlight
-> +- pnl-enable-gpios: GPIO that enables the panel
-> +- bl-enable-gpios: GPIO that enables the backlight
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> 
+> ---
+>  security/device_cgroup.c |   38 ++++++++++++++++++++++++--------------
+>  1 file changed, 24 insertions(+), 14 deletions(-)
+> 
+> --- github.orig/security/device_cgroup.c	2013-01-30 08:58:02.000000000 -0500
+> +++ github/security/device_cgroup.c	2013-01-30 09:00:09.435351867 -0500
+> @@ -354,9 +354,11 @@ 	return 0;
+>   *		verify if a certain access is allowed.
+>   * @dev_cgroup: dev cgroup to be tested against
+>   * @refex: new exception
+> + * @behavior: behavior of the exception
+>   */
+>  static bool may_access(struct dev_cgroup *dev_cgroup,
+> -		       struct dev_exception_item *refex)
+> +		       struct dev_exception_item *refex,
+> +		       enum devcg_behavior behavior)
+>  {
+>  	struct dev_exception_item *ex;
+>  	bool match = false;
+> @@ -380,19 +382,27 @@ 		if (ex->minor != ~0 && ex->minor != re
+>  		break;
+>  	}
+>  
+> -	/*
+> -	 * In two cases we'll consider this new exception valid:
+> -	 * - the dev cgroup has its default policy to deny + exception list:
+> -	 *   the new exception *should* match the exceptions
+> -	 * - the dev cgroup has its default policy to allow + exception list:
+> -	 *   the new exception should *not* match any of the exceptions
+> -	 */
+> -	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
+> -		if (match)
+> +	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+> +		if (behavior == DEVCG_DEFAULT_ALLOW) {
+> +			/* the exception will deny access to certain devices */
+>  			return true;
+> +		} else {
+> +			/* the exception will allow access to certain devices */
+> +			if (match)
+> +				/*
+> +				 * a new exception allowing access shouldn't
+> +				 * match an parent's exception
+> +				 */
+> +				return false;
+> +			return true;
+> +		}
+>  	} else {
+> -		if (!match)
+> +		/* only behavior == DEVCG_DEFAULT_DENY allowed here */
+> +		if (match)
+> +			/* parent has an exception that matches the proposed */
+>  			return true;
+> +		else
+> +			return false;
+>  	}
+>  	return false;
+>  }
+> @@ -411,7 +421,7 @@ static int parent_has_perm(struct dev_cg
+>  	if (!pcg)
+>  		return 1;
+>  	parent = cgroup_to_devcgroup(pcg);
+> -	return may_access(parent, ex);
+> +	return may_access(parent, ex, childcg->behavior);
+>  }
+>  
+>  /**
+> @@ -445,7 +455,7 @@ static int devcgroup_update_access(struc
+>  {
+>  	const char *b;
+>  	char temp[12];		/* 11 + 1 characters needed for a u32 */
+> -	int count, rc;
+> +	int count, rc = 0;
 
-So this looks like a reasonable binding to me. The one issue is that
-it's very generic, and if we go this route, we'll probably end up with
-tens or hundreds of identical or extremely similar simple bindings, and
-associated drivers.
+This here points out that (unrelated to yor set) devcgroup_update_access()
+really needs a cleanup.
 
-We can avoid this instead by defining something like a "simple-lcd"
-binding, and associated driver, that will work for perhaps 90%, 95%,
-99%, even 100%(?) of panels. Just like the above, but with:
-
-compatible="simple-panel", "chunghwa,claa101wa01a"
-
-instead, and the driver binding to "simple-panel" rather than
-"chunghwa,claa101wa01a".
-
-The driver can assume that a specific set of supplies (and perhaps
-GPIOs) is always present, and that the /sequence/ of manipulating those
-is fixed. This will avoid the need for anything like the power sequences
-code. If a particular panel doesn't fit those assumptions, including the
-exact sequence of manipulations for each state transition (which should
-be documented in the binding) then it can get a custom driver, this also
-avoiding having to define custom sequences in DT.
-
-Things that might be parameterized/optional:
-
-* Perhaps some GPIOs aren't always present.
-* If some regulators aren't SW-controllable, DT should still provide a
-fixed/dummy regulator so the driver doesn't care.
-* Wait times between regulator/GPIO/... manipulation could be specified
-in DT.
-* For panels without EDID, CDF DT bindings can provide the list of
-supported modes, otherwise we assume that the display controller that
-drives the panel has been told how to access the EDID, just like it
-would for an "external" display.
+>  	struct dev_exception_item ex;
+>  	struct cgroup *p = devcgroup->css.cgroup;
+>  	struct dev_cgroup *parent = NULL;
+> @@ -663,7 +673,7 @@ 	memset(&ex, 0, sizeof(ex));
+>  
+>  	rcu_read_lock();
+>  	dev_cgroup = task_devcgroup(current);
+> -	rc = may_access(dev_cgroup, &ex);
+> +	rc = may_access(dev_cgroup, &ex, dev_cgroup->behavior);
+>  	rcu_read_unlock();
+>  
+>  	if (!rc)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
