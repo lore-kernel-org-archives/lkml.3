@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab3A3RMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 12:12:24 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:41751 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090Ab3A3RLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 12:11:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130130164614.GC30559@balto.lan>
-References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
-	<1359550803-18577-3-git-send-email-fabio.baltieri@linaro.org>
-	<CAKohpok0iDffNM31W2r97Wtq4DR+TdPwYWTAdJH7AyLqHm0UPA@mail.gmail.com>
-	<20130130164614.GC30559@balto.lan>
-Date: Wed, 30 Jan 2013 22:41:08 +0530
-Message-ID: <CAKohponMezzus0tRW+CdC7wLq1U1pRio5q=g6F845x7iveFCAA@mail.gmail.com>
-Subject: Re: [PATCH v7 2/4] cpufreq: ondemand: call dbs_check_cpu only when necessary
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
-        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756247Ab3A3RNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 12:13:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38209 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755867Ab3A3RLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 12:11:07 -0500
+Message-Id: <20130130171101.263587090@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 30 Jan 2013 12:11:02 -0500
+From: aris@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: [PATCH v4 1/9] device_cgroup: prepare exception list handling functions for two lists
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+Content-Disposition: inline; filename=dev_exception_helpers.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 January 2013 22:16, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
-> Isn't that how it works now?  The current cpu ktime is not checked
-> against its own, but against the "leader" cpu (dbs_info_local->cdbs.cpu),
-> that's why it's initialized only for the first.
->
-> Maybe I should have used dbs_info_leader/dbs_info instead of
-> dbs_info_local/dbs_info.
+In the following patches, device_cgroup structure will have two sets of
+behavior and exceptions list (actual one, another with the local settings)
+so rework the functions to use exception list, not a device_cgroup.
 
-This routine is called as wq handler. Which will recover dbs_info from work
-using container_of. Which would give dbs_info_local for the cpu j.
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-Then we will execute below code.
+---
+ security/device_cgroup.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-+       /* use leader CPU's dbs_info */
-+       dbs_info = &per_cpu(od_cpu_dbs_info, dbs_info_local->cdbs.cpu);
+--- github.orig/security/device_cgroup.c	2013-01-29 11:48:50.603298122 -0500
++++ github/security/device_cgroup.c	2013-01-29 11:49:14.739657516 -0500
+@@ -104,7 +104,7 @@ free_and_exit:
+ /*
+  * called under devcgroup_mutex
+  */
+-static int dev_exception_add(struct dev_cgroup *dev_cgroup,
++static int dev_exception_add(struct list_head *exceptions,
+ 			     struct dev_exception_item *ex)
+ {
+ 	struct dev_exception_item *excopy, *walk;
+@@ -115,7 +115,7 @@ static int dev_exception_add(struct dev_
+ 	if (!excopy)
+ 		return -ENOMEM;
+ 
+-	list_for_each_entry(walk, &dev_cgroup->exceptions, list) {
++	list_for_each_entry(walk, exceptions, list) {
+ 		if (walk->type != ex->type)
+ 			continue;
+ 		if (walk->major != ex->major)
+@@ -129,21 +129,21 @@ static int dev_exception_add(struct dev_
+ 	}
+ 
+ 	if (excopy != NULL)
+-		list_add_tail_rcu(&excopy->list, &dev_cgroup->exceptions);
++		list_add_tail_rcu(&excopy->list, exceptions);
+ 	return 0;
+ }
+ 
+ /*
+  * called under devcgroup_mutex
+  */
+-static void dev_exception_rm(struct dev_cgroup *dev_cgroup,
++static void dev_exception_rm(struct list_head *exceptions,
+ 			     struct dev_exception_item *ex)
+ {
+ 	struct dev_exception_item *walk, *tmp;
+ 
+ 	lockdep_assert_held(&devcgroup_mutex);
+ 
+-	list_for_each_entry_safe(walk, tmp, &dev_cgroup->exceptions, list) {
++	list_for_each_entry_safe(walk, tmp, exceptions, list) {
+ 		if (walk->type != ex->type)
+ 			continue;
+ 		if (walk->major != ex->major)
+@@ -514,10 +514,10 @@ 		case '\0':
+ 		 * don't want to break compatibility
+ 		 */
+ 		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+-			dev_exception_rm(devcgroup, &ex);
++			dev_exception_rm(&devcgroup->exceptions, &ex);
+ 			return 0;
+ 		}
+-		return dev_exception_add(devcgroup, &ex);
++		return dev_exception_add(&devcgroup->exceptions, &ex);
+ 	case DEVCG_DENY:
+ 		/*
+ 		 * If the default policy is to deny by default, try to remove
+@@ -525,10 +525,10 @@ 			return 0;
+ 		 * don't want to break compatibility
+ 		 */
+ 		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
+-			dev_exception_rm(devcgroup, &ex);
++			dev_exception_rm(&devcgroup->exceptions, &ex);
+ 			return 0;
+ 		}
+-		return dev_exception_add(devcgroup, &ex);
++		return dev_exception_add(&devcgroup->exceptions, &ex);
+ 	default:
+ 		return -EINVAL;
+ 	}
 
-dbs_info_local->cdbs.cpu was uninitialized for all cpus except policy->cpu.
-And so, might be initialized with 0 as its a global variable... But if you
-offline cpu 0 and online it back, then policy->cpu would be 1 and this logic,
-which worked by mistake will fail.
-
-+       mutex_lock(&dbs_info->cdbs.timer_mutex);
-+
-+       time_now = ktime_get();
-+       delta_us = ktime_us_delta(time_now, dbs_info->cdbs.time_stamp);
-
-and so as this.
-
-Correct?
