@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab3A3Nh2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 08:37:28 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:60055 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753908Ab3A3NhZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 08:37:25 -0500
-Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433ED04134@DBDE01.ent.ti.com>
-Date: Wed, 30 Jan 2013 15:37:19 +0200
-Cc: "N, Mugunthan V" <mugunthanvnm@ti.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        "Porter, Matt" <mporter@ti.com>, "Maupin, Chase" <chase.maupin@ti.com>,
-        "Kridner, Jason" <jdk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F3F6248B-4DF4-418E-AD1F-F41E14CC85B2@antoniou-consulting.com>
-References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com> <5107B650.5090901@ti.com> <3DE2C638-6AE8-4BC9-AD68-3AAA40CD6233@antoniou-consulting.com> <5108E1C6.9020201@ti.com> <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com> <5108FC31.3000507@ti.com> <27A3106E-3FDB-43DB-AAC9-DC2DA768AF9E@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED03FE1@DBDE01.ent.ti.com> <0422CC2C-3D0D-4BB5-A90D-D3D337E44DD0@antoniou-consulting.com> <B5906170F1614E41A8A28DE3B8D121433ED04134@DBDE01.ent.ti.com>
-To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-X-Mailer: Apple Mail (2.1085)
+	id S1754790Ab3A3Nhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 08:37:34 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:40348 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754625Ab3A3Nh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 08:37:29 -0500
+Message-ID: <1359553043.3325.18.camel@thor.lan>
+Subject: Re: [PATCH 10/11] staging/fwserial: Fix premature unthrottle
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Date: Wed, 30 Jan 2013 08:37:23 -0500
+In-Reply-To: <20130130133240.GA16591@kroah.com>
+References: <1359430485-5301-1-git-send-email-peter@hurleysoftware.com>
+	 <1359430485-5301-10-git-send-email-peter@hurleysoftware.com>
+	 <20130130042947.GA25371@kroah.com> <1359551465.3325.14.camel@thor.lan>
+	 <20130130133240.GA16591@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vaibhav,
-
-On Jan 30, 2013, at 3:29 PM, Bedia, Vaibhav wrote:
-
-> On Wed, Jan 30, 2013 at 18:14:30, Pantelis Antoniou wrote:
->> Hi Vaibhav,
->> 
->> On Jan 30, 2013, at 2:38 PM, Bedia, Vaibhav wrote:
->> 
->>> On Wed, Jan 30, 2013 at 16:38:50, Pantelis Antoniou wrote:
->>> [...]
->>>> 
->>>> TBH I haven't found a simple way to print out the silicon revision number.
->>>> Anyone on the list know a quick and dirty method? 
->>>> 
->>> 
->>> You can dump the DEVICE_ID register @ 0x44e10600.
->>> Bits 31:28 should be 0 for PG1.0 and 1 for PG2.0.
->>> 
->> 
->> Thanks this works perfectly:
->> 
->> original-bone:
->> root@beaglebone:~# devmem2 0x44e10600 w
->> Read at address  0x44E10600 (0xb6ff4600): 0x0B94402E
->> 
->> bone-black:
->> root@beaglebone:~# devmem2 0x44e10600 w
->> Read at address  0x44E10600 (0xb6fcc600): 0x1B94402E
->> 
+On Wed, 2013-01-30 at 14:32 +0100, Greg Kroah-Hartman wrote:
+> On Wed, Jan 30, 2013 at 08:11:05AM -0500, Peter Hurley wrote:
+> > On Tue, 2013-01-29 at 23:29 -0500, Greg Kroah-Hartman wrote:
+> > > On Mon, Jan 28, 2013 at 10:34:44PM -0500, Peter Hurley wrote:
+> > > > The unthrottle may restart the writer before the rx push
+> > > > has a chance to start emptying the rx buffer, resulting in an
+> > > > overflowed rx buffer and lost data.
+> > > > 
+> > > > Perform the actual device unthrottle with the rx push instead.
+> > > > 
+> > > > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> > > > ---
+> > > >  drivers/staging/fwserial/fwserial.c | 30 ++++++++++++++----------------
+> > > >  1 file changed, 14 insertions(+), 16 deletions(-)
+> > > 
+> > > this patch fails to apply to my tree, but the 9 previous ones were fine,
+> > > so I'll not apply it, or ght 11/11 patch.  Care to fix it up and resend
+> > > both of them?
+> > 
+> > Hi Greg,
+> > 
+> > I can rebase these against your staging-next, if you'd prefer, but it
+> > will make the -next merge non-trivial.
+> > 
+> > Your tty-next tree is carrying patches to this driver from patch series
+> >   "TTY: switch flipping functions to tty_port"
+> > which is already in -next.
+> > 
+> > Let me know what you'd like me to do.
 > 
-> I just re-read the mail-chain and I am confused here.
-> So the patch in question is meant for Bone-A4 which has
-> PG1.0?
+> Ugh, that's a mess.
 > 
+> Can these wait until after 3.9-rc1 is out?
 
-It is a general bug fix. The problem was discovered only on 
-the bone black which has PG2.0 silicon. The driver has been
-tested and it works on the original bone with PG1.0 as well.
+Ok. Should I plan to resend patches 10 & 11 then (as 1 & 2)?
 
-> Regards,
-> Vaibhav
-
-Regards
-
--- Pantelis
+Regards,
+Peter Hurley
 
