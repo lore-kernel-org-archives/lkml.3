@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3A3KEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 05:04:44 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:40649 "HELO
-	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752651Ab3A3KEm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 05:04:42 -0500
-Message-ID: <5108F031.1010005@gaisler.com>
-Date: Wed, 30 Jan 2013 11:04:33 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1754511Ab3A3KFJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 05:05:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:48843 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753688Ab3A3KFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 05:05:04 -0500
+Date: Wed, 30 Jan 2013 11:06:55 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tty: Prevent deadlock in n_gsm driver
+Message-ID: <20130130100655.GA31575@kroah.com>
+References: <4B03AD17-906A-4FBF-9F00-3F860395B229@nedap.com>
+ <20130130051213.GA26675@kroah.com>
+ <E78C7BE9-BB39-409D-B2F9-4DAB81BE9513@nedap.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        linux-kernel@vger.kernel.org, Peter Korsgaard <jacmet@sunsite.dk>,
-        spi-devel-general@lists.sourceforge.net,
-        Mingkai Hu <Mingkai.hu@freescale.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, software@gaisler.com
-Subject: Re: [PATCH] spi: spi-fsl-spi: Make spi-fsl-spi usable in cpu mode
- outside of FSL SOC environments and add a grlib variant normally running
- on sparc
-References: <1356711368-10437-1-git-send-email-andreas@gaisler.com>
-In-Reply-To: <1356711368-10437-1-git-send-email-andreas@gaisler.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E78C7BE9-BB39-409D-B2F9-4DAB81BE9513@nedap.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-28 17:16, Andreas Larsson wrote:
-> This makes the cpu mode of the driver available outside of an FSL SOC
-> and even powerpc environment. This is accomplished by putting things
-> regarding fsl specific code and to cpm specific code within ifdefs.
->
-> Furthermore, this adds support for the mostly register-compatible
-> SPICTRL core from the GRLIB VHDL IP core library normally running on
-> sparc. A different entry in of_fsl_spi_match matches this core and
-> indicates a different hardware type that is used to set up different
-> function pointers and special cases. The fetching of irq is changed to
-> work under sparc as well.
->
-> The GRLIB core operates in cpu mode and from the driver's point of view
-> the important differences are that the number of bits per word might be
-> limited and that there might be native chipselects selected via the
-> added slvsel register. These differences if present are indicated by an
-> added capabilities register.
->
-> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+On Wed, Jan 30, 2013 at 10:55:00AM +0100, Dirkjan Bussink wrote:
+> 
+> On 30 Jan 2013, at 06:12, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> 
+> > It doesn't apply cleanly to the linux-next tree, can you refresh this
+> > and resend it so that I can apply it?  If you want it backported to the
+> > stable kernel releases, we can only do that after it gets into Linus's
+> > tree, see the file, Documentation/stable_kernel_rules.txt for details
+> > about this.
+> 
+> I've reapplied the patch to linux-next and submitted it just now. Is there
+> anything additionally that needs to be done to merge this back to stable
+> after this patch is applied? 
 
-Any comments anyone?
+You need to add a "cc: stable@vger.kernel.org" line to the
+signed-off-by: area.  I'll do it to the patch when I apply it.
 
-This patch takes "Approach A" discussed and supported in 
-http://sourceforge.net/mailarchive/message.php?msg_id=30131080
+I found the problem, your email client stripped out the trailing spaces
+of the patch, which kept it from being applied as it wasn't a valid
+patch.  I've edited it by hand this time, but next time please fix your
+email client.
 
-Cheers,
-Andreas Larsson
+thanks,
 
+greg k-h
