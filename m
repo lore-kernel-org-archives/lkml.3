@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab3A3Dvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 22:51:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44878 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab3A3Dvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 22:51:52 -0500
-Date: Tue, 29 Jan 2013 19:51:40 -0800
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-7d41a8a4a2b2438621a9159477bff36a11d79a42@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1359058816-7615-30-git-send-email-yinghai@kernel.org>
-References: <1359058816-7615-30-git-send-email-yinghai@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm2] x86, kdump:
-  Remove crashkernel range find limit for 64bit
-Git-Commit-ID: 7d41a8a4a2b2438621a9159477bff36a11d79a42
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753405Ab3A3Dwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 22:52:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53548 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753187Ab3A3Dwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 22:52:37 -0500
+Date: Wed, 30 Jan 2013 04:52:35 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@amd.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, Jacob.Shin@amd.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] x86,AMD: Enable WC+ memory type on family 10
+ processors
+Message-ID: <20130130035235.GE30965@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Boris Ostrovsky <boris.ostrovsky@amd.com>, tglx@linutronix.de,
+	mingo@redhat.com, hpa@zytor.com, Jacob.Shin@amd.com,
+	linux-kernel@vger.kernel.org
+References: <1359497723-24791-1-git-send-email-boris.ostrovsky@amd.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 29 Jan 2013 19:51:46 -0800 (PST)
+In-Reply-To: <1359497723-24791-1-git-send-email-boris.ostrovsky@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7d41a8a4a2b2438621a9159477bff36a11d79a42
-Gitweb:     http://git.kernel.org/tip/7d41a8a4a2b2438621a9159477bff36a11d79a42
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 24 Jan 2013 12:20:10 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 29 Jan 2013 19:32:58 -0800
+On Tue, Jan 29, 2013 at 05:15:23PM -0500, Boris Ostrovsky wrote:
+> In some cases BIOS may not enable WC+ memory type on family 10
+> processors, instead converting what would be WC+ memory to CD type.
+> On guests using nested pages this could result in performance
+> degradation. This patch enables WC+.
+> 
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-x86, kdump: Remove crashkernel range find limit for 64bit
+Acked-by: Borislav Petkov <bp@suse.de>
 
-Now kexeced kernel/ramdisk could be above 4g, so remove 896 limit for
-64bit.
+-- 
+Regards/Gruss,
+    Boris.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1359058816-7615-30-git-send-email-yinghai@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/setup.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index bbe8cdf..4778dde 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -501,13 +501,11 @@ static void __init memblock_x86_reserve_range_setup_data(void)
- /*
-  * Keep the crash kernel below this limit.  On 32 bits earlier kernels
-  * would limit the kernel to the low 512 MiB due to mapping restrictions.
-- * On 64 bits, kexec-tools currently limits us to 896 MiB; increase this
-- * limit once kexec-tools are fixed.
-  */
- #ifdef CONFIG_X86_32
- # define CRASH_KERNEL_ADDR_MAX	(512 << 20)
- #else
--# define CRASH_KERNEL_ADDR_MAX	(896 << 20)
-+# define CRASH_KERNEL_ADDR_MAX	MAXMEM
- #endif
- 
- static void __init reserve_crashkernel(void)
+Sent from a fat crate under my desk. Formatting is fine.
+--
