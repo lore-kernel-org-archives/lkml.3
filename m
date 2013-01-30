@@ -1,70 +1,515 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab3A3CP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 21:15:58 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63405 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab3A3CP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 21:15:56 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-ab-5108825b040f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thomas Backlund <tmb@mageia.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: perf 3.8-rc build failure:  undefined reference to `strlcpy'
-References: <51074E9D.3040803@mageia.org> <20130129103722.GE14444@pd.tnic>
-Date: Wed, 30 Jan 2013 11:15:55 +0900
-In-Reply-To: <20130129103722.GE14444@pd.tnic> (Borislav Petkov's message of
-	"Tue, 29 Jan 2013 11:37:22 +0100")
-Message-ID: <87ehh3v2jo.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753175Ab3A3CR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 21:17:56 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:5844 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab3A3CRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Jan 2013 21:17:51 -0500
+X-IronPort-AV: E=Sophos;i="4.84,564,1355068800"; 
+   d="scan'208";a="6662585"
+Message-ID: <51088298.9080302@cn.fujitsu.com>
+Date: Wed, 30 Jan 2013 10:16:56 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v6 08/15] memory-hotplug: Common APIs to support page
+ tables hot-remove
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>  <1357723959-5416-9-git-send-email-tangchen@cn.fujitsu.com> <1359464694.1624.18.camel@kernel>
+In-Reply-To: <1359464694.1624.18.camel@kernel>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/30 10:16:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/30 10:16:37,
+	Serialize complete at 2013/01/30 10:16:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
-
-On Tue, 29 Jan 2013 11:37:22 +0100, Borislav Petkov wrote:
-> On Tue, Jan 29, 2013 at 06:22:53AM +0200, Thomas Backlund wrote:
->> 
->> [tmb@tmb linux-3.8-rc5]$ make -C tools/perf -s V=1
->> HAVE_CPLUS_DEMANGLE=1 prefix=%{_prefix} all
->> 
->> ...
->> 
->> /tmp/ccJEJv6m.o: In function `main':
->> :(.text+0x14): undefined reference to `strlcpy'
->> collect2: ld returned 1 exit status
->> 
->> ...
->> 
->> This did not show up in 3.7
+On 01/29/2013 09:04 PM, Simon Jeons wrote:
+> Hi Tang,
+> On Wed, 2013-01-09 at 17:32 +0800, Tang Chen wrote:
+>> From: Wen Congyang<wency@cn.fujitsu.com>
+>>
+>> When memory is removed, the corresponding pagetables should alse be removed.
+>> This patch introduces some common APIs to support vmemmap pagetable and x86_64
+>> architecture pagetable removing.
 >
-> Ditto here:
+> Why don't need to build_all_zonelists like online_pages does during
+> hot-add path(add_memory)?
+
+Hi Simon,
+
+As you said, build_all_zonelists is done by online_pages. When the 
+memory device
+is hot-added, we cannot use it. we can only use is when we online the 
+pages on it.
+
+But we can online the pages as different types, kernel or movable (which 
+belongs to
+different zones), and we can online part of the memory, not all of them.
+So each time we online some pages, we should check if we need to update 
+the zone list.
+
+So I think that is why we do build_all_zonelists when online_pages.
+(just my opinion)
+
+Thanks. :)
+
 >
-> /tmp/ccC1kLwn.o: In function `main':
-> :(.text+0x14): undefined reference to `strlcpy'
-> collect2: error: ld returned 1 exit status
+>>
+>> All pages of virtual mapping in removed memory cannot be freedi if some pages
+>> used as PGD/PUD includes not only removed memory but also other memory. So the
+>> patch uses the following way to check whether page can be freed or not.
+>>
+>>   1. When removing memory, the page structs of the revmoved memory are filled
+>>      with 0FD.
+>>   2. All page structs are filled with 0xFD on PT/PMD, PT/PMD can be cleared.
+>>      In this case, the page used as PT/PMD can be freed.
+>>
+>> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+>> Signed-off-by: Jianguo Wu<wujianguo@huawei.com>
+>> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> ---
+>>   arch/x86/include/asm/pgtable_types.h |    1 +
+>>   arch/x86/mm/init_64.c                |  299 ++++++++++++++++++++++++++++++++++
+>>   arch/x86/mm/pageattr.c               |   47 +++---
+>>   include/linux/bootmem.h              |    1 +
+>>   4 files changed, 326 insertions(+), 22 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+>> index 3c32db8..4b6fd2a 100644
+>> --- a/arch/x86/include/asm/pgtable_types.h
+>> +++ b/arch/x86/include/asm/pgtable_types.h
+>> @@ -352,6 +352,7 @@ static inline void update_page_count(int level, unsigned long pages) { }
+>>    * as a pte too.
+>>    */
+>>   extern pte_t *lookup_address(unsigned long address, unsigned int *level);
+>> +extern int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase);
+>>
+>>   #endif	/* !__ASSEMBLY__ */
+>>
+>> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+>> index 9ac1723..fe01116 100644
+>> --- a/arch/x86/mm/init_64.c
+>> +++ b/arch/x86/mm/init_64.c
+>> @@ -682,6 +682,305 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>>   }
+>>   EXPORT_SYMBOL_GPL(arch_add_memory);
+>>
+>> +#define PAGE_INUSE 0xFD
+>> +
+>> +static void __meminit free_pagetable(struct page *page, int order)
+>> +{
+>> +	struct zone *zone;
+>> +	bool bootmem = false;
+>> +	unsigned long magic;
+>> +	unsigned int nr_pages = 1<<  order;
+>> +
+>> +	/* bootmem page has reserved flag */
+>> +	if (PageReserved(page)) {
+>> +		__ClearPageReserved(page);
+>> +		bootmem = true;
+>> +
+>> +		magic = (unsigned long)page->lru.next;
+>> +		if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
+>> +			while (nr_pages--)
+>> +				put_page_bootmem(page++);
+>> +		} else
+>> +			__free_pages_bootmem(page, order);
+>> +	} else
+>> +		free_pages((unsigned long)page_address(page), order);
+>> +
+>> +	/*
+>> +	 * SECTION_INFO pages and MIX_SECTION_INFO pages
+>> +	 * are all allocated by bootmem.
+>> +	 */
+>> +	if (bootmem) {
+>> +		zone = page_zone(page);
+>> +		zone_span_writelock(zone);
+>> +		zone->present_pages += nr_pages;
+>> +		zone_span_writeunlock(zone);
+>> +		totalram_pages += nr_pages;
+>> +	}
+>> +}
+>> +
+>> +static void __meminit free_pte_table(pte_t *pte_start, pmd_t *pmd)
+>> +{
+>> +	pte_t *pte;
+>> +	int i;
+>> +
+>> +	for (i = 0; i<  PTRS_PER_PTE; i++) {
+>> +		pte = pte_start + i;
+>> +		if (pte_val(*pte))
+>> +			return;
+>> +	}
+>> +
+>> +	/* free a pte talbe */
+>> +	free_pagetable(pmd_page(*pmd), 0);
+>> +	spin_lock(&init_mm.page_table_lock);
+>> +	pmd_clear(pmd);
+>> +	spin_unlock(&init_mm.page_table_lock);
+>> +}
+>> +
+>> +static void __meminit free_pmd_table(pmd_t *pmd_start, pud_t *pud)
+>> +{
+>> +	pmd_t *pmd;
+>> +	int i;
+>> +
+>> +	for (i = 0; i<  PTRS_PER_PMD; i++) {
+>> +		pmd = pmd_start + i;
+>> +		if (pmd_val(*pmd))
+>> +			return;
+>> +	}
+>> +
+>> +	/* free a pmd talbe */
+>> +	free_pagetable(pud_page(*pud), 0);
+>> +	spin_lock(&init_mm.page_table_lock);
+>> +	pud_clear(pud);
+>> +	spin_unlock(&init_mm.page_table_lock);
+>> +}
+>> +
+>> +/* Return true if pgd is changed, otherwise return false. */
+>> +static bool __meminit free_pud_table(pud_t *pud_start, pgd_t *pgd)
+>> +{
+>> +	pud_t *pud;
+>> +	int i;
+>> +
+>> +	for (i = 0; i<  PTRS_PER_PUD; i++) {
+>> +		pud = pud_start + i;
+>> +		if (pud_val(*pud))
+>> +			return false;
+>> +	}
+>> +
+>> +	/* free a pud table */
+>> +	free_pagetable(pgd_page(*pgd), 0);
+>> +	spin_lock(&init_mm.page_table_lock);
+>> +	pgd_clear(pgd);
+>> +	spin_unlock(&init_mm.page_table_lock);
+>> +
+>> +	return true;
+>> +}
+>> +
+>> +static void __meminit
+>> +remove_pte_table(pte_t *pte_start, unsigned long addr, unsigned long end,
+>> +		 bool direct)
+>> +{
+>> +	unsigned long next, pages = 0;
+>> +	pte_t *pte;
+>> +	void *page_addr;
+>> +	phys_addr_t phys_addr;
+>> +
+>> +	pte = pte_start + pte_index(addr);
+>> +	for (; addr<  end; addr = next, pte++) {
+>> +		next = (addr + PAGE_SIZE)&  PAGE_MASK;
+>> +		if (next>  end)
+>> +			next = end;
+>> +
+>> +		if (!pte_present(*pte))
+>> +			continue;
+>> +
+>> +		/*
+>> +		 * We mapped [0,1G) memory as identity mapping when
+>> +		 * initializing, in arch/x86/kernel/head_64.S. These
+>> +		 * pagetables cannot be removed.
+>> +		 */
+>> +		phys_addr = pte_val(*pte) + (addr&  PAGE_MASK);
+>> +		if (phys_addr<  (phys_addr_t)0x40000000)
+>> +			return;
+>> +
+>> +		if (IS_ALIGNED(addr, PAGE_SIZE)&&
+>> +		    IS_ALIGNED(next, PAGE_SIZE)) {
+>> +			if (!direct) {
+>> +				free_pagetable(pte_page(*pte), 0);
+>> +				pages++;
+>> +			}
+>> +
+>> +			spin_lock(&init_mm.page_table_lock);
+>> +			pte_clear(&init_mm, addr, pte);
+>> +			spin_unlock(&init_mm.page_table_lock);
+>> +		} else {
+>> +			/*
+>> +			 * If we are not removing the whole page, it means
+>> +			 * other ptes in this page are being used and we canot
+>> +			 * remove them. So fill the unused ptes with 0xFD, and
+>> +			 * remove the page when it is wholly filled with 0xFD.
+>> +			 */
+>> +			memset((void *)addr, PAGE_INUSE, next - addr);
+>> +			page_addr = page_address(pte_page(*pte));
+>> +
+>> +			if (!memchr_inv(page_addr, PAGE_INUSE, PAGE_SIZE)) {
+>> +				free_pagetable(pte_page(*pte), 0);
+>> +				pages++;
+>> +
+>> +				spin_lock(&init_mm.page_table_lock);
+>> +				pte_clear(&init_mm, addr, pte);
+>> +				spin_unlock(&init_mm.page_table_lock);
+>> +			}
+>> +		}
+>> +	}
+>> +
+>> +	/* Call free_pte_table() in remove_pmd_table(). */
+>> +	flush_tlb_all();
+>> +	if (direct)
+>> +		update_page_count(PG_LEVEL_4K, -pages);
+>> +}
+>> +
+>> +static void __meminit
+>> +remove_pmd_table(pmd_t *pmd_start, unsigned long addr, unsigned long end,
+>> +		 bool direct)
+>> +{
+>> +	unsigned long pte_phys, next, pages = 0;
+>> +	pte_t *pte_base;
+>> +	pmd_t *pmd;
+>> +
+>> +	pmd = pmd_start + pmd_index(addr);
+>> +	for (; addr<  end; addr = next, pmd++) {
+>> +		next = pmd_addr_end(addr, end);
+>> +
+>> +		if (!pmd_present(*pmd))
+>> +			continue;
+>> +
+>> +		if (pmd_large(*pmd)) {
+>> +			if (IS_ALIGNED(addr, PMD_SIZE)&&
+>> +			    IS_ALIGNED(next, PMD_SIZE)) {
+>> +				if (!direct) {
+>> +					free_pagetable(pmd_page(*pmd),
+>> +						       get_order(PMD_SIZE));
+>> +					pages++;
+>> +				}
+>> +
+>> +				spin_lock(&init_mm.page_table_lock);
+>> +				pmd_clear(pmd);
+>> +				spin_unlock(&init_mm.page_table_lock);
+>> +				continue;
+>> +			}
+>> +
+>> +			/*
+>> +			 * We use 2M page, but we need to remove part of them,
+>> +			 * so split 2M page to 4K page.
+>> +			 */
+>> +			pte_base = (pte_t *)alloc_low_page(&pte_phys);
+>> +			BUG_ON(!pte_base);
+>> +			__split_large_page((pte_t *)pmd, addr,
+>> +					   (pte_t *)pte_base);
+>> +
+>> +			spin_lock(&init_mm.page_table_lock);
+>> +			pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
+>> +			spin_unlock(&init_mm.page_table_lock);
+>> +
+>> +			flush_tlb_all();
+>> +		}
+>> +
+>> +		pte_base = (pte_t *)map_low_page((pte_t *)pmd_page_vaddr(*pmd));
+>> +		remove_pte_table(pte_base, addr, next, direct);
+>> +		free_pte_table(pte_base, pmd);
+>> +		unmap_low_page(pte_base);
+>> +	}
+>> +
+>> +	/* Call free_pmd_table() in remove_pud_table(). */
+>> +	if (direct)
+>> +		update_page_count(PG_LEVEL_2M, -pages);
+>> +}
+>> +
+>> +static void __meminit
+>> +remove_pud_table(pud_t *pud_start, unsigned long addr, unsigned long end,
+>> +		 bool direct)
+>> +{
+>> +	unsigned long pmd_phys, next, pages = 0;
+>> +	pmd_t *pmd_base;
+>> +	pud_t *pud;
+>> +
+>> +	pud = pud_start + pud_index(addr);
+>> +	for (; addr<  end; addr = next, pud++) {
+>> +		next = pud_addr_end(addr, end);
+>> +
+>> +		if (!pud_present(*pud))
+>> +			continue;
+>> +
+>> +		if (pud_large(*pud)) {
+>> +			if (IS_ALIGNED(addr, PUD_SIZE)&&
+>> +			    IS_ALIGNED(next, PUD_SIZE)) {
+>> +				if (!direct) {
+>> +					free_pagetable(pud_page(*pud),
+>> +						       get_order(PUD_SIZE));
+>> +					pages++;
+>> +				}
+>> +
+>> +				spin_lock(&init_mm.page_table_lock);
+>> +				pud_clear(pud);
+>> +				spin_unlock(&init_mm.page_table_lock);
+>> +				continue;
+>> +			}
+>> +
+>> +			/*
+>> +			 * We use 1G page, but we need to remove part of them,
+>> +			 * so split 1G page to 2M page.
+>> +			 */
+>> +			pmd_base = (pmd_t *)alloc_low_page(&pmd_phys);
+>> +			BUG_ON(!pmd_base);
+>> +			__split_large_page((pte_t *)pud, addr,
+>> +					   (pte_t *)pmd_base);
+>> +
+>> +			spin_lock(&init_mm.page_table_lock);
+>> +			pud_populate(&init_mm, pud, __va(pmd_phys));
+>> +			spin_unlock(&init_mm.page_table_lock);
+>> +
+>> +			flush_tlb_all();
+>> +		}
+>> +
+>> +		pmd_base = (pmd_t *)map_low_page((pmd_t *)pud_page_vaddr(*pud));
+>> +		remove_pmd_table(pmd_base, addr, next, direct);
+>> +		free_pmd_table(pmd_base, pud);
+>> +		unmap_low_page(pmd_base);
+>> +	}
+>> +
+>> +	if (direct)
+>> +		update_page_count(PG_LEVEL_1G, -pages);
+>> +}
+>> +
+>> +/* start and end are both virtual address. */
+>> +static void __meminit
+>> +remove_pagetable(unsigned long start, unsigned long end, bool direct)
+>> +{
+>> +	unsigned long next;
+>> +	pgd_t *pgd;
+>> +	pud_t *pud;
+>> +	bool pgd_changed = false;
+>> +
+>> +	for (; start<  end; start = next) {
+>> +		pgd = pgd_offset_k(start);
+>> +		if (!pgd_present(*pgd))
+>> +			continue;
+>> +
+>> +		next = pgd_addr_end(start, end);
+>> +
+>> +		pud = (pud_t *)map_low_page((pud_t *)pgd_page_vaddr(*pgd));
+>> +		remove_pud_table(pud, start, next, direct);
+>> +		if (free_pud_table(pud, pgd))
+>> +			pgd_changed = true;
+>> +		unmap_low_page(pud);
+>> +	}
+>> +
+>> +	if (pgd_changed)
+>> +		sync_global_pgds(start, end - 1);
+>> +
+>> +	flush_tlb_all();
+>> +}
+>> +
+>>   #ifdef CONFIG_MEMORY_HOTREMOVE
+>>   int __ref arch_remove_memory(u64 start, u64 size)
+>>   {
+>> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+>> index a718e0d..7dcb6f9 100644
+>> --- a/arch/x86/mm/pageattr.c
+>> +++ b/arch/x86/mm/pageattr.c
+>> @@ -501,21 +501,13 @@ out_unlock:
+>>   	return do_split;
+>>   }
+>>
+>> -static int split_large_page(pte_t *kpte, unsigned long address)
+>> +int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
+>>   {
+>>   	unsigned long pfn, pfninc = 1;
+>>   	unsigned int i, level;
+>> -	pte_t *pbase, *tmp;
+>> +	pte_t *tmp;
+>>   	pgprot_t ref_prot;
+>> -	struct page *base;
+>> -
+>> -	if (!debug_pagealloc)
+>> -		spin_unlock(&cpa_lock);
+>> -	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
+>> -	if (!debug_pagealloc)
+>> -		spin_lock(&cpa_lock);
+>> -	if (!base)
+>> -		return -ENOMEM;
+>> +	struct page *base = virt_to_page(pbase);
+>>
+>>   	spin_lock(&pgd_lock);
+>>   	/*
+>> @@ -523,10 +515,11 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+>>   	 * up for us already:
+>>   	 */
+>>   	tmp = lookup_address(address,&level);
+>> -	if (tmp != kpte)
+>> -		goto out_unlock;
+>> +	if (tmp != kpte) {
+>> +		spin_unlock(&pgd_lock);
+>> +		return 1;
+>> +	}
+>>
+>> -	pbase = (pte_t *)page_address(base);
+>>   	paravirt_alloc_pte(&init_mm, page_to_pfn(base));
+>>   	ref_prot = pte_pgprot(pte_clrhuge(*kpte));
+>>   	/*
+>> @@ -579,17 +572,27 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+>>   	 * going on.
+>>   	 */
+>>   	__flush_tlb_all();
+>> +	spin_unlock(&pgd_lock);
+>>
+>> -	base = NULL;
+>> +	return 0;
+>> +}
+>>
+>> -out_unlock:
+>> -	/*
+>> -	 * If we dropped out via the lookup_address check under
+>> -	 * pgd_lock then stick the page back into the pool:
+>> -	 */
+>> -	if (base)
+>> +static int split_large_page(pte_t *kpte, unsigned long address)
+>> +{
+>> +	pte_t *pbase;
+>> +	struct page *base;
+>> +
+>> +	if (!debug_pagealloc)
+>> +		spin_unlock(&cpa_lock);
+>> +	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
+>> +	if (!debug_pagealloc)
+>> +		spin_lock(&cpa_lock);
+>> +	if (!base)
+>> +		return -ENOMEM;
+>> +
+>> +	pbase = (pte_t *)page_address(base);
+>> +	if (__split_large_page(kpte, address, pbase))
+>>   		__free_page(base);
+>> -	spin_unlock(&pgd_lock);
+>>
+>>   	return 0;
+>>   }
+>> diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+>> index 3f778c2..190ff06 100644
+>> --- a/include/linux/bootmem.h
+>> +++ b/include/linux/bootmem.h
+>> @@ -53,6 +53,7 @@ extern void free_bootmem_node(pg_data_t *pgdat,
+>>   			      unsigned long size);
+>>   extern void free_bootmem(unsigned long physaddr, unsigned long size);
+>>   extern void free_bootmem_late(unsigned long physaddr, unsigned long size);
+>> +extern void __free_pages_bootmem(struct page *page, unsigned int order);
+>>
+>>   /*
+>>    * Flags for reserve_bootmem (also if CONFIG_HAVE_ARCH_BOOTMEM_NODE,
 >
-> Someone needs to get HAVE_STRLCPY and tools/perf/util/path.c in order so
-> that the linker sees it, IMHO.
-
-Please see my reply on another post from Thomas:
-
-  https://lkml.org/lkml/2013/1/29/32
-
-
-It's not like a build failure of perf tools, it's just a result of
-feature test so should not affect the build of perf itself, right?  Why
-it confuses us is that we don't show any compile message if -s option is
-given to make, so I posted a patch to hide CHK and above failure message
-when -s option is specified.
-
-Thanks,
-Namhyung
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
