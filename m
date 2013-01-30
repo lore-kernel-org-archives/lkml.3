@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3A3IIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:08:12 -0500
-Received: from mga11.intel.com ([192.55.52.93]:36788 "EHLO mga11.intel.com"
+	id S1753272Ab3A3IIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:08:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44441 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab3A3IIL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:08:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,566,1355126400"; 
-   d="scan'208";a="280238941"
-Message-ID: <1359533274.31148.52.camel@smile>
-Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line
- base
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Date: Wed, 30 Jan 2013 10:07:54 +0200
-In-Reply-To: <CAOh2x==Ng1=iHOj-55mUTWCwpaJpRXjiQyfxz-a48ALDOW3aiA@mail.gmail.com>
-References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x==psH4fYmr_MxwO8vjYb=sWk=V7Vs8fs_-6U00gmiko_w@mail.gmail.com>
-	 <20130129052247.GH2239@intel.com>
-	 <CAOh2x=nTJ1iz9aoR8VrkE5A+iaLMMbvFeebGPsO8KWRpDLw7=A@mail.gmail.com>
-	 <1359531176.31148.46.camel@smile>
-	 <CAOh2x==Ng1=iHOj-55mUTWCwpaJpRXjiQyfxz-a48ALDOW3aiA@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1750800Ab3A3IIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:08:44 -0500
+Date: Tue, 29 Jan 2013 23:29:47 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [PATCH 10/11] staging/fwserial: Fix premature unthrottle
+Message-ID: <20130130042947.GA25371@kroah.com>
+References: <1359430485-5301-1-git-send-email-peter@hurleysoftware.com>
+ <1359430485-5301-10-git-send-email-peter@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359430485-5301-10-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-30 at 13:31 +0530, Viresh Kumar wrote: 
-> On Wed, Jan 30, 2013 at 1:02 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > We get a device from the ACPI CSRT table. During enumeration we don't
-> > know what kind of the device it is. From the enumeration point of view
-> > each device enumerated from CSRT is a platform device (see
-> > drivers/acpi/csrt.c for the details).
-> >
-> > That's why we have to pass this info somehow to the DMAC driver. And
-> > like Mika already mentioned we have no other generic way except
-> > IORESOURCE_DMA. If you have something better in mind, please share. We
-> > could adopt our code then.
+On Mon, Jan 28, 2013 at 10:34:44PM -0500, Peter Hurley wrote:
+> The unthrottle may restart the writer before the rx push
+> has a chance to start emptying the rx buffer, resulting in an
+> overflowed rx buffer and lost data.
 > 
-> You don't need this in DT case too? 
+> Perform the actual device unthrottle with the rx push instead.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/staging/fwserial/fwserial.c | 30 ++++++++++++++----------------
+>  1 file changed, 14 insertions(+), 16 deletions(-)
 
-I think no. It seems the DT has a proper backlink from the slave device
-to the dmac ("dma-names" property if I understood it correctly).
+this patch fails to apply to my tree, but the 9 previous ones were fine,
+so I'll not apply it, or ght 11/11 patch.  Care to fix it up and resend
+both of them?
 
-> Or only for ACPI case?
+thanks,
 
-ACPI 5 case only until now.
-We would like to initiate the proposal to the ACPI specification
-team/whoever to have this part designed better in next versions.
-
-> I think "Yes" is the answer of both the questions. If so, then you
-> can keep it this way or add another variable in platform data.
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+greg k-h
