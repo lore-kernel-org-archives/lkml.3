@@ -1,36 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab3A3Ua4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 15:30:56 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38171 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab3A3Uay (ORCPT
+	id S1756730Ab3A3UcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 15:32:18 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:38505 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab3A3UcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 15:30:54 -0500
-Message-ID: <510982F4.9040800@wwwdotorg.org>
-Date: Wed, 30 Jan 2013 13:30:44 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 30 Jan 2013 15:32:15 -0500
+Date: Wed, 30 Jan 2013 12:32:14 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: Rename page struct field helpers
+In-Reply-To: <20130130115833.GB2964@suse.de>
+Message-ID: <alpine.LNX.2.00.1301301226570.22527@eggly.anvils>
+References: <1358874762-19717-1-git-send-email-mgorman@suse.de> <1358874762-19717-6-git-send-email-mgorman@suse.de> <20130122144659.d512e05c.akpm@linux-foundation.org> <20130123142507.GI13304@suse.de> <20130123135612.4b383fa7.akpm@linux-foundation.org>
+ <20130124105544.GO13304@suse.de> <alpine.LNX.2.00.1301282014560.27042@eggly.anvils> <20130130115833.GB2964@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-tegra@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [RFC 1/4] video: panel: add CLAA101WA01A panel support
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <1359514939-15653-2-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1359514939-15653-2-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 08:02 PM, Alexandre Courbot wrote:
-> Add support for the Chunghwa CLAA101WA01A display panel.
+On Wed, 30 Jan 2013, Mel Gorman wrote:
+> mm: Rename page_xchg_last_nid
+> 
+> Andrew found the functions names page_xchg_last_nid(), page_last_nid()
+> and reset_page_last_nid() to be inconsistent and were renamed
+> to page_nid_xchg_last(), page_nid_last() and page_nid_reset_last().
+> Hugh found this unhelpful and suggested a rename of page_xchg_last_nid to
+> keep with a verb_struct_field naming pattern.
+> 
+> This patch replaces mm-rename-page-struct-field-helpers.patch.
+> 
+> Suggested-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Since this defines a new DT binding, especially since it's for a new
-class of device, this patch should be Cc:
-devicetree-discuss@lists.ozlabs.org too, next time you post.
+FWIW looks just right to me (I don't think I deserve a Suggested-by
+and an Acked-by), thanks.  But we may get a Rejected-by from Andrew.
+
+> ---
+>  include/linux/mm.h |    6 +++---
+>  mm/huge_memory.c   |    2 +-
+>  mm/mempolicy.c     |    2 +-
+>  mm/migrate.c       |    4 ++--
+>  mm/mmzone.c        |    2 +-
+>  5 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 6e4468f..6356db0 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -657,7 +657,7 @@ static inline int page_to_nid(const struct page *page)
+>  
+>  #ifdef CONFIG_NUMA_BALANCING
+>  #ifdef LAST_NID_NOT_IN_PAGE_FLAGS
+> -static inline int page_xchg_last_nid(struct page *page, int nid)
+> +static inline int xchg_page_last_nid(struct page *page, int nid)
+>  {
+>  	return xchg(&page->_last_nid, nid);
+>  }
+> @@ -676,7 +676,7 @@ static inline int page_last_nid(struct page *page)
+>  	return (page->flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
+>  }
+>  
+> -extern int page_xchg_last_nid(struct page *page, int nid);
+> +extern int xchg_page_last_nid(struct page *page, int nid);
+>  
+>  static inline void reset_page_last_nid(struct page *page)
+>  {
+> @@ -687,7 +687,7 @@ static inline void reset_page_last_nid(struct page *page)
+>  }
+>  #endif /* LAST_NID_NOT_IN_PAGE_FLAGS */
+>  #else
+> -static inline int page_xchg_last_nid(struct page *page, int nid)
+> +static inline int xchg_page_last_nid(struct page *page, int nid)
+>  {
+>  	return page_to_nid(page);
+>  }
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 648c102..ed97040 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1642,7 +1642,7 @@ static void __split_huge_page_refcount(struct page *page)
+>  		page_tail->mapping = page->mapping;
+>  
+>  		page_tail->index = page->index + i;
+> -		page_xchg_last_nid(page_tail, page_last_nid(page));
+> +		xchg_page_last_nid(page_tail, page_last_nid(page));
+>  
+>  		BUG_ON(!PageAnon(page_tail));
+>  		BUG_ON(!PageUptodate(page_tail));
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index e2df1c1..61226db 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -2308,7 +2308,7 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+>  		 * it less likely we act on an unlikely task<->page
+>  		 * relation.
+>  		 */
+> -		last_nid = page_xchg_last_nid(page, polnid);
+> +		last_nid = xchg_page_last_nid(page, polnid);
+>  		if (last_nid != polnid)
+>  			goto out;
+>  	}
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 8ef1cbf..4d9b724 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -1495,7 +1495,7 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
+>  					  __GFP_NOWARN) &
+>  					 ~GFP_IOFS, 0);
+>  	if (newpage)
+> -		page_xchg_last_nid(newpage, page_last_nid(page));
+> +		xchg_page_last_nid(newpage, page_last_nid(page));
+>  
+>  	return newpage;
+>  }
+> @@ -1679,7 +1679,7 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+>  	if (!new_page)
+>  		goto out_fail;
+>  
+> -	page_xchg_last_nid(new_page, page_last_nid(page));
+> +	xchg_page_last_nid(new_page, page_last_nid(page));
+>  
+>  	isolated = numamigrate_isolate_page(pgdat, page);
+>  	if (!isolated) {
+> diff --git a/mm/mmzone.c b/mm/mmzone.c
+> index bce796e..de2a951 100644
+> --- a/mm/mmzone.c
+> +++ b/mm/mmzone.c
+> @@ -98,7 +98,7 @@ void lruvec_init(struct lruvec *lruvec)
+>  }
+>  
+>  #if defined(CONFIG_NUMA_BALANCING) && !defined(LAST_NID_NOT_IN_PAGE_FLAGS)
+> -int page_xchg_last_nid(struct page *page, int nid)
+> +int xchg_page_last_nid(struct page *page, int nid)
+>  {
+>  	unsigned long old_flags, flags;
+>  	int last_nid;
+> 
