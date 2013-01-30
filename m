@@ -1,68 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab3AaAOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:14:07 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59523 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab3AaAOF (ORCPT
+	id S1756078Ab3AaAOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:14:22 -0500
+Received: from mo1.mail-out.ovh.net ([178.32.228.1]:38292 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab3AaAOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:14:05 -0500
-Date: Thu, 31 Jan 2013 00:13:40 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: BUG: circular locking dependency detected
-Message-ID: <20130131001339.GC14801@flint.arm.linux.org.uk>
-References: <20130130200648.GA13298@flint.arm.linux.org.uk> <20130130215211.GA28418@flint.arm.linux.org.uk> <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com> <20130130221946.GA14801@flint.arm.linux.org.uk> <CA+55aFyRHK3dmwQf_mdfB18dmoaRZqBG9FvHRqTs7cqBjgUs+g@mail.gmail.com> <CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com>
+	Wed, 30 Jan 2013 19:14:21 -0500
+Date: Thu, 31 Jan 2013 00:18:06 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Ruslan Bilovol <ruslan.bilovol@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        eduardo.valentin@ti.com
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [RFC PATCH v3 1/2] ARM: kernel: update cpuinfo to print SoC
+ model name
+Message-ID: <20130130231806.GO7360@game.jcrosoft.org>
+References: <1359558091-29251-1-git-send-email-ruslan.bilovol@ti.com>
+ <1359558091-29251-2-git-send-email-ruslan.bilovol@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1359558091-29251-2-git-send-email-ruslan.bilovol@ti.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 12283567985525828421
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrledtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrledtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 10:04:05AM +1000, Dave Airlie wrote:
-> On Thu, Jan 31, 2013 at 9:52 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Thu, Jan 31, 2013 at 9:19 AM, Russell King <rmk@arm.linux.org.uk> wrote:
-> >>
-> >> So... what you seem to be telling me is that 3.9 is going to be a
-> >> release which issues lockdep complaints when the console blanks, and
-> >> you think that's acceptable?
-> >>
-> >> Adding Linus and Andrew so they're aware of this issue...
-> >
-> > Oh, we're extremely aware of it. And it's not a new issue, the locking
-> > problem have apparently been around forever, although I'm not sure why
-> > the lockdep splat itself started happening only recently.
-> >
-> > They'll make it into 3.9, it's 3.8 that won't have them. The patches
-> > initially caused way *worse* behavior than just a lockdep splat - they
-> > caused actual hard lockups (and that was *after* the initial series of
-> > fixes). That got fixed (hopefully for the last case!) fairly recently,
-> > and I'm not willing to take the scary patch-series that has had
-> > several problem cases.
+On 17:01 Wed 30 Jan     , Ruslan Bilovol wrote:
+> Currently, reading /proc/cpuinfo provides userspace with CPU ID of
+> the CPU carrying out the read from the file.
+> Userspace using this information may decide what module
+> to load or how to configure some specific (and processor-depended)
+> settings or so.
+> However, since really different SoCs can share same ARM core,
+> this information currently is not so useful.
+> For example, TI OMAP4460 and OMAP4470 SoCs show the same
+> information in the /proc/cpuinfo whereas they are different.
+> Since in most cases ARM CPU is a part of some system on a chip (SoC),
+> the "cpuinfo" file looks like exactly that place, where this
+> information have to be displayed.
 > 
-> Well we didn't have any lock validation support before Daniel added it
-> a couple of kernels back,
-> so instead of hidden locking problems we've had from time began, we now have
-> lockdep detectable locking problems.
+> So added new line "SoC name" in the "cpuinfo" output for system
+> on a chip name. It is placed between CPU information and machine
+> information, so the file structure looks gracefully (CPU-SoC-Hardware)
+Nack
 
-Which may or may not be a good thing depending how you look at it; it
-means that once your kernel blanks, you get a lockdep dump.  At that
-point you lose lockdep checking for everything else because lockdep
-disables itself after the first dump.
+this break the kernel ABI
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+and we have now socinfo via sysfs
+
+Best Regards,
+J.
+> 
+> Example:
+> 
+> / # cat proc/cpuinfo
+> [...]
+> CPU variant     : 0x2
+> CPU part        : 0xc09
+> CPU revision    : 10
+> 
+> SoC name        : OMAP4470
+> 
+> Hardware        : OMAP4 Blaze Tablet
+> Revision        : 20edb4
+> [...]
+> 
+> Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
+> ---
+>  arch/arm/include/asm/setup.h |    1 +
+>  arch/arm/kernel/setup.c      |    9 +++++++++
+>  2 files changed, 10 insertions(+)
+> 
+> diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
+> index c50f056..621df40 100644
+> --- a/arch/arm/include/asm/setup.h
+> +++ b/arch/arm/include/asm/setup.h
+> @@ -52,5 +52,6 @@ extern struct meminfo meminfo;
+>  extern int arm_add_memory(phys_addr_t start, phys_addr_t size);
+>  extern void early_print(const char *str, ...);
+>  extern void dump_machine_table(void);
+> +extern void set_soc_model_name(char *name);
+>  
+>  #endif
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 3f6cbb2..bb3805f 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -134,6 +134,7 @@ char elf_platform[ELF_PLATFORM_SIZE];
+>  EXPORT_SYMBOL(elf_platform);
+>  
+>  static const char *cpu_name;
+> +static const char *soc_name;
+>  static const char *machine_name;
+>  static char __initdata cmd_line[COMMAND_LINE_SIZE];
+>  struct machine_desc *machine_desc __initdata;
+> @@ -493,6 +494,11 @@ static void __init setup_processor(void)
+>  	cpu_init();
+>  }
+>  
+> +void set_soc_model_name(char *name)
+> +{
+> +	soc_name = name;
+> +}
+> +
+>  void __init dump_machine_table(void)
+>  {
+>  	struct machine_desc *p;
+> @@ -902,6 +908,9 @@ static int c_show(struct seq_file *m, void *v)
+>  		seq_printf(m, "CPU revision\t: %d\n\n", cpuid & 15);
+>  	}
+>  
+> +	if (soc_name)
+> +		seq_printf(m, "SoC name\t: %s\n\n", soc_name);
+> +
+>  	seq_printf(m, "Hardware\t: %s\n", machine_name);
+>  	seq_printf(m, "Revision\t: %04x\n", system_rev);
+>  	seq_printf(m, "Serial\t\t: %08x%08x\n",
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
