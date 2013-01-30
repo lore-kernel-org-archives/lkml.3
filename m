@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3A3Pvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 10:51:45 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:63130 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab3A3Pvn (ORCPT
+	id S1755339Ab3A3PxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 10:53:24 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:62811 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab3A3PxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 10:51:43 -0500
+	Wed, 30 Jan 2013 10:53:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359550803-18577-3-git-send-email-fabio.baltieri@linaro.org>
+In-Reply-To: <1359550803-18577-4-git-send-email-fabio.baltieri@linaro.org>
 References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
-	<1359550803-18577-3-git-send-email-fabio.baltieri@linaro.org>
-Date: Wed, 30 Jan 2013 21:21:41 +0530
-Message-ID: <CAKohpok0iDffNM31W2r97Wtq4DR+TdPwYWTAdJH7AyLqHm0UPA@mail.gmail.com>
-Subject: Re: [PATCH v7 2/4] cpufreq: ondemand: call dbs_check_cpu only when necessary
+	<1359550803-18577-4-git-send-email-fabio.baltieri@linaro.org>
+Date: Wed, 30 Jan 2013 21:23:22 +0530
+Message-ID: <CAKohpompi7mzd+XmrUzJ4T=apzpmUcryHaBfQWUoO5G3+4y=_Q@mail.gmail.com>
+Subject: Re: [PATCH v7 3/4] cpufreq: conservative: call dbs_check_cpu only
+ when necessary
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: Fabio Baltieri <fabio.baltieri@linaro.org>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
@@ -27,149 +28,25 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 30 January 2013 18:30, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
-> Modify ondemand timer to not resample CPU utilization if recently
+> Modify conservative timer to not resample CPU utilization if recently
 > sampled from another SW coordinated core.
 >
 > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 
-I might be wrong but i have some real concerns over this patch.
+We are again doing the same mistake which i fixed with:
 
-This is what i believe is your idea:
-- because a cpu can sleep, create timer per cpu
-- then check load again only when no other cpu in policy->cpus has
-  checked load within sampling time interval.
+commit 4471a34f9a1f2da220272e823bdb8e8fa83a7661
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Fri Oct 26 00:47:42 2012 +0200
 
-Correct?
+    cpufreq: governors: remove redundant code
 
-> ---
->  drivers/cpufreq/cpufreq_governor.c |  3 ++
->  drivers/cpufreq/cpufreq_governor.h |  1 +
->  drivers/cpufreq/cpufreq_ondemand.c | 58 +++++++++++++++++++++++++++++++-------
->  3 files changed, 52 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index 8393d6e..46f96a4 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -289,6 +289,9 @@ second_time:
->                 }
->                 mutex_unlock(&dbs_data->mutex);
->
-> +               /* Initiate timer time stamp */
-> +               cpu_cdbs->time_stamp = ktime_get();
+    Initially ondemand governor was written and then using its code conservative
+    governor is written. It used a lot of code from ondemand governor,
+but copy of
+    code was created instead of using the same routines from both
+governors. Which
+    increased code redundancy, which is difficult to manage.
 
-We have updated time_stamp only for policy->cpu's cdbs.
-
->                 for_each_cpu(j, policy->cpus)
->                         dbs_timer_init(dbs_data, j, *sampling_rate);
->                 break;
-
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index 93bb56d..13ceb3c 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -216,23 +216,23 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
->         }
->  }
->
-> -static void od_dbs_timer(struct work_struct *work)
-> +static void od_timer_update(struct od_cpu_dbs_info_s *dbs_info, bool sample,
-> +                           struct delayed_work *dw)
->  {
-> -       struct od_cpu_dbs_info_s *dbs_info =
-> -               container_of(work, struct od_cpu_dbs_info_s, cdbs.work.work);
->         unsigned int cpu = dbs_info->cdbs.cpu;
->         int delay, sample_type = dbs_info->sample_type;
->
-> -       mutex_lock(&dbs_info->cdbs.timer_mutex);
-> -
->         /* Common NORMAL_SAMPLE setup */
->         dbs_info->sample_type = OD_NORMAL_SAMPLE;
->         if (sample_type == OD_SUB_SAMPLE) {
->                 delay = dbs_info->freq_lo_jiffies;
-> -               __cpufreq_driver_target(dbs_info->cdbs.cur_policy,
-> -                       dbs_info->freq_lo, CPUFREQ_RELATION_H);
-> +               if (sample)
-> +                       __cpufreq_driver_target(dbs_info->cdbs.cur_policy,
-> +                                               dbs_info->freq_lo,
-> +                                               CPUFREQ_RELATION_H);
->         } else {
-> -               dbs_check_cpu(&od_dbs_data, cpu);
-> +               if (sample)
-> +                       dbs_check_cpu(&od_dbs_data, cpu);
->                 if (dbs_info->freq_lo) {
->                         /* Setup timer for SUB_SAMPLE */
->                         dbs_info->sample_type = OD_SUB_SAMPLE;
-> @@ -243,11 +243,49 @@ static void od_dbs_timer(struct work_struct *work)
->                 }
->         }
->
-> -       schedule_delayed_work_on(smp_processor_id(), &dbs_info->cdbs.work,
-> -                       delay);
-> +       schedule_delayed_work_on(smp_processor_id(), dw, delay);
-> +}
-
-All good until now.
-
-> +
-> +static void od_timer_coordinated(struct od_cpu_dbs_info_s *dbs_info_local,
-> +                                struct delayed_work *dw)
-> +{
-> +       struct od_cpu_dbs_info_s *dbs_info;
-> +       ktime_t time_now;
-> +       s64 delta_us;
-> +       bool sample = true;
-> +
-
---start--
-
-> +       /* use leader CPU's dbs_info */
-> +       dbs_info = &per_cpu(od_cpu_dbs_info, dbs_info_local->cdbs.cpu);
-> +       mutex_lock(&dbs_info->cdbs.timer_mutex);
-> +
-> +       time_now = ktime_get();
-> +       delta_us = ktime_us_delta(time_now, dbs_info->cdbs.time_stamp);
-> +
-> +       /* Do nothing if we recently have sampled */
-> +       if (delta_us < (s64)(od_tuners.sampling_rate / 2))
-> +               sample = false;
-> +       else
-> +               dbs_info->cdbs.time_stamp = time_now;
-> +
-
---end--
-
-Instead of two routines (this and the one below), we can have one and can
-put the above code in the if (coordinated cpus case). That will save some
-redundant code.
-
-Another issue that i see is: Current routine will be called from timer handler
-of every cpu and so above calculations will happen for every cpu. Here, you
-are taking the diff of last timestamp of cpu "x" with cpu "x" current timestamp,
-but what you should have really done is the diff b/w current timestamp with
-the timestamp of last change on any cpu in policy->cpus.
-
-Over that, timestamp for all cpu's isn't initialized early in the code
-at GOV_START.
-
-Am i correct?
-
-> +       od_timer_update(dbs_info, sample, dw);
->         mutex_unlock(&dbs_info->cdbs.timer_mutex);
->  }
->
-> +static void od_dbs_timer(struct work_struct *work)
-> +{
-> +       struct delayed_work *dw = to_delayed_work(work);
-> +       struct od_cpu_dbs_info_s *dbs_info =
-> +               container_of(work, struct od_cpu_dbs_info_s, cdbs.work.work);
-> +
-> +       if (dbs_sw_coordinated_cpus(&dbs_info->cdbs)) {
-> +               od_timer_coordinated(dbs_info, dw);
-> +       } else {
-> +               mutex_lock(&dbs_info->cdbs.timer_mutex);
-> +               od_timer_update(dbs_info, true, dw);
-> +               mutex_unlock(&dbs_info->cdbs.timer_mutex);
-> +       }
-> +}
-> +
+    This patch is an attempt to move common part of both the governors to
+    cpufreq_governor.c file to come over above mentioned issues.
