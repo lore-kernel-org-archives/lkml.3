@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab3A3LsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 06:48:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45475 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab3A3LsS (ORCPT
+	id S1752921Ab3A3Lsc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:48:32 -0500
+Received: from hermes.synopsys.com ([198.182.44.81]:50302 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab3A3Ls3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 06:48:18 -0500
+	Wed, 30 Jan 2013 06:48:29 -0500
+Message-ID: <51090809.8010801@synopsys.com>
+Date: Wed, 30 Jan 2013 17:16:17 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <s5h8v7brkqe.wl%tiwai@suse.de>
-References: <1359470814-7993-1-git-send-email-tiwai@suse.de>
-	<1359470814-7993-2-git-send-email-tiwai@suse.de>
-	<CACVXFVOf4LZD+qVcqS9yBtvNZCRF=LMpR5BKuXby3Z8dfB+Vzw@mail.gmail.com>
-	<s5hpq0nw35i.wl%tiwai@suse.de>
-	<CACVXFVN9JNe6US655hh3cNpKyJFdWrLEYOOOdnk97_5bFmZYxw@mail.gmail.com>
-	<s5hfw1jrmhn.wl%tiwai@suse.de>
-	<CACVXFVNmhpfHgM4BVMDi3tffN4ajinUqnZD7c3fPvTL26EDDRA@mail.gmail.com>
-	<s5hd2wnrlgl.wl%tiwai@suse.de>
-	<s5h8v7brkqe.wl%tiwai@suse.de>
-Date: Wed, 30 Jan 2013 19:48:15 +0800
-Message-ID: <CACVXFVMqxrjBKSnRENHYhd5=pfp3L2LchOzo8cLbp4eo1ph6FA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] firmware: Refactoring for splitting user-mode helper code
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: James Hogan <james.hogan@imgtec.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, Robert Richter <rric@kernel.org>,
+        <oprofile-list@lists.sf.net>
+Subject: Re: [PATCH v3 40/71] ARC: OProfile support
+References: <1359025589-22277-1-git-send-email-vgupta@synopsys.com> <1359025589-22277-25-git-send-email-vgupta@synopsys.com> <5108016B.5050303@imgtec.com> <5108BEF5.6030500@synopsys.com> <5108FBFD.8080705@imgtec.com>
+In-Reply-To: <5108FBFD.8080705@imgtec.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.164]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 7:08 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Wed, 30 Jan 2013 11:53:14 +0100,
-> Takashi Iwai wrote:
+On Wednesday 30 January 2013 04:24 PM, James Hogan wrote:
+> On 30/01/13 06:34, Vineet Gupta wrote:
+>> On Tuesday 29 January 2013 10:35 PM, James Hogan wrote:
+>>> Hi Vineet,
+>>>
+>>> You don't appear to define CONFIG_HW_PERF_EVENTS, so
+>>> include/linux/oprofile.h will presumably define oprofile_perf_init as
+>>> just a pr_info(...); return -ENODEV;
+>>>
+>>> Similarly drivers/oprofile/oprofile_perf.o doesn't seem to be being built.
+>>>
+>>> I'm probably missing something somewhere?
+>> Not much :-)
 >>
->> At Wed, 30 Jan 2013 18:50:05 +0800,
->> Ming Lei wrote:
->> >
->> > On Wed, Jan 30, 2013 at 6:31 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > >
->> > > But it's supposed to be cached, no?
->> >
->> > Generally it will be cached, but some crazy devices might come as new
->> > device during resume, so we still need to handle the situation.
->>
->> In that case, shouldn't we simply return an error instead of
->> usermodehelper lock (at least for direct loading)?
->
-> The patch below is what I have in my mind...
->
->
-> Takashi
->
-> ---
-> From: Takashi Iwai <tiwai@suse.de>
-> Subject: [PATCH] firmware: Skip usermodehelper_lock for direct loading
->
-> We don't need a user mode helper lock for the direct fw loading.
-> This also reduces the use of timeout when user mode helper is
-> disabled, thus we can move the code into ifdef block, too.
->
-> For avoiding the possible call of request_firmware() without caching,
-> add a check of suspend state for the direct loading case, and returns
-> immediately if it's called during suspend/resume.  Then it proceeds to
-> the user mode helper if enabled, or returns the error.
->
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/base/firmware_class.c | 97 ++++++++++++++++++++++++-------------------
->  1 file changed, 54 insertions(+), 43 deletions(-)
->
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index f1caad7..c973bb0 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -88,13 +88,6 @@ enum {
->         FW_STATUS_ABORT,
->  };
->
-> -static int loading_timeout = 60;       /* In seconds */
-> -
-> -static inline long firmware_loading_timeout(void)
-> -{
-> -       return loading_timeout > 0 ? loading_timeout * HZ : MAX_SCHEDULE_TIMEOUT;
-> -}
-> -
->  struct firmware_cache {
->         /* firmware_buf instance will be added into the below list */
->         spinlock_t lock;
-> @@ -315,6 +308,9 @@ static bool fw_get_filesystem_firmware(struct device *device,
->         bool success = false;
->         char *path = __getname();
->
-> +       if (device->power.is_suspended)
-> +               return false;
+>> oprofile_arch_init() failure causes oprofile to fall back to timer based PC only
+>> sampling - for coarse grained profiling. I'll soon be starting on integratign the
+>> hardware counter support to both oprofile/perf.
+> Okay cool. It's just slightly misleading for anybody copying the code
+> that it calls oprofile_perf_init which is known never to do anything
+> :-). Maybe it's worth adding a comment in there to clarify.
 
-The device which is requesting firmware is resumed  does not mean the
-storage device has been resumed, so this check isn't enough.
+I think banner comment in oprofile.h for oprofile_arch_init() needs to document
+that "in case it fails, oprofile switches to timer mode PC sampling".
+But nevertheless it's good idea to add that clarification in my code anyways.
 
-Thanks,
---
-Ming Lei
+>  
+> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+
+Thx,
+-Vineet
