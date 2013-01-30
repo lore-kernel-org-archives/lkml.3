@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3A3H1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 02:27:22 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19912 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab3A3H1R (ORCPT
+	id S1753858Ab3A3Hav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 02:30:51 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3186 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab3A3Hau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 02:27:17 -0500
+	Wed, 30 Jan 2013 02:30:50 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 29 Jan 2013 23:26:56 -0800
-Message-ID: <5108CB4F.7000103@nvidia.com>
-Date: Wed, 30 Jan 2013 16:27:11 +0900
+	by hqnvupgp05.nvidia.com on Tue, 29 Jan 2013 23:30:49 -0800
+Message-ID: <5108CC25.7080709@nvidia.com>
+Date: Wed, 30 Jan 2013 16:30:45 +0900
 From: Alex Courbot <acourbot@nvidia.com>
 Organization: NVIDIA
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Mark Zhang <nvmarkzhang@gmail.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Mark Zhang <nvmarkzhang@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [RFC 1/4] video: panel: add CLAA101WA01A panel support
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <1359514939-15653-2-git-send-email-acourbot@nvidia.com> <5108C9C1.1090707@gmail.com>
-In-Reply-To: <5108C9C1.1090707@gmail.com>
+Subject: Re: [RFC 3/4] drm: tegra: use the Common Display Framework
+References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <1359514939-15653-4-git-send-email-acourbot@nvidia.com> <5108C298.1000500@gmail.com> <5108C55C.30104@nvidia.com> <20130130072406.GA17128@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130130072406.GA17128@avionic-0098.mockup.avionic-design.de>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 04:20 PM, Mark Zhang wrote:
->> +	/* OFF and STANDBY are equivalent to us */
->> +	if (state == DISPLAY_ENTITY_STATE_STANDBY)
->> +		state = DISPLAY_ENTITY_STATE_OFF;
+On 01/30/2013 04:24 PM, Thierry Reding wrote:
+>>> Could you pick up a somewhat meaningful name? You know, there are too
+>>> many variables with name "drm/connector/output/encoder"... :)
+>>
+>> Well, it's supposed to be abstract. From the CDF point of view it
+>> could be anything besides a panel. I know this makes it an output of
+>> an output, but I can't think of anything better right now.
 >
-> Do we need this? The "switch" below handles the same thing already.
+> How about renaming "this" to stream to match with what the output is in
+> CDF speak.
 
-Indeed, I have rewritten this part actually.
+Good idea.
 
->> +static int panel_claa101_get_modes(struct display_entity *entity,
->> +				   const struct videomode **modes)
->> +{
->> +	/* TODO get modes from EDID? */
->
-> Why not move the "nvidia,ddc" from encoder's DT to panel's DT? In that
-> case, you can get EDID here. I know drm has some helpers to fetch EDID
-> but I recall there are some other functions which has no drm
-> dependencies which may be suitable for you.
+> And the output's output is the panel, right? Why not just
+> call it that? Even if it isn't directly connected to a panel entity but
+> has indeed a whole pipeline in between, for tegra-drm it is still a
+> panel.
 
-I explained this in the cover letter - I'm not sure we want to have a 
-dependency on DRM here, as CDF entities could also be connected to other 
-subsystems. That's something we need to figure out. But yes, ultimately 
-this should be the place where EDID is retrieved.
-
->> +static struct of_device_id panel_claa101_of_match[] = {
->> +	{ .compatible = "chunghwa,claa101wa01a", },
->> +	{ },
->> +};
->> +MODULE_DEVICE_TABLE(of, pwm_backlight_of_match);
->
-> What does this mean? Why we need this?
-
-Well, now you know where I copy my code from. :)
-
+Makes sense indeed. Besides the DT refer it as "panel" already.
 
 Thanks,
 Alex.
-
