@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab3A3WHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 17:07:21 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:60483 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab3A3WHS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 17:07:18 -0500
+	id S1757169Ab3A3WLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 17:11:21 -0500
+Received: from fieldses.org ([174.143.236.118]:45863 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754467Ab3A3WLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 17:11:20 -0500
+Date: Wed, 30 Jan 2013 17:11:18 -0500
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org
+Subject: Re: [PATCH v2 0/8] Add O_DENY* support for VFS and CIFS/NFS
+Message-ID: <20130130221118.GB15584@fieldses.org>
+References: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130130215211.GA28418@flint.arm.linux.org.uk>
-References: <20130130200648.GA13298@flint.arm.linux.org.uk>
-	<20130130215211.GA28418@flint.arm.linux.org.uk>
-Date: Wed, 30 Jan 2013 23:07:16 +0100
-Message-ID: <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
-Subject: Re: BUG: circular locking dependency detected
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 10:52 PM, Russell King <rmk@arm.linux.org.uk> wrote:
-> Also adding Greg and Daniel to this as Daniel introduced the lockdep
-> checking.
->
-> This looks extremely horrid to be to solve - the paths are rather deep
-> where the dependency occurs.  The two paths between the locks are:
->
-> console_lock+0x5c/0x70
-> register_con_driver+0x44/0x150
-> take_over_console+0x24/0x3b4
-> fbcon_takeover+0x70/0xd4
-> fbcon_event_notify+0x7c8/0x818
-> notifier_call_chain+0x4c/0x8c
-> __blocking_notifier_call_chain+0x50/0x68
-> blocking_notifier_call_chain+0x20/0x28
->
-> and
->
-> __blocking_notifier_call_chain+0x34/0x68
-> blocking_notifier_call_chain+0x20/0x28
-> fb_notifier_call_chain+0x20/0x28
-> fb_blank+0x40/0xac
-> fbcon_blank+0x1f4/0x29c
-> do_blank_screen+0x1b8/0x270
-> console_callback+0x74/0x138
+On Thu, Jan 17, 2013 at 08:52:09PM +0400, Pavel Shilovsky wrote:
+> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
+> 
+> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
+> 
+> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
 
-You want Dave Airlie's pile of locking reworks, which fixes all
-currently known offenders around console_lock and fb_notifier. Patches
-won't go into 3.9 since it took a few rounds until they did not cause
-regression by making these deadlocks easier to hit.
+Maybe that's good enough.  A mount flag might be simpler and give
+consistent enforcement for all users.
 
-http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
+> 
+> So, we have four new flags:
+> O_DENYREAD - to prevent other opens with read access,
+> O_DENYWRITE - to prevent other opens with write access,
+> O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
+> O_DENYMAND - to switch on/off three flags above.
 
-Long term solution would be to abolish the fb_notifier, at least for
-the purpose of linking fbdevs up with the fbcon and just replace those
-with direct function calls. But that requires that we no longer allow
-fbdev drivers and the fbcon to be loaded in any arbitrary order. Or
-just force fbcon to be built-in if enabled, imo the sane choice (no
-one's bothering with config_vt=m either, after all).
+It would be useful to have some really careful documentation of how
+these are meant to work.  Maybe try updating the open man page?
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+--b.
+> 
+> The #1 patch bring infrastructure to let us add this capability easier. #2 patch adds flags to fcntl while #3 patch implement VFS part. Patches #4, #5, #6 are related to CIFS-specific changes. #7 and #8 describe NFS and NFSD parts.
+> 
+> Also, I created the preliminary patch for Samba that replaces the existing use of flock/LOCK_MAND mechanism with O_DENY* flags:
+> http://git.etersoft.ru/people/piastry/packages/?p=samba.git;a=commitdiff;h=f116c478bf9a1bc3985e9a719fb20d854914d67a
+> 
+> Pavel Shilovsky (8):
+>   locks: make flock_lock_file take is_conflict callback parm
+>   fcntl: Introduce new O_DENY* open flags
+>   vfs: Add O_DENYREAD/WRITE flags support for open syscall
+>   CIFS: Add O_DENY* open flags support
+>   CIFS: Use NT_CREATE_ANDX command for forcemand mounts
+>   CIFS: Translate SHARING_VIOLATION to -ETXTBSY error code for SMB2
+>   NFSv4: Add O_DENY* open flags support
+>   NFSD: Pass share reservations flags to VFS
+> 
+>  fs/cifs/cifsacl.c                |  10 ++--
+>  fs/cifs/cifsglob.h               |  12 +++-
+>  fs/cifs/cifsproto.h              |   9 +--
+>  fs/cifs/cifssmb.c                |  47 ++++++++-------
+>  fs/cifs/dir.c                    |  14 +++--
+>  fs/cifs/file.c                   |  18 ++++--
+>  fs/cifs/inode.c                  |  11 ++--
+>  fs/cifs/link.c                   |  10 ++--
+>  fs/cifs/readdir.c                |   2 +-
+>  fs/cifs/smb1ops.c                |  15 ++---
+>  fs/cifs/smb2file.c               |  10 ++--
+>  fs/cifs/smb2inode.c              |   4 +-
+>  fs/cifs/smb2maperror.c           |   2 +-
+>  fs/cifs/smb2ops.c                |  10 ++--
+>  fs/cifs/smb2pdu.c                |   6 +-
+>  fs/cifs/smb2proto.h              |  14 +++--
+>  fs/fcntl.c                       |   5 +-
+>  fs/locks.c                       | 121 ++++++++++++++++++++++++++++++++++++---
+>  fs/namei.c                       |  10 +++-
+>  fs/nfs/nfs4xdr.c                 |  24 ++++++--
+>  fs/nfsd/nfs4state.c              |  46 ++++++++++++++-
+>  include/linux/fs.h               |   6 ++
+>  include/uapi/asm-generic/fcntl.h |  14 +++++
+>  23 files changed, 324 insertions(+), 96 deletions(-)
+> 
+> -- 
+> 1.8.1.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
