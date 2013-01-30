@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab3A3DCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Jan 2013 22:02:08 -0500
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:52022
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751626Ab3A3DCF (ORCPT
+	id S1752519Ab3A3DCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Jan 2013 22:02:41 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13578 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab3A3DCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 22:02:05 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <matthieu.castet@parrot.com>,
-        <ffainelli@freebox.fr>, <gabriel.matni@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v3] mtd: fix the wrong timeo for panic_nand_wait()
-Date: Wed, 30 Jan 2013 10:03:56 +0800
-Message-ID: <1359511436-12107-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <201301292200.14622.ffainelli@freebox.fr>
-References: <201301292200.14622.ffainelli@freebox.fr>
+	Tue, 29 Jan 2013 22:02:38 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 29 Jan 2013 19:00:45 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [RFC 0/4] Use the Common Display Framework in tegra-drm
+Date: Wed, 30 Jan 2013 12:02:15 +0900
+Message-ID: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The panic_nand_wait() expects the timeo in ms and not in jiffies.
-But in nand_wait(), the timeo for panic_nand_wait() is assigned with
-wrong value(jiffies + some delay). The timeo should be set like the
-panic_nand_write() does.
+This series leverages the (still work-in-progress) Common Display Framework to
+add panel support to the tegra-drm driver. It also adds a driver for the
+CLAA101WA01A panel used on the Ventana board.
 
-This patch passes timeo in ms to panic_nand_wait().
-And this patch also passes timeo in jiffies(converted by msecs_to_jiffies)
-to time_before() which makes the code more readable.
+The CDF is a moving target but Tegra needs some sort of display framework and
+even in its current state the CDF seems to be the best candidate. Besides, by
+using the CDF from now on we hope to provide useful feedback to Laurent and the
+other CDF designers.
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
-v1 --> v2:
-	fixed a compiler error.
+The changes to tegra-drm are rather minimal. Panels are referenced from Tegra DC
+output nodes through the "nvidia,panel" property. This property is looked up
+when a display connect notification is received in order to see if it points to
+the connected display entity. If it does, the entity is then used for output.
 
-v2 --> v3:
-	add more comments.
----
- drivers/mtd/nand/nand_base.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+The DPMS states are then propagated to the output entity, which is then supposed
+to call back into the set_stream() hook in order to enable/disable the output
+stream as needed.
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 8323ac9..a8c1fb4 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -825,13 +825,8 @@ static void panic_nand_wait(struct mtd_info *mtd, struct nand_chip *chip,
- static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
- {
- 
--	unsigned long timeo = jiffies;
- 	int status, state = chip->state;
--
--	if (state == FL_ERASING)
--		timeo += (HZ * 400) / 1000;
--	else
--		timeo += (HZ * 20) / 1000;
-+	unsigned long timeo = (state == FL_ERASING ? 400 : 20);
- 
- 	led_trigger_event(nand_led_trigger, LED_FULL);
- 
-@@ -849,6 +844,7 @@ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
- 	if (in_interrupt() || oops_in_progress)
- 		panic_nand_wait(mtd, chip, timeo);
- 	else {
-+		timeo = jiffies + msecs_to_jiffies(timeo);
- 		while (time_before(jiffies, timeo)) {
- 			if (chip->dev_ready) {
- 				if (chip->dev_ready(mtd))
+Although the overall design seems to work ok, a few specific issues need to be
+addressed:
+
+1) The CDF has a get_modes() hook, but this is already implemented by
+tegra_connector_get_modes(). Ideally everything should be moved to the CDF hook,
+but Tegra's implementation uses DRM functions to retrieve the EDID and CDF
+should, AFAIK, remain DRM-agnostic.
+
+2) There is currently no panel/backlight interaction, e.g. backlight status is
+controlled through FB events, independantly from the panel state. It could make
+sense to have the panel DT node reference the backlight and control it as part
+of its own power on/off sequence. Right now however, a backlight device cannot
+ignore FB events.
+
+3) Probably related to 2), now the backlight's power controls are part of the
+panel driver, because the pwm-backlight driver cannot control the power
+regulator and enable GPIO. This means that the backlight power is not turned off
+when its brightness is set to 0 through sysfs. Once again this speaks in favor
+of having stronger panel/backlight interaction: for instance, the panel driver
+could reference the backlight and hijack its update_status() op to replace it by
+one that does the correct power sequencing before calling the original function.
+This would require some extra infrastructure though. Another possibility would
+be to have a dedicated backlight driver for each panel, with its own
+"compatible" string.
+
+The code is based on 3.8rc5 + Steffen's videomode patches and the CDF v2.
+
+Alexandre Courbot (4):
+  video: panel: add CLAA101WA01A panel support
+  tegra: ventana: add display and backlight DT nodes
+  drm: tegra: use the Common Display Framework
+  tegra: enable CDF and claa101 panel
+
+ .../bindings/gpu/nvidia,tegra20-host1x.txt         |   2 +
+ .../video/display/chunghwa,claa101wa01a.txt        |   8 +
+ arch/arm/boot/dts/tegra20-ventana.dts              |  34 +++-
+ arch/arm/configs/tegra_defconfig                   |   2 +
+ drivers/gpu/drm/tegra/drm.h                        |  16 ++
+ drivers/gpu/drm/tegra/output.c                     | 118 +++++++++++-
+ drivers/video/display/Kconfig                      |   8 +
+ drivers/video/display/Makefile                     |   1 +
+ drivers/video/display/panel-claa101wa01a.c         | 209 +++++++++++++++++++++
+ 9 files changed, 393 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/video/display/chunghwa,claa101wa01a.txt
+ create mode 100644 drivers/video/display/panel-claa101wa01a.c
+
 -- 
-1.7.0.4
-
+1.8.1.1
 
