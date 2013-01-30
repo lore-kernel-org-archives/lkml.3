@@ -1,132 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab3A3LIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 06:08:47 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:50950 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab3A3LIo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 06:08:44 -0500
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CAF6AEGv2XqJB49Q-6BUtU80qMZx9tXHuwTV0Ds6c7L1J+4xwBw@mail.gmail.com>
-References: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com>
-	<1358253244-11453-3-git-send-email-maarten.lankhorst@canonical.com>
-	<CAF6AEGv2XqJB49Q-6BUtU80qMZx9tXHuwTV0Ds6c7L1J+4xwBw@mail.gmail.com>
-Date: Wed, 30 Jan 2013 12:08:42 +0100
-X-Google-Sender-Auth: XXkCCc1cEOD5fxvhaU5Hu3rkKXk
-Message-ID: <CAKMK7uGxbL=kZ1eeJYKVkCh0rz2gunmr8FBQWUNK5JsxMsjRgQ@mail.gmail.com>
-Subject: Re: [PATCH 2/7] mutex: add support for reservation style locks
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755236Ab3A3LJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 06:09:00 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:39069 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754622Ab3A3LI4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 06:08:56 -0500
+Subject: Re: [PATCH] cpsw: Fix interrupt storm among other things
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <5108FC31.3000507@ti.com>
+Date: Wed, 30 Jan 2013 13:08:50 +0200
+Cc: Richard Cochran <richardcochran@gmail.com>, Matt Porter <mporter@ti.com>,
+        Chase Maupin <chase.maupin@ti.com>, Jason Kridner <jdk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <27A3106E-3FDB-43DB-AAC9-DC2DA768AF9E@antoniou-consulting.com>
+References: <1359378668-26536-1-git-send-email-panto@antoniou-consulting.com> <5107B650.5090901@ti.com> <3DE2C638-6AE8-4BC9-AD68-3AAA40CD6233@antoniou-consulting.com> <5108E1C6.9020201@ti.com> <0FB10FF4-6639-472E-943C-61CEDB0336E0@antoniou-consulting.com> <5108FC31.3000507@ti.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 2:07 AM, Rob Clark <robdclark@gmail.com> wrote:
-> ==========================
-> Basic problem statement:
-> ----- ------- ---------
-> GPU's do operations that commonly involve many buffers.  Those buffers
-> can be shared across contexts/processes, exist in different memory
-> domains (for example VRAM vs system memory), and so on.  And with
-> PRIME / dmabuf, they can even be shared across devices.  So there are
-> a handful of situations where the driver needs to wait for buffers to
-> become ready.  If you think about this in terms of waiting on a buffer
-> mutex for it to become available, this presents a problem because
-> there is no way to guarantee that buffers appear in a execbuf/batch in
-> the same order in all contexts.  That is directly under control of
-> userspace, and a result of the sequence of GL calls that an
-> application makes.  Which results in the potential for deadlock.  The
-> problem gets more complex when you consider that the kernel may need
-> to migrate the buffer(s) into VRAM before the GPU operates on the
-> buffer(s), which main in turn require evicting some other buffers (and
-> you don't want to evict other buffers which are already queued up to
-> the GPU), but for a simplified understanding of the problem you can
-> ignore this.
->
-> The algorithm that TTM came up with for dealing with this problem is
-> quite simple.  For each group of buffers (execbuf) that need to be
-> locked, the caller would be assigned a unique reservation_id, from a
-> global counter.  In case of deadlock in the process of locking all the
-> buffers associated with a execbuf, the one with the lowest
-> reservation_id wins, and the one with the higher reservation_id
-> unlocks all of the buffers that it has already locked, and then tries
-> again.
->
-> Originally TTM implemented this algorithm on top of an event-queue and
-> atomic-ops, but Maarten Lankhorst realized that by merging this with
-> the mutex code we could take advantage of the existing mutex fast-path
-> code and result in a simpler solution, and so ticket_mutex was born.
-> (Well, there where also some additional complexities with the original
-> implementation when you start adding in cross-device buffer sharing
-> for PRIME.. Maarten could probably better explain.)
+Hi Mugunthan,
 
-I think the motivational writeup above is really nice, but the example
-code below is a bit wrong
+On Jan 30, 2013, at 12:55 PM, Mugunthan V N wrote:
 
-> How it is used:
-> --- -- -- -----
->
-> A very simplified version:
->
->   int submit_execbuf(execbuf)
->   {
->       /* acquiring locks, before queuing up to GPU: */
->       seqno = assign_global_seqno();
->   retry:
->       for (buf in execbuf->buffers) {
->           ret = mutex_reserve_lock(&buf->lock, seqno);
->           switch (ret) {
->           case 0:
->               /* we got the lock */
->               break;
->           case -EAGAIN:
->               /* someone with a lower seqno, so unreserve and try again: */
->               for (buf2 in reverse order starting before buf in
-> execbuf->buffers)
->                   mutex_unreserve_unlock(&buf2->lock);
->               goto retry;
->           default:
->               goto err;
->           }
->       }
->
->       /* now everything is good to go, submit job to GPU: */
->       ...
->   }
->
->   int finish_execbuf(execbuf)
->   {
->       /* when GPU is finished: */
->       for (buf in execbuf->buffers)
->           mutex_unreserve_unlock(&buf->lock);
->   }
-> ==========================
+> On 1/30/2013 3:06 PM, Pantelis Antoniou wrote:
+>> Hi,
+>> 
+>> On Jan 30, 2013, at 11:03 AM, Mugunthan V N wrote:
+>> 
+>>> On 1/30/2013 2:06 PM, Pantelis Antoniou wrote:
+>>>> Hi Mugunthan,
+>>>> 
+>>>> On Jan 29, 2013, at 1:45 PM, Mugunthan V N wrote:
+>>>> 
+>>>>> On 1/28/2013 6:41 PM, Pantelis Antoniou wrote:
+>>>>>> Fix interrupt storm on bone A4 cause by non-by-the-book interrupt handling.
+>>>>>> While at it, added a non-NAPI mode (which is easier to debug), plus
+>>>>>> some general fixes.
+>>>>>> 
+>>>>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+>>>>>> ---
+>>>>>>  Documentation/devicetree/bindings/net/cpsw.txt |   1 +
+>>>>>>  drivers/net/ethernet/ti/cpsw.c                 | 222 +++++++++++++++++++++----
+>>>>>>  drivers/net/ethernet/ti/davinci_cpdma.c        |   4 +-
+>>>>>>  drivers/net/ethernet/ti/davinci_cpdma.h        |   2 +-
+>>>>>>  include/linux/platform_data/cpsw.h             |   1 +
+>>>>>>  5 files changed, 194 insertions(+), 36 deletions(-)
+>>>>> I have tested CPSW on AM335x EVM 1.5A with flood ping and i am not
+>>>>> seeing any interrupt storm.
+>>>>> Can you provide more details on how to reproduce the issue.
+>>>>> 
+>>>> A beaglebone prototype with the new silicon version, with the ethernet errata
+>>>> fixed displays this. You can't trigger it on old silicon.
+>>>> 
+>>>> The TI people on the CC list can confirm.
+>>> But i have the same silicon revision (PG2.0) in my EVM and I am not seeing any issues. Can you
+>>> point me to the ethernet errata which you are mentioning?
+>>> 
+>>> Regards
+>>> Mugunthan V N
+>> What kernel version are you using? This is only triggered on the mainline driver.
+>> 
+>> The advisory in question: From http://www.ti.com/lit/er/sprz360c/sprz360c.pdf
+>> 
+>> Advisory 1.0.9: "Ethernet Media Access Controller and Switch Subsystem: C0_TX_PEND
+>> and C0_RX_PEND Interrupts Not Connected to ARM Cortex-A8"
+>> 
+>> I bet you're using an old kernel driver with the workarounds with the timers.
+>> 
+>> If I had to guess (although I didn't use a probe or anything) is that the
+>> interrupts are now proper level interrupts, instead of working in edge
+>> triggered mode due to the workaround.
+>> 
+>> Apparently the interrupt was never acked properly in the original driver
+>> (the sequence described in the TRM is not followed).
+>> 
+>> Looking at the TRM (spruh73g.pdf) 14.3.1.3 Interrupts in particular, the
+>> the status registers are not read, and more damning the proper values to the
+>> CPDMA_EOI_VECTOR register are not written.
+>> 
+>> The original driver blindly wrote zero (cpdma_ctlr_eoi), while you have to
+>> write different values according to the interrupt you ack.
+>> 
+>> What happened was that on the first interrupt, the interrupt was never acked,
+>> and we had an irq storm...
+>> 
+>> Regards
+>> 
+>> -- Pantelis
+> The above mentioned advisory is for PG1.0 and not for PG2.0
+> I am booting net-next kernel.
+> 
+> [    0.000000] Booting Linux on physical CPU 0x0
+> [    0.000000] Linux version 3.8.0-rc5-01248-gd2ed273 (a0131834@a0131834-linux) (gcc version 4.5.3 20110311 (prerelease) (GCC) ) #21 SMP Wed Jan 30 163
+> [    0.000000] CPU: ARMv7 Processor [413fc082] revision 2 (ARMv7), cr=10c53c7d
+> [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+> 
+> [root@arago /]# uname -a
+> Linux arago 3.8.0-rc5-01248-gd2ed273 #21 SMP Wed Jan 30 16:13:26 IST 2013 armv7l GNU/Linux
+> 
+> In theory what you are mentioning is correct. I have a beagle bone black and yet to try it.
+> 
 
-Since gpu command submission is all asnyc (hopefully at least) we
-don't unlock once it completes, but right away after the commands are
-submitted. Otherwise you wouldn't be able to submit new execbufs using
-the same buffer objects (and besides, holding locks while going back
-out to userspace is evil).
+I don't know what kind of silicon revision you have there.
 
-The trick is to add a fence object for async operation (essentially a
-waitqueue on steriods to support gpu->gpu direct signalling). And
-updating fences for a given execbuf needs to happen atomically for all
-buffers, for otherwise userspace could trick the kernel into creating
-a circular fence chain. This wouldn't deadlock the kernel, since
-everything is async, but it'll nicely deadlock the gpus involved.
-Hence why we need ticketing locks to get dma_buf fences off the
-ground.
+FWIW both the original bone and the black show the exact same CPU: ARMv7 lines:
 
-Maybe wait for Maarten's feedback, then update your motivational blurb a bit?
+bone-original:
+[    0.000000] CPU: ARMv7 Processor [413fc082] revision 2 (ARMv7), cr=10c5387d
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+bone-black: (with the known silicon version that has the fix)
+[    0.000000] CPU: ARMv7 Processor [413fc082] revision 2 (ARMv7), cr=10c5387d
+
+TBH I haven't found a simple way to print out the silicon revision number.
+Anyone on the list know a quick and dirty method? 
+
+> Regards
+> Mugunthan V N
+
+Regards
+
+-- Pantelis
+
+
