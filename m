@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab3A3IVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:21:35 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:9484 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753750Ab3A3IVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:21:31 -0500
-Message-ID: <5108D808.6010405@bfs.de>
-Date: Wed, 30 Jan 2013 09:21:28 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1754131Ab3A3IXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:23:09 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6443 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab3A3IXG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:23:06 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 30 Jan 2013 00:22:46 -0800
+Message-ID: <5108D865.3070301@nvidia.com>
+Date: Wed, 30 Jan 2013 17:23:01 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Julia Lawall <julia.lawall@lip6.fr>, Russell King <linux@arm.linux.org.uk>,
-        Mike Rapoport <mike@compulab.co.il>, Valdis.Kletnieks@vt.edu,
-        cocci@systeme.lip6.fr, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Paul Fulghum <paulkf@microgate.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: coccinelle and bitmask arithmetic
-References: <20130127194039.GA18787@elgon.mountain>	 <1359317078.14406.12.camel@joe-AO722> <20130127201947.GO16282@mwanda>	 <9561.1359474916@turing-police.cc.vt.edu>	 <1359475998.4196.26.camel@joe-AO722>	 <alpine.DEB.2.02.1301291847070.3339@hadrien> <1359482637.15135.7.camel@joe-AO722>
-In-Reply-To: <1359482637.15135.7.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "gnurou@gmail.com" <gnurou@gmail.com>
+Subject: Re: [RFC 0/4] Use the Common Display Framework in tegra-drm
+References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <20130130074020.GA17547@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130130074020.GA17547@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/30/2013 04:40 PM, Thierry Reding wrote:
+> Thanks *a lot* for taking care of this Alexandre! From a quick look at
+> the patches they seem generally fine. I'll go over them in a bit more
+> detail though.
 
+Glad you like it better than my previous attempts at controlling Tegra's 
+panels and backlights. ;)
 
-Am 29.01.2013 19:03, schrieb Joe Perches:
-> On Tue, 2013-01-29 at 18:49 +0100, Julia Lawall wrote:
->> How about the following (from today's linux-next).  They appear to be
->> trying to do the same calculation, once with + and once with |.
-> 
-> (cc'ing the original developer and Russell King)
-> 
-> Likely the it8152_pci_platform_notify uses should use +
-> 
->> arch/arm/common/it8152.c
->>
->> int dma_set_coherent_mask(struct device *dev, u64 mask)
->> {
->>         if (mask >= PHYS_OFFSET + SZ_64M - 1)
->>                 return 0;
->>
->>         return -EIO;
->> }
->>
+>> 1) The CDF has a get_modes() hook, but this is already implemented by
+>> tegra_connector_get_modes(). Ideally everything should be moved to the CDF hook,
+>> but Tegra's implementation uses DRM functions to retrieve the EDID and CDF
+>> should, AFAIK, remain DRM-agnostic.
+>
+> Maybe a good option would be to just not implement get_modes() if the
+> same information can be retrieved via EDID. That is, the DRM driver
+> could just go and fetch EDID when the nvidia,ddc-i2c-bus is available
+> (or parse the nvidia,edid blob) and only rely on CDF otherwise.
 
-Great hit Joe :)
+Since EDID information is per-panel I'd intuitively say it should be 
+provided by the panel driver.
 
-Sometimes i am really surprised what code can be found
-in the kernal and it is still working.
-Having no clue of the code i suspect somebody tries to
-check is mask outside the range it should read
-PHYS_OFFSET |( SZ_64M - 1)
-maybe someone should tell them that
-1+1=10 while 1|1=1
-It does not seem to matter here (or ... ?)
+> So for Ventana the only reason why we need CDF is basically the power
+> sequencing, right?
 
-really perplexed,
+As of now, yes.
 
-wh
+> I definitely think that we should aim for correct panel and backlight
+> interaction. Perhaps this could work by looking up the real backlight
+> via it's phandle and have the CDF driver use the backlight API to
+> disable or enable the backlight as part of the power sequencing.
 
+I have just written a bit of code that does that. It works well and 
+seems like a natural way to operate the backlight. However...
 
->> static int it8152_pci_platform_notify(struct device *dev)
->> {
->>         if (dev->bus == &pci_bus_type) {
->>                 if (dev->dma_mask)
->>                         *dev->dma_mask = (SZ_64M - 1) | PHYS_OFFSET;
->>                 dev->coherent_dma_mask = (SZ_64M - 1) | PHYS_OFFSET;
->>                 dmabounce_register_dev(dev, 2048, 4096, it8152_needs_bounce);
->>         }
->>         return 0;
->> }
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+> I'm not sure what you mean by "cannot ignore FB events"? Can you provide
+> a concrete problematic use-case?
+
+... that's where thing stop looking nice. The backlight framework 
+forcibly registers a framebuffer notifier callback and switches the 
+backlight on and off on blank/unblank events, effectively duplicating 
+what the panel driver does. There is no way to disable this behavior at 
+the moment.
+
+This could be solved by introducing a new function for controlling the 
+"ownership" of the backlight that would unregister the notifier when the 
+panel driver takes its reference to the backlight.
+
+> Hijacking .update_status() sounds a bit risky. But perhaps you could
+> wrap the real backlight in a CDF backlight to receive notifications.
+> Obviously you'd get two backlight devices in sysfs, but that turn out
+> not to be a problem.
+
+For cosmetic reasons I'd prefer to avoid having two backlight devices 
+(which ended up in that terrible PWM backlight subdriver thing). Maybe 
+we can engineer the backlight framework to make such customizations easier?
+
+Alex.
+
