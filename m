@@ -1,134 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab3A3Ot1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 09:49:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57851 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350Ab3A3OrT (ORCPT
+	id S1755559Ab3A3Otv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 09:49:51 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54427
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755367Ab3A3OrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 09:47:19 -0500
+	Wed, 30 Jan 2013 09:47:17 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/21] tools lib traceevent: Handle dynamic array's element size properly
-Date: Wed, 30 Jan 2013 11:46:42 -0300
-Message-Id: <1359557222-17547-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 12/21] perf tools: Make numa benchmark optional
+Date: Wed, 30 Jan 2013 11:46:53 -0300
+Message-Id: <1359557222-17547-13-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359557222-17547-1-git-send-email-acme@infradead.org>
 References: <1359557222-17547-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-Fixing the dynamic array format field parsing.
+Commit "perf: Add 'perf bench numa mem'..." added a NUMA performance
+benchmark to perf. Make this optional and test for required
+dependencies.
 
-Currently the event_read_fields function could segfault while parsing
-dynamic array other than string type. The reason is the event->pevent
-does not need to be set and gets dereferenced unconditionaly.
-
-Also adding proper initialization of field->elementsize based on the
-parsed dynamic type.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1359060403-32422-1-git-send-email-jolsa@redhat.com
-[ committer note: Made a char pointer parameter const, as requested by Steven ]
+Link: http://lkml.kernel.org/r/1359337882-21821-1-git-send-email-peter@hurleysoftware.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c | 39 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 37 insertions(+), 2 deletions(-)
+ tools/perf/Makefile                 | 16 ++++++++++++++--
+ tools/perf/builtin-bench.c          |  4 ++++
+ tools/perf/config/feature-tests.mak | 11 +++++++++++
+ 3 files changed, 29 insertions(+), 2 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index bb8b3db..82b0606 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -1223,6 +1223,34 @@ static int field_is_long(struct format_field *field)
- 	return 0;
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index b62dbc0..4b1044c 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -47,6 +47,8 @@ include config/utilities.mak
+ # backtrace post unwind.
+ #
+ # Define NO_BACKTRACE if you do not want stack backtrace debug feature
++#
++# Define NO_LIBNUMA if you do not want numa perf benchmark
  
-+static unsigned int type_size(const char *name)
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -103,7 +105,7 @@ ifdef PARSER_DEBUG
+ endif
+ 
+ CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+-EXTLIBS = -lpthread -lrt -lelf -lm -lnuma
++EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ ALL_LDFLAGS = $(LDFLAGS)
+ STRIP ?= strip
+@@ -492,7 +494,6 @@ LIB_OBJS += $(OUTPUT)tests/python-use.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+-BUILTIN_OBJS += $(OUTPUT)bench/numa.o
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+ ifeq ($(RAW_ARCH),x86_64)
+@@ -839,6 +840,17 @@ ifndef NO_BACKTRACE
+        endif
+ endif
+ 
++ifndef NO_LIBNUMA
++	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
++	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
++		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
++	else
++		BASIC_CFLAGS += -DLIBNUMA_SUPPORT
++		BUILTIN_OBJS += $(OUTPUT)bench/numa.o
++		EXTLIBS += -lnuma
++	endif
++endif
++
+ ifdef ASCIIDOC8
+ 	export ASCIIDOC8
+ endif
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index e5d514b..77298bf 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -35,6 +35,7 @@ struct bench_suite {
+ /* sentinel: easy for help */
+ #define suite_all { "all", "Test all benchmark suites", NULL }
+ 
++#ifdef LIBNUMA_SUPPORT
+ static struct bench_suite numa_suites[] = {
+ 	{ "mem",
+ 	  "Benchmark for NUMA workloads",
+@@ -44,6 +45,7 @@ static struct bench_suite numa_suites[] = {
+ 	  NULL,
+ 	  NULL                  }
+ };
++#endif
+ 
+ static struct bench_suite sched_suites[] = {
+ 	{ "messaging",
+@@ -78,9 +80,11 @@ struct bench_subsys {
+ };
+ 
+ static struct bench_subsys subsystems[] = {
++#ifdef LIBNUMA_SUPPORT
+ 	{ "numa",
+ 	  "NUMA scheduling and MM behavior",
+ 	  numa_suites },
++#endif
+ 	{ "sched",
+ 	  "scheduler and IPC mechanism",
+ 	  sched_suites },
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index f5ac774..b4eabb4 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -225,3 +225,14 @@ int main(void)
+ 	return on_exit(NULL, NULL);
+ }
+ endef
++
++define SOURCE_LIBNUMA
++#include <numa.h>
++#include <numaif.h>
++
++int main(void)
 +{
-+	/* This covers all FIELD_IS_STRING types. */
-+	static struct {
-+		const char *type;
-+		unsigned int size;
-+	} table[] = {
-+		{ "u8",   1 },
-+		{ "u16",  2 },
-+		{ "u32",  4 },
-+		{ "u64",  8 },
-+		{ "s8",   1 },
-+		{ "s16",  2 },
-+		{ "s32",  4 },
-+		{ "s64",  8 },
-+		{ "char", 1 },
-+		{ },
-+	};
-+	int i;
-+
-+	for (i = 0; table[i].type; i++) {
-+		if (!strcmp(table[i].type, name))
-+			return table[i].size;
-+	}
-+
++	numa_available();
 +	return 0;
 +}
-+
- static int event_read_fields(struct event_format *event, struct format_field **fields)
- {
- 	struct format_field *field = NULL;
-@@ -1232,6 +1260,8 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 	int count = 0;
- 
- 	do {
-+		unsigned int size_dynamic = 0;
-+
- 		type = read_token(&token);
- 		if (type == EVENT_NEWLINE) {
- 			free_token(token);
-@@ -1390,6 +1420,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 				field->type = new_type;
- 				strcat(field->type, " ");
- 				strcat(field->type, field->name);
-+				size_dynamic = type_size(field->name);
- 				free_token(field->name);
- 				strcat(field->type, brackets);
- 				field->name = token;
-@@ -1478,10 +1509,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 		if (field->flags & FIELD_IS_ARRAY) {
- 			if (field->arraylen)
- 				field->elementsize = field->size / field->arraylen;
-+			else if (field->flags & FIELD_IS_DYNAMIC)
-+				field->elementsize = size_dynamic;
- 			else if (field->flags & FIELD_IS_STRING)
- 				field->elementsize = 1;
--			else
--				field->elementsize = event->pevent->long_size;
-+			else if (field->flags & FIELD_IS_LONG)
-+				field->elementsize = event->pevent ?
-+						     event->pevent->long_size :
-+						     sizeof(long);
- 		} else
- 			field->elementsize = field->size;
- 
++endef
+\ No newline at end of file
 -- 
 1.8.1.1.361.gec3ae6e
 
