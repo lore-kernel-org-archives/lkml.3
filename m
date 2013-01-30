@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3A3IKP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 03:10:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44719 "EHLO mail.kernel.org"
+	id S1753961Ab3A3IK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 03:10:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44750 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab3A3IKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 03:10:14 -0500
-Date: Wed, 30 Jan 2013 00:12:14 -0500
+	id S1751766Ab3A3IK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 03:10:26 -0500
+Date: Wed, 30 Jan 2013 00:14:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dirkjan Bussink <dirkjan.bussink@nedap.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tty: Prevent deadlock in n_gsm driver
-Message-ID: <20130130051213.GA26675@kroah.com>
-References: <4B03AD17-906A-4FBF-9F00-3F860395B229@nedap.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        linux-arch@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v3 43/44] tty/metag_da: Add metag DA TTY driver
+Message-ID: <20130130051418.GB26687@kroah.com>
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
+ <1357831872-29451-44-git-send-email-james.hogan@imgtec.com>
+ <50F3E3FF.4080803@imgtec.com>
+ <51026E55.80905@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4B03AD17-906A-4FBF-9F00-3F860395B229@nedap.com>
+In-Reply-To: <51026E55.80905@imgtec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 09:49:52AM +0100, Dirkjan Bussink wrote:
-> This change fixes a deadlock when the multiplexer is closed while there
-> are still client side ports open.
+On Fri, Jan 25, 2013 at 11:36:53AM +0000, James Hogan wrote:
+> Hi,
 > 
-> When the multiplexer is closed and there are active tty's it tries to
-> close them with tty_vhangup. This has a problem though, because
-> tty_vhangup needs the tty_lock. This patch changes it to unlock the
-> tty_lock before attempting the hangup and relocks afterwards. The
-> additional call to tty_port_tty_set is needed because otherwise the
-> port stays active because of the reference counter.
+> On 14/01/13 10:54, James Hogan wrote:
+> > Here's a new version addressing Jiri's feedback.
+> > 
+> > Add a TTY driver for communicating over a Meta DA (Debug Adapter)
+> > channel using the bios channel SWITCH operation.
+> > 
+> > Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> > Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: Jiri Slaby <jslaby@suse.cz>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > Cc: Cesar Eduardo Barros <cesarb@cesarb.net>
+> > Cc: Joe Perches <joe@perches.com>
+> > Cc: "David S. Miller" <davem@davemloft.net>
 > 
-> This change also exposed another problem that other code paths don't
-> expect that the multiplexer could have been closed. This patch also adds
-> checks for these cases in the gsmtty_ class of function that could be
-> called.
+> If this looks okay, I'd appreciate if somebody could Ack it.
 > 
-> The documentation explicitly states that "first close all virtual ports
-> before closing the physical port" but we've found this to not always
-> reality in our field situations. The GPRS / UTMS modem sometimes crashes
-> and needs a power cycle in that case which means cleanly shutting down
-> everything is not always possible. This change makes it much more robust
-> for our situation where at least the system is recoverable with this patch
-> and doesn't hang in a deadlock situation inside the kernel.
-> 
-> The patch is against the long term support kernel (3.4.27) and should
-> apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
-> and Telit HE910 modem.
+> I have some further patches ready to simplify the code around
+> tty_prepare_flip_string and tty_flip_buffer_push to avoid taking a tty
+> kref, after Jiri's changes in that area in linux-next. I guess these can
+> be applied once both sets of changes are merged.
 
-It doesn't apply cleanly to the linux-next tree, can you refresh this
-and resend it so that I can apply it?  If you want it backported to the
-stable kernel releases, we can only do that after it gets into Linus's
-tree, see the file, Documentation/stable_kernel_rules.txt for details
-about this.
+At first glance, it looks good to me:
 
-thanks,
-
-greg k-h
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
