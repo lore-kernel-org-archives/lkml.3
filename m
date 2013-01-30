@@ -1,29 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3A3RLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 12:11:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30557 "EHLO mx1.redhat.com"
+	id S1756407Ab3A3RM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 12:12:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30030 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab3A3RLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 12:11:05 -0500
-Message-Id: <20130130171101.406627645@napanee.usersys.redhat.com>
+	id S1756050Ab3A3RLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 12:11:08 -0500
+Message-Id: <20130130171101.812377398@napanee.usersys.redhat.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 30 Jan 2013 12:11:03 -0500
+Date: Wed, 30 Jan 2013 12:11:06 -0500
 From: aris@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v4 2/9] devcg: reorder device exception functions
+Subject: [PATCH v4 5/9] devcg: prepare may_access() for hierarchy support
 References: <20130130171101.060853036@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=reorder_exception_functions.patch
+Content-Disposition: inline; filename=strengthen-may_access.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for the next patch, reorder dev_exception_add() and
-dev_exception_rm().
+Currently may_access() is only able to verify if an exception is valid for the
+current cgroup, which has the same behavior. With hierarchy, it'll be also used
+to verify if a cgroup local exception is valid towards its cgroup parent, which
+might have different behavior.
 
-This patch doesn't introduce any functional changes.
+v2:
+- updated patch description
+- rebased on top of a new patch to expand the may_access() logic to make it
+  more clear
+- fixed argument description order in may_access()
 
 Acked-by: Tejun Heo <tj@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
@@ -31,91 +37,87 @@ Cc: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
 ---
- security/device_cgroup.c |   44 ++++++++++++++++++++++----------------------
- 1 file changed, 22 insertions(+), 22 deletions(-)
+ security/device_cgroup.c |   38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
 
---- github.orig/security/device_cgroup.c	2013-01-29 11:49:14.739657516 -0500
-+++ github/security/device_cgroup.c	2013-01-29 11:49:14.987661210 -0500
-@@ -104,18 +104,14 @@ free_and_exit:
- /*
-  * called under devcgroup_mutex
+--- github.orig/security/device_cgroup.c	2013-01-30 08:58:02.000000000 -0500
++++ github/security/device_cgroup.c	2013-01-30 09:00:09.435351867 -0500
+@@ -354,9 +354,11 @@ 	return 0;
+  *		verify if a certain access is allowed.
+  * @dev_cgroup: dev cgroup to be tested against
+  * @refex: new exception
++ * @behavior: behavior of the exception
   */
--static int dev_exception_add(struct list_head *exceptions,
-+static void dev_exception_rm(struct list_head *exceptions,
- 			     struct dev_exception_item *ex)
+ static bool may_access(struct dev_cgroup *dev_cgroup,
+-		       struct dev_exception_item *refex)
++		       struct dev_exception_item *refex,
++		       enum devcg_behavior behavior)
  {
--	struct dev_exception_item *excopy, *walk;
-+	struct dev_exception_item *walk, *tmp;
+ 	struct dev_exception_item *ex;
+ 	bool match = false;
+@@ -380,19 +382,27 @@ 		if (ex->minor != ~0 && ex->minor != re
+ 		break;
+ 	}
  
- 	lockdep_assert_held(&devcgroup_mutex);
- 
--	excopy = kmemdup(ex, sizeof(*ex), GFP_KERNEL);
--	if (!excopy)
--		return -ENOMEM;
--
--	list_for_each_entry(walk, exceptions, list) {
-+	list_for_each_entry_safe(walk, tmp, exceptions, list) {
- 		if (walk->type != ex->type)
- 			continue;
- 		if (walk->major != ex->major)
-@@ -123,27 +119,29 @@ static int dev_exception_add(struct list
- 		if (walk->minor != ex->minor)
- 			continue;
- 
--		walk->access |= ex->access;
--		kfree(excopy);
--		excopy = NULL;
-+		walk->access &= ~ex->access;
-+		if (!walk->access) {
-+			list_del_rcu(&walk->list);
-+			kfree_rcu(walk, rcu);
+-	/*
+-	 * In two cases we'll consider this new exception valid:
+-	 * - the dev cgroup has its default policy to deny + exception list:
+-	 *   the new exception *should* match the exceptions
+-	 * - the dev cgroup has its default policy to allow + exception list:
+-	 *   the new exception should *not* match any of the exceptions
+-	 */
+-	if (dev_cgroup->behavior == DEVCG_DEFAULT_DENY) {
+-		if (match)
++	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW) {
++		if (behavior == DEVCG_DEFAULT_ALLOW) {
++			/* the exception will deny access to certain devices */
+ 			return true;
++		} else {
++			/* the exception will allow access to certain devices */
++			if (match)
++				/*
++				 * a new exception allowing access shouldn't
++				 * match an parent's exception
++				 */
++				return false;
++			return true;
 +		}
+ 	} else {
+-		if (!match)
++		/* only behavior == DEVCG_DEFAULT_DENY allowed here */
++		if (match)
++			/* parent has an exception that matches the proposed */
+ 			return true;
++		else
++			return false;
  	}
--
--	if (excopy != NULL)
--		list_add_tail_rcu(&excopy->list, exceptions);
--	return 0;
+ 	return false;
+ }
+@@ -411,7 +421,7 @@ static int parent_has_perm(struct dev_cg
+ 	if (!pcg)
+ 		return 1;
+ 	parent = cgroup_to_devcgroup(pcg);
+-	return may_access(parent, ex);
++	return may_access(parent, ex, childcg->behavior);
  }
  
- /*
-  * called under devcgroup_mutex
-  */
--static void dev_exception_rm(struct list_head *exceptions,
-+static int dev_exception_add(struct list_head *exceptions,
- 			     struct dev_exception_item *ex)
+ /**
+@@ -445,7 +455,7 @@ static int devcgroup_update_access(struc
  {
--	struct dev_exception_item *walk, *tmp;
-+	struct dev_exception_item *excopy, *walk;
+ 	const char *b;
+ 	char temp[12];		/* 11 + 1 characters needed for a u32 */
+-	int count, rc;
++	int count, rc = 0;
+ 	struct dev_exception_item ex;
+ 	struct cgroup *p = devcgroup->css.cgroup;
+ 	struct dev_cgroup *parent = NULL;
+@@ -663,7 +673,7 @@ 	memset(&ex, 0, sizeof(ex));
  
- 	lockdep_assert_held(&devcgroup_mutex);
+ 	rcu_read_lock();
+ 	dev_cgroup = task_devcgroup(current);
+-	rc = may_access(dev_cgroup, &ex);
++	rc = may_access(dev_cgroup, &ex, dev_cgroup->behavior);
+ 	rcu_read_unlock();
  
--	list_for_each_entry_safe(walk, tmp, exceptions, list) {
-+	excopy = kmemdup(ex, sizeof(*ex), GFP_KERNEL);
-+	if (!excopy)
-+		return -ENOMEM;
-+
-+	list_for_each_entry(walk, exceptions, list) {
- 		if (walk->type != ex->type)
- 			continue;
- 		if (walk->major != ex->major)
-@@ -151,12 +149,14 @@ static void dev_exception_rm(struct list
- 		if (walk->minor != ex->minor)
- 			continue;
- 
--		walk->access &= ~ex->access;
--		if (!walk->access) {
--			list_del_rcu(&walk->list);
--			kfree_rcu(walk, rcu);
--		}
-+		walk->access |= ex->access;
-+		kfree(excopy);
-+		excopy = NULL;
- 	}
-+
-+	if (excopy != NULL)
-+		list_add_tail_rcu(&excopy->list, exceptions);
-+	return 0;
- }
- 
- static void __dev_exception_clean(struct dev_cgroup *dev_cgroup)
+ 	if (!rc)
 
