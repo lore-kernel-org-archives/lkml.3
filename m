@@ -1,106 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab3A3HCB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 02:02:01 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17879 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab3A3HBy (ORCPT
+	id S1754069Ab3A3HCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 02:02:05 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:53004 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab3A3HAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 02:01:54 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 29 Jan 2013 22:59:38 -0800
-Message-ID: <5108C55C.30104@nvidia.com>
-Date: Wed, 30 Jan 2013 16:01:48 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Mark Zhang <nvmarkzhang@gmail.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, Mark Zhang <markz@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>
-Subject: Re: [RFC 3/4] drm: tegra: use the Common Display Framework
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <1359514939-15653-4-git-send-email-acourbot@nvidia.com> <5108C298.1000500@gmail.com>
-In-Reply-To: <5108C298.1000500@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Jan 2013 02:00:19 -0500
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v6 05/10] dmaengine: edma: Add TI EDMA device tree binding
+Date: Wed, 30 Jan 2013 02:00:24 -0500
+Message-Id: <1359529229-22207-6-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359529229-22207-1-git-send-email-mporter@ti.com>
+References: <1359529229-22207-1-git-send-email-mporter@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 03:50 PM, Mark Zhang wrote:
->> @@ -147,6 +148,9 @@ struct tegra_output {
->>
->>   	struct drm_encoder encoder;
->>   	struct drm_connector connector;
->> +	struct display_entity this;
->> +	struct display_entity *output;
->
-> Could you pick up a somewhat meaningful name? You know, there are too
-> many variables with name "drm/connector/output/encoder"... :)
+The binding definition is based on the generic DMA controller
+binding.
 
-Well, it's supposed to be abstract. From the CDF point of view it could 
-be anything besides a panel. I know this makes it an output of an 
-output, but I can't think of anything better right now.
+Signed-off-by: Matt Porter <mporter@ti.com>
+---
+ Documentation/devicetree/bindings/dma/ti-edma.txt |   49 +++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
 
->> +		if (entity->dev && entity->dev->of_node == pnode) {
->> +			dev_dbg(output->dev, "connecting panel\n");
->> +			output->output = display_entity_get(entity);
->> +			display_entity_connect(&output->this, output->output);
->> +		}
->> +		of_node_put(pnode);
->> +
->> +		break;
->> +
->> +	case DISPLAY_ENTITY_NOTIFIER_DISCONNECT:
->> +		if (!output->output || output->output != entity)
->> +			break;
->> +
->> +		dev_dbg(output->dev, "disconnecting panel\n");
->> +		display_entity_disconnect(&output->this, output->output);
->> +		output->output = NULL;
->> +		display_entity_put(&output->this);
->
-> No "display_entity_get" for "output->this", so I don't think we need
-> "display_entity_put" here. If you register this entity with "release"
-> callback and you wanna release "output->this", call the "release"
-> function manually.
-
-Oh, this was supposed to be called on output->output actually, to 
-balance the display_entity_get() of the connect event. Thanks for 
-catching this.
-
->> +	/* register display entity */
->> +	memset(&output->this, 0, sizeof(output->this));
->> +	output->this.dev = drm->dev;
->
-> Use "output->dev" here. Actually the device you wanna register it to
-> display entity is the "encoder"(in drm terms), not "drm->dev". If we use
-> "drm->dev" here, we will have all same device for all encoders(HDMI,
-> DSI...).
-
-Yes, that's absolutely right.
-
->> +	/* register display notifier */
->> +	output->display_notifier.dev = NULL;
->
-> Set "display_notifier.dev" to NULL makes we have to compare with every
-> display entity, just like what you do in "display_notify_callback":
->
-> entity->dev && entity->dev->of_node == pnode
->
-> So can we get the "struct device *" of panel here? Seems currently the
-> "of" framework doesn't allow "device_node -> device".
-
-Nope. AFAICT the device might not be instanciated at this point. We 
-become aware of it for the first time in the callback function. We also 
-don't want to defer probing until the panel is parsed first, since the 
-panel might also depend on resources of the display device.
-
-Thanks,
-Alex.
+diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+new file mode 100644
+index 0000000..075a60e3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+@@ -0,0 +1,49 @@
++TI EDMA
++
++Required properties:
++- compatible : "ti,edma3"
++- ti,hwmods: Name of the hwmods associated to the EDMA
++- ti,edma-regions: Number of regions
++- ti,edma-slots: Number of slots
++- ti,edma-queue-tc-map: List of transfer control to queue mappings
++- ti,edma-queue-priority-map: List of queue priority mappings
++- ti,edma-default-queue: Default queue value
++
++Optional properties:
++- ti,edma-reserved-channels: List of reserved channel regions
++- ti,edma-reserved-slots: List of reserved slot regions
++- ti,edma-xbar-event-map: Crossbar event to channel map
++
++Example:
++
++edma: edma@49000000 {
++	reg = <0x49000000 0x10000>;
++	interrupt-parent = <&intc>;
++	interrupts = <12 13 14>;
++	compatible = "ti,edma3";
++	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++	#dma-cells = <1>;
++	dma-channels = <64>;
++	ti,edma-regions = <4>;
++	ti,edma-slots = <256>;
++	ti,edma-reserved-channels = <0  2
++				     14 2
++				     26 6
++				     48 4
++				     56 8>;
++	ti,edma-reserved-slots = <0  2
++				  14 2
++				  26 6
++				  48 4
++				  56 8
++				  64 127>;
++	ti,edma-queue-tc-map = <0 0
++				1 1
++				2 2>;
++	ti,edma-queue-priority-map = <0 0
++				      1 1
++				      2 2>;
++	ti,edma-default-queue = <0>;
++	ti,edma-xbar-event-map = <1 12
++				  2 13>;
++};
+-- 
+1.7.9.5
 
