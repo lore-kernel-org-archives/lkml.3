@@ -1,227 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab3AaWzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:55:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:63948 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756940Ab3AaWwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:52:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="279285616"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 11/12] perf, tools: Support sorting by intx, abort branch flags v2
-Date: Thu, 31 Jan 2013 14:51:49 -0800
-Message-Id: <1359672710-19528-12-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
-References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
+	id S1757148Ab3AaW4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:56:11 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:64480 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab3AaW4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:56:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1301312302290.11905@ionos>
+References: <20130131120348.372374706@linutronix.de> <20130131122342.31b28664.akpm@linux-foundation.org>
+ <alpine.LFD.2.02.1301312233480.11905@ionos> <CA+55aFx=cv+HxKGx+oQk4iLnnTGO7P0u3+DnvuOWbYzM-wvEeQ@mail.gmail.com>
+ <alpine.LFD.2.02.1301312302290.11905@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Feb 2013 09:55:48 +1100
+X-Google-Sender-Auth: 57g56RPlB7OGkjxD2xOwCqj_ii0
+Message-ID: <CA+55aFypNfzA1HZMmAiyFo48MhUTr+gt+1uvM7SHFzXh60-KQQ@mail.gmail.com>
+Subject: Re: [patch 00/40] CPU hotplug rework - episode I
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
+        Richard Weinberger <rw@linutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, Feb 1, 2013 at 9:44 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> Just face it. The current hotplug maze has 100+ states which are
+> completely undocumented. They are asymetric vs. startup and
+> teardown. They just exists and work somehow aside of the occasional
+> hard to decode hickup.
+>
+> Do you really want to preserve that state by all means [F*ck no]?
 
-Extend the perf branch sorting code to support sorting by intx
-or abort qualifiers. Also print out those qualifiers.
+No., But I also don't want to replace it with "there's now eleven
+documented states, and random people hook into random documented
+states".
 
-This also fixes up some of the existing sort key documentation.
+So for me it's the "expose these states" that I get worried about.. A
+random driver should not necessarily even be able to *see* this, and
+decide to be clever and take advantage of the ordering.
 
-We do not support notx here, because it's simply not showing
-the intx flag.
+So I'd hope there would be some visibility restrictions. We currently
+have drivers already being confused by DOWN_PREPARE vs DOWN_FAILED etc
+etc random state transitions, and giving them even more flexibility to
+pick random states sounds like a really bad idea. I'd like to make
+sure that drivers and filesystems etc do not even *see* the states
+that are meant for the scheduler or workqueues, for example).
 
-v2: Readd flags to man pages
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-report.txt |    4 ++-
- tools/perf/Documentation/perf-top.txt    |    4 ++-
- tools/perf/builtin-report.c              |    2 +-
- tools/perf/builtin-top.c                 |    4 ++-
- tools/perf/perf.h                        |    4 ++-
- tools/perf/util/hist.h                   |    2 +
- tools/perf/util/sort.c                   |   51 ++++++++++++++++++++++++++++++
- tools/perf/util/sort.h                   |    2 +
- 8 files changed, 68 insertions(+), 5 deletions(-)
+So 11 states (although some of those seem to have lots of substates,
+so there may be many more) is too many to *expose*. It's not
+necessarily too many to "have and document", if you see the
+difference.
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 848a0dc..eaf23ab 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -71,7 +71,7 @@ OPTIONS
- 	entries are displayed as "[other]".
- 	- cpu: cpu number the task ran at the time of sample
- 	- srcline: filename and line number executed at the time of sample.  The
--	DWARF debuggin info must be provided.
-+	DWARF debugging info must be provided.
- 
- 	By default, comm, dso and symbol keys are used.
- 	(i.e. --sort comm,dso,symbol)
-@@ -85,6 +85,8 @@ OPTIONS
- 	- symbol_from: name of function branched from
- 	- symbol_to: name of function branched to
- 	- mispredict: "N" for predicted branch, "Y" for mispredicted branch
-+	- intx: branch in TSX transaction
-+	- abort: TSX transaction abort.
- 
- 	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
- 	and symbol_to, see '--branch-stack'.
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index a414bc9..93970b7 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -112,7 +112,9 @@ Default is to monitor all CPUS.
- 
- -s::
- --sort::
--	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
-+	Sort by key(s): pid, comm, dso, symbol, parent, srcline,
-+        dso_from, dso_to, symbol_to, symbol_from, mispredict,
-+        abort, intx
- 
- -n::
- --show-nr-samples::
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 47a8644..d51a66d 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -596,7 +596,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Use the stdio interface"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
--		   " dso_to, dso_from, symbol_to, symbol_from, mispredict"),
-+		   " dso_to, dso_from, symbol_to, symbol_from, mispredict, abort, intx"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 7978c81..9e08cec 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1078,7 +1078,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
--		   "sort by key(s): pid, comm, dso, symbol, parent"),
-+		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
-+		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
-+		   " abort, intx"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
- 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 8f3bf38..eb049df 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -193,7 +193,9 @@ struct ip_callchain {
- struct branch_flags {
- 	u64 mispred:1;
- 	u64 predicted:1;
--	u64 reserved:62;
-+	u64 intx:1;
-+	u64 abort:1;
-+	u64 reserved:60;
- };
- 
- struct branch_entry {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 3862468..36a8565 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -44,6 +44,8 @@ enum hist_column {
- 	HISTC_PARENT,
- 	HISTC_CPU,
- 	HISTC_MISPREDICT,
-+	HISTC_INTX,
-+	HISTC_ABORT,
- 	HISTC_SYMBOL_FROM,
- 	HISTC_SYMBOL_TO,
- 	HISTC_DSO_FROM,
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 7ad6239..b7a4100 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -472,6 +472,55 @@ struct sort_entry sort_mispredict = {
- 	.se_width_idx	= HISTC_MISPREDICT,
- };
- 
-+static int64_t
-+sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.abort !=
-+		right->branch_info->flags.abort;
-+}
-+
-+static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.abort)
-+		out = "A";
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_abort = {
-+	.se_header	= "Transaction abort",
-+	.se_cmp		= sort__abort_cmp,
-+	.se_snprintf	= hist_entry__abort_snprintf,
-+	.se_width_idx	= HISTC_ABORT,
-+};
-+
-+static int64_t
-+sort__intx_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.intx !=
-+		right->branch_info->flags.intx;
-+}
-+
-+static int hist_entry__intx_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.intx)
-+		out = "T";
-+
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_intx = {
-+	.se_header	= "Branch in transaction",
-+	.se_cmp		= sort__intx_cmp,
-+	.se_snprintf	= hist_entry__intx_snprintf,
-+	.se_width_idx	= HISTC_INTX,
-+};
-+
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -500,6 +549,8 @@ static struct sort_dimension bstack_sort_dimensions[] = {
- 	DIM(SORT_SYM_FROM, "symbol_from", sort_sym_from),
- 	DIM(SORT_SYM_TO, "symbol_to", sort_sym_to),
- 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
-+	DIM(SORT_ABORT, "abort", sort_abort),
-+	DIM(SORT_INTX, "intx", sort_intx),
- };
- 
- #undef DIM
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index e994ad3e..6755d28 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -138,6 +138,8 @@ enum sort_type {
- 	SORT_SYM_FROM,
- 	SORT_SYM_TO,
- 	SORT_MISPREDICT,
-+	SORT_ABORT,
-+	SORT_INTX,
- };
- 
- /*
--- 
-1.7.7.6
-
+                   Linus
