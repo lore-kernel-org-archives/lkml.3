@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab3AaWDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:03:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752703Ab3AaWDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:03:52 -0500
-Date: Thu, 31 Jan 2013 17:03:47 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v4 9/9] devcg: propagate local changes down the hierarchy
-Message-ID: <20130131220347.GO17632@redhat.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
+	id S1755497Ab3AaWFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:05:07 -0500
+Received: from forward2h.mail.yandex.net ([84.201.187.147]:60804 "EHLO
+	forward2h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab3AaWFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:05:04 -0500
+X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jan 2013 17:05:04 EST
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <1359648490.17639.107.camel@gandalf.local.home>
+References: <2016751359330408@web20f.yandex.ru> <1359648490.17639.107.camel@gandalf.local.home>
+Subject: Re: [PATCH] sched/rt: Decrease number of calls of push_rt_task() in push_rt_tasks()
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130131043839.GA14726@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <313901359669474@web15h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 01 Feb 2013 01:57:54 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Serge,
-On Thu, Jan 31, 2013 at 04:38:39AM +0000, Serge E. Hallyn wrote:
-> > @@ -610,9 +770,14 @@ 		case '\0':
-> >  		 */
-> >  		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-> >  			dev_exception_rm(devcgroup, &ex);
-> > -			return 0;
-> > +			rc = propagate_exception(devcgroup);
-> 
-> Let's say the default in both parent A and child B is ALLOW, and both
-> have a blacklist entry for "b 8:* rwm".  Now I
-> 
-> 	echo "b 8:* rwm" > A/devices.allow
-> 
-> removing the blacklist entry.  Here you are propagating that to the
-> child B, which I would argue is actually propagating a new allow to
-> a child.  Which you said you wouldn't do.
 
-yep, that's a bug. will fix it up
 
-thanks!
+31.01.2013, 20:08, "Steven Rostedt" <rostedt@goodmis.org>:
+> On Mon, 2013-01-28 at 03:46 +0400, Kirill Tkhai wrote:
+>
+>> šThe patch aims to decrease the number of calls of push_rt_task()
+>> šin push_rt_tasks().
+>>
+>> šIt's not necessary to push more than 'num_online_cpus() - 1' tasks.
+>> šIf just pushed task doesn't leave its new CPU during our local call
+>> šof push_rt_tasks() than we won't push another task to the CPU.
+>> šIf it leave or change priority than it will pull new task by itself.
+>
+> I'm curious. Have you hit situations where this was an issue? Or was
+> this just discovered by code review?
 
--- 
-Aristeu
+No, I did't hit this situation. It's impossible to hook every situation.
 
+Thanks for your explanation.
+
+Kirill
+
+>
+> -- Steve
+>
+>> šSigned-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+>> šCC: Steven Rostedt <rostedt@goodmis.org>
+>> šCC: Ingo Molnar <mingo@kernel.org>
+>> šCC: Peter Zijlstra <peterz@infradead.org>
+>> šCC: linux-rt-users <linux-rt-users@vger.kernel.org>
+>> š---
+>> šškernel/sched/rt.c | ššš4 +++-
+>> šš1 file changed, 3 insertions(+), 1 deletion(-)
+>> šdiff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+>> šindex 4e8f0f4..edf046d 100644
+>> š--- a/kernel/sched/rt.c
+>> š+++ b/kernel/sched/rt.c
+>> š@@ -1703,8 +1703,10 @@ out:
+>>
+>> ššstatic void push_rt_tasks(struct rq *rq)
+>> šš{
+>> š+ int num_cpus = num_online_cpus() - 1;
+>> š+
+>> šššššššššš/* push_rt_task will return true if it moved an RT */
+>> š- while (push_rt_task(rq))
+>> š+ while (push_rt_task(rq) && --num_cpus > 0)
+>> šššššššššššššššššš;
+>> šš}
