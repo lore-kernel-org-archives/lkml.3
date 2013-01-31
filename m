@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab3AaKqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:46:01 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:55260 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab3AaKps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:45:48 -0500
-Date: Thu, 31 Jan 2013 11:45:41 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] rwsem-spinlock: let rwsem write lock stealable
-Message-ID: <20130131104541.GA2291@gmail.com>
-References: <1359537244-20588-1-git-send-email-yuanhan.liu@linux.intel.com>
- <20130131093931.GA398@gmail.com>
- <20130131100927.GY12678@yliu-dev.sh.intel.com>
+	id S1754656Ab3AaKpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:45:47 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42210 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751954Ab3AaKpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 05:45:44 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: <linux-mmc@vger.kernel.org>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <hs@denx.de>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <cjb@laptop.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@ti.com>,
+        <ido@wizery.com>, <gregkh@linuxfoundation.org>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] ARM: davinci: da850: add mmc DT entries
+Date: Thu, 31 Jan 2013 16:03:07 +0530
+Message-ID: <1359628387-14437-4-git-send-email-prakash.pm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359628387-14437-1-git-send-email-prakash.pm@ti.com>
+References: <1359628387-14437-1-git-send-email-prakash.pm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130131100927.GY12678@yliu-dev.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add DT entry for MMC. Also add entry for pinmux information.
+Tested on da850-evm without card detect and EDMA support as
+DT support for GPIO and EDMA are yet come.
 
-* Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: cjb@laptop.org
+Cc: Sekhar Nori <nsekhar@ti.com>
+---
+ arch/arm/boot/dts/da850-evm.dts |   13 +++++++++++++
+ arch/arm/boot/dts/da850.dtsi    |   15 +++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
-> > > output with this patch:
-> > > -----------------------
-> > > cpu 00:   0   0   ...   1   1   2   1   1   1   2   1   1   1 .... 1   3
-> > > cpu 01:   0   0   ...   1   1   1   1   1   1   2   1   1   1 .... 1   3
-> > > cpu 02:   0   0   ...   2   2   3   2   0   2   1   2   1   1 .... 1   1
-> > > cpu 03:   0   0   ...   2   2   3   2   1   2   1   2   1   1 .... 1   1
-> > > cpu 04:   0   1   ...   2   0   0   1   0   1   3   1   1   1 .... 1   1
-> > > cpu 05:   0   1   ...   2   0   1   1   0   1   2   1   1   1 .... 1   1
-> > > cpu 06:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
-> > > cpu 07:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
-> > > cpu 08:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
-> > > cpu 09:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
-> > > cpu 10:   0   0   ...   1   1   1   0   0   1   1   1   1   1 .... 0   0
-> > > cpu 11:   0   0   ...   1   1   1   0   0   1   1   1   1   2 .... 1   0
-> > > cpu 12:   0   0   ...   1   1   1   0   1   1   0   0   0   1 .... 2   1
-> > > cpu 13:   0   0   ...   1   1   1   0   1   1   1   0   1   2 .... 2   0
-> > > cpu 14:   0   0   ...   2   0   0   0   0   1   1   1   1   1 .... 2   2
-> > > cpu 15:   0   0   ...   2   0   0   1   0   1   1   1   1   1 .... 2   2
-> > > ------------------------------------------------------------------------
-> > > Where you can see that CPU is much busier with this patch.
-> > 
-> > That looks really good - quite similar to how it behaved 
-> > with mutexes, right?
-> 
-> Yes :)
-> 
-> And the result is almost same with mutex lock when MUTEX_SPIN_ON_OWNER
-> is disabled, and that's the reason you will see massive processes(about
-> 100) queued on each CPU in my last report:
->     https://lkml.org/lkml/2013/1/29/84
+diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+index fa04152..51c87e7 100644
+--- a/arch/arm/boot/dts/da850-evm.dts
++++ b/arch/arm/boot/dts/da850-evm.dts
+@@ -30,6 +30,19 @@
+ 		rtc0: rtc@1c23000 {
+ 			status = "okay";
+ 		};
++		mmc0: mmc@1c40000 {
++			status = "okay";
++			bus-width = <4>;
++			max-frequency = <50000000>;
++			/*
++			 * BIT(1) MMC_CAP_MMC_HIGHSPEED
++			 * BIT(2) MMC_CAP_SD_HIGHSPEED
++			 */
++			caps = <6>;
++			version = <1>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&mmc0_pins>;
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		status = "okay";
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index 099c81e..5978a83 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -56,6 +56,15 @@
+ 					0x30 0x01100000  0x0ff00000
+ 				>;
+ 			};
++			mmc0_pins: pinmux_mmc_pins {
++				pinctrl-single,bits = <
++					/* MMCSD0_DAT[3] MMCSD0_DAT[2]
++					 * MMCSD0_DAT[1] MMCSD0_DAT[0]
++					 * MMCSD0_CMD    MMCSD0_CLK
++					 */
++					0x28 0x00222222  0x00ffffff
++				>;
++			};
+ 		};
+ 		serial0: serial@1c42000 {
+ 			compatible = "ns16550a";
+@@ -88,6 +97,12 @@
+ 				      19>;
+ 			status = "disabled";
+ 		};
++		mmc0: mmc@1c40000 {
++			compatible = "ti,davinci_mmc";
++			reg = <0x40000 0x1000>;
++			interrupts = <16>;
++			status = "disabled";
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		compatible = "ti,davinci-nand";
+-- 
+1.7.4.1
 
-Just curious: how does MUTEX_SPIN_ON_OWNER versus 
-!MUTEX_SPIN_ON_OWNER compare, for this particular, 
-massively-contended anon-vma locks benchmark?
-
-> > Does this recover most of the performance regression?
-> 
-> Yes, there is only a 10% gap here then. I guess that's because 
-> I used the general rwsem lock 
-> implementation(lib/rwsem-spinlock.c), but not the XADD 
-> one(lib/rwsem.c). I guess the gap may be a little smaller if 
-> we do the same thing to lib/rwsem.c.
-
-Is part of the gap due to MUTEX_SPIN_ON_OWNER perhaps?
-
-I'm surprised that rwsem-spinlock versus rwsem.c would show a 
-10% performance difference - assuming you have lock 
-debugging/tracing disabled in the .config.
-
-( Once the performance regression is fixed, another thing to 
-  check would be to reduce anon-vma lock contention. )
-
-Thanks,
-
-	Ingo
