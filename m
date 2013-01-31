@@ -1,166 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3AaMUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:20:37 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55863 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3AaMLS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:11:18 -0500
-Message-Id: <20130131120741.897171827@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 31 Jan 2013 12:11:16 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
-        Richard Weinberger <rw@linutronix.de>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 06/40] cpu: hotplug: Split out cpu down functions
-References: <20130131120348.372374706@linutronix.de>
-Content-Disposition: inline; filename=cpu-hotplug-split-out-cpu-down.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752131Ab3AaMXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:23:05 -0500
+Received: from mga14.intel.com ([143.182.124.37]:60202 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295Ab3AaMXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 07:23:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,576,1355126400"; 
+   d="scan'208";a="197042626"
+Date: Thu, 31 Jan 2013 20:23:54 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] rwsem-spinlock: let rwsem write lock stealable
+Message-ID: <20130131122354.GZ12678@yliu-dev.sh.intel.com>
+References: <1359537244-20588-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <20130131093931.GA398@gmail.com>
+ <20130131100927.GY12678@yliu-dev.sh.intel.com>
+ <20130131104541.GA2291@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130131104541.GA2291@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split cpu_down in separate functions in preparation for state machine
-conversion.
+On Thu, Jan 31, 2013 at 11:45:41AM +0100, Ingo Molnar wrote:
+> 
+> * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+> 
+> > > > output with this patch:
+> > > > -----------------------
+> > > > cpu 00:   0   0   ...   1   1   2   1   1   1   2   1   1   1 .... 1   3
+> > > > cpu 01:   0   0   ...   1   1   1   1   1   1   2   1   1   1 .... 1   3
+> > > > cpu 02:   0   0   ...   2   2   3   2   0   2   1   2   1   1 .... 1   1
+> > > > cpu 03:   0   0   ...   2   2   3   2   1   2   1   2   1   1 .... 1   1
+> > > > cpu 04:   0   1   ...   2   0   0   1   0   1   3   1   1   1 .... 1   1
+> > > > cpu 05:   0   1   ...   2   0   1   1   0   1   2   1   1   1 .... 1   1
+> > > > cpu 06:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
+> > > > cpu 07:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
+> > > > cpu 08:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
+> > > > cpu 09:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
+> > > > cpu 10:   0   0   ...   1   1   1   0   0   1   1   1   1   1 .... 0   0
+> > > > cpu 11:   0   0   ...   1   1   1   0   0   1   1   1   1   2 .... 1   0
+> > > > cpu 12:   0   0   ...   1   1   1   0   1   1   0   0   0   1 .... 2   1
+> > > > cpu 13:   0   0   ...   1   1   1   0   1   1   1   0   1   2 .... 2   0
+> > > > cpu 14:   0   0   ...   2   0   0   0   0   1   1   1   1   1 .... 2   2
+> > > > cpu 15:   0   0   ...   2   0   0   1   0   1   1   1   1   1 .... 2   2
+> > > > ------------------------------------------------------------------------
+> > > > Where you can see that CPU is much busier with this patch.
+> > > 
+> > > That looks really good - quite similar to how it behaved 
+> > > with mutexes, right?
+> > 
+> > Yes :)
+> > 
+> > And the result is almost same with mutex lock when MUTEX_SPIN_ON_OWNER
+> > is disabled, and that's the reason you will see massive processes(about
+> > 100) queued on each CPU in my last report:
+> >     https://lkml.org/lkml/2013/1/29/84
+> 
+> Just curious: how does MUTEX_SPIN_ON_OWNER versus 
+> !MUTEX_SPIN_ON_OWNER compare, for this particular, 
+> massively-contended anon-vma locks benchmark?
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/cpu.c |   83 +++++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 53 insertions(+), 30 deletions(-)
+In above testcase, MUTEX_SPIN_ON_OWNER is slightly doing better job(like
+3% ~ 4%) than !MUTEX_SPIN_ON_OWNER.
 
-Index: linux-2.6/kernel/cpu.c
-===================================================================
---- linux-2.6.orig/kernel/cpu.c
-+++ linux-2.6/kernel/cpu.c
-@@ -206,11 +206,6 @@ static int bringup_cpu(unsigned int cpu)
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
--
--static void cpu_notify_nofail(unsigned long val, unsigned int cpu)
--{
--	BUG_ON(cpu_notify(val, cpu));
--}
- EXPORT_SYMBOL(register_cpu_notifier);
- 
- void __ref unregister_cpu_notifier(struct notifier_block *nb)
-@@ -278,6 +273,25 @@ static inline void check_for_tasks(int c
- 	write_unlock_irq(&tasklist_lock);
- }
- 
-+static void cpu_notify_nofail(unsigned long val, unsigned int cpu)
-+{
-+	BUG_ON(cpu_notify(val, cpu));
-+}
-+
-+static int notify_down_prepare(unsigned int cpu)
-+{
-+	int err, nr_calls = 0;
-+
-+	err = __cpu_notify(CPU_DOWN_PREPARE, cpu, -1, &nr_calls);
-+	if (err) {
-+		nr_calls--;
-+		__cpu_notify(CPU_DOWN_FAILED, cpu, nr_calls, NULL);
-+		printk("%s: attempt to take down CPU %u failed\n",
-+				__func__, cpu);
-+	}
-+	return err;
-+}
-+
- /* Take this CPU down. */
- static int __ref take_cpu_down(void *_param)
- {
-@@ -294,37 +308,17 @@ static int __ref take_cpu_down(void *_pa
- 	return 0;
- }
- 
--/* Requires cpu_add_remove_lock to be held */
--static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
-+static int takedown_cpu(unsigned int cpu)
- {
--	int err, nr_calls = 0;
--
--	if (num_online_cpus() == 1)
--		return -EBUSY;
--
--	if (!cpu_online(cpu))
--		return -EINVAL;
--
--	cpu_hotplug_begin();
--
--	cpuhp_tasks_frozen = tasks_frozen;
-+	int err;
- 
--	err = __cpu_notify(CPU_DOWN_PREPARE, cpu, -1, &nr_calls);
--	if (err) {
--		nr_calls--;
--		__cpu_notify(CPU_DOWN_FAILED, cpu, nr_calls, NULL);
--		printk("%s: attempt to take down CPU %u failed\n",
--				__func__, cpu);
--		goto out_release;
--	}
- 	smpboot_park_threads(cpu);
--
- 	err = __stop_machine(take_cpu_down, NULL, cpumask_of(cpu));
- 	if (err) {
- 		/* CPU didn't die: tell everyone.  Can't complain. */
- 		smpboot_unpark_threads(cpu);
- 		cpu_notify_nofail(CPU_DOWN_FAILED, cpu);
--		goto out_release;
-+		return err;
- 	}
- 	BUG_ON(cpu_online(cpu));
- 
-@@ -341,10 +335,39 @@ static int __ref _cpu_down(unsigned int 
- 	/* This actually kills the CPU. */
- 	__cpu_die(cpu);
- 
--	/* CPU is completely dead: tell everyone.  Too late to complain. */
--	cpu_notify_nofail(CPU_DEAD, cpu);
-+	return 0;
-+}
- 
-+static int notify_dead(unsigned int cpu)
-+{
-+	cpu_notify_nofail(CPU_DEAD, cpu);
- 	check_for_tasks(cpu);
-+	return 0;
-+}
-+
-+/* Requires cpu_add_remove_lock to be held */
-+static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
-+{
-+	int err;
-+
-+	if (num_online_cpus() == 1)
-+		return -EBUSY;
-+
-+	if (!cpu_online(cpu))
-+		return -EINVAL;
-+
-+	cpu_hotplug_begin();
-+
-+	cpuhp_tasks_frozen = tasks_frozen;
-+
-+	err = notify_down_prepare(cpu);
-+	if (err)
-+		goto out_release;
-+	err = takedown_cpu(cpu);
-+	if (err)
-+		goto out_release;
-+
-+	notify_dead(cpu);
- 
- out_release:
- 	cpu_hotplug_done();
+> 
+> > > Does this recover most of the performance regression?
+> > 
+> > Yes, there is only a 10% gap here then. I guess that's because 
+
+Sorry, to be accurate, it's about 14% gap; when MUTEX_SPIN_ON_OWNER is
+enabled.
+
+> > I used the general rwsem lock 
+> > implementation(lib/rwsem-spinlock.c), but not the XADD 
+> > one(lib/rwsem.c). I guess the gap may be a little smaller if 
+> > we do the same thing to lib/rwsem.c.
+> 
+> Is part of the gap due to MUTEX_SPIN_ON_OWNER perhaps?
+
+Nope, !MUTEX_SPIN_ON_OWNER does introduce a little performance drop just
+as above stated.
+
+So, to make it clear, here is the list:
+
+lock case                            performance drop compared to mutex lock
+----------------------------------------------------------------------------
+mutex lock w/o MUTEX_SPIN_ON_OWNER   3.x%
+rwsem-spinlock with write stealing   14.x%
+rwsem-spinlock                       >100%
 
 
+> 
+> I'm surprised that rwsem-spinlock versus rwsem.c would show a 
+> 10% performance difference -
+
+Yes, it may not. And there is only about 0.9% performance difference in
+above test between rwsem-spinlock and XADD rwsem. The difference maybe
+enlarged when both has write lock stealing enabled, which will be known
+only after we do same thing to lib/rwsem.c.
+
+Thanks.
+
+	--yliu
+
+> assuming you have lock 
+> debugging/tracing disabled in the .config.
+> 
+> ( Once the performance regression is fixed, another thing to 
+>   check would be to reduce anon-vma lock contention. )
+> 
+> Thanks,
+> 
+> 	Ingo
