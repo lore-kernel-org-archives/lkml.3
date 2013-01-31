@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab3AaMOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:14:49 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56136 "EHLO
+	id S1754207Ab3AaMLj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:11:39 -0500
+Received: from www.linutronix.de ([62.245.132.108]:55909 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260Ab3AaMLl (ORCPT
+	with ESMTP id S1751728Ab3AaMLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:11:41 -0500
-Message-Id: <20130131120743.787438421@linutronix.de>
+	Thu, 31 Jan 2013 07:11:23 -0500
+Message-Id: <20130131120741.553993267@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 31 Jan 2013 12:11:39 -0000
+Date: Thu, 31 Jan 2013 12:11:12 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
         Richard Weinberger <rw@linutronix.de>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 34/40] cpuhotplug: Remove CPU_DYING notifier
+Subject: [patch 01/40] smpboot: Allow selfparking per cpu threads
 References: <20130131120348.372374706@linutronix.de>
-Content-Disposition: inline; filename=cpuhotplug-remove-cpu-dying.patch
+Content-Disposition: inline; filename=smpboot-allow-selfstopping-threads.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -29,86 +29,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All users gone.
+The stop machine threads are still killed when a cpu goes offline. The
+reason is that the thread is used to bring the cpu down, so it can't
+be parked along with the other per cpu threads.
+
+Allow a per cpu thread to be excluded from automatic parking, so it
+can park itself once it's done
+
+Add a create callback function as well.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/cpu.h        |    6 ------
- include/linux/cpuhotplug.h |    1 -
- kernel/cpu.c               |   11 -----------
- 3 files changed, 18 deletions(-)
+ include/linux/smpboot.h |    5 +++++
+ kernel/smpboot.c        |    5 +++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/include/linux/cpu.h
+Index: linux-2.6/include/linux/smpboot.h
 ===================================================================
---- linux-2.6.orig/include/linux/cpu.h
-+++ linux-2.6/include/linux/cpu.h
-@@ -60,11 +60,6 @@ extern ssize_t arch_print_cpu_modalias(s
- #define CPU_DOWN_PREPARE	0x0005 /* CPU (unsigned)v going down */
- #define CPU_DOWN_FAILED		0x0006 /* CPU (unsigned)v NOT going down */
- #define CPU_DEAD		0x0007 /* CPU (unsigned)v dead */
--#define CPU_DYING		0x0008 /* CPU (unsigned)v not running any task,
--					* not handling interrupts, soon dead.
--					* Called on the dying cpu, interrupts
--					* are already disabled. Must not
--					* sleep, must not fail */
- #define CPU_POST_DEAD		0x0009 /* CPU (unsigned)v dead, cpu_hotplug
- 					* lock is dropped */
+--- linux-2.6.orig/include/linux/smpboot.h
++++ linux-2.6/include/linux/smpboot.h
+@@ -14,6 +14,8 @@ struct smpboot_thread_data;
+  * @thread_should_run:	Check whether the thread should run or not. Called with
+  *			preemption disabled.
+  * @thread_fn:		The associated thread function
++ * @create:		Optional setup function, called when the thread gets
++ *			created (Not called from the thread context)
+  * @setup:		Optional setup function, called when the thread gets
+  *			operational the first time
+  * @cleanup:		Optional cleanup function, called when the thread
+@@ -22,6 +24,7 @@ struct smpboot_thread_data;
+  *			parked (cpu offline)
+  * @unpark:		Optional unpark function, called when the thread is
+  *			unparked (cpu online)
++ * @selfparking:	Thread is not parked by the park function.
+  * @thread_comm:	The base name of the thread
+  */
+ struct smp_hotplug_thread {
+@@ -29,10 +32,12 @@ struct smp_hotplug_thread {
+ 	struct list_head		list;
+ 	int				(*thread_should_run)(unsigned int cpu);
+ 	void				(*thread_fn)(unsigned int cpu);
++	void				(*create)(unsigned int cpu);
+ 	void				(*setup)(unsigned int cpu);
+ 	void				(*cleanup)(unsigned int cpu, bool online);
+ 	void				(*park)(unsigned int cpu);
+ 	void				(*unpark)(unsigned int cpu);
++	bool				selfparking;
+ 	const char			*thread_comm;
+ };
  
-@@ -79,7 +74,6 @@ extern ssize_t arch_print_cpu_modalias(s
- #define CPU_DOWN_PREPARE_FROZEN	(CPU_DOWN_PREPARE | CPU_TASKS_FROZEN)
- #define CPU_DOWN_FAILED_FROZEN	(CPU_DOWN_FAILED | CPU_TASKS_FROZEN)
- #define CPU_DEAD_FROZEN		(CPU_DEAD | CPU_TASKS_FROZEN)
--#define CPU_DYING_FROZEN	(CPU_DYING | CPU_TASKS_FROZEN)
- 
- #ifdef CONFIG_SMP
- extern bool cpuhp_tasks_frozen;
-Index: linux-2.6/include/linux/cpuhotplug.h
+Index: linux-2.6/kernel/smpboot.c
 ===================================================================
---- linux-2.6.orig/include/linux/cpuhotplug.h
-+++ linux-2.6/include/linux/cpuhotplug.h
-@@ -29,7 +29,6 @@ enum cpuhp_states {
- 	CPUHP_AP_ARM_VFP_STARTING,
- 	CPUHP_AP_ARM64_TIMER_STARTING,
- 	CPUHP_AP_KVM_STARTING,
--	CPUHP_AP_NOTIFY_DYING,
- 	CPUHP_AP_CLOCKEVENTS_DYING,
- 	CPUHP_AP_RCUTREE_DYING,
- 	CPUHP_AP_X86_TBOOT_DYING,
-Index: linux-2.6/kernel/cpu.c
-===================================================================
---- linux-2.6.orig/kernel/cpu.c
-+++ linux-2.6/kernel/cpu.c
-@@ -303,12 +303,6 @@ static int notify_down_prepare(unsigned 
- 	return err;
+--- linux-2.6.orig/kernel/smpboot.c
++++ linux-2.6/kernel/smpboot.c
+@@ -183,9 +183,10 @@ __smpboot_create_thread(struct smp_hotpl
+ 		kfree(td);
+ 		return PTR_ERR(tsk);
+ 	}
+-
+ 	get_task_struct(tsk);
+ 	*per_cpu_ptr(ht->store, cpu) = tsk;
++	if (ht->create)
++		ht->create(cpu);
+ 	return 0;
  }
  
--static int notify_dying(unsigned int cpu)
--{
--	cpu_notify(CPU_DYING, cpu);
--	return 0;
--}
--
- /* Take this CPU down. */
- static int __ref take_cpu_down(void *_param)
+@@ -225,7 +226,7 @@ static void smpboot_park_thread(struct s
  {
-@@ -366,7 +360,6 @@ static int notify_dead(unsigned int cpu)
- #define notify_down_prepare	NULL
- #define takedown_cpu		NULL
- #define notify_dead		NULL
--#define notify_dying		NULL
- #endif
+ 	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
  
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -825,10 +818,6 @@ static struct cpuhp_step cpuhp_ap_states
- 		.startup = sched_starting_cpu,
- 		.teardown = NULL,
- 	},
--	[CPUHP_AP_NOTIFY_DYING] = {
--		.startup = NULL,
--		.teardown = notify_dying,
--	},
- 	[CPUHP_AP_CLOCKEVENTS_DYING] = {
- 		.startup = NULL,
- 		.teardown = clockevents_dying_cpu,
+-	if (tsk)
++	if (tsk && !ht->selfparking)
+ 		kthread_park(tsk);
+ }
+ 
 
 
