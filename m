@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab3AaHhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 02:37:51 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:57034 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab3AaHhu convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Thu, 31 Jan 2013 02:37:50 -0500
-Message-Id: <510A2D5802000078000BAEAA@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Thu, 31 Jan 2013 07:37:44 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "KY Srinivasan" <kys@microsoft.com>
-Cc: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: RE: [PATCH 2/3] X86: Add a check to catch Xen emulation of
- Hyper-V
-References: <1359507077-26050-1-git-send-email-kys@microsoft.com>
- <1359507108-26091-1-git-send-email-kys@microsoft.com>
- <1359507108-26091-2-git-send-email-kys@microsoft.com>
- <5108ED9702000078000BAA08@nat28.tlf.novell.com>
- <1db4d98aa3434d4eab7b36bbeb89cd47@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <1db4d98aa3434d4eab7b36bbeb89cd47@SN2PR03MB061.namprd03.prod.outlook.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755022Ab3AaHkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:40:43 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47469 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab3AaHkm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 02:40:42 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-fe-510a1ff82d4c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        tglx@linutronix.de
+Subject: Re: [RFC 2/2] sched/fair: prefer a CPU in the "lowest" idle state
+References: <1359580757-4121-1-git-send-email-bigeasy@linutronix.de>
+	<1359580757-4121-3-git-send-email-bigeasy@linutronix.de>
+	<5109D313.1020409@linux.vnet.ibm.com>
+	<8738xiue31.fsf@sejong.aot.lge.com>
+	<510A1198.2070803@linux.vnet.ibm.com>
+	<87txpxu9cx.fsf@sejong.aot.lge.com>
+	<510A1D7A.3050408@linux.vnet.ibm.com>
+Date: Thu, 31 Jan 2013 16:40:39 +0900
+In-Reply-To: <510A1D7A.3050408@linux.vnet.ibm.com> (Michael Wang's message of
+	"Thu, 31 Jan 2013 15:30:02 +0800")
+Message-ID: <87pq0lu7ew.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.01.13 at 19:12, KY Srinivasan <kys@microsoft.com> wrote:
-> Presumably, Hyper-V emulation is only to run enlightened Windows. The issue 
-> with
-> Xen is not that it emulates Hyper-V, but this emulation is turned on while 
-> running Linux.
-> That is the reason I chose to check for Xen. Would you prefer a DMI check 
-> for the Hyper-V
-> platform. 
+On Thu, 31 Jan 2013 15:30:02 +0800, Michael Wang wrote:
+> On 01/31/2013 02:58 PM, Namhyung Kim wrote:
+>> But AFAIK the number of states in cpuidle is usually less than 10 so maybe
+>> we can change the weight then, but there's no promise...
+>
+> And I just got another case we should take care:
+>
+> 	group 0		cpu 0			cpu 1
+> 			power index 8		power index 8
+>
+>
+> 	group 1		cpu 2			cpu 3
+> 			power index 0		load 15
+>
+> so load of group 0 is 16 and group 1 is 15, but group 0 is better...
 
-I consider DMI checks to be too fragile here - in particular with
-the eventual passing through of host DMI attributes to guests,
-this sets you up for mistakes. Instead, I would envision you
-scanning the whole CPUID range "reserved" for virtualization
-(starting at 0x40000000) and see whether you get back
-anything other than the Hyper-V identification (much like the
-way xen_cpuid_base() scans for the Xen range). Of course
-that's under the premise that you're right in assuming Hyper-V
-would never emulate any other hypervisor's interface.
+Maybe it's not.  The cpus in group 0 are in a lower power state so that
+there will be a benefit to select cpu 2 from the power' PoV IMHO.  Also
+such a low power state has a longer exit latency so that we should
+choose cpu2 to get a better performance and it's the basic idea of this
+patchset I believe.
 
-Jan
-
+Thanks,
+Namhyung
