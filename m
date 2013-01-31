@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab3AaMLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:11:45 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55940 "EHLO
+	id S1754641Ab3AaMLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:11:50 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56036 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab3AaMLZ (ORCPT
+	with ESMTP id S1753858Ab3AaMLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:11:25 -0500
-Message-Id: <20130131120742.507792549@linutronix.de>
+	Thu, 31 Jan 2013 07:11:33 -0500
+Message-Id: <20130131120743.130169311@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 31 Jan 2013 12:11:24 -0000
+Date: Thu, 31 Jan 2013 12:11:31 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
         Richard Weinberger <rw@linutronix.de>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 15/40] x86: perf: Convert AMD IBS to hotplug state machine
+Subject: [patch 24/40] arm64: Convert generic timers to hotplug state machine
 References: <20130131120348.372374706@linutronix.de>
-Content-Disposition: inline; filename=x86-perf-amd-ibs-convert.patch
+Content-Disposition: inline; filename=arm64-generic-timer-convert.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -29,137 +29,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Install the callbacks via the state machine and let the core invoke
-the callbacks on the already online cpus.
+Straight forward replacement.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |   54 +++++++++++--------------------
- include/linux/cpuhotplug.h               |    1 
- 2 files changed, 21 insertions(+), 34 deletions(-)
+ drivers/clocksource/arm_generic.c |   40 +++++++++++---------------------------
+ include/linux/cpuhotplug.h        |    1 
+ 2 files changed, 13 insertions(+), 28 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+Index: linux-2.6/drivers/clocksource/arm_generic.c
 ===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -637,13 +637,10 @@ static __init int perf_ibs_pmu_init(stru
- 	return ret;
+--- linux-2.6.orig/drivers/clocksource/arm_generic.c
++++ linux-2.6/drivers/clocksource/arm_generic.c
+@@ -91,8 +91,10 @@ static int arch_timer_set_next_event(uns
+ 	return 0;
  }
  
--static __init int perf_event_ibs_init(void)
-+static __init void perf_event_ibs_init(void)
+-static void __cpuinit arch_timer_setup(struct clock_event_device *clk)
++static int __cpuinit arch_timer_cpu_starting(unsigned int cpu)
  {
- 	struct attribute **attr = ibs_op_format_attrs;
++	struct clock_event_device *clk = per_cpu_ptr(&arch_timer_evt, cpu);
++
+ 	/* Let's make sure the timer is off before doing anything else */
+ 	arch_timer_stop();
  
--	if (!ibs_caps)
--		return -ENODEV;	/* ibs not supported by the cpu */
--
- 	perf_ibs_pmu_init(&perf_ibs_fetch, "ibs_fetch");
- 
- 	if (ibs_caps & IBS_CAPS_OPCNT) {
-@@ -654,13 +651,11 @@ static __init int perf_event_ibs_init(vo
- 
- 	register_nmi_handler(NMI_LOCAL, perf_ibs_nmi_handler, 0, "perf_ibs");
- 	printk(KERN_INFO "perf: AMD IBS detected (0x%08x)\n", ibs_caps);
--
--	return 0;
+@@ -157,34 +159,17 @@ unsigned long long notrace sched_clock(v
+ 	return arch_counter_get_cntvct() * sched_clock_mult;
  }
  
- #else /* defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_AMD) */
- 
--static __init int perf_event_ibs_init(void) { return 0; }
-+static __init void perf_event_ibs_init(void) { }
- 
- #endif
- 
-@@ -827,11 +822,10 @@ static inline int get_ibs_lvt_offset(voi
- 	return val & IBSCTL_LVT_OFFSET_MASK;
- }
- 
--static void setup_APIC_ibs(void *dummy)
-+static void setup_APIC_ibs(void)
+-static int __cpuinit arch_timer_cpu_notify(struct notifier_block *self,
+-					   unsigned long action, void *hcpu)
++
++static int __cpuinit arch_timer_dying_cpu(unsigned int cpu)
  {
--	int offset;
-+	int offset = get_ibs_lvt_offset();
+-	int cpu = (long)hcpu;
+ 	struct clock_event_device *clk = per_cpu_ptr(&arch_timer_evt, cpu);
  
--	offset = get_ibs_lvt_offset();
- 	if (offset < 0)
- 		goto failed;
- 
-@@ -842,30 +836,19 @@ failed:
- 		smp_processor_id());
- }
- 
--static void clear_APIC_ibs(void *dummy)
-+static int __cpuinit x86_pmu_amd_ibs_starting_cpu(unsigned int cpu)
- {
--	int offset;
--
--	offset = get_ibs_lvt_offset();
--	if (offset >= 0)
--		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
-+	setup_APIC_ibs();
-+	return 0;
- }
- 
--static int __cpuinit
--perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
-+static int __cpuinit x86_pmu_amd_ibs_dying_cpu(unsigned int cpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
+-	switch(action) {
 -	case CPU_STARTING:
--		setup_APIC_ibs(NULL);
+-	case CPU_STARTING_FROZEN:
+-		arch_timer_setup(clk);
 -		break;
+-
 -	case CPU_DYING:
--		clear_APIC_ibs(NULL);
--		break;
--	default:
+-	case CPU_DYING_FROZEN:
+-		pr_debug("arch_timer_teardown disable IRQ%d cpu #%d\n",
+-			 clk->irq, cpu);
+-		disable_percpu_irq(clk->irq);
+-		arch_timer_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
 -		break;
 -	}
-+	int offset = get_ibs_lvt_offset();
- 
+-
 -	return NOTIFY_OK;
-+	if (offset >= 0)
-+		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
++	pr_debug("arch_timer_teardown disable IRQ%d cpu #%d\n", clk->irq, cpu);
++	disable_percpu_irq(clk->irq);
++	arch_timer_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
 +	return 0;
  }
  
- static __init int amd_ibs_init(void)
-@@ -889,15 +872,18 @@ static __init int amd_ibs_init(void)
- 	if (!ibs_eilvt_valid())
- 		goto out;
+-static struct notifier_block __cpuinitdata arch_timer_cpu_nb = {
+-	.notifier_call = arch_timer_cpu_notify,
+-};
+-
+ static const struct of_device_id arch_timer_of_match[] __initconst = {
+ 	{ .compatible = "arm,armv8-timer" },
+ 	{},
+@@ -223,10 +208,9 @@ int __init arm_generic_timer_init(void)
+ 	/* Calibrate the delay loop directly */
+ 	lpj_fine = DIV_ROUND_CLOSEST(arch_timer_rate, HZ);
  
--	get_online_cpus();
- 	ibs_caps = caps;
- 	/* make ibs_caps visible to other cpus: */
- 	smp_mb();
--	perf_cpu_notifier(perf_ibs_cpu_notifier);
--	smp_call_function(setup_APIC_ibs, NULL, 1);
--	put_online_cpus();
-+	/*
-+	 * x86_pmu_amd_ibs_starting_cpu will be called from core on
-+	 * all online cpus.
-+	 */
-+	cpuhp_setup_state(CPUHP_AP_PERF_X86_AMD_IBS_STARTING,
-+			  x86_pmu_amd_ibs_starting_cpu,
-+			  x86_pmu_amd_ibs_dying_cpu);
+-	/* Immediately configure the timer on the boot CPU */
+-	arch_timer_setup(this_cpu_ptr(&arch_timer_evt));
+-
+-	register_cpu_notifier(&arch_timer_cpu_nb);
++	/* Register and immediately configure the timer on the boot CPU */
++	return cpuhp_setup_state(CPUHP_AP_ARM64_TIMER_STARTING,
++				 arch_timer_starting_cpu, arch_timer_dying_cpu);
  
--	ret = perf_event_ibs_init();
-+	perf_event_ibs_init();
- out:
- 	if (ret)
- 		pr_err("Failed to setup IBS, %d\n", ret);
+ 	return 0;
+ }
 Index: linux-2.6/include/linux/cpuhotplug.h
 ===================================================================
 --- linux-2.6.orig/include/linux/cpuhotplug.h
 +++ linux-2.6/include/linux/cpuhotplug.h
-@@ -14,6 +14,7 @@ enum cpuhp_states {
- 	CPUHP_AP_OFFLINE,
- 	CPUHP_AP_SCHED_STARTING,
+@@ -22,6 +22,7 @@ enum cpuhp_states {
  	CPUHP_AP_PERF_X86_UNCORE_STARTING,
-+	CPUHP_AP_PERF_X86_AMD_IBS_STARTING,
+ 	CPUHP_AP_PERF_X86_AMD_IBS_STARTING,
  	CPUHP_AP_PERF_X86_STARTING,
++	CPUHP_AP_ARM64_TIMER_STARTING,
  	CPUHP_AP_NOTIFY_STARTING,
  	CPUHP_AP_NOTIFY_DYING,
+ 	CPUHP_AP_SCHED_MIGRATE_DYING,
 
 
