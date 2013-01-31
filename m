@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab3AaWwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:52:24 -0500
+	id S1757320Ab3AaWw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:52:29 -0500
 Received: from mga09.intel.com ([134.134.136.24]:5377 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756669Ab3AaWwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:52:19 -0500
+	id S1756397Ab3AaWwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:52:18 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="279285605"
+   d="scan'208";a="279285606"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 03/12] perf, x86: Basic Haswell PEBS support v4
-Date: Thu, 31 Jan 2013 14:51:41 -0800
-Message-Id: <1359672710-19528-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 04/12] perf, x86: Support the TSX intx/intx_cp qualifiers v3
+Date: Thu, 31 Jan 2013 14:51:42 -0800
+Message-Id: <1359672710-19528-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
 References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
@@ -26,97 +26,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add basic PEBS support for Haswell.
-The constraints are similar to SandyBridge with a few new events.
+Implement the TSX transaction and checkpointed transaction qualifiers for
+Haswell. This allows e.g. to profile the number of cycles in transactions.
 
-v2: Readd missing pebs_aliases
-v3: Readd missing hunk. Fix some constraints.
-v4: Fix typo in PEBS event table (Stephane Eranian)
+The checkpointed qualifier requires forcing the event to
+counter 2, implement this with a custom constraint for Haswell.
+
+Also add sysfs format attributes for intx/intx_cp
+
+[Updated from earlier version that used generic attributes, now does
+raw + sysfs formats]
+v2: Moved bad hunk. Forbid some bad combinations.
+v3: Use EOPNOTSUPP. White space fixes (Stephane Eranian)
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.h          |    2 ++
- arch/x86/kernel/cpu/perf_event_intel.c    |    6 ++++--
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
- 3 files changed, 35 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   62 ++++++++++++++++++++++++++++++++
+ 1 files changed, 62 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 8941899..1567b0d 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -596,6 +596,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
- 
- extern struct event_constraint intel_ivb_pebs_event_constraints[];
- 
-+extern struct event_constraint intel_hsw_pebs_event_constraints[];
-+
- struct event_constraint *intel_pebs_constraints(struct perf_event *event);
- 
- void intel_pmu_pebs_enable(struct perf_event *event);
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 78045e5..8163ebf 100644
+index 8163ebf..f8d26c2 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -826,7 +826,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
- 		return true;
+@@ -13,6 +13,7 @@
+ #include <linux/slab.h>
+ #include <linux/export.h>
  
- 	/* implicit branch sampling to correct PEBS skid */
--	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
-+	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
-+	    x86_pmu.intel_cap.pebs_format < 2)
- 		return true;
++#include <asm/cpufeature.h>
+ #include <asm/hardirq.h>
+ #include <asm/apic.h>
  
- 	return false;
-@@ -2127,8 +2128,9 @@ __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_snb();
+@@ -1597,6 +1598,45 @@ static void core_pmu_enable_all(int added)
+ 	}
+ }
  
- 		x86_pmu.event_constraints = intel_hsw_event_constraints;
--
-+		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
- 		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
- 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 9d0dae0..0252930 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -427,6 +427,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
-         EVENT_CONSTRAINT_END
++static int hsw_hw_config(struct perf_event *event)
++{
++	int ret = intel_pmu_hw_config(event);
++
++	if (ret)
++		return ret;
++	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
++		return 0;
++	event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
++
++	/*
++	 * INTX/INTX-CP do not play well with PEBS or ANY thread mode.
++	 */
++	if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
++	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
++	      event->attr.precise_ip > 0))
++		return -EOPNOTSUPP;
++
++	return 0;
++}
++
++static struct event_constraint counter2_constraint =
++			EVENT_CONSTRAINT(0, 0x4, 0);
++
++static struct event_constraint *
++hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
++{
++	struct event_constraint *c = intel_get_event_constraints(cpuc, event);
++
++	/* Handle special quirk on intx_checkpointed only in counter 2 */
++	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
++		if (c->idxmsk64 & (1U << 2))
++			return &counter2_constraint;
++		return &emptyconstraint;
++	}
++
++	return c;
++}
++
+ PMU_FORMAT_ATTR(event,	"config:0-7"	);
+ PMU_FORMAT_ATTR(umask,	"config:8-15"	);
+ PMU_FORMAT_ATTR(edge,	"config:18"	);
+@@ -1604,6 +1644,8 @@ PMU_FORMAT_ATTR(pc,	"config:19"	);
+ PMU_FORMAT_ATTR(any,	"config:21"	); /* v3 + */
+ PMU_FORMAT_ATTR(inv,	"config:23"	);
+ PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
++PMU_FORMAT_ATTR(intx,	"config:32"	);
++PMU_FORMAT_ATTR(intx_cp,"config:33"	);
+ 
+ static struct attribute *intel_arch_formats_attr[] = {
+ 	&format_attr_event.attr,
+@@ -1761,6 +1803,23 @@ static struct attribute *intel_arch3_formats_attr[] = {
+ 	NULL,
  };
  
-+struct event_constraint intel_hsw_pebs_event_constraints[] = {
-+	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+	INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-+	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-+	INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-+	INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
-+	INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-+	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-+	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
-+	INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-+	INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
++/* Arch3 + TSX support */
++static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_pc.attr,
++	&format_attr_any.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask.attr,
++	&format_attr_intx.attr,
++	&format_attr_intx_cp.attr,
 +
-+	EVENT_CONSTRAINT_END
++	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
++	NULL,
 +};
 +
- struct event_constraint *intel_pebs_constraints(struct perf_event *event)
- {
- 	struct event_constraint *c;
++
+ static __initconst const struct x86_pmu intel_pmu = {
+ 	.name			= "Intel",
+ 	.handle_irq		= intel_pmu_handle_irq,
+@@ -2135,6 +2194,9 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+ 
++		x86_pmu.hw_config = hsw_hw_config;
++		x86_pmu.get_event_constraints = hsw_get_event_constraints;
++		x86_pmu.format_attrs = intel_hsw_formats_attr;
+ 		pr_cont("Haswell events, ");
+ 		break;
+ 
 -- 
 1.7.7.6
 
