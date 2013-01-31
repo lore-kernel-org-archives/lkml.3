@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab3AaUBD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 15:01:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35582 "EHLO mx1.redhat.com"
+	id S932073Ab3AaUBS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 15:01:18 -0500
+Received: from mout.gmx.net ([212.227.15.18]:57652 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753928Ab3AaUBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 15:01:01 -0500
-Date: Thu, 31 Jan 2013 22:00:24 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Prarit Bhargava <prarit@redhat.com>,
-        alex.williamson@redhat.com
-Subject: Re: [PATCH] x86, x2apic: Only WARN on broken BIOSes inside a virtual
- guest
-Message-ID: <20130131200024.GB1757@redhat.com>
-References: <1359650435-73586-1-git-send-email-dzickus@redhat.com>
- <20130131185200.GA1757@redhat.com>
- <20130131193427.GP98867@redhat.com>
+	id S1756916Ab3AaUBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 15:01:16 -0500
+X-Authenticated: #1045983
+X-Provags-ID: V01U2FsdGVkX1/6DllvcdL6PoKc8bKrvrg6C7DaFWDBxVZuTBG0Ny
+	pDwtap0pCqiOvZ
+Date: Thu, 31 Jan 2013 21:01:10 +0100
+From: Helge Deller <deller@gmx.de>
+To: linux-parisc@vger.kernel.org, James.Bottomley@HansenPartnership.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] parisc: unbreak automounter support on 64-bit kernel with
+ 32-bit userspace
+Message-ID: <20130131200110.GA6032@p100.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130131193427.GP98867@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 02:34:27PM -0500, Don Zickus wrote:
-> On Thu, Jan 31, 2013 at 08:52:00PM +0200, Gleb Natapov wrote:
-> > > http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
-> > > 
-> > > After talking with folks, the threat of irq injections on virtual guests
-> > > made sense.  However, when discussing if this was possible on bare metal
-> > > machines, we could not come up with a plausible scenario.
-> > > 
-> > The irq injections is something that a guest with assigned device does
-> > to attack a hypervisor it runs on. Interrupt remapping protects host
-> > from this attack. According to pdf above if x2apic is disabled in a
-> > hypervisor interrupt remapping can be bypassed and leave host vulnerable
-> > to guest attack. This means that situation is exactly opposite: warning
-> > has sense on a bare metal, but not in a guest. I am not sure that there is
-> > a hypervisor that emulates interrupt remapping device though and without
-> > it the warning cannot be triggered in a guest.
-> 
-> Ah, it makes sense.  Not sure how I got it backwards then.  So my patch is
-> pointless then?  I'll asked for it to be dropped.
-Yes, it is backwards.
+Similiar to other 64 bit Linux targets autofs_wqt_t needs to be of type int
+which has a size of 32 bits on 32- and 64-bit parisc kernels.
 
-> 
-> >From my previous discussions with folks, is that KVM was protected from
-> this type of attack.  Is that still true?
-> 
-Copying Alex. He said that to use device assignment without interrupt
-remapping customer needs to opt-in explicitly. Not sure what happens
-with interrupt remapping but with x2apic disabled.
+Signed-off-by: Helge Deller <deller@gmx.de>
 
-The problem is not limited to virtualization BTW. Any vfio user may
-attack kernel without interrupt remapping so vfio has the same opt-in.
+diff --git a/include/uapi/linux/auto_fs.h b/include/uapi/linux/auto_fs.h
+index 77cdba9..d551754 100644
+--- a/include/uapi/linux/auto_fs.h
++++ b/include/uapi/linux/auto_fs.h
+@@ -43,7 +43,7 @@
+  */
  
---
-			Gleb.
+ #if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
+- || defined(__powerpc__) || defined(__s390__)
++ || defined(__powerpc__) || defined(__s390__) || defined(__hppa__)
+ typedef unsigned int autofs_wqt_t;
+ #else
+ typedef unsigned long autofs_wqt_t;
