@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab3AaMjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:39:35 -0500
-Received: from mga11.intel.com ([192.55.52.93]:51746 "EHLO mga11.intel.com"
+	id S1753515Ab3AaMqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:46:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36476 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751743Ab3AaMjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:39:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,576,1355126400"; 
-   d="scan'208";a="280813725"
-Date: Thu, 31 Jan 2013 20:40:04 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] rwsem-spinlock: let rwsem write lock stealable
-Message-ID: <20130131124004.GA12678@yliu-dev.sh.intel.com>
-References: <1359537244-20588-1-git-send-email-yuanhan.liu@linux.intel.com>
- <CANN689GwGh2sHwoP66JjoXs2ZMQAXbVpA0MHQahWq5M+baNfSQ@mail.gmail.com>
+	id S1751728Ab3AaMqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 07:46:37 -0500
+Date: Thu, 31 Jan 2013 13:46:25 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz
+Subject: Re: [PATCH] printk: Avoid softlockups in console_unlock()
+Message-ID: <20130131124625.GB4612@quack.suse.cz>
+References: <20130116145005.e20f4e53.akpm@linux-foundation.org>
+ <20130116235529.GA10251@quack.suse.cz>
+ <20130116161118.f6e2e6a4.akpm@linux-foundation.org>
+ <20130117210442.GA23984@quack.suse.cz>
+ <20130117133917.0f75728e.akpm@linux-foundation.org>
+ <20130117234614.GB10127@quack.suse.cz>
+ <20130117155029.cb70ec95.akpm@linux-foundation.org>
+ <20130121210008.GB23041@quack.suse.cz>
+ <20130129145424.GF32246@quack.suse.cz>
+ <20130130160827.cadb3262.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANN689GwGh2sHwoP66JjoXs2ZMQAXbVpA0MHQahWq5M+baNfSQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130130160827.cadb3262.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 03:57:51AM -0800, Michel Lespinasse wrote:
-> On Wed, Jan 30, 2013 at 1:14 AM, Yuanhan Liu
-> <yuanhan.liu@linux.intel.com> wrote:
-> > We(Linux Kernel Performance project) found a regression introduced by
-> > commit 5a50508, which just convert all mutex lock to rwsem write lock.
-> > The semantics is same, but the results is quite huge in some cases.
-> > After investigation, we found the root cause: mutex support lock
-> > stealing. Here is the link for the detailed regression report:
-> >     https://lkml.org/lkml/2013/1/29/84
-> >
-> > Ingo suggests to add write lock stealing to rwsem as well:
-> >     "I think we should allow lock-steal between rwsem writers - that
-> >      will not hurt fairness as most rwsem fairness concerns relate to
-> >      reader vs. writer fairness"
-> >
-> > I then tried it with rwsem-spinlock first as I found it much easier to
-> > implement it than lib/rwsem.c. And here I sent out this patch first for
-> > comments. I'd try lib/rwsem.c later once the change to rwsem-spinlock
-> > is OK to you guys.
+On Wed 30-01-13 16:08:27, Andrew Morton wrote:
+> On Tue, 29 Jan 2013 15:54:24 +0100
+> Jan Kara <jack@suse.cz> wrote:
 > 
-> I noticed that you haven't modified __down_write_trylock() - for
-> consistency with __down_write() you should replace
->         if (sem->activity == 0 && list_empty(&sem->wait_list)) {
-> with
->         if (sem->activity == 0) {
-
-Yes, my bad for missing that. Thanks a lot for pointing it out. Will fix it.
+> > >   So I was testing the attached patch which does what we discussed. The bad
+> > > news is I was able to trigger a situation (twice) when suddently sda
+> > > disappeared and thus all IO requests failed with EIO. There is no trace of
+> > > what's happened in the kernel log. I'm guessing that disabled interrupts on
+> > > the printing CPU caused scsi layer to time out for some request and fail the
+> > > device. So where do we go from here?
+> >   Andrew? I guess this fell off your radar via the "hrm, strange, need to
+> > have a closer look later" path?
 > 
-> Other than that, I like the idea. I was originally uncomfortable with
-> doing lock stealing for the rwsem, but I think doing it for writers
-> only as you propose should be fine. Readers wait for any queued
-> writers, and in exchange they are guaranteed to get the lock once
-> they've blocked.
+> urgh.  I was hoping that if we left it long enough, one of both of us
+> would die :(
+  I'm too young for this strategy to work for me :)
 
-> You *still* want to check for regressions that this
-> change might cause - not with anon_vma as this was a mutex not long
-> ago, but possibly with mmap_sem
-
-Yes. Well, at least it passed Fengguang's 0-DAY test, which did lots
-of tests on almost all ARCHs. Well, you reminds me that I just enabled
-RWSEM_GENERIC_SPINLOCK for x86 ARCH, thus I need to enable
-RWSEM_GENERIC_SPINLOCK to all ARCHs and do test again.
-
-BTW, mind to tell a nice test case for mmap_sem?
-
-> - but I'm crossing my fingers and
-> thinking that it'll most likely turn out fine.
-
-Thanks!
-
+> I fear we will rue the day when we changed printk() to bounce some of
+> its work up to a kernel thread.
 > 
-> I may be able to help with the non-spinlock version of this as I still
-> remember how this works.
+> > Currently I'd be inclined to return to my original solution...
+> 
+> Can we make it smarter?  Say, take a peek at the current
+> softlockup/nmi-watchdog intervals, work out how for how long we can
+> afford to keep interrupts disabled and then use that period and
+> sched_clock() to work out if we're getting into trouble?  IOW, remove
+> the hard-wired "1000" thing which will always be too high or too low
+> for all situations.
+  Yes, I also thought that making offloading more clever (so that offload
+doesn't happen unless we really have no choice) could make the approach
+more acceptable. 
 
-That would be great! Especially I will have vacation soon for Chinese
-New Year.
-
-
-	--yliu
+> Implementation-wise, that would probably end up adding a kernel-wide
+> function along the lines of
+> 
+> /*
+>  * Return the maximum number of nanosecond for which interrupts may be disabled
+>  * on the current CPU
+>  */
+> u64 max_interrupt_disabled_duration(void)
+> {
+> 	return min(sortirq duration, nmi watchdog duration);
+> }
+  OK, that sounds good. So I'll write some patch...
+ 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
