@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3AaVde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 16:33:34 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51330 "EHLO mail.skyhub.de"
+	id S1754942Ab3AaVmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 16:42:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57629 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab3AaVdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 16:33:33 -0500
-Date: Thu, 31 Jan 2013 22:33:27 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Woodhouse, David" <david.woodhouse@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [RFC] arm: use built-in byte swap function
-Message-ID: <20130131213327.GB5050@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Kim Phillips <kim.phillips@freescale.com>,
-	Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	"Woodhouse, David" <david.woodhouse@intel.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Daniel Santos <daniel.santos@pobox.com>,
-	David Rientjes <rientjes@google.com>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Rob Herring <robherring2@gmail.com>
-References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
- <20130129083522.GA14302@pd.tnic>
- <1359478014.3529.157.camel@shinybook.infradead.org>
- <20130129174249.GB25415@pd.tnic>
- <1359482147.3529.161.camel@shinybook.infradead.org>
- <20130129181046.GC25415@pd.tnic>
- <1359541333.3529.186.camel@shinybook.infradead.org>
- <20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com>
- <20130131092801.GV23505@n2100.arm.linux.org.uk>
- <20130131145947.f62474a0600848df86548b96@freescale.com>
+	id S1752632Ab3AaVmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 16:42:12 -0500
+Date: Thu, 31 Jan 2013 22:42:02 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1301312238390.23853@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130131145947.f62474a0600848df86548b96@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 02:59:47PM -0600, Kim Phillips wrote:
-> - add new ARCH_DEFINES_BUILTIN_BSWAP (see Kconfig help).
->   - if set, generic compiler header does not set HAVE_BUILTIN_BSWAPxx
->   - not too sure about this having to be a new CONFIG_, but it's hard
->     to find a place for it given linux/compiler.h doesn't include any
->     arch-specific files.
+Linus,
 
-Yeah, me neither. It seems to me the whole deal can be simplified even
-further without introducing CONFIG_ARCH_DEFINES_BUILTIN_BSWAP.
+please pull from
 
-And, we don't even want to use CONFIG_ARCH_USE_BUILTIN_BSWAP on arm due
-to different compiler versions supporting it (correct me if I'm wrong
-here) vs the generic thing in include/linux/compiler-gcc4.h which we
-want off.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-3.8/upstream-fixes
 
-If so, you'd need to simply put the following from below in
-arch/arm/include/asm/swab.h
+to receive updates that should still go into 3.8.
 
-#if GCC_VERSION >= 40600
-#define __HAVE_BUILTIN_BSWAP32__
-#define __HAVE_BUILTIN_BSWAP64__
-#if GCC_VERSION >= 40800
-#define __HAVE_BUILTIN_BSWAP16__
-#endif /* GCC_VERSION >= 40800 */
-#endif /* GCC_VERSION >= 40600 */
 
-and that's it.
+- fix i2c-hid and hidraw interaction, by Benjamin Tissoires
+- a quirk to make a particular device (Formosa IR receiver) work properly,
+  by Nicholas Santos
 
-Makes sense or am I over-simplifying this?
 
 Thanks.
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Benjamin Tissoires (1):
+      HID: i2c-hid: fix i2c_hid_output_raw_report
+
+Jiri Kosina (1):
+      HID: remove x bit from sensor doc
+
+Nicholas Santos (1):
+      HID: usbhid: quirk for Formosa IR receiver
+
+ drivers/hid/hid-ids.h            |    3 +++
+ drivers/hid/i2c-hid/i2c-hid.c    |   13 ++++++++++++-
+ drivers/hid/usbhid/hid-quirks.c  |    1 +
+ 3 files changed, 16 insertions(+), 1 deletions(-)
+ mode change 100755 => 100644 Documentation/hid/hid-sensor.txt
+
+-- 
+Jiri Kosina
+SUSE Labs
