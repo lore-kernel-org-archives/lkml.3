@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3AaD0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 22:26:36 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40751 "EHLO
+	id S1756889Ab3AaD1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 22:27:54 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40822 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab3AaD0e (ORCPT
+	with ESMTP id S1756223Ab3AaD1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 22:26:34 -0500
+	Wed, 30 Jan 2013 22:27:51 -0500
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5109E454.8040102@jp.fujitsu.com>
-Date: Thu, 31 Jan 2013 12:26:12 +0900
+Message-ID: <5109E49E.1070005@jp.fujitsu.com>
+Date: Thu, 31 Jan 2013 12:27:26 +0900
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
@@ -17,17 +17,19 @@ To: "Rafael J. Wysocki" <rjw@sisk.pl>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>
-Subject: [RESEND PATCH 3/4] PNPACPI: Fix acpi_bus_get_device() check in drivers/pnp/pnpacpi/core.c
-References: <1451967.YMyGeCCNtu@vostro.rjw.lan> <6099377.PFvsxPeyib@vostro.rjw.lan> <5109E11A.5030400@jp.fujitsu.com> <5109E21C.4010904@jp.fujitsu.com>
-In-Reply-To: <5109E21C.4010904@jp.fujitsu.com>
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        <daniel.vetter@ffwll.ch>, <airlied@linux.ie>,
+        <dri-devel@lists.freedesktop.org>
+Subject: [RESEND PATCH 4/4] GPU/i915: Fix acpi_bus_get_device() check in drivers/gpu/drm/i915/intel_opregion.c
+References: <1451967.YMyGeCCNtu@vostro.rjw.lan> <6099377.PFvsxPeyib@vostro.rjw.lan> <5109E11A.5030400@jp.fujitsu.com> <5109E2AF.2000107@jp.fujitsu.com>
+In-Reply-To: <5109E2AF.2000107@jp.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to chnage subject. So I resend a patch.
+I forgot to change subject. So I resend a patch.
 
 ---
 acpi_bus_get_device() returns int not acpi_status.
@@ -37,56 +39,20 @@ acpi_bus_get_device().
 
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
-  drivers/pnp/pnpacpi/core.c |   10 +++++-----
-  1 file changed, 5 insertions(+), 5 deletions(-)
+  drivers/gpu/drm/i915/intel_opregion.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-pm/drivers/pnp/pnpacpi/core.c
+Index: linux-pm/drivers/gpu/drm/i915/intel_opregion.c
 ===================================================================
---- linux-pm.orig/drivers/pnp/pnpacpi/core.c	2013-01-31 11:04:43.000000000 +0900
-+++ linux-pm/drivers/pnp/pnpacpi/core.c	2013-01-31 11:38:47.659849883 +0900
-@@ -90,7 +90,7 @@ static int pnpacpi_set_resources(struct
-  	pnp_dbg(&dev->dev, "set resources\n");
+--- linux-pm.orig/drivers/gpu/drm/i915/intel_opregion.c	2013-01-31 11:39:37.075849905 +0900
++++ linux-pm/drivers/gpu/drm/i915/intel_opregion.c	2013-01-31 11:52:18.796850274 +0900
+@@ -347,7 +347,7 @@ static void intel_didl_outputs(struct dr
+  	int i = 0;
   
-  	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || acpi_bus_get_device(handle, &acpi_dev)) {
-  		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
-  		return -ENODEV;
-  	}
-@@ -123,7 +123,7 @@ static int pnpacpi_disable_resources(str
-  	dev_dbg(&dev->dev, "disable resources\n");
+  	handle = DEVICE_ACPI_HANDLE(&dev->pdev->dev);
+-	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev)))
++	if (!handle || acpi_bus_get_device(handle, &acpi_dev))
+  		return;
   
-  	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || acpi_bus_get_device(handle, &acpi_dev)) {
-  		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
-  		return 0;
-  	}
-@@ -145,7 +145,7 @@ static bool pnpacpi_can_wakeup(struct pn
-  	acpi_handle handle;
-  
-  	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || acpi_bus_get_device(handle, &acpi_dev)) {
-  		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
-  		return false;
-  	}
-@@ -160,7 +160,7 @@ static int pnpacpi_suspend(struct pnp_de
-  	int error = 0;
-  
-  	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || acpi_bus_get_device(handle, &acpi_dev)) {
-  		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
-  		return 0;
-  	}
-@@ -197,7 +197,7 @@ static int pnpacpi_resume(struct pnp_dev
-  	acpi_handle handle = DEVICE_ACPI_HANDLE(&dev->dev);
-  	int error = 0;
-  
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
-+	if (!handle || acpi_bus_get_device(handle, &acpi_dev)) {
-  		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
-  		return -ENODEV;
-  	}
+  	if (acpi_is_video_device(acpi_dev))
 
