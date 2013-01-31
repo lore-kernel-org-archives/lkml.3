@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757021Ab3AaEYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 23:24:42 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:54281 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab3AaEYk (ORCPT
+	id S1757057Ab3AaE1P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 23:27:15 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:55241 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab3AaE1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 23:24:40 -0500
+	Wed, 30 Jan 2013 23:27:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <5109EA2A.8020204@gmail.com>
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
- <1359514939-15653-2-git-send-email-acourbot@nvidia.com> <5108C9C1.1090707@gmail.com>
- <51098064.7030902@wwwdotorg.org> <5109EA2A.8020204@gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 31 Jan 2013 13:24:19 +0900
-Message-ID: <CAAVeFuJf9Ww7g8Q9RAG9Na1SZq2-n2MMxcAEBek52ZVG7RpL7g@mail.gmail.com>
-Subject: Re: [RFC 1/4] video: panel: add CLAA101WA01A panel support
-To: Mark Zhang <nvmarkzhang@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LNX.2.00.1301301855350.25423@eggly.anvils>
+References: <1359591980-29542-1-git-send-email-walken@google.com>
+	<1359591980-29542-3-git-send-email-walken@google.com>
+	<alpine.LNX.2.00.1301301855350.25423@eggly.anvils>
+Date: Wed, 30 Jan 2013 20:27:11 -0800
+Message-ID: <CANN689Et6381+mDby_HK9SP24hooSojoR__7w0AMvDv1K_aH-A@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mm: accelerate mm_populate() treatment of THP pages
+From: Michel Lespinasse <walken@google.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 12:51 PM, Mark Zhang <nvmarkzhang@gmail.com> wrote:
->> DDC access is a property of the display controller, not the panel
->> itself. The panel might be hooked up to a display controller's DDC/I2C
->> channel as the target, but it isn't the host/controller of the DDC/I2C
->> channel. As such, placing the nvidia,ddc property into the display
->> controller node makes sense.
+On Wed, Jan 30, 2013 at 7:05 PM, Hugh Dickins <hughd@google.com> wrote:
+> On Wed, 30 Jan 2013, Michel Lespinasse wrote:
+>
+>> This change adds a page_mask argument to follow_page.
 >>
+>> follow_page sets *page_mask to HPAGE_PMD_NR - 1 when it encounters a THP page,
+>> and to 0 in other cases.
+>>
+>> __get_user_pages() makes use of this in order to accelerate populating
+>> THP ranges - that is, when both the pages and vmas arrays are NULL,
+>> we don't need to iterate HPAGE_PMD_NR times to cover a single THP page
+>> (and we also avoid taking mm->page_table_lock that many times).
+>>
+>> Other follow_page() call sites can safely ignore the value returned in
+>> *page_mask.
+>>
+>> Signed-off-by: Michel Lespinasse <walken@google.com>
 >
-> Yes, DC triggers the DDC access and is the host of the DDC/I2C channel.
-> So I think it's reasonable to put nvidia,ddc property into the display
-> controller node. But the video mode info in EDID which be fetched via
-> DDC is the property of the panel, so this info should be provided by
-> panel driver. Actually display controller cares about the video modes,
-> not the way to get these info. So I think it's better to do the whole
-> work like this:
+> I certainly like the skipping.
 >
-> 1) display controller relied on CDF to call "display_entity_get_modes"
-> 2) panel driver calls the function which is hooked to display controller
-> to get the video modes via DDC.
-> 3) if the video modes can't be fetched via DDC, panel driver provides
-> the info(either by hard-coded or defined in DT) anyway
+> And (b) why can't we just omit the additional arg, and get it from the
+> page found?  You've explained the unreliability of the !FOLL_GET case
+> to me privately, but that needs to be spelt out in the commit comment
+> (and I'd love if we found a counter-argument, the extra arg of interest
+> to almost no-one does irritate me).
 
-This would require a callback dedicated to this in display_entity and
-would break its simple design.
+Right. My understanding is that after calling follow_page() without
+the FOLL_GET flag, you really can't do much with the returned page
+pointer other than checking it for IS_ERR(). We don't get a reference
+to the page, so it could get migrated away as soon as follow_page()
+releases the page table lock. In the most extreme case, the memory
+corresponding to that page could get offlined / dereferencing the page
+pointer could fail.
 
-> Just like I said above, display controller should not query DDC
-> directly. Since CDF already defines these for us, display controller
-> should call CDF's functions, like: display_entity_get_modes,
-> display_entity_get_size... I think this is the key difference I wanna
-> talk about. And also in this way, display controller doesn't need to
-> care about this 2 steps logics, just call "display_entity_get_modes" is OK.
+I actually think the follow_page API is very error prone in this way,
+as the returned page pointer is very tempting to use, but can't be
+safely used. I almost wish we could return something like
+ERR_PTR(-ESTALE) or whatever, just to make remove any temptations of
+dereferencing that page pointer.
 
-Well the fact is that it *is* the display controller that queries DDC
-directly. The panel is just a bus here, and the EDID EEPROM could
-perfectly work without it. If you model what you described with DT
-nodes, I'm afraid you will end up with something both complex (with DC
-node referencing panel node and back again for the EDID bus) and that
-does not picture reality accurately.
+Now I agree the extra argument isn't pretty, but I don't have any
+better ideas for communicating the size of the page that got touched.
 
-Alex.
+> But (a) if the additional arg has to exist, then I'd much prefer it
+> to be page_size than page_mask - I realize there's a tiny advantage to
+> subtracting 1 from an immediate than from a variable, but I don't think
+> it justifies the peculiar interface.  mask makes people think of masking.
+
+Yes, I started with a page_size in bytes and then I moved to the
+page_mask. I agree the performance advantage is tiny, and I don't mind
+switching back to bytes if people are happier with it.
+
+I think one benefit of the page_mask implementation might be that it's
+easier for people to see that page_increment will end up in the
+[1..HPAGE_PMD_NR] range. Would a page size in 4k page units work out ?
+(I'm just not sure how to call such a quantity, though).
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
