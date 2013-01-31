@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab3AaWUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:20:07 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:34515 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3AaWUF (ORCPT
+	id S1756397Ab3AaWVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:21:21 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44403 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501Ab3AaWVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:20:05 -0500
+	Thu, 31 Jan 2013 17:21:19 -0500
+Message-ID: <510AEE5C.6030303@wwwdotorg.org>
+Date: Thu, 31 Jan 2013 15:21:16 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Date: Thu, 31 Jan 2013 17:20:03 -0500
-Message-ID: <CA+3xLx6HRWuc58oWP=T1J9NkKx958DQEULy+gMt8mooj3nsw+g@mail.gmail.com>
-Subject: ABI violations eventually caused by short sighted coding style
-From: Jon Pry <jonpry@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] nl80211: avoid "wdev_id may be used uninitialized"
+References: <1359504662-23561-1-git-send-email-swarren@wwwdotorg.org>   (sfid-20130130_011118_335925_03B80596) <1359532679.8010.1.camel@jlt4.sipsolutions.net>  <51094F10.60605@wwwdotorg.org> <1359665497.8415.102.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1359665497.8415.102.camel@jlt4.sipsolutions.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have recently been bitten by an ABI change. I'd prefer not to name names, but
-it seems at this point the ABI cannot even be reverted. This sequence of events
-results from the following strategy to deal with ioctl's using structures and
-attempting to maintain backward compatibility.
+On 01/31/2013 01:51 PM, Johannes Berg wrote:
+> On Wed, 2013-01-30 at 09:49 -0700, Stephen Warren wrote:
+>> On 01/30/2013 12:57 AM, Johannes Berg wrote:
+>>> On Tue, 2013-01-29 at 17:11 -0700, Stephen Warren wrote:
+>>>> From: Stephen Warren <swarren@nvidia.com>
+>>>>
+>>>> Silence the following:
+>>>> net/wireless/nl80211.c: In function '__cfg80211_wdev_from_attrs.clone.119':
+>>>> net/wireless/nl80211.c:57:6: warning: 'wdev_id' may be used uninitialized in this function
+>>>>
+>>>> ... by always initializing wdev_id to zero. I assume that wiphy_idx and
+>>>> ifidx are set to -1 for similar reasons, so this change simply propagates
+>>>> the same workaround.
+>>>>
+>>>> In practice, this warning is false, since wdev_id is both set and used
+>>>> under the condition if (have_wdev_id). However, at least my compiler
+>>>> can't be coerced into realizing this; almost any code between the if
+>>>> blocks that set and use the variable causes this warning.
+>>>
+>>> I don't see this warning? What compiler are you using?
+>>
+>> I'm using gcc-4.5.3 for ARM. I checked with gcc-4.6.3 and gcc-4.7.2 and
+>> indeed I don't see the warning there.
+> 
+> Interesting. So should I keep it or remove it? I guess in this
+> particular instance it doesn't matter all that much. In other cases I'd
+> be more against changing it I guess.
 
-Take for example the following:
-
-foo_ioctl(struct *myioctldata);
-
-The creator of this structure knows that the driver may have it's features
-extended in the future. So they invent this:
-
-struct foodata{
-	u32 foo;
-};
-
-struct myioctldata{
-	u32 type;
-	union {
-		struct foodata;
-		u8 data[64];
-	} u;
-};
-
-
-The creator is proud. Because now this ioctl is future proof. More structures
-can simply be added in the future without breaking existing code. Right? Wrong.
-If a new structure is added to the union that requires higher alignment. Like
-adding a 64-bit element. The union will now be moved in the structure and
-sizeof(myioctldata) will now be different to accommodate the padding.
-
-This is even cooler if myioctldata.type is a u8, then it is possible to get 4
-whole different sized structs depending on the contents of the union. I find
-this to be rather stupid. The kernel is littered with this stuff so it's
-probably impossible to remove it. At least new code should not be encouraged to
-follow this form. Most developers just don't know and assume if the struct is
-small enough, it will not cause any problems. To make matters worse,
-the effects
-can be different on 32/64bit platforms, allowing the code to pass testing.
-
-I believe changes should be made to the coding style forcing developers to take
-action. There are a couple of solutions I can think of:
-
-1. 	Put the unions at the beginning of structures if possible, or at least put
-	them in a position that would ensure 8 byte offset from the beginning of
-	the struct. Such as after a u64. Multiple unions should ensure the data[]
-	of the preceding unions to be a multiple of 8 bytes.
-2.  Require the data element to be declared as u64[size/8].
-3.  Pack the ioctl structures
-
-My preference is for the former since it does not cause any
-unnecessary padding.
-
-Regards,
-
-Jon Pry
+It's your call. I guess since it's fixed going forward in gcc, you may
+as well drop it though.
