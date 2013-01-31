@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab3AaOcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 09:32:17 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:34829 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab3AaOcO (ORCPT
+	id S1754053Ab3AaOdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 09:33:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38831 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753617Ab3AaOdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 09:32:14 -0500
+	Thu, 31 Jan 2013 09:33:33 -0500
+Date: Thu, 31 Jan 2013 22:33:24 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ASoC: Ux500: Fix build error pertaining to missing
+ include file
+Message-ID: <20130131143323.GB13321@opensource.wolfsonmicro.com>
+References: <1359635640-1932-1-git-send-email-lee.jones@linaro.org>
+ <20130131123744.GG11078@opensource.wolfsonmicro.com>
+ <20130131130340.GB2042@gmail.com>
+ <20130131130631.GA12824@opensource.wolfsonmicro.com>
+ <20130131140735.GD2042@gmail.com>
+ <20130131141019.GA13321@opensource.wolfsonmicro.com>
+ <20130131142117.GE2042@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130131142102.GA7339@gmail.com>
-References: <1359640479-5289-1-git-send-email-eranian@google.com>
-	<20130131142102.GA7339@gmail.com>
-Date: Thu, 31 Jan 2013 15:32:14 +0100
-Message-ID: <CABPqkBQEbpss=SGiFw+Aj7+MvO9nWcrtkawj4-e=cw+mJiUk4g@mail.gmail.com>
-Subject: Re: [PATCH 0/2] perf: add new uncore command
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yEPQxsgoJgBvi8ip"
+Content-Disposition: inline
+In-Reply-To: <20130131142117.GE2042@gmail.com>
+X-Cookie: You are fairminded, just and loving.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 3:21 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> This patchset adds a new command to perf: perf uncore.
->> It is used to measure processor socket-level metrics
->> on a system-wide basis and at all priv levels.
->>
->> The command comes with a set of predefined key metrics
->> which are useful to measure multi-socket system imbalance
->> and various bandwidths.
->>
->> The following metrics are currently defined:
->>   - memory bandwidth (Nehalem, Westmere, SandyBridge-EP)
->>   - PCIe bandwidth (SandyBridge-EP)
->>   - QPI bandwidth (SandyBridge-EP)
->>   - C-state residency (SandyBridge-EP)
->>
->> Others can be added in the future.
->>
->> The command provides options to modify the unit of the metrics
->> (default: MB/s for bandwidth).
->>
->> Example on Nehalem:
->>
->>  # perf uncore
->>  #------------------------------
->>  #           Socket0           |
->>  #------------------------------
->>  #        RAM Bandwidth        |
->>  #            Wr             Rd|
->>  #          MB/s           MB/s|
->>  #------------------------------
->>          4954.99       14897.29
->>          4953.97       14894.56
->>          4947.52       14874.97
->>
->> To make plotting easier, the output can be augmented with a timestamp:
->>
->>  # perf uncore -T
->>  #----------------------------------------
->>  #         |           Socket0           |
->>  #         |------------------------------
->>  #   Time  |        RAM Bandwidth        |
->>  #    in   |            Wr             Rd|
->>  #   secs  |          MB/s           MB/s|
->>  #----------------------------------------
->>           1        4952.50       14890.49
->>           2        4955.55       14900.19
->>           3        4949.13       14879.60
->>           4        4954.66       14896.26
->
-> Looks really useful - how about naming it in a bit more generic
-> way, because I'm quite sure this command will become popular and
-> 'perf uncore' is a bit un-intutive.
->
-> A couple of possibilities:
->
->   perf system
->   perf hw
->   perf hw-stat
->
-I am fine with that.  I prefer hw or systems for the command name.
 
-> and also adding subcommands instead of options for the various
-> views/metrics, such as:
->
->   perf hw ram
->   perf hw pci
->   perf hw qpi
->   perf hw cstate
+--yEPQxsgoJgBvi8ip
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes, could do that. Even though having all of them measure at once
-is also useful (this is how it currently works by default).
+On Thu, Jan 31, 2013 at 02:21:17PM +0000, Lee Jones wrote:
 
->   etc.
->
-> A plain 'perf hw' command would then list the available
-> sub-commands and inform the user about the (current) set of
-> hw subsystems that provide metrics.
->
-Yes. this is what perf uncore -L already does.
+> Are you going to take the patch?
 
-For instance on SNB-EP:
-$ perf uncore -L
-mem_bw : SNB-EP MEM Bandwidth
-qpi_bw : SNB-EP QPI Bandwidth
-pcie_bw : SNB-EP PCIe Bandwidth
-cstate : SNB-EP C-state residency
+Yes, I applied it when I sent the original reply.
+
+--yEPQxsgoJgBvi8ip
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRCoCsAAoJELSic+t+oim9CX4P/1yfErzg5pT4sycfDouyDJXQ
+b9KB0JoQWwkKmKJ18Y4qlGZEOpNRdItVeJCaexlDLZ6zWcxn8Kjn+DIGpohgMCo/
+QYs/RkYzHnMljn6u6DDPxkhxm0EYMFYoZE7toV9+dYdiZ+X4LUHMm/CrTzrqI7MK
+IvUWG+rw3FN5z+SQMg/TM4+hoN9facPKU+7SJa8CbqJcm6SFcz3fOM2dumpRKokk
+Y1RherTYljWAbyxSRCyIBdFJG1A0tyjzsW/aVLBY4ElW3cpgeHabd8Slws+Ap9/C
+Lo8RRjYKQG43zY81GnB7ESKa0n9cqKqiu628j+k9fW823/AJbnLOZ2QLH9/I77P+
+At6gDonDLvRFdcgcjtOurUsHE1WPE5Ramc9uovNmY5HKwwZ3EGwIx+GXuazsYsmw
+BIrwtn0nI3gAZ2w/pvkY7lQ+ZS6M4W1EI3WPt+v3q9JqdaFTqp+IRZAbO6ByA0uu
+HvtQ7Xuj6mMZf90+Fs1iPoDwSaQ9fz6jqmzc+A9hQD/JbG3Ibhn5ww/J225aTRbH
+34MY4byu0OLAmjtIS1Q12RF8SMgtWP02PAUIcdYzR+RiA4gIb016q581akWYaBwY
+hwn9C8daHnKjVVj/F17dBYOXobieAESi3VAdUUPkCxhSRkFPUyldg2nxNE62I6tc
+68pfgXP7ujtmT9KImjSv
+=14MN
+-----END PGP SIGNATURE-----
+
+--yEPQxsgoJgBvi8ip--
