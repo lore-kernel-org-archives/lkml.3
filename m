@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab3AaIm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:42:58 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42247 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753424Ab3AaImq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:42:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,575,1355126400"; 
-   d="scan'208";a="278960716"
-Date: Thu, 31 Jan 2013 10:46:38 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH 2/2] ACPI / scan: Clean up acpi_bus_get_parent()
-Message-ID: <20130131084638.GA2239@intel.com>
-References: <1451967.YMyGeCCNtu@vostro.rjw.lan>
- <7667918.svVNymu9rt@vostro.rjw.lan>
+	id S1752513Ab3AaIqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:46:08 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:50675 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab3AaIqG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 03:46:06 -0500
+Message-ID: <510A2F42.5050007@linux.vnet.ibm.com>
+Date: Thu, 31 Jan 2013 16:45:54 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7667918.svVNymu9rt@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        tglx@linutronix.de
+Subject: Re: [RFC 2/2] sched/fair: prefer a CPU in the "lowest" idle state
+References: <1359580757-4121-1-git-send-email-bigeasy@linutronix.de> <1359580757-4121-3-git-send-email-bigeasy@linutronix.de> <5109D313.1020409@linux.vnet.ibm.com>	<8738xiue31.fsf@sejong.aot.lge.com> <510A1198.2070803@linux.vnet.ibm.com>	<87txpxu9cx.fsf@sejong.aot.lge.com> <510A1D7A.3050408@linux.vnet.ibm.com> <87pq0lu7ew.fsf@sejong.aot.lge.com> <510A2A50.1090207@linux.vnet.ibm.com>
+In-Reply-To: <510A2A50.1090207@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13013108-6102-0000-0000-000002F0BA39
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 11:04:03PM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 01/31/2013 04:24 PM, Michael Wang wrote:
+> On 01/31/2013 03:40 PM, Namhyung Kim wrote:
+>> On Thu, 31 Jan 2013 15:30:02 +0800, Michael Wang wrote:
+>>> On 01/31/2013 02:58 PM, Namhyung Kim wrote:
+>>>> But AFAIK the number of states in cpuidle is usually less than 10 so maybe
+>>>> we can change the weight then, but there's no promise...
+>>>
+>>> And I just got another case we should take care:
+>>>
+>>> 	group 0		cpu 0			cpu 1
+>>> 			power index 8		power index 8
+>>>
+>>>
+>>> 	group 1		cpu 2			cpu 3
+>>> 			power index 0		load 15
+>>>
+>>> so load of group 0 is 16 and group 1 is 15, but group 0 is better...
+>>
+>> Maybe it's not.  The cpus in group 0 are in a lower power state so that
+>> there will be a benefit to select cpu 2 from the power' PoV IMHO.  Also
+>> such a low power state has a longer exit latency so that we should
+>> choose cpu2 to get a better performance and it's the basic idea of this
+>> patchset I believe.
 > 
-> Make acpi_bus_get_parent() more straightforward and remove an
-> unnecessary local variable ret from it.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Well, this case is just to notify that, we may face the comparison
+> between load and index, not between index and index, I just doubt there
+> won't be a rule which could take care both, besides, comparison between
+> load and index is strange...
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Oh, I miss the point that you call it 'idle load', hmm...may be it could
+works, if we could scale the current load number, then we will have more
+'space' for 'idle load'.
+
+Regards,
+Michael Wang
+
+> 
+> Regards,
+> Michael Wang
+> 
+>>
+>> Thanks,
+>> Namhyung
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+
