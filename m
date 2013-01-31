@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab3AaN7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 08:59:11 -0500
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:51634 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab3AaN7K (ORCPT
+	id S1753067Ab3AaODY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 09:03:24 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:44874 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab3AaODV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 08:59:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAK9yfHxhwRXCeqb0YbkP74MXgnOOqTNVvtv0ykHnVBB+aiCbKg@mail.gmail.com>
-References: <CAK9yfHybC6ZgGwxa_i=LrMpU_q9M4aaMraTqK63B+fw11NBqRA@mail.gmail.com>
-	<CACRpkdYj_e6+iT7iAVtA8_t=4e_2Lxo9duozXccfcbKY8fGk7A@mail.gmail.com>
-	<CAK9yfHwav_u3mjVqNdX4kY=LyUW30vr6AMGUExfGKuJn2KH8qQ@mail.gmail.com>
-	<076401cdfe9f$6a0f5fa0$3e2e1ee0$@samsung.com>
-	<CACRpkdZp8wM+ho9gg51YRx4ScJVw9RnPCpVJXKJgZ=xngi6=Jg@mail.gmail.com>
-	<CAK9yfHxhwRXCeqb0YbkP74MXgnOOqTNVvtv0ykHnVBB+aiCbKg@mail.gmail.com>
-Date: Thu, 31 Jan 2013 14:59:08 +0100
-Message-ID: <CACRpkdb5at3vtguNn3NRRzL9sPB2DPU5Z2bfm53VhBzsMFOWpw@mail.gmail.com>
-Subject: Re: Failure due to missing (Exynos related) pinctrl patch
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 31 Jan 2013 09:03:21 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH 0/2] perf: add new uncore command
+Date: Thu, 31 Jan 2013 14:54:37 +0100
+Message-Id: <1359640479-5289-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 11:15 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> On 30 January 2013 15:18, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Wed, Jan 30, 2013 at 5:08 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
->>> Sachin Kamat wrote:
->>>>
->>>> >> This patch is required along with the
->>>> >> patch "gpio: samsung: fix pinctrl condition for exynos and exynos5440"
->>>> >> (mainline commit Id: e4a5da51) which has already made it into
->>>> >> mainline. Without the missing patch we get the following boot up
->>>> >> warnings and subsequent failures with dt boot on 4412 based board:
->>>> >
->>>> > Hm I didn't realize there was a dependency between these
->>>> > patches, oh well, better get the pull for the pinctrl tree finished
->>>> > off then...
->
->>
->> Torvalds has already pulled it in -> problem solved. :-)
->>
->
-> I tested this on Linus T.'s latest tip (2e51b231) and the problem
-> still persists :(
->
-> You sent the following patch in your pull request to Linus T.:
-> Kukjin Kim (1):
->       pinctrl: samsung: removing duplicated condition for PINCTRL_SAMSUNG
->
-> However, the missing dependent patch is:
->
-> "pinctrl: exynos: change PINCTRL_EXYNOS option"
+This patchset adds a new command to perf: perf uncore.
+It is used to measure processor socket-level metrics
+on a system-wide basis and at all priv levels.
 
-Aha how typically chaotical.
+The command comes with a set of predefined key metrics
+which are useful to measure multi-socket system imbalance
+and various bandwidths.
 
-And that is in the middle of the devel branch that people are
-basing their development on.
+The following metrics are currently defined:
+  - memory bandwidth (Nehalem, Westmere, SandyBridge-EP)
+  - PCIe bandwidth (SandyBridge-EP)
+  - QPI bandwidth (SandyBridge-EP)
+  - C-state residency (SandyBridge-EP)
 
-Not much to do, I cherry-picked that patch to the fixes branch
-and hope that git will cope. (It usually does.)
+Others can be added in the future.
 
-Yours,
-Linus Walleij
+The command provides options to modify the unit of the metrics
+(default: MB/s for bandwidth).
+
+Example on Nehalem:
+
+ # perf uncore
+ #------------------------------
+ #           Socket0           |
+ #------------------------------
+ #        RAM Bandwidth        |
+ #            Wr             Rd|
+ #          MB/s           MB/s|
+ #------------------------------
+         4954.99       14897.29
+         4953.97       14894.56
+         4947.52       14874.97
+
+To make plotting easier, the output can be augmented with a timestamp:
+
+ # perf uncore -T
+ #----------------------------------------
+ #         |           Socket0           |
+ #         |------------------------------
+ #   Time  |        RAM Bandwidth        |
+ #    in   |            Wr             Rd|
+ #   secs  |          MB/s           MB/s|
+ #----------------------------------------
+          1        4952.50       14890.49
+          2        4955.55       14900.19
+          3        4949.13       14879.60
+          4        4954.66       14896.26
+
+The code is split between generic layer (builtin-uncore.c) and
+an arch specific layer (arch/*/util/uncore.c). All events are
+hardcoded because they don't change for a given processor and
+metric computation requires combining multiple events.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+Stephane Eranian (2):
+  perf tools: add cpu_map__get_socket()
+  perf: add new perf uncore command
+
+ tools/perf/Documentation/perf-uncore.txt |   88 ++++
+ tools/perf/Makefile                      |    1 +
+ tools/perf/arch/x86/Makefile             |    1 +
+ tools/perf/arch/x86/util/uncore.c        |  539 ++++++++++++++++++++++
+ tools/perf/builtin-uncore.c              |  739 ++++++++++++++++++++++++++++++
+ tools/perf/builtin.h                     |    1 +
+ tools/perf/command-list.txt              |    1 +
+ tools/perf/perf.c                        |    1 +
+ tools/perf/util/cpumap.c                 |   26 ++
+ tools/perf/util/cpumap.h                 |    1 +
+ tools/perf/util/uncore.h                 |   56 +++
+ 11 files changed, 1454 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-uncore.txt
+ create mode 100644 tools/perf/arch/x86/util/uncore.c
+ create mode 100644 tools/perf/builtin-uncore.c
+ create mode 100644 tools/perf/util/uncore.h
+
+-- 
+1.7.10.4
+
