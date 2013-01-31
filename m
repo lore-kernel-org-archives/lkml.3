@@ -1,278 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab3AaA42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:56:28 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42828 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab3AaA4Y (ORCPT
+	id S1756475Ab3AaBAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 20:00:37 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55464 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab3AaBA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:56:24 -0500
-Subject: [RFC][PATCH] rip out x86_32 NUMA remapping code
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Wed, 30 Jan 2013 16:56:16 -0800
-Message-Id: <20130131005616.1C79F411@kernel.stglabs.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13013100-7408-0000-0000-00000C61F410
+	Wed, 30 Jan 2013 20:00:28 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-a0-5109c2280203
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v4 2/3] ARM: ioremap: introduce an infrastructure for static mapped area
+Date: Thu, 31 Jan 2013 10:00:07 +0900
+Message-Id: <1359594008-14688-3-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359594008-14688-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1359594008-14688-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In current implementation, we used ARM-specific flag, that is,
+VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+The purpose of static mapped area is to re-use static mapped area when
+entire physical address range of the ioremap request can be covered
+by this area.
 
-This code was an optimization for 32-bit NUMA systems.
+This implementation causes needless overhead for some cases.
+For example, assume that there is only one static mapped area and
+vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+deciding whether it is matched or not. Moreover, even if there is
+no static mapped area and vmlist has 300 areas, every time we call
+ioremap, we check 300 areas in now.
 
-It has probably been the cause of a number of subtle bugs over
-the years, although the conditions to excite them would have
-been hard to trigger.  Essentially, we remap part of the kernel
-linear mapping area, and then sometimes part of that area gets
-freed back in to the bootmem allocator.  If those pages get
-used by kernel data structures (say mem_map[] or a dentry),
-there's no big deal.  But, if anyone ever tried to use the
-linear mapping for these pages _and_ cared about their physical
-address, bad things happen.
+If we construct a extra list for static mapped area, we can eliminate
+above mentioned overhead.
+With a extra list, if there is one static mapped area,
+we just check only one area and proceed next operation quickly.
 
-For instance, say you passed __GFP_ZERO to the page allocator
-and then happened to get handed one of these pages, it zero the
-remapped page, but it would make a pte to the _old_ page.
-There are probably a hundred other ways that it could screw
-with things.
+In fact, it is not a critical problem, because ioremap is not frequently
+used. But reducing overhead is better idea.
 
-We don't need to hang on to performance optimizations for
-these old boxes any more.  All my 32-bit NUMA systems are long
-dead and buried, and I probably had access to more than most
-people.
+Another reason for doing this work is for removing architecture dependency
+on vmalloc layer. I think that vmlist and vmlist_lock is internal data
+structure for vmalloc layer. Some codes for debugging and stat inevitably
+use vmlist and vmlist_lock. But it is preferable that they are used
+as least as possible in outside of vmalloc.c
 
-This code is causing real things to break today:
+Now, I introduce an ARM-specific infrastructure for static mapped area. In
+the following patch, we will use this and resolve above mentioned problem.
 
-	https://lkml.org/lkml/2013/1/9/376
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-I looked in to actually fixing this, but it requires surgery
-to way too much brittle code, as well as stuff like
-per_cpu_ptr_to_phys().
-
-
----
-
- linux-2.6.git-dave/arch/x86/Kconfig            |    4 
- linux-2.6.git-dave/arch/x86/mm/numa.c          |    3 
- linux-2.6.git-dave/arch/x86/mm/numa_32.c       |  161 -------------------------
- linux-2.6.git-dave/arch/x86/mm/numa_internal.h |    6 
- 4 files changed, 174 deletions(-)
-
-diff -puN arch/x86/Kconfig~rip-out-i386-NUMA-remapping-code arch/x86/Kconfig
---- linux-2.6.git/arch/x86/Kconfig~rip-out-i386-NUMA-remapping-code	2013-01-30 16:25:36.792338332 -0800
-+++ linux-2.6.git-dave/arch/x86/Kconfig	2013-01-30 16:25:36.800338399 -0800
-@@ -1253,10 +1253,6 @@ config NODES_SHIFT
- 	  Specify the maximum number of NUMA Nodes available on the target
- 	  system.  Increases memory reserved to accommodate various tables.
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index 88fd86c..ceb34ae 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -39,6 +39,78 @@
+ #include <asm/mach/pci.h>
+ #include "mm.h"
  
--config HAVE_ARCH_ALLOC_REMAP
--	def_bool y
--	depends on X86_32 && NUMA
--
- config ARCH_HAVE_MEMORY_PRESENT
- 	def_bool y
- 	depends on X86_32 && DISCONTIGMEM
-diff -puN arch/x86/mm/numa_32.c~rip-out-i386-NUMA-remapping-code arch/x86/mm/numa_32.c
---- linux-2.6.git/arch/x86/mm/numa_32.c~rip-out-i386-NUMA-remapping-code	2013-01-30 16:25:36.796338365 -0800
-+++ linux-2.6.git-dave/arch/x86/mm/numa_32.c	2013-01-30 16:25:36.800338399 -0800
-@@ -73,167 +73,6 @@ unsigned long node_memmap_size_bytes(int
- 
- extern unsigned long highend_pfn, highstart_pfn;
- 
--#define LARGE_PAGE_BYTES (PTRS_PER_PTE * PAGE_SIZE)
--
--static void *node_remap_start_vaddr[MAX_NUMNODES];
--void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
--
--/*
-- * Remap memory allocator
-- */
--static unsigned long node_remap_start_pfn[MAX_NUMNODES];
--static void *node_remap_end_vaddr[MAX_NUMNODES];
--static void *node_remap_alloc_vaddr[MAX_NUMNODES];
--
--/**
-- * alloc_remap - Allocate remapped memory
-- * @nid: NUMA node to allocate memory from
-- * @size: The size of allocation
-- *
-- * Allocate @size bytes from the remap area of NUMA node @nid.  The
-- * size of the remap area is predetermined by init_alloc_remap() and
-- * only the callers considered there should call this function.  For
-- * more info, please read the comment on top of init_alloc_remap().
-- *
-- * The caller must be ready to handle allocation failure from this
-- * function and fall back to regular memory allocator in such cases.
-- *
-- * CONTEXT:
-- * Single CPU early boot context.
-- *
-- * RETURNS:
-- * Pointer to the allocated memory on success, %NULL on failure.
-- */
--void *alloc_remap(int nid, unsigned long size)
--{
--	void *allocation = node_remap_alloc_vaddr[nid];
--
--	size = ALIGN(size, L1_CACHE_BYTES);
--
--	if (!allocation || (allocation + size) > node_remap_end_vaddr[nid])
--		return NULL;
--
--	node_remap_alloc_vaddr[nid] += size;
--	memset(allocation, 0, size);
--
--	return allocation;
--}
--
--#ifdef CONFIG_HIBERNATION
--/**
-- * resume_map_numa_kva - add KVA mapping to the temporary page tables created
-- *                       during resume from hibernation
-- * @pgd_base - temporary resume page directory
-- */
--void resume_map_numa_kva(pgd_t *pgd_base)
--{
--	int node;
--
--	for_each_online_node(node) {
--		unsigned long start_va, start_pfn, nr_pages, pfn;
--
--		start_va = (unsigned long)node_remap_start_vaddr[node];
--		start_pfn = node_remap_start_pfn[node];
--		nr_pages = (node_remap_end_vaddr[node] -
--			    node_remap_start_vaddr[node]) >> PAGE_SHIFT;
--
--		printk(KERN_DEBUG "%s: node %d\n", __func__, node);
--
--		for (pfn = 0; pfn < nr_pages; pfn += PTRS_PER_PTE) {
--			unsigned long vaddr = start_va + (pfn << PAGE_SHIFT);
--			pgd_t *pgd = pgd_base + pgd_index(vaddr);
--			pud_t *pud = pud_offset(pgd, vaddr);
--			pmd_t *pmd = pmd_offset(pud, vaddr);
--
--			set_pmd(pmd, pfn_pmd(start_pfn + pfn,
--						PAGE_KERNEL_LARGE_EXEC));
--
--			printk(KERN_DEBUG "%s: %08lx -> pfn %08lx\n",
--				__func__, vaddr, start_pfn + pfn);
--		}
--	}
--}
--#endif
--
--/**
-- * init_alloc_remap - Initialize remap allocator for a NUMA node
-- * @nid: NUMA node to initizlie remap allocator for
-- *
-- * NUMA nodes may end up without any lowmem.  As allocating pgdat and
-- * memmap on a different node with lowmem is inefficient, a special
-- * remap allocator is implemented which can be used by alloc_remap().
-- *
-- * For each node, the amount of memory which will be necessary for
-- * pgdat and memmap is calculated and two memory areas of the size are
-- * allocated - one in the node and the other in lowmem; then, the area
-- * in the node is remapped to the lowmem area.
-- *
-- * As pgdat and memmap must be allocated in lowmem anyway, this
-- * doesn't waste lowmem address space; however, the actual lowmem
-- * which gets remapped over is wasted.  The amount shouldn't be
-- * problematic on machines this feature will be used.
-- *
-- * Initialization failure isn't fatal.  alloc_remap() is used
-- * opportunistically and the callers will fall back to other memory
-- * allocation mechanisms on failure.
-- */
--void __init init_alloc_remap(int nid, u64 start, u64 end)
--{
--	unsigned long start_pfn = start >> PAGE_SHIFT;
--	unsigned long end_pfn = end >> PAGE_SHIFT;
--	unsigned long size, pfn;
--	u64 node_pa, remap_pa;
--	void *remap_va;
--
--	/*
--	 * The acpi/srat node info can show hot-add memroy zones where
--	 * memory could be added but not currently present.
--	 */
--	printk(KERN_DEBUG "node %d pfn: [%lx - %lx]\n",
--	       nid, start_pfn, end_pfn);
--
--	/* calculate the necessary space aligned to large page size */
--	size = node_memmap_size_bytes(nid, start_pfn, end_pfn);
--	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
--	size = ALIGN(size, LARGE_PAGE_BYTES);
--
--	/* allocate node memory and the lowmem remap area */
--	node_pa = memblock_find_in_range(start, end, size, LARGE_PAGE_BYTES);
--	if (!node_pa) {
--		pr_warning("remap_alloc: failed to allocate %lu bytes for node %d\n",
--			   size, nid);
--		return;
--	}
--	memblock_reserve(node_pa, size);
--
--	remap_pa = memblock_find_in_range(min_low_pfn << PAGE_SHIFT,
--					  max_low_pfn << PAGE_SHIFT,
--					  size, LARGE_PAGE_BYTES);
--	if (!remap_pa) {
--		pr_warning("remap_alloc: failed to allocate %lu bytes remap area for node %d\n",
--			   size, nid);
--		memblock_free(node_pa, size);
--		return;
--	}
--	memblock_reserve(remap_pa, size);
--	remap_va = phys_to_virt(remap_pa);
--
--	/* perform actual remap */
--	for (pfn = 0; pfn < size >> PAGE_SHIFT; pfn += PTRS_PER_PTE)
--		set_pmd_pfn((unsigned long)remap_va + (pfn << PAGE_SHIFT),
--			    (node_pa >> PAGE_SHIFT) + pfn,
--			    PAGE_KERNEL_LARGE);
--
--	/* initialize remap allocator parameters */
--	node_remap_start_pfn[nid] = node_pa >> PAGE_SHIFT;
--	node_remap_start_vaddr[nid] = remap_va;
--	node_remap_end_vaddr[nid] = remap_va + size;
--	node_remap_alloc_vaddr[nid] = remap_va;
--
--	printk(KERN_DEBUG "remap_alloc: node %d [%08llx-%08llx) -> [%p-%p)\n",
--	       nid, node_pa, node_pa + size, remap_va, remap_va + size);
--}
--
- void __init initmem_init(void)
++
++LIST_HEAD(static_vmlist);
++static DEFINE_RWLOCK(static_vmlist_lock);
++
++static struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
++			size_t size, unsigned long flags)
++{
++	struct static_vm *svm;
++	struct vm_struct *vm;
++
++	read_lock(&static_vmlist_lock);
++	list_for_each_entry(svm, &static_vmlist, list) {
++		if (svm->flags != flags)
++			continue;
++
++		vm = &svm->vm;
++		if (vm->phys_addr > paddr ||
++			paddr + size - 1 > vm->phys_addr + vm->size - 1)
++			continue;
++
++		read_unlock(&static_vmlist_lock);
++		return svm;
++	}
++
++	return NULL;
++}
++
++struct static_vm *find_static_vm_vaddr(void *vaddr)
++{
++	struct static_vm *svm;
++	struct vm_struct *vm;
++
++	read_lock(&static_vmlist_lock);
++	list_for_each_entry(svm, &static_vmlist, list) {
++		vm = &svm->vm;
++
++		/* static_vmlist is ascending order */
++		if (vm->addr > vaddr)
++			break;
++
++		if (vm->addr <= vaddr && vm->addr + vm->size > vaddr) {
++			read_unlock(&static_vmlist_lock);
++			return svm;
++		}
++	}
++	read_unlock(&static_vmlist_lock);
++
++	return NULL;
++}
++
++void add_static_vm_early(struct static_vm *svm, unsigned long flags)
++{
++	struct static_vm *curr_svm;
++	struct vm_struct *vm;
++	void *vaddr;
++
++	vm_area_add_early(&svm->vm);
++
++	vaddr = svm->vm.addr;
++	svm->flags = flags;
++
++	write_lock(&static_vmlist_lock);
++	list_for_each_entry(curr_svm, &static_vmlist, list) {
++		vm = &curr_svm->vm;
++
++		if (vm->addr > vaddr)
++			break;
++	}
++	list_add_tail(&svm->list, &curr_svm->list);
++	write_unlock(&static_vmlist_lock);
++}
++
+ int ioremap_page(unsigned long virt, unsigned long phys,
+ 		 const struct mem_type *mtype)
  {
- 	x86_numa_init();
-diff -puN arch/x86/mm/numa.c~rip-out-i386-NUMA-remapping-code arch/x86/mm/numa.c
---- linux-2.6.git/arch/x86/mm/numa.c~rip-out-i386-NUMA-remapping-code	2013-01-30 16:25:36.796338365 -0800
-+++ linux-2.6.git-dave/arch/x86/mm/numa.c	2013-01-30 16:25:36.800338399 -0800
-@@ -205,9 +205,6 @@ static void __init setup_node_data(int n
- 	if (end && (end - start) < NODE_MIN_SIZE)
- 		return;
+diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+index a8ee92d..fb45c79 100644
+--- a/arch/arm/mm/mm.h
++++ b/arch/arm/mm/mm.h
+@@ -1,4 +1,6 @@
+ #ifdef CONFIG_MMU
++#include <linux/list.h>
++#include <linux/vmalloc.h>
  
--	/* initialize remap allocator before aligning to ZONE_ALIGN */
--	init_alloc_remap(nid, start, end);
--
- 	start = roundup(start, ZONE_ALIGN);
+ /* the upper-most page table pointer */
+ extern pmd_t *top_pmd;
+@@ -65,6 +67,24 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
+ /* consistent regions used by dma_alloc_attrs() */
+ #define VM_ARM_DMA_CONSISTENT	0x20000000
  
- 	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n",
-diff -puN arch/x86/mm/numa_internal.h~rip-out-i386-NUMA-remapping-code arch/x86/mm/numa_internal.h
---- linux-2.6.git/arch/x86/mm/numa_internal.h~rip-out-i386-NUMA-remapping-code	2013-01-30 16:25:36.796338365 -0800
-+++ linux-2.6.git-dave/arch/x86/mm/numa_internal.h	2013-01-30 16:25:36.800338399 -0800
-@@ -21,12 +21,6 @@ void __init numa_reset_distance(void);
++
++/* ARM specific static_vm->flags bits */
++#define STATIC_VM_MEM		0x00000001
++#define STATIC_VM_EMPTY		0x00000002
++#define STATIC_VM_MTYPE(mtype)	((mtype) << 20)
++
++#define STATIC_VM_TYPE(type, mtype) (type | STATIC_VM_MTYPE(mtype))
++
++struct static_vm {
++	struct vm_struct vm;
++	struct list_head list;
++	unsigned long flags;
++};
++
++extern struct list_head static_vmlist;
++extern struct static_vm *find_static_vm_vaddr(void *vaddr);
++extern void add_static_vm_early(struct static_vm *svm, unsigned long flags);
++
+ #endif
  
- void __init x86_numa_init(void);
- 
--#ifdef CONFIG_X86_64
--static inline void init_alloc_remap(int nid, u64 start, u64 end)	{ }
--#else
--void __init init_alloc_remap(int nid, u64 start, u64 end);
--#endif
--
- #ifdef CONFIG_NUMA_EMU
- void __init numa_emulation(struct numa_meminfo *numa_meminfo,
- 			   int numa_dist_cnt);
-_
+ #ifdef CONFIG_ZONE_DMA
+-- 
+1.7.9.5
 
