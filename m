@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab3AaLLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:11:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33488 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab3AaLLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 06:11:39 -0500
-Message-ID: <510A5161.7060903@suse.cz>
-Date: Thu, 31 Jan 2013 12:11:29 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 1/1] depmod: pass -P $CONFIG_SYMBOL_PREFIX
-References: <1359625303-11842-1-git-send-email-james.hogan@imgtec.com> <510A4967.5070009@suse.cz> <510A4C82.8090806@imgtec.com>
-In-Reply-To: <510A4C82.8090806@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1753534Ab3AaLNu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:13:50 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:61394 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3AaLNq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 06:13:46 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-6a-510a51e9bf00
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        balbi@ti.com, kishon@ti.com
+Subject: [PATCH RFC] usb: dwc3: Get PHY from platform specific dwc3 dt node.
+Date: Thu, 31 Jan 2013 16:50:32 +0530
+Message-id: <1359631232-7107-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsWyRsSkVvdlIFegwf7/RhaXd81hs5i9pJ/F
+	Ysb5fUwWi5a1MjuweHzeJBfAGMVlk5Kak1mWWqRvl8CV8fR5O1PBEp6KZwtWszQwzuTqYuTk
+	kBAwkfh39SkrhC0mceHeerYuRi4OIYGljBLTG1YzwxSdfPWNESIxnVFi65c+VghnMpNE44+r
+	bCBVbAK6Ek1vdzGC2CICshKHr/xmBiliFpjDKNHT+xNslLCAj8T3zd/A9rEIqEps7N4L1swr
+	4C6xf+lmqHUKEm9uP4OyL7NJLOzJgqgXkPg2+RBLFyMHUFxWYtMBqBJJiYMrbrBMYBRcwMiw
+	ilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyMw5E7/eya1g3Flg8UhRgEORiUeXg1HzkAh1sSy
+	4srcQ4wSHMxKIryV+lyBQrwpiZVVqUX58UWlOanFhxiTgZZPZJYSTc4HxkNeSbyhsYm5qbGp
+	pZGRmakpacJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCUamC0Osyx4P3BBYdTr4crno+/kNST
+	uNP/4cPTHnudzimF5Zi9+sW3t0heo7mhRzXiZ5NKuIHEU9ur8fIXNhhmW6iUVsUKFMye4ff2
+	2TUDoVMLr2yorhdNkJ3TfI/Fq2qfjuyGVX6fW8w2qb85U7JhyzPB9U2rqiXFJu6QeDzZzZ/r
+	9MqDZ6/O/Z2uxFKckWioxVxUnAgAyo0DnH0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t9jQd2XgVyBBktfqVhc3jWHzWL2kn4W
+	ixnn9zFZLFrWyuzA4vF5k1wAY1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5
+	kkJeYm6qrZKLT4CuW2YO0BIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEN
+	Y8bT5+1MBUt4Kp4tWM3SwDiTq4uRk0NCwETi5KtvjBC2mMSFe+vZuhi5OIQEpjNKbP3Sxwrh
+	TGaSaPxxlQ2kik1AV6Lp7S6wDhEBWYnDV34zgxQxC8xhlOjp/ckMkhAW8JH4vvkbK4jNIqAq
+	sbF7L1gzr4C7xP6lm5kh1ilIvLn9jHkCI/cCRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmb
+	GMEh/UxqB+PKBotDjAIcjEo8vBqOnIFCrIllxZW5hxglOJiVRHgr9bkChXhTEiurUovy44tK
+	c1KLDzEmA22fyCwlmpwPjLe8knhDYxNzU2NTSxMLEzNL0oSVxHkZTz0JEBJITyxJzU5NLUgt
+	gtnCxMEp1cDoxZSeOcObeavKobIf/7RvOin+dCv0uSaeeKXw1OM69Tj3Wcnvw8rZiry67GvV
+	mPKdTZZu++j7eOoGOxOHaI+eug3nzoTWel2WEODoqa0RfJ/PHy+WFLZw6oqmMr8ti6cFqxUc
+	cZ0fOF9vRdXOP6+2Z/yPtOe23dl+4++VCgs3RdNLTQvb9yqxFGckGmoxFxUnAgDOjW5xrQIA	AA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.1.2013 11:50, James Hogan wrote:
-> Hi Michal,
-> 
-> On 31/01/13 10:37, Michal Marek wrote:
->> On 31.1.2013 10:41, James Hogan wrote:
->>> On architectures which have symbol prefixes, depmod emits lots of false
->>> warnings like this:
->>>
->>> WARNING: $module.ko needs unknown symbol $symbol
->>>
->>> This is because depmod isn't being passed the -P <symbol_prefix>
->>> arguments to specify the symbol prefix to ignore. This option is
->>> included since the 3.13 release of module-init-tools.
->>>
->>> Update scripts/depmod.sh to take extra arguments which are passed
->>> through directly to depmod, and update the main Makefile to pass
->>> -P $(CONFIG_SYMBOL_PREFIX to scripts/depmod.sh, but only if
->>> CONFIG_SYMBOL_PREFIX is set and non-empty.
->>
->> OK.
->>
->>
->>> scripts/depmod.sh also drops the -P arguments if depmod --version
->>> reports module-init-tools with a version number < 3.13.
->>
->> You can replace the test with a simple
->>
->> "$DEPMOD" -P _ --help 2>/dev/null >/dev/null
-> 
-> Thanks for the suggestion. It would be much cleaner, but unfortunately I
-> tried this on module-init-tools 3.3-pre2 and module-init-tools 3.9 and
-> both still return success.
+With device tree support in place for dwc3-core layer,
+it gets PHY from "synopsis-dwc3" node.
+Some controllers may not have separate memory maps and interrupts
+for dwc3 core and platform glue layers. In such case only glue
+layer's node will exist.
+Moreover, SoCs having multiple dwc3 controllers will have multiple
+PHYs, which eventually be added using usb_add_phy_dev(), and not
+using usb_add_phy(). So each dwc3 controller won't be able to
+get PHYs by simply calling devm_usb_get_phy() also.
+In such cases, dwc3 should expect PHYs from its parent's node.
+So, adding provision for getting PHY from platform specific
+device tree node.
 
-Indeed, depmod had the modutils fallback, so it did not fail on unknown
-options immediately. So the version parsing is inevitable. Thanks for
-checking.
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
 
-Michal
+Based on 'usb-next'.
+
+ drivers/usb/dwc3/core.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index 9999094..75439c0 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -423,6 +423,11 @@ static int dwc3_probe(struct platform_device *pdev)
+ 	if (node) {
+ 		dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
+ 		dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
++	} else if (dev->parent->of_node) {
++		dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev->parent,
++								"usb-phy", 0);
++		dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev->parent,
++								"usb-phy", 1);
+ 	} else {
+ 		dwc->usb2_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+ 		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+-- 
+1.7.6.5
+
