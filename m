@@ -1,161 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3AaQrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 11:47:14 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52201 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab3AaQrL (ORCPT
+	id S1755343Ab3AaQse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 11:48:34 -0500
+Received: from nat-pool-12-rdu.redhat.com ([66.187.233.206]:55505 "EHLO
+	intel-canoepass-08.lab.bos.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752485Ab3AaQs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 11:47:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DF0AF4E@sausexdag04.amd.com>
-References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
-	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
-	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
-	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
-	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
-	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
-	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
-	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
-	<CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
-	<CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
-	<CAKocOOPsvh=jOXLahe6ukjpyjOOqt9tRdwELxv8i0_Vi1xqQkA@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A37D@sausexdag04.amd.com>
-	<CAKocOOORwoUAStDmFPhW1--WhAJaEzEmG-=tZ1sgkWKsquq=rQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A3B7@sausexdag04.amd.com>
-	<CAKocOOMxbZXjL_qxQQD+-Z7ocJ1tR7UDEDr+2uSSfjhihik6VA@mail.gmail.com>
-	<CAKocOOOHcaYoUQ6Z1yC9T0o9=qaMas3mVzrD8iEnycLJd3nxVQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0ABD0@sausexdag04.amd.com>
-	<CAKocOOMSRZysoKh9Lkgj-3_WsRq9Q6Oo0wJneUStjD+g+WgzAQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0AC95@sausexdag04.amd.com>
-	<CAKocOOPoZ2HqxSz=PB68wpZxd6z8Byv1Yfj3nArt1z+3ViuNNQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0AF15@sausexdag04.amd.com>
-	<CAKocOOMivziOF3ntKiwgH8Pc-d8h5sdykeJS7mKQ6vPe6Y=guA@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0AF4E@sausexdag04.amd.com>
-Date: Thu, 31 Jan 2013 09:47:09 -0700
-Message-ID: <CAKocOONWjaYLziXF6WKewqZ=bETwX898kWvGxHZq9N=OYpWQsg@mail.gmail.com>
-Subject: Re: Linux 3.8-rc4
-From: Shuah Khan <shuahkhan@gmail.com>
-To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 31 Jan 2013 11:48:29 -0500
+X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jan 2013 11:48:29 EST
+From: Don Zickus <dzickus@redhat.com>
+To: x86@kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Prarit Bhargava <prarit@redhat.com>
+Subject: [PATCH] x86, x2apic: Only WARN on broken BIOSes inside a virtual guest
+Date: Thu, 31 Jan 2013 11:40:35 -0500
+Message-Id: <1359650435-73586-1-git-send-email-dzickus@redhat.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 9:05 AM, Deucher, Alexander
-<Alexander.Deucher@amd.com> wrote:
->> -----Original Message-----
->> From: Shuah Khan [mailto:shuahkhan@gmail.com]
->> Sent: Thursday, January 31, 2013 11:01 AM
->> To: Deucher, Alexander
->> Cc: Linus Torvalds; Linux Kernel Mailing List
->> Subject: Re: Linux 3.8-rc4
->>
->> On Thu, Jan 31, 2013 at 7:56 AM, Deucher, Alexander
->> <Alexander.Deucher@amd.com> wrote:
->> >> -----Original Message-----
->> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
->> >> Sent: Wednesday, January 30, 2013 4:12 PM
->> >> To: Deucher, Alexander
->> >> Cc: Linus Torvalds; Linux Kernel Mailing List
->> >> Subject: Re: Linux 3.8-rc4
->> >>
->> >> On Wed, Jan 30, 2013 at 8:53 AM, Deucher, Alexander
->> >> <Alexander.Deucher@amd.com> wrote:
->> >> >> -----Original Message-----
->> >> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
->> >> >> Sent: Wednesday, January 30, 2013 10:35 AM
->> >> >> To: Deucher, Alexander
->> >> >> Cc: Linus Torvalds; Linux Kernel Mailing List
->> >> >> Subject: Re: Linux 3.8-rc4
->> >> >>
->> >> >> On Wed, Jan 30, 2013 at 6:31 AM, Deucher, Alexander
->> >> >> <Alexander.Deucher@amd.com> wrote:
->> >> >>
->> >> >> >>
->> >> >> >> ok. I did more debugging in rv515_mc_stop() and here is what's
->> >> >> >> happening. It has two display controllers and one of them is
->> enabled
->> >> >> >> and the other is in disabled state when AVIVO_D1CRTC_CONTROL
->> is
->> >> >> >> checked. The current code doesn't blank the disabled crtc.
->> However, it
->> >> >> >> needs to be blanked to avoid DMAR faults it appears. I think that is
->> >> >> >> what the original code prior to
->> >> >> >> 6253e4c75d96006c06b9ac8f417eba873de2497b commit was doing:
->> >> >> >>
->> >> >> >> -       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 1);
->> >> >> >> -       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 1);
->> >> >> >> -       WREG32(R_006080_D1CRTC_CONTROL, 0);
->> >> >> >> -       WREG32(R_006880_D2CRTC_CONTROL, 0);
->> >> >> >> -       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 0);
->> >> >> >> -       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
->> >> >> >> -       WREG32(R_000330_D1VGA_CONTROL, 0);
->> >> >> >> -       WREG32(R_000338_D2VGA_CONTROL, 0);
->> >> >> >>
->> >> >> >> Anyways, here is the diff for the change (by no means a patch) I
->> made
->> >> >> >> that fixed the problem:
->> >> >> >
->> >> >> > Unfortunately, that just fixes the problem by causing an additional
->> delay
->> >> >> since the wait_for_vblank() and get_frame_count() loops will timeout
->> >> since
->> >> >> the secondary display is disabled.  The previous code disabled the
->> displays
->> >> >> completely while the new code just disables the memory request
->> >> interface
->> >> >> so that the display timing stays on to avoid additional flicker at startup
->> or
->> >> GPU
->> >> >> reset.  For some reason on your system there seems to be a delay in
->> >> getting
->> >> >> the memory request interface to stop.
->> >> >> >
->> >> >> > Alex
->> >> >>
->> >> >> Right. That makes sense and yes the annoying flicker went away. :) Can
->> >> >> you think of something that can address systems that would need
->> more
->> >> >> time to get the memory request interface to stop such as mine?
->> >> >
->> >> > Does adding an additional radeon_mc_wait_for_idle(rdev) call at the
->> end
->> >> of rv515_mc_stop() help?  Can you find out what the minimum delay
->> >> required for your system is?
->> >> >
->> >> > Alex
->> >>
->> >> Adding radeon_mc_wait_for_idle(rdev) call at the end of
->> >> rv515_mc_stop() - didn't help.
->> >>
->> >> I tried with adding udelay() with delay values of 1,10, and 50, and
->> >> 100 at the end of rv515_mc_stop(). 100 is the minimum that fixed the
->> >> DMAR faults.
->> >
->> > I guess we can just add the delay.  I've tried all the ways I know of to get
->> proper feedback from the hardware.
->> >
->> > Alex
->> >
->>
->> Do you want me to send a patch with delay()? Would you like to see the
->> delay specific to this chipset which is RV620? That said if you think
->> of other ideas to try instead of delay, I can continue the debug and
->> testing effort.
->
-> I'm planning to merge the attached patch.  I'll let you know if I found out any other things to try.
->
-> Alex
->
+In commit "41750d3 x86, x2apic: Enable the bios request for x2apic optout"
+it was explained how OEMs are trying to opt out of using x2apics.
 
-Tested it on 3.8-rc5 - looks good.
+That commit moved code around and screamed with a WARN if the BIOS
+opted out of x2apic mode.  Fair enough.
 
--- Shuah
+This code hit our RHEL distro and OEMs started complaining that the
+WARN is scaring their customers and asked we tone it down to a
+pr_warn().
+
+Before we did that, we thought we should change it upstream too.
+Upstream complained that WARN was necessary due to a serious
+security threat, namely irq injections.  Hard to argue that.
+
+This left us between a rock and a hard place.  We toned down the
+WARN in RHEL to keep our customers happy.  But this leaves us with
+a perpetual patch in RHEL and possibly covering up a security threat.
+
+I poked around to understand the nature of the security threat and why
+OEMs would want to leave themselves vulnerable.  The only security
+threat I could find was this whitepaper talking about Xen and irq
+injections:
+
+http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+
+After talking with folks, the threat of irq injections on virtual guests
+made sense.  However, when discussing if this was possible on bare metal
+machines, we could not come up with a plausible scenario.
+
+Talking with OEMs, it seems like opting out of x2apic only happens on
+bare metal as virtual guests seem to have their own bioses.
+
+Unless irq injections can happen on bare metal too, I am proposing a
+tweak in the WARN code.  I am breaking the printk into two pieces.
+
+The first is the loud BIOS disabled x2apic message, but at a printk level
+instead of a WARN.  Our OEMs are ok with that.
+
+The second is the security threat of irq injections.  The code now
+only WARNs when it detects itself on a virtual machine using x86_hyper.
+
+The hypervisor is configured through setup_arch(), which is run before
+the irqs are configured through smp_prepare_boot_cpu(), so this variable
+should always be defined correctly.
+
+I tested this on a Dell machine that has x2apic disabled and on an
+Intel box that had x2apic enabled.  Everything looked as expected. I
+couldn't figure out how to test a virtual guest setup to verify the WARN
+works as expected.
+
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ drivers/iommu/intel_irq_remapping.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index af8904d..f639906 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -14,6 +14,7 @@
+ #include <asm/irq_remapping.h>
+ #include <asm/pci-direct.h>
+ #include <asm/msidef.h>
++#include <asm/hypervisor.h>
+ 
+ #include "irq_remapping.h"
+ 
+@@ -536,10 +537,13 @@ static int __init intel_enable_irq_remapping(void)
+ 
+ 	if (x2apic_supported()) {
+ 		eim = !dmar_x2apic_optout();
+-		WARN(!eim, KERN_WARNING
++		if (!eim) {
++			printk(KERN_WARNING
+ 			   "Your BIOS is broken and requested that x2apic be disabled\n"
+-			   "This will leave your machine vulnerable to irq-injection attacks\n"
+ 			   "Use 'intremap=no_x2apic_optout' to override BIOS request\n");
++			WARN(x86_hyper,
++			   "This will leave your machine vulnerable to irq-injection attacks\n");
++		}
+ 	}
+ 
+ 	for_each_drhd_unit(drhd) {
+-- 
+1.7.1
+
