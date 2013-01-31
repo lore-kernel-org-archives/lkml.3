@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab3AaUso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 15:48:44 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37016 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab3AaUsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 15:48:42 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
-        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
-        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug framework
-Date: Thu, 31 Jan 2013 21:54:51 +0100
-Message-ID: <9860755.q4y3PrCFZx@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1359601065.15120.156.camel@misato.fc.hp.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <20130130045830.GH30002@kroah.com> <1359601065.15120.156.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754270Ab3AaUv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 15:51:29 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:56309 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3AaUv0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 15:51:26 -0500
+Message-ID: <1359665497.8415.102.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] nl80211: avoid "wdev_id may be used uninitialized"
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Date: Thu, 31 Jan 2013 21:51:37 +0100
+In-Reply-To: <51094F10.60605@wwwdotorg.org>
+References: <1359504662-23561-1-git-send-email-swarren@wwwdotorg.org>
+	  (sfid-20130130_011118_335925_03B80596) <1359532679.8010.1.camel@jlt4.sipsolutions.net>
+	 <51094F10.60605@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.1-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 30, 2013 07:57:45 PM Toshi Kani wrote:
-> On Tue, 2013-01-29 at 23:58 -0500, Greg KH wrote:
-> > On Thu, Jan 10, 2013 at 04:40:19PM -0700, Toshi Kani wrote:
-> > > +/*
-> > > + * Hot-plug device information
-> > > + */
+On Wed, 2013-01-30 at 09:49 -0700, Stephen Warren wrote:
+> On 01/30/2013 12:57 AM, Johannes Berg wrote:
+> > On Tue, 2013-01-29 at 17:11 -0700, Stephen Warren wrote:
+> >> From: Stephen Warren <swarren@nvidia.com>
+> >>
+> >> Silence the following:
+> >> net/wireless/nl80211.c: In function '__cfg80211_wdev_from_attrs.clone.119':
+> >> net/wireless/nl80211.c:57:6: warning: 'wdev_id' may be used uninitialized in this function
+> >>
+> >> ... by always initializing wdev_id to zero. I assume that wiphy_idx and
+> >> ifidx are set to -1 for similar reasons, so this change simply propagates
+> >> the same workaround.
+> >>
+> >> In practice, this warning is false, since wdev_id is both set and used
+> >> under the condition if (have_wdev_id). However, at least my compiler
+> >> can't be coerced into realizing this; almost any code between the if
+> >> blocks that set and use the variable causes this warning.
 > > 
-> > Again, stop it with the "generic" hotplug term here, and everywhere
-> > else.  You are doing a very _specific_ type of hotplug devices, so spell
-> > it out.  We've worked hard to hotplug _everything_ in Linux, you are
-> > going to confuse a lot of people with this type of terms.
+> > I don't see this warning? What compiler are you using?
 > 
-> Agreed.  I will clarify in all places.
-> 
-> > > +union shp_dev_info {
-> > > +	struct shp_cpu {
-> > > +		u32		cpu_id;
-> > > +	} cpu;
-> > 
-> > What is this?  Why not point to the system device for the cpu?
-> 
-> This info is used to on-line a new CPU and create its system/cpu device.
-> In other word, a system/cpu device is created as a result of CPU
-> hotplug.
-> 
-> > > +	struct shp_memory {
-> > > +		int		node;
-> > > +		u64		start_addr;
-> > > +		u64		length;
-> > > +	} mem;
-> > 
-> > Same here, why not point to the system device?
-> 
-> Same as above.
-> 
-> > > +	struct shp_hostbridge {
-> > > +	} hb;
-> > > +
-> > > +	struct shp_node {
-> > > +	} node;
-> > 
-> > What happened here with these?  Empty structures?  Huh?
-> 
-> They are place holders for now.  PCI bridge hot-plug and node hot-plug
-> are still very much work in progress, so I have not integrated them into
-> this framework yet.
-> 
-> > > +};
-> > > +
-> > > +struct shp_device {
-> > > +	struct list_head	list;
-> > > +	struct device		*device;
-> > 
-> > No, make it a "real" device, embed the device into it.
-> 
-> This device pointer is used to send KOBJ_ONLINE/OFFLINE event during CPU
-> online/offline operation in order to maintain the current behavior.  CPU
-> online/offline operation only changes the state of CPU, so its
-> system/cpu device continues to be present before and after an operation.
-> (Whereas, CPU hot-add/delete operation creates or removes a system/cpu
-> device.)  So, this "*device" needs to be a pointer to reference an
-> existing device that is to be on-lined/off-lined.
-> 
-> > But, again, I'm going to ask why you aren't using the existing cpu /
-> > memory / bridge / node devices that we have in the kernel.  Please use
-> > them, or give me a _really_ good reason why they will not work.
-> 
-> We cannot use the existing system devices or ACPI devices here.  During
-> hot-plug, ACPI handler sets this shp_device info, so that cpu and memory
-> handlers (drivers/cpu.c and mm/memory_hotplug.c) can obtain their target
-> device information in a platform-neutral way.  During hot-add, we first
-> creates an ACPI device node (i.e. device under /sys/bus/acpi/devices),
-> but platform-neutral modules cannot use them as they are ACPI-specific.
+> I'm using gcc-4.5.3 for ARM. I checked with gcc-4.6.3 and gcc-4.7.2 and
+> indeed I don't see the warning there.
 
-But suppose we're smart and have ACPI scan handlers that will create
-"physical" device nodes for those devices during the ACPI namespace scan.
-Then, the platform-neutral nodes will be able to bind to those "physical"
-nodes.  Moreover, it should be possible to get a hierarchy of device objects
-this way that will reflect all of the dependencies we need to take into
-account during hot-add and hot-remove operations.  That may not be what we
-have today, but I don't see any *fundamental* obstacles preventing us from
-using this approach.
+Interesting. So should I keep it or remove it? I guess in this
+particular instance it doesn't matter all that much. In other cases I'd
+be more against changing it I guess.
 
-This is already done for PCI host bridges and platform devices and I don't
-see why we can't do that for the other types of devices too.
+johannes
 
-The only missing piece I see is a way to handle the "eject" problem, i.e.
-when we try do eject a device at the top of a subtree and need to tear down
-the entire subtree below it, but if that's going to lead to a system crash,
-for example, we want to cancel the eject.  It seems to me that we'll need some
-help from the driver core here.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
