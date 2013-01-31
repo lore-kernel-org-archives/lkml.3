@@ -1,266 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab3AaKiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:38:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35944 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604Ab3AaKiQ (ORCPT
+	id S1754323Ab3AaKin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:38:43 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:58154 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab3AaKic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:38:16 -0500
-Date: Thu, 31 Jan 2013 02:37:17 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-933537sxtcz47qs0e0ledmrp@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Stop using 'self' in strlist
-Git-Commit-ID: d8639f068a59c842882339173f58311a583c555f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 02:37:23 -0800 (PST)
+	Thu, 31 Jan 2013 05:38:32 -0500
+Message-ID: <1359628705.2048.5.camel@kernel>
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Date: Thu, 31 Jan 2013 04:38:25 -0600
+In-Reply-To: <510A3CE6.202@cn.fujitsu.com>
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+	    <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>
+	   <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>
+	  <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>
+	 <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d8639f068a59c842882339173f58311a583c555f
-Gitweb:     http://git.kernel.org/tip/d8639f068a59c842882339173f58311a583c555f
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 24 Jan 2013 21:59:59 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 25 Jan 2013 12:49:28 -0300
+Hi Tang,
+On Thu, 2013-01-31 at 17:44 +0800, Tang Chen wrote:
+> Hi Simon,
+> 
+> On 01/31/2013 04:48 PM, Simon Jeons wrote:
+> > Hi Tang,
+> > On Thu, 2013-01-31 at 15:10 +0800, Tang Chen wrote:
+> >
+> > 1. IIUC, there is a button on machine which supports hot-remove memory,
+> > then what's the difference between press button and echo to /sys?
+> 
+> No important difference, I think. Since I don't have the machine you are
+> saying, I cannot surely answer you. :)
+> AFAIK, pressing the button means trigger the hotplug from hardware, sysfs
+> is just another entrance. At last, they will run into the same code.
+> 
+> > 2. Since kernel memory is linear mapping(I mean direct mapping part),
+> > why can't put kernel direct mapping memory into one memory device, and
+> > other memory into the other devices?
+> 
+> We cannot do that because in that way, we will lose NUMA performance.
+> 
+> If you know NUMA, you will understand the following example:
+> 
+> node0:                    node1:
+>     cpu0~cpu15                cpu16~cpu31
+>     memory0~memory511         memory512~memory1023
+> 
+> cpu16~cpu31 access memory16~memory1023 much faster than memory0~memory511.
+> If we set direct mapping area in node0, and movable area in node1, then
+> the kernel code running on cpu16~cpu31 will have to access 
+> memory0~memory511.
+> This is a terrible performance down.
 
-perf tools: Stop using 'self' in strlist
+So if config NUMA, kernel memory will not be linear mapping anymore? For
+example, 
 
-As suggested by tglx, 'self' should be replaced by something that is
-more useful.
+Node 0  Node 1 
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-933537sxtcz47qs0e0ledmrp@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/strlist.c | 54 +++++++++++++++++++++++------------------------
- tools/perf/util/strlist.h | 42 ++++++++++++++++++------------------
- 2 files changed, 48 insertions(+), 48 deletions(-)
+0 ~ 10G 11G~14G
 
-diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
-index 155d8b7..55433aa 100644
---- a/tools/perf/util/strlist.c
-+++ b/tools/perf/util/strlist.c
-@@ -35,11 +35,11 @@ out_delete:
- 	return NULL;
- }
- 
--static void str_node__delete(struct str_node *self, bool dupstr)
-+static void str_node__delete(struct str_node *snode, bool dupstr)
- {
- 	if (dupstr)
--		free((void *)self->s);
--	free(self);
-+		free((void *)snode->s);
-+	free(snode);
- }
- 
- static
-@@ -59,12 +59,12 @@ static int strlist__node_cmp(struct rb_node *rb_node, const void *entry)
- 	return strcmp(snode->s, str);
- }
- 
--int strlist__add(struct strlist *self, const char *new_entry)
-+int strlist__add(struct strlist *slist, const char *new_entry)
- {
--	return rblist__add_node(&self->rblist, new_entry);
-+	return rblist__add_node(&slist->rblist, new_entry);
- }
- 
--int strlist__load(struct strlist *self, const char *filename)
-+int strlist__load(struct strlist *slist, const char *filename)
- {
- 	char entry[1024];
- 	int err;
-@@ -80,7 +80,7 @@ int strlist__load(struct strlist *self, const char *filename)
- 			continue;
- 		entry[len - 1] = '\0';
- 
--		err = strlist__add(self, entry);
-+		err = strlist__add(slist, entry);
- 		if (err != 0)
- 			goto out;
- 	}
-@@ -107,56 +107,56 @@ struct str_node *strlist__find(struct strlist *slist, const char *entry)
- 	return snode;
- }
- 
--static int strlist__parse_list_entry(struct strlist *self, const char *s)
-+static int strlist__parse_list_entry(struct strlist *slist, const char *s)
- {
- 	if (strncmp(s, "file://", 7) == 0)
--		return strlist__load(self, s + 7);
-+		return strlist__load(slist, s + 7);
- 
--	return strlist__add(self, s);
-+	return strlist__add(slist, s);
- }
- 
--int strlist__parse_list(struct strlist *self, const char *s)
-+int strlist__parse_list(struct strlist *slist, const char *s)
- {
- 	char *sep;
- 	int err;
- 
- 	while ((sep = strchr(s, ',')) != NULL) {
- 		*sep = '\0';
--		err = strlist__parse_list_entry(self, s);
-+		err = strlist__parse_list_entry(slist, s);
- 		*sep = ',';
- 		if (err != 0)
- 			return err;
- 		s = sep + 1;
- 	}
- 
--	return *s ? strlist__parse_list_entry(self, s) : 0;
-+	return *s ? strlist__parse_list_entry(slist, s) : 0;
- }
- 
--struct strlist *strlist__new(bool dupstr, const char *slist)
-+struct strlist *strlist__new(bool dupstr, const char *list)
- {
--	struct strlist *self = malloc(sizeof(*self));
-+	struct strlist *slist = malloc(sizeof(*slist));
- 
--	if (self != NULL) {
--		rblist__init(&self->rblist);
--		self->rblist.node_cmp    = strlist__node_cmp;
--		self->rblist.node_new    = strlist__node_new;
--		self->rblist.node_delete = strlist__node_delete;
-+	if (slist != NULL) {
-+		rblist__init(&slist->rblist);
-+		slist->rblist.node_cmp    = strlist__node_cmp;
-+		slist->rblist.node_new    = strlist__node_new;
-+		slist->rblist.node_delete = strlist__node_delete;
- 
--		self->dupstr	 = dupstr;
--		if (slist && strlist__parse_list(self, slist) != 0)
-+		slist->dupstr	 = dupstr;
-+		if (slist && strlist__parse_list(slist, list) != 0)
- 			goto out_error;
- 	}
- 
--	return self;
-+	return slist;
- out_error:
--	free(self);
-+	free(slist);
- 	return NULL;
- }
- 
--void strlist__delete(struct strlist *self)
-+void strlist__delete(struct strlist *slist)
- {
--	if (self != NULL)
--		rblist__delete(&self->rblist);
-+	if (slist != NULL)
-+		rblist__delete(&slist->rblist);
- }
- 
- struct str_node *strlist__entry(const struct strlist *slist, unsigned int idx)
-diff --git a/tools/perf/util/strlist.h b/tools/perf/util/strlist.h
-index dd9f922..5c7f870 100644
---- a/tools/perf/util/strlist.h
-+++ b/tools/perf/util/strlist.h
-@@ -17,34 +17,34 @@ struct strlist {
- };
- 
- struct strlist *strlist__new(bool dupstr, const char *slist);
--void strlist__delete(struct strlist *self);
-+void strlist__delete(struct strlist *slist);
- 
--void strlist__remove(struct strlist *self, struct str_node *sn);
--int strlist__load(struct strlist *self, const char *filename);
--int strlist__add(struct strlist *self, const char *str);
-+void strlist__remove(struct strlist *slist, struct str_node *sn);
-+int strlist__load(struct strlist *slist, const char *filename);
-+int strlist__add(struct strlist *slist, const char *str);
- 
--struct str_node *strlist__entry(const struct strlist *self, unsigned int idx);
--struct str_node *strlist__find(struct strlist *self, const char *entry);
-+struct str_node *strlist__entry(const struct strlist *slist, unsigned int idx);
-+struct str_node *strlist__find(struct strlist *slist, const char *entry);
- 
--static inline bool strlist__has_entry(struct strlist *self, const char *entry)
-+static inline bool strlist__has_entry(struct strlist *slist, const char *entry)
- {
--	return strlist__find(self, entry) != NULL;
-+	return strlist__find(slist, entry) != NULL;
- }
- 
--static inline bool strlist__empty(const struct strlist *self)
-+static inline bool strlist__empty(const struct strlist *slist)
- {
--	return rblist__empty(&self->rblist);
-+	return rblist__empty(&slist->rblist);
- }
- 
--static inline unsigned int strlist__nr_entries(const struct strlist *self)
-+static inline unsigned int strlist__nr_entries(const struct strlist *slist)
- {
--	return rblist__nr_entries(&self->rblist);
-+	return rblist__nr_entries(&slist->rblist);
- }
- 
- /* For strlist iteration */
--static inline struct str_node *strlist__first(struct strlist *self)
-+static inline struct str_node *strlist__first(struct strlist *slist)
- {
--	struct rb_node *rn = rb_first(&self->rblist.entries);
-+	struct rb_node *rn = rb_first(&slist->rblist.entries);
- 	return rn ? rb_entry(rn, struct str_node, rb_node) : NULL;
- }
- static inline struct str_node *strlist__next(struct str_node *sn)
-@@ -59,21 +59,21 @@ static inline struct str_node *strlist__next(struct str_node *sn)
- /**
-  * strlist_for_each      - iterate over a strlist
-  * @pos:	the &struct str_node to use as a loop cursor.
-- * @self:	the &struct strlist for loop.
-+ * @slist:	the &struct strlist for loop.
-  */
--#define strlist__for_each(pos, self)	\
--	for (pos = strlist__first(self); pos; pos = strlist__next(pos))
-+#define strlist__for_each(pos, slist)	\
-+	for (pos = strlist__first(slist); pos; pos = strlist__next(pos))
- 
- /**
-  * strlist_for_each_safe - iterate over a strlist safe against removal of
-  *                         str_node
-  * @pos:	the &struct str_node to use as a loop cursor.
-  * @n:		another &struct str_node to use as temporary storage.
-- * @self:	the &struct strlist for loop.
-+ * @slist:	the &struct strlist for loop.
-  */
--#define strlist__for_each_safe(pos, n, self)	\
--	for (pos = strlist__first(self), n = strlist__next(pos); pos;\
-+#define strlist__for_each_safe(pos, n, slist)	\
-+	for (pos = strlist__first(slist), n = strlist__next(pos); pos;\
- 	     pos = n, n = strlist__next(n))
- 
--int strlist__parse_list(struct strlist *self, const char *s);
-+int strlist__parse_list(struct strlist *slist, const char *s);
- #endif /* __PERF_STRLIST_H */
+kernel memory only at Node 0? Can part of kernel memory also at Node 1?
+
+How big is kernel direct mapping memory in x86_64? Is there max limit?
+It seems that only around 896MB on x86_32. 
+
+> 
+> >As you know x86_64 don't need
+> > highmem, IIUC, all kernel memory will linear mapping in this case. Is my
+> > idea available? If is correct, x86_32 can't implement in the same way
+> > since highmem(kmap/kmap_atomic/vmalloc) can map any address, so it's
+> > hard to focus kernel memory on single memory device.
+> 
+> Sorry, I'm not quite familiar with x86_32 box.
+> 
+> > 3. In current implementation, if memory hotplug just need memory
+> > subsystem and ACPI codes support? Or also needs firmware take part in?
+> > Hope you can explain in details, thanks in advance. :)
+> 
+> We need firmware take part in, such as SRAT in ACPI BIOS, or the firmware
+> based memory migration mentioned by Liu Jiang.
+
+Is there any material about firmware based memory migration?
+
+> 
+> So far, I only know this. :)
+> 
+> > 4. What's the status of memory hotplug? Apart from can't remove kernel
+> > memory, other things are fully implementation?
+> 
+> I think the main job is done for now. And there are still bugs to fix.
+> And this functionality is not stable.
+> 
+> Thanks. :)
+
+
