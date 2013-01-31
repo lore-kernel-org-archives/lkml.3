@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab3AaJ2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 04:28:51 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59800 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab3AaJ2t (ORCPT
+	id S1753344Ab3AaJcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 04:32:20 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:61665 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3AaJcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 04:28:49 -0500
-Date: Thu, 31 Jan 2013 09:28:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [RFC] arm: use built-in byte swap function
-Message-ID: <20130131092801.GV23505@n2100.arm.linux.org.uk>
-References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com> <20130129083522.GA14302@pd.tnic> <1359478014.3529.157.camel@shinybook.infradead.org> <20130129174249.GB25415@pd.tnic> <1359482147.3529.161.camel@shinybook.infradead.org> <20130129181046.GC25415@pd.tnic> <1359541333.3529.186.camel@shinybook.infradead.org> <20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com>
+	Thu, 31 Jan 2013 04:32:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1358253244-11453-5-git-send-email-maarten.lankhorst@canonical.com>
+References: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com>
+	<1358253244-11453-5-git-send-email-maarten.lankhorst@canonical.com>
+Date: Thu, 31 Jan 2013 18:32:15 +0900
+X-Google-Sender-Auth: BSh2Po05xJ45LXpqYb_562TsXRU
+Message-ID: <CAAQKjZMpFin6s+-z8ei+JcxcdFrWUpFZrsCuxv7AH+8wVfTUqw@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 4/7] fence: dma-buf cross-device
+ synchronization (v11)
+From: Inki Dae <inki.dae@samsung.com>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 08:09:00PM -0600, Kim Phillips wrote:
-> The savings come mostly from device-tree related code, and some
-> from drivers.
+Hi,
 
-You forget that IP networking is all big endian, so these will be using
-the byte swapping too (search it for htons/ntohs/htonl/ntohl).
+below is my opinion.
 
-> v2:
-> - at91 and lpd270 builds fixed by limiting to ARMv6 and above
->   (i.e., ARM cores that have support for the 'rev' instruction).
->   Otherwise, the compiler emits calls to libgcc's __bswapsi2 on
->   these ARMv4/v5 builds (and arch ARM doesn't link with libgcc).
+> +struct fence;
+> +struct fence_ops;
+> +struct fence_cb;
+> +
+> +/**
+> + * struct fence - software synchronization primitive
+> + * @refcount: refcount for this fence
+> + * @ops: fence_ops associated with this fence
+> + * @cb_list: list of all callbacks to call
+> + * @lock: spin_lock_irqsave used for locking
+> + * @priv: fence specific private data
+> + * @flags: A mask of FENCE_FLAG_* defined below
+> + *
+> + * the flags member must be manipulated and read using the appropriate
+> + * atomic ops (bit_*), so taking the spinlock will not be needed most
+> + * of the time.
+> + *
+> + * FENCE_FLAG_SIGNALED_BIT - fence is already signaled
+> + * FENCE_FLAG_ENABLE_SIGNAL_BIT - enable_signaling might have been called*
+> + * FENCE_FLAG_USER_BITS - start of the unused bits, can be used by the
+> + * implementer of the fence for its own purposes. Can be used in different
+> + * ways by different fence implementers, so do not rely on this.
+> + *
+> + * *) Since atomic bitops are used, this is not guaranteed to be the case.
+> + * Particularly, if the bit was set, but fence_signal was called right
+> + * before this bit was set, it would have been able to set the
+> + * FENCE_FLAG_SIGNALED_BIT, before enable_signaling was called.
+> + * Adding a check for FENCE_FLAG_SIGNALED_BIT after setting
+> + * FENCE_FLAG_ENABLE_SIGNAL_BIT closes this race, and makes sure that
+> + * after fence_signal was called, any enable_signaling call will have either
+> + * been completed, or never called at all.
+> + */
+> +struct fence {
+> +       struct kref refcount;
+> +       const struct fence_ops *ops;
+> +       struct list_head cb_list;
+> +       spinlock_t *lock;
+> +       unsigned context, seqno;
+> +       unsigned long flags;
+> +};
+> +
+> +enum fence_flag_bits {
+> +       FENCE_FLAG_SIGNALED_BIT,
+> +       FENCE_FLAG_ENABLE_SIGNAL_BIT,
+> +       FENCE_FLAG_USER_BITS, /* must always be last member */
+> +};
+> +
 
-Which compiler version?  gcc 4.5.4 doesn't do this, except for the 16-bit
-swap, so I doubt that any later compiler does.
+It seems like that this fence framework need to add read/write flags.
+In case of two read operations, one might wait for another one. But
+the another is just read operation so we doesn't need to wait for it.
+Shouldn't fence-wait-request be ignored? In this case, I think it's
+enough to consider just only write operation.
 
-> --- a/arch/arm/include/uapi/asm/swab.h
-> +++ b/arch/arm/include/uapi/asm/swab.h
-> @@ -50,4 +50,14 @@ static inline __attribute_const__ __u32 __arch_swab32(__u32 x)
->  
->  #endif
->  
-> +#if defined(__KERNEL__) && __LINUX_ARM_ARCH__ >= 6
-> +#if GCC_VERSION >= 40600
-> +#define __HAVE_BUILTIN_BSWAP32__
-> +#define __HAVE_BUILTIN_BSWAP64__
-> +#endif
-> +#if GCC_VERSION >= 40800
-> +#define __HAVE_BUILTIN_BSWAP16__
-> +#endif
-> +#endif
+For this, you could add the following,
 
-If this is __KERNEL__ only, it should not be in a uapi header.  UAPI
-headers get exported to userland, this is not userland interface code.
-IT should be in arch/arm/include/asm/swab.h
+enum fence_flag_bits {
+        ...
+        FENCE_FLAG_ACCESS_READ_BIT,
+        FENCE_FLAG_ACCESS_WRITE_BIT,
+        ...
+};
+
+And the producer could call fence_init() like below,
+__fence_init(..., FENCE_FLAG_ACCESS_WRITE_BIT,...);
+
+With this, fence->flags has FENCE_FLAG_ACCESS_WRITE_BIT as write
+operation and then other sides(read or write operation) would wait for
+the write operation completion.
+And also consumer calls that function with FENCE_FLAG_ACCESS_READ_BIT
+so that other consumers could ignore the fence-wait to any read
+operations.
+
+Thanks,
+Inki Dae
