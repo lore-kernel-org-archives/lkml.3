@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3AaWCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:02:33 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44500 "EHLO arroyo.ext.ti.com"
+	id S1755549Ab3AaWDG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:03:06 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51528 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755954Ab3AaV7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 16:59:02 -0500
+	id S1755607Ab3AaV6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 16:58:54 -0500
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
 CC: <sboyd@codeaurora.org>, <will.deacon@arm.com>,
         <paulmck@linux.vnet.ibm.com>, <nico@linaro.org>,
         <catalin.marinas@arm.com>, <marc.zyngier@arm.com>,
-        <linus.walleij@linaro.org>, Cyril Chemparathy <cyril@ti.com>,
-        Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH v4 12/13] ARM: mm: clean up membank size limit checks
-Date: Thu, 31 Jan 2013 16:58:31 -0500
-Message-ID: <1359669512-31276-13-git-send-email-cyril@ti.com>
+        <linus.walleij@linaro.org>, Vitaly Andrianov <vitalya@ti.com>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH v4 04/13] ARM: LPAE: use phys_addr_t for initrd location
+Date: Thu, 31 Jan 2013 16:58:23 -0500
+Message-ID: <1359669512-31276-5-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359669512-31276-1-git-send-email-cyril@ti.com>
 References: <1359669512-31276-1-git-send-email-cyril@ti.com>
@@ -26,83 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up the highmem sanity check code by simplifying the range
-checks with a pre-calculated size_limit.  This patch should otherwise have no
-functional impact on behavior.
+From: Vitaly Andrianov <vitalya@ti.com>
 
-This patch also removes a redundant (bank->start < vmalloc_limit) check, since
-this is already covered by the !highmem condition.
+This patch fixes the initrd setup code to use phys_addr_t instead of assuming
+32-bit addressing.  Without this we cannot boot on systems where initrd is
+located above the 4G physical address limit.
 
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Acked-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/mm/mmu.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ arch/arm/mm/init.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 85ed732..2a02ff0 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -933,10 +933,15 @@ void __init sanity_check_meminfo(void)
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 1c5151a..87ee0ec 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -36,12 +36,13 @@
  
- 	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
- 		struct membank *bank = &meminfo.bank[j];
-+		phys_addr_t size_limit;
-+
- 		*bank = meminfo.bank[i];
-+		size_limit = bank->size;
+ #include "mm.h"
  
- 		if (bank->start >= vmalloc_limit)
- 			highmem = 1;
-+		else
-+			size_limit = vmalloc_limit - bank->start;
+-static unsigned long phys_initrd_start __initdata = 0;
++static phys_addr_t phys_initrd_start __initdata = 0;
+ static unsigned long phys_initrd_size __initdata = 0;
  
- 		bank->highmem = highmem;
+ static int __init early_initrd(char *p)
+ {
+-	unsigned long start, size;
++	phys_addr_t start;
++	unsigned long size;
+ 	char *endp;
  
-@@ -945,8 +950,7 @@ void __init sanity_check_meminfo(void)
- 		 * Split those memory banks which are partially overlapping
- 		 * the vmalloc area greatly simplifying things later.
- 		 */
--		if (!highmem && bank->start < vmalloc_limit &&
--		    bank->size > vmalloc_limit - bank->start) {
-+		if (!highmem && bank->size > size_limit) {
- 			if (meminfo.nr_banks >= NR_BANKS) {
- 				printk(KERN_CRIT "NR_BANKS too low, "
- 						 "ignoring high memory\n");
-@@ -955,12 +959,12 @@ void __init sanity_check_meminfo(void)
- 					(meminfo.nr_banks - i) * sizeof(*bank));
- 				meminfo.nr_banks++;
- 				i++;
--				bank[1].size -= vmalloc_limit - bank->start;
-+				bank[1].size -= size_limit;
- 				bank[1].start = vmalloc_limit;
- 				bank[1].highmem = highmem = 1;
- 				j++;
- 			}
--			bank->size = vmalloc_limit - bank->start;
-+			bank->size = size_limit;
- 		}
- #else
- 		/*
-@@ -978,14 +982,13 @@ void __init sanity_check_meminfo(void)
- 		 * Check whether this memory bank would partially overlap
- 		 * the vmalloc area.
- 		 */
--		if (bank->start + bank->size > vmalloc_limit)
--			unsigned long newsize = vmalloc_limit - bank->start;
-+		if (bank->size > size_limit) {
- 			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
- 			       "to -%.8llx (vmalloc region overlap).\n",
- 			       (unsigned long long)bank->start,
- 			       (unsigned long long)bank->start + bank->size - 1,
--			       (unsigned long long)bank->start + newsize - 1);
--			bank->size = newsize;
-+			       (unsigned long long)bank->start + size_limit - 1);
-+			bank->size = size_limit;
- 		}
- #endif
- 		if (!bank->highmem && bank->start + bank->size > arm_lowmem_limit)
+ 	start = memparse(p, &endp);
+@@ -347,14 +348,14 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	if (phys_initrd_size &&
+ 	    !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
+-		pr_err("INITRD: 0x%08lx+0x%08lx is not a memory region - disabling initrd\n",
+-		       phys_initrd_start, phys_initrd_size);
++		pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
++		       (u64)phys_initrd_start, phys_initrd_size);
+ 		phys_initrd_start = phys_initrd_size = 0;
+ 	}
+ 	if (phys_initrd_size &&
+ 	    memblock_is_region_reserved(phys_initrd_start, phys_initrd_size)) {
+-		pr_err("INITRD: 0x%08lx+0x%08lx overlaps in-use memory region - disabling initrd\n",
+-		       phys_initrd_start, phys_initrd_size);
++		pr_err("INITRD: 0x%08llx+0x%08lx overlaps in-use memory region - disabling initrd\n",
++		       (u64)phys_initrd_start, phys_initrd_size);
+ 		phys_initrd_start = phys_initrd_size = 0;
+ 	}
+ 	if (phys_initrd_size) {
 -- 
 1.7.9.5
 
