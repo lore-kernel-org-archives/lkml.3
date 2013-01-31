@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab3AaLci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:32:38 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:60757 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab3AaLcf (ORCPT
+	id S1752506Ab3AaLef (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:34:35 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47414 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab3AaLec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 06:32:35 -0500
-Date: Thu, 31 Jan 2013 12:32:30 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
-        "mingo.kernel.org@gmail.com" <mingo.kernel.org@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
-        "Pearson, Greg" <greg.pearson@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] x86/apic: check FADT settings after enable x2apic
-Message-ID: <20130131113230.GD4587@gmail.com>
-References: <1358214636-4801-1-git-send-email-song-bo.wang@hp.com>
- <FE3E8B88161FFE48B03E3B93408433EC671016E2@G9W0754.americas.hpqcorp.net>
- <CAE9FiQW75eP_exufb1gd7jQuu98WnkyGX23EBXktUCSyZX9Jvg@mail.gmail.com>
- <20130128101135.GD7168@gmail.com>
- <CAE9FiQUtQ4uaBZxndV+acHW55JL5-nb0EnuXHhwiB-mK8Swtag@mail.gmail.com>
- <20130129074746.GA594@gmail.com>
- <FE3E8B88161FFE48B03E3B93408433EC671027BC@G9W0754.americas.hpqcorp.net>
- <20130129084914.GB5350@gmail.com>
- <CAE9FiQXe2QHacwyJx+5MQWmoGYW1Swnr5M-MSircgfA4_9e19Q@mail.gmail.com>
+	Thu, 31 Jan 2013 06:34:32 -0500
+Message-ID: <510A56BF.3040804@ti.com>
+Date: Thu, 31 Jan 2013 17:04:23 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQXe2QHacwyJx+5MQWmoGYW1Swnr5M-MSircgfA4_9e19Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>
+Subject: Re: [PATCH RFC] usb: dwc3: Get PHY from platform specific dwc3 dt
+ node.
+References: <1359631232-7107-1-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <1359631232-7107-1-git-send-email-gautam.vivek@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+On Thursday 31 January 2013 04:50 PM, Vivek Gautam wrote:
+> With device tree support in place for dwc3-core layer,
+> it gets PHY from "synopsis-dwc3" node.
+> Some controllers may not have separate memory maps and interrupts
+> for dwc3 core and platform glue layers. In such case only glue
+> layer's node will exist.
 
-> Please check attached.
+Not really. As long as you have dwc3 core as a separate device, you can 
+add a node for it.
+Just that the glue should create a device for dwc3 core using 
+of_platform_populate.(You can have a look at 
+drivers/usb/dwc3/dwc3-omap.c in usb-next)
+> Moreover, SoCs having multiple dwc3 controllers will have multiple
+> PHYs, which eventually be added using usb_add_phy_dev(), and not
+> using usb_add_phy(). So each dwc3 controller won't be able to
+> get PHYs by simply calling devm_usb_get_phy() also.
+No. We have added usb_get_phy_dev() for that purpose in the case of non-dt.
+I think, instead you can have a patch to use devm_usb_get_phy_dev() here 
+and in exynos platform specific code use usb_bind_phy() to bind the phy 
+and controller till you change it to dt.
+> In such cases, dwc3 should expect PHYs from its parent's node.
+NAK.
 
-Almost good.
-
-This:
-
-  > When some HP sytems boot without x2apic_phys, there will be
-
-Should mention the approximate models of the systems affected - 
-is it just a specific line of systems, or a wider range of 
-systems affected?
-
-This will inform users and will help maintainers like me to 
-prioritize the merging and backporting of patches.
-
-Thanks,
-
-	Ingo
+Thanks
+Kishon
