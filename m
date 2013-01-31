@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab3AaWZb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:25:31 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:49889 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab3AaWZ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:25:27 -0500
-Date: Thu, 31 Jan 2013 17:25:59 -0500
-From: Matt Porter <mporter@ti.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] dmaengine: add per channel capabilities api
-Message-ID: <20130131222559.GK2244@beef>
-References: <1357844826-30746-1-git-send-email-mporter@ti.com>
- <abcd725c6216491da2b1054e5e11ad82@DFLE72.ent.ti.com>
- <20130120163735.GC21407@beef>
- <c4113bae604945b586e9613814be737a@DLEE74.ent.ti.com>
- <20130121181922.GD10020@beef>
- <f97c0fe89e4643069c177f549a2e5628@DLEE74.ent.ti.com>
+	id S1756799Ab3AaW0a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:26:30 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37258 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754839Ab3AaW02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:26:28 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Peter Wu <lekensteyn@gmail.com>
+Subject: [Resend][PATCH] ACPI / PM: Do not power manage devices in unknown initial states
+Date: Thu, 31 Jan 2013 23:32:40 +0100
+Message-ID: <3676077.i6vcpp7Nrn@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <f97c0fe89e4643069c177f549a2e5628@DLEE74.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 10:06:03AM +0000, Vinod Koul wrote:
-> On Mon, Jan 21, 2013 at 01:19:23PM -0500, Matt Porter wrote:
-> > > b) Sg segment length and numbers: Well these are capabilities, so it tells
-> > > you what is the maximum I can do. IMO it doesn't make sense to tie it down to
-> > > burst, width etc. For that configuration you are checking maximum. What this
-> > > needs to return is what is the maximum length it supports and maximum number of
-> > > sg list the h/w can use. Also if you return your burst and width capablity, then
-> > > any client can easily find out what is the length byte value it can hold.
-> >  
-> > Ok, so I could report the max burst size to the client, but on EDMA it's
-> > going to be SZ_64K-1, as that's the hw limit. Max addr width would also
-> > be the same or capped at the maximum enum the current API support of 8
-> > bytes.
-> Yes IMO you should report the h/w limit and let client deduce what can be done
-> with that h/w limit given the other parameters (burst, length etc...)
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Hrm, in a driver that runs on two different DMACs, we don't know which
-one we are running on in order to determine if the information returned
-is relevant to do a calculation. If omap_hsmmc.c is running on SDMA the
-absolute max_seg_len may be fixed. On EDMA, that max values can be
-returned but is invalid for purposes of computing the actual length of
-sg segments that can be absorbed by the driver.
+In general, for ACPI device power management to work, the initial
+power states of devices must be known (otherwise, we wouldn't be able
+to keep track of power resources, for example).  Hence, if it is
+impossible to determine the initial ACPI power states of some
+devices, they can't be regarded as power-manageable using ACPI.
 
-The client driver does know the burst and length, and could compute this
-in an EDMA specific way, but we're talking now about in the client
-driver is:
+For this reason, modify acpi_bus_get_power_flags() to clear the
+power_manageable flag if acpi_bus_init_power() fails and add some
+extra fallback code to acpi_bus_init_power() to cover broken
+BIOSes that provide _PS0/_PS3 without _PSC for some devices.
 
-if (i_am_edma)
-	max_seg_len = (SZ_64K-1) * max_burst * addr_width;
-else /* sdma */
-	max_seg_len = MY_FIXED_VALUE_FROM_CHANNEL_CAPS;
+Verified to work on my HP nx6325 that has this problem.
 
-There's no way to deduce what to do in the client driver without having
-the knowledge of being on an EDMA DMAC or not. The only thing to do with
-fixed h/w caps is to report back a safe value. That would be SZ_64K-1
-but would be very inefficient when the slave config is set for a large
-FIFO and 32-bit address width and the actual size that can be
-transferred if much larger.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/device_pm.c |    6 ++++++
+ drivers/acpi/scan.c      |    5 ++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-> > 
-> > This information is not useful to the client in my case. Only the client
-> > knows its FIFO size, and thus the actual burst size it needs to request
-> > as that is a value specific to the IP the client driver controls. So it
-> > knows actual burst size and the width of that fifo transfer, because we
-> > already support telling the dmaengine driver this info in the current
-> > API.
-> Your current API way is not very generic. We need to make sure it useful on
-> other systems too. That is why it would make sense to query the DMA H/W
-> capablities and then use it with above properties to get various parameters used
-> for initiating a transfer, that way you dont need to set slave parameters
+Index: linux-pm/drivers/acpi/device_pm.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -330,6 +330,12 @@ int acpi_bus_init_power(struct acpi_devi
+ 		result = acpi_dev_pm_explicit_set(device, state);
+ 		if (result)
+ 			return result;
++	} else if (state == ACPI_STATE_UNKNOWN) {
++		/* No power resources and missing _PSC? Try to force D0. */
++		state = ACPI_STATE_D0;
++		result = acpi_dev_pm_explicit_set(device, state);
++		if (result)
++			return result;
+ 	}
+ 	device->power.state = state;
+ 	return 0;
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1175,7 +1175,10 @@ static void acpi_bus_get_power_flags(str
+ 			device->power.flags.power_resources)
+ 		device->power.states[ACPI_STATE_D3_COLD].flags.os_accessible = 1;
  
-Ok, you want something then that takes max_burst and addr_width as
-arguments and returns max_seg_len. Easy enough. That's the minimum
-information the driver needs to report the value and will avoid having
-to set the slave config first.
+-	acpi_bus_init_power(device);
++	if (acpi_bus_init_power(device)) {
++		acpi_free_power_resources_lists(device);
++		device->flags.power_manageable = 0;
++	}
+ }
+ 
+ static void acpi_bus_get_flags(struct acpi_device *device)
 
--Matt
