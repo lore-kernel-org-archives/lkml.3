@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab3AaKiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:38:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35946 "EHLO
+	id S1753785Ab3AaKiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:38:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35944 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab3AaKiR (ORCPT
+	with ESMTP id S1751604Ab3AaKiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:38:17 -0500
-Date: Thu, 31 Jan 2013 02:36:05 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-e23c1a5578cf32ed3a7ac9dde59a2de0a52ff812@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        mingo@elte.hu
-In-Reply-To: <1359060403-32422-1-git-send-email-jolsa@redhat.com>
-References: <1359060403-32422-1-git-send-email-jolsa@redhat.com>
+	Thu, 31 Jan 2013 05:38:16 -0500
+Date: Thu, 31 Jan 2013 02:37:17 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-933537sxtcz47qs0e0ledmrp@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent: Handle dynamic array'
- s element size properly
-Git-Commit-ID: e23c1a5578cf32ed3a7ac9dde59a2de0a52ff812
+Subject: [tip:perf/core] perf tools: Stop using 'self' in strlist
+Git-Commit-ID: d8639f068a59c842882339173f58311a583c555f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,115 +29,238 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 02:36:13 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 02:37:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e23c1a5578cf32ed3a7ac9dde59a2de0a52ff812
-Gitweb:     http://git.kernel.org/tip/e23c1a5578cf32ed3a7ac9dde59a2de0a52ff812
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Thu, 24 Jan 2013 21:46:43 +0100
+Commit-ID:  d8639f068a59c842882339173f58311a583c555f
+Gitweb:     http://git.kernel.org/tip/d8639f068a59c842882339173f58311a583c555f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 24 Jan 2013 21:59:59 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Fri, 25 Jan 2013 12:49:28 -0300
 
-tools lib traceevent: Handle dynamic array's element size properly
+perf tools: Stop using 'self' in strlist
 
-Fixing the dynamic array format field parsing.
+As suggested by tglx, 'self' should be replaced by something that is
+more useful.
 
-Currently the event_read_fields function could segfault while parsing
-dynamic array other than string type. The reason is the event->pevent
-does not need to be set and gets dereferenced unconditionaly.
-
-Also adding proper initialization of field->elementsize based on the
-parsed dynamic type.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1359060403-32422-1-git-send-email-jolsa@redhat.com
-[ committer note: Made a char pointer parameter const, as requested by Steven ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-933537sxtcz47qs0e0ledmrp@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c | 39 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 37 insertions(+), 2 deletions(-)
+ tools/perf/util/strlist.c | 54 +++++++++++++++++++++++------------------------
+ tools/perf/util/strlist.h | 42 ++++++++++++++++++------------------
+ 2 files changed, 48 insertions(+), 48 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index bb8b3db..82b0606 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -1223,6 +1223,34 @@ static int field_is_long(struct format_field *field)
- 	return 0;
+diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
+index 155d8b7..55433aa 100644
+--- a/tools/perf/util/strlist.c
++++ b/tools/perf/util/strlist.c
+@@ -35,11 +35,11 @@ out_delete:
+ 	return NULL;
  }
  
-+static unsigned int type_size(const char *name)
-+{
-+	/* This covers all FIELD_IS_STRING types. */
-+	static struct {
-+		const char *type;
-+		unsigned int size;
-+	} table[] = {
-+		{ "u8",   1 },
-+		{ "u16",  2 },
-+		{ "u32",  4 },
-+		{ "u64",  8 },
-+		{ "s8",   1 },
-+		{ "s16",  2 },
-+		{ "s32",  4 },
-+		{ "s64",  8 },
-+		{ "char", 1 },
-+		{ },
-+	};
-+	int i;
-+
-+	for (i = 0; table[i].type; i++) {
-+		if (!strcmp(table[i].type, name))
-+			return table[i].size;
-+	}
-+
-+	return 0;
-+}
-+
- static int event_read_fields(struct event_format *event, struct format_field **fields)
+-static void str_node__delete(struct str_node *self, bool dupstr)
++static void str_node__delete(struct str_node *snode, bool dupstr)
  {
- 	struct format_field *field = NULL;
-@@ -1232,6 +1260,8 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 	int count = 0;
+ 	if (dupstr)
+-		free((void *)self->s);
+-	free(self);
++		free((void *)snode->s);
++	free(snode);
+ }
  
- 	do {
-+		unsigned int size_dynamic = 0;
-+
- 		type = read_token(&token);
- 		if (type == EVENT_NEWLINE) {
- 			free_token(token);
-@@ -1390,6 +1420,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 				field->type = new_type;
- 				strcat(field->type, " ");
- 				strcat(field->type, field->name);
-+				size_dynamic = type_size(field->name);
- 				free_token(field->name);
- 				strcat(field->type, brackets);
- 				field->name = token;
-@@ -1478,10 +1509,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 		if (field->flags & FIELD_IS_ARRAY) {
- 			if (field->arraylen)
- 				field->elementsize = field->size / field->arraylen;
-+			else if (field->flags & FIELD_IS_DYNAMIC)
-+				field->elementsize = size_dynamic;
- 			else if (field->flags & FIELD_IS_STRING)
- 				field->elementsize = 1;
--			else
--				field->elementsize = event->pevent->long_size;
-+			else if (field->flags & FIELD_IS_LONG)
-+				field->elementsize = event->pevent ?
-+						     event->pevent->long_size :
-+						     sizeof(long);
- 		} else
- 			field->elementsize = field->size;
+ static
+@@ -59,12 +59,12 @@ static int strlist__node_cmp(struct rb_node *rb_node, const void *entry)
+ 	return strcmp(snode->s, str);
+ }
  
+-int strlist__add(struct strlist *self, const char *new_entry)
++int strlist__add(struct strlist *slist, const char *new_entry)
+ {
+-	return rblist__add_node(&self->rblist, new_entry);
++	return rblist__add_node(&slist->rblist, new_entry);
+ }
+ 
+-int strlist__load(struct strlist *self, const char *filename)
++int strlist__load(struct strlist *slist, const char *filename)
+ {
+ 	char entry[1024];
+ 	int err;
+@@ -80,7 +80,7 @@ int strlist__load(struct strlist *self, const char *filename)
+ 			continue;
+ 		entry[len - 1] = '\0';
+ 
+-		err = strlist__add(self, entry);
++		err = strlist__add(slist, entry);
+ 		if (err != 0)
+ 			goto out;
+ 	}
+@@ -107,56 +107,56 @@ struct str_node *strlist__find(struct strlist *slist, const char *entry)
+ 	return snode;
+ }
+ 
+-static int strlist__parse_list_entry(struct strlist *self, const char *s)
++static int strlist__parse_list_entry(struct strlist *slist, const char *s)
+ {
+ 	if (strncmp(s, "file://", 7) == 0)
+-		return strlist__load(self, s + 7);
++		return strlist__load(slist, s + 7);
+ 
+-	return strlist__add(self, s);
++	return strlist__add(slist, s);
+ }
+ 
+-int strlist__parse_list(struct strlist *self, const char *s)
++int strlist__parse_list(struct strlist *slist, const char *s)
+ {
+ 	char *sep;
+ 	int err;
+ 
+ 	while ((sep = strchr(s, ',')) != NULL) {
+ 		*sep = '\0';
+-		err = strlist__parse_list_entry(self, s);
++		err = strlist__parse_list_entry(slist, s);
+ 		*sep = ',';
+ 		if (err != 0)
+ 			return err;
+ 		s = sep + 1;
+ 	}
+ 
+-	return *s ? strlist__parse_list_entry(self, s) : 0;
++	return *s ? strlist__parse_list_entry(slist, s) : 0;
+ }
+ 
+-struct strlist *strlist__new(bool dupstr, const char *slist)
++struct strlist *strlist__new(bool dupstr, const char *list)
+ {
+-	struct strlist *self = malloc(sizeof(*self));
++	struct strlist *slist = malloc(sizeof(*slist));
+ 
+-	if (self != NULL) {
+-		rblist__init(&self->rblist);
+-		self->rblist.node_cmp    = strlist__node_cmp;
+-		self->rblist.node_new    = strlist__node_new;
+-		self->rblist.node_delete = strlist__node_delete;
++	if (slist != NULL) {
++		rblist__init(&slist->rblist);
++		slist->rblist.node_cmp    = strlist__node_cmp;
++		slist->rblist.node_new    = strlist__node_new;
++		slist->rblist.node_delete = strlist__node_delete;
+ 
+-		self->dupstr	 = dupstr;
+-		if (slist && strlist__parse_list(self, slist) != 0)
++		slist->dupstr	 = dupstr;
++		if (slist && strlist__parse_list(slist, list) != 0)
+ 			goto out_error;
+ 	}
+ 
+-	return self;
++	return slist;
+ out_error:
+-	free(self);
++	free(slist);
+ 	return NULL;
+ }
+ 
+-void strlist__delete(struct strlist *self)
++void strlist__delete(struct strlist *slist)
+ {
+-	if (self != NULL)
+-		rblist__delete(&self->rblist);
++	if (slist != NULL)
++		rblist__delete(&slist->rblist);
+ }
+ 
+ struct str_node *strlist__entry(const struct strlist *slist, unsigned int idx)
+diff --git a/tools/perf/util/strlist.h b/tools/perf/util/strlist.h
+index dd9f922..5c7f870 100644
+--- a/tools/perf/util/strlist.h
++++ b/tools/perf/util/strlist.h
+@@ -17,34 +17,34 @@ struct strlist {
+ };
+ 
+ struct strlist *strlist__new(bool dupstr, const char *slist);
+-void strlist__delete(struct strlist *self);
++void strlist__delete(struct strlist *slist);
+ 
+-void strlist__remove(struct strlist *self, struct str_node *sn);
+-int strlist__load(struct strlist *self, const char *filename);
+-int strlist__add(struct strlist *self, const char *str);
++void strlist__remove(struct strlist *slist, struct str_node *sn);
++int strlist__load(struct strlist *slist, const char *filename);
++int strlist__add(struct strlist *slist, const char *str);
+ 
+-struct str_node *strlist__entry(const struct strlist *self, unsigned int idx);
+-struct str_node *strlist__find(struct strlist *self, const char *entry);
++struct str_node *strlist__entry(const struct strlist *slist, unsigned int idx);
++struct str_node *strlist__find(struct strlist *slist, const char *entry);
+ 
+-static inline bool strlist__has_entry(struct strlist *self, const char *entry)
++static inline bool strlist__has_entry(struct strlist *slist, const char *entry)
+ {
+-	return strlist__find(self, entry) != NULL;
++	return strlist__find(slist, entry) != NULL;
+ }
+ 
+-static inline bool strlist__empty(const struct strlist *self)
++static inline bool strlist__empty(const struct strlist *slist)
+ {
+-	return rblist__empty(&self->rblist);
++	return rblist__empty(&slist->rblist);
+ }
+ 
+-static inline unsigned int strlist__nr_entries(const struct strlist *self)
++static inline unsigned int strlist__nr_entries(const struct strlist *slist)
+ {
+-	return rblist__nr_entries(&self->rblist);
++	return rblist__nr_entries(&slist->rblist);
+ }
+ 
+ /* For strlist iteration */
+-static inline struct str_node *strlist__first(struct strlist *self)
++static inline struct str_node *strlist__first(struct strlist *slist)
+ {
+-	struct rb_node *rn = rb_first(&self->rblist.entries);
++	struct rb_node *rn = rb_first(&slist->rblist.entries);
+ 	return rn ? rb_entry(rn, struct str_node, rb_node) : NULL;
+ }
+ static inline struct str_node *strlist__next(struct str_node *sn)
+@@ -59,21 +59,21 @@ static inline struct str_node *strlist__next(struct str_node *sn)
+ /**
+  * strlist_for_each      - iterate over a strlist
+  * @pos:	the &struct str_node to use as a loop cursor.
+- * @self:	the &struct strlist for loop.
++ * @slist:	the &struct strlist for loop.
+  */
+-#define strlist__for_each(pos, self)	\
+-	for (pos = strlist__first(self); pos; pos = strlist__next(pos))
++#define strlist__for_each(pos, slist)	\
++	for (pos = strlist__first(slist); pos; pos = strlist__next(pos))
+ 
+ /**
+  * strlist_for_each_safe - iterate over a strlist safe against removal of
+  *                         str_node
+  * @pos:	the &struct str_node to use as a loop cursor.
+  * @n:		another &struct str_node to use as temporary storage.
+- * @self:	the &struct strlist for loop.
++ * @slist:	the &struct strlist for loop.
+  */
+-#define strlist__for_each_safe(pos, n, self)	\
+-	for (pos = strlist__first(self), n = strlist__next(pos); pos;\
++#define strlist__for_each_safe(pos, n, slist)	\
++	for (pos = strlist__first(slist), n = strlist__next(pos); pos;\
+ 	     pos = n, n = strlist__next(n))
+ 
+-int strlist__parse_list(struct strlist *self, const char *s);
++int strlist__parse_list(struct strlist *slist, const char *s);
+ #endif /* __PERF_STRLIST_H */
