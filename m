@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab3AaMh7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:37:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58776 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751743Ab3AaMh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:37:57 -0500
-Date: Thu, 31 Jan 2013 20:37:48 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ASoC: Ux500: Fix build error pertaining to missing
- include file
-Message-ID: <20130131123744.GG11078@opensource.wolfsonmicro.com>
-References: <1359635640-1932-1-git-send-email-lee.jones@linaro.org>
+	id S1753405Ab3AaMio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:38:44 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:49526 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab3AaMil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 07:38:41 -0500
+Message-ID: <510A65BA.6090208@ti.com>
+Date: Thu, 31 Jan 2013 13:38:18 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="27ZtN5FSuKKSZcBU"
-Content-Disposition: inline
-In-Reply-To: <1359635640-1932-1-git-send-email-lee.jones@linaro.org>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Purdie <rpurdie@rpsys.net>
+CC: Grant Likely <grant.likely@secretlab.ca>, Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH 2/4] pwm_backlight: Validate dft_brightness in main probe
+ function
+References: <1358861996-27194-1-git-send-email-peter.ujfalusi@ti.com> <1358861996-27194-3-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1358861996-27194-3-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thierry,
 
---27ZtN5FSuKKSZcBU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/22/2013 02:39 PM, Peter Ujfalusi wrote:
+> Move the dft_brightness validity check from the DT parsing function to the
+> main probe. In this way we can validate it in case we are booting with or
+> without DT.
 
-On Thu, Jan 31, 2013 at 12:34:00PM +0000, Lee Jones wrote:
-> Some compilers complain when building sound for MOP500:
->=20
-> sound/soc/ux500/mop500.c:27:27:
->         fatal error: mop500_ab8500.h: No such file or directory
+Based on the discussion the rest of the series is going to be dropped, but
+what about this single patch?
+I think it is still addresses a valid issue, which is that in non DT boot we
+do not check if the dft_brightness is within valid range.
 
-Should be kernel version dependant I expect...
+I can resend this patch alone since it is not going to apply on mainline as it is.
 
---27ZtN5FSuKKSZcBU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Péter
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRCmWFAAoJELSic+t+oim9lFsP/31bIijLKhxyktmcvsgO4CbH
-r+hqtp3XshSWLmNoIkj0NhegZsw/WTHTDk2ubL3RQ9RAJnZ4yjwVz0Qa1d4JjeHs
-7Udz4lxcJcIrBsetEBaW4MDtphUtZ3tJAvnyy+h/mgm0ZsWYKuoHW3eQXZqEHyYq
-ZkCDCFCFzQnJlORT+NrwwkIacL/C9ljl9kDo6GA1N2wwHRw2j1YWWjzh/vbhwo4g
-Bw0NQF10kNUnhfHcAgO4mi838mggP9fXhGqRyOLhu8nPZhi5jq+ScNb2eAz25W7R
-1hqBaK5C6OhQh3xc1OLZSEvL0q09g45fB4pz9k7dctZG0wRnqzmpbh3qDaPI7EbI
-G1g5kEUrPB1gAgycIh2rmVjmJHrA3KopJDOqR4zDr7AmHdX0FzyF6holXpm7hqyG
-8HZ262V0QqQxTPSsUkZdzM1rmrzn3fYP3w3xJnOr9w83v1gASSIVJgGcRKD6JMRb
-qoykXrGTF4+BzTdfDyXn4MJ6RdtpIwmmECFnv1CVXtAJM6gRNc1LS3joWcL3s1d7
-uJ1qAtmapg+kIuUyY3bI35I3aP+0w0zwxpps4pdifCBfKL+YwH15UAyysbEkg1f+
-Tl3RIGNt3sTNb8cUyS6Os3kzyQqRyzb6oX/eckKBDU1292O6Xg3uh7q+l2XwHysG
-Fg1fxMXtoGrZYfbPQyKc
-=Ns3O
------END PGP SIGNATURE-----
-
---27ZtN5FSuKKSZcBU--
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+>  drivers/video/backlight/pwm_bl.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+> index f0d6854..2a81c24 100644
+> --- a/drivers/video/backlight/pwm_bl.c
+> +++ b/drivers/video/backlight/pwm_bl.c
+> @@ -135,12 +135,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
+>  		if (ret < 0)
+>  			return ret;
+>  
+> -		if (value >= data->max_brightness) {
+> -			dev_warn(dev, "invalid default brightness level: %u, using %u\n",
+> -				 value, data->max_brightness - 1);
+> -			value = data->max_brightness - 1;
+> -		}
+> -
+>  		data->dft_brightness = value;
+>  	}
+>  
+> @@ -249,6 +243,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+>  		goto err_alloc;
+>  	}
+>  
+> +	if (data->dft_brightness > data->max_brightness) {
+> +		dev_warn(&pdev->dev,
+> +			 "invalid default brightness level: %u, using %u\n",
+> +			 data->dft_brightness, data->max_brightness);
+> +		data->dft_brightness = data->max_brightness;
+> +	}
+>  	bl->props.brightness = data->dft_brightness;
+>  	backlight_update_status(bl);
+>  
+> 
