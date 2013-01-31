@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab3AaPKD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 10:10:03 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:51322 "HELO
+	id S1754435Ab3AaPNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 10:13:08 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:51335 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751973Ab3AaPKA (ORCPT
+	with SMTP id S1752469Ab3AaPNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 10:10:00 -0500
-Date: Thu, 31 Jan 2013 10:09:59 -0500 (EST)
+	Thu, 31 Jan 2013 10:13:06 -0500
+Date: Thu, 31 Jan 2013 10:13:05 -0500 (EST)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
 To: Aaron Lu <aaron.lu@intel.com>
@@ -16,9 +16,9 @@ cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
         Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v8 2/4] block: add runtime pm helpers
-In-Reply-To: <20130131053535.GA14627@aaronlu.sh.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1301311004050.1876-100000@iolanthe.rowland.org>
+Subject: Re: [PATCH v8 4/4] sd: change to auto suspend mode
+In-Reply-To: <20130131054324.GB14627@aaronlu.sh.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301311010200.1876-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,25 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 31 Jan 2013, Aaron Lu wrote:
 
-> > > +void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
+> > > +static int scsi_blk_runtime_suspend(struct device *dev)
 > > > +{
-> > > +	q->dev = dev;
-> > > +	q->rpm_status = RPM_ACTIVE;
-> > > +	pm_runtime_set_autosuspend_delay(q->dev, -1);
-> > > +	pm_runtime_use_autosuspend(q->dev);
-> > > +	pm_runtime_mark_last_busy(q->dev);
-> > > +	pm_runtime_autosuspend(q->dev);
+> > > +	struct scsi_device *sdev = to_scsi_device(dev);
 > > 
-> > This last line is no longer needed.  It can't do anything useful, since 
-> > autosuspends are disabled (the delay is -1).
+> > For this routine and the other new ones, it may be slightly more
+> > efficient to pass both dev and sdev as arguments (this depends on how
+> > smart the compiler's optimizer is).  The caller already knows both of
+> > them, after all.
 > 
-> Right, thanks.
-> And the mark_last_busy can probably be removed too, it didn't make much
-> sense here and we can add "driver should call pm_runtime_mark_last_busy
-> and pm_runtime_autosuspend in its runtime idle callback" to the kernel
-> doc. What do you think?
+> What about passing only scsi_device? When device is needed, I can use
+> &sdev->sdev_gendev. Is this equally efficient?
 
-Yes, okay.
+I don't know...  The difference is very small in any case.  The 
+routines will probably be inlined automatically.
+
+> > > +		if (sdev->request_queue->dev) {
+> > > +			pm_runtime_mark_last_busy(dev);
+> > > +			err = pm_runtime_autosuspend(dev);
+> > > +		} else {
+> > > +			err = pm_schedule_suspend(dev, 100);
+> > > +		}
+> > > +	} else {
+> > >  		err = pm_runtime_suspend(dev);
+> > > +	}
+> > >  	return err;
+> 
+> Shall we ignore the return value for these pm_xxx_suspend functions?
+> I mean we do not need to record the return value for them and return it,
+> since pm core doesn't care the return value of idle callback.
+
+Maybe it will care in a future kernel version.  You might as well store 
+the return code and pass it back.
 
 Alan Stern
+
 
