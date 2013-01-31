@@ -1,116 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab3AaIM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:12:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:58165 "EHLO
+	id S1755450Ab3AaINN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:13:13 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:62051 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755108Ab3AaIM0 (ORCPT
+	with ESMTP id S1754688Ab3AaINK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:12:26 -0500
-Date: Thu, 31 Jan 2013 09:12:18 +0100
+	Thu, 31 Jan 2013 03:13:10 -0500
+Date: Thu, 31 Jan 2013 09:13:05 +0100
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Sachin Kamat <sachin.kamat@linaro.org>
 Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Subject: Re: [PATCH 1/1] dma: pl330: Convert to devm_ioremap_resource()
-Message-ID: <20130131081218.GA3171@avionic-0098.mockup.avionic-design.de>
+Message-ID: <20130131081305.GB3171@avionic-0098.mockup.avionic-design.de>
 References: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
+ <20130131072808.GA2041@avionic-0098.mockup.avionic-design.de>
+ <CAK9yfHy3qV1b5c586ToHONBu3BQdkdM4hYbvJcofZ=kL70rZjA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
 Content-Disposition: inline
-In-Reply-To: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <CAK9yfHy3qV1b5c586ToHONBu3BQdkdM4hYbvJcofZ=kL70rZjA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:8flmKN07fu6Q0dl8tRBMDJA1vFtrc0CqNjnOi6MGVtz
- edms+DvkrvCFGOkx4/5GxS4VQnW8d2R5QzKSfftdY3gxLFWn/p
- 8niWF8/bSvqRu0QxpShxg+TAC+WoV8WyGStVrYTM5pC0PL07Vg
- Ns2g3L4I6NgFacSLvpTMk24xaEaRsX1L7c51yMaxLS1loZ2pZp
- 1g12Zi58LnJjxSpImTqy4029XfZ57nREKGVDJCBeddC6+xn9gj
- MapbPDAwlWSXQWPSdwL24Ia5T8MPCy1QC2wTBFUHz6IDDL7+HC
- AYHYHry2kkVW3gVlZuk9yYnDFuxoYPdOAJVIlFv86icQqoJtU5
- 93NQ9SBJbxEI2VLEn+fnUjubEEIw/ndAhQxaI9Ur7QAvAePGzF
- TQjZfFwSVwbGwL7WC/VlWuYhifYonQuZh8=
+X-Provags-ID: V02:K0:F0uMLAvphNXtCtV7r6PIwYx9bwz4vP9ge7veWFUQGJZ
+ kzS6bX+qx+dJ5I2UUEhkESgrOW1ZgwFxbR8ofJUYF7BohniyYs
+ fn1y0Oszb4RU4yVLoOYmvK87DsUF9Ww/mULVzvNQfnbzDox6F1
+ KyXd77u5P702zmsFMq++vmzrW9rkQP0g+RW61tmNuXapi2bJ85
+ Bfdo07f1Uo3vsfRb1gI8uoOajGXGTLAnXtQeF16e3Ja1Nwh2yn
+ ewOlbnItS4T6PXpNqeyNJljr54QgVmH98UNuan2gXtlfCao6UT
+ AXigWwHcGyHlgmGmCKxhaElLl9YczE5GYgzk+gIUIsK//VsG5Z
+ xz0gykhDzjKeXJKufcWYveB1D5VKHf52tXa2BBKDOYrOunem3s
+ 6DIvewL7PxOmq56jKht3gzc0GeX1bEOlgY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---0F1p//8PRICkK4MW
+--qlTNgmc+xy1dBmNv
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jan 31, 2013 at 12:37:04PM +0530, Sachin Kamat wrote:
-> Use the newly introduced devm_ioremap_resource() instead of
-> devm_request_and_ioremap() which provides more consistent error handling.
+On Thu, Jan 31, 2013 at 01:39:59PM +0530, Sachin Kamat wrote:
+> On 31 January 2013 12:58, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > On Thu, Jan 31, 2013 at 12:37:04PM +0530, Sachin Kamat wrote:
+> >> Use the newly introduced devm_ioremap_resource() instead of
+> >> devm_request_and_ioremap() which provides more consistent error handli=
+ng.
+> >>
+> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> >> Cc: Vinod Koul <vinod.koul@intel.com>
+> >> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> ---
+> >> This change is based against linux-next tree (20130128).
+> >> This change however introduces the followign sparse warning:
+> >> drivers/dma/pl330.c:2883:22: warning: incorrect type in argument 1 (di=
+fferent address spaces)
+> >> drivers/dma/pl330.c:2883:22:    expected void const *ptr
+> >> drivers/dma/pl330.c:2883:22:    got void [noderef] <asn:2>*base
+> >> drivers/dma/pl330.c:2884:34: warning: incorrect type in argument 1 (di=
+fferent address spaces)
+> >> drivers/dma/pl330.c:2884:34:    expected void const *ptr
+> >> drivers/dma/pl330.c:2884:34:    got void [noderef] <asn:2>*base
+> >
+> > Yes, those are false positives. They can be fixed with the two patches I
+> > posted a few hours ago, starting here:
+> >
+> >         https://lkml.org/lkml/2013/1/30/455
 >=20
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
-> This change is based against linux-next tree (20130128).
-> This change however introduces the followign sparse warning:
-> drivers/dma/pl330.c:2883:22: warning: incorrect type in argument 1 (diffe=
-rent address spaces)
-> drivers/dma/pl330.c:2883:22:    expected void const *ptr
-> drivers/dma/pl330.c:2883:22:    got void [noderef] <asn:2>*base
-> drivers/dma/pl330.c:2884:34: warning: incorrect type in argument 1 (diffe=
-rent address spaces)
-> drivers/dma/pl330.c:2884:34:    expected void const *ptr
-> drivers/dma/pl330.c:2884:34:    got void [noderef] <asn:2>*base
-> ---
->  drivers/dma/pl330.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
+> OK. That's great.
+> >
+> > Note that the first patch is against sparse. The problem, in a nutshell,
+> > is that sparse complains that the pointer address spaces and noderef
+> > attributes differ. In the case of the IS_ERR() function and friends the
+> > attributes aren't relevant because only the pointer value is only used
+> > arithmetically. Unfortunately there is no way you can cast away these
+> > attributes without causing other warnings, so the solution is somewhat
+> > more complex.
 >=20
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 316a43e..142fe4d 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -25,6 +25,7 @@
->  #include <linux/amba/pl330.h>
->  #include <linux/scatterlist.h>
->  #include <linux/of.h>
-> +#include <linux/err.h>
-> =20
->  #include "dmaengine.h"
->  #define PL330_MAX_CHAN		8
-> @@ -2878,9 +2879,9 @@ pl330_probe(struct amba_device *adev, const struct =
-amba_id *id)
->  	pi->mcbufsz =3D pdat ? pdat->mcbuf_sz : 0;
-> =20
->  	res =3D &adev->res;
-> -	pi->base =3D devm_request_and_ioremap(&adev->dev, res);
-> -	if (!pi->base)
-> -		return -ENXIO;
-> +	pi->base =3D devm_ioremap_resource(&adev->dev, res);
-> +	if (IS_ERR(pi->base))
-> +		return PTR_ERR(pi->base);
-> =20
->  	amba_set_drvdata(adev, pdmac);
-> =20
+> Thanks for the explaination.
+> However, is the patch for the dma relevant?
 
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+Yes, I forgot to add my Reviewed-by. Done now.
 
---0F1p//8PRICkK4MW
+Thierry
+
+--qlTNgmc+xy1dBmNv
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRCidiAAoJEN0jrNd/PrOhqvoQALhj4Z2AGuNXbPaOjif/yjTR
-Ux2JCXogz/arFPkM1YK66h4wkd5ZnnQBawmTyHdudW5zxJqZsL6XTDxB27uB+CD2
-fby7fE9uzqApOXy+bNm25uB0ILehB4vMpym3fpE3RKppi7N4yRDPzCSjZqQgVq+W
-IxihVWINDlvUXsvKP4xRJYSO1ew4iMdvMsPjrGt9BnB9VuAEYWe/Dyt0Gvh+/fgU
-zl9FfUsw3LtO37FuXiGKk/6qCKulV896QcyKJkH7YnYKVs3p/z4cj4AwCkQzeXCc
-e621Y6D0rsmxR4pbHUVinxDXx1O0rdMkW/uz4YbeMYqxwBcN3kwlnY68v8mk03Zn
-BTHm62b1Dv9ZW1cl7TFlrH6EecLPZm/LTQAeASMjvUldSiOsD3Zp/obYs2iT3Al8
-NSZZ6c3Bjvn0ZOpfheZOLa/s9z4ZeszlSZTNs/qEAj6+ZS7yxXsAAlmuY2v9z/+E
-n9iuNRsxZIgDEU7mBMWIYcn1+0wGK/wsQ59isMwQRyclEcrW5yWe3MpQRyLgYLZU
-ssX+Sb5Ce8jhjfsC8OwU7ssvaOfaqSoBC17FLKxwRyFJjes5sDbGHFL6ZrRIK6bi
-J13sLP2THY16oqrytzj8QXP0DxXU1Sl92Fbz83zV9GEtk9XlbAuqcsSCzQjdDHqT
-4vbiOaI8++OeLHwYpeDS
-=aqM2
+iQIcBAEBAgAGBQJRCieRAAoJEN0jrNd/PrOh9rcP/1zye52YG4Q0LPwAmVuOgqHY
+BUbez/KFd6R65TK9gZEX0kgOeH+XPRur/kTD6qHase+SyuDlXRAURlIUKg5M3rwa
+bGeVOE/1UNSU7kq+j1o6NG7AqmE2m6ZgI+wz8AJxuIRWkYRX2fqH3crOqwVkK/Mc
+gIeTFxShjclY9WjhENc9rfULJlImC/ra2waH93Gbx2Q2sQdqApnz5b0HZ/wLFRz5
+t+O84wVlgyVgDIBCcvCuYUaWRaqNAkoqaK5D4MH2cLHjtLib8S3bOsP4hwhztmd0
+X86/oZa5dHXfm9EJhVgXb5L2UfZRaxHE0buqGIXmgI3ywqDiCnIMh2wtw8CwXxhR
+2Aa7PW8UlJd3RFeh6QlOgULdoShbsK+iEXeDDF8W70Pu8cQGEBKjHWW70eCwZWHe
+ZUc/dVF5suX34wWC3ENgiF7ACQGafB4zrGQsS3aIqkVInqE6ediKu6lV1UyvnOrv
+LyxL3yjvxzYGIILiJUQL2WVDz1ACvpOcfL3ji2xJnVk+F+cUiB+QEVIGd58BDsPJ
+XypOpC7d1ctyEL6QM2kfnOHJHb4DF7Mm/PK+ulz+WXFZCZPADVGZegUMqQDog5e4
+5IaeODywsPnp/SoLZbvilvtF/4MpfhfgBjuSp/MJ5mnBlqKeCNRPVYJ5DlWTMf8M
+uSC9qU+SSmCCoN2DhamB
+=YpKH
 -----END PGP SIGNATURE-----
 
---0F1p//8PRICkK4MW--
+--qlTNgmc+xy1dBmNv--
