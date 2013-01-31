@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab3AaIj0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:39:26 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52610 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3AaIjW (ORCPT
+	id S1752424Ab3AaIm2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:42:28 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:37796 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab3AaImZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:39:22 -0500
-Date: Thu, 31 Jan 2013 09:39:09 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
-        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 2/4] cpufreq: ondemand: call dbs_check_cpu only when
- necessary
-Message-ID: <20130131083825.GA30667@balto.lan>
-References: <1359550803-18577-1-git-send-email-fabio.baltieri@linaro.org>
- <1359550803-18577-3-git-send-email-fabio.baltieri@linaro.org>
- <CAKohpok0iDffNM31W2r97Wtq4DR+TdPwYWTAdJH7AyLqHm0UPA@mail.gmail.com>
- <20130130164614.GC30559@balto.lan>
- <CAKohponMezzus0tRW+CdC7wLq1U1pRio5q=g6F845x7iveFCAA@mail.gmail.com>
+	Thu, 31 Jan 2013 03:42:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohponMezzus0tRW+CdC7wLq1U1pRio5q=g6F845x7iveFCAA@mail.gmail.com>
-X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359127711-19070-6-git-send-email-arnd@arndb.de>
+References: <1359127711-19070-1-git-send-email-arnd@arndb.de>
+	<1359127711-19070-6-git-send-email-arnd@arndb.de>
+Date: Thu, 31 Jan 2013 14:12:24 +0530
+Message-ID: <CAPdUM4MbFN6htJ9Xa_OtdfgpxNH=7JD6-eUAkVM5_O5SZYv2+w@mail.gmail.com>
+Subject: Re: [PATCH 5/5] drm/exynos: don't include plat/gpio-cfg.h
+From: Rahul Sharma <r.sh.open@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Inki Dae <inki.dae@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Rob Clark <rob@ti.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Viresh,
+Hi Arnd Bergmann,
 
-On Wed, Jan 30, 2013 at 10:41:08PM +0530, Viresh Kumar wrote:
-> On 30 January 2013 22:16, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
-> > Isn't that how it works now?  The current cpu ktime is not checked
-> > against its own, but against the "leader" cpu (dbs_info_local->cdbs.cpu),
-> > that's why it's initialized only for the first.
-> >
-> > Maybe I should have used dbs_info_leader/dbs_info instead of
-> > dbs_info_local/dbs_info.
-> 
-> This routine is called as wq handler. Which will recover dbs_info from work
-> using container_of. Which would give dbs_info_local for the cpu j.
-> 
-> Then we will execute below code.
-> 
-> +       /* use leader CPU's dbs_info */
-> +       dbs_info = &per_cpu(od_cpu_dbs_info, dbs_info_local->cdbs.cpu);
-> 
-> dbs_info_local->cdbs.cpu was uninitialized for all cpus except policy->cpu.
+It looks good to me. My patch caused this issue.
+Thanks for the fix.
 
-Ok, now I see the problem: cdbs->cpu is initialized only on the leader
-cpu and this is working by coincidence on my system, while
-cdbs->time_stamp is initialized only on the leader cpu, and that should
-be correct even when cpu hotplugging as that's reinitialized every time.
+regards,
+Rahul Sharma.
 
-That's a fix so I'll send a patch just to set ->cpu into the
-for_each_cpu cycle.
-
-Thanks,
-Fabio
-
-> And so, might be initialized with 0 as its a global variable... But if you
-> offline cpu 0 and online it back, then policy->cpu would be 1 and this logic,
-> which worked by mistake will fail.
-> 
-> +       mutex_lock(&dbs_info->cdbs.timer_mutex);
-> +
-> +       time_now = ktime_get();
-> +       delta_us = ktime_us_delta(time_now, dbs_info->cdbs.time_stamp);
-> 
-> and so as this.
-> 
-> Correct?
+On Fri, Jan 25, 2013 at 8:58 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> Patch  9eb3e9e6f3 "drm/exynos: add support for ARCH_MULTIPLATFORM"
+> allowed building the exynos hdmi driver on non-samsung platforms,
+> which unfortunately broke compilation in combination with 22c4f42897
+> "drm: exynos: hdmi: add support for exynos5 hdmi", which added
+> an inclusion of the samsung-specific plat/gpio-cfg.h header file.
+>
+> Fortunately, that header file is not required any more here, so
+> we can simply revert the inclusion in order to build the ARM
+> allyesconfig again without getting this error:
+>
+> drivers/gpu/drm/exynos/exynos_hdmi.c:37:27: fatal error: plat/gpio-cfg.h: No such file or directory
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Rob Clark <rob@ti.com>
+> Cc: Inki Dae <inki.dae@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Rahul Sharma <rahul.sharma@samsung.com>
+> ---
+>  drivers/gpu/drm/exynos/exynos_hdmi.c | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+> index 41ff79d..b5f5119 100644
+> --- a/drivers/gpu/drm/exynos/exynos_hdmi.c
+> +++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+> @@ -34,7 +34,6 @@
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/io.h>
+>  #include <linux/of_gpio.h>
+> -#include <plat/gpio-cfg.h>
+>
+>  #include <drm/exynos_drm.h>
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Fabio Baltieri
+> 1.8.0
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
