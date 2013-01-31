@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab3AaFLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 00:11:45 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47804 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab3AaFLn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 00:11:43 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-a5-5109fd0d4fdc
-Date: Thu, 31 Jan 2013 14:11:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Questin about swap_slot free and invalidate page
-Message-ID: <20130131051140.GB23548@blaptop>
+	id S1752345Ab3AaFPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 00:15:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50342 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751843Ab3AaFPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 00:15:33 -0500
+Date: Thu, 31 Jan 2013 06:17:28 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Joe Millenbach <jmillenbach@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alan Cox <alan@linux.intel.com>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>, Jamey Sharp <jamey@minilop.net>
+Subject: Re: [PATCHv5] tty: Added a CONFIG_TTY option to allow removal of TTY
+Message-ID: <20130131051728.GA2961@kroah.com>
+References: <1359594919-2819-1-git-send-email-jmillenbach@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1359594919-2819-1-git-send-email-jmillenbach@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I reviewed zswap, I was curious about frontswap_store.
-It said following as.
+On Wed, Jan 30, 2013 at 05:15:19PM -0800, Joe Millenbach wrote:
+> The option allows you to remove TTY and compile without errors. This
+> saves space on systems that won't support TTY interfaces anyway.
+> bloat-o-meter output is below.
+> 
+> The bulk of this patch consists of Kconfig changes adding "depends on
+> TTY" to various serial devices and similar drivers that require the TTY
+> layer.  Ideally, these dependencies would occur on a common intermediate
+> symbol, but many drivers select rather than depend on features, and
+> "select" does not respect dependencies.
+> 
+> bloat-o-meter output filtered to not show removed entries to save space
+> 
+> $ scripts/bloat-o-meter min min-no-tty | awk '$3 != "-"'
+> add/remove: 0/225 grow/shrink: 2/12 up/down: 8/-29628 (-29620)
+> function                                     old     new   delta
+> chr_dev_init                                 138     145      +7
+> linux_banner                                 123     124      +1
+> static.__warned                              132     131      -1
+> unregister_console                           106     101      -5
+> start_kernel                                 467     462      -5
+> register_console                             545     540      -5
+> copy_from_user                                40      35      -5
+> sys_setsid                                   105      98      -7
+> sys_vhangup                                   27      15     -12
+> do_exit                                     1363    1346     -17
+> arch_local_irq_save                          136     116     -20
+> bitmap_zero                                   44      22     -22
+> release_task                                 587     562     -25
+> static.spin_unlock_irqrestore                223     187     -36
+> 
+> Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Reviewed-by: Jamey Sharp <jamey@minilop.net>
+> ---
+> v5: Rebasing to 3.8 rc5 and minimized driver/input changes based on input
+>     from Dmitry Torokhov.
 
- * If frontswap already contains a page with matching swaptype and
- * offset, the frontswap implementation may either overwrite the data and
- * return success or invalidate the page from frontswap and return failure.
+This isn't going to work because I've already applied this to my tree.
+Can you just make a tiny patch against the tty-next git tree to fix up
+the differences here for the Input drivers and I can apply that?
 
-It didn't say why it happens. we already have __frontswap_invalidate_page
-and call it whenever swap_slot frees. If we don't free swap slot,
-scan_swap_map can't find the slot for swap out so I thought overwriting of
-data shouldn't happen in frontswap.
+thanks,
 
-As I looked the code, the curplit is reuse_swap_page. It couldn't free swap
-slot if the page founded is PG_writeback but miss calling frontswap_invalidate_page
-so data overwriting on frontswap can happen. I'm not sure frontswap guys
-already discussed it long time ago.
-
-If we can fix it, we can remove duplication entry handling logic
-in all of backend of frontswap. All of backend should handle it although
-it's pretty rare. Of course, zram could be fixed. It might be trivial now
-but more there are many backend of frontswap, more it would be a headache.
-
-If we are trying to fix it in swap layer,  we might fix it following as
-
-int reuse_swap_page(struct page *page)
-{
-        ..
-        ..
-        if (count == 1) {
-                if (!PageWriteback(page)) {
-                        delete_from_swap_cache(page);
-                        SetPageDirty(page);
-                } else {
-                        frontswap_invalidate_page();
-                        swap_slot_free_notify();
-                }
-        }
-}
-
-But not sure, it is worth at the moment and there might be other places
-to be fixed.(I hope Hugh can point out if we are missing something if he
-has a time)
-
-If we are reluctant to it, at least, we should write out comment above
-frontswap_store about that to notice curious guys who spend many
-time to know WHY and smart guys who are going to fix it with nice way.
-
-Mr. Frontswap, What do you think about it?
-
--- 
-Kind regards,
-Minchan Kim
+greg k-h
