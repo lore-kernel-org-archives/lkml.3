@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab3AaLGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:06:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36405 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab3AaLG1 (ORCPT
+	id S1753156Ab3AaLGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:06:30 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:46461 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580Ab3AaLGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 06:06:27 -0500
-Date: Thu, 31 Jan 2013 03:06:09 -0800
-From: tip-bot for Kirill Tkhai <tkhai@yandex.ru>
-Message-ID: <tip-fc79e240be5aa379dd36a62158be5a5ee0e4aec7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, linux-rt-users@vger.kernel.org,
-        rostedt@goodmis.org, tkhai@yandex.ru, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, peterz@infradead.org, tkhai@yandex.ru,
-        tglx@linutronix.de, linux-rt-users@vger.kernel.org
-In-Reply-To: <931541359550236@web1g.yandex.ru>
-References: <931541359550236@web1g.yandex.ru>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt:
-  Do not account zero delta_exec in update_curr_rt()
-Git-Commit-ID: fc79e240be5aa379dd36a62158be5a5ee0e4aec7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 31 Jan 2013 06:06:25 -0500
+Date: Thu, 31 Jan 2013 12:06:13 +0100
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
+        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: governors: clean timer init and exit code
+Message-ID: <20130131110613.GD30667@balto.lan>
+References: <1359554017-28620-1-git-send-email-fabio.baltieri@linaro.org>
+ <CAKohpomTNkEOrnyQWKJ8siajg67-fpe4EnYxiipgmN8STMSwAQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 03:06:16 -0800 (PST)
+In-Reply-To: <CAKohpomTNkEOrnyQWKJ8siajg67-fpe4EnYxiipgmN8STMSwAQ@mail.gmail.com>
+X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc79e240be5aa379dd36a62158be5a5ee0e4aec7
-Gitweb:     http://git.kernel.org/tip/fc79e240be5aa379dd36a62158be5a5ee0e4aec7
-Author:     Kirill Tkhai <tkhai@yandex.ru>
-AuthorDate: Wed, 30 Jan 2013 16:50:36 +0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 31 Jan 2013 10:31:13 +0100
+On Thu, Jan 31, 2013 at 04:23:06PM +0530, Viresh Kumar wrote:
+> On 30 January 2013 19:23, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
+> > Drop unused arguments from dbs_timer_init and clean dbs_timer_exit and
+> > cpufreq_governor_dbs to remove non necessary special cases.
+> >
+> > Reported-by: Viresh Kumar <viresh.kumar@linaro.org>
+> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> 
+> As discussed over IRC, you will fix following in few days:
+> - Code redundancy within governors
+> - Removing second_time: label and cdbs->enable field
+> - Fixing params to timer init and exit to make them more efficient.
 
-sched/rt: Do not account zero delta_exec in update_curr_rt()
+That's the plan, I'd leave it up to Rafael to decide if further cleanup
+patches should be included in 3.9 merge window or skip to the following
+one... I understand that we are starting to be late on the -rc and I
+also prefer to focus on fixup.
 
-There are several places of consecutive calls of
-dequeue_task_rt() and put_prev_task_rt() in the scheduler.
-For example, function rt_mutex_setprio() does it.
+Thanks,
+Fabio
 
-The both calls lead to update_curr_rt(), the second of it
-receives zeroed delta_exec. The only effective action in this
-case is call of sched_rt_avg_update(), which can change
-rq->age_stamp and rq->rt_avg. But it is possible in case of
-""floating"" rq->clock. This fact is not reasonable to be
-accounted. Another actions do nothing.
+> And here is my ack for this patch:
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-CC: linux-rt-users <linux-rt-users@vger.kernel.org>
-Link: http://lkml.kernel.org/r/931541359550236@web1g.yandex.ru
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/rt.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 2f69ca9..94abca4 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -925,8 +925,8 @@ static void update_curr_rt(struct rq *rq)
- 		return;
- 
- 	delta_exec = rq->clock_task - curr->se.exec_start;
--	if (unlikely((s64)delta_exec < 0))
--		delta_exec = 0;
-+	if (unlikely((s64)delta_exec <= 0))
-+		return;
- 
- 	schedstat_set(curr->se.statistics.exec_max,
- 		      max(curr->se.statistics.exec_max, delta_exec));
+-- 
+Fabio Baltieri
