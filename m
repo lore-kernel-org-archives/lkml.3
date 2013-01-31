@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab3AaWQa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:16:30 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:55691 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab3AaWQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:16:28 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Thu, 31 Jan 2013 17:16:27 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Michal Marek <mmarek@suse.cz>, hyojun.im@lge.com,
-        raphael.andy.lee@gmail.com, linux-kbuild@vger.kernel.org,
-        gunho.lee@lge.com, namhyung.kim@lge.com, x86@kernel.org,
-        minchan.kim@lge.com, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Ingo Molnar <mingo@redhat.com>, Joe Millenbach <jmillenbach@gmail.com>,
-        chan.jeong@lge.com, Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-In-reply-to: <510AE6BF.4080303@zytor.com>
-Message-id: <alpine.LFD.2.02.1301311700470.6300@xanadu.home>
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
- <20130128142510.68092e10.akpm@linux-foundation.org>
- <20130129101549.GP23505@n2100.arm.linux.org.uk> <51089523.3080804@zytor.com>
- <alpine.LFD.2.02.1301301326530.6300@xanadu.home> <510AE6BF.4080303@zytor.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755954Ab3AaWRp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:17:45 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:37222 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754325Ab3AaWRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:17:42 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 2/2] cpufreq: governors: Remove code redundancy between governors
+Date: Thu, 31 Jan 2013 23:23:54 +0100
+Message-ID: <1730121.raxo9SGZyf@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130131185004.GB20164@balto.lan>
+References: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org> <118c59263751862b1750ed9f96639a4e70069e66.1359653181.git.viresh.kumar@linaro.org> <20130131185004.GB20164@balto.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jan 2013, H. Peter Anvin wrote:
-
-> On 01/30/2013 10:33 AM, Nicolas Pitre wrote:
-> >>
-> >> The only concern I have with that is if someone paints themselves into a
-> >> corner and absolutely wants, say, LZO.
+On Thursday, January 31, 2013 07:50:04 PM Fabio Baltieri wrote:
+> On Thu, Jan 31, 2013 at 10:58:02PM +0530, Viresh Kumar wrote:
+> > With the inclusion of following patches:
 > > 
-> > That would be hard to justify given that the kernel provides its own 
-> > decompressor code, making the compression format transparent to 
-> > bootloaders, etc.  And no one should be poking into the compressed 
-> > zImage.
+> > 9f4eb10 cpufreq: conservative: call dbs_check_cpu only when necessary
+> > 772b4b1 cpufreq: ondemand: call dbs_check_cpu only when necessary
 > > 
+> > code redundancy is introduced again. Get rid of it.
+> > 
+> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> > ---
 > 
-> Some utterly weird things like the Xen domain builder do that, because
-> they have to.  That is why we explicitly document that the payload is
-> ELF and how to access it in the bzImage spec.
+> Hi,
+> 
+> Tested-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 
-Are you kidding?
+OK
 
-And what format do they expect?
+Fabio, Viresh, Shawn,
 
-If people are doing weird things with formats we're about to remove then 
-it's their fault if they didn't make upstream developers aware of it.  
-And if the reason they didn't tell anyone is because it is too nasty for 
-public confession then they simply deserve to be broken and come up with 
-a more sustainable solution.
+This time I was *really* confused as to what patches I was supposed to take,
+from whom and in what order, so I applied a number of them in the order given
+by patchwork.  That worked well enough, because (almost) all of them applied
+for me without conflicts.  That said I would appreciate it if you could look
+into the bleeding-edge branch of my tree and see if there's anything missing
+or something that shouldn't be there (cpufreq-wise).
+
+Thanks,
+Rafael
 
 
-Nicolas
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
