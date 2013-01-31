@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab3AaSiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 13:38:20 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:59551 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab3AaSiS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 13:38:18 -0500
+	id S1756327Ab3AaSlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 13:41:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752877Ab3AaSlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 13:41:49 -0500
+Date: Thu, 31 Jan 2013 13:41:44 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        James Morris <jmorris@namei.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/4] ima: added policy support for 'security.ima' type
+Message-ID: <20130131184144.GC2580@redhat.com>
+References: <1358892454-25045-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1358892454-25045-2-git-send-email-zohar@linux.vnet.ibm.com>
+ <20130130215340.GA4918@redhat.com>
+ <1359585759.816.127.camel@falcor1.watson.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <6099377.PFvsxPeyib@vostro.rjw.lan>
-References: <1451967.YMyGeCCNtu@vostro.rjw.lan>
-	<6099377.PFvsxPeyib@vostro.rjw.lan>
-Date: Thu, 31 Jan 2013 10:38:17 -0800
-X-Google-Sender-Auth: lOlTe8bJmha20GpRTygLdRelQy8
-Message-ID: <CAE9FiQXPaMCSyH72qqu-NvPbPkeUbQq5Dcb_SdKz6SEiSmdR7Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ACPI / scan: Fix acpi_bus_get_device() check in acpi_match_device()
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359585759.816.127.camel@falcor1.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 2:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Since acpi_bus_get_device() returns int and not acpi_status, change
-> acpi_match_device() so that it doesn't apply ACPI_FAILURE() to the
-> return value of acpi_bus_get_device().
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/scan.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> Index: linux-pm/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/scan.c
-> +++ linux-pm/drivers/acpi/scan.c
-> @@ -491,9 +491,9 @@ const struct acpi_device_id *acpi_match_
->                                                const struct device *dev)
->  {
->         struct acpi_device *adev;
-> +       acpi_handle handle = ACPI_HANDLE(dev);
->
-> -       if (!ids || !ACPI_HANDLE(dev)
-> -           || ACPI_FAILURE(acpi_bus_get_device(ACPI_HANDLE(dev), &adev)))
-> +       if (!ids || !handle || acpi_bus_get_device(handle, &adev))
->                 return NULL;
->
->         return __acpi_match_device(adev, ids);
->
+On Wed, Jan 30, 2013 at 05:42:39PM -0500, Mimi Zohar wrote:
+> On Wed, 2013-01-30 at 16:53 -0500, Vivek Goyal wrote:
+> > On Tue, Jan 22, 2013 at 05:07:31PM -0500, Mimi Zohar wrote:
+> > 
+> > [..]
+> > >  /* iint cache flags */
+> > > +#define IMA_ACTION_FLAGS	0xff00
+> > >  #define IMA_DIGSIG		0x0100
+> > > +#define IMA_DIGSIG_REQUIRED	0x0200
+> > 
+> > Hi Mimi,
+> > 
+> > IMA_DIGSIG_REQUIRED state does not really have to be stored in iint I guess.
+> > This is needed only if we go on to appraise and then we want to make
+> > sure digital signatures are present. Once appraisal is done, IMG_DIGSIG
+> > will be set and saved in iint->flags but looks like we don't require
+> > IMA_DIGSIG_REQUIRED to be saved.
+> > 
+> > If yes, will it make sense to not save it in iint. There are still 8
+> > bits left unused. We can mark these 8 bits for temporary flags like
+> > IMA_DIGSIG_REQUIRED. If that works, I can use same space for defining
+> > additional temporary flags like IMA_DIGSIG_SIGNED_ONLY to handle the
+> > case of appraise_type=imasig,signed_only. That flag also does not have
+> > to be persistent in iint.
+> 
+> Interesting idea.  My only concern would be that we're not leaving room
+> for additional hooks (eg. firmware).
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Ok. May be we can employ another 32bit variable and put both of them in
+a structure to expand it, when firmware hooks come along.
+
+Or I can do that right now, if you like it that way.
+
+I need to move out non-persistent flags from iint flags, otherwise it
+can happen that conflicting flag might be set from different hooks.
+
+For example, say hypothetically there are too hooks.
+
+appraise fowner=0 func=mmap appraise_type=imasig
+appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_signed_only
+
+Now this will lead to setting of both IMA_DISGIG_REQUIRED and
+IMA_DIGSIG_SIGNED_ONLY in iint->flags and that does not mean much in
+the context of iint.
+
+So by keeping them temporary, these flags become kind of hook specific
+and then two appraise hook don't conflict with each other.
+
+Thanks
+Vivek
+
