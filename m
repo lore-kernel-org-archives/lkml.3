@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3AaPXh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 10:23:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43413 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754501Ab3AaPXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754578Ab3AaPXc (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 31 Jan 2013 10:23:32 -0500
-Date: Thu, 31 Jan 2013 16:23:24 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Wood <simon@mungewell.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rosegardener@freeode.co.uk
-Subject: Re: [PATCH 1/5] USB: HID: SRW-S1 Gaming Wheel Driver
-In-Reply-To: <1359644830-3274-1-git-send-email-simon@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1301311622430.23853@pobox.suse.cz>
-References: <alpine.LNX.2.00.1301291057170.23853@pobox.suse.cz> <1359644830-3274-1-git-send-email-simon@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:33182 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab3AaPX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 10:23:29 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <510A56BF.3040804@ti.com>
+References: <1359631232-7107-1-git-send-email-gautam.vivek@samsung.com>
+	<510A56BF.3040804@ti.com>
+Date: Thu, 31 Jan 2013 20:53:27 +0530
+Message-ID: <CAFp+6iFkb=U0CJA=3zmQvd5XfMwbROuRJjXoJG7zvvq4_upzNw@mail.gmail.com>
+Subject: Re: [PATCH RFC] usb: dwc3: Get PHY from platform specific dwc3 dt node.
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: kishon <kishon@ti.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        balbi@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jan 2013, Simon Wood wrote:
+Hi Kishon,
 
-> Add support the SRW-S1 by patching HID descriptor to read axis
-> as Generic Desktop X, Y and Z (rather than Usage page being
-> 'Simulation').
-> 
-> Signed-off-by: Simon Wood <simon@mungewell.org>
-> Tested-by: John Murphy <rosegardener@freeode.co.uk>
-> ---
->  drivers/hid/Kconfig                 |    6 ++++
->  drivers/hid/Makefile                |    1 +
->  drivers/hid/hid-core.c              |    1 +
->  drivers/hid/hid-ids.h               |    3 ++
->  drivers/hid/hid-steelseries-srws1.c |   58 +++++++++++++++++++++++++++++++++++
->  5 files changed, 69 insertions(+)
->  create mode 100644 drivers/hid/hid-steelseries-srws1.c
-> 
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index e7d6a13..37df92f 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -596,6 +596,12 @@ config HID_SPEEDLINK
->  	---help---
->  	Support for Speedlink Vicious and Divine Cezanne mouse.
->  
-> +config HID_STEELSERIES_SRWS1
-> +	tristate "Steelseries SRW-S1 steering wheel support"
-> +	depends on USB_HID
-> +	---help---
-> +	Support for Steelseries SRW-S1 steering wheel
-> +
->  config HID_SUNPLUS
->  	tristate "Sunplus wireless desktop"
->  	depends on USB_HID
-> diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-> index b622157..bbebe0a 100644
-> --- a/drivers/hid/Makefile
-> +++ b/drivers/hid/Makefile
-> @@ -101,6 +101,7 @@ obj-$(CONFIG_HID_SAMSUNG)	+= hid-samsung.o
->  obj-$(CONFIG_HID_SMARTJOYPLUS)	+= hid-sjoy.o
->  obj-$(CONFIG_HID_SONY)		+= hid-sony.o
->  obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
-> +obj-$(CONFIG_HID_STEELSERIES_SRWS1)    	+= hid-steelseries-srws1.o
 
-Simon,
+On Thu, Jan 31, 2013 at 5:04 PM, kishon <kishon@ti.com> wrote:
+> Hi,
+>
 
-thanks for respin of the patchset.
+Thanks for your quick help.
 
-I thought we converged to hid-steelseries name in the end originally?
+>
+> On Thursday 31 January 2013 04:50 PM, Vivek Gautam wrote:
+>>
+>> With device tree support in place for dwc3-core layer,
+>> it gets PHY from "synopsis-dwc3" node.
+>> Some controllers may not have separate memory maps and interrupts
+>> for dwc3 core and platform glue layers. In such case only glue
+>> layer's node will exist.
+>
+>
+> Not really. As long as you have dwc3 core as a separate device, you can add
+> a node for it.
+> Just that the glue should create a device for dwc3 core using
+> of_platform_populate.(You can have a look at drivers/usb/dwc3/dwc3-omap.c in
+> usb-next)
+>
 
-If you agree, I'll change it and apply.
+Right, we should be doing this way.
+
+>> Moreover, SoCs having multiple dwc3 controllers will have multiple
+>> PHYs, which eventually be added using usb_add_phy_dev(), and not
+>> using usb_add_phy(). So each dwc3 controller won't be able to
+>> get PHYs by simply calling devm_usb_get_phy() also.
+>
+> No. We have added usb_get_phy_dev() for that purpose in the case of non-dt.
+> I think, instead you can have a patch to use devm_usb_get_phy_dev() here and
+> in exynos platform specific code use usb_bind_phy() to bind the phy and
+> controller till you change it to dt.
+>
+
+We have dt support for dwc3-exynos, in such case we should go ahead with
+of_platform_populate(), right ?
+But if when i use of_platform_populate() i will not be able to set
+dma_mask to dwc3->dev. :-(
+And setting it in dwc3_probe() won't be good idea, isn't it ?
+
+>> In such cases, dwc3 should expect PHYs from its parent's node.
+>
+> NAK.
+>
+> Thanks
+> Kishon
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 -- 
-Jiri Kosina
-SUSE Labs
+Thanks & Regards
+Vivek
