@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab3AaAb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:31:27 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:43554 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab3AaAbZ (ORCPT
+	id S1756544Ab3AaAco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:32:44 -0500
+Received: from [216.32.181.184] ([216.32.181.184]:19661 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1755313Ab3AaAck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:31:25 -0500
+	Wed, 30 Jan 2013 19:32:40 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI1432I1447Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 31 Jan 2013 08:31:20 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Remove unused variables
+Message-ID: <20130131003118.GC2765@S2101-09.ap.freescale.net>
+References: <1359576681-14797-1-git-send-email-thierry.reding@avionic-design.de>
 MIME-Version: 1.0
-In-Reply-To: <CANN689HUyc4WyM5irQ6ru+80tf=Fk53QH3ynNJFSTg2ig3dk9A@mail.gmail.com>
-References: <1357145418.5429.17.camel@mesosphere.localdomain>
-	<CANN689HqKWf2SdE+HHQum9ukpwj6HbQoh66fZciWZuQVaJaUxQ@mail.gmail.com>
-	<1357232977.1886.17.camel@mesosphere.localdomain>
-	<20130104115748.GA8830@google.com>
-	<1357368032.1927.5.camel@mesosphere.localdomain>
-	<CANN689HUyc4WyM5irQ6ru+80tf=Fk53QH3ynNJFSTg2ig3dk9A@mail.gmail.com>
-Date: Wed, 30 Jan 2013 16:31:23 -0800
-Message-ID: <CANN689G7KgUFQLNnukfHL5JSW-Zu=WuzVbyhYBJUxEsUUyDHMQ@mail.gmail.com>
-Subject: Re: mmap() scalability in the presence of the MAP_POPULATE flag
-From: Michel Lespinasse <walken@google.com>
-To: Roman Dubtsov <dubtsov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1359576681-14797-1-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roman,
+On Wed, Jan 30, 2013 at 09:11:21PM +0100, Thierry Reding wrote:
+> Commit 3f175a6 (mmc: sdhci-esdhc-imx: remove ESDHC_CD_GPIO handling from
+> IO accessory) removed all the code that was using these variables, so it
+> is safe to drop them.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-On Fri, Jan 4, 2013 at 11:43 PM, Michel Lespinasse <walken@google.com> wrote:
-> On Fri, Jan 4, 2013 at 10:40 PM, Roman Dubtsov <dubtsov@gmail.com> wrote:
->> - POPULATE_VIA_LOOP -- makes the test populate memory using a loop
->> - POPULATE_VIA_MMAP -- makes the test populate memory via MAP_POPULATE
->>
-> Heh, very interesting. As it turns out, the problem gets MUCH worse as
-> the number of threads increase.
->
-> In the POPULATE_VIA_MMAP, follow_page() is called at 4KB increment
-> addresses, and it takes the mm->page_table_lock 511 times out of 512
-> (that is, every time it falls within a huge page that's just been
-> populated). So all OMP_NUM_THREADS threads are constantly bouncing
-> over the mm->page_table_lock, and getting terrible performance as a
-> result.
+Thanks for the fixing, Thierry.  But Chris has already queued a fix [1]
+from Fabio.
 
-FYI, the patchset I just sent out ("fixes for large mm_populate() and
-munlock() operations") takes care of this and brings POPULATE_VIA_MMAP
-performance up where it should be.
+Shawn
 
-Thanks a lot for the report, as I hadn't noticed this issue before :)
+[1] http://thread.gmane.org/gmane.linux.kernel.mmc/18724
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+> ---
+>  drivers/mmc/host/sdhci-esdhc-imx.c | 5 -----
+>  1 file changed, 5 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
+> index ae68bc9..509be3a 100644
+> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
+> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+> @@ -144,10 +144,6 @@ static inline void esdhc_clrset_le(struct sdhci_host *host, u32 mask, u32 val, i
+>  
+>  static u32 esdhc_readl_le(struct sdhci_host *host, int reg)
+>  {
+> -	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> -	struct pltfm_imx_data *imx_data = pltfm_host->priv;
+> -	struct esdhc_platform_data *boarddata = &imx_data->boarddata;
+> -
+>  	u32 val = readl(host->ioaddr + reg);
+>  
+>  	if (unlikely(reg == SDHCI_CAPABILITIES)) {
+> @@ -178,7 +174,6 @@ static void esdhc_writel_le(struct sdhci_host *host, u32 val, int reg)
+>  {
+>  	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+>  	struct pltfm_imx_data *imx_data = pltfm_host->priv;
+> -	struct esdhc_platform_data *boarddata = &imx_data->boarddata;
+>  	u32 data;
+>  
+>  	if (unlikely(reg == SDHCI_INT_ENABLE || reg == SDHCI_SIGNAL_ENABLE)) {
+> -- 
+> 1.8.1.2
+> 
+
