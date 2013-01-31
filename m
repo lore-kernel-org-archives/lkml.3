@@ -1,139 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3AaRaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:30:00 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60086
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754805Ab3AaRZj (ORCPT
+	id S1756258Ab3AaRb1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:31:27 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:58072 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755786Ab3AaR37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 12:25:39 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranina@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/25] perf gtk/browser: Add support for event group view
-Date: Thu, 31 Jan 2013 14:25:17 -0300
-Message-Id: <1359653128-10433-15-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
-References: <1359653128-10433-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 31 Jan 2013 12:29:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
+References: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
+Date: Thu, 31 Jan 2013 22:59:58 +0530
+Message-ID: <CAKohpomqerpAuXwbObKoKg44zO2QwL_ckSV5fEkTBtpzdpsDBg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: governors: Get rid of dbs_data->enable field
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, fabio.baltieri@linaro.org
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 31 January 2013 22:58, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> CPUFREQ_GOV_START/STOP are called only once for all policy->cpus and hence we
+> don't need to adapt cpufreq_governor_dbs() routine for multiple calls.
+>
+> So, this patch removes dbs_data->enable field entirely. And rearrange code a
+> bit.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> Hi Fabio,
+>
+> I have fixed all the pending issues, but haven't checked these patches. Can you
+> please add your tested-by (obviously after testing them) ?
 
-Show group members's overhead also when showing leader's if event
-group is enabled.
+BTW, these are rebased over your patches and git log shows:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranina@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-13-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/gtk/hists.c | 56 +++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 52 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 38be79d..c87a98c 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -8,8 +8,7 @@
- 
- #define MAX_COLUMNS			32
- 
--static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
--					    double percent)
-+static int __percent_color_snprintf(char *buf, size_t size, double percent)
- {
- 	int ret = 0;
- 	const char *markup;
-@@ -18,7 +17,7 @@ static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
- 	if (markup)
- 		ret += scnprintf(buf, size, markup);
- 
--	ret += scnprintf(buf + ret, size - ret, "%6.2f%%", percent);
-+	ret += scnprintf(buf + ret, size - ret, " %6.2f%%", percent);
- 
- 	if (markup)
- 		ret += scnprintf(buf + ret, size - ret, "</span>");
-@@ -37,7 +36,55 @@ static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	if (hists->stats.total_period)
- 		percent = 100.0 * get_field(he) / hists->stats.total_period;
- 
--	ret = perf_gtk__percent_color_snprintf(hpp->buf, hpp->size, percent);
-+	ret = __percent_color_snprintf(hpp->buf, hpp->size, percent);
-+
-+	if (symbol_conf.event_group) {
-+		int prev_idx, idx_delta;
-+		struct perf_evsel *evsel = hists_to_evsel(hists);
-+		struct hist_entry *pair;
-+		int nr_members = evsel->nr_members;
-+
-+		if (nr_members <= 1)
-+			return ret;
-+
-+		prev_idx = perf_evsel__group_idx(evsel);
-+
-+		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
-+			u64 period = get_field(pair);
-+			u64 total = pair->hists->stats.total_period;
-+
-+			evsel = hists_to_evsel(pair->hists);
-+			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
-+
-+			while (idx_delta--) {
-+				/*
-+				 * zero-fill group members in the middle which
-+				 * have no sample
-+				 */
-+				ret += __percent_color_snprintf(hpp->buf + ret,
-+								hpp->size - ret,
-+								0.0);
-+			}
-+
-+			percent = 100.0 * period / total;
-+			ret += __percent_color_snprintf(hpp->buf + ret,
-+							hpp->size - ret,
-+							percent);
-+
-+			prev_idx = perf_evsel__group_idx(evsel);
-+		}
-+
-+		idx_delta = nr_members - prev_idx - 1;
-+
-+		while (idx_delta--) {
-+			/*
-+			 * zero-fill group members at last which have no sample
-+			 */
-+			ret += __percent_color_snprintf(hpp->buf + ret,
-+							hpp->size - ret,
-+							0.0);
-+		}
-+	}
- 	return ret;
- }
- 
-@@ -96,6 +143,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 	struct perf_hpp hpp = {
- 		.buf		= s,
- 		.size		= sizeof(s),
-+		.ptr		= hists_to_evsel(hists),
- 	};
- 
- 	nr_cols = 0;
--- 
-1.8.1.1.361.gec3ae6e
-
+af8a2e1 cpufreq: governors: Remove code redundancy between governors
+09a94ff cpufreq: governors: Get rid of dbs_data->enable field
+faa8107 cpufreq: governors: implement generic policy_is_shared
+88fe0a9 cpufreq: governors: clean timer init and exit code
+13c18e8 cpufreq: governors: fix misuse of cdbs.cpu
