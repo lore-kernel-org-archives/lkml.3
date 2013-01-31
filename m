@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab3AaJdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 04:33:10 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:60018 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408Ab3AaJdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 04:33:06 -0500
+	id S1753695Ab3AaJdS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 04:33:18 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49167 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3AaJdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 04:33:14 -0500
 From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
@@ -13,8 +14,8 @@ To: <linux-arm-kernel@lists.infradead.org>,
 CC: <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <khilman@deeprootsystems.com>,
         <manishv.b@ti.com>
 Subject: [PATCH RFC] davinci: poll for sleep completion in resume routine.
-Date: Thu, 31 Jan 2013 14:56:33 +0530
-Message-ID: <1359624393-5898-1-git-send-email-manishv.b@ti.com>
+Date: Thu, 31 Jan 2013 14:53:41 +0530
+Message-ID: <1359624221-5378-1-git-send-email-manishv.b@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
