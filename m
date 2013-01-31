@@ -1,210 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab3AaQG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 11:06:56 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:15512 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750921Ab3AaQGy (ORCPT
+	id S1755219Ab3AaQH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 11:07:58 -0500
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:41098 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750921Ab3AaQHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 11:06:54 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dI9371Ic85fh542I1432I1418Izz1ee6h1de0h1202h1e76h1d1ah1d2ahz8dhz8275bhz2dh668h839hd25hf0ah1288h12a5h12bdh137ah1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h34h1155h)
-X-WSS-ID: 0MHHZDP-01-6B0-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Shuah Khan <shuahkhan@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: Linux 3.8-rc4
-Thread-Topic: Linux 3.8-rc4
-Thread-Index: AQHN9cxhktnF6ESNpkuAIBoIzsaQJZhQNCEAgACn4tCABRQtgP//oN5AgAB+F4D//6LmYIAAax0AgABUMQCAAH8jgIAAu/gAgAhrfoCAAD7IYIAAyyMA//+iZkAAEN8ZAAAMc2Aw//+/k4CAADBXAP//sg3QgAEm9ICAAF/qMP///jmAgABY5vCAAOKXAIAAZEpw
-Date: Thu, 31 Jan 2013 16:05:23 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02DF0AF4E@sausexdag04.amd.com>
-References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
-	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
-	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
-	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
-	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
-	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
-	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
-	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
-	<CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
-	<CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
-	<CAKocOOPsvh=jOXLahe6ukjpyjOOqt9tRdwELxv8i0_Vi1xqQkA@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A37D@sausexdag04.amd.com>
-	<CAKocOOORwoUAStDmFPhW1--WhAJaEzEmG-=tZ1sgkWKsquq=rQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A3B7@sausexdag04.amd.com>
-	<CAKocOOMxbZXjL_qxQQD+-Z7ocJ1tR7UDEDr+2uSSfjhihik6VA@mail.gmail.com>
-	<CAKocOOOHcaYoUQ6Z1yC9T0o9=qaMas3mVzrD8iEnycLJd3nxVQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0ABD0@sausexdag04.amd.com>
-	<CAKocOOMSRZysoKh9Lkgj-3_WsRq9Q6Oo0wJneUStjD+g+WgzAQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0AC95@sausexdag04.amd.com>
-	<CAKocOOPoZ2HqxSz=PB68wpZxd6z8Byv1Yfj3nArt1z+3ViuNNQ@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DF0AF15@sausexdag04.amd.com>
- <CAKocOOMivziOF3ntKiwgH8Pc-d8h5sdykeJS7mKQ6vPe6Y=guA@mail.gmail.com>
-In-Reply-To: <CAKocOOMivziOF3ntKiwgH8Pc-d8h5sdykeJS7mKQ6vPe6Y=guA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.224.15.178]
-Content-Type: multipart/mixed;
-	boundary="_002_A3397C8B8B789E45844E7EC5DEAD89D02DF0AF4Esausexdag04amdc_"
-MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+	Thu, 31 Jan 2013 11:07:54 -0500
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jan 2013 11:07:54 EST
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: poeschel@lemonage.de, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rob@landley.net, linus.walleij@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org
+Subject: [PATCH RFC 1/1] gpio: mcp23s08: convert driver to DT
+Date: Thu, 31 Jan 2013 16:58:23 +0100
+Message-Id: <1359647903-15801-2-git-send-email-larsi@wh2.tu-dresden.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359647903-15801-1-git-send-email-larsi@wh2.tu-dresden.de>
+References: <1359647903-15801-1-git-send-email-larsi@wh2.tu-dresden.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_A3397C8B8B789E45844E7EC5DEAD89D02DF0AF4Esausexdag04amdc_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+From: Lars Poeschel <poeschel@lemonage.de>
 
-> -----Original Message-----
-> From: Shuah Khan [mailto:shuahkhan@gmail.com]
-> Sent: Thursday, January 31, 2013 11:01 AM
-> To: Deucher, Alexander
-> Cc: Linus Torvalds; Linux Kernel Mailing List
-> Subject: Re: Linux 3.8-rc4
->=20
-> On Thu, Jan 31, 2013 at 7:56 AM, Deucher, Alexander
-> <Alexander.Deucher@amd.com> wrote:
-> >> -----Original Message-----
-> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
-> >> Sent: Wednesday, January 30, 2013 4:12 PM
-> >> To: Deucher, Alexander
-> >> Cc: Linus Torvalds; Linux Kernel Mailing List
-> >> Subject: Re: Linux 3.8-rc4
-> >>
-> >> On Wed, Jan 30, 2013 at 8:53 AM, Deucher, Alexander
-> >> <Alexander.Deucher@amd.com> wrote:
-> >> >> -----Original Message-----
-> >> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
-> >> >> Sent: Wednesday, January 30, 2013 10:35 AM
-> >> >> To: Deucher, Alexander
-> >> >> Cc: Linus Torvalds; Linux Kernel Mailing List
-> >> >> Subject: Re: Linux 3.8-rc4
-> >> >>
-> >> >> On Wed, Jan 30, 2013 at 6:31 AM, Deucher, Alexander
-> >> >> <Alexander.Deucher@amd.com> wrote:
-> >> >>
-> >> >> >>
-> >> >> >> ok. I did more debugging in rv515_mc_stop() and here is what's
-> >> >> >> happening. It has two display controllers and one of them is
-> enabled
-> >> >> >> and the other is in disabled state when AVIVO_D1CRTC_CONTROL
-> is
-> >> >> >> checked. The current code doesn't blank the disabled crtc.
-> However, it
-> >> >> >> needs to be blanked to avoid DMAR faults it appears. I think tha=
-t is
-> >> >> >> what the original code prior to
-> >> >> >> 6253e4c75d96006c06b9ac8f417eba873de2497b commit was doing:
-> >> >> >>
-> >> >> >> -       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 1);
-> >> >> >> -       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 1);
-> >> >> >> -       WREG32(R_006080_D1CRTC_CONTROL, 0);
-> >> >> >> -       WREG32(R_006880_D2CRTC_CONTROL, 0);
-> >> >> >> -       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 0);
-> >> >> >> -       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
-> >> >> >> -       WREG32(R_000330_D1VGA_CONTROL, 0);
-> >> >> >> -       WREG32(R_000338_D2VGA_CONTROL, 0);
-> >> >> >>
-> >> >> >> Anyways, here is the diff for the change (by no means a patch) I
-> made
-> >> >> >> that fixed the problem:
-> >> >> >
-> >> >> > Unfortunately, that just fixes the problem by causing an addition=
-al
-> delay
-> >> >> since the wait_for_vblank() and get_frame_count() loops will timeou=
-t
-> >> since
-> >> >> the secondary display is disabled.  The previous code disabled the
-> displays
-> >> >> completely while the new code just disables the memory request
-> >> interface
-> >> >> so that the display timing stays on to avoid additional flicker at =
-startup
-> or
-> >> GPU
-> >> >> reset.  For some reason on your system there seems to be a delay in
-> >> getting
-> >> >> the memory request interface to stop.
-> >> >> >
-> >> >> > Alex
-> >> >>
-> >> >> Right. That makes sense and yes the annoying flicker went away. :) =
-Can
-> >> >> you think of something that can address systems that would need
-> more
-> >> >> time to get the memory request interface to stop such as mine?
-> >> >
-> >> > Does adding an additional radeon_mc_wait_for_idle(rdev) call at the
-> end
-> >> of rv515_mc_stop() help?  Can you find out what the minimum delay
-> >> required for your system is?
-> >> >
-> >> > Alex
-> >>
-> >> Adding radeon_mc_wait_for_idle(rdev) call at the end of
-> >> rv515_mc_stop() - didn't help.
-> >>
-> >> I tried with adding udelay() with delay values of 1,10, and 50, and
-> >> 100 at the end of rv515_mc_stop(). 100 is the minimum that fixed the
-> >> DMAR faults.
-> >
-> > I guess we can just add the delay.  I've tried all the ways I know of t=
-o get
-> proper feedback from the hardware.
-> >
-> > Alex
-> >
->=20
-> Do you want me to send a patch with delay()? Would you like to see the
-> delay specific to this chipset which is RV620? That said if you think
-> of other ideas to try instead of delay, I can continue the debug and
-> testing effort.
+This converts the mcp23s08 driver to be able to be used with device
+tree.
+There are two properties taken, that correspond to the members of
+the struct mcp23s08_platform_data, that is the base member and the
+chip array member.
 
-I'm planning to merge the attached patch.  I'll let you know if I found out=
- any other things to try.
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+---
+ .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |   27 ++++++
+ drivers/gpio/gpio-mcp23s08.c                       |   93 +++++++++++++++++++-
+ include/linux/spi/mcp23s08.h                       |    1 +
+ 3 files changed, 117 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
 
-Alex
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+new file mode 100644
+index 0000000..572bc87
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+@@ -0,0 +1,27 @@
++Microchip MCP2308/MCP23S08/MCP23017/MCP23S17 driver for
++8-/16-bit I/O expander with serial interface (I2C/SPI)
++
++Required properties:
++- compatible : Should be "mcp,mcp23s08-gpio", "mcp,mcp23s17-gpio",
++			"mcp,mcp23008-gpio" or "mcp,mcp23017-gpio"
++- base : The first gpio number that should be assigned by this chip.
++
++Optional properties:
++- chips : This is a table with 2 columns and up to 8 entries. The first column
++	is a is_present flag, that makes only sense for SPI chips. Multiple
++	chips can share the same chipselect. This flag can be 0 or 1 depending
++	if there is a chip at this address or not.
++	The second column is written to the GPPU register, selecting a 100k
++	pullup resistor or not. Setting a 1 is activating the pullup.
++	For I2C chips only the first line in this table is used. Further chips
++	are registered at different addresses at the I2C bus.
++
++Example:
++&mcp0 {
++	compatible = "mcp,mcp23017";
++	base = <128>;
++	chips = <
++	/* is_present  pullups */
++		1	0x07	/* chip addr 0 */
++	>;
++};
+diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+index 3cea0ea..7f90d11 100644
+--- a/drivers/gpio/gpio-mcp23s08.c
++++ b/drivers/gpio/gpio-mcp23s08.c
+@@ -12,6 +12,8 @@
+ #include <linux/spi/mcp23s08.h>
+ #include <linux/slab.h>
+ #include <asm/byteorder.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ 
+ /**
+  * MCP types supported by driver
+@@ -473,16 +475,89 @@ fail:
+ 
+ /*----------------------------------------------------------------------*/
+ 
++#ifdef CONFIG_OF
++static struct of_device_id mcp23s08_of_match[] = {
++#ifdef CONFIG_SPI_MASTER
++	{
++		.compatible = "mcp,mcp23s08-gpio",
++	},
++	{
++		.compatible = "mcp,mcp23s17-gpio",
++	},
++#endif
++#if IS_ENABLED(CONFIG_I2C)
++	{
++		.compatible = "mcp,mcp23008-gpio",
++	},
++	{
++		.compatible = "mcp,mcp23017-gpio",
++	},
++#endif
++	{ },
++};
++MODULE_DEVICE_TABLE(of, mcp23s08_of_match);
++
++static struct mcp23s08_platform_data *
++		of_get_mcp23s08_pdata(struct device *dev)
++{
++	struct mcp23s08_platform_data *pdata;
++	struct device_node *np = dev->of_node;
++	u32 gpio_base;
++	u32 chips[sizeof(pdata->chip)];
++	int ret, i, j;
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	ret = of_property_read_u32(np, "base", &gpio_base);
++	if (!ret)
++		pdata->base = gpio_base;
++
++	for (i = ARRAY_SIZE(pdata->chip) * MCP23S08_CHIP_INFO_MEMBERS;
++				i > 0; i -= MCP23S08_CHIP_INFO_MEMBERS) {
++		ret = of_property_read_u32_array(np, "chips", chips, i);
++		if (ret == -EOVERFLOW)
++			continue;
++		break;
++	}
++	if (!ret) {
++		for (j = 0; j < i / MCP23S08_CHIP_INFO_MEMBERS ; j++) {
++			pdata->chip[j].is_present =
++				chips[j * MCP23S08_CHIP_INFO_MEMBERS];
++			pdata->chip[j].pullups =
++				chips[j * MCP23S08_CHIP_INFO_MEMBERS + 1];
++		}
++	}
++
++	return pdata;
++}
++#else
++static struct mcp23s08_platform_data *
++		of_get_mcp23s08_pdata(struct i2c_client *client, int *chip_id)
++{
++	return NULL;
++}
++#endif /* CONFIG_OF */
++
+ #if IS_ENABLED(CONFIG_I2C)
+ 
+ static int mcp230xx_probe(struct i2c_client *client,
+ 				    const struct i2c_device_id *id)
+ {
+-	struct mcp23s08_platform_data *pdata;
++	struct mcp23s08_platform_data *pdata = NULL;
+ 	struct mcp23s08 *mcp;
+ 	int status;
++	const struct of_device_id *match;
++
++	match = of_match_device(of_match_ptr(mcp23s08_of_match), &client->dev);
++	if (match)
++		pdata = of_get_mcp23s08_pdata(&client->dev);
++
++	/* if there was no pdata in DT, take it the legacy way */
++	if (!pdata)
++		pdata = client->dev.platform_data;
+ 
+-	pdata = client->dev.platform_data;
+ 	if (!pdata || !gpio_is_valid(pdata->base)) {
+ 		dev_dbg(&client->dev, "invalid or missing platform data\n");
+ 		return -EINVAL;
+@@ -531,6 +606,7 @@ static struct i2c_driver mcp230xx_driver = {
+ 	.driver = {
+ 		.name	= "mcp230xx",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = mcp23s08_of_match,
+ 	},
+ 	.probe		= mcp230xx_probe,
+ 	.remove		= mcp230xx_remove,
+@@ -560,16 +636,24 @@ static void mcp23s08_i2c_exit(void) { }
+ 
+ static int mcp23s08_probe(struct spi_device *spi)
+ {
+-	struct mcp23s08_platform_data	*pdata;
++	struct mcp23s08_platform_data	*pdata = NULL;
+ 	unsigned			addr;
+ 	unsigned			chips = 0;
+ 	struct mcp23s08_driver_data	*data;
+ 	int				status, type;
+ 	unsigned			base;
++	const struct			of_device_id *match;
+ 
+ 	type = spi_get_device_id(spi)->driver_data;
+ 
+-	pdata = spi->dev.platform_data;
++	match = of_match_device(of_match_ptr(mcp23s08_of_match), &spi->dev);
++	if (match)
++		pdata = of_get_mcp23s08_pdata(&spi->dev);
++
++	/* if there was no pdata in DT, take it the legacy way */
++	if (!pdata)
++		pdata = spi->dev.platform_data;
++
+ 	if (!pdata || !gpio_is_valid(pdata->base)) {
+ 		dev_dbg(&spi->dev, "invalid or missing platform data\n");
+ 		return -EINVAL;
+@@ -668,6 +752,7 @@ static struct spi_driver mcp23s08_driver = {
+ 	.driver = {
+ 		.name	= "mcp23s08",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = mcp23s08_of_match,
+ 	},
+ };
+ 
+diff --git a/include/linux/spi/mcp23s08.h b/include/linux/spi/mcp23s08.h
+index 2d676d5..3969e12 100644
+--- a/include/linux/spi/mcp23s08.h
++++ b/include/linux/spi/mcp23s08.h
+@@ -1,3 +1,4 @@
++#define MCP23S08_CHIP_INFO_MEMBERS	2
+ 
+ /* FIXME driver should be able to handle IRQs...  */
+ 
+-- 
+1.7.10.4
 
-
---_002_A3397C8B8B789E45844E7EC5DEAD89D02DF0AF4Esausexdag04amdc_
-Content-Type: application/octet-stream;
-	name="0001-drm-radeon-r5xx-r7xx-wait-for-the-MC-to-settle-after.patch"
-Content-Description: 0001-drm-radeon-r5xx-r7xx-wait-for-the-MC-to-settle-after.patch
-Content-Disposition: attachment;
-	filename="0001-drm-radeon-r5xx-r7xx-wait-for-the-MC-to-settle-after.patch";
-	size=1010; creation-date="Thu, 31 Jan 2013 16:05:00 GMT";
-	modification-date="Thu, 31 Jan 2013 16:04:19 GMT"
-Content-Transfer-Encoding: base64
-
-RnJvbSAwMWQwZWM0MWNkZDMwZDljZTA4ZjIyOGY5NTBhNWU5ZGI4Y2YzODZmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
-b20+CkRhdGU6IFRodSwgMzEgSmFuIDIwMTMgMDk6MDE6NTkgLTA1MDAKU3ViamVjdDogW1BBVENI
-XSBkcm0vcmFkZW9uL3I1eHgtcjd4eDogd2FpdCBmb3IgdGhlIE1DIHRvIHNldHRsZSBhZnRlciBN
-QwogYmxhY2tvdXQKClNvbWUgY2hpcHMgc2VlbSB0byBuZWVkIGEgbGl0dGxlIGRlbGF5IGFmdGVy
-IGJsYWNraW5nIG91dAp0aGUgTUMgYmVmb3JlIHRoZSByZXF1ZXN0cyBhY3R1YWxseSBzdG9wLgoK
-UmVwb3J0ZWQtYnk6IFNodWFoIEtoYW4gPHNodWFoa2hhbkBnbWFpbC5jb20+ClNpZ25lZC1vZmYt
-Ynk6IEFsZXggRGV1Y2hlciA8YWxleGFuZGVyLmRldWNoZXJAYW1kLmNvbT4KLS0tCiBkcml2ZXJz
-L2dwdS9kcm0vcmFkZW9uL3J2NTE1LmMgfCAgICAyICsrCiAxIGZpbGVzIGNoYW5nZWQsIDIgaW5z
-ZXJ0aW9ucygrKSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0v
-cmFkZW9uL3J2NTE1LmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3J2NTE1LmMKaW5kZXggMmJi
-NmQwZS4uNDM1ZWQzNSAxMDA2NDQKLS0tIGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9ydjUxNS5j
-CisrKyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcnY1MTUuYwpAQCAtMzM2LDYgKzMzNiw4IEBA
-IHZvaWQgcnY1MTVfbWNfc3RvcChzdHJ1Y3QgcmFkZW9uX2RldmljZSAqcmRldiwgc3RydWN0IHJ2
-NTE1X21jX3NhdmUgKnNhdmUpCiAJCQkJV1JFRzMyKFI2MDBfQ0lURl9DTlRMLCBibGFja291dCk7
-CiAJCX0KIAl9CisJLyogd2FpdCBmb3IgdGhlIE1DIHRvIHNldHRsZSAqLworCXVkZWxheSgxMDAp
-OwogfQogCiB2b2lkIHJ2NTE1X21jX3Jlc3VtZShzdHJ1Y3QgcmFkZW9uX2RldmljZSAqcmRldiwg
-c3RydWN0IHJ2NTE1X21jX3NhdmUgKnNhdmUpCi0tIAoxLjcuNy41Cgo=
-
---_002_A3397C8B8B789E45844E7EC5DEAD89D02DF0AF4Esausexdag04amdc_--
