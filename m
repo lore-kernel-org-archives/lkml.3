@@ -1,79 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab3AaEIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 23:08:09 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:54359 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753470Ab3AaEIG (ORCPT
+	id S1756999Ab3AaELz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 23:11:55 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50692 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755558Ab3AaELu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 23:08:06 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgAFAFLsCVG2/3vK/2dsb2JhbAArGoVfuTwWc4IeAQEEATo0CwULCAMNCwklDwUoIROICwUNLME8kQwDlgyGEQOKOIML
-Date: Thu, 31 Jan 2013 15:07:48 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: CAI Qian <caiqian@redhat.com>
-Cc: xfs@oss.sgi.com, linux-xfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.8-rc5 xfs corruption
-Message-ID: <20130131040748.GH32297@disturbed.disaster>
-Mail-Followup-To: CAI Qian <caiqian@redhat.com>, xfs@oss.sgi.com,
-	linux-xfs@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <614607656.11545086.1359601991846.JavaMail.root@redhat.com>
- <473604401.11548931.1359602207833.JavaMail.root@redhat.com>
+	Wed, 30 Jan 2013 23:11:50 -0500
+From: "Patil, Rachna" <rachna@ti.com>
+To: Koen Kooi <koen@dominion.thruhere.net>
+CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Rob Herring <rob.herring@calxeda.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Tony Lindgren <tony@atomide.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH v4 5/8] MFD: ti_am335x_tscadc: Add DT support
+Thread-Topic: [PATCH v4 5/8] MFD: ti_am335x_tscadc: Add DT support
+Thread-Index: AQHN+eU4Ait4NoO8mU2XgvHAUfkGNphhXFuAgABfUVA=
+Date: Thu, 31 Jan 2013 04:11:11 +0000
+Message-ID: <4CE347531D4CA947960AF71FF095B9323E9B1EE9@DBDE01.ent.ti.com>
+References: <1358999112-31192-1-git-send-email-rachna@ti.com>
+ <1358999112-31192-6-git-send-email-rachna@ti.com>
+ <A9839AA2-ABCD-4642-9766-D56824AC27AD@dominion.thruhere.net>
+In-Reply-To: <A9839AA2-ABCD-4642-9766-D56824AC27AD@dominion.thruhere.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <473604401.11548931.1359602207833.JavaMail.root@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 10:16:47PM -0500, CAI Qian wrote:
-> Hello,
+On Wed, Jan 30, 2013 at 16:10:09, Koen Kooi wrote:
 > 
-> (Sorry to post to xfs mailing lists but unsure about which one is the
-> best for this.)
+> Op 24 jan. 2013, om 04:45 heeft "Patil, Rachna" <rachna@ti.com> het volgende geschreven:
+> 
+> > From: "Patil, Rachna" <rachna@ti.com>
+> > 
+> > Make changes to add DT support in the MFD core driver.
+> > 
+> > Signed-off-by: Patil, Rachna <rachna@ti.com>
+> > ---
+> > Changes in v4:
+> > 	Non-standard properties prefixed with vendor name.
+> > 
+> > drivers/mfd/ti_am335x_tscadc.c |   28 +++++++++++++++++++++++-----
+> > 1 file changed, 23 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/mfd/ti_am335x_tscadc.c 
+> > b/drivers/mfd/ti_am335x_tscadc.c index e9f3fb5..87b446b 100644
+> > --- a/drivers/mfd/ti_am335x_tscadc.c
+> > +++ b/drivers/mfd/ti_am335x_tscadc.c
+> > @@ -22,6 +22,8 @@
+> > #include <linux/regmap.h>
+> > #include <linux/mfd/core.h>
+> > #include <linux/pm_runtime.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_device.h>
+> > 
+> > #include <linux/mfd/ti_am335x_tscadc.h> #include 
+> > <linux/input/ti_am335x_tsc.h>
+> > @@ -64,20 +66,31 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+> > 	struct resource		*res;
+> > 	struct clk		*clk;
+> > 	struct mfd_tscadc_board	*pdata = pdev->dev.platform_data;
+> > +	struct device_node	*node = pdev->dev.of_node;
+> > 	struct mfd_cell		*cell;
+> > 	int			err, ctrl;
+> > 	int			clk_value, clock_rate;
+> > -	int			tsc_wires, adc_channels = 0, total_channels;
+> > +	int			tsc_wires = 0, adc_channels = 0, total_channels;
+> > 
+> > -	if (!pdata) {
+> > +	if (!pdata && !pdev->dev.of_node) {
+> > 		dev_err(&pdev->dev, "Could not find platform data\n");
+> > 		return -EINVAL;
+> > 	}
+> > 
+> > -	if (pdata->adc_init)
+> > -		adc_channels = pdata->adc_init->adc_channels;
+> > +	if (pdev->dev.platform_data) {
+> > +		if (pdata->tsc_init)
+> > +			tsc_wires = pdata->tsc_init->wires;
+> > +
+> > +		if (pdata->adc_init)
+> > +			adc_channels = pdata->adc_init->adc_channels;
+> > +	} else {
+> > +		node = of_find_node_by_name(pdev->dev.of_node, "tsc");
+> > +		of_property_read_u32(node, "ti,wires", &tsc_wires);
+> > +
+> > +		node = of_find_node_by_name(pdev->dev.of_node, "adc");
+> > +		of_property_read_u32(node, "ti,adc-channels", &adc_channels);
+> > +	}
+> 
+> Since AM335x is DT only, why is there a platform data codepath and why is it the first branch it tries? And I guess the next question is related to the first: why doesn't it work when used with DT? When I copy over the nodes from the evm.dts to my board I get "tsc tsc: Missing platform data" in dmesg.
 
-Trimmed to just xfs@oss.sgi.com.
+This IP came up 1st on AM335x, but it is not platform dependent. The driver can be used on other platforms where-in DT is not supported.
+According to the maintainers platform data takes precedence over DT. Hence the order.
 
-> I have seen something like this once during testing on a system with a
-> EMC VNX FC/multipath back-end.
+I do not see "Missing platform data" error msg in the latest driver. I am not able to trace from where this got populated.
 
-This is a trace from the verifier code that was added in 3.8-rc1 so
-I doubt it has anything to do with any problem you've seen in the
-past....
+> 
+> What are the chances this driver will work when applied on top of 3.8-rcX? Has it even been tested with that? Has it been tested at all?
 
-Can you tell us what workload you were running and what hardware you
-are using as per:
+This driver has been tested on top of v3.8-rc3 on a AM335x EVM.
 
-http://xfs.org/index.php/XFS_FAQ#Q:_What_information_should_I_include_when_reporting_a_problem.3F
+Regards,
+Rachna
 
-As it is, if you mounted the filesystem after this problem was
-detected, log recovery probably propagated it to disk. I'd suggest
-that you run xfs_repair -n on the device and post the output so we
-can see if any corruption has actaully made it to disk. If no
-corruption made it to disk, it's possible that we've got the
-incorrect verifier attached to the buffer.
-
-> [ 3025.063024] ffff8801a0d50000: 2e 2e 2f 2e 2e 2f 75 73 72 2f 6c 69 62 2f 6d 6f  ../../usr/lib/mo 
-
-The start of a block contains a path and the only
-type of block that can contain this format of metadata is remote
-symlink block. Remote symlink blocks don't have a verifier attached
-to them as there is nothing that can currently be used to verify
-them as correct.
-
-I can't see exactly how this can occur as stale buffers have the
-verifier ops cleared before being returned to the new user, and
-newly allocated xfs_bufs are zeroed before being initialised. I
-really need to know what you are doing to be able to get to the
-bottom of it....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
