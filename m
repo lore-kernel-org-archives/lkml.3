@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab3AaMPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:15:24 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56120 "EHLO
+	id S1753640Ab3AaMPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:15:52 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56109 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab3AaMLj (ORCPT
+	with ESMTP id S1753344Ab3AaMLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:11:39 -0500
-Message-Id: <20130131120743.656655375@linutronix.de>
+	Thu, 31 Jan 2013 07:11:38 -0500
+Message-Id: <20130131120743.596323286@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 31 Jan 2013 12:11:38 -0000
+Date: Thu, 31 Jan 2013 12:11:37 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -19,10 +19,11 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
         Richard Weinberger <rw@linutronix.de>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 32/40] rcu: Convert rcutree to hotplug state machine
+Subject: [patch 31/40] sched: Convert fair nohz balancer to hotplug state
+ machine
 References: <20130131120348.372374706@linutronix.de>
 Content-Disposition: inline;
- filename=cpuhtoplug-convert-rcutree-to-state-machine.patch
+ filename=cpuhotplug-sched-convert-fair-nohz-balancer.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -30,224 +31,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do we really need so many states here ?
+Straight forward conversion which leaves the question whether this
+couldn't be combined with already existing infrastructure in the
+scheduler instead of having an extra state.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/cpuhotplug.h |   18 ++++++++
- kernel/cpu.c               |   12 +++++
- kernel/rcutree.c           |   95 ++++++++++++++++++++-------------------------
- 3 files changed, 73 insertions(+), 52 deletions(-)
+ include/linux/cpuhotplug.h |    6 ++++++
+ kernel/cpu.c               |    4 ++++
+ kernel/sched/fair.c        |   16 ++--------------
+ 3 files changed, 12 insertions(+), 14 deletions(-)
 
 Index: linux-2.6/include/linux/cpuhotplug.h
 ===================================================================
 --- linux-2.6.orig/include/linux/cpuhotplug.h
 +++ linux-2.6/include/linux/cpuhotplug.h
-@@ -12,6 +12,7 @@ enum cpuhp_states {
- 	CPUHP_PERF_PREPARE,
- 	CPUHP_SCHED_MIGRATE_PREP,
- 	CPUHP_WORKQUEUE_PREP,
-+	CPUHP_RCUTREE_PREPARE,
- 	CPUHP_NOTIFY_PREPARE,
- 	CPUHP_NOTIFY_DEAD,
- 	CPUHP_CPUFREQ_DEAD,
-@@ -27,6 +28,7 @@ enum cpuhp_states {
- 	CPUHP_AP_ARM64_TIMER_STARTING,
- 	CPUHP_AP_KVM_STARTING,
+@@ -29,6 +29,7 @@ enum cpuhp_states {
  	CPUHP_AP_NOTIFY_DYING,
-+	CPUHP_AP_RCUTREE_DYING,
  	CPUHP_AP_X86_TBOOT_DYING,
  	CPUHP_AP_S390_VTIME_DYING,
- 	CPUHP_AP_SCHED_NOHZ_DYING,
-@@ -39,6 +41,7 @@ enum cpuhp_states {
- 	CPUHP_SCHED_MIGRATE_ONLINE,
- 	CPUHP_WORKQUEUE_ONLINE,
- 	CPUHP_CPUFREQ_ONLINE,
-+	CPUHP_RCUTREE_ONLINE,
- 	CPUHP_NOTIFY_ONLINE,
- 	CPUHP_NOTIFY_DOWN_PREPARE,
- 	CPUHP_PERF_X86_UNCORE_ONLINE,
-@@ -147,4 +150,19 @@ int workqueue_prepare_cpu(unsigned int c
- int workqueue_online_cpu(unsigned int cpu);
- int workqueue_offline_cpu(unsigned int cpu);
- 
-+/* RCUtree hotplug events */
-+#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
-+int rcutree_prepare_cpu(unsigned int cpu);
-+int rcutree_online_cpu(unsigned int cpu);
-+int rcutree_offline_cpu(unsigned int cpu);
-+int rcutree_dead_cpu(unsigned int cpu);
-+int rcutree_dying_cpu(unsigned int cpu);
-+#else
-+#define rcutree_prepare_cpu	NULL
-+#define rcutree_online_cpu	NULL
-+#define rcutree_offline_cpu	NULL
-+#define rcutree_dead_cpu	NULL
-+#define rcutree_dying_cpu	NULL
-+#endif
-+
++	CPUHP_AP_SCHED_NOHZ_DYING,
+ 	CPUHP_AP_SCHED_MIGRATE_DYING,
+ 	CPUHP_AP_MAX,
+ 	CPUHP_TEARDOWN_CPU,
+@@ -126,6 +127,11 @@ int sched_migration_dead_cpu(unsigned in
+ #define sched_migration_dying_cpu	NULL
+ #define sched_migration_dead_cpu	NULL
  #endif
++#if defined(CONFIG_NO_HZ)
++int nohz_balance_exit_idle(unsigned int cpu);
++#else
++#define nohz_balance_exit_idle		NULL
++#endif
+ 
+  /* Performance counter hotplug functions */
+ #ifdef CONFIG_PERF_EVENTS
 Index: linux-2.6/kernel/cpu.c
 ===================================================================
 --- linux-2.6.orig/kernel/cpu.c
 +++ linux-2.6/kernel/cpu.c
-@@ -755,6 +755,10 @@ static struct cpuhp_step cpuhp_bp_states
- 		.startup = workqueue_prepare_cpu,
- 		.teardown = NULL,
- 	},
-+	[CPUHP_RCUTREE_PREPARE] = {
-+		.startup = rcutree_prepare_cpu,
-+		.teardown = rcutree_dead_cpu,
-+	},
- 	[CPUHP_NOTIFY_PREPARE] = {
- 		.startup = notify_prepare,
- 		.teardown = NULL,
-@@ -787,6 +791,10 @@ static struct cpuhp_step cpuhp_bp_states
- 		.startup = workqueue_online_cpu,
- 		.teardown = workqueue_offline_cpu,
- 	},
-+	[CPUHP_RCUTREE_ONLINE] = {
-+		.startup = rcutree_online_cpu,
-+		.teardown = rcutree_offline_cpu,
-+	},
- 	[CPUHP_NOTIFY_ONLINE] = {
- 		.startup = notify_online,
- 		.teardown = NULL,
-@@ -813,6 +821,10 @@ static struct cpuhp_step cpuhp_ap_states
+@@ -813,6 +813,10 @@ static struct cpuhp_step cpuhp_ap_states
  		.startup = NULL,
  		.teardown = notify_dying,
  	},
-+	[CPUHP_AP_RCUTREE_DYING] = {
++	[CPUHP_AP_SCHED_NOHZ_DYING] = {
 +		.startup = NULL,
-+		.teardown = rcutree_dying_cpu,
++		.teardown = nohz_balance_exit_idle,
 +	},
- 	[CPUHP_AP_SCHED_NOHZ_DYING] = {
+ 	[CPUHP_AP_SCHED_MIGRATE_DYING] = {
  		.startup = NULL,
- 		.teardown = nohz_balance_exit_idle,
-Index: linux-2.6/kernel/rcutree.c
+ 		.teardown = sched_migration_dying_cpu,
+Index: linux-2.6/kernel/sched/fair.c
 ===================================================================
---- linux-2.6.orig/kernel/rcutree.c
-+++ linux-2.6/kernel/rcutree.c
-@@ -2787,67 +2787,59 @@ rcu_init_percpu_data(int cpu, struct rcu
- 	mutex_unlock(&rsp->onoff_mutex);
+--- linux-2.6.orig/kernel/sched/fair.c
++++ linux-2.6/kernel/sched/fair.c
+@@ -5390,13 +5390,14 @@ static void nohz_balancer_kick(int cpu)
+ 	return;
  }
  
--static void __cpuinit rcu_prepare_cpu(int cpu)
-+int __cpuinit rcutree_prepare_cpu(unsigned int cpu)
+-static inline void nohz_balance_exit_idle(int cpu)
++int nohz_balance_exit_idle(unsigned int cpu)
  {
- 	struct rcu_state *rsp;
- 
- 	for_each_rcu_flavor(rsp)
- 		rcu_init_percpu_data(cpu, rsp,
- 				     strcmp(rsp->name, "rcu_preempt") == 0);
-+	rcu_prepare_kthreads(cpu);
+ 	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
+ 		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+ 		atomic_dec(&nohz.nr_cpus);
+ 		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
+ 	}
 +	return 0;
  }
  
--/*
-- * Handle CPU online/offline notification events.
-- */
--static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
--				    unsigned long action, void *hcpu)
-+int __cpuinit rcutree_dead_cpu(unsigned int cpu)
- {
--	long cpu = (long)hcpu;
--	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
--	struct rcu_node *rnp = rdp->mynode;
- 	struct rcu_state *rsp;
--	int ret = NOTIFY_OK;
- 
--	trace_rcu_utilization("Start CPU hotplug");
--	switch (action) {
--	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
--		rcu_prepare_cpu(cpu);
--		rcu_prepare_kthreads(cpu);
--		break;
--	case CPU_ONLINE:
--	case CPU_DOWN_FAILED:
--		rcu_boost_kthread_setaffinity(rnp, -1);
--		break;
--	case CPU_DOWN_PREPARE:
--		if (nocb_cpu_expendable(cpu))
--			rcu_boost_kthread_setaffinity(rnp, cpu);
--		else
--			ret = NOTIFY_BAD;
--		break;
+ static inline void set_cpu_sd_state_busy(void)
+@@ -5448,18 +5449,6 @@ void nohz_balance_enter_idle(int cpu)
+ 	atomic_inc(&nohz.nr_cpus);
+ 	set_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
+ }
+-
+-static int __cpuinit sched_ilb_notifier(struct notifier_block *nfb,
+-					unsigned long action, void *hcpu)
+-{
+-	switch (action & ~CPU_TASKS_FROZEN) {
 -	case CPU_DYING:
--	case CPU_DYING_FROZEN:
--		/*
--		 * The whole machine is "stopped" except this CPU, so we can
--		 * touch any data without introducing corruption. We send the
--		 * dying CPU's callbacks to an arbitrarily chosen online CPU.
--		 */
--		for_each_rcu_flavor(rsp)
--			rcu_cleanup_dying_cpu(rsp);
--		rcu_cleanup_after_idle(cpu);
--		break;
--	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
--	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
--		for_each_rcu_flavor(rsp)
--			rcu_cleanup_dead_cpu(cpu, rsp);
--		break;
+-		nohz_balance_exit_idle(smp_processor_id());
+-		return NOTIFY_OK;
 -	default:
--		break;
+-		return NOTIFY_DONE;
 -	}
--	trace_rcu_utilization("End CPU hotplug");
--	return ret;
-+	for_each_rcu_flavor(rsp)
-+		rcu_cleanup_dead_cpu(cpu, rsp);
-+	return 0;
-+}
-+
-+static void __cpuinit rcutree_affinity_setting(unsigned int cpu, int outgoing)
-+{
-+	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
-+
-+	rcu_boost_kthread_setaffinity(rdp->mynode, outgoing);
-+}
-+
-+int __cpuinit rcutree_online_cpu(unsigned int cpu)
-+{
-+	rcutree_affinity_setting(cpu, -1);
-+	return 0;
-+}
-+
-+int __cpuinit rcutree_offline_cpu(unsigned int cpu)
-+{
-+	if (!nocb_cpu_expendable(cpu))
-+		return -EINVAL;
-+	rcutree_affinity_setting(cpu, cpu);
-+	return 0;
-+}
-+
-+int __cpuinit rcutree_dying_cpu(unsigned int cpu)
-+{
-+	struct rcu_state *rsp;
-+	/*
-+	 * The whole machine is "stopped" except this CPU, so we can
-+	 * touch any data without introducing corruption. We send the
-+	 * dying CPU's callbacks to an arbitrarily chosen online CPU.
-+	 */
-+	for_each_rcu_flavor(rsp)
-+		rcu_cleanup_dying_cpu(rsp);
-+	rcu_cleanup_after_idle(cpu);
-+	return 0;
- }
+-}
+ #endif
  
- /*
-@@ -3071,9 +3063,8 @@ void __init rcu_init(void)
- 	 * this is called early in boot, before either interrupts
- 	 * or the scheduler are operational.
- 	 */
--	cpu_notifier(rcu_cpu_notify, 0);
- 	for_each_online_cpu(cpu)
--		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
-+		rcutree_prepare_cpu(cpu);
- 	check_cpu_stall_init();
- }
+ static DEFINE_SPINLOCK(balancing);
+@@ -6167,7 +6156,6 @@ __init void init_sched_fair_class(void)
+ #ifdef CONFIG_NO_HZ
+ 	nohz.next_balance = jiffies;
+ 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
+-	cpu_notifier(sched_ilb_notifier, 0);
+ #endif
+ #endif /* SMP */
  
 
 
