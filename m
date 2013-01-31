@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3AaIWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:22:46 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:43402 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab3AaIWo (ORCPT
+	id S1753471Ab3AaIZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:25:11 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48154 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab3AaIZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:22:44 -0500
+	Thu, 31 Jan 2013 03:25:08 -0500
+Message-ID: <510A2A50.1090207@linux.vnet.ibm.com>
+Date: Thu, 31 Jan 2013 16:24:48 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CDD08C147402274194A8DDD9DBEF5593414954@SHSMSX101.ccr.corp.intel.com>
-References: <1358987804.18561.22.camel@suxuemin.sh.intel.com>
-	<87bocfugln.fsf@intel.com>
-	<1359017171.18561.29.camel@suxuemin.sh.intel.com>
-	<878v7juf2v.fsf@intel.com>
-	<CDD08C147402274194A8DDD9DBEF5593414954@SHSMSX101.ccr.corp.intel.com>
-Date: Thu, 31 Jan 2013 09:22:42 +0100
-X-Google-Sender-Auth: w7S-nT2zOigMdIDHpE3EGJWNyE0
-Message-ID: <CAKMK7uH3Og8Fi-w98BQtU61=B4cVzOv241L9eg9qHOekEUqs1w@mail.gmail.com>
-Subject: Re: [PATCH V3] drm_crtc: check if fb_create return NULL
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "Su, Xuemin" <xuemin.su@intel.com>, Dave Airlie <airlied@gmail.com>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>, "He, Bo" <bo.he@intel.com>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        tglx@linutronix.de
+Subject: Re: [RFC 2/2] sched/fair: prefer a CPU in the "lowest" idle state
+References: <1359580757-4121-1-git-send-email-bigeasy@linutronix.de> <1359580757-4121-3-git-send-email-bigeasy@linutronix.de> <5109D313.1020409@linux.vnet.ibm.com>	<8738xiue31.fsf@sejong.aot.lge.com> <510A1198.2070803@linux.vnet.ibm.com>	<87txpxu9cx.fsf@sejong.aot.lge.com> <510A1D7A.3050408@linux.vnet.ibm.com> <87pq0lu7ew.fsf@sejong.aot.lge.com>
+In-Reply-To: <87pq0lu7ew.fsf@sejong.aot.lge.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13013108-5816-0000-0000-0000067E4C75
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 1:55 AM, Su, Xuemin <xuemin.su@intel.com> wrote:
-> -----Original Message-----
-> From: Jani Nikula [mailto:jani.nikula@linux.intel.com]
-> Sent: Thursday, January 24, 2013 5:05 PM
-> To: Su, Xuemin
-> Cc: airlied@linux.ie; dri-devel@lists.freedesktop.org; linux-kernel@vger.kernel.org; yanmin_zhang@linux.intel.com; He, Bo
-> Subject: Re: [PATCH V3] drm_crtc: check if fb_create return NULL
->
->>Ah, sorry, never mind, I missed Daniel's comment. The benefit of the
->>BUG_ON() is making it clear what's expected of the drivers.
->
->>Reviewed-by: Jani Nikula <jani.nikula@intel.com>
->
-> Do you think this patch is still needed?
-> Currently I fix a buggy function radeon_user_framebuffer_create() which returns NULL and patch is added to 3.7-stable tree.
-> Do you think it's also needed to do something in drm_mode_addfb()?
+On 01/31/2013 03:40 PM, Namhyung Kim wrote:
+> On Thu, 31 Jan 2013 15:30:02 +0800, Michael Wang wrote:
+>> On 01/31/2013 02:58 PM, Namhyung Kim wrote:
+>>> But AFAIK the number of states in cpuidle is usually less than 10 so maybe
+>>> we can change the weight then, but there's no promise...
+>>
+>> And I just got another case we should take care:
+>>
+>> 	group 0		cpu 0			cpu 1
+>> 			power index 8		power index 8
+>>
+>>
+>> 	group 1		cpu 2			cpu 3
+>> 			power index 0		load 15
+>>
+>> so load of group 0 is 16 and group 1 is 15, but group 0 is better...
+> 
+> Maybe it's not.  The cpus in group 0 are in a lower power state so that
+> there will be a benefit to select cpu 2 from the power' PoV IMHO.  Also
+> such a low power state has a longer exit latency so that we should
+> choose cpu2 to get a better performance and it's the basic idea of this
+> patchset I believe.
 
-Imo it's still useful, just to document the assumptions of the interface. Dave?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Well, this case is just to notify that, we may face the comparison
+between load and index, not between index and index, I just doubt there
+won't be a rule which could take care both, besides, comparison between
+load and index is strange...
+
+Regards,
+Michael Wang
+
+> 
+> Thanks,
+> Namhyung
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
