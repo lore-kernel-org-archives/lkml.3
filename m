@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab3AaWw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:52:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:5377 "EHLO mga09.intel.com"
+	id S1757250Ab3AaWwW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:52:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:63236 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757078Ab3AaWwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:52:20 -0500
+	id S1756741Ab3AaWwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:52:19 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="279285607"
+   d="scan'208";a="279285614"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 05/12] perf, x86: Support Haswell v4 LBR format
-Date: Thu, 31 Jan 2013 14:51:43 -0800
-Message-Id: <1359672710-19528-6-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 09/12] perf, x86: Disable LBR recording for unknown LBR_FMT
+Date: Thu, 31 Jan 2013 14:51:47 -0800
+Message-Id: <1359672710-19528-10-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
 References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
@@ -26,98 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Haswell has two additional LBR from flags for TSX: intx and abort, implemented
-as a new v4 version of the LBR format.
-
-Handle those in and adjust the sign extension code to still correctly extend.
-The flags are exported similarly in the LBR record to the existing misprediction
-flag
+When the LBR format is unknown disable LBR recording. This prevents
+crashes when the LBR address is misdecoded and mis-sign extended.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
- include/linux/perf_event.h                 |    7 ++++++-
- 2 files changed, 21 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index da02e9c..2af6695b 100644
+index 2af6695b..ad5af13 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -12,6 +12,7 @@ enum {
- 	LBR_FORMAT_LIP		= 0x01,
+@@ -13,6 +13,7 @@ enum {
  	LBR_FORMAT_EIP		= 0x02,
  	LBR_FORMAT_EIP_FLAGS	= 0x03,
-+	LBR_FORMAT_EIP_FLAGS2	= 0x04,
+ 	LBR_FORMAT_EIP_FLAGS2	= 0x04,
++	LBR_FORMAT_MAX_KNOWN	= LBR_FORMAT_EIP_FLAGS2,
  };
  
  /*
-@@ -56,6 +57,8 @@ enum {
- 	 LBR_FAR)
+@@ -392,7 +393,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 	/*
+ 	 * no LBR on this PMU
+ 	 */
+-	if (!x86_pmu.lbr_nr)
++	if (!x86_pmu.lbr_nr || x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
+ 		return -EOPNOTSUPP;
  
- #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
-+#define LBR_FROM_FLAG_INTX     (1ULL << 62)
-+#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
- 
- #define for_each_branch_sample_type(x) \
- 	for ((x) = PERF_SAMPLE_BRANCH_USER; \
-@@ -270,21 +273,30 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
- 
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
- 		unsigned long lbr_idx = (tos - i) & mask;
--		u64 from, to, mis = 0, pred = 0;
-+		u64 from, to, mis = 0, pred = 0, intx = 0, abort = 0;
- 
- 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
- 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
- 
--		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
-+		if (lbr_format == LBR_FORMAT_EIP_FLAGS ||
-+		    lbr_format == LBR_FORMAT_EIP_FLAGS2) {
- 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
- 			pred = !mis;
--			from = (u64)((((s64)from) << 1) >> 1);
-+			if (lbr_format == LBR_FORMAT_EIP_FLAGS)
-+				from = (u64)((((s64)from) << 1) >> 1);
-+			else if (lbr_format == LBR_FORMAT_EIP_FLAGS2) {
-+				intx = !!(from & LBR_FROM_FLAG_INTX);
-+				abort = !!(from & LBR_FROM_FLAG_ABORT);
-+				from = (u64)((((s64)from) << 3) >> 3);
-+			}
- 		}
- 
- 		cpuc->lbr_entries[i].from	= from;
- 		cpuc->lbr_entries[i].to		= to;
- 		cpuc->lbr_entries[i].mispred	= mis;
- 		cpuc->lbr_entries[i].predicted	= pred;
-+		cpuc->lbr_entries[i].intx	= intx;
-+		cpuc->lbr_entries[i].abort	= abort;
- 		cpuc->lbr_entries[i].reserved	= 0;
- 	}
- 	cpuc->lbr_stack.nr = i;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 6bfb2faa..91052e1 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -74,13 +74,18 @@ struct perf_raw_record {
-  *
-  * support for mispred, predicted is optional. In case it
-  * is not supported mispred = predicted = 0.
-+ *
-+ *     intx: running in a hardware transaction
-+ *     abort: aborting a hardware transaction
-  */
- struct perf_branch_entry {
- 	__u64	from;
- 	__u64	to;
- 	__u64	mispred:1,  /* target mispredicted */
- 		predicted:1,/* target predicted */
--		reserved:62;
-+		intx:1,	    /* in transaction */
-+		abort:1,    /* transaction abort */
-+		reserved:60;
- };
- 
- /*
+ 	/*
 -- 
 1.7.7.6
 
