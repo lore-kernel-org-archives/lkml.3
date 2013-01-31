@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab3AaX3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 18:29:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65436 "EHLO mx1.redhat.com"
+	id S1753990Ab3AaXf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 18:35:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33370 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523Ab3AaX3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 18:29:37 -0500
-Subject: Re: [PATCH 1/2] PCI: ASPM exit link state code could skip devices
-From: Myron Stowe <mstowe@redhat.com>
-To: Joe Lawrence <Joe.Lawrence@stratus.com>
-Cc: linux-pci@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Bulkow <david.bulkow@stratus.com>, shli@kernel.org,
-        shli@fusionio.com, kaneshige.kenji@jp.fujitsu.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.02.1301181322500.31163@jlaw-desktop.mno.stratus.com>
-References: <alpine.DEB.2.02.1301181302260.31163@jlaw-desktop.mno.stratus.com>
-	 <alpine.DEB.2.02.1301181322500.31163@jlaw-desktop.mno.stratus.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Jan 2013 16:29:25 -0700
-Message-ID: <1359674965.2426.13.camel@zim.stowe>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752671Ab3AaXf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 18:35:56 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HWPOISON: fix wrong num_poisoned_pages in handling memory error on thp
+Date: Thu, 31 Jan 2013 18:35:45 -0500
+Message-Id: <1359675345-23262-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130131113416.963b5f07.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 13:23 -0500, Joe Lawrence wrote:
-> From 3a51bbad5555ba6c6e144aa5176c8112eb449325 Mon Sep 17 00:00:00 2001
-> From: Joe Lawrence <joe.lawrence@stratus.com>
-> Date: Tue, 15 Jan 2013 14:51:57 -0500
-> Subject: [PATCH 1/2] PCI: ASPM exit link state code could skip devices
+On Thu, Jan 31, 2013 at 11:34:16AM -0800, Andrew Morton wrote:
+> On Thu, 31 Jan 2013 10:25:58 -0500
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 > 
-> On PCI bus hotplug removal, pcie_aspm_exit_link_state could potentially skip
-> parent devices that have link_state allocated.  Instead of exiting early if
-> a given device is not PCIe, check that the device's parent is PCIe.  This
-> enables pcie_aspm_exit_link_state to properly clean up parent link_state when
-> the last function in a slot might not be PCIe.
+> > num_poisoned_pages counts up the number of pages isolated by memory errors.
+> > But for thp, only one subpage is isolated because memory error handler
+> > splits it, so it's wrong to add (1 << compound_trans_order).
+> > 
+> > ...
+> >
+> > --- mmotm-2013-01-23-17-04.orig/mm/memory-failure.c
+> > +++ mmotm-2013-01-23-17-04/mm/memory-failure.c
+> > @@ -1039,7 +1039,14 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+> >  		return 0;
+> >  	}
+> >  
+> > -	nr_pages = 1 << compound_trans_order(hpage);
+> > +	/*
+> > +	 * If a thp is hit by a memory failure, it's supposed to be split.
+> > +	 * So we should add only one to num_poisoned_pages for that case.
+> > +	 */
+> > +	if (PageHuge(p))
 > 
-> Reviewed-by: David Bulkow <david.bulkow@stratus.com>
-> Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-> ---
->  drivers/pci/pcie/aspm.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> /*
+>  * PageHuge() only returns true for hugetlbfs pages, but not for normal or
+>  * transparent huge pages.  See the PageTransHuge() documentation for more
+>  * details.
+>  */
+> int PageHuge(struct page *page)
+> {
+
+Do you mean that my comment refers to thp but this if-condition uses
+PageHuge so it's confusing, right?
+And yes, that's right, so I want to change this comment like this:
+
+   /*
+    * Currently errors on hugetlbfs pages are contained in hugepage
+    * unit, so nr_pages should be 1 << compound_order. OTOH when
+    * errors are on transparent hugepages, they are supposed to be
+    * split and error containment is done in normal page unit.
+    * So nr_pages should be one in this case.
+    */
+
 > 
-> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-> index b52630b..6122447 100644
-> --- a/drivers/pci/pcie/aspm.c
-> +++ b/drivers/pci/pcie/aspm.c
-> @@ -634,7 +634,7 @@ void pcie_aspm_exit_link_state(struct pci_dev *pdev)
->  	struct pci_dev *parent = pdev->bus->self;
->  	struct pcie_link_state *link, *root, *parent_link;
->  
-> -	if (!pci_is_pcie(pdev) || !parent || !parent->link_state)
-> +	if (!parent || !pci_is_pcie(parent) || !parent->link_state)
->  		return;
->  	if ((pci_pcie_type(parent) != PCI_EXP_TYPE_ROOT_PORT) &&
->  	    (pci_pcie_type(parent) != PCI_EXP_TYPE_DOWNSTREAM))
+> > +		nr_pages = 1 << compound_trans_order(hpage);
 
-Joe:
+I should've used compound_order because this code is run only for
+hugetlbfs pages.
 
-Bjorn and I looked at this again today and think the checks that occur
-early in 'pcie_aspm_exit_link_state()' could be simplified (as shown
-below) to avoid issues such as you are encountering.
+> > +	else /* normal page or thp */
+> > +		nr_pages = 1;
+> >  	atomic_long_add(nr_pages, &num_poisoned_pages);
+> >  
+> >  	/*
 
-I think part of the confusion concerning the asymmetry between
-'pcie_aspm_init_link_state()' and 'pcie_aspm_exit_link_state()' is that
-the former is passed in a pointer to a bridge device whereas the latter
-is passed in a pointer to a end-point device.  Frankly, I find the
-entire driver to be confusing and very hard to understand.
-
-Could you please test with the following patch and let us know the
-results?
-
-
-PCI: ASPM exit link state code is skipping devices
-
-From: Myron Stowe <myron.stowe@redhat.com>
-
-On PCI bus hotplug removal, 'pcie_aspm_exit_link_state' can potentially
-skip parent devices that have link_state allocated.  Instead of exiting
-early if a given device in not PCIe, check whether or not the device's
-parent has link_state allocated.  This enables 'pcie_aspm_exit_link_state'
-to properly clean up parent link_state when the last function in a slot
-might not be PCIe.
-
-Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
----
-
- drivers/pci/pcie/aspm.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
-
-
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index 8474b6a..aa52727 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -634,10 +634,7 @@ void pcie_aspm_exit_link_state(struct pci_dev *pdev)
- 	struct pci_dev *parent = pdev->bus->self;
- 	struct pcie_link_state *link, *root, *parent_link;
- 
--	if (!pci_is_pcie(pdev) || !parent || !parent->link_state)
--		return;
--	if ((pci_pcie_type(parent) != PCI_EXP_TYPE_ROOT_PORT) &&
--	    (pci_pcie_type(parent) != PCI_EXP_TYPE_DOWNSTREAM))
-+	if (!parent || !parent->link_state)
- 		return;
- 
- 	down_read(&pci_bus_sem);
-
-
+Thanks,
+Naoya
