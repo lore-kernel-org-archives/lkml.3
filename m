@@ -1,34 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab3AaRAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:00:15 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50596 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab3AaRAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 12:00:12 -0500
-Message-ID: <510AA318.5060208@wwwdotorg.org>
-Date: Thu, 31 Jan 2013 10:00:08 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755486Ab3AaRFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:05:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753918Ab3AaRFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 12:05:44 -0500
+Date: Thu, 31 Jan 2013 18:04:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] uprobes: Teach debug/tracing/uprobe_events to do
+	the filtering
+Message-ID: <20130131170412.GA14017@redhat.com>
+References: <20130127194814.GA25377@redhat.com>
 MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: linux-kernel@vger.kernel.org, thierry.reding@avionic-design.de,
-        gregkh@linuxfoundation.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 3/3] serial: tegra: Convert to devm_ioremap_resource()
-References: <1359627939-2685-1-git-send-email-sachin.kamat@linaro.org> <1359627939-2685-3-git-send-email-sachin.kamat@linaro.org>
-In-Reply-To: <1359627939-2685-3-git-send-email-sachin.kamat@linaro.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130127194814.GA25377@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 03:25 AM, Sachin Kamat wrote:
-> Use the newly introduced devm_ioremap_resource() instead of
-> devm_request_and_ioremap() which provides more consistent error handling.
+On 01/27, Oleg Nesterov wrote:
+>
+> Based on git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+> on top of pre-filtering patches in kernel/uprobes.c.
+>
+> Please review.
 
-Presumably though that function isn't yet available in the tree that
-this new serial driver was merged through is it?
+Self-NACK.
+
+Everything seems to work, including the additional cleanupe I sent,
+but:
+
+> After that I'll try to change tools/perf to use this new feature.
+
+this can't help perf.
+
+I never used it before so I naively thought that it writes to
+tracing/uprobe_events and does perf_event_open(id) in the single
+session, but this is not true.
+
+I'll try to do something else. It seems that we can use
+TRACE_REG_PERF_OPEN rather than TRACE_REG_PERF_REGISTER and
+exploit event->ctx->task->mm to implement the pre-filtering...
+
+Oleg.
+
