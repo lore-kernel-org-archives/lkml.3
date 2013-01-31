@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3AaFan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 00:30:43 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50700 "EHLO mail.kernel.org"
+	id S1754063Ab3AaFer (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 00:34:47 -0500
+Received: from mga01.intel.com ([192.55.52.88]:5049 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524Ab3AaFak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 00:30:40 -0500
-Date: Thu, 31 Jan 2013 06:32:35 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] staging: zsmalloc: remove unused pool name
-Message-ID: <20130131053235.GD3228@kroah.com>
-References: <1359560212-8818-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <51093F43.2090503@linux.vnet.ibm.com>
- <20130130172159.GA24760@kroah.com>
- <20130130172956.GC2217@konrad-lan.dumpdata.com>
+	id S1750941Ab3AaFep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 00:34:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,574,1355126400"; 
+   d="scan'208";a="284500882"
+Date: Thu, 31 Jan 2013 13:35:35 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v8 2/4] block: add runtime pm helpers
+Message-ID: <20130131053535.GA14627@aaronlu.sh.intel.com>
+References: <1359538494-2936-3-git-send-email-aaron.lu@intel.com>
+ <Pine.LNX.4.44L0.1301301053210.1709-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130130172956.GC2217@konrad-lan.dumpdata.com>
+In-Reply-To: <Pine.LNX.4.44L0.1301301053210.1709-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 12:29:57PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jan 30, 2013 at 06:21:59PM +0100, Greg Kroah-Hartman wrote:
-> > On Wed, Jan 30, 2013 at 09:41:55AM -0600, Seth Jennings wrote:
-> > > On 01/30/2013 09:36 AM, Seth Jennings wrote:> zs_create_pool()
-> > > currently takes a name argument which is
-> > > > never used in any useful way.
-> > > >
-> > > > This patch removes it.
-> > > >
-> > > > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > > 
-> > > Crud, forgot the Acks...
-> > > 
-> > > Acked-by: Nitin Gupta <ngupta@vflare.org>
-> > > Acked-by: Rik van Riel <riel@redhat.com>
-> > 
-> > {sigh} you just made me have to edit your patch by hand, you now owe me
-> > a beer...
-> > 
-> Should we codify that :-)
+On Wed, Jan 30, 2013 at 10:54:53AM -0500, Alan Stern wrote:
+> On Wed, 30 Jan 2013, Aaron Lu wrote:
 > 
+> > From: Lin Ming <ming.m.lin@intel.com>
+> > 
+> > Add runtime pm helper functions:
+> > 
+> > void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
+> >   - Initialization function for drivers to call.
+> > 
+> > int blk_pre_runtime_suspend(struct request_queue *q)
+> >   - If any requests are in the queue, mark last busy and return -EBUSY.
+> >     Otherwise set q->rpm_status to RPM_SUSPENDING and return 0.
+> > 
+> > void blk_post_runtime_suspend(struct request_queue *q, int err)
+> >   - If the suspend succeeded then set q->rpm_status to RPM_SUSPENDED.
+> >     Otherwise set it to RPM_ACTIVE.
+> > 
+> > void blk_pre_runtime_resume(struct request_queue *q)
+> >   - Set q->rpm_status to RPM_RESUMING.
+> > 
+> > void blk_post_runtime_resume(struct request_queue *q, int err)
+> >   - If the resume succeeded then set q->rpm_status to RPM_ACTIVE
+> >     and call __blk_run_queue, then mark last busy and autosuspend.
+> >     Otherwise set q->rpm_status to RPM_SUSPENDED.
+> > 
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 > 
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index c379a2a..f879c60 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -94,6 +94,7 @@ includes updates for subsystem X.  Please apply."
->  The maintainer will thank you if you write your patch description in a
->  form which can be easily pulled into Linux's source code management
->  system, git, as a "commit log".  See #15, below.
-> +If the maintainer has to hand-edit your patch, you owe them a beer.
->  
->  If your description starts to get long, that's a sign that you probably
->  need to split up your patch.  See #3, next.
+> > +void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
+> > +{
+> > +	q->dev = dev;
+> > +	q->rpm_status = RPM_ACTIVE;
+> > +	pm_runtime_set_autosuspend_delay(q->dev, -1);
+> > +	pm_runtime_use_autosuspend(q->dev);
+> > +	pm_runtime_mark_last_busy(q->dev);
+> > +	pm_runtime_autosuspend(q->dev);
+> 
+> This last line is no longer needed.  It can't do anything useful, since 
+> autosuspends are disabled (the delay is -1).
 
-Yes we do need to codify this, but let's be fair, not everyone likes
-beer:
+Right, thanks.
+And the mark_last_busy can probably be removed too, it didn't make much
+sense here and we can add "driver should call pm_runtime_mark_last_busy
+and pm_runtime_autosuspend in its runtime idle callback" to the kernel
+doc. What do you think?
 
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index c379a2a..d1bec01 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -93,7 +93,9 @@ includes updates for subsystem X.  Please apply."
- 
- The maintainer will thank you if you write your patch description in a
- form which can be easily pulled into Linux's source code management
--system, git, as a "commit log".  See #15, below.
-+system, git, as a "commit log".  See #15, below.  If the maintainer has
-+to hand-edit your patch, you owe them the beverage of their choice the
-+next time you see them.
- 
- If your description starts to get long, that's a sign that you probably
- need to split up your patch.  See #3, next.
+Thanks,
+Aaron
+
