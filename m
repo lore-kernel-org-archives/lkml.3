@@ -1,167 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab3AaTZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 14:25:07 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:45705 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756718Ab3AaTY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 14:24:58 -0500
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: tony@atomide.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: OMAP2+: Export SoC information to userspace
-Date: Thu, 31 Jan 2013 21:24:44 +0200
-Message-Id: <1359660284-5225-3-git-send-email-ruslan.bilovol@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359660284-5225-1-git-send-email-ruslan.bilovol@ti.com>
-References: <1359660284-5225-1-git-send-email-ruslan.bilovol@ti.com>
+	id S1755638Ab3AaT0G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 14:26:06 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35026 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755294Ab3AaT0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 14:26:03 -0500
+Message-ID: <1359660311.816.173.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH v2 1/4] ima: added policy support for 'security.ima' type
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-security-module@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        James Morris <jmorris@namei.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 31 Jan 2013 14:25:11 -0500
+In-Reply-To: <20130131184144.GC2580@redhat.com>
+References: <1358892454-25045-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1358892454-25045-2-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20130130215340.GA4918@redhat.com>
+	 <1359585759.816.127.camel@falcor1.watson.ibm.com>
+	 <20130131184144.GC2580@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13013119-5806-0000-0000-00001EFEA418
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some situations it is useful for userspace to
-know some SoC-specific information. For example,
-this may be used for deciding what kernel module to
-use or how to better configure some settings etc.
-This patch exports OMAP SoC information to userspace
-using existing in Linux kernel SoC infrastructure.
+On Thu, 2013-01-31 at 13:41 -0500, Vivek Goyal wrote:
+> On Wed, Jan 30, 2013 at 05:42:39PM -0500, Mimi Zohar wrote:
+> > On Wed, 2013-01-30 at 16:53 -0500, Vivek Goyal wrote:
+> > > On Tue, Jan 22, 2013 at 05:07:31PM -0500, Mimi Zohar wrote:
+> > > 
+> > > [..]
+> > > >  /* iint cache flags */
+> > > > +#define IMA_ACTION_FLAGS	0xff00
+> > > >  #define IMA_DIGSIG		0x0100
+> > > > +#define IMA_DIGSIG_REQUIRED	0x0200
+> > > 
+> > > Hi Mimi,
+> > > 
+> > > IMA_DIGSIG_REQUIRED state does not really have to be stored in iint I guess.
+> > > This is needed only if we go on to appraise and then we want to make
+> > > sure digital signatures are present. Once appraisal is done, IMG_DIGSIG
+> > > will be set and saved in iint->flags but looks like we don't require
+> > > IMA_DIGSIG_REQUIRED to be saved.
+> > > 
+> > > If yes, will it make sense to not save it in iint. There are still 8
+> > > bits left unused. We can mark these 8 bits for temporary flags like
+> > > IMA_DIGSIG_REQUIRED. If that works, I can use same space for defining
+> > > additional temporary flags like IMA_DIGSIG_SIGNED_ONLY to handle the
+> > > case of appraise_type=imasig,signed_only. That flag also does not have
+> > > to be persistent in iint.
+> > 
+> > Interesting idea.  My only concern would be that we're not leaving room
+> > for additional hooks (eg. firmware).
+> 
+> Ok. May be we can employ another 32bit variable and put both of them in
+> a structure to expand it, when firmware hooks come along.
+> 
+> Or I can do that right now, if you like it that way.
+> 
+> I need to move out non-persistent flags from iint flags, otherwise it
+> can happen that conflicting flag might be set from different hooks.
+> 
+> For example, say hypothetically there are too hooks.
+> 
+> appraise fowner=0 func=mmap appraise_type=imasig
+> appraise fowner=0 func=BPRM_CHECK appraise_type=imasig_signed_only
+> 
+> Now this will lead to setting of both IMA_DISGIG_REQUIRED and
+> IMA_DIGSIG_SIGNED_ONLY in iint->flags and that does not mean much in
+> the context of iint.
+> 
+> So by keeping them temporary, these flags become kind of hook specific
+> and then two appraise hook don't conflict with each other.
 
-This information can be read under
-/sys/devices/socX directory
+With the following patches, which James pulled earlier this week, each
+hook can have a different appraise status.
 
-Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
----
- arch/arm/mach-omap2/Kconfig  |    1 +
- arch/arm/mach-omap2/common.h |    8 ++++++
- arch/arm/mach-omap2/id.c     |   65 ++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/io.c     |    1 +
- 4 files changed, 75 insertions(+)
+5a73fcf ima: differentiate appraise status only for hook specific rules
+d79d72e ima: per hook cache integrity appraisal status
+f578c08 ima: increase iint flag size
+0e5a247 ima: added policy support for 'security.ima' type
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index fe926e0..47da0bd 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -17,6 +17,7 @@ config ARCH_OMAP2PLUS
- 	select PROC_DEVICETREE if PROC_FS
- 	select SPARSE_IRQ
- 	select USE_OF
-+	select SOC_BUS
- 	help
- 	  Systems based on OMAP2, OMAP3, OMAP4 or OMAP5
- 
-diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
-index 948bcaa..2a6f866 100644
---- a/arch/arm/mach-omap2/common.h
-+++ b/arch/arm/mach-omap2/common.h
-@@ -111,6 +111,14 @@ void ti81xx_init_late(void);
- void omap4430_init_late(void);
- int omap2_common_pm_late_init(void);
- 
-+#ifdef CONFIG_SOC_BUS
-+void omap_soc_device_init(void);
-+#else
-+static inline void omap_soc_device_init(void)
-+{
-+}
-+#endif
-+
- #if defined(CONFIG_SOC_OMAP2420) || defined(CONFIG_SOC_OMAP2430)
- void omap2xxx_restart(char mode, const char *cmd);
- #else
-diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
-index 436fcf9..5724ee8 100644
---- a/arch/arm/mach-omap2/id.c
-+++ b/arch/arm/mach-omap2/id.c
-@@ -18,6 +18,11 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/io.h>
-+#include <linux/slab.h>
-+
-+#ifdef CONFIG_SOC_BUS
-+#include <linux/sys_soc.h>
-+#endif
- 
- #include <asm/cputype.h>
- 
-@@ -572,3 +577,63 @@ void __init omap2_set_globals_tap(u32 class, void __iomem *tap)
- 	else
- 		tap_prod_id = 0x0208;
- }
-+
-+#ifdef CONFIG_SOC_BUS
-+
-+static const char const *omap_types[] = {
-+	[OMAP2_DEVICE_TYPE_TEST]	= "TST",
-+	[OMAP2_DEVICE_TYPE_EMU]		= "EMU",
-+	[OMAP2_DEVICE_TYPE_SEC]		= "HS",
-+	[OMAP2_DEVICE_TYPE_GP]		= "GP",
-+	[OMAP2_DEVICE_TYPE_BAD]		= "BAD",
-+};
-+
-+static const char * __init omap_get_family(void)
-+{
-+	if (cpu_is_omap24xx())
-+		return kasprintf(GFP_KERNEL, "OMAP2");
-+	else if (cpu_is_omap34xx())
-+		return kasprintf(GFP_KERNEL, "OMAP3");
-+	else if (cpu_is_omap44xx())
-+		return kasprintf(GFP_KERNEL, "OMAP4");
-+	else if (soc_is_omap54xx())
-+		return kasprintf(GFP_KERNEL, "OMAP5");
-+	else
-+		return kasprintf(GFP_KERNEL, "Unknown");
-+}
-+
-+static ssize_t omap_get_type(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	return sprintf(buf, "%s\n", omap_types[omap_type()]);
-+}
-+
-+static struct device_attribute omap_soc_attr =
-+	__ATTR(type,  S_IRUGO, omap_get_type,  NULL);
-+
-+void __init omap_soc_device_init(void)
-+{
-+	struct device *parent;
-+	struct soc_device *soc_dev;
-+	struct soc_device_attribute *soc_dev_attr;
-+
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (!soc_dev_attr)
-+		return;
-+
-+	soc_dev_attr->machine  = cpu_name;
-+	soc_dev_attr->family   = omap_get_family();
-+	soc_dev_attr->revision = cpu_rev;
-+
-+	soc_dev = soc_device_register(soc_dev_attr);
-+	if (IS_ERR_OR_NULL(soc_dev)) {
-+		kfree(soc_dev_attr);
-+		return;
-+	}
-+
-+	parent = soc_device_to_device(soc_dev);
-+	if (!IS_ERR_OR_NULL(parent))
-+		device_create_file(parent, &omap_soc_attr);
-+}
-+#endif /* CONFIG_SOC_BUS */
-diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
-index 2c3fdd6..08003c1 100644
---- a/arch/arm/mach-omap2/io.c
-+++ b/arch/arm/mach-omap2/io.c
-@@ -602,6 +602,7 @@ void __init omap4430_init_late(void)
- 	omap2_common_pm_late_init();
- 	omap4_pm_init();
- 	omap2_clk_enable_autoidle_all();
-+	omap_soc_device_init();
- }
- #endif
- 
--- 
-1.7.9.5
+thanks,
+
+Mimi
 
