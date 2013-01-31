@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab3AaHUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 02:20:23 -0500
-Received: from mga07.intel.com ([143.182.124.22]:62241 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753997Ab3AaHUV (ORCPT
+	id S1754807Ab3AaHXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:23:51 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:44012 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab3AaHXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 02:20:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1301311201380.24326@tundra.namei.org>
-References: <783235259540e27e745f68316b1735e8d4ce9137.1359125652.git.dmitry.kasatkin@intel.com>
-	<CALLzPKai_9SR2pBDe8fU1sGTf+fN=EDGGU1HKQ-LTdWuP0Ti5Q@mail.gmail.com>
-	<alpine.LRH.2.02.1301311201380.24326@tundra.namei.org>
-Date: Thu, 31 Jan 2013 09:20:19 +0200
-Message-ID: <CALLzPKaEGQS1KRzRZ6dcbKtQzACtaRQ=mSyfQjrB0ptE=Buw7g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] digsig: Fix memory leakage in digsig_verify_rsa()
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 31 Jan 2013 02:23:48 -0500
+Date: Thu, 31 Jan 2013 08:23:32 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>
+Subject: Re: [PATCH v2] i2c-i801: SMBus patch for Intel Avoton DeviceIDs
+Message-ID: <20130131082332.1f3235c6@endymion.delvare>
+In-Reply-To: <1359595532-5365-1-git-send-email-seth.heasley@intel.com>
+References: <1359595532-5365-1-git-send-email-seth.heasley@intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 3:02 AM, James Morris <jmorris@namei.org> wrote:
-> What's the practical impact of this?  Could an attacker kill the machine?
->
->
+On Wed, 30 Jan 2013 17:25:32 -0800, Seth Heasley wrote:
+> This patch adds the PCU SMBus DeviceID for the Intel Avoton SOC.
+> 
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> ---
+> Change notes for v2:
+> * corrected order of DeviceID defines
+> 
+>  Documentation/i2c/busses/i2c-i801 |    1 +
+>  drivers/i2c/busses/Kconfig        |    1 +
+>  drivers/i2c/busses/i2c-i801.c     |    3 +++
+>  3 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
+> index 157416e..8d71d57 100644
+> --- a/Documentation/i2c/busses/i2c-i801
+> +++ b/Documentation/i2c/busses/i2c-i801
+> @@ -22,6 +22,7 @@ Supported adapters:
+>    * Intel Panther Point (PCH)
+>    * Intel Lynx Point (PCH)
+>    * Intel Lynx Point-LP (PCH)
+> +  * Intel Avoton (SOC)
+>     Datasheets: Publicly available at the Intel website
+>  
+>  On Intel Patsburg and later chipsets, both the normal host SMBus controller
+> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> index bdca511..77d2887 100644
+> --- a/drivers/i2c/busses/Kconfig
+> +++ b/drivers/i2c/busses/Kconfig
+> @@ -106,6 +106,7 @@ config I2C_I801
+>  	    Panther Point (PCH)
+>  	    Lynx Point (PCH)
+>  	    Lynx Point-LP (PCH)
+> +	    Avoton (SOC)
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called i2c-i801.
+> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+> index 3092387..b00c29d 100644
+> --- a/drivers/i2c/busses/i2c-i801.c
+> +++ b/drivers/i2c/busses/i2c-i801.c
+> @@ -53,6 +53,7 @@
+>    Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
+>    Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
+>    Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
+> +  Avoton (SOC)          0x1f3c     32     hard     yes     yes     yes
+>  
+>    Features supported by this driver:
+>    Software PEC                     no
+> @@ -162,6 +163,7 @@
+>  #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1	0x1d71
+>  #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2	0x1d72
+>  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
+> +#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
+>  #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+>  #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
+>  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
+> @@ -798,6 +800,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_AVOTON_SMBUS) },
+>  	{ 0, }
+>  };
+>  
 
-It might be possible slowly to eat the whole memory if there were too
-many memory verifications.
-This is a bug and the patch will be applied to stable.
-Should go to mainline as well.
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
 
-I suggest to apply it and also couple of other patches I sent yesterday.
-
-thanks.
-
-- Dmitry
-
-> On Wed, 30 Jan 2013, Kasatkin, Dmitry wrote:
->
->> On Fri, Jan 25, 2013 at 4:54 PM, Dmitry Kasatkin
->> <dmitry.kasatkin@intel.com> wrote:
->> > From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
->> >
->> > digsig_verify_rsa() does not free kmalloc'ed buffer returned by
->> > mpi_get_buffer().
->> >
->> > Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
->> > Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
->> > Cc: stable@vger.kernel.org
->> > ---
->> >  lib/digsig.c |    2 ++
->> >  1 file changed, 2 insertions(+)
->> >
->> > diff --git a/lib/digsig.c b/lib/digsig.c
->> > index 8c0e629..dc2be7e 100644
->> > --- a/lib/digsig.c
->> > +++ b/lib/digsig.c
->> > @@ -162,6 +162,8 @@ static int digsig_verify_rsa(struct key *key,
->> >         memset(out1, 0, head);
->> >         memcpy(out1 + head, p, l);
->> >
->> > +       kfree(p);
->> > +
->> >         err = pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
->> >         if (err)
->> >                 goto err;
->> > --
->> > 1.7.10.4
->> >
->>
->> James, can you please apply this patch.
->>
->> - Dmitry
->>
->
-> --
-> James Morris
-> <jmorris@namei.org>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jean Delvare
