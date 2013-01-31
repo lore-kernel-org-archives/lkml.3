@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab3AaNAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 08:00:09 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36106 "EHLO hydra.sisk.pl"
+	id S1754295Ab3AaNAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 08:00:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:33356 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766Ab3AaNAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 08:00:05 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
-        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: governors: clean timer init and exit code
-Date: Thu, 31 Jan 2013 14:06:17 +0100
-Message-ID: <1560132.gKXbKl82oR@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130131110613.GD30667@balto.lan>
-References: <1359554017-28620-1-git-send-email-fabio.baltieri@linaro.org> <CAKohpomTNkEOrnyQWKJ8siajg67-fpe4EnYxiipgmN8STMSwAQ@mail.gmail.com> <20130131110613.GD30667@balto.lan>
+	id S1751766Ab3AaNAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 08:00:12 -0500
+Date: Thu, 31 Jan 2013 14:02:06 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: BUG: circular locking dependency detected
+Message-ID: <20130131130206.GB13352@kroah.com>
+References: <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
+ <20130130221946.GA14801@flint.arm.linux.org.uk>
+ <CA+55aFyRHK3dmwQf_mdfB18dmoaRZqBG9FvHRqTs7cqBjgUs+g@mail.gmail.com>
+ <CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com>
+ <20130131001339.GC14801@flint.arm.linux.org.uk>
+ <CA+55aFxfeXWAiXV18qGgOk9+2HHiD7LUuyk55brHFXd+_c6eZQ@mail.gmail.com>
+ <20130131054002.GA3697@kroah.com>
+ <CAKMK7uGUrvh2dXza_b288kVdztiLjSCNpH304oBQgg_ZonEnzw@mail.gmail.com>
+ <20130131092146.GB3361@kroah.com>
+ <CAPM=9tzZLPZ0EqEvEuZbimomSQv+xMnLpTq28z7=bKBF1w26TQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tzZLPZ0EqEvEuZbimomSQv+xMnLpTq28z7=bKBF1w26TQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 31, 2013 12:06:13 PM Fabio Baltieri wrote:
-> On Thu, Jan 31, 2013 at 04:23:06PM +0530, Viresh Kumar wrote:
-> > On 30 January 2013 19:23, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
-> > > Drop unused arguments from dbs_timer_init and clean dbs_timer_exit and
-> > > cpufreq_governor_dbs to remove non necessary special cases.
-> > >
-> > > Reported-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
-> > 
-> > As discussed over IRC, you will fix following in few days:
-> > - Code redundancy within governors
-> > - Removing second_time: label and cdbs->enable field
-> > - Fixing params to timer init and exit to make them more efficient.
+On Thu, Jan 31, 2013 at 10:51:27PM +1100, Dave Airlie wrote:
+> On Thu, Jan 31, 2013 at 8:21 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Jan 31, 2013 at 09:21:16AM +0100, Daniel Vetter wrote:
+> >> On Thu, Jan 31, 2013 at 6:40 AM, Greg Kroah-Hartman
+> >> <gregkh@linuxfoundation.org> wrote:
+> >> > On Thu, Jan 31, 2013 at 11:26:53AM +1100, Linus Torvalds wrote:
+> >> >> On Thu, Jan 31, 2013 at 11:13 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+> >> >> >
+> >> >> > Which may or may not be a good thing depending how you look at it; it
+> >> >> > means that once your kernel blanks, you get a lockdep dump.  At that
+> >> >> > point you lose lockdep checking for everything else because lockdep
+> >> >> > disables itself after the first dump.
+> >> >>
+> >> >> Fair enough, we may want to revert the lockdep checking for
+> >> >> console_lock, and make re-enabling it part of the patch-series that
+> >> >> fixes the locking.
+> >> >>
+> >> >> Daniel/Dave? Does that sound reasonable?
+> >>
+> >> Yeah, sounds good.
+> >>
+> >> > Reverting the patch is fine with me.  Just let me know so I can queue it
+> >> > up again for 3.9.
+> >>
+> >> Can you please also pick up the (currently) three locking fixups
+> >> around fbcon? Just so that we don't repeat the same fun where people
+> >> complain about lockdep splats, but the fixes are stuck somewhere. And
+> >> I guess Dave would be happy to not end up as fbcon maintainer ;-) He
+> >> has a git branch with them at
+> >> http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
+> >> though I have a small bikeshed on his last patch pending.
+> >
+> > Care to just send me the patches through email when you all get done
+> > bikesheding?  And for some reason I thought Andrew was going to handle
+> > these fbcon patches, but if not, I'll be glad to take them.
 > 
-> That's the plan, I'd leave it up to Rafael to decide if further cleanup
-> patches should be included in 3.9 merge window or skip to the following
-> one... I understand that we are starting to be late on the -rc and I
-> also prefer to focus on fixup.
+> I'll ship them via my tree at this point I think, since I now need to
+> queue a revert of the revert on top.
+> 
+> I have a few vgacon/fbcon fixes that I need to go in this cycle.
 
-The deadline for 3.9 merge window patches is about 2 days before 3.8-rc7
-(assuming that there will be -rc7) and by that time they need to be in
-linux-next.  Whatever doesn't make it will have to go after 3.9-rc1 or be
-postponed until the 3.10 merge window.
+Ok, I'll gladly let you handle this :)
 
-Thanks,
-Rafael
+thanks,
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+greg k-h
