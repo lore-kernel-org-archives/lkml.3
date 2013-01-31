@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab3AaKm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:42:58 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:54880 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab3AaKm4 (ORCPT
+	id S1754044Ab3AaKnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:43:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36063 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab3AaKnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:42:56 -0500
-Date: Thu, 31 Jan 2013 11:42:41 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Donghwa Lee <dh09.lee@samsung.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 1/3] video: exynos_mipi_dsi: Convert to
- devm_ioremap_resource()
-Message-ID: <20130131104241.GA8676@avionic-0098.mockup.avionic-design.de>
-References: <1359627939-2685-1-git-send-email-sachin.kamat@linaro.org>
+	Thu, 31 Jan 2013 05:43:43 -0500
+Date: Thu, 31 Jan 2013 02:43:07 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-g449kvnbcpli4ceyxbe2jp1e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui browser: Free browser->helpline()
+  on ui_browser__hide()
+Git-Commit-ID: 56ab7140325c835c8bb53cf3bca0cf7b6e967f15
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jI8keyz6grp/JLjh"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1359627939-2685-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:FvcX2AUr1dOo9kzuNZEn2wEAPpDSxpR3VWryviaYJnG
- JBt/5Anjw9PjptjE42jamsnboDg34L4oYzzNVBixkNRTlcJnaA
- jixdNzjp2GpcSHnTR9n8m/aA2oQVME3I1EOigs+dBms3yZRXhj
- jkpd5XWb2ZRCfASGYzySEsO2sowOKjdZlTGjU9hfTsZHW6Vdvj
- J0TK3pTBIz4atDNE3kcFab1iv32nHBDx+I2Usq60U3ldS9IwWx
- +S6qcjegJr3UUzlPKNiW52cDS1bcScQIteaL7kvf0y/Gy9yRpN
- Vzlfh6FAFB0TGlaa3ONPU39zkOzUfrurO+32/onTAALVykz1js
- D5rMMZPXSVmLGC8+JVjg8YdsQaVSu46yk/g/6Xids6YGiwOoCa
- /2j0cxCLIjBw3+t5CusE9j1LLBU3n5yN1ql0jPaxgzpT+KNCqE
- d7PfB
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 02:43:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  56ab7140325c835c8bb53cf3bca0cf7b6e967f15
+Gitweb:     http://git.kernel.org/tip/56ab7140325c835c8bb53cf3bca0cf7b6e967f15
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 24 Jan 2013 22:45:21 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 25 Jan 2013 12:49:29 -0300
 
---jI8keyz6grp/JLjh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+perf ui browser: Free browser->helpline() on ui_browser__hide()
 
-On Thu, Jan 31, 2013 at 03:55:37PM +0530, Sachin Kamat wrote:
-> Use the newly introduced devm_ioremap_resource() instead of
-> devm_request_and_ioremap() which provides more consistent error handling.
->=20
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Donghwa Lee <dh09.lee@samsung.com>
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Cc: linux-fbdev@vger.kernel.org
-> ---
->  drivers/video/exynos/exynos_mipi_dsi.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
+It is allocated at ui_browser__show(), so free it in its counterpart,
+ui_browser__hide().
 
-All of these can drop the additional error message because equivalent
-error message are output by devm_ioremap_resource() itself.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-g449kvnbcpli4ceyxbe2jp1e@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/browser.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Thierry
-
---jI8keyz6grp/JLjh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRCkqhAAoJEN0jrNd/PrOh3goQALyFuRRHioY8l4PZuv0oTjQv
-vrIzvY9KGFF6ihNUiC4I6Kw55/Fezb8dHtw0ZE8ryLnrBN//ZgKr1FsG8s9w9zN6
-T5SPQGvQSAod5vrRG8Ps5Yc8jkzWXLBQVQ+TERFgmw0xMARR3fPtaet9tCz8Esq4
-sdT/HJdEj0NqbJpyAh1FizgBmPaH3ZJOeTDJelIKgxIadhiHYLV6x2Xy2lpWRZvY
-rx+WnSVmxosa4/QoeaYlJ58KchMUo7cSq/YHgnaCZl26GLME8aHlyDaQmzZznItL
-KMQk3W3UGFrs60+0H+xS059GfT/HBeF+NOjihA/38cAmdk0i4klUCgUXOAv04eEP
-ViFSrZgVKBJ5Qqx3wV3nKi9BgiAVkA7l+vUszRokfsl79ZZHWVio+eRflL7Bi7K4
-tWxi2nGrO/6UrGmxxA+K/urQeSqgU2+WsL9iohutqhfw2aNNIYaZ0iIssILWce9Z
-dBpSzScOkDA25AtbHB7/EZ/H3GiXSJmO9WJtIawU1yxqL9+HMPy6jsnjpXw+JdoM
-OiXQ5YKOd+6SUKoK6/4Swf/Virh0b6zxKtgvrwz+M1OtjYgsR5m669oKbwdb4t67
-xajxoFpuvN7GAtY0Drvgg8U+rvAFwoohpz5ADze4RCY4sHz9SXdAsbJKGK0WmQo/
-uhyCmTUDwJA/X63VIlqe
-=2ol7
------END PGP SIGNATURE-----
-
---jI8keyz6grp/JLjh--
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index 588bcb2..809ea46 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -273,6 +273,8 @@ void ui_browser__hide(struct ui_browser *browser __maybe_unused)
+ {
+ 	pthread_mutex_lock(&ui__lock);
+ 	ui_helpline__pop();
++	free(browser->helpline);
++	browser->helpline = NULL;
+ 	pthread_mutex_unlock(&ui__lock);
+ }
+ 
