@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3AaIOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:14:08 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:52934 "EHLO
+	id S1755733Ab3AaIOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:14:46 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:62178 "EHLO
 	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab3AaIOF (ORCPT
+	with ESMTP id S1755218Ab3AaIOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:14:05 -0500
-Message-ID: <510A27C8.3070909@suse.cz>
-Date: Thu, 31 Jan 2013 09:14:00 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-References: <20130129202848.GE25415@pd.tnic> <5109A8F1.9040707@suse.cz> <5109B11C.2010400@suse.cz> <5170962.qHnbnlVDfx@vostro.rjw.lan> <20130131070926.GC4926@pd.tnic>
-In-Reply-To: <20130131070926.GC4926@pd.tnic>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jan 2013 03:14:43 -0500
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH] cpufreq: governors: implement generic policy_is_shared
+Date: Thu, 31 Jan 2013 09:14:24 +0100
+Message-Id: <1359620064-14751-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.7.12.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 08:09 AM, Borislav Petkov wrote:
-> On Thu, Jan 31, 2013 at 01:54:56AM +0100, Rafael J. Wysocki wrote:
->> On Thursday, January 31, 2013 12:47:40 AM Jiri Slaby wrote:
->>> On 01/31/2013 12:12 AM, Jiri Slaby wrote:
->>>> I think I will start with commenting parts of `power' script to see
->>>> exactly which of the power savings cause this.
->>>
->>> ... NMI watchdog. If I remove it from the script, the problem
->>> disappears. If I try it alone, I have those NMIs.
->>
->> Well, beats me. :-(
->>
->> I suspect that it doesn't quiesce itself sufficiently before image restoration
->> and we get some crosstalk between the boot kernel and the image kernel.
-> 
-> Well, I did what Jiri said causes it:
-> 
-> echo 0 > /proc/sys/kernel/nmi_watchdog
-> 
-> No NMI.
-> 
-> BUT(!), if I start powertop and set all tunables in the "Tunables" tab
-> to "Good", then suspend to disk, when I resume I get the NMI and this
-> time the unknown reason is 0x3c. Sounds like this needs bisection...
-> Btw, this is latest -rc5 + tip/master and Jiri triggers it on 3.7-stable
-> ...
+Implement a generic helper function policy_is_shared() to replace the
+current dbs_sw_coordinated_cpus() at cpufreq level, so that it can be
+used by code other than cpufreq governors.
 
-And 3.6(.0) was the first one I _tried_ and had that issue too. Not sure
-if there is any bisect-good kernel to start with.
+Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+ drivers/cpufreq/cpufreq_conservative.c | 2 +-
+ drivers/cpufreq/cpufreq_governor.c     | 8 --------
+ drivers/cpufreq/cpufreq_governor.h     | 1 -
+ drivers/cpufreq/cpufreq_ondemand.c     | 2 +-
+ include/linux/cpufreq.h                | 5 +++++
+ 5 files changed, 7 insertions(+), 11 deletions(-)
 
-> Btw, this e1000e thing has another problem: when I unplug the network
-> cable and replug it again, it cannot ping local network anymore.
-> Normally, when you plug the network cable back in, it does some sort if
-> link detection saying eth link is back up but it doesn't say it on that
-> box - only a reboot fixes it. Hmm.
-
-I think this is what Konstantin fixes with his patches.
-
+diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+index 5d8e894..653fb06 100644
+--- a/drivers/cpufreq/cpufreq_conservative.c
++++ b/drivers/cpufreq/cpufreq_conservative.c
+@@ -154,7 +154,7 @@ static void cs_dbs_timer(struct work_struct *work)
+ 	struct cs_cpu_dbs_info_s *dbs_info = container_of(work,
+ 			struct cs_cpu_dbs_info_s, cdbs.work.work);
+ 
+-	if (dbs_sw_coordinated_cpus(&dbs_info->cdbs)) {
++	if (policy_is_shared(dbs_info->cdbs.cur_policy)) {
+ 		cs_timer_coordinated(dbs_info, dw);
+ 	} else {
+ 		mutex_lock(&dbs_info->cdbs.timer_mutex);
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 46f96a4..67e235a 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -161,14 +161,6 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+ }
+ EXPORT_SYMBOL_GPL(dbs_check_cpu);
+ 
+-bool dbs_sw_coordinated_cpus(struct cpu_dbs_common_info *cdbs)
+-{
+-	struct cpufreq_policy *policy = cdbs->cur_policy;
+-
+-	return cpumask_weight(policy->cpus) > 1;
+-}
+-EXPORT_SYMBOL_GPL(dbs_sw_coordinated_cpus);
+-
+ static inline void dbs_timer_init(struct dbs_data *dbs_data, int cpu,
+ 				  unsigned int sampling_rate)
+ {
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index aaf073d..b72e628 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -172,7 +172,6 @@ static inline int delay_for_sampling_rate(unsigned int sampling_rate)
+ 
+ u64 get_cpu_idle_time(unsigned int cpu, u64 *wall);
+ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu);
+-bool dbs_sw_coordinated_cpus(struct cpu_dbs_common_info *cdbs);
+ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ 		struct cpufreq_policy *policy, unsigned int event);
+ #endif /* _CPUFREQ_GOVERNER_H */
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 1017b90..5ae84ff 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -277,7 +277,7 @@ static void od_dbs_timer(struct work_struct *work)
+ 	struct od_cpu_dbs_info_s *dbs_info =
+ 		container_of(work, struct od_cpu_dbs_info_s, cdbs.work.work);
+ 
+-	if (dbs_sw_coordinated_cpus(&dbs_info->cdbs)) {
++	if (policy_is_shared(dbs_info->cdbs.cur_policy)) {
+ 		od_timer_coordinated(dbs_info, dw);
+ 	} else {
+ 		mutex_lock(&dbs_info->cdbs.timer_mutex);
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 5fdc6c6..f106406 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -125,6 +125,11 @@ struct cpufreq_policy {
+ #define CPUFREQ_SHARED_TYPE_ALL	 (2) /* All dependent CPUs should set freq */
+ #define CPUFREQ_SHARED_TYPE_ANY	 (3) /* Freq can be set from any dependent CPU*/
+ 
++static inline bool policy_is_shared(struct cpufreq_policy *policy)
++{
++	return cpumask_weight(policy->cpus) > 1;
++}
++
+ /******************** cpufreq transition notifiers *******************/
+ 
+ #define CPUFREQ_PRECHANGE	(0)
 -- 
-js
-suse labs
+1.7.12.1
+
