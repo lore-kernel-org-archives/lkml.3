@@ -1,211 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751136Ab3AaFAt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 00:00:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55443 "EHLO mga02.intel.com"
+	id S1751406Ab3AaFCk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 00:02:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52624 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab3AaFAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 00:00:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,574,1355126400"; 
-   d="scan'208";a="278891718"
-From: "Li, Fei" <fei.li@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+	id S1750744Ab3AaFCf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 00:02:35 -0500
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "Patil, Rachna" <rachna@ti.com>, Koen Kooi <koen@dominion.thruhere.net>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: RE: [PATCH V2] suspend: enable freeze timeout configuration through
- sys
-Thread-Topic: [PATCH V2] suspend: enable freeze timeout configuration
- through sys
-Thread-Index: AQHN/rKa7MrU9+agX0644BLelmjjVphhUq2AgAGO5gA=
-Date: Thu, 31 Jan 2013 05:00:23 +0000
-Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE36343F0B3D@SHSMSX102.ccr.corp.intel.com>
-References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <1359527019.26790.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <2335103.cho0vcBPUK@vostro.rjw.lan>
-In-Reply-To: <2335103.cho0vcBPUK@vostro.rjw.lan>
+        Rob Herring <rob.herring@calxeda.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v4 5/8] MFD: ti_am335x_tscadc: Add DT support
+Thread-Topic: [PATCH v4 5/8] MFD: ti_am335x_tscadc: Add DT support
+Thread-Index: AQHN+eVtDadlPzEeCUiwIKBMOIKxvJhhXFuAgAElp4CAAGmuIA==
+Date: Thu, 31 Jan 2013 05:02:04 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EBEFAE8@DBDE01.ent.ti.com>
+References: <1358999112-31192-1-git-send-email-rachna@ti.com>
+ <1358999112-31192-6-git-send-email-rachna@ti.com>
+ <A9839AA2-ABCD-4642-9766-D56824AC27AD@dominion.thruhere.net>
+ <4CE347531D4CA947960AF71FF095B9323E9B1EE9@DBDE01.ent.ti.com>
+In-Reply-To: <4CE347531D4CA947960AF71FF095B9323E9B1EE9@DBDE01.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0V50qST018468
 
-Hello Rafael,
-   I update it as below in V3, do you think it makes sense?
-
-At present, the value of timeout for freezing is 20s, which is
-meaningless in case that one thread is frozen with mutex locked
-and another thread is trying to lock the mutex, as this time of
-freezing will fail unavoidably.
-And if there is no new wakeup event registered, the system will
-waste at most 20s for such meaningless trying of freezing.
-
-With this patch, the value of timeout can be configured to smaller
-value, so such meaningless trying of freezing will be aborted in
-earlier time, and later freezing can be also triggered in earlier
-time. And more power will be saved.
-In normal case on mobile phone, it costs real little time to freeze
-processes. On some platform, it only costs about 20ms to freeze
-user space processes and 10ms to freeze kernel freezable threads.
-
-Thanks a lot!
-
-Best Regards,
-Li Fei
-TEL: +86 (0)21 6116 5140
-Mob: +86 (0)139 1696 7435
-Platform System Integration Shanghai
-
-
-
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Wednesday, January 30, 2013 9:10 PM
-> To: Li, Fei
-> Cc: akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
-> linux-pm@vger.kernel.org; Liu, Chuansheng
-> Subject: Re: [PATCH V2] suspend: enable freeze timeout configuration through
-> sys
+On Thu, Jan 31, 2013 at 09:41:11, Patil, Rachna wrote:
+> On Wed, Jan 30, 2013 at 16:10:09, Koen Kooi wrote:
+> > 
+> > Op 24 jan. 2013, om 04:45 heeft "Patil, Rachna" <rachna@ti.com> het volgende geschreven:
+> > 
+> > > From: "Patil, Rachna" <rachna@ti.com>
+> > > 
+> > > Make changes to add DT support in the MFD core driver.
+> > > 
+> > > Signed-off-by: Patil, Rachna <rachna@ti.com>
+> > > ---
+> > > Changes in v4:
+> > > 	Non-standard properties prefixed with vendor name.
+> > > 
+> > > drivers/mfd/ti_am335x_tscadc.c |   28 +++++++++++++++++++++++-----
+> > > 1 file changed, 23 insertions(+), 5 deletions(-)
+> > > 
+> > > diff --git a/drivers/mfd/ti_am335x_tscadc.c 
+> > > b/drivers/mfd/ti_am335x_tscadc.c index e9f3fb5..87b446b 100644
+> > > --- a/drivers/mfd/ti_am335x_tscadc.c
+> > > +++ b/drivers/mfd/ti_am335x_tscadc.c
+> > > @@ -22,6 +22,8 @@
+> > > #include <linux/regmap.h>
+> > > #include <linux/mfd/core.h>
+> > > #include <linux/pm_runtime.h>
+> > > +#include <linux/of.h>
+> > > +#include <linux/of_device.h>
+> > > 
+> > > #include <linux/mfd/ti_am335x_tscadc.h> #include 
+> > > <linux/input/ti_am335x_tsc.h>
+> > > @@ -64,20 +66,31 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+> > > 	struct resource		*res;
+> > > 	struct clk		*clk;
+> > > 	struct mfd_tscadc_board	*pdata = pdev->dev.platform_data;
+> > > +	struct device_node	*node = pdev->dev.of_node;
+> > > 	struct mfd_cell		*cell;
+> > > 	int			err, ctrl;
+> > > 	int			clk_value, clock_rate;
+> > > -	int			tsc_wires, adc_channels = 0, total_channels;
+> > > +	int			tsc_wires = 0, adc_channels = 0, total_channels;
+> > > 
+> > > -	if (!pdata) {
+> > > +	if (!pdata && !pdev->dev.of_node) {
+> > > 		dev_err(&pdev->dev, "Could not find platform data\n");
+> > > 		return -EINVAL;
+> > > 	}
+> > > 
+> > > -	if (pdata->adc_init)
+> > > -		adc_channels = pdata->adc_init->adc_channels;
+> > > +	if (pdev->dev.platform_data) {
+> > > +		if (pdata->tsc_init)
+> > > +			tsc_wires = pdata->tsc_init->wires;
+> > > +
+> > > +		if (pdata->adc_init)
+> > > +			adc_channels = pdata->adc_init->adc_channels;
+> > > +	} else {
+> > > +		node = of_find_node_by_name(pdev->dev.of_node, "tsc");
+> > > +		of_property_read_u32(node, "ti,wires", &tsc_wires);
+> > > +
+> > > +		node = of_find_node_by_name(pdev->dev.of_node, "adc");
+> > > +		of_property_read_u32(node, "ti,adc-channels", &adc_channels);
+> > > +	}
+> > 
+> > Since AM335x is DT only, why is there a platform data codepath and why is it the first branch it tries? And I guess the next question is related to the first: why doesn't it work when used with DT? When I copy over the nodes from the evm.dts to my board I get "tsc tsc: Missing platform data" in dmesg.
 > 
-> On Wednesday, January 30, 2013 02:23:39 PM fli24 wrote:
-> >
-> > At present, the timeout value for freezing tasks is fixed as 20s,
-> > which is too long for handheld device usage, especially for mobile
-> > phone.
-> >
-> > In order to improve user experience, we enable freeze timeout
-> > configuration through sys, so that we can tune the value easily
-> > for concrete usage, such as smaller value for handheld device such
-> > as mobile phone.
+> This IP came up 1st on AM335x, but it is not platform dependent. The driver can be used on other platforms where-in DT is not supported.
+> According to the maintainers platform data takes precedence over DT. Hence the order.
 > 
-> As I said, I'd like to know what's the exact problem you need to work around
-> using this.
+
+Rachana,
+
+I see no point adding support for platform_data when you know that none of 
+older platforms are going to use this driver and all future platforms _must_ 
+follow device-tree model.
+
+So I agree that you should remove board file dependency from the driver.
+
+
+> I do not see "Missing platform data" error msg in the latest driver. I am not able to trace from where this got populated.
 > 
-> Thanks,
-> Rafael
+
+Can you share the branch which you have tested?
+
+Thanks,
+Vaibhav
+
+> > 
+> > What are the chances this driver will work when applied on top of 3.8-rcX? Has it even been tested with that? Has it been tested at all?
 > 
+> This driver has been tested on top of v3.8-rc3 on a AM335x EVM.
 > 
-> > Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
-> > Signed-off-by: Li Fei <fei.li@intel.com>
-> > ---
-> >  Documentation/power/freezing-of-tasks.txt |    5 +++++
-> >  include/linux/freezer.h                   |    5 +++++
-> >  kernel/power/main.c                       |   27
-> +++++++++++++++++++++++++++
-> >  kernel/power/process.c                    |    4 ++--
-> >  4 files changed, 39 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/Documentation/power/freezing-of-tasks.txt
-> b/Documentation/power/freezing-of-tasks.txt
-> > index 6ec291e..85894d8 100644
-> > --- a/Documentation/power/freezing-of-tasks.txt
-> > +++ b/Documentation/power/freezing-of-tasks.txt
-> > @@ -223,3 +223,8 @@ since they ask the freezer to skip freezing this task,
-> since it is anyway
-> >  only after the entire suspend/hibernation sequence is complete.
-> >  So, to summarize, use [un]lock_system_sleep() instead of directly using
-> >  mutex_[un]lock(&pm_mutex). That would prevent freezing failures.
-> > +
-> > +V. Miscellaneous
-> > +/sys/power/pm_freeze_timeout controls how long it will cost at most to
-> freeze
-> > +all user space processes or all freezable kernel threads, in unit of millisecond.
-> > +The default value is 20000, with range of unsigned integer.
-> > diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> > index e4238ce..5a24a33 100644
-> > --- a/include/linux/freezer.h
-> > +++ b/include/linux/freezer.h
-> > @@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect
-> */
-> >  extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
-> >
-> >  /*
-> > + * Timeout for stopping processes
-> > + */
-> > +extern unsigned int sys_freeze_process_timeout_msecs;
-> > +
-> > +/*
-> >   * Check if a process has been frozen
-> >   */
-> >  static inline bool frozen(struct task_struct *p)
-> > diff --git a/kernel/power/main.c b/kernel/power/main.c
-> > index 1c16f91..453ead1 100644
-> > --- a/kernel/power/main.c
-> > +++ b/kernel/power/main.c
-> > @@ -553,6 +553,30 @@ power_attr(pm_trace_dev_match);
-> >
-> >  #endif /* CONFIG_PM_TRACE */
-> >
-> > +#ifdef CONFIG_FREEZER
-> > +static ssize_t pm_freeze_timeout_show(struct kobject *kobj,
-> > +				      struct kobj_attribute *attr, char *buf)
-> > +{
-> > +	return sprintf(buf, "%u\n", sys_freeze_process_timeout_msecs);
-> > +}
-> > +
-> > +static ssize_t pm_freeze_timeout_store(struct kobject *kobj,
-> > +				       struct kobj_attribute *attr,
-> > +				       const char *buf, size_t n)
-> > +{
-> > +	unsigned long val;
-> > +
-> > +	if (kstrtoul(buf, 10, &val))
-> > +		return -EINVAL;
-> > +
-> > +	sys_freeze_process_timeout_msecs = val;
-> > +	return n;
-> > +}
-> > +
-> > +power_attr(pm_freeze_timeout);
-> > +
-> > +#endif	/* CONFIG_FREEZER*/
-> > +
-> >  static struct attribute * g[] = {
-> >  	&state_attr.attr,
-> >  #ifdef CONFIG_PM_TRACE
-> > @@ -576,6 +600,9 @@ static struct attribute * g[] = {
-> >  	&pm_print_times_attr.attr,
-> >  #endif
-> >  #endif
-> > +#ifdef CONFIG_FREEZER
-> > +	&pm_freeze_timeout_attr.attr,
-> > +#endif
-> >  	NULL,
-> >  };
-> >
-> > diff --git a/kernel/power/process.c b/kernel/power/process.c
-> > index d5a258b..ba45a26 100644
-> > --- a/kernel/power/process.c
-> > +++ b/kernel/power/process.c
-> > @@ -21,7 +21,7 @@
-> >  /*
-> >   * Timeout for stopping processes
-> >   */
-> > -#define TIMEOUT	(20 * HZ)
-> > +unsigned int __read_mostly sys_freeze_process_timeout_msecs = 20000;
-> >
-> >  static int try_to_freeze_tasks(bool user_only)
-> >  {
-> > @@ -36,7 +36,7 @@ static int try_to_freeze_tasks(bool user_only)
-> >
-> >  	do_gettimeofday(&start);
-> >
-> > -	end_time = jiffies + TIMEOUT;
-> > +	end_time = jiffies + msecs_to_jiffies(sys_freeze_process_timeout_msecs);
-> >
-> >  	if (!user_only)
-> >  		freeze_workqueues_begin();
-> >
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Regards,
+> Rachna
+> 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> 
+
