@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab3AaL0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:26:16 -0500
-Received: from msa105.auone-net.jp ([61.117.18.165]:46764 "EHLO
-	msa105.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628Ab3AaL0O (ORCPT
+	id S1753585Ab3AaL11 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:27:27 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42734 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082Ab3AaL10 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 06:26:14 -0500
-Date: Thu, 31 Jan 2013 20:26:12 +0900
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] ioprio: Allow CAP_SYS_NICE to set IOPRIO_CLASS_RT
+	Thu, 31 Jan 2013 06:27:26 -0500
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: RE: [PATCH v3 1/4] ASoC: tlv320aic3x: Convert mic bias to a supply
+ widget
+Thread-Topic: [PATCH v3 1/4] ASoC: tlv320aic3x: Convert mic bias to a supply
+ widget
+Thread-Index: AQHN/6U5pGhRJT3kcEGcYmC+XsWA1phi74MAgABcfwA=
+Date: Thu, 31 Jan 2013 11:27:07 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EB5A48E@DBDE01.ent.ti.com>
+References: <1359631394-9511-1-git-send-email-gururaja.hebbar@ti.com>
+ <1359631394-9511-2-git-send-email-gururaja.hebbar@ti.com>
+ <20130131112414.GE11078@opensource.wolfsonmicro.com>
+In-Reply-To: <20130131112414.GE11078@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Message-Id: <20130131112612.E7F446FC039@msa105.auone-net.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sched_setscheduler allows a process with CAP_SYS_NICE to set
-real-time policy. Let ioprio_set follow this.
+On Thu, Jan 31, 2013 at 16:54:16, Mark Brown wrote:
+> On Thu, Jan 31, 2013 at 04:53:10PM +0530, Hebbar Gururaja wrote:
+> 
+> > :100644 100644 e7b98f4... f47c3f5... M	Documentation/devicetree/bindings/sound/tlv320aic3x.txt
+> > :100644 100644 ffd9bc7... 9407fd0... M	include/sound/tlv320aic3x.h
+> > :100644 100644 4989143... 65d09d6... M	sound/soc/codecs/tlv320aic3x.c
+> > :100644 100644 6db3c41... e521ac3... M	sound/soc/codecs/tlv320aic3x.h
+> 
+> As mentioned when you posted this before this patch needs to update the
+> machine drivers using the device too.
 
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
----
- fs/ioprio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The patch-set 2/4 does the same thing. Since I have da850-evm at my end, I 
+have modified that machine driver and sent-it as 2/4.
 
-diff --git a/fs/ioprio.c b/fs/ioprio.c
-index e50170c..155b51e 100644
---- a/fs/ioprio.c
-+++ b/fs/ioprio.c
-@@ -70,7 +70,7 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
- 
- 	switch (class) {
- 		case IOPRIO_CLASS_RT:
--			if (!capable(CAP_SYS_ADMIN))
-+			if (!capable(CAP_SYS_NICE) && !capable(CAP_SYS_ADMIN))
- 				return -EPERM;
- 			/* fall through, rt has prio field too */
- 		case IOPRIO_CLASS_BE:
--- 
-1.7.10.4
+> 
 
+
+Regards, 
+Gururaja
