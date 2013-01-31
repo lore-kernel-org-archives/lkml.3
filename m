@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3AaMSI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:18:08 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55993 "EHLO
+	id S1754326Ab3AaMSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:18:38 -0500
+Received: from www.linutronix.de ([62.245.132.108]:55981 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab3AaML3 (ORCPT
+	with ESMTP id S1753641Ab3AaML2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:11:29 -0500
-Message-Id: <20130131120742.853625949@linutronix.de>
+	Thu, 31 Jan 2013 07:11:28 -0500
+Message-Id: <20130131120742.788886767@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 31 Jan 2013 12:11:28 -0000
+Date: Thu, 31 Jan 2013 12:11:27 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -19,9 +19,10 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
         Richard Weinberger <rw@linutronix.de>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 20/40] perf: Remove perf cpu notifier code
+Subject: [patch 19/40] sh: perf: Convert the hotplug notifiers to state
+ machine callbacks
 References: <20130131120348.372374706@linutronix.de>
-Content-Disposition: inline; filename=perf-remove-perf-cpu-notifier.patch
+Content-Disposition: inline; filename=sh-perf-notifier-convert.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -29,58 +30,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All users converted to state machine callbacks.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/cpu.h        |    2 --
- include/linux/perf_event.h |   21 ---------------------
- 2 files changed, 23 deletions(-)
+ arch/sh/kernel/perf_event.c |   22 +++-------------------
+ include/linux/cpuhotplug.h  |    1 +
+ 2 files changed, 4 insertions(+), 19 deletions(-)
 
-Index: linux-2.6/include/linux/cpu.h
+Index: linux-2.6/arch/sh/kernel/perf_event.c
 ===================================================================
---- linux-2.6.orig/include/linux/cpu.h
-+++ linux-2.6/include/linux/cpu.h
-@@ -58,8 +58,6 @@ extern ssize_t arch_print_cpu_modalias(s
-  * CPU notifier priorities.
-  */
- enum {
--	/* migration should happen before other stuff but after perf */
--	CPU_PRI_PERF		= 20,
- 	CPU_PRI_MIGRATION	= 10,
- 	/* bring up workqueues before normal notifiers and down after */
- 	CPU_PRI_WORKQUEUE_UP	= 5,
-Index: linux-2.6/include/linux/perf_event.h
+--- linux-2.6.orig/arch/sh/kernel/perf_event.c
++++ linux-2.6/arch/sh/kernel/perf_event.c
+@@ -360,28 +360,12 @@ static struct pmu pmu = {
+ 	.read		= sh_pmu_read,
+ };
+ 
+-static void sh_pmu_setup(int cpu)
++static int __cpuinit sh_pmu_prepare_cpu(unsigned int cpu)
+ {
+ 	struct cpu_hw_events *cpuhw = &per_cpu(cpu_hw_events, cpu);
+ 
+ 	memset(cpuhw, 0, sizeof(struct cpu_hw_events));
+-}
+-
+-static int __cpuinit
+-sh_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+-{
+-	unsigned int cpu = (long)hcpu;
+-
+-	switch (action & ~CPU_TASKS_FROZEN) {
+-	case CPU_UP_PREPARE:
+-		sh_pmu_setup(cpu);
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	return NOTIFY_OK;
++	return 0;
+ }
+ 
+ int __cpuinit register_sh_pmu(struct sh_pmu *_pmu)
+@@ -395,6 +379,6 @@ int __cpuinit register_sh_pmu(struct sh_
+ 	WARN_ON(_pmu->num_events > MAX_HWEVENTS);
+ 
+ 	perf_pmu_register(&pmu, "cpu", PERF_TYPE_RAW);
+-	perf_cpu_notifier(sh_pmu_notifier);
++	cpuhp_setup_state(CPUHP_PERF_SUPERH, sh_pmu_prepare_cpu, NULL);
+ 	return 0;
+ }
+Index: linux-2.6/include/linux/cpuhotplug.h
 ===================================================================
---- linux-2.6.orig/include/linux/perf_event.h
-+++ linux-2.6/include/linux/perf_event.h
-@@ -796,27 +796,6 @@ static inline void perf_event_task_tick(
- 
- #define perf_output_put(handle, x) perf_output_copy((handle), &(x), sizeof(x))
- 
--/*
-- * This has to have a higher priority than migration_notifier in sched.c.
-- */
--#define perf_cpu_notifier(fn)						\
--do {									\
--	static struct notifier_block fn##_nb __cpuinitdata =		\
--		{ .notifier_call = fn, .priority = CPU_PRI_PERF };	\
--	unsigned long cpu = smp_processor_id();				\
--	unsigned long flags;						\
--	fn(&fn##_nb, (unsigned long)CPU_UP_PREPARE,			\
--		(void *)(unsigned long)cpu);				\
--	local_irq_save(flags);						\
--	fn(&fn##_nb, (unsigned long)CPU_STARTING,			\
--		(void *)(unsigned long)cpu);				\
--	local_irq_restore(flags);					\
--	fn(&fn##_nb, (unsigned long)CPU_ONLINE,				\
--		(void *)(unsigned long)cpu);				\
--	register_cpu_notifier(&fn##_nb);				\
--} while (0)
--
--
- #define PMU_FORMAT_ATTR(_name, _format)					\
- static ssize_t								\
- _name##_show(struct device *dev,					\
+--- linux-2.6.orig/include/linux/cpuhotplug.h
++++ linux-2.6/include/linux/cpuhotplug.h
+@@ -8,6 +8,7 @@ enum cpuhp_states {
+ 	CPUHP_PERF_X86_PREPARE,
+ 	CPUHP_PERF_BFIN,
+ 	CPUHP_PERF_POWER,
++	CPUHP_PERF_SUPERH,
+ 	CPUHP_PERF_PREPARE,
+ 	CPUHP_NOTIFY_PREPARE,
+ 	CPUHP_NOTIFY_DEAD,
 
 
