@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab3AaXOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 18:14:48 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:39404 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab3AaXOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 18:14:45 -0500
-Date: Thu, 31 Jan 2013 15:14:33 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Chris Metcalf <cmetcalf@tilera.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: kbuild test robot <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: kernel/cgroup_freezer.c:151:3: error: 'system_freezing_cnt'
- undeclared
-Message-ID: <20130131231433.GM6824@mtj.dyndns.org>
-References: <510aa746.fVU8ZdQ2hys/RwjS%fengguang.wu@intel.com>
+	id S1753495Ab3AaXVZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 18:21:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45732 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab3AaXVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 18:21:22 -0500
+Message-ID: <510AFC6A.5030703@zytor.com>
+Date: Thu, 31 Jan 2013 15:21:14 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <510aa746.fVU8ZdQ2hys/RwjS%fengguang.wu@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jon Pry <jonpry@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: ABI violations eventually caused by short sighted coding style
+References: <CA+3xLx6HRWuc58oWP=T1J9NkKx958DQEULy+gMt8mooj3nsw+g@mail.gmail.com>
+In-Reply-To: <CA+3xLx6HRWuc58oWP=T1J9NkKx958DQEULy+gMt8mooj3nsw+g@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
-
-On Fri, Feb 01, 2013 at 01:17:58AM +0800, kbuild test robot wrote:
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux master
-> head:   04c2eee5b9dfcb13f3cd07a5537fb8c785f2751a
-> commit: a3201227f803ad7fd43180c5195dbe5a2bf998aa freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE
-> date:   1 year, 2 months ago
-
-Heh, this gone goes way back.
-
-> config: make ARCH=tile allyesconfig
+On 01/31/2013 02:20 PM, Jon Pry wrote:
 > 
-> All error/warnings:
+> I believe changes should be made to the coding style forcing developers to take
+> action. There are a couple of solutions I can think of:
 > 
->    kernel/cgroup_freezer.c: In function 'freezer_destroy':
-> >> kernel/cgroup_freezer.c:151:3: error: 'system_freezing_cnt' undeclared (first use in this function)
->    kernel/cgroup_freezer.c:151:3: note: each undeclared identifier is reported only once for each function it appears in
->    kernel/cgroup_freezer.c: In function 'freezer_fork':
->    kernel/cgroup_freezer.c:209:3: error: implicit declaration of function 'freeze_task'
->    kernel/cgroup_freezer.c: In function 'unfreeze_cgroup':
->    kernel/cgroup_freezer.c:296:3: error: implicit declaration of function '__thaw_task'
->    kernel/cgroup_freezer.c: In function 'freezer_change_state':
-> >> kernel/cgroup_freezer.c:315:4: error: 'system_freezing_cnt' undeclared (first use in this function)
+> 1. 	Put the unions at the beginning of structures if possible, or at least put
+> 	them in a position that would ensure 8 byte offset from the beginning of
+> 	the struct. Such as after a u64. Multiple unions should ensure the data[]
+> 	of the preceding unions to be a multiple of 8 bytes.
+> 2.  Require the data element to be declared as u64[size/8].
+> 3.  Pack the ioctl structures
+> 
+> My preference is for the former since it does not cause any
+> unnecessary padding.
+> 
 
-So, CONFIG_FREEZER is defbool which is turned on automatically if
-CONFIG_CGROUP_FREEZER; however, CONFIG_FREEZER is defined in
-Kconfig.freezer which should be included by arch Kconfig file.  tile
-doesn't include it (maybe it doesn't want freezer for some reason?).
-CONFIG_COGRUP_FREEZER is in init/Kconfig, so allyesconfig enables it
-but as CONFIG_FREEZER definition isn't visible, we end up with broken
-config CONFIG_CGROUP_FREEZER && !CONFIG_FREEZER.
+"The former" doesn't work when you are talking about a choice of three
+elements.
 
-Maybe we need to move CONFIG_CGROUP_FREEZER to Kconfig.freezer if tile
-actually doesn't want freezer?
+packed structures are *very* expensive to use on some architectures, so
+that is not a good solution.
 
-Thanks.
+In many, if not most cases, this is actually better handled by having
+different ioctl numbers for each version/interface, but if you have to
+make it self-contained, it makes most sense to make the common portion a
+u64 or explicitly align the union to u64.
 
--- 
-tejun
+Another thing to keep in mind is that it often makes a lot more sense to
+have a length member, and skip the problematic union.  That way a future
+version of the kernel can simply memset() the part of the structure that
+isn't initialized, and doesn't need a huge apparatus to keep track of
+each individual version.
+
+	-hpa
+
+
+
