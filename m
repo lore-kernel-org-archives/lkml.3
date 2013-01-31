@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab3AaJ1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 04:27:50 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29812 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753961Ab3AaJ1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 04:27:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,575,1355126400"; 
-   d="scan'208";a="278976812"
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH 3/3] nsproxy: remove duplicate task_cred_xxx for user_ns
-Date: Thu, 31 Jan 2013 17:28:32 +0800
-Message-Id: <1359624512-23469-3-git-send-email-yuanhan.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1359624512-23469-1-git-send-email-yuanhan.liu@linux.intel.com>
-References: <1359624512-23469-1-git-send-email-yuanhan.liu@linux.intel.com>
+	id S1754181Ab3AaJ2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 04:28:51 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59800 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab3AaJ2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 04:28:49 -0500
+Date: Thu, 31 Jan 2013 09:28:01 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kim Phillips <kim.phillips@freescale.com>
+Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        David Rientjes <rientjes@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [RFC] arm: use built-in byte swap function
+Message-ID: <20130131092801.GV23505@n2100.arm.linux.org.uk>
+References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com> <20130129083522.GA14302@pd.tnic> <1359478014.3529.157.camel@shinybook.infradead.org> <20130129174249.GB25415@pd.tnic> <1359482147.3529.161.camel@shinybook.infradead.org> <20130129181046.GC25415@pd.tnic> <1359541333.3529.186.camel@shinybook.infradead.org> <20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use user_ns, which is also assigned from task_cred_xxx(tsk,
-user_ns), at the beginning of copy_namespaces().
+On Wed, Jan 30, 2013 at 08:09:00PM -0600, Kim Phillips wrote:
+> The savings come mostly from device-tree related code, and some
+> from drivers.
 
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
----
- kernel/nsproxy.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+You forget that IP networking is all big endian, so these will be using
+the byte swapping too (search it for htons/ntohs/htonl/ntohl).
 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 78e2ecb..b781e66 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -153,8 +153,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
- 		goto out;
- 	}
- 
--	new_ns = create_new_namespaces(flags, tsk,
--				       task_cred_xxx(tsk, user_ns), tsk->fs);
-+	new_ns = create_new_namespaces(flags, tsk, user_ns, tsk->fs);
- 	if (IS_ERR(new_ns)) {
- 		err = PTR_ERR(new_ns);
- 		goto out;
--- 
-1.7.7.6
+> v2:
+> - at91 and lpd270 builds fixed by limiting to ARMv6 and above
+>   (i.e., ARM cores that have support for the 'rev' instruction).
+>   Otherwise, the compiler emits calls to libgcc's __bswapsi2 on
+>   these ARMv4/v5 builds (and arch ARM doesn't link with libgcc).
 
+Which compiler version?  gcc 4.5.4 doesn't do this, except for the 16-bit
+swap, so I doubt that any later compiler does.
+
+> --- a/arch/arm/include/uapi/asm/swab.h
+> +++ b/arch/arm/include/uapi/asm/swab.h
+> @@ -50,4 +50,14 @@ static inline __attribute_const__ __u32 __arch_swab32(__u32 x)
+>  
+>  #endif
+>  
+> +#if defined(__KERNEL__) && __LINUX_ARM_ARCH__ >= 6
+> +#if GCC_VERSION >= 40600
+> +#define __HAVE_BUILTIN_BSWAP32__
+> +#define __HAVE_BUILTIN_BSWAP64__
+> +#endif
+> +#if GCC_VERSION >= 40800
+> +#define __HAVE_BUILTIN_BSWAP16__
+> +#endif
+> +#endif
+
+If this is __KERNEL__ only, it should not be in a uapi header.  UAPI
+headers get exported to userland, this is not userland interface code.
+IT should be in arch/arm/include/asm/swab.h
