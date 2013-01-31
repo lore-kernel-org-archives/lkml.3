@@ -1,126 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab3AaMNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:13:51 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:39289 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab3AaMNq (ORCPT
+	id S1754334Ab3AaMN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:13:58 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56169 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3AaMLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:13:46 -0500
-Date: Thu, 31 Jan 2013 12:08:33 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [GIT PULL] power: ab8500-bm: Latest Mainline<->STE delta
- reduction patch-set
-Message-ID: <20130131120833.GH5301@gmail.com>
-References: <20130123113854.GK15873@gmail.com>
- <20130123144441.GN15873@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130123144441.GN15873@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 Jan 2013 07:11:43 -0500
+Message-Id: <20130131120743.992876989@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Thu, 31 Jan 2013 12:11:42 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
+        Richard Weinberger <rw@linutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [patch 37/40] x86: x2apic: Convert to cpu hotplug state machine
+References: <20130131120348.372374706@linutronix.de>
+Content-Disposition: inline; filename=0003-cpu-hotplug-convert-x2apic.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+From: Richard Weinberger <richard@nod.at>
 
-> Okay, after Linus Walleij's diligent observaions, I have removed all
-> new functionallity related to Deep Debug and will continue to
-> investigate what I need to do in that regard.
-> 
-> In the mean-time, here's the fresh deep-debug:less pull-request:
-> 
-> ----------------------------------------------------------------
-> 
-> The following changes since commit 8fd526fd18233887ba652079a369f4eee0de9d9d:
-> 
->   qnap-poweroff: Fix license string (2013-01-19 18:04:04 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.linaro.org/people/ljones/linux-3.0-ux500.git tb-power-2
-> 
-> for you to fetch changes up to 34c11a709e928090cf34ecd706f7d3170f4e5026:
-> 
->   u8500-charger: Delay for USB enumeration (2013-01-23 14:39:22 +0000)
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/apic/x2apic_cluster.c |   80 ++++++++++++----------------------
+ include/linux/cpuhotplug.h            |    1 
+ 2 files changed, 31 insertions(+), 50 deletions(-)
 
-Did you pull this in the end?
+Index: linux-2.6/arch/x86/kernel/apic/x2apic_cluster.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/x2apic_cluster.c
++++ linux-2.6/arch/x86/kernel/apic/x2apic_cluster.c
+@@ -145,68 +145,48 @@ static void init_x2apic_ldr(void)
+ 	}
+ }
+ 
+- /*
+-  * At CPU state changes, update the x2apic cluster sibling info.
+-  */
+-static int __cpuinit
+-update_clusterinfo(struct notifier_block *nfb, unsigned long action, void *hcpu)
++/*
++ * At CPU state changes, update the x2apic cluster sibling info.
++ */
++int __cpuinit x2apic_prepare_cpu(unsigned int cpu)
+ {
+-	unsigned int this_cpu = (unsigned long)hcpu;
+-	unsigned int cpu;
+-	int err = 0;
+-
+-	switch (action) {
+-	case CPU_UP_PREPARE:
+-		if (!zalloc_cpumask_var(&per_cpu(cpus_in_cluster, this_cpu),
+-					GFP_KERNEL)) {
+-			err = -ENOMEM;
+-		} else if (!zalloc_cpumask_var(&per_cpu(ipi_mask, this_cpu),
+-					       GFP_KERNEL)) {
+-			free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
+-			err = -ENOMEM;
+-		}
+-		break;
+-	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+-	case CPU_DEAD:
+-		for_each_online_cpu(cpu) {
+-			if (x2apic_cluster(this_cpu) != x2apic_cluster(cpu))
+-				continue;
+-			__cpu_clear(this_cpu, per_cpu(cpus_in_cluster, cpu));
+-			__cpu_clear(cpu, per_cpu(cpus_in_cluster, this_cpu));
+-		}
+-		free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
+-		free_cpumask_var(per_cpu(ipi_mask, this_cpu));
+-		break;
++	if (!zalloc_cpumask_var(&per_cpu(cpus_in_cluster, cpu), GFP_KERNEL))
++		return -ENOMEM;
++
++	if (!zalloc_cpumask_var(&per_cpu(ipi_mask, cpu), GFP_KERNEL)) {
++		free_cpumask_var(per_cpu(cpus_in_cluster, cpu));
++		return -ENOMEM;
+ 	}
+ 
+-	return notifier_from_errno(err);
++	return 0;
+ }
+ 
+-static struct notifier_block __refdata x2apic_cpu_notifier = {
+-	.notifier_call = update_clusterinfo,
+-};
+-
+-static int x2apic_init_cpu_notifier(void)
++int __cpuinit x2apic_dead_cpu(unsigned int this_cpu)
+ {
+-	int cpu = smp_processor_id();
+-
+-	zalloc_cpumask_var(&per_cpu(cpus_in_cluster, cpu), GFP_KERNEL);
+-	zalloc_cpumask_var(&per_cpu(ipi_mask, cpu), GFP_KERNEL);
++	int cpu;
+ 
+-	BUG_ON(!per_cpu(cpus_in_cluster, cpu) || !per_cpu(ipi_mask, cpu));
+-
+-	__cpu_set(cpu, per_cpu(cpus_in_cluster, cpu));
+-	register_hotcpu_notifier(&x2apic_cpu_notifier);
+-	return 1;
++	for_each_online_cpu(cpu) {
++		if (x2apic_cluster(this_cpu) != x2apic_cluster(cpu))
++			continue;
++		__cpu_clear(this_cpu, per_cpu(cpus_in_cluster, cpu));
++		__cpu_clear(cpu, per_cpu(cpus_in_cluster, this_cpu));
++	}
++	free_cpumask_var(per_cpu(cpus_in_cluster, this_cpu));
++	free_cpumask_var(per_cpu(ipi_mask, this_cpu));
++	return 0;
+ }
+ 
+ static int x2apic_cluster_probe(void)
+ {
+-	if (x2apic_mode)
+-		return x2apic_init_cpu_notifier();
+-	else
++	int cpu = smp_processor_id();
++
++	if (!x2apic_mode)
+ 		return 0;
++
++	__cpu_set(cpu, per_cpu(cpus_in_cluster, cpu));
++	cpuhp_setup_state(CPUHP_X2APIC_PREPARE, x2apic_prepare_cpu,
++			  x2apic_dead_cpu);
++	return 1;
+ }
+ 
+ static const struct cpumask *x2apic_cluster_target_cpus(void)
+Index: linux-2.6/include/linux/cpuhotplug.h
+===================================================================
+--- linux-2.6.orig/include/linux/cpuhotplug.h
++++ linux-2.6/include/linux/cpuhotplug.h
+@@ -16,6 +16,7 @@ enum cpuhp_states {
+ 	CPUHP_HRTIMERS_PREPARE,
+ 	CPUHP_TIMERS_PREPARE,
+ 	CPUHP_PROFILE_PREPARE,
++	CPUHP_X2APIC_PREPARE,
+ 	CPUHP_NOTIFY_PREPARE,
+ 	CPUHP_NOTIFY_DEAD,
+ 	CPUHP_CLOCKEVENTS_DEAD,
 
-> ----------------------------------------------------------------
-> Hakan Berg (1):
->       ab8500-fg: Adjust for RF bursts voltage drops
-> 
-> Henrik Sölver (1):
->       ab8500-charger: AB workaround for invalid charger
-> 
-> Jonas Aaberg (2):
->       ab8500-bm: Flush all work queues before suspending
->       ab8500-charger: Do not touch VBUSOVV bits
-> 
-> Lee Jones (7):
->       ab8500-charger: Kick watchdog
->       ab8500-chargalg: Update battery health on safety timer exp
->       pm2301: Move all configuration and emum structs out to a header
->       file
->       ab8500-chargalg: Only root should have write permission on sysfs
->       file
->       abx500-chargalg: Add new sysfs interface to get current charge
->       status
->       pm2301: LPN mode control support
->       ab8500-bm: Remove individual [charger|btemp|fg|chargalg] pdata
->       structures
-> 
-> Loic Pallardy (2):
->       pm2301: Remove volt_now & curr_now properties
->       pm2301: Update watchdog for pm2xxx support
-> 
-> Martin Bergström (1):
->       ab8500-fg: Go to INIT_RECOVERY when charger removed
-> 
-> Michel JAOUEN (2):
->       pm2301: Provide u9540 support for the pm2301 charger
->       ab8500-btemp: Adaptation to AB8505 and AB9540 platforms
-> 
-> Nicolas Guion (1):
->       ab8500-charger: Add support for autopower on AB8505 and AB9540
-> 
-> Olivier Clergeaud (1):
->       pm2301: Clean-up PM2301 interrupt management
-> 
-> Paer-Olof Haakansson (1):
->       u8500-charger: Delay for USB enumeration
-> 
-> Rajkumar Kasirajan (2):
->       pm2301: Enable vbat low monitoring
->       ab8500-fg: Use correct battery charge full design
-> 
->  drivers/mfd/ab8500-core.c                 |    6 +
->  drivers/power/Kconfig                     |    7 +
->  drivers/power/Makefile                    |    1 +
->  drivers/power/ab8500_btemp.c              |   67 +-
->  drivers/power/ab8500_charger.c            |  617 ++++++++++++----
->  drivers/power/ab8500_fg.c                 |   51 +-
->  drivers/power/abx500_chargalg.c           |   43 +-
->  drivers/power/pm2301_charger.c            | 1088 +++++++++++++++++++++++++++++
->  drivers/power/pm2301_charger.h            |  513 ++++++++++++++
->  include/linux/mfd/abx500.h                |    3 +
->  include/linux/mfd/abx500/ab8500-bm.h      |   22 +-
->  include/linux/mfd/abx500/ab8500.h         |   19 +
->  include/linux/mfd/abx500/ux500_chargalg.h |    5 +
->  include/linux/pm2301_charger.h            |   61 ++
->  14 files changed, 2306 insertions(+), 197 deletions(-)
->  create mode 100644 drivers/power/pm2301_charger.c
->  create mode 100644 drivers/power/pm2301_charger.h
->  create mode 100644 include/linux/pm2301_charger.h
-> 
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
