@@ -1,193 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3AaQnT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 11:43:19 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:54010 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688Ab3AaQnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 11:43:17 -0500
-Message-ID: <510A9F1E.2090403@mev.co.uk>
-Date: Thu, 31 Jan 2013 16:43:10 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>,
+	id S1753814Ab3AaQpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 11:45:39 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:52409 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab3AaQph convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
+	Thu, 31 Jan 2013 11:45:37 -0500
+Message-Id: <510AADBE02000078000BB190@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Thu, 31 Jan 2013 16:45:34 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "KY Srinivasan" <kys@microsoft.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [Q]staging/comedi: Considation of *_find_boardinfo possible?
-References: <201301300041.36064.PeterHuewe@gmx.de> <ADE657CA350FB648AAC2C43247A983F00207A707B3C8@AUSP01VMBX24.collaborationhost.net> <5108FE31.8020107@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F00207A707B521@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00207A707B521@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: RE: [PATCH 2/3] X86: Add a check to catch Xen emulation of
+ Hyper-V
+References: <1359507077-26050-1-git-send-email-kys@microsoft.com>
+ <1359507108-26091-1-git-send-email-kys@microsoft.com>
+ <1359507108-26091-2-git-send-email-kys@microsoft.com>
+ <5108ED9702000078000BAA08@nat28.tlf.novell.com>
+ <1db4d98aa3434d4eab7b36bbeb89cd47@SN2PR03MB061.namprd03.prod.outlook.com>
+ <510A2D5802000078000BAEAA@nat28.tlf.novell.com>
+ <32e50a43db8849f2944db256989bebb8@SN2PR03MB061.namprd03.prod.outlook.com>
+ <fe91cec766464b4fbfeea56d7e5de0a0@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <fe91cec766464b4fbfeea56d7e5de0a0@SN2PR03MB061.namprd03.prod.outlook.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-01-30 17:54, H Hartley Sweeten wrote:
-> On Wednesday, January 30, 2013 4:04 AM, Ian Abbott wrote:
->> Here's some code to illustrate what I'm on about in the above description:
->>
->> struct foobar_board {
->> 	const char *name;
->> 	unsigned int ai_chans;
->> 	unsigned int ai_bits;
->> };
->
-> I would also like to make a common "boardinfo" struct that the comedi
-> core can then use in the comedi_recognize() and comedi_report_boards()
-> functions to remove the need for the pointer math. Something like:
->
-> struct comedi_board {
-> 	const char *name;
-> 	const void *private;
-> };
->
-> The comedi_driver then could be changed to:
->
-> +	const struct comedi_board *boards;
-> -	/* number of elements in board_name and board_id arrays */
-> -	unsigned int num_names;
-> -	const char *const *board_name;
-> -	/* offset in bytes from one board name pointer to the next */
-> -	int offset;
-> };
+>>> On 31.01.13 at 16:53, KY Srinivasan <kys@microsoft.com> wrote:
+> Are there any published standards in terms of how the CPUID space should be 
+> populated in the range from 0x40000000 to 0x40010000. Specifically, unless 
 
-I think you'd still need the equivalent of num_names as the comedi core 
-would need to know the length of the boards array.
+I recall having seen this range being marked as reserved for
+hypervisor use somewhere, but I don't remember where that was.
 
-I'm not excited about the idea of adding an extra layer of indirection 
-to all the drivers for the sake of making a couple of functions in the 
-core a little cleaner.  It was kind of done the way it is for the 
-convenience of the driver in the first place.
+> the standard mandates that all ranges unused by a given hypervisor would 
+> return a known value, how can this code be used to detect the presence of an 
+> unknown hypervisor. Hyper-V is going to return the Hyper-V string at 
+> 0x40000000. So, I was planning to scan starting at 0x40000100. Clearly, I can 
+> check for a specific hypervisor that I know causes a problem for Hyper-V (as I 
+> have currently done by checking for Xen). How can I check for the presence of 
+> yet to be created Hypervisors that may emulate Hyper-V by scanning the CPUID 
+> space. I am almost tempted to say that Xen is the special case and the patch 
+> I have submitted addresses that. If a new (or existing hypervisor) plans to 
+> do what Xen is doing, perhaps we can dissuade them from doing that or we can 
+> fix that within the general framework we have here.
 
-> The board_ptr in comedi_device would then change to:
->
-> +	const struct comedi_board *board_ptr;
-> -	const void *board_ptr;
->
-> The comedi_board() helper would also need changed:
->
-> static inline const void *comedi_board(const struct comedi_device *dev)
-> {
-> +	return (dev->board_ptr) ? dev->board_ptr->private : NULL;
-> -	return dev->board_ptr;
-> }
+I'd simply preset ECX, EDX, and EBX to zero, and check whether
+they change on any EAX input divisible by 256, skipping the one
+range you know Hyper-V sits in.
 
-...and probably renamed to avoid the confusion between comedi board and 
-private board structures.
+Jan
 
-> It still returns the driver specific boardinfo as a const void *.
->
-> The common comedi_board would also allow removing the board_name
-> from the comedi_device. A helper function could just fetch it:
->
-> static const char *comedi_board_name(struct comedi_device *dev)
-> {
-> 	return (dev->board_ptr) ? dev->board_ptr->name : dev->driver->driver_name;
-> }
->
->> enum foobar_board_nums {
->> 	bn_foo,
->> 	bn_bar,
->> 	bn_baz
->> };
->>
->> static const struct foobar_board foobar_boards[] = {
->> 	[bn_foo] = {
->> 		.name = "foo",
->> 		.ai_chans = 4,
->> 		.ai_bits = 12,
->> 	},
->> 	[bn_bar] = {
->> 		.name = "bar",
->> 		.ai_chans = 4,
->> 		.ai_bits = 16,
->> 	},
->> 	[bn_baz] = {
->> 		.name = "baz",
->> 		.ai_chans = 8,
->> 		.ai_bits = 16,
->> 	},
->> };
->
-> Using the common comedi_board would change this a bit:
->
-> static const struct foobar_board[] = {
-> 	[bn_foo] = {
-> 		.ai_chans = 4,
-> 		.ai_bits = 12,
-> 	},
-> 	[bn_bar] = {
-> 		.ai_chans = 4,
-> 		.ai_bits = 16,
-> 	},
-> 	[bn_baz] = {
-> 		.ai_chans = 8,
-> 		.ai_bits = 16,
-> 	},
-> };
->
-> static const struct comedi_board foobar_boards[] = {
-> 	[bn_foo] = {
-> 		.name = "foo",
-> 		.private = &foorbar_info[bn_foo],
-> 	},
-> 	[bn_bar] = {
-> 		.name = "bar",
-> 		.private = &foorbar_info[bn_bar],
-> 	},
-> 	[bn_baz] = {
-> 		.name = "baz",
-> 		.private = &foorbar_info[bn_baz],
-> 	},
-> };
->
-> Any other "common" information that the comedi core needs to
-> access could be added to comedi_board. All the driver specific
-> information stays in the private struct.
->
->> static int foobar_auto_attach(struct comedi_device *dev,
->> 			      unsigned long context_bn)
->> {
->> 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
->> 	struct foobar_board *thisboard = &foobar_boards[bn_foo];
->>
->> 	dev->board_ptr = thisboard;	/* no searching! */
->
-> The dev->board_ptr should just be set in the comedi core before
-> calling the drivers auto_attach. Something like:
->
-> 		comedi_set_hw_dev(comedi_dev, hardware_device);
-> 		comedi_dev->driver = driver;
-> +		if (driver->boards)
-> +			comedi_dev->board_ptr = &driver->boards[context];
-> 		ret = driver->auto_attach(comedi_dev, context);
->
-> Actually, if we go this route, the context should not be required in the
-> auto_attach since the core has already taken care of it.
-
-The context should be under the control of the driver for its own 
-nefarious purposes, not dictated by what the comedi core thinks it 
-should be used for.
-
-> Basically, once the auto_attach is called the comedi_device already has
-> the following fields initialized correctly:
->
-> driver		points to the comedi_driver
-> hw_dev	points to the underlying device (pci/usb/pcmcia/etc.)
-> board_name	no longer needed
-> board_ptr	points to the correct comedi_board 'context'
->
-> Other than that, the rest of your code follows what I'm thinking.
->
-> Opinion?
-
-Well I'm not keen!
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
