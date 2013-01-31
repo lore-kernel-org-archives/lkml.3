@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab3AaWwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:52:22 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63236 "EHLO mga09.intel.com"
+	id S1757313Ab3AaWyD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:54:03 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5377 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756741Ab3AaWwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:52:19 -0500
+	id S1757228Ab3AaWwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:52:20 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="279285614"
+   d="scan'208";a="279285613"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 09/12] perf, x86: Disable LBR recording for unknown LBR_FMT
-Date: Thu, 31 Jan 2013 14:51:47 -0800
-Message-Id: <1359672710-19528-10-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 08/12] perf, x86: Move NMI clearing to end of PMI handler after the counter registers are reset
+Date: Thu, 31 Jan 2013 14:51:46 -0800
+Message-Id: <1359672710-19528-9-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
 References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
@@ -26,35 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-When the LBR format is unknown disable LBR recording. This prevents
-crashes when the LBR address is misdecoded and mis-sign extended.
+This avoids some problems with spurious PMIs on Haswell.
+Haswell seems to behave more like P4 in this regard. Do
+the same thing as the P4 perf handler by unmasking
+the NMI only at the end. Shouldn't make any difference
+for earlier non P4 cores.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 2af6695b..ad5af13 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -13,6 +13,7 @@ enum {
- 	LBR_FORMAT_EIP		= 0x02,
- 	LBR_FORMAT_EIP_FLAGS	= 0x03,
- 	LBR_FORMAT_EIP_FLAGS2	= 0x04,
-+	LBR_FORMAT_MAX_KNOWN	= LBR_FORMAT_EIP_FLAGS2,
- };
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 3d915e9..2fe3673 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1138,16 +1138,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
  
- /*
-@@ -392,7 +393,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
- 	/*
- 	 * no LBR on this PMU
- 	 */
--	if (!x86_pmu.lbr_nr)
-+	if (!x86_pmu.lbr_nr || x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
- 		return -EOPNOTSUPP;
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
  
- 	/*
+-	/*
+-	 * Some chipsets need to unmask the LVTPC in a particular spot
+-	 * inside the nmi handler.  As a result, the unmasking was pushed
+-	 * into all the nmi handlers.
+-	 *
+-	 * This handler doesn't seem to have any issues with the unmasking
+-	 * so it was left at the top.
+-	 */
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+@@ -1216,6 +1206,11 @@ again:
+ 
+ done:
+ 	intel_pmu_enable_all(0);
++	/*
++	 * Only unmask the NMI after the overflow counters
++	 * have been reset.
++	 */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	return handled;
+ }
+ 
 -- 
 1.7.7.6
 
