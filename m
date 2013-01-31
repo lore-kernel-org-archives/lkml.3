@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab3AaHYZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 02:24:25 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:38393 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab3AaHYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 02:24:23 -0500
+	id S1754882Ab3AaH2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:28:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:52739 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754793Ab3AaH2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 02:28:10 -0500
+Date: Thu, 31 Jan 2013 08:30:05 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH 1/1] dma: pl330: Convert to devm_ioremap_resource()
+Message-ID: <20130131073005.GA12469@kroah.com>
+References: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAFTL4hyzAR0ztncwA0Hx=9P4MKYgUp1Uro8Lt2VjYPdM5Bd1Qg@mail.gmail.com>
-References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
-	<1359399845-10568-9-git-send-email-fweisbec@gmail.com>
-	<CA+icZUWdGCytVsNKK+gA7Sh-RKT-GPCHoRtPNfDw4_Hfh+ynyA@mail.gmail.com>
-	<CAFTL4hyzAR0ztncwA0Hx=9P4MKYgUp1Uro8Lt2VjYPdM5Bd1Qg@mail.gmail.com>
-Date: Thu, 31 Jan 2013 08:24:22 +0100
-Message-ID: <CA+icZUWJSZT+TUMynsFKd-_3x-TMB=NeK+6f2cWsi6-g82rWKA@mail.gmail.com>
-Subject: Re: [PATCH 8/8] cputime: Safely read cputime of full dynticks CPUs
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 1:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 2013/1/28 Sedat Dilek <sedat.dilek@gmail.com>:
->> On Mon, Jan 28, 2013 at 8:04 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>> While remotely reading the cputime of a task running in a
->>> full dynticks CPU, the values stored in utime/stime fields
->>> of struct task_struct may be stale. Its values may be those
->>> of the last kernel <-> user transition time snapshot and
->>> we need to add the tickless time spent since this snapshot.
->>>
->>> To fix this, flush the cputime of the dynticks CPUs on
->>> kernel <-> user transition and record the time / context
->>> where we did this. Then on top of this snapshot and the current
->>> time, perform the fixup on the reader side from task_times()
->>> accessors.
->>>
->>> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> Cc: Ingo Molnar <mingo@kernel.org>
->>> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
->>> Cc: Namhyung Kim <namhyung.kim@lge.com>
->>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
->>> Cc: Peter Zijlstra <peterz@infradead.org>
->>> Cc: Steven Rostedt <rostedt@goodmis.org>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> [fixed kvm module related build errors]
->>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
->>>
->>
->> Can you explain a bit what is the difference between "3.8-rc4-nohz3"
->> and "full-dynticks-cputime-for-mingo" patchsets?
->
-> 3.8-rc4-nohz3 is the latest experimental tree that implements full
-> dynticks. It includes an earlier version of full dynticks cputime and
-> many other things to make the full dynticks possible: nohz printk,
-> many tweaks on the scheduler and timers...etc
->
+On Thu, Jan 31, 2013 at 12:37:04PM +0530, Sachin Kamat wrote:
+> Use the newly introduced devm_ioremap_resource() instead of
+> devm_request_and_ioremap() which provides more consistent error handling.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+> This change is based against linux-next tree (20130128).
+> This change however introduces the followign sparse warning:
+> drivers/dma/pl330.c:2883:22: warning: incorrect type in argument 1 (different address spaces)
+> drivers/dma/pl330.c:2883:22:    expected void const *ptr
+> drivers/dma/pl330.c:2883:22:    got void [noderef] <asn:2>*base
+> drivers/dma/pl330.c:2884:34: warning: incorrect type in argument 1 (different address spaces)
+> drivers/dma/pl330.c:2884:34:    expected void const *ptr
+> drivers/dma/pl330.c:2884:34:    got void [noderef] <asn:2>*base
 
-So, dynticks-cputime will go into 3.9?
-What about the other parts? Coming later?
+These are known, a patch has been posted for both the kernel and sparse
+to fix this up.
 
->>
->> Does the latter need no more EXPORT_SYMBOL_GPL for vtime_guest_enter()
->> and vtime_guest_exit() when CONFIG_KVM=m (see [1])?
->
-> It doesn't need export symbol on vtime_guest_() APIs, only on
-> guest_enter and guest_exit.
->
+thanks,
 
-I verified this by building by myself.
-
-- Sedat -
-
-> Thanks.
+greg k-h
