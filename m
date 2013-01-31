@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab3AaHQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 02:16:16 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33588 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab3AaHQN (ORCPT
+	id S1754780Ab3AaHUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:20:23 -0500
+Received: from mga07.intel.com ([143.182.124.22]:62241 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753997Ab3AaHUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 02:16:13 -0500
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: sachin.kamat@linaro.org, Vinod Koul <vinod.koul@intel.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/1] dma: pl330: Convert to devm_ioremap_resource()
-Date: Thu, 31 Jan 2013 12:37:04 +0530
-Message-Id: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 31 Jan 2013 02:20:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LRH.2.02.1301311201380.24326@tundra.namei.org>
+References: <783235259540e27e745f68316b1735e8d4ce9137.1359125652.git.dmitry.kasatkin@intel.com>
+	<CALLzPKai_9SR2pBDe8fU1sGTf+fN=EDGGU1HKQ-LTdWuP0Ti5Q@mail.gmail.com>
+	<alpine.LRH.2.02.1301311201380.24326@tundra.namei.org>
+Date: Thu, 31 Jan 2013 09:20:19 +0200
+Message-ID: <CALLzPKaEGQS1KRzRZ6dcbKtQzACtaRQ=mSyfQjrB0ptE=Buw7g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] digsig: Fix memory leakage in digsig_verify_rsa()
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: James Morris <jmorris@namei.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the newly introduced devm_ioremap_resource() instead of
-devm_request_and_ioremap() which provides more consistent error handling.
+On Thu, Jan 31, 2013 at 3:02 AM, James Morris <jmorris@namei.org> wrote:
+> What's the practical impact of this?  Could an attacker kill the machine?
+>
+>
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
-This change is based against linux-next tree (20130128).
-This change however introduces the followign sparse warning:
-drivers/dma/pl330.c:2883:22: warning: incorrect type in argument 1 (different address spaces)
-drivers/dma/pl330.c:2883:22:    expected void const *ptr
-drivers/dma/pl330.c:2883:22:    got void [noderef] <asn:2>*base
-drivers/dma/pl330.c:2884:34: warning: incorrect type in argument 1 (different address spaces)
-drivers/dma/pl330.c:2884:34:    expected void const *ptr
-drivers/dma/pl330.c:2884:34:    got void [noderef] <asn:2>*base
----
- drivers/dma/pl330.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+It might be possible slowly to eat the whole memory if there were too
+many memory verifications.
+This is a bug and the patch will be applied to stable.
+Should go to mainline as well.
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 316a43e..142fe4d 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -25,6 +25,7 @@
- #include <linux/amba/pl330.h>
- #include <linux/scatterlist.h>
- #include <linux/of.h>
-+#include <linux/err.h>
- 
- #include "dmaengine.h"
- #define PL330_MAX_CHAN		8
-@@ -2878,9 +2879,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	pi->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
- 
- 	res = &adev->res;
--	pi->base = devm_request_and_ioremap(&adev->dev, res);
--	if (!pi->base)
--		return -ENXIO;
-+	pi->base = devm_ioremap_resource(&adev->dev, res);
-+	if (IS_ERR(pi->base))
-+		return PTR_ERR(pi->base);
- 
- 	amba_set_drvdata(adev, pdmac);
- 
--- 
-1.7.4.1
+I suggest to apply it and also couple of other patches I sent yesterday.
 
+thanks.
+
+- Dmitry
+
+> On Wed, 30 Jan 2013, Kasatkin, Dmitry wrote:
+>
+>> On Fri, Jan 25, 2013 at 4:54 PM, Dmitry Kasatkin
+>> <dmitry.kasatkin@intel.com> wrote:
+>> > From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+>> >
+>> > digsig_verify_rsa() does not free kmalloc'ed buffer returned by
+>> > mpi_get_buffer().
+>> >
+>> > Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+>> > Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+>> > Cc: stable@vger.kernel.org
+>> > ---
+>> >  lib/digsig.c |    2 ++
+>> >  1 file changed, 2 insertions(+)
+>> >
+>> > diff --git a/lib/digsig.c b/lib/digsig.c
+>> > index 8c0e629..dc2be7e 100644
+>> > --- a/lib/digsig.c
+>> > +++ b/lib/digsig.c
+>> > @@ -162,6 +162,8 @@ static int digsig_verify_rsa(struct key *key,
+>> >         memset(out1, 0, head);
+>> >         memcpy(out1 + head, p, l);
+>> >
+>> > +       kfree(p);
+>> > +
+>> >         err = pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
+>> >         if (err)
+>> >                 goto err;
+>> > --
+>> > 1.7.10.4
+>> >
+>>
+>> James, can you please apply this patch.
+>>
+>> - Dmitry
+>>
+>
+> --
+> James Morris
+> <jmorris@namei.org>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
