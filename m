@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab3AaAz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:55:28 -0500
-Received: from mga03.intel.com ([143.182.124.21]:38079 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab3AaAzZ convert rfc822-to-8bit (ORCPT
+	id S1754892Ab3AaA4D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:56:03 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35247 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab3AaAz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:55:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,572,1355126400"; 
-   d="scan'208";a="250527771"
-From: "Su, Xuemin" <xuemin.su@intel.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-CC: "airlied@linux.ie" <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "He, Bo" <bo.he@intel.com>
-Subject: RE: [PATCH V3] drm_crtc: check if fb_create return NULL
-Thread-Topic: [PATCH V3] drm_crtc: check if fb_create return NULL
-Thread-Index: AQHN+cp64wPr1K2oZ0urPhpEh4jDvphXoM4AgACO+k+ACnYAUA==
-Date: Thu, 31 Jan 2013 00:55:21 +0000
-Message-ID: <CDD08C147402274194A8DDD9DBEF5593414954@SHSMSX101.ccr.corp.intel.com>
-References: <1358987804.18561.22.camel@suxuemin.sh.intel.com>
- <87bocfugln.fsf@intel.com> <1359017171.18561.29.camel@suxuemin.sh.intel.com>
- <878v7juf2v.fsf@intel.com>
-In-Reply-To: <878v7juf2v.fsf@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Jan 2013 19:55:59 -0500
+Message-ID: <5109C115.5080507@oracle.com>
+Date: Wed, 30 Jan 2013 19:55:49 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: torvalds@linux-foundation.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hlist: drop the node parameter from iterators
+References: <1358998645-20452-1-git-send-email-sasha.levin@oracle.com> <5108728E.5020901@oracle.com> <20130130154725.f7b40daa.akpm@linux-foundation.org> <5109B64D.9050904@oracle.com> <20130130162243.8137c424.akpm@linux-foundation.org>
+In-Reply-To: <20130130162243.8137c424.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/30/2013 07:22 PM, Andrew Morton wrote:
+> On Wed, 30 Jan 2013 19:09:49 -0500
+> Sasha Levin <sasha.levin@oracle.com> wrote:
+>> If not, should I send it over to you on -rc1?
+> 
+> Probably that's the way to go, but there's no point in going via my
+> tree on this - put it straight into mainline and we'll have any adverse
+> fallout fixed up pretty soon afterwards.
+
+Linus rejected this plan because this way it won't have any testing up
+until the point it lands into mainline.
+
+The idea was to put it in your tree so it would be able to live there and
+in -next until the next merge window opens.
+
+> But... how confident can we be that the code is correct?
+> 
+> I guess a bit of linux-next testing wouldn't hurt, however applying the
+> v2 patch to current linux-next is not pretty:
+> 
+> 1 out of 3 hunks FAILED -- saving rejects to file arch/mips/kernel/kprobes.c.rej
+> 4 out of 4 hunks FAILED -- saving rejects to file arch/x86/kernel/kprobes.c.rej
+> 1 out of 3 hunks FAILED -- saving rejects to file block/blk-cgroup.c.rej
+> 1 out of 2 hunks FAILED -- saving rejects to file block/cfq-iosched.c.rej
+> 1 out of 1 hunk FAILED -- saving rejects to file block/elevator.c.rej
+> 1 out of 17 hunks FAILED -- saving rejects to file drivers/clk/clk.c.rej
+> 2 out of 2 hunks FAILED -- saving rejects to file drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c.rej
+> 2 out of 2 hunks FAILED -- saving rejects to file drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c.rej
+> 4 out of 4 hunks FAILED -- saving rejects to file kernel/cgroup.c.rej
+> 6 out of 7 hunks FAILED -- saving rejects to file kernel/workqueue.c.rej
+> 2 out of 8 hunks FAILED -- saving rejects to file net/batman-adv/bat_iv_ogm.c.rej
+> 11 out of 23 hunks FAILED -- saving rejects to file net/batman-adv/bridge_loop_avoidance.c.rej
+> 2 out of 15 hunks FAILED -- saving rejects to file net/batman-adv/originator.c.rej
+> 1 out of 4 hunks FAILED -- saving rejects to file net/batman-adv/routing.c.rej
+> 2 out of 3 hunks FAILED -- saving rejects to file net/batman-adv/send.c.rej
+> 2 out of 38 hunks FAILED -- saving rejects to file net/batman-adv/translation-table.c.rej
+> 4 out of 16 hunks FAILED -- saving rejects to file net/batman-adv/vis.c.rej
+> 2 out of 6 hunks FAILED -- saving rejects to file net/ipv4/inet_connection_sock.c.rej
+> 1 out of 2 hunks FAILED -- saving rejects to file net/ipv6/inet6_connection_sock.c.rej
+> 
+> 
+> Hum.  Perhaps to move this thing forward you could prepare a diff
+> against current linux-next and I'll see how painful it is to maintain
+> for a month?
+
+This patch is like beer, keep it open for a week and it'll become flat taste like crap.
+
+I've tried applying it on top of today's -next with git's 3-way merge, which produced
+only 2 conflicts - both were pretty trivial. I'm reviewing a bunch of greps while an
+allyesconfig is running in the background, I'll resend the patch when both of these
+look good.
 
 
------Original Message-----
-From: Jani Nikula [mailto:jani.nikula@linux.intel.com] 
-Sent: Thursday, January 24, 2013 5:05 PM
-To: Su, Xuemin
-Cc: airlied@linux.ie; dri-devel@lists.freedesktop.org; linux-kernel@vger.kernel.org; yanmin_zhang@linux.intel.com; He, Bo
-Subject: Re: [PATCH V3] drm_crtc: check if fb_create return NULL
+Thanks,
+Sasha
 
->Ah, sorry, never mind, I missed Daniel's comment. The benefit of the
->BUG_ON() is making it clear what's expected of the drivers.
-
->Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-
-Do you think this patch is still needed?
-Currently I fix a buggy function radeon_user_framebuffer_create() which returns NULL and patch is added to 3.7-stable tree.
-Do you think it's also needed to do something in drm_mode_addfb()?
-Thanks.
