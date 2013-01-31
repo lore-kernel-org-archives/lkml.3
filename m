@@ -1,108 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab3AaW1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:27:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44862 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756898Ab3AaW1j (ORCPT
+	id S964769Ab3AaW2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:28:47 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:46502 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754369Ab3AaW2p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:27:39 -0500
-Date: Thu, 31 Jan 2013 14:27:28 -0800
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-d288e1cf8e62f3e4034f1f021f047009c4ac0b3c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1356075872-3054-4-git-send-email-fenghua.yu@intel.com>
-References: <1356075872-3054-4-git-send-email-fenghua.yu@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86/common.c: Make have_cpuid_p()
-  a global function
-Git-Commit-ID: d288e1cf8e62f3e4034f1f021f047009c4ac0b3c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 31 Jan 2013 17:28:45 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Date: Fri, 1 Feb 2013 00:28:44 +0200
+Message-ID: <CA+MedixNn7Nxu8LMpPWF8AKWpzPh6qt-Hx2=t02MhCX=OUd7Dg@mail.gmail.com>
+Subject: [BUG][bonding][3.7.+] - bonding with 802.3ad mode send all traffic
+ via a single interface only
+From: Nikolay Ulyanitsky <lystor@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 14:27:33 -0800 (PST)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d288e1cf8e62f3e4034f1f021f047009c4ac0b3c
-Gitweb:     http://git.kernel.org/tip/d288e1cf8e62f3e4034f1f021f047009c4ac0b3c
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Thu, 20 Dec 2012 23:44:23 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 31 Jan 2013 13:18:58 -0800
+Hello
 
-x86/common.c: Make have_cpuid_p() a global function
+Bonding with 802.3ad mode send all traffic via a single interface on
+kernel 3.7.+
 
-Remove static declaration in have_cpuid_p() to make it a global function. The
-function will be called in early loading microcode.
+Tested kernels with the issue: 3.7.5, 3.7.0
+Tested kernels without the issue: 3.6.11, 3.4.28 and older
+CentOS 6 x86_64
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1356075872-3054-4-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/processor.h | 8 ++++++++
- arch/x86/kernel/cpu/common.c     | 9 +++------
- 2 files changed, 11 insertions(+), 6 deletions(-)
+All kernels are compiled from the same config (http://pastebin.com/SPbgAAVt).
+A screenshot from a router with 4 NICs on bond0 (eth0, eth1) and bond1
+(eth2, eth3):
+http://s17.postimage.org/f5a4owrsf/bonding.png
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index bdee8bd..3cdf4aa 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -190,6 +190,14 @@ extern void init_amd_cacheinfo(struct cpuinfo_x86 *c);
- extern void detect_extended_topology(struct cpuinfo_x86 *c);
- extern void detect_ht(struct cpuinfo_x86 *c);
- 
-+#ifdef CONFIG_X86_32
-+extern int have_cpuid_p(void);
-+#else
-+static inline int have_cpuid_p(void)
-+{
-+	return 1;
-+}
-+#endif
- static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
- 				unsigned int *ecx, unsigned int *edx)
- {
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 9c3ab43..d7fd246 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -37,6 +37,8 @@
- #include <asm/mce.h>
- #include <asm/msr.h>
- #include <asm/pat.h>
-+#include <asm/microcode.h>
-+#include <asm/microcode_intel.h>
- 
- #ifdef CONFIG_X86_LOCAL_APIC
- #include <asm/uv/uv.h>
-@@ -213,7 +215,7 @@ static inline int flag_is_changeable_p(u32 flag)
- }
- 
- /* Probe for the CPUID instruction */
--static int __cpuinit have_cpuid_p(void)
-+int __cpuinit have_cpuid_p(void)
- {
- 	return flag_is_changeable_p(X86_EFLAGS_ID);
- }
-@@ -249,11 +251,6 @@ static inline int flag_is_changeable_p(u32 flag)
- {
- 	return 1;
- }
--/* Probe for the CPUID instruction */
--static inline int have_cpuid_p(void)
--{
--	return 1;
--}
- static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
- {
- }
+STEPS TO REPRODUCE ON TEST HOST:
+Sorry, I have no any managed switches with 802.3ad at home. So I use
+Virtualbox for bug reporting with two bridged adapters on the guest
+attached to TAP devices on the host.
+
+STEP 1. VIRTUALBOX HOST – INIT:
+# cat /etc/modprobe.d/bonding.conf:
+alias bond0 bonding
+options bond0 mode=4 xmit_hash_policy=layer3+4 miimon=100
+
+# ip tuntap add dev tap0 mode tap
+# ip tuntap add dev tap1 mode tap
+# modprobe -v bond0
+# ip l set dev tap0 up
+# ip l set dev tap1 up
+# ip l set dev bond0 up
+# ifenslave bond0 tap0 tap1
+# ip a add 192.168.10.10/24 dev bond0
+
+STEP 2. VIRTUALBOX GUEST – INIT:
+# cat /etc/modprobe.d/bonding.conf:
+alias bond0 bonding
+options bond0 mode=4 xmit_hash_policy=layer3+4 miimon=100
+
+# modprobe -v bond0
+# ip l set dev p2p1 up
+# ip l set dev p7p1 up
+# ip l set dev bond0 up
+# ifenslave bond0 p2p1 p7p1
+# ip a add 192.168.10.20/24 dev bond0
+# ip r add default via 192.168.10.10
+
+STEP 3. VIRTUALBOX HOST – INIT SNIFFERS:
+# tcpdump -n -nn -l -i tap0 > tap0.txt &
+# tcpdump -n -nn -l -i tap1 > tap1.txt &
+
+STEP 4. VIRTUALBOX HOST – GENERATE SOME TRAFFIC:
+# nmap -sU -v -T 5 192.168.10.20
+
+On 3.7.5, 3.7.0 the bonding will place all traffic only to a single
+interface (tap0 or tap1).
+On 3.6.11, 3.4.28 and older kernels the bonding will place all traffic
+to both interfaces (tap0 and tap1).
+
+
+# cat /proc/net/bonding/bond0
+Ethernet Channel Bonding Driver: v3.7.1 (April 27, 2011)
+Bonding Mode: IEEE 802.3ad Dynamic link aggregation
+Transmit Hash Policy: layer3+4 (1)
+MII Status: up
+MII Polling Interval (ms): 100
+Up Delay (ms): 0
+Down Delay (ms): 0
+802.3ad info
+LACP rate: slow
+Min links: 0
+Aggregator selection policy (ad_select): stable
+Active Aggregator Info:
+Aggregator ID: 1
+Number of ports: 2
+Actor Key: 5
+Partner Key: 17
+Partner Mac Address: 08:00:27:af:dd:45
+
+Slave Interface: tap0
+MII Status: up
+Speed: 10 Mbps
+Duplex: full
+Link Failure Count: 0
+Permanent HW addr: ba:2f:b5:25:d0:67
+Aggregator ID: 1
+Slave queue ID: 0
+
+Slave Interface: tap1
+MII Status: up
+Speed: 10 Mbps
+Duplex: full
+Link Failure Count: 0
+Permanent HW addr: 6a:ce:e4:d0:0c:05
+Aggregator ID: 1
+Slave queue ID: 0
+
+
+Any ideas?
+Thanks
+
+–
+With best regards,
+Nikolay Ulyanitsky
