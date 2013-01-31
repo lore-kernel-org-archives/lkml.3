@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab3AaWwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:52:47 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:51498 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756489Ab3AaWwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:52:43 -0500
-From: William Hubbs <w.d.hubbs@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: mpagano@gentoo.org, William Hubbs <w.d.hubbs@gmail.com>
-Subject: [PATCH] init: fix name of root device in /proc/mounts
-Date: Thu, 31 Jan 2013 16:51:39 -0600
-Message-Id: <1359672699-23540-1-git-send-email-w.d.hubbs@gmail.com>
-X-Mailer: git-send-email 1.7.12.4
+	id S1757300Ab3AaWw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:52:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5377 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757078Ab3AaWwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:52:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
+   d="scan'208";a="279285607"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
+        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 05/12] perf, x86: Support Haswell v4 LBR format
+Date: Thu, 31 Jan 2013 14:51:43 -0800
+Message-Id: <1359672710-19528-6-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
+References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a system that does not use an initramfs, /dev/root was always
-listed in /proc/mounts. This breaks software which scans /proc/mounts to
-determine which file systems are mounted since /dev/root is not a valid
-device name.
+From: Andi Kleen <ak@linux.intel.com>
 
-This changes that processing so that "/dev/root" is only added to
-/proc/mounts if a root device is not specified with the root= option on
-the kernel command line.
+Haswell has two additional LBR from flags for TSX: intx and abort, implemented
+as a new v4 version of the LBR format.
 
-Signed-off-by: William Hubbs <w.d.hubbs@gmail.com>
+Handle those in and adjust the sign extension code to still correctly extend.
+The flags are exported similarly in the LBR record to the existing misprediction
+flag
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- init/do_mounts.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
+ include/linux/perf_event.h                 |    7 ++++++-
+ 2 files changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 1d1b634..efc37d2 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -480,7 +480,10 @@ void __init change_floppy(char *fmt, ...)
- 	va_start(args, fmt);
- 	vsprintf(buf, fmt, args);
- 	va_end(args);
--	fd = sys_open("/dev/root", O_RDWR | O_NDELAY, 0);
-+	if (saved_root_name[0])
-+		fd = sys_open(saved_root_name, O_RDWR | O_NDELAY, 0);
-+	else
-+		fd = sys_open("/dev/root", O_RDWR | O_NDELAY, 0);
- 	if (fd >= 0) {
- 		sys_ioctl(fd, FDEJECT, 0);
- 		sys_close(fd);
-@@ -523,8 +526,13 @@ void __init mount_root(void)
- 	}
- #endif
- #ifdef CONFIG_BLOCK
--	create_dev("/dev/root", ROOT_DEV);
--	mount_block_root("/dev/root", root_mountflags);
-+	if (saved_root_name[0]) {
-+		create_dev(saved_root_name, ROOT_DEV);
-+		mount_block_root(saved_root_name, root_mountflags);
-+	} else {
-+		create_dev("/dev/root", ROOT_DEV);
-+		mount_block_root("/dev/root", root_mountflags);
-+	}
- #endif
- }
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index da02e9c..2af6695b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -12,6 +12,7 @@ enum {
+ 	LBR_FORMAT_LIP		= 0x01,
+ 	LBR_FORMAT_EIP		= 0x02,
+ 	LBR_FORMAT_EIP_FLAGS	= 0x03,
++	LBR_FORMAT_EIP_FLAGS2	= 0x04,
+ };
  
+ /*
+@@ -56,6 +57,8 @@ enum {
+ 	 LBR_FAR)
+ 
+ #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
++#define LBR_FROM_FLAG_INTX     (1ULL << 62)
++#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
+ 
+ #define for_each_branch_sample_type(x) \
+ 	for ((x) = PERF_SAMPLE_BRANCH_USER; \
+@@ -270,21 +273,30 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ 
+ 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
+ 		unsigned long lbr_idx = (tos - i) & mask;
+-		u64 from, to, mis = 0, pred = 0;
++		u64 from, to, mis = 0, pred = 0, intx = 0, abort = 0;
+ 
+ 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
+ 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
+ 
+-		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
++		if (lbr_format == LBR_FORMAT_EIP_FLAGS ||
++		    lbr_format == LBR_FORMAT_EIP_FLAGS2) {
+ 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
+ 			pred = !mis;
+-			from = (u64)((((s64)from) << 1) >> 1);
++			if (lbr_format == LBR_FORMAT_EIP_FLAGS)
++				from = (u64)((((s64)from) << 1) >> 1);
++			else if (lbr_format == LBR_FORMAT_EIP_FLAGS2) {
++				intx = !!(from & LBR_FROM_FLAG_INTX);
++				abort = !!(from & LBR_FROM_FLAG_ABORT);
++				from = (u64)((((s64)from) << 3) >> 3);
++			}
+ 		}
+ 
+ 		cpuc->lbr_entries[i].from	= from;
+ 		cpuc->lbr_entries[i].to		= to;
+ 		cpuc->lbr_entries[i].mispred	= mis;
+ 		cpuc->lbr_entries[i].predicted	= pred;
++		cpuc->lbr_entries[i].intx	= intx;
++		cpuc->lbr_entries[i].abort	= abort;
+ 		cpuc->lbr_entries[i].reserved	= 0;
+ 	}
+ 	cpuc->lbr_stack.nr = i;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6bfb2faa..91052e1 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -74,13 +74,18 @@ struct perf_raw_record {
+  *
+  * support for mispred, predicted is optional. In case it
+  * is not supported mispred = predicted = 0.
++ *
++ *     intx: running in a hardware transaction
++ *     abort: aborting a hardware transaction
+  */
+ struct perf_branch_entry {
+ 	__u64	from;
+ 	__u64	to;
+ 	__u64	mispred:1,  /* target mispredicted */
+ 		predicted:1,/* target predicted */
+-		reserved:62;
++		intx:1,	    /* in transaction */
++		abort:1,    /* transaction abort */
++		reserved:60;
+ };
+ 
+ /*
 -- 
-1.7.12.4
+1.7.7.6
 
