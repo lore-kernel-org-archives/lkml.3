@@ -1,133 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab3AaKIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:08:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37758 "EHLO mga01.intel.com"
+	id S1754394Ab3AaKLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:11:47 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38458 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753742Ab3AaKIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:08:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,575,1355126400"; 
-   d="scan'208";a="280767690"
-Date: Thu, 31 Jan 2013 18:09:27 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] rwsem-spinlock: let rwsem write lock stealable
-Message-ID: <20130131100927.GY12678@yliu-dev.sh.intel.com>
-References: <1359537244-20588-1-git-send-email-yuanhan.liu@linux.intel.com>
- <20130131093931.GA398@gmail.com>
+	id S1753446Ab3AaKLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 05:11:44 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>
+Subject: RE: [PATCH RFC] davinci: poll for sleep completion in resume
+ routine.
+Thread-Topic: [PATCH RFC] davinci: poll for sleep completion in resume
+ routine.
+Thread-Index: AQHN/5XxpHn9OjBrUkS7PDbkGefup5hi1cUAgABgJMA=
+Date: Thu, 31 Jan 2013 10:11:30 +0000
+Message-ID: <A4887BF146CD57468F700B415D2F4701581C4A@DBDE01.ent.ti.com>
+References: <1359624393-5898-1-git-send-email-manishv.b@ti.com>
+ <510A3EAE.107@ti.com>
+In-Reply-To: <510A3EAE.107@ti.com>
+Accept-Language: en-IN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130131093931.GA398@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0VABkXB019491
 
-On Thu, Jan 31, 2013 at 10:39:31AM +0100, Ingo Molnar wrote:
-> 
-> * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> 
-> > We(Linux Kernel Performance project) found a regression introduced by
-> > commit 5a50508, which just convert all mutex lock to rwsem write lock.
-> > The semantics is same, but the results is quite huge in some cases.
-> > After investigation, we found the root cause: mutex support lock
-> > stealing. Here is the link for the detailed regression report:
-> >     https://lkml.org/lkml/2013/1/29/84
-> > 
-> > Ingo suggests to add write lock stealing to rwsem as well:
-> >     "I think we should allow lock-steal between rwsem writers - that
-> >      will not hurt fairness as most rwsem fairness concerns relate to
-> >      reader vs. writer fairness"
-> > 
-> > I then tried it with rwsem-spinlock first as I found it much easier to
-> > implement it than lib/rwsem.c. And here I sent out this patch first for
-> > comments. I'd try lib/rwsem.c later once the change to rwsem-spinlock
-> > is OK to you guys.
-> > 
-> > With this patch, we got a double performance increase in one test box
-> > with following aim7 workfile:
-> >     FILESIZE: 1M
-> >     POOLSIZE: 10M
-> >     10 fork_test
-> > 
-> > some /usr/bin/time output w/o patch      some /usr/bin/time_output with patch
-> > ----------------------------------------------------------------------------
-> > Percent of CPU this job got: 369%        Percent of CPU this job got: 537%
-> > Voluntary context switches: 640595016    Voluntary context switches: 157915561
-> > ----------------------------------------------------------------------------
-> > You will see we got a 45% increase of CPU usage and saves about 3/4
-> > voluntary context switches.
-> > 
-> > 
-> > Here is the .nr_running filed for all CPUs from /proc/sched_debug.
-> > 
-> > output w/o this patch:
-> > ----------------------
-> > cpu 00:   0   0   ...   0   0   0   0   0   0   0   1   0   1 .... 0   0
-> > cpu 01:   0   0   ...   1   0   0   0   0   0   1   1   0   1 .... 0   0
-> > cpu 02:   0   0   ...   1   1   0   0   0   1   0   0   1   0 .... 1   1
-> > cpu 03:   0   0   ...   0   1   0   0   0   1   1   0   1   1 .... 0   0
-> > cpu 04:   0   1   ...   0   0   2   1   1   2   1   0   1   0 .... 1   0
-> > cpu 05:   0   1   ...   0   0   2   1   1   2   1   1   1   1 .... 0   0
-> > cpu 06:   0   0   ...   2   0   0   1   0   0   1   0   0   0 .... 0   0
-> > cpu 07:   0   0   ...   2   0   0   0   1   0   1   1   0   0 .... 1   0
-> > cpu 08:   0   0   ...   1   0   0   0   1   0   0   1   0   0 .... 0   1
-> > cpu 09:   0   0   ...   1   0   0   0   1   0   0   1   0   0 .... 0   1
-> > cpu 10:   0   0   ...   0   0   0   2   0   0   1   0   1   1 .... 1   2
-> > cpu 11:   0   0   ...   0   0   0   2   2   0   1   0   1   0 .... 1   2
-> > cpu 12:   0   0   ...   2   0   0   0   1   1   3   1   1   1 .... 1   0
-> > cpu 13:   0   0   ...   2   0   0   0   1   1   3   1   1   0 .... 1   1
-> > cpu 14:   0   0   ...   0   0   0   2   0   0   1   1   0   0 .... 1   0
-> > cpu 15:   0   0   ...   1   0   0   2   0   0   1   1   0   0 .... 0   0
-> > 
-> > output with this patch:
-> > -----------------------
-> > cpu 00:   0   0   ...   1   1   2   1   1   1   2   1   1   1 .... 1   3
-> > cpu 01:   0   0   ...   1   1   1   1   1   1   2   1   1   1 .... 1   3
-> > cpu 02:   0   0   ...   2   2   3   2   0   2   1   2   1   1 .... 1   1
-> > cpu 03:   0   0   ...   2   2   3   2   1   2   1   2   1   1 .... 1   1
-> > cpu 04:   0   1   ...   2   0   0   1   0   1   3   1   1   1 .... 1   1
-> > cpu 05:   0   1   ...   2   0   1   1   0   1   2   1   1   1 .... 1   1
-> > cpu 06:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
-> > cpu 07:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
-> > cpu 08:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
-> > cpu 09:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
-> > cpu 10:   0   0   ...   1   1   1   0   0   1   1   1   1   1 .... 0   0
-> > cpu 11:   0   0   ...   1   1   1   0   0   1   1   1   1   2 .... 1   0
-> > cpu 12:   0   0   ...   1   1   1   0   1   1   0   0   0   1 .... 2   1
-> > cpu 13:   0   0   ...   1   1   1   0   1   1   1   0   1   2 .... 2   0
-> > cpu 14:   0   0   ...   2   0   0   0   0   1   1   1   1   1 .... 2   2
-> > cpu 15:   0   0   ...   2   0   0   1   0   1   1   1   1   1 .... 2   2
-> > ------------------------------------------------------------------------
-> > Where you can see that CPU is much busier with this patch.
-> 
-> That looks really good - quite similar to how it behaved with 
-> mutexes, right?
+Hi Sekhar
 
-Yes :)
+On Thu, Jan 31, 2013 at 15:21:42, Nori, Sekhar wrote:
+> 
+> 
+> On 1/31/2013 2:56 PM, Vishwanathrao Badarkhe, Manish wrote:
+> > As per OMAP-L138 TRM, Software must poll for SLEEPCOMPLETE bit until 
+> > it is set to 1 before clearing SLEEPENABLE bit in DEEPSLEEP register 
+> > in resume routine.
+> > Modifications are as per datasheet:
+> > http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
+> > See sections 10.10.2.2 and 11.5.21 for more detailed explanation.
+> > 
+> > Tested on da850-evm.
+> > 
+> > Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> 
+> Is this a bug fix? Do you see any issue without this patch?
 
-And the result is almost same with mutex lock when MUTEX_SPIN_ON_OWNER
-is disabled, and that's the reason you will see massive processes(about
-100) queued on each CPU in my last report:
-    https://lkml.org/lkml/2013/1/29/84
+This is not a bug fix. I have not seen any issue without this patch. 
+Only, modifications are done as per OMAP-L138 TRM.   
 
 > 
-> Does this recover most of the performance regression?
-
-Yes, there is only a 10% gap here then. I guess that's because I used
-the general rwsem lock implementation(lib/rwsem-spinlock.c), but not the
-XADD one(lib/rwsem.c). I guess the gap may be a little smaller if we do
-the same thing to lib/rwsem.c.
+> Thanks,
+> Sekhar
+> 
 
 
-Thanks.
-
-	--yliu
+Regards, 
+Manish
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
