@@ -1,101 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab3AaODY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 09:03:24 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:44874 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3AaODV (ORCPT
+	id S1753446Ab3AaOD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 09:03:27 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:56539 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997Ab3AaODY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 09:03:21 -0500
+	Thu, 31 Jan 2013 09:03:24 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH 0/2] perf: add new uncore command
-Date: Thu, 31 Jan 2013 14:54:37 +0100
-Message-Id: <1359640479-5289-1-git-send-email-eranian@google.com>
+Subject: [PATCH 1/2] perf tools: add cpu_map__get_socket()
+Date: Thu, 31 Jan 2013 14:54:38 +0100
+Message-Id: <1359640479-5289-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359640479-5289-1-git-send-email-eranian@google.com>
+References: <1359640479-5289-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds a new command to perf: perf uncore.
-It is used to measure processor socket-level metrics
-on a system-wide basis and at all priv levels.
-
-The command comes with a set of predefined key metrics
-which are useful to measure multi-socket system imbalance
-and various bandwidths.
-
-The following metrics are currently defined:
-  - memory bandwidth (Nehalem, Westmere, SandyBridge-EP)
-  - PCIe bandwidth (SandyBridge-EP)
-  - QPI bandwidth (SandyBridge-EP)
-  - C-state residency (SandyBridge-EP)
-
-Others can be added in the future.
-
-The command provides options to modify the unit of the metrics
-(default: MB/s for bandwidth).
-
-Example on Nehalem:
-
- # perf uncore
- #------------------------------
- #           Socket0           |
- #------------------------------
- #        RAM Bandwidth        |
- #            Wr             Rd|
- #          MB/s           MB/s|
- #------------------------------
-         4954.99       14897.29
-         4953.97       14894.56
-         4947.52       14874.97
-
-To make plotting easier, the output can be augmented with a timestamp:
-
- # perf uncore -T
- #----------------------------------------
- #         |           Socket0           |
- #         |------------------------------
- #   Time  |        RAM Bandwidth        |
- #    in   |            Wr             Rd|
- #   secs  |          MB/s           MB/s|
- #----------------------------------------
-          1        4952.50       14890.49
-          2        4955.55       14900.19
-          3        4949.13       14879.60
-          4        4954.66       14896.26
-
-The code is split between generic layer (builtin-uncore.c) and
-an arch specific layer (arch/*/util/uncore.c). All events are
-hardcoded because they don't change for a given processor and
-metric computation requires combining multiple events.
+To get the socket number associated with a CPU.
+Useful for uncore output.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
+ tools/perf/util/cpumap.c |   26 ++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h |    1 +
+ 2 files changed, 27 insertions(+)
 
-Stephane Eranian (2):
-  perf tools: add cpu_map__get_socket()
-  perf: add new perf uncore command
-
- tools/perf/Documentation/perf-uncore.txt |   88 ++++
- tools/perf/Makefile                      |    1 +
- tools/perf/arch/x86/Makefile             |    1 +
- tools/perf/arch/x86/util/uncore.c        |  539 ++++++++++++++++++++++
- tools/perf/builtin-uncore.c              |  739 ++++++++++++++++++++++++++++++
- tools/perf/builtin.h                     |    1 +
- tools/perf/command-list.txt              |    1 +
- tools/perf/perf.c                        |    1 +
- tools/perf/util/cpumap.c                 |   26 ++
- tools/perf/util/cpumap.h                 |    1 +
- tools/perf/util/uncore.h                 |   56 +++
- 11 files changed, 1454 insertions(+)
- create mode 100644 tools/perf/Documentation/perf-uncore.txt
- create mode 100644 tools/perf/arch/x86/util/uncore.c
- create mode 100644 tools/perf/builtin-uncore.c
- create mode 100644 tools/perf/util/uncore.h
-
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index 2b32ffa..adb2e9c 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -1,4 +1,5 @@
+ #include "util.h"
++#include "sysfs.h"
+ #include "../perf.h"
+ #include "cpumap.h"
+ #include <assert.h>
+@@ -201,3 +202,28 @@ void cpu_map__delete(struct cpu_map *map)
+ {
+ 	free(map);
+ }
++
++int cpu_map__get_socket(struct cpu_map *map, int idx)
++{
++	FILE *fp;
++	char path[PATH_MAX];
++	const char *sysfs;
++	int cpu, ret;
++
++	if (idx > map->nr)
++		return -1;
++
++	cpu = map->map[idx];
++
++	sysfs = sysfs_find_mountpoint();
++	if (!sysfs)
++		return -1;
++
++	sprintf(path, "%s/devices/system/cpu/cpu%d/topology/physical_package_id", sysfs, cpu);
++	fp = fopen(path, "r");
++	if (!fp)
++		return -1;
++	ret = fscanf(fp, "%d", &cpu);
++	fclose(fp);
++	return ret == 1 ? cpu : -1;
++}
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 2f68a3b..0178e49 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -14,6 +14,7 @@ struct cpu_map *cpu_map__dummy_new(void);
+ void cpu_map__delete(struct cpu_map *map);
+ struct cpu_map *cpu_map__read(FILE *file);
+ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
++int cpu_map__get_socket(struct cpu_map *map, int idx);
+ 
+ static inline int cpu_map__nr(const struct cpu_map *map)
+ {
 -- 
 1.7.10.4
 
