@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab3AaAYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:24:42 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:35136 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab3AaAYh (ORCPT
+	id S1755904Ab3AaA00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:26:26 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:59482 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab3AaA0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:24:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130118113742.GA9006@arm.com>
-References: <20130118113742.GA9006@arm.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 30 Jan 2013 17:24:14 -0700
-Message-ID: <CAErSpo7Oyx41Qy80YcZNpSe7CatzLZ4Lai0--YRGJ0NZ1zQTRA@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/2] Implementation of pci_fixup_irqs for descendants
- of a specified bus
-To: Andrew Murray <Andrew.Murray@arm.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 30 Jan 2013 19:26:24 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] fixes for large mm_populate() and munlock() operations
+Date: Wed, 30 Jan 2013 16:26:17 -0800
+Message-Id: <1359591980-29542-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 4:37 AM, Andrew Murray <Andrew.Murray@arm.com> wrote:
-> Continuing from discussion with Thierry (lkml.org/lkml/2013/1/18/107) perhaps
-> this will be useful to fold into your patchset.
-> ---
-> This patch provides pci_bus_fixup_irqs which performs the same
-> function as pci_fixup_irqs but only to descendants of the specified
-> bus.
+These 3 changes are to improve the handling of large mm_populate and
+munlock operations. They apply on top of mmotm (in particular, they
+depend on both my prior mm_populate work and Kirill's "thp: avoid
+dumping huge zero page" change).
 
-I think pci_fixup_irqs() is a broken design to begin with because it
-is only called once at boot-time and it iterates over all the devices
-we've found so far.  Any hot-added devices never get the fixups.
+- Patch 1 fixes an integer overflow issue when populating 2^32 pages.
+  The nr_pages argument to get_user_pages would overflow, resulting in 0
+  pages being processed per iteration. I am proposing to simply convert
+  the nr_pages argument to a long.
 
-Adding pci_bus_fixup_irqs() addresses part of that, by adding a way to
-fixup a subset of devices, e.g., maybe it could be done for hot-added
-things.
+- Patch 2 accelerates populating regions with THP pages. get_user_pages()
+  can increment the address by a huge page size in this case instead of
+  a small page size, and avoid repeated mm->page_table_lock acquisitions.
+  This fixes an issue reported by Roman Dubtsov where populating regions
+  via mmap MAP_POPULATE was significantly slower than doing so by
+  touching pages from userspace.
 
-But I think it would be better to do a more extensive refactoring and
-do the IRQ fixups directly somewhere in the pci_device_add() path.
-That way we can do it a device at a time, for every device (present at
-boot and hot-added later), and before any drivers claim the device.
+- Patch 3 is a similar acceleration for the munlock case. I would actually
+  like to get Andrea's attention on this one, as I can't explain how
+  munlock_vma_page() is safe against racing with split_huge_page().
 
-> This can reduce unnecessary fixing up of device irqs when new buses
-> are added.
->
-> Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> ---
->  drivers/pci/setup-irq.c |   15 +++++++++++++++
->  include/linux/pci.h     |    3 +++
->  2 files changed, 18 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/pci/setup-irq.c b/drivers/pci/setup-irq.c
-> index eb219a1..ea91874 100644
-> --- a/drivers/pci/setup-irq.c
-> +++ b/drivers/pci/setup-irq.c
-> @@ -62,3 +62,18 @@ pci_fixup_irqs(u8 (*swizzle)(struct pci_dev *, u8 *),
->         for_each_pci_dev(dev)
->                 pdev_fixup_irq(dev, swizzle, map_irq);
->  }
-> +
-> +void __init
-> +pci_bus_fixup_irqs(struct pci_bus *bus,
-> +               u8 (*swizzle)(struct pci_dev *, u8 *),
-> +               int (*map_irq)(const struct pci_dev *, u8, u8))
-> +{
-> +       struct pci_dev *dev;
-> +
-> +       list_for_each_entry(dev, &bus->devices, bus_list) {
-> +               pdev_fixup_irq(dev, swizzle, map_irq);
-> +
-> +               if (dev->subordinate)
-> +                       pci_bus_fixup_irqs(dev->subordinate, swizzle, map_irq);
-> +       }
-> +}
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 5faa831..1b3c2eb 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -953,6 +953,9 @@ void pdev_enable_device(struct pci_dev *);
->  int pci_enable_resources(struct pci_dev *, int mask);
->  void pci_fixup_irqs(u8 (*)(struct pci_dev *, u8 *),
->                     int (*)(const struct pci_dev *, u8, u8));
-> +void pci_bus_fixup_irqs(struct pci_bus *bus,
-> +               u8 (*swizzle)(struct pci_dev *, u8 *),
-> +               int (*map_irq)(const struct pci_dev *, u8, u8));
->  #define HAVE_PCI_REQ_REGIONS   2
->  int __must_check pci_request_regions(struct pci_dev *, const char *);
->  int __must_check pci_request_regions_exclusive(struct pci_dev *, const char *);
-> --
-> 1.7.0.4
->
->
+Note that patches 1-2 are logically independent of patch 3, so if the
+discussion of patch 3 takes too long I would ask Andrew to consider
+merging patches 1-2 first.
+
+Michel Lespinasse (3):
+  mm: use long type for page counts in mm_populate() and get_user_pages()
+  mm: accelerate mm_populate() treatment of THP pages
+  mm: accelerate munlock() treatment of THP pages
+
+ arch/ia64/xen/xencomm.c    |  3 ++-
+ arch/powerpc/kernel/vdso.c |  9 +++++----
+ arch/s390/mm/pgtable.c     |  3 ++-
+ include/linux/hugetlb.h    |  6 +++---
+ include/linux/mm.h         | 16 ++++++++--------
+ mm/hugetlb.c               | 10 +++++-----
+ mm/internal.h              |  2 +-
+ mm/ksm.c                   | 10 +++++++---
+ mm/memory.c                | 39 ++++++++++++++++++++++++++-------------
+ mm/migrate.c               |  7 +++++--
+ mm/mlock.c                 | 37 ++++++++++++++++++++++++-------------
+ 11 files changed, 88 insertions(+), 54 deletions(-)
+
+-- 
+1.8.1
+
