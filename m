@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab3AaRaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:30:15 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48043 "EHLO
+	id S1756458Ab3AaRaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:30:12 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48046 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab3AaRZj (ORCPT
+	with ESMTP id S1754220Ab3AaRZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jan 2013 12:25:39 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/25] perf gtk/browser: Trim column header string when event group enabled
-Date: Thu, 31 Jan 2013 14:25:18 -0300
-Message-Id: <1359653128-10433-16-git-send-email-acme@infradead.org>
+Subject: [PATCH 05/25] perf header: Add HEADER_GROUP_DESC feature
+Date: Thu, 31 Jan 2013 14:25:08 -0300
+Message-Id: <1359653128-10433-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
 References: <1359653128-10433-1-git-send-email-acme@infradead.org>
@@ -30,36 +30,254 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-When event group feature is enabled, each column header is expanded to
-match with the whole group column width.  But this is not needed for
-GTK+ browser since ti usually use variable-width fonts.  So trim it.
+Save group relationship information so that it can be restored when perf
+report is running.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-15-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1358845787-1350-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/gtk/hists.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-record.c |   3 +
+ tools/perf/util/header.c    | 164 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/header.h    |   2 +
+ 3 files changed, 169 insertions(+)
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index c87a98c..caa554b 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -170,7 +170,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 		fmt->header(&hpp);
- 
- 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
--							    -1, s,
-+							    -1, ltrim(s),
- 							    renderer, "markup",
- 							    col_idx++, NULL);
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 2ac690c..774c907 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -486,6 +486,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		goto out_delete_session;
  	}
+ 
++	if (!evsel_list->nr_groups)
++		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
++
+ 	/*
+ 	 * perf_session__delete(session) will be called at perf_record__exit()
+ 	 */
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index f6081cb3..8022b52 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1085,6 +1085,52 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
+ }
+ 
+ /*
++ * File format:
++ *
++ * struct group_descs {
++ *	u32	nr_groups;
++ *	struct group_desc {
++ *		char	name[];
++ *		u32	leader_idx;
++ *		u32	nr_members;
++ *	}[nr_groups];
++ * };
++ */
++static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
++			    struct perf_evlist *evlist)
++{
++	u32 nr_groups = evlist->nr_groups;
++	struct perf_evsel *evsel;
++	int ret;
++
++	ret = do_write(fd, &nr_groups, sizeof(nr_groups));
++	if (ret < 0)
++		return ret;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 1) {
++			const char *name = evsel->group_name ?: "{anon_group}";
++			u32 leader_idx = evsel->idx;
++			u32 nr_members = evsel->nr_members;
++
++			ret = do_write_string(fd, name);
++			if (ret < 0)
++				return ret;
++
++			ret = do_write(fd, &leader_idx, sizeof(leader_idx));
++			if (ret < 0)
++				return ret;
++
++			ret = do_write(fd, &nr_members, sizeof(nr_members));
++			if (ret < 0)
++				return ret;
++		}
++	}
++	return 0;
++}
++
++/*
+  * default get_cpuid(): nothing gets recorded
+  * actual implementation must be in arch/$(ARCH)/util/header.c
+  */
+@@ -1447,6 +1493,31 @@ error:
+ 	fprintf(fp, "# pmu mappings: unable to read\n");
+ }
+ 
++static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
++			     FILE *fp)
++{
++	struct perf_session *session;
++	struct perf_evsel *evsel;
++	u32 nr = 0;
++
++	session = container_of(ph, struct perf_session, header);
++
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		if (perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 1) {
++			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
++				perf_evsel__name(evsel));
++
++			nr = evsel->nr_members - 1;
++		} else if (nr) {
++			fprintf(fp, ",%s", perf_evsel__name(evsel));
++
++			if (--nr == 0)
++				fprintf(fp, "}\n");
++		}
++	}
++}
++
+ static int __event_process_build_id(struct build_id_event *bev,
+ 				    char *filename,
+ 				    struct perf_session *session)
+@@ -1961,6 +2032,98 @@ error:
+ 	return -1;
+ }
+ 
++static int process_group_desc(struct perf_file_section *section __maybe_unused,
++			      struct perf_header *ph, int fd,
++			      void *data __maybe_unused)
++{
++	size_t ret = -1;
++	u32 i, nr, nr_groups;
++	struct perf_session *session;
++	struct perf_evsel *evsel, *leader = NULL;
++	struct group_desc {
++		char *name;
++		u32 leader_idx;
++		u32 nr_members;
++	} *desc;
++
++	if (readn(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
++		return -1;
++
++	if (ph->needs_swap)
++		nr_groups = bswap_32(nr_groups);
++
++	ph->env.nr_groups = nr_groups;
++	if (!nr_groups) {
++		pr_debug("group desc not available\n");
++		return 0;
++	}
++
++	desc = calloc(nr_groups, sizeof(*desc));
++	if (!desc)
++		return -1;
++
++	for (i = 0; i < nr_groups; i++) {
++		desc[i].name = do_read_string(fd, ph);
++		if (!desc[i].name)
++			goto out_free;
++
++		if (readn(fd, &desc[i].leader_idx, sizeof(u32)) != sizeof(u32))
++			goto out_free;
++
++		if (readn(fd, &desc[i].nr_members, sizeof(u32)) != sizeof(u32))
++			goto out_free;
++
++		if (ph->needs_swap) {
++			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
++			desc[i].nr_members = bswap_32(desc[i].nr_members);
++		}
++	}
++
++	/*
++	 * Rebuild group relationship based on the group_desc
++	 */
++	session = container_of(ph, struct perf_session, header);
++	session->evlist->nr_groups = nr_groups;
++
++	i = nr = 0;
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		if (evsel->idx == (int) desc[i].leader_idx) {
++			evsel->leader = evsel;
++			/* {anon_group} is a dummy name */
++			if (strcmp(desc[i].name, "{anon_group}"))
++				evsel->group_name = desc[i].name;
++			evsel->nr_members = desc[i].nr_members;
++
++			if (i >= nr_groups || nr > 0) {
++				pr_debug("invalid group desc\n");
++				goto out_free;
++			}
++
++			leader = evsel;
++			nr = evsel->nr_members - 1;
++			i++;
++		} else if (nr) {
++			/* This is a group member */
++			evsel->leader = leader;
++
++			nr--;
++		}
++	}
++
++	if (i != nr_groups || nr != 0) {
++		pr_debug("invalid group desc\n");
++		goto out_free;
++	}
++
++	ret = 0;
++out_free:
++	while ((int) --i >= 0)
++		free(desc[i].name);
++	free(desc);
++
++	return ret;
++}
++
+ struct feature_ops {
+ 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
+ 	void (*print)(struct perf_header *h, int fd, FILE *fp);
+@@ -2000,6 +2163,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
+ 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
++	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
+ };
+ 
+ struct header_print_data {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 20f0344..c9fc55c 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -29,6 +29,7 @@ enum {
+ 	HEADER_NUMA_TOPOLOGY,
+ 	HEADER_BRANCH_STACK,
+ 	HEADER_PMU_MAPPINGS,
++	HEADER_GROUP_DESC,
+ 	HEADER_LAST_FEATURE,
+ 	HEADER_FEAT_BITS	= 256,
+ };
+@@ -79,6 +80,7 @@ struct perf_session_env {
+ 	char			*numa_nodes;
+ 	int			nr_pmu_mappings;
+ 	char			*pmu_mappings;
++	int			nr_groups;
+ };
+ 
+ struct perf_header {
 -- 
 1.8.1.1.361.gec3ae6e
 
