@@ -1,130 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3AaR1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:27:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48070 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755558Ab3AaRZp (ORCPT
+	id S1755971Ab3AaR2R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:28:17 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:38651 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3AaR2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 12:25:45 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@au1.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 24/25] perf/POWER7: Make some POWER7 events available in sysfs
-Date: Thu, 31 Jan 2013 14:25:27 -0300
-Message-Id: <1359653128-10433-25-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
-References: <1359653128-10433-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 31 Jan 2013 12:28:12 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, fabio.baltieri@linaro.org
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/2] cpufreq: governors: Get rid of dbs_data->enable field
+Date: Thu, 31 Jan 2013 22:58:01 +0530
+Message-Id: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+CPUFREQ_GOV_START/STOP are called only once for all policy->cpus and hence we
+don't need to adapt cpufreq_governor_dbs() routine for multiple calls.
 
-Make some POWER7-specific perf events available in sysfs.
+So, this patch removes dbs_data->enable field entirely. And rearrange code a
+bit.
 
-	$ /bin/ls -1 /sys/bus/event_source/devices/cpu/events/
-	branch-instructions
-	branch-misses
-	cache-misses
-	cache-references
-	cpu-cycles
-	instructions
-	PM_BRU_FIN
-	PM_BRU_MPRED
-	PM_CMPLU_STALL
-	PM_CYC
-	PM_GCT_NOSLOT_CYC
-	PM_INST_CMPL
-	PM_LD_MISS_L1
-	PM_LD_REF_L1
-	stalled-cycles-backend
-	stalled-cycles-frontend
-
-where the 'PM_*' events are POWER specific and the others are the
-generic events.
-
-This will enable users to specify these events with their symbolic
-names rather than with their raw code.
-
-	perf stat -e 'cpu/PM_CYC' ...
-
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Anton Blanchard <anton@au1.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: linuxppc-dev@ozlabs.org
-Link: http://lkml.kernel.org/r/20130123062528.GE13720@us.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/powerpc/include/asm/perf_event_server.h |  3 +++
- arch/powerpc/perf/power7-pmu.c               | 18 ++++++++++++++++++
- 2 files changed, 21 insertions(+)
+Hi Fabio,
 
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index b9b6c55..b29fcc6 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -132,3 +132,6 @@ extern ssize_t power_events_sysfs_show(struct device *dev,
+I have fixed all the pending issues, but haven't checked these patches. Can you
+please add your tested-by (obviously after testing them) ?
+
+Compile tested only.
+
+ drivers/cpufreq/cpufreq_governor.c | 58 +++++++++++++-------------------------
+ drivers/cpufreq/cpufreq_governor.h |  1 -
+ 2 files changed, 20 insertions(+), 39 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 46f1c78..29d6a59 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -182,6 +182,8 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ {
+ 	struct od_cpu_dbs_info_s *od_dbs_info = NULL;
+ 	struct cs_cpu_dbs_info_s *cs_dbs_info = NULL;
++	struct cs_ops *cs_ops = NULL;
++	struct od_ops *od_ops = NULL;
+ 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+ 	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
+ 	struct cpu_dbs_common_info *cpu_cdbs;
+@@ -194,10 +196,12 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ 		cs_dbs_info = dbs_data->get_cpu_dbs_info_s(cpu);
+ 		sampling_rate = &cs_tuners->sampling_rate;
+ 		ignore_nice = cs_tuners->ignore_nice;
++		cs_ops = dbs_data->gov_ops;
+ 	} else {
+ 		od_dbs_info = dbs_data->get_cpu_dbs_info_s(cpu);
+ 		sampling_rate = &od_tuners->sampling_rate;
+ 		ignore_nice = od_tuners->ignore_nice;
++		od_ops = dbs_data->gov_ops;
+ 	}
  
- #define	GENERIC_EVENT_ATTR(_name, _id)	EVENT_ATTR(_name, _id, _g)
- #define	GENERIC_EVENT_PTR(_id)		EVENT_PTR(_id, _g)
-+
-+#define	POWER_EVENT_ATTR(_name, _id)	EVENT_ATTR(PM_##_name, _id, _p)
-+#define	POWER_EVENT_PTR(_id)		EVENT_PTR(_id, _p)
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index 269bf24..b554879 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -384,6 +384,15 @@ GENERIC_EVENT_ATTR(cache-misses,		LD_MISS_L1);
- GENERIC_EVENT_ATTR(branch-instructions,		BRU_FIN);
- GENERIC_EVENT_ATTR(branch-misses,		BRU_MPRED);
+ 	switch (event) {
+@@ -207,10 +211,9 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
  
-+POWER_EVENT_ATTR(CYC,				CYC);
-+POWER_EVENT_ATTR(GCT_NOSLOT_CYC,		GCT_NOSLOT_CYC);
-+POWER_EVENT_ATTR(CMPLU_STALL,			CMPLU_STALL);
-+POWER_EVENT_ATTR(INST_CMPL,			INST_CMPL);
-+POWER_EVENT_ATTR(LD_REF_L1,			LD_REF_L1);
-+POWER_EVENT_ATTR(LD_MISS_L1,			LD_MISS_L1);
-+POWER_EVENT_ATTR(BRU_FIN,			BRU_FIN)
-+POWER_EVENT_ATTR(BRU_MPRED,			BRU_MPRED);
+ 		mutex_lock(&dbs_data->mutex);
+ 
+-		dbs_data->enable++;
+ 		for_each_cpu(j, policy->cpus) {
+-			struct cpu_dbs_common_info *j_cdbs;
+-			j_cdbs = dbs_data->get_cpu_cdbs(j);
++			struct cpu_dbs_common_info *j_cdbs =
++				dbs_data->get_cpu_cdbs(j);
+ 
+ 			j_cdbs->cpu = j;
+ 			j_cdbs->cur_policy = policy;
+@@ -225,13 +228,6 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ 					     dbs_data->gov_dbs_timer);
+ 		}
+ 
+-		/*
+-		 * Start the timerschedule work, when this governor is used for
+-		 * first time
+-		 */
+-		if (dbs_data->enable != 1)
+-			goto second_time;
+-
+ 		rc = sysfs_create_group(cpufreq_global_kobject,
+ 				dbs_data->attr_group);
+ 		if (rc) {
+@@ -249,17 +245,19 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ 		 * governor, thus we are bound to jiffes/HZ
+ 		 */
+ 		if (dbs_data->governor == GOV_CONSERVATIVE) {
+-			struct cs_ops *ops = dbs_data->gov_ops;
+-
+-			cpufreq_register_notifier(ops->notifier_block,
++			cs_dbs_info->down_skip = 0;
++			cs_dbs_info->enable = 1;
++			cs_dbs_info->requested_freq = policy->cur;
++			cpufreq_register_notifier(cs_ops->notifier_block,
+ 					CPUFREQ_TRANSITION_NOTIFIER);
+ 
+ 			dbs_data->min_sampling_rate = MIN_SAMPLING_RATE_RATIO *
+ 				jiffies_to_usecs(10);
+ 		} else {
+-			struct od_ops *ops = dbs_data->gov_ops;
+-
+-			od_tuners->io_is_busy = ops->io_busy();
++			od_dbs_info->rate_mult = 1;
++			od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
++			od_ops->powersave_bias_init_cpu(cpu);
++			od_tuners->io_is_busy = od_ops->io_busy();
+ 		}
+ 
+ 		/* Bring kernel and HW constraints together */
+@@ -267,18 +265,6 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ 				MIN_LATENCY_MULTIPLIER * latency);
+ 		*sampling_rate = max(dbs_data->min_sampling_rate, latency *
+ 				LATENCY_MULTIPLIER);
+-
+-second_time:
+-		if (dbs_data->governor == GOV_CONSERVATIVE) {
+-			cs_dbs_info->down_skip = 0;
+-			cs_dbs_info->enable = 1;
+-			cs_dbs_info->requested_freq = policy->cur;
+-		} else {
+-			struct od_ops *ops = dbs_data->gov_ops;
+-			od_dbs_info->rate_mult = 1;
+-			od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
+-			ops->powersave_bias_init_cpu(cpu);
+-		}
+ 		mutex_unlock(&dbs_data->mutex);
+ 
+ 		/* Initiate timer time stamp */
+@@ -297,16 +283,12 @@ second_time:
+ 
+ 		mutex_lock(&dbs_data->mutex);
+ 		mutex_destroy(&cpu_cdbs->timer_mutex);
+-		dbs_data->enable--;
+-		if (!dbs_data->enable) {
+-			struct cs_ops *ops = dbs_data->gov_ops;
+-
+-			sysfs_remove_group(cpufreq_global_kobject,
+-					dbs_data->attr_group);
+-			if (dbs_data->governor == GOV_CONSERVATIVE)
+-				cpufreq_unregister_notifier(ops->notifier_block,
+-						CPUFREQ_TRANSITION_NOTIFIER);
+-		}
 +
- static struct attribute *power7_events_attr[] = {
- 	GENERIC_EVENT_PTR(CYC),
- 	GENERIC_EVENT_PTR(GCT_NOSLOT_CYC),
-@@ -393,6 +402,15 @@ static struct attribute *power7_events_attr[] = {
- 	GENERIC_EVENT_PTR(LD_MISS_L1),
- 	GENERIC_EVENT_PTR(BRU_FIN),
- 	GENERIC_EVENT_PTR(BRU_MPRED),
-+
-+	POWER_EVENT_PTR(CYC),
-+	POWER_EVENT_PTR(GCT_NOSLOT_CYC),
-+	POWER_EVENT_PTR(CMPLU_STALL),
-+	POWER_EVENT_PTR(INST_CMPL),
-+	POWER_EVENT_PTR(LD_REF_L1),
-+	POWER_EVENT_PTR(LD_MISS_L1),
-+	POWER_EVENT_PTR(BRU_FIN),
-+	POWER_EVENT_PTR(BRU_MPRED),
- 	NULL
- };
++		sysfs_remove_group(cpufreq_global_kobject,
++				dbs_data->attr_group);
++		if (dbs_data->governor == GOV_CONSERVATIVE)
++			cpufreq_unregister_notifier(cs_ops->notifier_block,
++					CPUFREQ_TRANSITION_NOTIFIER);
+ 		mutex_unlock(&dbs_data->mutex);
+ 
+ 		break;
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index b72e628..c19a16c 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -130,7 +130,6 @@ struct dbs_data {
+ 	#define GOV_CONSERVATIVE	1
+ 	int governor;
+ 	unsigned int min_sampling_rate;
+-	unsigned int enable; /* number of CPUs using this policy */
+ 	struct attribute_group *attr_group;
+ 	void *tuners;
  
 -- 
-1.8.1.1.361.gec3ae6e
+1.7.12.rc2.18.g61b472e
 
