@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab3AaSpD (ORCPT <rfc822;w@1wt.eu>);
+	id S1756843Ab3AaSpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 13:45:31 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:65243 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756165Ab3AaSpD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jan 2013 13:45:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:16627 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756484Ab3AaSlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 13:41:55 -0500
-X-IronPort-AV: E=Sophos;i="4.84,578,1355068800"; 
-   d="scan'208";a="6672835"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 04/13] workqueue: clear cwq when cancel the work
-Date: Fri, 1 Feb 2013 02:41:27 +0800
-Message-Id: <1359657696-2767-5-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/01 02:40:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/01 02:40:45,
-	Serialize complete at 2013/02/01 02:40:45
+Date: Thu, 31 Jan 2013 19:44:49 +0100
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 1/2] cpufreq: governors: Get rid of dbs_data->enable field
+Message-ID: <20130131184449.GA20164@balto.lan>
+References: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
+X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add clear_work_cwq() which clear the CWQ bit when the work is offq when it is
-cancelled.
+On Thu, Jan 31, 2013 at 10:58:01PM +0530, Viresh Kumar wrote:
+> CPUFREQ_GOV_START/STOP are called only once for all policy->cpus and hence we
+> don't need to adapt cpufreq_governor_dbs() routine for multiple calls.
+> 
+> So, this patch removes dbs_data->enable field entirely. And rearrange code a
+> bit.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> Hi Fabio,
+> 
+> I have fixed all the pending issues, but haven't checked these patches. Can you
+> please add your tested-by (obviously after testing them) ?
+> 
+> Compile tested only.
 
-It is the other important step of killing CWQ bit of the work which is
-not queued on any pool.
+Hello Viresh, thanks for getting this done... looks much cleaner now!
 
-Now, when a work is offq, it has no CWQ bit.
+I tested both patches on my ux500 setup (dual Cortex-A9) and it seems to
+run correctly on both CPU load changes and CPU hotplug, so:
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Tested-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index b12b30e..50d3dd5 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -556,6 +556,12 @@ static void set_work_cwq(struct work_struct *work,
- 		      WORK_STRUCT_PENDING | WORK_STRUCT_CWQ | extra_flags);
- }
- 
-+static void clear_work_cwq(struct work_struct *work, int pool_id)
-+{
-+	set_work_data(work, pool_id << WORK_OFFQ_POOL_SHIFT,
-+		      WORK_STRUCT_PENDING);
-+}
-+
- static void set_work_pool_and_clear_pending(struct work_struct *work,
- 					    int pool_id)
- {
-@@ -1115,6 +1121,7 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
- 			cwq_dec_nr_in_flight(get_work_cwq(work),
- 				get_work_color(work));
- 
-+			clear_work_cwq(work, pool->id);
- 			spin_unlock(&pool->lock);
- 			return 1;
- 		}
+As a sidenote, I noticed just now that since:
+
+bc92bea cpufreq: Notify governors when cpus are hot-[un]plugged
+
+governor's sampling_rate gets reset to default every time you hotplug a
+CPU (the one you read/write on
+/sys/devices/system/cpu/cpufreq/ondemand/sampling_rate).
+
+If you need further tests, I'll be back on Monday.
+
+Thanks,
+Fabio
+
 -- 
-1.7.7.6
-
+Fabio Baltieri
