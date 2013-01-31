@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3AaLOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:14:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36473 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab3AaLN5 (ORCPT
+	id S1752773Ab3AaLSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:18:33 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:40413 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab3AaLSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 06:13:57 -0500
-Date: Thu, 31 Jan 2013 03:11:30 -0800
-From: tip-bot for Borislav Petkov <bp@suse.de>
-Message-ID: <tip-1e9209edc71b851d81f0316ca03a0e6335c0ef9a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dave@linux.vnet.ibm.com, tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dave@linux.vnet.ibm.com, tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1359245901-8512-1-git-send-email-bp@alien8.de>
-References: <1359245901-8512-1-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/numa: Use __pa_nodebug() instead
-Git-Commit-ID: 1e9209edc71b851d81f0316ca03a0e6335c0ef9a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 31 Jan 2013 06:18:30 -0500
+Date: Thu, 31 Jan 2013 12:18:23 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>, Mike Lykov <combr@yandex.ru>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, kirill@shutemov.name
+Subject: Re: [BUG?] false positive in soft lockup detector while unlzma
+ initramfs on slow cpu
+Message-ID: <20130131111823.GA4587@gmail.com>
+References: <5107D1D3.6040105@yandex.ru>
+ <20130129153348.GR98867@redhat.com>
+ <20130129155917.4ee64214.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 03:11:35 -0800 (PST)
+In-Reply-To: <20130129155917.4ee64214.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1e9209edc71b851d81f0316ca03a0e6335c0ef9a
-Gitweb:     http://git.kernel.org/tip/1e9209edc71b851d81f0316ca03a0e6335c0ef9a
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Sun, 27 Jan 2013 01:18:21 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 31 Jan 2013 11:40:55 +0100
 
-x86/numa: Use __pa_nodebug() instead
+* Andrew Morton <akpm@linux-foundation.org> wrote:
 
-... and fix the following warning:
+> On Tue, 29 Jan 2013 10:33:48 -0500
+> Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > --- a/kernel/watchdog.c
+> > +++ b/kernel/watchdog.c
+> > @@ -79,6 +79,14 @@ static int __init softlockup_panic_setup(char *str)
+> >  }
+> >  __setup("softlockup_panic=", softlockup_panic_setup);
+> >  
+> > +static int __init watchdog_thresh_setup(char *str)
+> > +{
+> > +	watchdog_thresh = simple_strtoul(str, NULL, 0);
+> > +
+> > +	return 1;
+> > +}
+> > +__setup("watchdog_thresh=", watchdog_thresh_setup);
+> 
+> I wonder if there's some magical way in which we can set any 
+> sysctl from the kernel command line.  Add 
+> sys.vm.min_free_kbytes=42 to the command line, walk the 
+> hierarchy late in boot...
 
-  arch/x86/mm/numa.c: In function ‘setup_node_data’:
-  arch/x86/mm/numa.c:222:3: warning: passing argument 1 of ‘__phys_addr_nodebug’ makes integer from pointer without a cast
+A facility like that would be totally awesome - we could remove 
+a lot of duplicated and outright inconsistent (often missing) 
+__setup() hackery that way.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1359245901-8512-1-git-send-email-bp@alien8.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/mm/numa.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Single source of information and all that.
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 76604eb..b2313c6 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -219,7 +219,7 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	 */
- 	nd = alloc_remap(nid, nd_size);
- 	if (nd) {
--		nd_pa = __phys_addr_nodebug(nd);
-+		nd_pa = __pa_nodebug(nd);
- 		remapped = true;
- 	} else {
- 		nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
+Thanks,
+
+	Ingo
