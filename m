@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab3AaLXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:23:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45078 "EHLO bear.ext.ti.com"
+	id S1754631Ab3AaLX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:23:56 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45077 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752326Ab3AaLWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752052Ab3AaLWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jan 2013 06:22:39 -0500
 From: Hebbar Gururaja <gururaja.hebbar@ti.com>
 To: <broonie@opensource.wolfsonmicro.com>, <alsa-devel@alsa-project.org>,
@@ -15,59 +15,54 @@ CC: <tony@atomide.com>, <lgirdwood@gmail.com>, <perex@perex.cz>,
         <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <rob@landley.net>,
         <grant.likely@secretlab.ca>
-Subject: [PATCH v3 0/4] ASoC davinci/tlv320aic3x updates, fixes & DT support
-Date: Thu, 31 Jan 2013 16:53:09 +0530
-Message-ID: <1359631394-9511-1-git-send-email-gururaja.hebbar@ti.com>
+Subject: [PATCH v3 4/4] ASoC: davinci: remove __dev* attributes
+Date: Thu, 31 Jan 2013 16:53:13 +0530
+Message-ID: <1359631394-9511-5-git-send-email-gururaja.hebbar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359631394-9511-1-git-send-email-gururaja.hebbar@ti.com>
+References: <1359631394-9511-1-git-send-email-gururaja.hebbar@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Convert tlv320aic3x mic bias to a supply widget and related machine driver
-2. Add DT support for Davinci machine platform
-3. remove __dev* attributes
+CONFIG_HOTPLUG is going away as an option.  As result the __dev*
+markings will be going away.
 
-This patch-set is tested on Davinci platform (DA850 EVM). This series applies on
-top of tag next-20130128 git tree
-https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+Remove use of __devexit_p and __devexit.
 
-These patches cannot be tested directly on mainline kernel (DT based).
-This is because dma is not yet completely ported to Davinci ASoC. I had to add
-few hacks to get Audio working on Davinci DA850 platform.
+Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+---
+Changes in v3
+	 - New patch
 
-For reference, I have placed the entire working tree @ 
-Tree :  https://github.com/ghebbar/linux.git
-Branch : dev_next-20130128_davinci_asoc_dt_v3
+:100644 100644 e6009a4... 37b8e78... M	sound/soc/davinci/davinci-evm.c
+ sound/soc/davinci/davinci-evm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-changes in v3
-	- drop mcasp pinctrl handler patch from seried as it is now handled
-	  centrally.
-	- Convert tlv320aic3x mic bias to a supply widget and related machine
-	  driver
-	- remove __dev* attributes
-
-Changes in V2
-	 - Remove reference to Linux & software details from DT binding
-
-Hebbar Gururaja (3):
-  ASoC: tlv320aic3x: Convert mic bias to a supply widget
-  ASoC: davinci: update machine driver dapm routes
-  ASoC: davinci: remove __dev* attributes
-
-Hebbar, Gururaja (1):
-  ASoC: davinci: machine: Add device tree binding
-
- .../bindings/sound/davinci-evm-audio.txt           |   53 ++++++
- .../devicetree/bindings/sound/tlv320aic3x.txt      |    6 +
- include/sound/tlv320aic3x.h                        |   10 ++
- sound/soc/codecs/tlv320aic3x.c                     |   83 ++++++++-
- sound/soc/codecs/tlv320aic3x.h                     |    4 +
- sound/soc/davinci/davinci-evm.c                    |  185 +++++++++++++++++---
- 6 files changed, 312 insertions(+), 29 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/sound/davinci-evm-audio.txt
-
+diff --git a/sound/soc/davinci/davinci-evm.c b/sound/soc/davinci/davinci-evm.c
+index e6009a4..37b8e78 100644
+--- a/sound/soc/davinci/davinci-evm.c
++++ b/sound/soc/davinci/davinci-evm.c
+@@ -390,7 +390,7 @@ static int davinci_evm_probe(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
+-static int __devexit davinci_evm_remove(struct platform_device *pdev)
++static int davinci_evm_remove(struct platform_device *pdev)
+ {
+ 	struct snd_soc_card *card = platform_get_drvdata(pdev);
+ 
+@@ -401,7 +401,7 @@ static int __devexit davinci_evm_remove(struct platform_device *pdev)
+ 
+ static struct platform_driver davinci_evm_driver = {
+ 	.probe		= davinci_evm_probe,
+-	.remove		= __devexit_p(davinci_evm_remove),
++	.remove		= davinci_evm_remove,
+ 	.driver		= {
+ 		.name	= "davinci_evm",
+ 		.owner	= THIS_MODULE,
 -- 
 1.7.9.5
 
