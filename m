@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3AaCPl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 21:15:41 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:65362 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab3AaCPj (ORCPT
+	id S1755568Ab3AaC0R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 21:26:17 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:42310 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab3AaC0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 21:15:39 -0500
-Message-ID: <5109D3B6.9060905@huawei.com>
-Date: Thu, 31 Jan 2013 10:15:18 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Aristeu Rozanski <aris@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
-        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v4 8/9] devcg: refactor dev_exception_clean()
-References: <20130130171101.060853036@napanee.usersys.redhat.com> <20130130171102.253395279@napanee.usersys.redhat.com> <20130130204730.GF8507@mail.hallyn.com> <20130130204917.GL17632@redhat.com> <CAOS58YOHkK9xTBPFAXKksrwP7ZxQc_WuGOp39D94Z1pBsFHfjw@mail.gmail.com>
-In-Reply-To: <CAOS58YOHkK9xTBPFAXKksrwP7ZxQc_WuGOp39D94Z1pBsFHfjw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Wed, 30 Jan 2013 21:26:15 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, jc.lee@samsung.com
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        kgene.kim@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: exynos: simplify .init() for setting policy->cpus
+Date: Thu, 31 Jan 2013 07:56:04 +0530
+Message-Id: <f216e85846c302756d55cb6753863a66697f79a6.1359599087.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/31 4:50, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Jan 30, 2013 at 12:49 PM, Aristeu Rozanski > that's not
-> intentional. thanks for catching this
->>
->> Tejun, you want me to resubmit the whole series or just the next patch
->> (where I was supposed to move that chunk)?
-> 
-> If it doesn't affect the next patch, just posting an updated version
-> of this patch should be enough, I think. Which tree are these patches
-> planned to go through?
-> 
+With the recent changes in cpufreq core, we just need to set mask of all
+possible cpus into policy->cpus. Rest would be done by core.
 
-It used to be -mm tree, but I bet Andrew would be happy to see you
-route them through your tree. ;)
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/exynos-cpufreq.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
+
+diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+index 7012ea8..81eb84a 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -227,19 +227,7 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	/* set the transition latency value */
+ 	policy->cpuinfo.transition_latency = 100000;
+ 
+-	/*
+-	 * EXYNOS4 multi-core processors has 2 cores
+-	 * that the frequency cannot be set independently.
+-	 * Each cpu is bound to the same speed.
+-	 * So the affected cpu is all of the cpus.
+-	 */
+-	if (num_online_cpus() == 1) {
+-		cpumask_copy(policy->related_cpus, cpu_possible_mask);
+-		cpumask_copy(policy->cpus, cpu_online_mask);
+-	} else {
+-		policy->shared_type = CPUFREQ_SHARED_TYPE_ANY;
+-		cpumask_setall(policy->cpus);
+-	}
++	cpumask_setall(policy->cpus);
+ 
+ 	return cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
+ }
+-- 
+1.7.12.rc2.18.g61b472e
 
