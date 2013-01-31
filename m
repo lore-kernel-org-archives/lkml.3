@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab3AaWx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:53:59 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63236 "EHLO mga09.intel.com"
+	id S1757304Ab3AaWx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:53:58 -0500
+Received: from mga09.intel.com ([134.134.136.24]:6884 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757231Ab3AaWwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757232Ab3AaWwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jan 2013 17:52:20 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="279285615"
+   d="scan'208";a="279285617"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 10/12] perf, x86: Support LBR filtering by INTX/NOTX/ABORT v3
-Date: Thu, 31 Jan 2013 14:51:48 -0800
-Message-Id: <1359672710-19528-11-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 12/12] perf, tools: Add abort_tx,no_tx,in_tx branch filter options to perf record -j v3
+Date: Thu, 31 Jan 2013 14:51:50 -0800
+Message-Id: <1359672710-19528-13-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
 References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
@@ -26,169 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add LBR filtering for branch in transaction, branch not in transaction
-or transaction abort. This is exposed as new sample types.
+Make perf record -j aware of the new in_tx,no_tx,abort_tx branch qualifiers.
 
-v2: Rename ABORT to ABORTTX
-v3: Use table instead of if
+v2: ABORT -> ABORTTX
+v3: Add more _
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   58 ++++++++++++++++++++++------
- include/uapi/linux/perf_event.h            |    5 ++-
- 2 files changed, 50 insertions(+), 13 deletions(-)
+ tools/perf/Documentation/perf-record.txt |    3 +++
+ tools/perf/builtin-record.c              |    3 +++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index ad5af13..0be69fd 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -16,6 +16,14 @@ enum {
- 	LBR_FORMAT_MAX_KNOWN	= LBR_FORMAT_EIP_FLAGS2,
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 938e890..f7d74b2 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -172,6 +172,9 @@ following filters are defined:
+         - u:  only when the branch target is at the user level
+         - k: only when the branch target is in the kernel
+         - hv: only when the target is at the hypervisor level
++	- in_tx: only when the target is in a hardware transaction
++	- no_tx: only when the target is not in a hardware transaction
++	- abort_tx: only when the target is a hardware transaction abort
+ 
+ +
+ The option requires at least one branch type among any, any_call, any_ret, ind_call.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 2ac690c..4bcfccd 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -671,6 +671,9 @@ static const struct branch_mode branch_modes[] = {
+ 	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
+ 	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
+ 	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
++	BRANCH_OPT("abort_tx", PERF_SAMPLE_BRANCH_ABORTTX),
++	BRANCH_OPT("in_tx", PERF_SAMPLE_BRANCH_INTX),
++	BRANCH_OPT("no_tx", PERF_SAMPLE_BRANCH_NOTX),
+ 	BRANCH_END
  };
  
-+static enum {
-+	LBR_EIP_FLAGS 		= 1,
-+	LBR_TSX			= 2,
-+} lbr_desc[LBR_FORMAT_MAX_KNOWN + 1] = {
-+	[LBR_FORMAT_EIP_FLAGS]  = LBR_EIP_FLAGS,
-+	[LBR_FORMAT_EIP_FLAGS2] = LBR_EIP_FLAGS | LBR_TSX,
-+};
-+
- /*
-  * Intel LBR_SELECT bits
-  * Intel Vol3a, April 2011, Section 16.7 Table 16-10
-@@ -85,9 +93,13 @@ enum {
- 	X86_BR_JMP      = 1 << 9, /* jump */
- 	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
- 	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
-+	X86_BR_ABORT    = 1 << 12,/* transaction abort */
-+	X86_BR_INTX     = 1 << 13,/* in transaction */
-+	X86_BR_NOTX     = 1 << 14,/* not in transaction */
- };
- 
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-+#define X86_BR_ANYTX (X86_BR_NOTX | X86_BR_INTX)
- 
- #define X86_BR_ANY       \
- 	(X86_BR_CALL    |\
-@@ -99,6 +111,7 @@ enum {
- 	 X86_BR_JCC     |\
- 	 X86_BR_JMP	 |\
- 	 X86_BR_IRQ	 |\
-+	 X86_BR_ABORT	 |\
- 	 X86_BR_IND_CALL)
- 
- #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
-@@ -275,22 +288,23 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
- 		unsigned long lbr_idx = (tos - i) & mask;
- 		u64 from, to, mis = 0, pred = 0, intx = 0, abort = 0;
-+		int skip = 0;
-+		int lbr_flags = lbr_desc[lbr_format];
- 
- 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
- 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
- 
--		if (lbr_format == LBR_FORMAT_EIP_FLAGS ||
--		    lbr_format == LBR_FORMAT_EIP_FLAGS2) {
-+		if (lbr_flags & LBR_EIP_FLAGS) {
- 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
- 			pred = !mis;
--			if (lbr_format == LBR_FORMAT_EIP_FLAGS)
--				from = (u64)((((s64)from) << 1) >> 1);
--			else if (lbr_format == LBR_FORMAT_EIP_FLAGS2) {
--				intx = !!(from & LBR_FROM_FLAG_INTX);
--				abort = !!(from & LBR_FROM_FLAG_ABORT);
--				from = (u64)((((s64)from) << 3) >> 3);
--			}
-+			skip = 1;
-+		}
-+		if (lbr_flags & LBR_TSX) {
-+			intx = !!(from & LBR_FROM_FLAG_INTX);
-+			abort = !!(from & LBR_FROM_FLAG_ABORT);
-+			skip = 3;
- 		}
-+		from = (u64)((((s64)from) << skip) >> skip);
- 
- 		cpuc->lbr_entries[i].from	= from;
- 		cpuc->lbr_entries[i].to		= to;
-@@ -347,6 +361,16 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 
- 	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
- 		mask |= X86_BR_IND_CALL;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_ABORTTX)
-+		mask |= X86_BR_ABORT;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_INTX)
-+		mask |= X86_BR_INTX;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_NOTX)
-+		mask |= X86_BR_NOTX;
-+
- 	/*
- 	 * stash actual user request into reg, it may
- 	 * be used by fixup code for some CPU
-@@ -393,7 +417,8 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
- 	/*
- 	 * no LBR on this PMU
- 	 */
--	if (!x86_pmu.lbr_nr || x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
-+	if (!x86_pmu.lbr_nr ||
-+	    x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
- 		return -EOPNOTSUPP;
- 
- 	/*
-@@ -421,7 +446,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
-  * decoded (e.g., text page not present), then X86_BR_NONE is
-  * returned.
-  */
--static int branch_type(unsigned long from, unsigned long to)
-+static int branch_type(unsigned long from, unsigned long to, int abort)
- {
- 	struct insn insn;
- 	void *addr;
-@@ -441,6 +466,9 @@ static int branch_type(unsigned long from, unsigned long to)
- 	if (from == 0 || to == 0)
- 		return X86_BR_NONE;
- 
-+	if (abort)
-+		return X86_BR_ABORT | to_plm;
-+
- 	if (from_plm == X86_BR_USER) {
- 		/*
- 		 * can happen if measuring at the user level only
-@@ -577,7 +605,13 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- 		from = cpuc->lbr_entries[i].from;
- 		to = cpuc->lbr_entries[i].to;
- 
--		type = branch_type(from, to);
-+		type = branch_type(from, to, cpuc->lbr_entries[i].abort);
-+		if (type != X86_BR_NONE && (br_sel & X86_BR_ANYTX)) {
-+			if (cpuc->lbr_entries[i].intx)
-+				type |= X86_BR_INTX;
-+			else
-+				type |= X86_BR_NOTX;
-+		}
- 
- 		/* if type does not correspond, then discard */
- 		if (type == X86_BR_NONE || (br_sel & type) != type) {
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9fa9c62..41b25f0 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -155,8 +155,11 @@ enum perf_branch_sample_type {
- 	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
- 	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
- 	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
-+	PERF_SAMPLE_BRANCH_ABORTTX	= 1U << 7, /* transaction aborts */
-+	PERF_SAMPLE_BRANCH_INTX		= 1U << 8, /* in transaction (flag) */
-+	PERF_SAMPLE_BRANCH_NOTX		= 1U << 9, /* not in transaction (flag) */
- 
--	PERF_SAMPLE_BRANCH_MAX		= 1U << 7, /* non-ABI */
-+	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
- };
- 
- #define PERF_SAMPLE_BRANCH_PLM_ALL \
 -- 
 1.7.7.6
 
