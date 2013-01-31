@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab3AaWRp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:17:45 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37222 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754325Ab3AaWRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:17:42 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 2/2] cpufreq: governors: Remove code redundancy between governors
-Date: Thu, 31 Jan 2013 23:23:54 +0100
-Message-ID: <1730121.raxo9SGZyf@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130131185004.GB20164@balto.lan>
-References: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org> <118c59263751862b1750ed9f96639a4e70069e66.1359653181.git.viresh.kumar@linaro.org> <20130131185004.GB20164@balto.lan>
+	id S1755973Ab3AaWUH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:20:07 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:34515 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab3AaWUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:20:05 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Date: Thu, 31 Jan 2013 17:20:03 -0500
+Message-ID: <CA+3xLx6HRWuc58oWP=T1J9NkKx958DQEULy+gMt8mooj3nsw+g@mail.gmail.com>
+Subject: ABI violations eventually caused by short sighted coding style
+From: Jon Pry <jonpry@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 31, 2013 07:50:04 PM Fabio Baltieri wrote:
-> On Thu, Jan 31, 2013 at 10:58:02PM +0530, Viresh Kumar wrote:
-> > With the inclusion of following patches:
-> > 
-> > 9f4eb10 cpufreq: conservative: call dbs_check_cpu only when necessary
-> > 772b4b1 cpufreq: ondemand: call dbs_check_cpu only when necessary
-> > 
-> > code redundancy is introduced again. Get rid of it.
-> > 
-> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > ---
-> 
-> Hi,
-> 
-> Tested-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+I have recently been bitten by an ABI change. I'd prefer not to name names, but
+it seems at this point the ABI cannot even be reverted. This sequence of events
+results from the following strategy to deal with ioctl's using structures and
+attempting to maintain backward compatibility.
 
-OK
+Take for example the following:
 
-Fabio, Viresh, Shawn,
+foo_ioctl(struct *myioctldata);
 
-This time I was *really* confused as to what patches I was supposed to take,
-from whom and in what order, so I applied a number of them in the order given
-by patchwork.  That worked well enough, because (almost) all of them applied
-for me without conflicts.  That said I would appreciate it if you could look
-into the bleeding-edge branch of my tree and see if there's anything missing
-or something that shouldn't be there (cpufreq-wise).
+The creator of this structure knows that the driver may have it's features
+extended in the future. So they invent this:
 
-Thanks,
-Rafael
+struct foodata{
+	u32 foo;
+};
+
+struct myioctldata{
+	u32 type;
+	union {
+		struct foodata;
+		u8 data[64];
+	} u;
+};
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The creator is proud. Because now this ioctl is future proof. More structures
+can simply be added in the future without breaking existing code. Right? Wrong.
+If a new structure is added to the union that requires higher alignment. Like
+adding a 64-bit element. The union will now be moved in the structure and
+sizeof(myioctldata) will now be different to accommodate the padding.
+
+This is even cooler if myioctldata.type is a u8, then it is possible to get 4
+whole different sized structs depending on the contents of the union. I find
+this to be rather stupid. The kernel is littered with this stuff so it's
+probably impossible to remove it. At least new code should not be encouraged to
+follow this form. Most developers just don't know and assume if the struct is
+small enough, it will not cause any problems. To make matters worse,
+the effects
+can be different on 32/64bit platforms, allowing the code to pass testing.
+
+I believe changes should be made to the coding style forcing developers to take
+action. There are a couple of solutions I can think of:
+
+1. 	Put the unions at the beginning of structures if possible, or at least put
+	them in a position that would ensure 8 byte offset from the beginning of
+	the struct. Such as after a u64. Multiple unions should ensure the data[]
+	of the preceding unions to be a multiple of 8 bytes.
+2.  Require the data element to be declared as u64[size/8].
+3.  Pack the ioctl structures
+
+My preference is for the former since it does not cause any
+unnecessary padding.
+
+Regards,
+
+Jon Pry
