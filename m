@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964769Ab3AaW2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:28:47 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:46502 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369Ab3AaW2p convert rfc822-to-8bit (ORCPT
+	id S964783Ab3AaW24 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:28:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44879 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756995Ab3AaW2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:28:45 -0500
+	Thu, 31 Jan 2013 17:28:48 -0500
+Date: Thu, 31 Jan 2013 14:28:37 -0800
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Message-ID: <tip-e6ebf5deaaaa33b661f0db86380c232b162bd68c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1356075872-3054-5-git-send-email-fenghua.yu@intel.com>
+References: <1356075872-3054-5-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/microcode] x86/common.c:
+  load ucode in 64 bit or show loading ucode info in 32 bit on AP
+Git-Commit-ID: e6ebf5deaaaa33b661f0db86380c232b162bd68c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Date: Fri, 1 Feb 2013 00:28:44 +0200
-Message-ID: <CA+MedixNn7Nxu8LMpPWF8AKWpzPh6qt-Hx2=t02MhCX=OUd7Dg@mail.gmail.com>
-Subject: [BUG][bonding][3.7.+] - bonding with 802.3ad mode send all traffic
- via a single interface only
-From: Nikolay Ulyanitsky <lystor@gmail.com>
-To: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 14:28:43 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Commit-ID:  e6ebf5deaaaa33b661f0db86380c232b162bd68c
+Gitweb:     http://git.kernel.org/tip/e6ebf5deaaaa33b661f0db86380c232b162bd68c
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Thu, 20 Dec 2012 23:44:24 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 31 Jan 2013 13:19:06 -0800
 
-Bonding with 802.3ad mode send all traffic via a single interface on
-kernel 3.7.+
+x86/common.c: load ucode in 64 bit or show loading ucode info in 32 bit on AP
 
-Tested kernels with the issue: 3.7.5, 3.7.0
-Tested kernels without the issue: 3.6.11, 3.4.28 and older
-CentOS 6 x86_64
+In 64 bit, load ucode on AP in cpu_init().
 
-All kernels are compiled from the same config (http://pastebin.com/SPbgAAVt).
-A screenshot from a router with 4 NICs on bond0 (eth0, eth1) and bond1
-(eth2, eth3):
-http://s17.postimage.org/f5a4owrsf/bonding.png
+In 32 bit, show ucode loading info on AP in cpu_init(). Microcode has been
+loaded earlier before paging. Now it is safe to show the loading microcode
+info on this AP.
 
-STEPS TO REPRODUCE ON TEST HOST:
-Sorry, I have no any managed switches with 802.3ad at home. So I use
-Virtualbox for bug reporting with two bridged adapters on the guest
-attached to TAP devices on the host.
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1356075872-3054-5-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/cpu/common.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-STEP 1. VIRTUALBOX HOST – INIT:
-# cat /etc/modprobe.d/bonding.conf:
-alias bond0 bonding
-options bond0 mode=4 xmit_hash_policy=layer3+4 miimon=100
-
-# ip tuntap add dev tap0 mode tap
-# ip tuntap add dev tap1 mode tap
-# modprobe -v bond0
-# ip l set dev tap0 up
-# ip l set dev tap1 up
-# ip l set dev bond0 up
-# ifenslave bond0 tap0 tap1
-# ip a add 192.168.10.10/24 dev bond0
-
-STEP 2. VIRTUALBOX GUEST – INIT:
-# cat /etc/modprobe.d/bonding.conf:
-alias bond0 bonding
-options bond0 mode=4 xmit_hash_policy=layer3+4 miimon=100
-
-# modprobe -v bond0
-# ip l set dev p2p1 up
-# ip l set dev p7p1 up
-# ip l set dev bond0 up
-# ifenslave bond0 p2p1 p7p1
-# ip a add 192.168.10.20/24 dev bond0
-# ip r add default via 192.168.10.10
-
-STEP 3. VIRTUALBOX HOST – INIT SNIFFERS:
-# tcpdump -n -nn -l -i tap0 > tap0.txt &
-# tcpdump -n -nn -l -i tap1 > tap1.txt &
-
-STEP 4. VIRTUALBOX HOST – GENERATE SOME TRAFFIC:
-# nmap -sU -v -T 5 192.168.10.20
-
-On 3.7.5, 3.7.0 the bonding will place all traffic only to a single
-interface (tap0 or tap1).
-On 3.6.11, 3.4.28 and older kernels the bonding will place all traffic
-to both interfaces (tap0 and tap1).
-
-
-# cat /proc/net/bonding/bond0
-Ethernet Channel Bonding Driver: v3.7.1 (April 27, 2011)
-Bonding Mode: IEEE 802.3ad Dynamic link aggregation
-Transmit Hash Policy: layer3+4 (1)
-MII Status: up
-MII Polling Interval (ms): 100
-Up Delay (ms): 0
-Down Delay (ms): 0
-802.3ad info
-LACP rate: slow
-Min links: 0
-Aggregator selection policy (ad_select): stable
-Active Aggregator Info:
-Aggregator ID: 1
-Number of ports: 2
-Actor Key: 5
-Partner Key: 17
-Partner Mac Address: 08:00:27:af:dd:45
-
-Slave Interface: tap0
-MII Status: up
-Speed: 10 Mbps
-Duplex: full
-Link Failure Count: 0
-Permanent HW addr: ba:2f:b5:25:d0:67
-Aggregator ID: 1
-Slave queue ID: 0
-
-Slave Interface: tap1
-MII Status: up
-Speed: 10 Mbps
-Duplex: full
-Link Failure Count: 0
-Permanent HW addr: 6a:ce:e4:d0:0c:05
-Aggregator ID: 1
-Slave queue ID: 0
-
-
-Any ideas?
-Thanks
-
-–
-With best regards,
-Nikolay Ulyanitsky
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index d7fd246..d814772 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1220,6 +1220,12 @@ void __cpuinit cpu_init(void)
+ 	int cpu;
+ 	int i;
+ 
++	/*
++	 * Load microcode on this cpu if a valid microcode is available.
++	 * This is early microcode loading procedure.
++	 */
++	load_ucode_ap();
++
+ 	cpu = stack_smp_processor_id();
+ 	t = &per_cpu(init_tss, cpu);
+ 	oist = &per_cpu(orig_ist, cpu);
+@@ -1311,6 +1317,8 @@ void __cpuinit cpu_init(void)
+ 	struct tss_struct *t = &per_cpu(init_tss, cpu);
+ 	struct thread_struct *thread = &curr->thread;
+ 
++	show_ucode_info_early();
++
+ 	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
+ 		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
+ 		for (;;)
