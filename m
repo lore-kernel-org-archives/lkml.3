@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab3AaPHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 10:07:31 -0500
-Received: from host171.canaca.com ([67.55.55.225]:33531 "EHLO
+	id S1754369Ab3AaPHX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 10:07:23 -0500
+Received: from host171.canaca.com ([67.55.55.225]:33524 "EHLO
 	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754336Ab3AaPH1 (ORCPT
+	with ESMTP id S1752013Ab3AaPHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 10:07:27 -0500
+	Thu, 31 Jan 2013 10:07:20 -0500
 From: Simon Wood <simon@mungewell.org>
 To: linux-input@vger.kernel.org
 Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
         simon@mungewell.org, rosegardener@freeode.co.uk
-Subject: [PATCH 3/5] USB: HID: Steelseries SRW-S1 Add support for LEDs
-Date: Thu, 31 Jan 2013 08:07:09 -0700
-Message-Id: <1359644830-3274-3-git-send-email-simon@mungewell.org>
+Subject: [PATCH 1/5] USB: HID: SRW-S1 Gaming Wheel Driver
+Date: Thu, 31 Jan 2013 08:07:07 -0700
+Message-Id: <1359644830-3274-1-git-send-email-simon@mungewell.org>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1359644830-3274-1-git-send-email-simon@mungewell.org>
+In-Reply-To: <alpine.LNX.2.00.1301291057170.23853@pobox.suse.cz>
 References: <alpine.LNX.2.00.1301291057170.23853@pobox.suse.cz>
- <1359644830-3274-1-git-send-email-simon@mungewell.org>
 X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
 X-AntiAbuse: Primary Hostname - host171.canaca.com
 X-AntiAbuse: Original Domain - vger.kernel.org
@@ -30,274 +29,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch to the SRW-S1 driver adds support for the LED RPM
-meter on the front of the device. The LEDs are controlled via
-/sys/class/leds interface, with an individual control for each
-of the 15 LEDs.
+Add support the SRW-S1 by patching HID descriptor to read axis
+as Generic Desktop X, Y and Z (rather than Usage page being
+'Simulation').
 
 Signed-off-by: Simon Wood <simon@mungewell.org>
 Tested-by: John Murphy <rosegardener@freeode.co.uk>
 ---
- Documentation/ABI/testing/sysfs-driver-hid-srws1 |   20 +++
- drivers/hid/hid-steelseries-srws1.c              |  199 ++++++++++++++++++++++
- 2 files changed, 219 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-srws1
+ drivers/hid/Kconfig                 |    6 ++++
+ drivers/hid/Makefile                |    1 +
+ drivers/hid/hid-core.c              |    1 +
+ drivers/hid/hid-ids.h               |    3 ++
+ drivers/hid/hid-steelseries-srws1.c |   58 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 69 insertions(+)
+ create mode 100644 drivers/hid/hid-steelseries-srws1.c
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-srws1 b/Documentation/ABI/testing/sysfs-driver-hid-srws1
-new file mode 100644
-index 0000000..c27b34d
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-srws1
-@@ -0,0 +1,20 @@
-+What:		/sys/class/leds/SRWS1::<serial>::RPM1
-+What:		/sys/class/leds/SRWS1::<serial>::RPM2
-+What:		/sys/class/leds/SRWS1::<serial>::RPM3
-+What:		/sys/class/leds/SRWS1::<serial>::RPM4
-+What:		/sys/class/leds/SRWS1::<serial>::RPM5
-+What:		/sys/class/leds/SRWS1::<serial>::RPM6
-+What:		/sys/class/leds/SRWS1::<serial>::RPM7
-+What:		/sys/class/leds/SRWS1::<serial>::RPM8
-+What:		/sys/class/leds/SRWS1::<serial>::RPM9
-+What:		/sys/class/leds/SRWS1::<serial>::RPM10
-+What:		/sys/class/leds/SRWS1::<serial>::RPM11
-+What:		/sys/class/leds/SRWS1::<serial>::RPM12
-+What:		/sys/class/leds/SRWS1::<serial>::RPM13
-+What:		/sys/class/leds/SRWS1::<serial>::RPM14
-+What:		/sys/class/leds/SRWS1::<serial>::RPM15
-+Date:		Jan 2013
-+KernelVersion:	3.9
-+Contact:	Simon Wood <simon@mungewell.org>
-+Description:	Provides a control for turning on/off the LEDs which form
-+		an RPM meter on the front of the controller
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index e7d6a13..37df92f 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -596,6 +596,12 @@ config HID_SPEEDLINK
+ 	---help---
+ 	Support for Speedlink Vicious and Divine Cezanne mouse.
+ 
++config HID_STEELSERIES_SRWS1
++	tristate "Steelseries SRW-S1 steering wheel support"
++	depends on USB_HID
++	---help---
++	Support for Steelseries SRW-S1 steering wheel
++
+ config HID_SUNPLUS
+ 	tristate "Sunplus wireless desktop"
+ 	depends on USB_HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index b622157..bbebe0a 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -101,6 +101,7 @@ obj-$(CONFIG_HID_SAMSUNG)	+= hid-samsung.o
+ obj-$(CONFIG_HID_SMARTJOYPLUS)	+= hid-sjoy.o
+ obj-$(CONFIG_HID_SONY)		+= hid-sony.o
+ obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
++obj-$(CONFIG_HID_STEELSERIES_SRWS1)    	+= hid-steelseries-srws1.o
+ obj-$(CONFIG_HID_SUNPLUS)	+= hid-sunplus.o
+ obj-$(CONFIG_HID_GREENASIA)	+= hid-gaff.o
+ obj-$(CONFIG_HID_THRUSTMASTER)	+= hid-tmff.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index eb2ee11..65cda7f 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1697,6 +1697,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_NAVIGATION_CONTROLLER) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_STEELSERIES, USB_DEVICE_ID_STEELSERIES_SRWS1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SUNPLUS, USB_DEVICE_ID_SUNPLUS_WDESKTOP) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb300) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THRUSTMASTER, 0xb304) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 4dfa605..f5976f3 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -723,6 +723,9 @@
+ #define USB_VENDOR_ID_STANTUM_SITRONIX		0x1403
+ #define USB_DEVICE_ID_MTP_SITRONIX		0x5001
+ 
++#define USB_VENDOR_ID_STEELSERIES	0x1038
++#define USB_DEVICE_ID_STEELSERIES_SRWS1	0x1410
++
+ #define USB_VENDOR_ID_SUN		0x0430
+ #define USB_DEVICE_ID_RARITAN_KVM_DONGLE	0xcdab
+ 
 diff --git a/drivers/hid/hid-steelseries-srws1.c b/drivers/hid/hid-steelseries-srws1.c
-index 38b0a24..ba2e2c3 100644
---- a/drivers/hid/hid-steelseries-srws1.c
+new file mode 100644
+index 0000000..4a5386b
+--- /dev/null
 +++ b/drivers/hid/hid-steelseries-srws1.c
-@@ -12,11 +12,21 @@
-  */
- 
- #include <linux/device.h>
-+#include <linux/usb.h>
- #include <linux/hid.h>
- #include <linux/module.h>
- 
-+#include "usbhid/usbhid.h"
- #include "hid-ids.h"
- 
-+#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-+#define SRWS1_NUMBER_LEDS 15
-+struct steelseries_srws1_data {
-+	__u16 led_state;
-+	struct led_classdev *led[SRWS1_NUMBER_LEDS];
+@@ -0,0 +1,58 @@
++/*
++ *  HID driver for Steelseries SRW-S1
++ *
++ *  Copyright (c) 2013 Simon Wood
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++#include <linux/device.h>
++#include <linux/hid.h>
++#include <linux/module.h>
++
++#include "hid-ids.h"
++
++static __u8 *steelseries_srws1_report_fixup(struct hid_device *hdev, __u8 *rdesc,
++		unsigned int *rsize)
++{
++	if (*rsize >= 115 && rdesc[11] == 0x02 && rdesc[13] == 0xc8
++			&& rdesc[29] == 0xbb && rdesc[40] == 0xc5) {
++		hid_info(hdev, "Fixing up Steelseries SRW-S1 report descriptor\n");
++		rdesc[11] = 0x01;
++		rdesc[13] = 0x30;
++		rdesc[29] = 0x31;
++		rdesc[40] = 0x32;
++	}
++	return rdesc;
++}
++
++static const struct hid_device_id steelseries_srws1_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_STEELSERIES, USB_DEVICE_ID_STEELSERIES_SRWS1) },
++	{ }
 +};
-+#endif
++MODULE_DEVICE_TABLE(hid, steelseries_srws1_devices);
 +
- /* Fixed report descriptor for Steelseries SRW-S1 wheel controller
-  *
-  * The original descriptor hides the sensitivity and assists dials
-@@ -97,6 +107,191 @@ static __u8 steelseries_srws1_rdesc_fixed[] = {
- 0xC0                /*  End Collection                      */
- };
- 
-+#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-+static void steelseries_srws1_set_leds(struct hid_device *hdev, __u16 leds)
++static struct hid_driver steelseries_srws1_driver = {
++	.name = "steelseries_srws1",
++	.id_table = steelseries_srws1_devices,
++	.report_fixup = steelseries_srws1_report_fixup
++};
++
++static int __init steelseries_srws1_init(void)
 +{
-+	struct list_head *report_list = &hdev->report_enum[HID_OUTPUT_REPORT].report_list;
-+	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
-+	__s32 *value = report->field[0]->value;
-+
-+	value[0] = 0x40;
-+	value[1] = leds & 0xFF;
-+	value[2] = leds >> 8;
-+	value[3] = 0x00;
-+	value[4] = 0x00;
-+	value[5] = 0x00;
-+	value[6] = 0x00;
-+	value[7] = 0x00;
-+	value[8] = 0x00;
-+	value[9] = 0x00;
-+	value[10] = 0x00;
-+	value[11] = 0x00;
-+	value[12] = 0x00;
-+	value[13] = 0x00;
-+	value[14] = 0x00;
-+	value[15] = 0x00;
-+
-+	usbhid_submit_report(hdev, report, USB_DIR_OUT);
-+
-+	/* Note: LED change does not show on device until the device is read/polled */
++	return hid_register_driver(&steelseries_srws1_driver);
 +}
 +
-+static void steelseries_srws1_led_set_brightness(struct led_classdev *led_cdev,
-+			enum led_brightness value)
++static void __exit steelseries_srws1_exit(void)
 +{
-+	struct device *dev = led_cdev->dev->parent;
-+	struct hid_device *hid = container_of(dev, struct hid_device, dev);
-+	struct steelseries_srws1_data *drv_data = hid_get_drvdata(hid);
-+	int i, state = 0;
-+
-+	if (!drv_data) {
-+		hid_err(hid, "Device data not found.");
-+		return;
-+	}
-+
-+	for (i = 0; i < SRWS1_NUMBER_LEDS; i++) {
-+		if (led_cdev != drv_data->led[i])
-+			continue;
-+
-+		state = (drv_data->led_state >> i) & 1;
-+		if (value == LED_OFF && state) {
-+			drv_data->led_state &= ~(1 << i);
-+			steelseries_srws1_set_leds(hid, drv_data->led_state);
-+		} else if (value != LED_OFF && !state) {
-+			drv_data->led_state |= 1 << i;
-+			steelseries_srws1_set_leds(hid, drv_data->led_state);
-+		}
-+		break;
-+	}
++	hid_unregister_driver(&steelseries_srws1_driver);
 +}
 +
-+static enum led_brightness steelseries_srws1_led_get_brightness(struct led_classdev *led_cdev)
-+{
-+	struct device *dev = led_cdev->dev->parent;
-+	struct hid_device *hid = container_of(dev, struct hid_device, dev);
-+	struct steelseries_srws1_data *drv_data;
-+	int i, value = 0;
-+
-+	drv_data = hid_get_drvdata(hid);
-+
-+	if (!drv_data) {
-+		hid_err(hid, "Device data not found.");
-+		return LED_OFF;
-+	}
-+
-+	for (i = 0; i < SRWS1_NUMBER_LEDS; i++)
-+		if (led_cdev == drv_data->led[i]) {
-+			value = (drv_data->led_state >> i) & 1;
-+			break;
-+		}
-+
-+	return value ? LED_FULL : LED_OFF;
-+}
-+
-+static int steelseries_srws1_probe(struct hid_device *hdev,
-+		const struct hid_device_id *id)
-+{
-+	int ret, i;
-+	struct led_classdev *led;
-+	size_t name_sz;
-+	char *name;
-+
-+	struct steelseries_srws1_data *drv_data = kzalloc(sizeof(*drv_data), GFP_KERNEL);
-+
-+	if (drv_data == NULL) {
-+		hid_err(hdev, "can't alloc SRW-S1 memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	hid_set_drvdata(hdev, drv_data);
-+
-+	ret = hid_parse(hdev);
-+	if (ret) {
-+		hid_err(hdev, "parse failed\n");
-+		goto err_free;
-+	}
-+
-+	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
-+	if (ret) {
-+		hid_err(hdev, "hw start failed\n");
-+		goto err_free;
-+	}
-+
-+	/* register led subsystem */
-+	drv_data->led_state = 0;
-+	for (i = 0; i < SRWS1_NUMBER_LEDS; i++)
-+		drv_data->led[i] = NULL;
-+
-+	steelseries_srws1_set_leds(hdev, 0);
-+
-+	name_sz = strlen(hdev->uniq) + 15;
-+
-+	for (i = 0; i < SRWS1_NUMBER_LEDS; i++) {
-+		led = kzalloc(sizeof(struct led_classdev)+name_sz, GFP_KERNEL);
-+		if (!led) {
-+			hid_err(hdev, "can't allocate memory for LED %d\n", i);
-+			goto err_led;
-+		}
-+
-+		name = (void *)(&led[1]);
-+		snprintf(name, name_sz, "SRWS1::%s::RPM%d", hdev->uniq, i+1);
-+		led->name = name;
-+		led->brightness = 0;
-+		led->max_brightness = 1;
-+		led->brightness_get = steelseries_srws1_led_get_brightness;
-+		led->brightness_set = steelseries_srws1_led_set_brightness;
-+
-+		drv_data->led[i] = led;
-+		ret = led_classdev_register(&hdev->dev, led);
-+
-+		if (ret) {
-+			hid_err(hdev, "failed to register LED %d. Aborting.\n", i);
-+err_led:
-+			/* Deregister all LEDs (if any) */
-+			for (i = 0; i < SRWS1_NUMBER_LEDS; i++) {
-+				led = drv_data->led[i];
-+				drv_data->led[i] = NULL;
-+				if (!led)
-+					continue;
-+				led_classdev_unregister(led);
-+				kfree(led);
-+			}
-+			goto out;	/* but let the driver continue without LEDs */
-+		}
-+	}
-+out:
-+	return 0;
-+err_free:
-+	kfree(drv_data);
-+	return ret;
-+}
-+
-+static void steelseries_srws1_remove(struct hid_device *hdev)
-+{
-+	int i;
-+	struct led_classdev *led;
-+
-+	struct steelseries_srws1_data *drv_data = hid_get_drvdata(hdev);
-+
-+	if (drv_data) {
-+		/* Deregister LEDs (if any) */
-+		for (i = 0; i < SRWS1_NUMBER_LEDS; i++) {
-+			led = drv_data->led[i];
-+			drv_data->led[i] = NULL;
-+			if (!led)
-+				continue;
-+			led_classdev_unregister(led);
-+			kfree(led);
-+		}
-+
-+	}
-+
-+	hid_hw_stop(hdev);
-+	kfree(drv_data);
-+	return;
-+}
-+#endif
-+
- static __u8 *steelseries_srws1_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
-@@ -118,6 +313,10 @@ MODULE_DEVICE_TABLE(hid, steelseries_srws1_devices);
- static struct hid_driver steelseries_srws1_driver = {
- 	.name = "steelseries_srws1",
- 	.id_table = steelseries_srws1_devices,
-+#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-+	.probe = steelseries_srws1_probe,
-+	.remove = steelseries_srws1_remove,
-+#endif
- 	.report_fixup = steelseries_srws1_report_fixup
- };
- 
++module_init(steelseries_srws1_init);
++module_exit(steelseries_srws1_exit);
++MODULE_LICENSE("GPL");
 -- 
 1.7.10.4
 
