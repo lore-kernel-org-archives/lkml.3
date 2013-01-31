@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab3AaJfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 04:35:23 -0500
-Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:49844 "EHLO
-	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab3AaJfU (ORCPT
+	id S1753456Ab3AaJhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 04:37:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39568 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751408Ab3AaJhe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 04:35:20 -0500
-Message-ID: <20130131113516.96632or3s6s22bwg@www.dalek.fi>
-Date: Thu, 31 Jan 2013 11:35:16 +0200
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Tom St Denis <tstdenis@elliptictech.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] CMAC support for CryptoAPI, fixed patch issues,
- indent, and testmgr build issues
-References: <20130124094337.GJ9147@secunet.com>
- <20130124112410.8535.75598.stgit@localhost6.localdomain6>
- <20130129093331.GA23291@secunet.com>
-In-Reply-To: <20130129093331.GA23291@secunet.com>
+	Thu, 31 Jan 2013 04:37:34 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "zonque@gmail.com" <zonque@gmail.com>,
+        "jacmet@sunsite.dk" <jacmet@sunsite.dk>
+Subject: RE: [PATCH v2 0/3] Add device tree support for NAND flash in
+ am335x-evm
+Thread-Topic: [PATCH v2 0/3] Add device tree support for NAND flash in
+ am335x-evm
+Thread-Index: AQHN+gkHtHC6EVLY202wwoalZaMh8phi2Jyg
+Date: Thu, 31 Jan 2013 09:36:10 +0000
+Deferred-Delivery: Thu, 31 Jan 2013 09:36:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EA68A6D@DBDE01.ent.ti.com>
+References: <cover.1359007746.git.avinashphilip@ti.com>
+In-Reply-To: <cover.1359007746.git.avinashphilip@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Steffen Klassert <steffen.klassert@secunet.com>:
+Benoit,
 
-> On Thu, Jan 24, 2013 at 01:25:46PM +0200, Jussi Kivilinna wrote:
->>
->> Maybe it would be cleaner to not mess with pfkeyv2.h at all, but  
->> instead mark algorithms that do not support pfkey with flag. See  
->> patch below.
->>
->
-> As nobody seems to have another opinion, we could go either with your
-> approach, or we can invert the logic and mark all existing algorithms
-> as pfkey supported. Then we would not need to bother about pfkey again.
->
-> I'd be fine with both. Do you want to submit a patch?
->
+On Thu, Jan 24, 2013 at 13:32:26, Philip, Avinash wrote:
+> This patch series adds device tree support for NAND flash in am335x-evm.
+> Also ELM node is populated in device tree and been used for BCH error
+> correction in NAND flash part. Also this patch series ensures RBL ecc
+> layout maintained in Linux kernel with BCH8 ecc scheme.
+> 
+> This patch series based on [1] and depends on [2].
+> 
+> 1. http://git.kernel.org/?p=linux/kernel/git/bcousson/linux-omap-dt.git;a=tree;h=refs/heads/for_3.9/dts;hb=refs/heads/for_3.9/dts
+> 
+> 2.mtd: devices: elm: Removes <xx> literals in elm DT node
+>   https://lkml.org/lkml/2013/1/24/30
+> 
 
-Ok, I'll invert the logic and send new patch.
+Can you accept this patch series so that NAND flash with BCH support
+for am335x-evm available in 3.9.
 
--Jussi
+Thanks
+Avinash
 
 
+> Philip Avinash (1):
+>   ARM: dts: AM33XX: Add NAND flash device tree data to am335x-evm
+> 
+> Philip, Avinash (2):
+>   ARM: dts: AM33XX: Add ELM node
+>   ARM: dts: AM33XX: Add GPMC node
+> 
+>  arch/arm/boot/dts/am335x-evm.dts |   98 +++++++++++++++++++++++++++++++++++++-
+>  arch/arm/boot/dts/am33xx.dtsi    |   20 ++++++++
+>  2 files changed, 117 insertions(+), 1 deletion(-)
+> 
+> -- 
+> 1.7.9.5
+> 
+> 
 
