@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3AaLSd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:18:33 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:40413 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab3AaLSa (ORCPT
+	id S1753243Ab3AaLUM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:20:12 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:54371 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab3AaLUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 06:18:30 -0500
-Date: Thu, 31 Jan 2013 12:18:23 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Don Zickus <dzickus@redhat.com>, Mike Lykov <combr@yandex.ru>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, kirill@shutemov.name
-Subject: Re: [BUG?] false positive in soft lockup detector while unlzma
- initramfs on slow cpu
-Message-ID: <20130131111823.GA4587@gmail.com>
-References: <5107D1D3.6040105@yandex.ru>
- <20130129153348.GR98867@redhat.com>
- <20130129155917.4ee64214.akpm@linux-foundation.org>
+	Thu, 31 Jan 2013 06:20:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130129155917.4ee64214.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130131104241.GA8676@avionic-0098.mockup.avionic-design.de>
+References: <1359627939-2685-1-git-send-email-sachin.kamat@linaro.org>
+	<20130131104241.GA8676@avionic-0098.mockup.avionic-design.de>
+Date: Thu, 31 Jan 2013 16:50:08 +0530
+Message-ID: <CAK9yfHwxhZ1MGEC_eswoNon9qN7n8_57z+2zrDYgU7nMTWSHuw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] video: exynos_mipi_dsi: Convert to devm_ioremap_resource()
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Donghwa Lee <dh09.lee@samsung.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 31 January 2013 16:12, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> On Thu, Jan 31, 2013 at 03:55:37PM +0530, Sachin Kamat wrote:
+>> Use the newly introduced devm_ioremap_resource() instead of
+>> devm_request_and_ioremap() which provides more consistent error handling.
+>>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> Cc: Donghwa Lee <dh09.lee@samsung.com>
+>> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+>> Cc: linux-fbdev@vger.kernel.org
+>> ---
+>>  drivers/video/exynos/exynos_mipi_dsi.c |    7 ++++---
+>>  1 files changed, 4 insertions(+), 3 deletions(-)
+>
+> All of these can drop the additional error message because equivalent
+> error message are output by devm_ioremap_resource() itself.
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+Ah right.. I will remove them and re-send the patches.
 
-> On Tue, 29 Jan 2013 10:33:48 -0500
-> Don Zickus <dzickus@redhat.com> wrote:
-> 
-> > --- a/kernel/watchdog.c
-> > +++ b/kernel/watchdog.c
-> > @@ -79,6 +79,14 @@ static int __init softlockup_panic_setup(char *str)
-> >  }
-> >  __setup("softlockup_panic=", softlockup_panic_setup);
-> >  
-> > +static int __init watchdog_thresh_setup(char *str)
-> > +{
-> > +	watchdog_thresh = simple_strtoul(str, NULL, 0);
-> > +
-> > +	return 1;
-> > +}
-> > +__setup("watchdog_thresh=", watchdog_thresh_setup);
-> 
-> I wonder if there's some magical way in which we can set any 
-> sysctl from the kernel command line.  Add 
-> sys.vm.min_free_kbytes=42 to the command line, walk the 
-> hierarchy late in boot...
-
-A facility like that would be totally awesome - we could remove 
-a lot of duplicated and outright inconsistent (often missing) 
-__setup() hackery that way.
-
-Single source of information and all that.
-
-Thanks,
-
-	Ingo
+-- 
+With warm regards,
+Sachin
