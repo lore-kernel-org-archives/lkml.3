@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab3AaMLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:11:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56071 "EHLO
+	id S1754704Ab3AaMLx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:11:53 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56029 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab3AaMLf (ORCPT
+	with ESMTP id S1753740Ab3AaMLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:11:35 -0500
-Message-Id: <20130131120743.322589840@linutronix.de>
+	Thu, 31 Jan 2013 07:11:32 -0500
+Message-Id: <20130131120743.064902597@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 31 Jan 2013 12:11:33 -0000
+Date: Thu, 31 Jan 2013 12:11:30 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
         Richard Weinberger <rw@linutronix.de>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 27/40] virt: Convert kvm hotplug to state machine
+Subject: [patch 23/40] cpufreq: Convert to hotplug state machine
 References: <20130131120348.372374706@linutronix.de>
-Content-Disposition: inline; filename=virt-kvm-convert.patch
+Content-Disposition: inline; filename=drivers-cpufreq-convert.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -29,109 +29,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Straight forward conversion to state machine callbacks w/o fixing the
+obvious brokeness of the asymetric state invocations.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/cpuhotplug.h |    1 +
- virt/kvm/kvm_main.c        |   42 ++++++++++++++++--------------------------
- 2 files changed, 17 insertions(+), 26 deletions(-)
+ drivers/cpufreq/cpufreq_stats.c |   55 +++++++++-------------------------------
+ include/linux/cpuhotplug.h      |    2 +
+ 2 files changed, 15 insertions(+), 42 deletions(-)
 
+Index: linux-2.6/drivers/cpufreq/cpufreq_stats.c
+===================================================================
+--- linux-2.6.orig/drivers/cpufreq/cpufreq_stats.c
++++ linux-2.6/drivers/cpufreq/cpufreq_stats.c
+@@ -167,7 +167,7 @@ static int freq_table_get_index(struct c
+ /* should be called late in the CPU removal sequence so that the stats
+  * memory is still available in case someone tries to use it.
+  */
+-static void cpufreq_stats_free_table(unsigned int cpu)
++static int cpufreq_stats_free_table(unsigned int cpu)
+ {
+ 	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, cpu);
+ 	if (stat) {
+@@ -175,18 +175,20 @@ static void cpufreq_stats_free_table(uns
+ 		kfree(stat);
+ 	}
+ 	per_cpu(cpufreq_stats_table, cpu) = NULL;
++	return 0;
+ }
+ 
+ /* must be called early in the CPU removal sequence (before
+  * cpufreq_remove_dev) so that policy is still valid.
+  */
+-static void cpufreq_stats_free_sysfs(unsigned int cpu)
++static int cpufreq_stats_free_sysfs(unsigned int cpu)
+ {
+ 	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
+ 	if (policy && policy->cpu == cpu)
+ 		sysfs_remove_group(&policy->kobj, &stats_attr_group);
+ 	if (policy)
+ 		cpufreq_cpu_put(policy);
++	return 0;
+ }
+ 
+ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
+@@ -316,35 +318,6 @@ static int cpufreq_stat_notifier_trans(s
+ 	return 0;
+ }
+ 
+-static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+-					       unsigned long action,
+-					       void *hcpu)
+-{
+-	unsigned int cpu = (unsigned long)hcpu;
+-
+-	switch (action) {
+-	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+-		cpufreq_update_policy(cpu);
+-		break;
+-	case CPU_DOWN_PREPARE:
+-	case CPU_DOWN_PREPARE_FROZEN:
+-		cpufreq_stats_free_sysfs(cpu);
+-		break;
+-	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
+-		cpufreq_stats_free_table(cpu);
+-		break;
+-	}
+-	return NOTIFY_OK;
+-}
+-
+-/* priority=1 so this will get called before cpufreq_remove_dev */
+-static struct notifier_block cpufreq_stat_cpu_notifier __refdata = {
+-	.notifier_call = cpufreq_stat_cpu_callback,
+-	.priority = 1,
+-};
+-
+ static struct notifier_block notifier_policy_block = {
+ 	.notifier_call = cpufreq_stat_notifier_policy
+ };
+@@ -364,18 +337,19 @@ static int __init cpufreq_stats_init(voi
+ 	if (ret)
+ 		return ret;
+ 
+-	register_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
+-	for_each_online_cpu(cpu)
+-		cpufreq_update_policy(cpu);
++	/* Install callbacks. Core will call them for each online cpu */
++	cpuhp_setup_state(CPUHP_CPUFREQ_DEAD, NULL, cpufreq_stats_free_table);
++	/* CHECKME: This is pretty broken versus failures in up/down! */
++	cpuhp_setup_state(CPUHP_CPUFREQ_ONLINE, cpufreq_update_policy,
++			  cpufreq_stats_free_sysfs);
+ 
+ 	ret = cpufreq_register_notifier(&notifier_trans_block,
+ 				CPUFREQ_TRANSITION_NOTIFIER);
+ 	if (ret) {
+ 		cpufreq_unregister_notifier(&notifier_policy_block,
+ 				CPUFREQ_POLICY_NOTIFIER);
+-		unregister_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
+-		for_each_online_cpu(cpu)
+-			cpufreq_stats_free_table(cpu);
++		cpuhp_uninstall_callbacks(cpufreq_stats_cbs,
++					  ARRAY_SIZE(cpufreq_stats_cbs));
+ 		return ret;
+ 	}
+ 
+@@ -389,11 +363,8 @@ static void __exit cpufreq_stats_exit(vo
+ 			CPUFREQ_POLICY_NOTIFIER);
+ 	cpufreq_unregister_notifier(&notifier_trans_block,
+ 			CPUFREQ_TRANSITION_NOTIFIER);
+-	unregister_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
+-	for_each_online_cpu(cpu) {
+-		cpufreq_stats_free_table(cpu);
+-		cpufreq_stats_free_sysfs(cpu);
+-	}
++	cpuhp_uninstall_callbacks(cpufreq_stats_cbs,
++				  ARRAY_SIZE(cpufreq_stats_cbs));
+ }
+ 
+ MODULE_AUTHOR("Zou Nan hai <nanhai.zou@intel.com>");
 Index: linux-2.6/include/linux/cpuhotplug.h
 ===================================================================
 --- linux-2.6.orig/include/linux/cpuhotplug.h
 +++ linux-2.6/include/linux/cpuhotplug.h
-@@ -25,6 +25,7 @@ enum cpuhp_states {
- 	CPUHP_AP_PERF_ARM_STARTING,
- 	CPUHP_AP_ARM_VFP_STARTING,
- 	CPUHP_AP_ARM64_TIMER_STARTING,
-+	CPUHP_AP_KVM_STARTING,
- 	CPUHP_AP_NOTIFY_STARTING,
- 	CPUHP_AP_NOTIFY_DYING,
- 	CPUHP_AP_SCHED_MIGRATE_DYING,
-Index: linux-2.6/virt/kvm/kvm_main.c
-===================================================================
---- linux-2.6.orig/virt/kvm/kvm_main.c
-+++ linux-2.6/virt/kvm/kvm_main.c
-@@ -2496,30 +2496,23 @@ static int hardware_enable_all(void)
- 	return r;
- }
- 
--static int kvm_cpu_hotplug(struct notifier_block *notifier, unsigned long val,
--			   void *v)
-+static int kvm_starting_cpu(unsigned int cpu)
- {
--	int cpu = (long)v;
--
--	if (!kvm_usage_count)
--		return NOTIFY_OK;
--
--	val &= ~CPU_TASKS_FROZEN;
--	switch (val) {
--	case CPU_DYING:
--		printk(KERN_INFO "kvm: disabling virtualization on CPU%d\n",
--		       cpu);
--		hardware_disable(NULL);
--		break;
--	case CPU_STARTING:
--		printk(KERN_INFO "kvm: enabling virtualization on CPU%d\n",
--		       cpu);
-+	if (kvm_usage_count) {
-+		pr_info("kvm: enabling virtualization on CPU%u\n", cpu);
- 		hardware_enable(NULL);
--		break;
- 	}
--	return NOTIFY_OK;
-+	return 0;
- }
- 
-+static int kvm_dying_cpu(unsigned int cpu)
-+{
-+	if (kvm_usage_count) {
-+		pr_info("kvm: disabling virtualization on CPU%u\n", cpu);
-+		hardware_disable(NULL);
-+	}
-+	return 0;
-+}
- 
- asmlinkage void kvm_spurious_fault(void)
- {
-@@ -2725,10 +2718,6 @@ int kvm_io_bus_unregister_dev(struct kvm
- 	return r;
- }
- 
--static struct notifier_block kvm_cpu_notifier = {
--	.notifier_call = kvm_cpu_hotplug,
--};
--
- static int vm_stat_get(void *_offset, u64 *val)
- {
- 	unsigned offset = (long)_offset;
-@@ -2870,7 +2859,8 @@ int kvm_init(void *opaque, unsigned vcpu
- 			goto out_free_1;
- 	}
- 
--	r = register_cpu_notifier(&kvm_cpu_notifier);
-+	r = cpuhp_setup_state_nocalls(CPUHP_AP_KVM_STARTING, kvm_starting_cpu,
-+				      kvm_dying_cpu);
- 	if (r)
- 		goto out_free_2;
- 	register_reboot_notifier(&kvm_reboot_notifier);
-@@ -2920,7 +2910,7 @@ out_free:
- 	kmem_cache_destroy(kvm_vcpu_cache);
- out_free_3:
- 	unregister_reboot_notifier(&kvm_reboot_notifier);
--	unregister_cpu_notifier(&kvm_cpu_notifier);
-+	cpuhp_remove_state_nocalls(CPUHP_AP_KVM_STARTING);
- out_free_2:
- out_free_1:
- 	kvm_arch_hardware_unsetup();
-@@ -2941,7 +2931,7 @@ void kvm_exit(void)
- 	kvm_async_pf_deinit();
- 	unregister_syscore_ops(&kvm_syscore_ops);
- 	unregister_reboot_notifier(&kvm_reboot_notifier);
--	unregister_cpu_notifier(&kvm_cpu_notifier);
-+	cpuhp_remove_state_nocalls(CPUHP_AP_KVM_STARTING);
- 	on_each_cpu(hardware_disable_nolock, NULL, 1);
- 	kvm_arch_hardware_unsetup();
- 	kvm_arch_exit();
+@@ -14,6 +14,7 @@ enum cpuhp_states {
+ 	CPUHP_WORKQUEUE_PREP,
+ 	CPUHP_NOTIFY_PREPARE,
+ 	CPUHP_NOTIFY_DEAD,
++	CPUHP_CPUFREQ_DEAD,
+ 	CPUHP_SCHED_DEAD,
+ 	CPUHP_BRINGUP_CPU,
+ 	CPUHP_AP_OFFLINE,
+@@ -31,6 +32,7 @@ enum cpuhp_states {
+ 	CPUHP_PERF_ONLINE,
+ 	CPUHP_SCHED_MIGRATE_ONLINE,
+ 	CPUHP_WORKQUEUE_ONLINE,
++	CPUHP_CPUFREQ_ONLINE,
+ 	CPUHP_NOTIFY_ONLINE,
+ 	CPUHP_NOTIFY_DOWN_PREPARE,
+ 	CPUHP_PERF_X86_UNCORE_ONLINE,
 
 
