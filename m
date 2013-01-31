@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3AaMLc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:11:32 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55877 "EHLO
+	id S1753282Ab3AaMLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:11:30 -0500
+Received: from www.linutronix.de ([62.245.132.108]:55881 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab3AaMLU (ORCPT
+	with ESMTP id S1752997Ab3AaMLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jan 2013 07:11:20 -0500
-Message-Id: <20130131120741.686315164@linutronix.de>
+Message-Id: <20130131120742.098044736@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 31 Jan 2013 12:11:14 -0000
+Date: Thu, 31 Jan 2013 12:11:19 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -19,9 +19,10 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
         Richard Weinberger <rw@linutronix.de>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 03/40] stop_machine: Use smpboot threads
+Subject: [patch 09/40] cpu: hotplug: Implement setup/removal interface
 References: <20130131120348.372374706@linutronix.de>
-Content-Disposition: inline; filename=stop-machine-use-smpboot-threads.patch
+Content-Disposition: inline;
+ filename=cpu-hotplug-implement-registration-interface.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -29,223 +30,321 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the smpboot thread infrastructure. Mark the stopper thread
-selfparking and park it after it has finished the take_cpu_down()
-work.
+Implement function which allow to setup/remove hotplug state
+callbacks.
+
+The default behaviour for setup is to call the startup function for
+this state for (or on) all cpus which have a hotplug state >= the
+installed state.
+
+The default behaviour for removal is to call the teardown function for
+this state for (or on) all cpus which have a hotplug state >= the
+installed state.
+
+For both setup and remove helper functions are provided, which prevent
+the core to issue the callbacks. This simplifies the conversion of
+existing hotplug notifiers.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/cpu.c          |    2 
- kernel/stop_machine.c |  134 ++++++++++++++++++--------------------------------
- 2 files changed, 51 insertions(+), 85 deletions(-)
+ include/linux/cpu.h        |    1 
+ include/linux/cpuhotplug.h |   70 +++++++++++++++++
+ kernel/cpu.c               |  185 ++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 255 insertions(+), 1 deletion(-)
 
+Index: linux-2.6/include/linux/cpu.h
+===================================================================
+--- linux-2.6.orig/include/linux/cpu.h
++++ linux-2.6/include/linux/cpu.h
+@@ -17,6 +17,7 @@
+ #include <linux/node.h>
+ #include <linux/compiler.h>
+ #include <linux/cpumask.h>
++#include <linux/cpuhotplug.h>
+ 
+ struct device;
+ 
+Index: linux-2.6/include/linux/cpuhotplug.h
+===================================================================
+--- linux-2.6.orig/include/linux/cpuhotplug.h
++++ linux-2.6/include/linux/cpuhotplug.h
+@@ -17,4 +17,74 @@ enum cpuhp_states {
+ 	CPUHP_NOTIFY_DOWN_PREPARE,
+ 	CPUHP_MAX,
+ };
++
++int __cpuhp_setup_state(enum cpuhp_states state, bool invoke,
++			int (*startup)(unsigned int cpu),
++			int (*teardown)(unsigned int cpu));
++
++/**
++ * cpuhp_setup_state - Setup hotplug state callbacks with calling the callbacks
++ * @state:	The state for which the calls are installed
++ * @startup:	startup callback function
++ * @teardown:	teardown callback function
++ *
++ * Installs the callback functions and invokes the startup callback on
++ * the present cpus which have already reached the @state.
++ */
++static inline int
++cpuhp_setup_state(enum cpuhp_states state, int (*startup)(unsigned int cpu),
++		  int (*teardown)(unsigned int cpu))
++{
++	return __cpuhp_setup_state(state, true, startup, teardown);
++}
++
++/**
++ * cpuhp_setup_state_nocalls - Setup hotplug state callbacks without calling the callbacks
++ * @state:	The state for which the calls are installed
++ * @startup:	startup callback function
++ * @teardown:	teardown callback function
++ *
++ * No calls are executed. NOP if SMP=n or HOTPLUG_CPU=n
++ */
++#if defined(CONFIG_SMP) && defined(CONFIG_HOTPLUG_CPU)
++static inline int
++cpuhp_setup_state_nocalls(enum cpuhp_states state,
++			 int (*startup)(unsigned int cpu),
++			 int (*teardown)(unsigned int cpu))
++{
++	return __cpuhp_setup_state(state, false, startup, teardown);
++}
++#else
++static inline int
++cpuhp_setup_state_nocalls(enum cpuhp_states state,
++			 int (*startup)(unsigned int cpu),
++			 int (*teardown)(unsigned int cpu))
++{
++	return 0;
++}
++#endif
++
++void __cpuhp_remove_state(enum cpuhp_states state, bool invoke);
++
++/**
++ * cpuhp_remove_state - Remove hotplug state callbacks and invoke the teardown
++ * @state:	The state for which the calls are removed
++ *
++ * Removes the callback functions and invokes the teardown callback on
++ * the present cpus which have already reached the @state.
++ */
++static inline void cpuhp_remove_state(enum cpuhp_states state)
++{
++	__cpuhp_remove_state(state, true);
++}
++
++/**
++ * cpuhp_remove_state_nocalls - Remove hotplug state callbacks without invoking teardown
++ * @state:	The state for which the calls are removed
++ */
++static inline void cpuhp_remove_state_nocalls(enum cpuhp_states state)
++{
++	__cpuhp_remove_state(state, false);
++}
++
+ #endif
 Index: linux-2.6/kernel/cpu.c
 ===================================================================
 --- linux-2.6.orig/kernel/cpu.c
 +++ linux-2.6/kernel/cpu.c
-@@ -254,6 +254,8 @@ static int __ref take_cpu_down(void *_pa
- 		return err;
+@@ -19,7 +19,6 @@
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
+ #include <linux/suspend.h>
+-#include <linux/cpuhotplug.h>
  
- 	cpu_notify(CPU_DYING | param->mod, param->hcpu);
-+	/* Park the stopper thread */
-+	kthread_park(current);
- 	return 0;
- }
+ #include "smpboot.h"
  
-Index: linux-2.6/kernel/stop_machine.c
-===================================================================
---- linux-2.6.orig/kernel/stop_machine.c
-+++ linux-2.6/kernel/stop_machine.c
-@@ -18,7 +18,7 @@
- #include <linux/stop_machine.h>
- #include <linux/interrupt.h>
- #include <linux/kallsyms.h>
--
-+#include <linux/smpboot.h>
- #include <linux/atomic.h>
- 
- /*
-@@ -245,20 +245,25 @@ int try_stop_cpus(const struct cpumask *
- 	return ret;
- }
- 
--static int cpu_stopper_thread(void *data)
-+static int cpu_stop_should_run(unsigned int cpu)
-+{
-+	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
-+	unsigned long flags;
-+	int run;
-+
-+	spin_lock_irqsave(&stopper->lock, flags);
-+	run = !list_empty(&stopper->works);
-+	spin_unlock_irqrestore(&stopper->lock, flags);
-+	return run;
-+}
-+
-+static void cpu_stopper_thread(unsigned int cpu)
- {
--	struct cpu_stopper *stopper = data;
-+	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
- 	struct cpu_stop_work *work;
- 	int ret;
- 
- repeat:
--	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
--
--	if (kthread_should_stop()) {
--		__set_current_state(TASK_RUNNING);
--		return 0;
--	}
--
- 	work = NULL;
- 	spin_lock_irq(&stopper->lock);
- 	if (!list_empty(&stopper->works)) {
-@@ -274,8 +279,6 @@ repeat:
- 		struct cpu_stop_done *done = work->done;
- 		char ksym_buf[KSYM_NAME_LEN] __maybe_unused;
- 
--		__set_current_state(TASK_RUNNING);
--
- 		/* cpu stop callbacks are not allowed to sleep */
- 		preempt_disable();
- 
-@@ -291,87 +294,55 @@ repeat:
- 					  ksym_buf), arg);
- 
- 		cpu_stop_signal_done(done, true);
--	} else
--		schedule();
--
--	goto repeat;
-+		goto repeat;
-+	}
- }
- 
- extern void sched_set_stop_task(int cpu, struct task_struct *stop);
- 
--/* manage stopper for a cpu, mostly lifted from sched migration thread mgmt */
--static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
--					   unsigned long action, void *hcpu)
-+static void cpu_stop_create(unsigned int cpu)
-+{
-+	sched_set_stop_task(cpu, per_cpu(cpu_stopper_task, cpu));
-+}
-+
-+static void cpu_stop_park(unsigned int cpu)
- {
--	unsigned int cpu = (unsigned long)hcpu;
- 	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
--	struct task_struct *p = per_cpu(cpu_stopper_task, cpu);
-+	struct cpu_stop_work *work;
-+	unsigned long flags;
- 
--	switch (action & ~CPU_TASKS_FROZEN) {
--	case CPU_UP_PREPARE:
--		BUG_ON(p || stopper->enabled || !list_empty(&stopper->works));
--		p = kthread_create_on_node(cpu_stopper_thread,
--					   stopper,
--					   cpu_to_node(cpu),
--					   "migration/%d", cpu);
--		if (IS_ERR(p))
--			return notifier_from_errno(PTR_ERR(p));
--		get_task_struct(p);
--		kthread_bind(p, cpu);
--		sched_set_stop_task(cpu, p);
--		per_cpu(cpu_stopper_task, cpu) = p;
--		break;
-+	/* drain remaining works */
-+	spin_lock_irqsave(&stopper->lock, flags);
-+	list_for_each_entry(work, &stopper->works, list)
-+		cpu_stop_signal_done(work->done, false);
-+	stopper->enabled = false;
-+	spin_unlock_irqrestore(&stopper->lock, flags);
-+}
- 
--	case CPU_ONLINE:
--		/* strictly unnecessary, as first user will wake it */
--		wake_up_process(p);
--		/* mark enabled */
--		spin_lock_irq(&stopper->lock);
--		stopper->enabled = true;
--		spin_unlock_irq(&stopper->lock);
--		break;
--
--#ifdef CONFIG_HOTPLUG_CPU
--	case CPU_UP_CANCELED:
--	case CPU_POST_DEAD:
--	{
--		struct cpu_stop_work *work;
--
--		sched_set_stop_task(cpu, NULL);
--		/* kill the stopper */
--		kthread_stop(p);
--		/* drain remaining works */
--		spin_lock_irq(&stopper->lock);
--		list_for_each_entry(work, &stopper->works, list)
--			cpu_stop_signal_done(work->done, false);
--		stopper->enabled = false;
--		spin_unlock_irq(&stopper->lock);
--		/* release the stopper */
--		put_task_struct(p);
--		per_cpu(cpu_stopper_task, cpu) = NULL;
--		break;
--	}
--#endif
--	}
-+static void cpu_stop_unpark(unsigned int cpu)
-+{
-+	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
- 
--	return NOTIFY_OK;
-+	spin_lock_irq(&stopper->lock);
-+	stopper->enabled = true;
-+	spin_unlock_irq(&stopper->lock);
- }
- 
--/*
-- * Give it a higher priority so that cpu stopper is available to other
-- * cpu notifiers.  It currently shares the same priority as sched
-- * migration_notifier.
-- */
--static struct notifier_block __cpuinitdata cpu_stop_cpu_notifier = {
--	.notifier_call	= cpu_stop_cpu_callback,
--	.priority	= 10,
-+static struct smp_hotplug_thread cpu_stop_threads = {
-+	.store			= &cpu_stopper_task,
-+	.thread_should_run	= cpu_stop_should_run,
-+	.thread_fn		= cpu_stopper_thread,
-+	.thread_comm		= "migration/%u",
-+	.create			= cpu_stop_create,
-+	.setup			= cpu_stop_unpark,
-+	.park			= cpu_stop_park,
-+	.unpark			= cpu_stop_unpark,
-+	.selfparking		= true,
+@@ -804,6 +803,190 @@ static struct cpuhp_step cpuhp_ap_states
+ 	},
  };
  
- static int __init cpu_stop_init(void)
- {
--	void *bcpu = (void *)(long)smp_processor_id();
- 	unsigned int cpu;
--	int err;
- 
- 	for_each_possible_cpu(cpu) {
- 		struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
-@@ -380,15 +351,8 @@ static int __init cpu_stop_init(void)
- 		INIT_LIST_HEAD(&stopper->works);
- 	}
- 
--	/* start one for the boot cpu */
--	err = cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_UP_PREPARE,
--				    bcpu);
--	BUG_ON(err != NOTIFY_OK);
--	cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_ONLINE, bcpu);
--	register_cpu_notifier(&cpu_stop_cpu_notifier);
--
-+	BUG_ON(smpboot_register_percpu_thread(&cpu_stop_threads));
- 	stop_machine_initialized = true;
--
- 	return 0;
- }
- early_initcall(cpu_stop_init);
++/* Sanity check for callbacks */
++static int cpuhp_cb_check(enum cpuhp_states state)
++{
++	if (state <= CPUHP_OFFLINE || state >= CPUHP_MAX)
++		return -EINVAL;
++	return 0;
++}
++
++static bool cpuhp_is_ap_state(enum cpuhp_states state)
++{
++	return (state > CPUHP_AP_OFFLINE && state < CPUHP_AP_MAX);
++}
++
++static void cpuhp_store_callbacks(enum cpuhp_states state,
++				  int (*startup)(unsigned int cpu),
++				  int (*teardown)(unsigned int cpu))
++{
++	/* (Un)Install the callbacks for further cpu hotplug operations */
++	struct cpuhp_step *sp;
++
++	sp = cpuhp_is_ap_state(state) ? cpuhp_ap_states : cpuhp_bp_states;
++	sp[state].startup = startup;
++	sp[state].teardown = teardown;
++}
++
++static void *cpuhp_get_teardown_cb(enum cpuhp_states state)
++{
++	/* (Un)Install the callbacks for further cpu hotplug operations */
++	struct cpuhp_step *sp;
++
++	sp = cpuhp_is_ap_state(state) ? cpuhp_ap_states : cpuhp_bp_states;
++	return sp[state].teardown;
++}
++
++/* Helper function to run callback on the target cpu */
++static void cpuhp_on_cpu_cb(void *__cb)
++{
++	int (*cb)(unsigned int cpu) = __cb;
++
++	BUG_ON(cb(smp_processor_id()));
++}
++
++/*
++ * Call the startup/teardown function for a step either on the AP or
++ * on the current CPU.
++ */
++static int cpuhp_issue_call(int cpu, enum cpuhp_states state,
++			    int (*cb)(unsigned int), bool bringup)
++{
++	int ret;
++
++	if (!cb)
++		return 0;
++
++	if (cpuhp_is_ap_state(state)) {
++		/*
++		 * Note, that a function called on the AP is not
++		 * allowed to fail.
++		 */
++		smp_call_function_single(cpu, cpuhp_on_cpu_cb, cb, 1);
++		return 0;
++	}
++
++	/*
++	 * The non AP bound callbacks can fail on bringup. On teardown
++	 * e.g. module removal we crash for now.
++	 */
++	ret = cb(cpu);
++	BUG_ON(ret && !bringup);
++	return ret;
++}
++
++/*
++ * Called from __cpuhp_setup_state on a recoverable failure.
++ *
++ * Note: The teardown callbacks for rollback are not allowed to fail!
++ */
++static void cpuhp_rollback_install(int failedcpu, enum cpuhp_states state,
++				   int (*teardown)(unsigned int cpu))
++{
++	int cpu;
++
++	if (!teardown)
++		return;
++
++	/* Roll back the already executed steps on the other cpus */
++	for_each_present_cpu(cpu) {
++		int cpustate = per_cpu(cpuhp_state, cpu);
++
++		if (cpu >= failedcpu)
++			break;
++
++		/* Did we invoke the startup call on that cpu ? */
++		if (cpustate >= state)
++			cpuhp_issue_call(cpu, state, teardown, false);
++	}
++}
++
++/**
++ * __cpuhp_setup_state - Setup the callbacks for an hotplug machine state
++ * @state:	The state to setup
++ * @invoke:	If true, the startup function is invoked for cpus where
++ *		cpu state >= @state
++ * @startup:	startup callback function
++ * @teardown:	teardown callback function
++ *
++ * Returns 0 if successful, otherwise a proper error code
++ */
++int __cpuhp_setup_state(enum cpuhp_states state, bool invoke,
++			int (*startup)(unsigned int cpu),
++			int (*teardown)(unsigned int cpu))
++{
++	int cpu, ret = 0;
++
++	if (cpuhp_cb_check(state))
++		return -EINVAL;
++
++	get_online_cpus();
++
++	if (!invoke || !startup)
++		goto install;
++
++	/*
++	 * Try to call the startup callback for each present cpu
++	 * depending on the hotplug state of the cpu.
++	 */
++	for_each_present_cpu(cpu) {
++		int ret, cpustate = per_cpu(cpuhp_state, cpu);
++
++		if (cpustate < state)
++			continue;
++
++		ret = cpuhp_issue_call(cpu, state, startup, true);
++		if (ret) {
++			cpuhp_rollback_install(cpu, state, teardown);
++			goto out;
++		}
++	}
++install:
++	cpuhp_store_callbacks(state, startup, teardown);
++out:
++	put_online_cpus();
++	return ret;
++}
++EXPORT_SYMBOL(__cpuhp_setup_state);
++
++/**
++ * __cpuhp_remove_state - Remove the callbacks for an hotplug machine state
++ * @state:	The state to remove
++ * @invoke:	If true, the teardown function is invoked for cpus where
++ *		cpu state >= @state
++ *
++ * The teardown callback is currently not allowed to fail. Think
++ * about module removal!
++ */
++void __cpuhp_remove_state(enum cpuhp_states state, bool invoke)
++{
++	int (*teardown)(unsigned int cpu) = cpuhp_get_teardown_cb(state);
++	int cpu;
++
++	BUG_ON(cpuhp_cb_check(state));
++
++	get_online_cpus();
++
++	if (!invoke || !teardown)
++		goto remove;
++
++	/*
++	 * Call the teardown callback for each present cpu depending
++	 * on the hotplug state of the cpu. This function is not
++	 * allowed to fail currently!
++	 */
++	for_each_present_cpu(cpu) {
++		int cpustate = per_cpu(cpuhp_state, cpu);
++
++		if (cpustate >= state)
++			cpuhp_issue_call(cpu, state, teardown, false);
++	}
++remove:
++	cpuhp_store_callbacks(state, NULL, NULL);
++	put_online_cpus();
++}
++EXPORT_SYMBOL(__cpuhp_remove_state);
++
+ /*
+  * cpu_bit_bitmap[] is a special, "compressed" data structure that
+  * represents all NR_CPUS bits binary values of 1<<nr.
 
 
