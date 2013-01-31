@@ -1,99 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab3AaEik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 23:38:40 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:50190 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab3AaEij (ORCPT
+	id S1756381Ab3AaExk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 23:53:40 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:52794 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648Ab3AaExi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 23:38:39 -0500
-Date: Thu, 31 Jan 2013 04:38:39 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: aris@redhat.com
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v4 9/9] devcg: propagate local changes down the
- hierarchy
-Message-ID: <20130131043839.GA14726@mail.hallyn.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
+	Wed, 30 Jan 2013 23:53:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130130171102.390708521@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <f216e85846c302756d55cb6753863a66697f79a6.1359599087.git.viresh.kumar@linaro.org>
+References: <f216e85846c302756d55cb6753863a66697f79a6.1359599087.git.viresh.kumar@linaro.org>
+Date: Thu, 31 Jan 2013 10:23:37 +0530
+Message-ID: <CAKohpo=eEnK8oJ1KEff=sBvyjZzdqmFKUgXe2+bhWAvyVVmzqg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: exynos: simplify .init() for setting policy->cpus
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting aris@redhat.com (aris@redhat.com):
-...
-> New exceptions allowing additional access to devices won't be propagated, but
-> it'll be possible to add an exception to access all of part of the newly
-> allowed device(s).
+On 31 January 2013 10:22, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> With the recent changes in cpufreq core, we just need to set mask of all
+> possible cpus into policy->cpus. Rest would be done by core.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Is that intended to apply only to only in the DEFAULT_DENY case?  If so
-that should be made clear.  If not,
-
-...
-
-> @@ -515,11 +673,13 @@ 	memset(&ex, 0, sizeof(ex));
->  							 &parent->exceptions);
->  			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
->  			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
-> +			rc = propagate_behavior(devcgroup);
->  			break;
->  		case DEVCG_DENY:
->  			dev_exception_clean_all(devcgroup);
->  			devcgroup->behavior = DEVCG_DEFAULT_DENY;
->  			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
-> +			rc = propagate_behavior(devcgroup);
->  			break;
->  		default:
->  			rc = -EINVAL;
-> @@ -610,9 +770,14 @@ 		case '\0':
->  		 */
->  		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
->  			dev_exception_rm(devcgroup, &ex);
-> -			return 0;
-> +			rc = propagate_exception(devcgroup);
-
-Let's say the default in both parent A and child B is ALLOW, and both
-have a blacklist entry for "b 8:* rwm".  Now I
-
-	echo "b 8:* rwm" > A/devices.allow
-
-removing the blacklist entry.  Here you are propagating that to the
-child B, which I would argue is actually propagating a new allow to
-a child.  Which you said you wouldn't do.
-
-> +			return rc;
->  		}
-> -		return dev_exception_add(devcgroup, &ex);
-> +		rc = dev_exception_add(devcgroup, &ex);
-> +		if (!rc)
-> +			/* if a local behavior wasn't explicitely choosen, pick it */
-> +			devcgroup->local.behavior = devcgroup->behavior;
-> +		break;
->  	case DEVCG_DENY:
->  		/*
->  		 * If the default policy is to deny by default, try to remove
-> @@ -621,13 +786,22 @@ 			return 0;
->  		 */
->  		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
->  			dev_exception_rm(devcgroup, &ex);
-> -			return 0;
-> +			rc = propagate_exception(devcgroup);
-> +			return rc;
->  		}
-> -		return dev_exception_add(devcgroup, &ex);
-> +		rc = dev_exception_add(devcgroup, &ex);
-> +		if (rc)
-> +			return rc;
-> +		/* we only propagate new restrictions */
-> +		rc = propagate_exception(devcgroup);
-> +		if (!rc)
-> +			/* if a local behavior wasn't explicitely choosen, pick it */
-> +			devcgroup->local.behavior = devcgroup->behavior;
-> +		break;
-
+Oops! Sent the wrong patch again. Ignore this mail :)
