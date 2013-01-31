@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab3AaXng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 18:43:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42147 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab3AaXnd (ORCPT
+	id S1754612Ab3AaXoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 18:44:06 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33859 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab3AaXoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 18:43:33 -0500
-Date: Thu, 31 Jan 2013 15:43:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: balbi@ti.com, Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: Page allocation failure on v3.8-rc5
-Message-Id: <20130131154331.09d157a3.akpm@linux-foundation.org>
-In-Reply-To: <CACVXFVOATzTJq+-5M9j3G3y_WUrWKJt=naPkjkLwGDmT0H8gog@mail.gmail.com>
-References: <20130128091039.GG6871@arwen.pp.htv.fi>
-	<CACVXFVOATzTJq+-5M9j3G3y_WUrWKJt=naPkjkLwGDmT0H8gog@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 31 Jan 2013 18:44:04 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <510B018D.4050800@jp.fujitsu.com>
+Date: Fri, 1 Feb 2013 08:43:09 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [RESEND PATCH 1/4] ACPI/PM: Fix acpi_bus_get_device() check in
+ drivers/acpi/device_pm.c
+References: <1451967.YMyGeCCNtu@vostro.rjw.lan> <5109E189.7040105@jp.fujitsu.com> <5109E366.4090703@jp.fujitsu.com> <3199804.hxRfeorGhh@vostro.rjw.lan>
+In-Reply-To: <3199804.hxRfeorGhh@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jan 2013 19:53:22 +0800
-Ming Lei <ming.lei@canonical.com> wrote:
+Hi Rafael,
 
-> The allocation failure is caused by the big sizeof(struct parsed_partitions),
-> which is 64K in my 32bit box,
-
-Geeze.
-
-We could fix that nicely by making parsed_partitions.parts an array of
-pointers to a single `struct parsed_partition' and allocating those
-on-demand.
-
-But given the short-lived nature of this storage and the infrequency of
-check_partition(), that isn't necessary.
-
-> could you test the blow patch to see
-> if it can fix the allocation failure?
-
-(The patch is wordwrapped)
-
-> ...
+2013/02/01 5:21, Rafael J. Wysocki wrote:
+> On Thursday, January 31, 2013 12:22:14 PM Yasuaki Ishimatsu wrote:
+>> I fogot to change subject. So I resend a patch.
 >
-> @@ -106,18 +107,43 @@ static int (*check_part[])(struct parsed_partitions *) = {
->  	NULL
->  };
-> 
-> +struct parsed_partitions *allocate_partitions(int nr)
-> +{
-> +	struct parsed_partitions *state;
-> +
-> +	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
+> I have applied patches [1-3/4] to my bleeding-edge branch,
 
-I personally prefer sizefo(*state) here.  It means the reader doesn't
-have to scroll back to check things.
+Thanks.
 
-> +	if (!state)
-> +		return NULL;
-> +
-> +	state->parts = vzalloc(nr * sizeof(state->parts[0]));
-> +	if (!state->parts) {
-> +		kfree(state);
-> +		return NULL;
-> +	}
+> but please note that
+> something (probably your MUA) added a space in front of every line originally
+> starting with a space.
 
-It doesn't really need to be this complex - we could just vmalloc the
-entire `struct parsed_partitions'.  But I see that your change will
-cause us to allcoate much less memory in many situations, which is
-good.  It should be mentioned in the changelog!
+I apologize for bothering you.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Thanks,
+> Rafael
+>
+>
+>> ---
+>> acpi_bus_get_device() returns int not acpi_status.
+>>
+>> The patch change not to apply ACPI_FAILURE() to the return value of
+>> acpi_bus_get_device().
+>>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> ---
+>>    drivers/acpi/device_pm.c |    6 +++---
+>>    1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> Index: linux-pm/drivers/acpi/device_pm.c
+>> ===================================================================
+>> --- linux-pm.orig/drivers/acpi/device_pm.c	2013-01-31 11:04:30.000000000 +0900
+>> +++ linux-pm/drivers/acpi/device_pm.c	2013-01-31 11:28:51.366849592 +0900
+>> @@ -213,7 +213,7 @@ int acpi_pm_device_sleep_state(struct de
+>>    	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+>>    	struct acpi_device *adev;
+>>
+>> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
+>> +	if (!handle || acpi_bus_get_device(handle, &adev)) {
+>>    		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
+>>    		return -ENODEV;
+>>    	}
+>> @@ -290,7 +290,7 @@ int acpi_pm_device_run_wake(struct devic
+>>    		return -EINVAL;
+>>
+>>    	handle = DEVICE_ACPI_HANDLE(phys_dev);
+>> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
+>> +	if (!handle || acpi_bus_get_device(handle, &adev)) {
+>>    		dev_dbg(phys_dev, "ACPI handle without context in %s!\n",
+>>    			__func__);
+>>    		return -ENODEV;
+>> @@ -334,7 +334,7 @@ int acpi_pm_device_sleep_wake(struct dev
+>>    		return -EINVAL;
+>>
+>>    	handle = DEVICE_ACPI_HANDLE(dev);
+>> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
+>> +	if (!handle || acpi_bus_get_device(handle, &adev)) {
+>>    		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
+>>    		return -ENODEV;
+>>    	}
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
