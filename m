@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3AaR1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:27:17 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60107
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754139Ab3AaRZq (ORCPT
+	id S1756032Ab3AaR1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:27:15 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48074 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755917Ab3AaRZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jan 2013 12:25:46 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -18,14 +18,14 @@ Cc: linux-kernel@vger.kernel.org,
         Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 22/25] perf: Make EVENT_ATTR global
-Date: Thu, 31 Jan 2013 14:25:25 -0300
-Message-Id: <1359653128-10433-23-git-send-email-acme@infradead.org>
+Subject: [PATCH 25/25] perf: Document the ABI of perf sysfs entries
+Date: Thu, 31 Jan 2013 14:25:28 -0300
+Message-Id: <1359653128-10433-26-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
 References: <1359653128-10433-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,14 +33,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-Rename EVENT_ATTR() to PMU_EVENT_ATTR() and make it global so it is
-available to all architectures.
+This patchset addes two new sets of files to sysfs for POWER architecture.
 
-Further to allow architectures flexibility, have PMU_EVENT_ATTR() pass
-in the variable name as a parameter.
+	- perf event config format in /sys/devices/cpu/format/event
+	- generic and POWER-specific perf events in /sys/devices/cpu/events/
 
-Changelog[v2]
-	- [Jiri Olsa] No need to define PMU_EVENT_PTR()
+The format of the first file is already documented in:
+
+	sysfs-bus-event_source-devices-format
+
+Document the format of the second set of files '/sys/devices/cpu/events/*'
+which would also become part of the ABI.
+
+Changelog[v4]:
+	[Jiri Olsa]: Mention that multiple event= like terms can be specified
+	in the 'events' file.
+	[Jiri Olsa]: Remove the documentation for the 'config format' file
+	as it is already documented in 'Documentation/ABI/testing/'.
+	[Jiri Olsa]: Move ABI documentation from 'stable/' to 'testing/'
+
+Changelog[v3]:
+	[Greg KH] Include ABI documentation.
 
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
@@ -53,66 +66,86 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: linuxppc-dev@ozlabs.org
-Link: http://lkml.kernel.org/r/20130123062422.GC13720@us.ibm.com
+Link: http://lkml.kernel.org/r/20130123062645.GG13720@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 13 +++----------
- include/linux/perf_event.h       | 11 +++++++++++
- 2 files changed, 14 insertions(+), 10 deletions(-)
+ Documentation/ABI/stable/sysfs-devices-cpu-events  |  0
+ .../testing/sysfs-bus-event_source-devices-events  | 62 ++++++++++++++++++++++
+ 2 files changed, 62 insertions(+)
+ delete mode 100644 Documentation/ABI/stable/sysfs-devices-cpu-events
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-events
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6774c17..c0df5ed2 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1310,11 +1310,6 @@ static struct attribute_group x86_pmu_format_group = {
- 	.attrs = NULL,
- };
- 
--struct perf_pmu_events_attr {
--	struct device_attribute attr;
--	u64 id;
--};
--
- /*
-  * Remove all undefined events (x86_pmu.event_map(id) == 0)
-  * out of events_attr attributes.
-@@ -1348,11 +1343,9 @@ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *at
- #define EVENT_VAR(_id)  event_attr_##_id
- #define EVENT_PTR(_id) &event_attr_##_id.attr.attr
- 
--#define EVENT_ATTR(_name, _id)					\
--static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
--	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
--	.id   =  PERF_COUNT_HW_##_id,				\
--};
-+#define EVENT_ATTR(_name, _id)						\
-+	PMU_EVENT_ATTR(_name, EVENT_VAR(_id), PERF_COUNT_HW_##_id,	\
-+			events_sysfs_show)
- 
- EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
- EVENT_ATTR(instructions,		INSTRUCTIONS		);
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 6bfb2faa..42adf01 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -817,6 +817,17 @@ do {									\
- } while (0)
- 
- 
-+struct perf_pmu_events_attr {
-+	struct device_attribute attr;
-+	u64 id;
-+};
+diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+new file mode 100644
+index 0000000..0adeb52
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -0,0 +1,62 @@
++What:		/sys/devices/cpu/events/
++		/sys/devices/cpu/events/branch-misses
++		/sys/devices/cpu/events/cache-references
++		/sys/devices/cpu/events/cache-misses
++		/sys/devices/cpu/events/stalled-cycles-frontend
++		/sys/devices/cpu/events/branch-instructions
++		/sys/devices/cpu/events/stalled-cycles-backend
++		/sys/devices/cpu/events/instructions
++		/sys/devices/cpu/events/cpu-cycles
 +
-+#define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
-+static struct perf_pmu_events_attr _var = {				\
-+	.attr = __ATTR(_name, 0444, _show, NULL),			\
-+	.id   =  _id,							\
-+};
++Date:		2013/01/08
 +
- #define PMU_FORMAT_ATTR(_name, _format)					\
- static ssize_t								\
- _name##_show(struct device *dev,					\
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++
++Description:	Generic performance monitoring events
++
++		A collection of performance monitoring events that may be
++		supported by many/most CPUs. These events can be monitored
++		using the 'perf(1)' tool.
++
++		The contents of each file would look like:
++
++			event=0xNNNN
++
++		where 'N' is a hex digit and the number '0xNNNN' shows the
++		"raw code" for the perf event identified by the file's
++		"basename".
++
++
++What: 		/sys/devices/cpu/events/PM_LD_MISS_L1
++		/sys/devices/cpu/events/PM_LD_REF_L1
++		/sys/devices/cpu/events/PM_CYC
++		/sys/devices/cpu/events/PM_BRU_FIN
++		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
++		/sys/devices/cpu/events/PM_BRU_MPRED
++		/sys/devices/cpu/events/PM_INST_CMPL
++		/sys/devices/cpu/events/PM_CMPLU_STALL
++
++Date:		2013/01/08
++
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++		Linux Powerpc mailing list <linuxppc-dev@ozlabs.org>
++
++Description:	POWER-systems specific performance monitoring events
++
++		A collection of performance monitoring events that may be
++		supported by the POWER CPU. These events can be monitored
++		using the 'perf(1)' tool.
++
++		These events may not be supported by other CPUs.
++
++		The contents of each file would look like:
++
++			event=0xNNNN
++
++		where 'N' is a hex digit and the number '0xNNNN' shows the
++		"raw code" for the perf event identified by the file's
++		"basename".
++
++		Further, multiple terms like 'event=0xNNNN' can be specified
++		and separated with comma. All available terms are defined in
++		the /sys/bus/event_source/devices/<dev>/format file.
 -- 
 1.8.1.1.361.gec3ae6e
 
