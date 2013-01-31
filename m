@@ -1,83 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab3AaEzB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 23:55:01 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:49327 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab3AaEy5 (ORCPT
+	id S1756998Ab3AaEzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 23:55:09 -0500
+Received: from [65.55.88.13] ([65.55.88.13]:6976 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754414Ab3AaEzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 23:54:57 -0500
-Message-ID: <5109F916.8080404@gmail.com>
-Date: Thu, 31 Jan 2013 12:54:46 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 30 Jan 2013 23:55:03 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I103dK1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839h944hd25hd2bhf0ah107ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14afh1504h1537h153bh162dh1631h1758h18e1h1946h1155h)
+Date: Thu, 31 Jan 2013 12:53:20 -0500
+From: Anson Huang <b20788@freescale.com>
+To: Troy Kisky <troy.kisky@boundarydevices.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <dong.aisheng@linaro.org>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 2/2] regulators: anatop: add set_voltage_time_sel
+ interface
+Message-ID: <20130131175320.GA22977@ubuntu>
+References: <1359585461-11377-1-git-send-email-b20788@freescale.com>
+ <51099107.3070705@boundarydevices.com>
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [RFC 1/4] video: panel: add CLAA101WA01A panel support
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com> <1359514939-15653-2-git-send-email-acourbot@nvidia.com> <5108C9C1.1090707@gmail.com> <51098064.7030902@wwwdotorg.org> <5109EA2A.8020204@gmail.com> <CAAVeFuJf9Ww7g8Q9RAG9Na1SZq2-n2MMxcAEBek52ZVG7RpL7g@mail.gmail.com>
-In-Reply-To: <CAAVeFuJf9Ww7g8Q9RAG9Na1SZq2-n2MMxcAEBek52ZVG7RpL7g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <51099107.3070705@boundarydevices.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 12:24 PM, Alexandre Courbot wrote:
-> On Thu, Jan 31, 2013 at 12:51 PM, Mark Zhang <nvmarkzhang@gmail.com> wrote:
->>> DDC access is a property of the display controller, not the panel
->>> itself. The panel might be hooked up to a display controller's DDC/I2C
->>> channel as the target, but it isn't the host/controller of the DDC/I2C
->>> channel. As such, placing the nvidia,ddc property into the display
->>> controller node makes sense.
->>>
->>
->> Yes, DC triggers the DDC access and is the host of the DDC/I2C channel.
->> So I think it's reasonable to put nvidia,ddc property into the display
->> controller node. But the video mode info in EDID which be fetched via
->> DDC is the property of the panel, so this info should be provided by
->> panel driver. Actually display controller cares about the video modes,
->> not the way to get these info. So I think it's better to do the whole
->> work like this:
->>
->> 1) display controller relied on CDF to call "display_entity_get_modes"
->> 2) panel driver calls the function which is hooked to display controller
->> to get the video modes via DDC.
->> 3) if the video modes can't be fetched via DDC, panel driver provides
->> the info(either by hard-coded or defined in DT) anyway
+On Wed, Jan 30, 2013 at 02:30:47PM -0700, Troy Kisky wrote:
+> On 1/30/2013 3:37 PM, Anson Huang wrote:
+> >some of anatop's regulators(vppcpu, vddpu and vddsoc) have
+> >register settings about LDO's step time, which will impact
+> >the LDO ramp up speed, need to use set_voltage_time_sel
+> >interface to add necessary delay everytime LDOs' voltage
+> >is increased.
+> >
+> >offset 0x170:
+> >bit [24-25]: vddcpu
+> >bit [26-27]: vddpu
+> >bit [28-29]: vddsoc
+> >
+> >field definition:
+> >0'b00: 64 cycles of 24M clock;
+> >0'b01: 128 cycles of 24M clock;
+> >0'b02: 256 cycles of 24M clock;
+> >0'b03: 512 cycles of 24M clock;
+> >
+> >Signed-off-by: Anson Huang <b20788@freescale.com>
+> >---
+> >  drivers/regulator/anatop-regulator.c |   42 ++++++++++++++++++++++++++++++++++
+> >  1 file changed, 42 insertions(+)
+> >
+> >diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+> >index 8f39cac..a857b9c 100644
+> >--- a/drivers/regulator/anatop-regulator.c
+> >+++ b/drivers/regulator/anatop-regulator.c
+> >@@ -31,12 +31,18 @@
+> >  #include <linux/regulator/driver.h>
+> >  #include <linux/regulator/of_regulator.h>
+> >+#define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
+> >+#define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
+> >+
+> >  struct anatop_regulator {
+> >  	const char *name;
+> >  	u32 control_reg;
+> >  	struct regmap *anatop;
+> >  	int vol_bit_shift;
+> >  	int vol_bit_width;
+> >+	u32 delay_reg;
+> >+	int delay_bit_shift;
+> >+	int delay_bit_width;
+> >  	int min_bit_val;
+> >  	int min_voltage;
+> >  	int max_voltage;
+> >@@ -55,6 +61,33 @@ static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
+> >  	return regulator_set_voltage_sel_regmap(reg, selector);
+> >  }
+> >+static int anatop_regmap_set_voltage_time_sel(struct regulator_dev *reg,
+> >+	unsigned int old_sel,
+> >+	unsigned int new_sel)
+> >+{
+> >+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+> >+	u32 val;
+> >+	int ret = 0;
+> >+
+> >+	/* check whether need to care about LDO ramp up speed */
+> >+	if (anatop_reg->delay_reg) {
+> >+		/*
+> >+		 * the delay for LDO ramp up time is
+> >+		 * based on the register setting, we need
+> >+		 * to calculate how many steps LDO need to
+> >+		 * ramp up, and how much delay needed. (us)
+> >+		 */
+> >+		regmap_read(anatop_reg->anatop, anatop_reg->delay_reg, &val);
+> >+		val = (val >> anatop_reg->delay_bit_shift) &
+> >+			((1 << anatop_reg->delay_bit_width) - 1);
+> >+		ret = new_sel > old_sel ? (new_sel - old_sel) *
 > 
-> This would require a callback dedicated to this in display_entity and
-> would break its simple design.
+> The (new_sel > old_sel) could be part of the above if.
+> 
+> if (anatop_reg->delay_reg && new_sel > old_sel)
+[Anson Huang]Good point, accepted. Please help review my v3 patch,thanks!
+> 
+> >+			((LDO_RAMP_UP_UNIT_IN_CYCLES << val) /
+> >+			LDO_RAMP_UP_FREQ_IN_MHZ + 1) : 0;
+> >+	}
+> >+
+> >+	return ret;
+> >+}
+> >+
+> >  static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+> >  {
+> >  	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+> >@@ -67,6 +100,7 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+> >  static struct regulator_ops anatop_rops = {
+> >  	.set_voltage_sel = anatop_regmap_set_voltage_sel,
+> >+	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
+> >  	.get_voltage_sel = anatop_regmap_get_voltage_sel,
+> >  	.list_voltage = regulator_list_voltage_linear,
+> >  	.map_voltage = regulator_map_voltage_linear,
+> >@@ -143,6 +177,14 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+> >  		goto anatop_probe_end;
+> >  	}
+> >+	/* read LDO ramp up setting, only for core reg */
+> >+	of_property_read_u32(np, "anatop-delay-reg-offset",
+> >+			     &sreg->delay_reg);
+> >+	of_property_read_u32(np, "anatop-delay-bit-width",
+> >+			     &sreg->delay_bit_width);
+> >+	of_property_read_u32(np, "anatop-delay-bit-shift",
+> >+			     &sreg->delay_bit_shift);
+> >+
+> >  	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage) / 25000 + 1
+> >  			    + sreg->min_bit_val;
+> >  	rdesc->min_uV = sreg->min_voltage;
+> 
+> 
 
-We just need to add a function pointer param which can be used by panel
-driver in "display_entity_get_modes", don't we?
-
-> 
->> Just like I said above, display controller should not query DDC
->> directly. Since CDF already defines these for us, display controller
->> should call CDF's functions, like: display_entity_get_modes,
->> display_entity_get_size... I think this is the key difference I wanna
->> talk about. And also in this way, display controller doesn't need to
->> care about this 2 steps logics, just call "display_entity_get_modes" is OK.
-> 
-> Well the fact is that it *is* the display controller that queries DDC
-> directly. The panel is just a bus here, and the EDID EEPROM could
-> perfectly work without it. If you model what you described with DT
-> nodes, I'm afraid you will end up with something both complex (with DC
-> node referencing panel node and back again for the EDID bus) and that
-> does not picture reality accurately.
-
-Display controller don't know whether the panel has EDID EEPROM but the
-panel driver knows. So why we need to make display controller queries
-EDID blindly? Since panel driver knows about all "video modes/panel
-size" stuffs, why not we let it handle all these things?
-
-> 
-> Alex.
-> 
