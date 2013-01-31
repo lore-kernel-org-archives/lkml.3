@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab3AaRbt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:31:49 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60080
+	id S1756602Ab3AaRcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:32:14 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60064
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754136Ab3AaRZi (ORCPT
+	by vger.kernel.org with ESMTP id S1753140Ab3AaRZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jan 2013 12:25:38 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/25] perf report: Make another loop for linking group hists
-Date: Thu, 31 Jan 2013 14:25:09 -0300
-Message-Id: <1359653128-10433-7-git-send-email-acme@infradead.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 02/25] perf top: Delete maps on exit
+Date: Thu, 31 Jan 2013 14:25:05 -0300
+Message-Id: <1359653128-10433-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
 References: <1359653128-10433-1-git-send-email-acme@infradead.org>
@@ -28,75 +29,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Now the event grouping viewing requires linking all member hists in a
-group to the leader's.  Thus hists__output_resort should be called after
-linking all events in evlist.
+Removing one more memory leak found with valgrind.
 
-Introduce symbol_conf.event_group flag to determine whether the feature
-is enabled or not.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/n/tip-gnb1gms0k8wictmtm2umpr8u@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c | 13 ++++++++++++-
- tools/perf/util/symbol.h    |  3 ++-
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ tools/perf/builtin-top.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 47a8644..fd2503a 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -416,8 +416,16 @@ static int __cmd_report(struct perf_report *rep)
- 			hists->symbol_filter_str = rep->symbol_filter_str;
- 
- 		hists__collapse_resort(hists);
--		hists__output_resort(hists);
- 		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
-+
-+		/* Non-group events are considered as leader */
-+		if (symbol_conf.event_group &&
-+		    !perf_evsel__is_group_leader(pos)) {
-+			struct hists *leader_hists = &pos->leader->hists;
-+
-+			hists__match(leader_hists, hists);
-+			hists__link(leader_hists, hists);
-+		}
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 903e4f4..f561757 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1164,7 +1164,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (!top.evlist->nr_entries &&
+ 	    perf_evlist__add_default(top.evlist) < 0) {
+ 		ui__error("Not enough memory for event selector list\n");
+-		return -ENOMEM;
++		goto out_delete_maps;
  	}
  
- 	if (nr_samples == 0) {
-@@ -425,6 +433,9 @@ static int __cmd_report(struct perf_report *rep)
- 		goto out_delete;
+ 	symbol_conf.nr_events = top.evlist->nr_entries;
+@@ -1187,7 +1187,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	} else {
+ 		ui__error("frequency and count are zero, aborting\n");
+ 		status = -EINVAL;
+-		goto out_delete_evlist;
++		goto out_delete_maps;
  	}
  
-+	list_for_each_entry(pos, &session->evlist->entries, node)
-+		hists__output_resort(&pos->hists);
-+
- 	if (use_browser > 0) {
- 		if (use_browser == 1) {
- 			perf_evlist__tui_browse_hists(session->evlist, help,
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index d97377a..b62ca37 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -96,7 +96,8 @@ struct symbol_conf {
- 			initialized,
- 			kptr_restrict,
- 			annotate_asm_raw,
--			annotate_src;
-+			annotate_src,
-+			event_group;
- 	const char	*vmlinux_name,
- 			*kallsyms_name,
- 			*source_prefix,
+ 	top.sym_evsel = perf_evlist__first(top.evlist);
+@@ -1220,6 +1220,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	status = __cmd_top(&top);
+ 
++out_delete_maps:
++	perf_evlist__delete_maps(top.evlist);
+ out_delete_evlist:
+ 	perf_evlist__delete(top.evlist);
+ 
 -- 
 1.8.1.1.361.gec3ae6e
 
