@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab3AaWcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:32:13 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:48329 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044Ab3AaWcL (ORCPT
+	id S1757127Ab3AaWc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:32:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44944 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756886Ab3AaWc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:32:11 -0500
+	Thu, 31 Jan 2013 17:32:26 -0500
+Date: Thu, 31 Jan 2013 14:32:14 -0800
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Message-ID: <tip-086fc8f8037bf16f55f82c66b26a8b834f7349ec@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1356075872-3054-8-git-send-email-fenghua.yu@intel.com>
+References: <1356075872-3054-8-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/microcode] x86/tlbflush.h:
+  Define __native_flush_tlb_global_irq_disabled()
+Git-Commit-ID: 086fc8f8037bf16f55f82c66b26a8b834f7349ec
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1359671257.7527.4.camel@dabdike>
-References: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
-	<50D5C473.2030902@mvista.com>
-	<CAGAzgso4cJHM+CNV0nCu6zUmq=xUstbsguynUp+hyx581LcHJg@mail.gmail.com>
-	<1359671257.7527.4.camel@dabdike>
-Date: Thu, 31 Jan 2013 14:32:10 -0800
-X-Google-Sender-Auth: doXEtTmbzRT3vLTHrRVxDPtBgoc
-Message-ID: <CAGAzgspDkPUAHHES434t-nVnd_2WC5udV8=J=T4wbU3cwH-Gow@mail.gmail.com>
-Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
-From: "dbasehore ." <dbasehore@chromium.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, jgarzik@pobox.com,
-        linux-ide@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 14:32:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That was a response to Sergei's message (which is properly tracked on
-the lists).
+Commit-ID:  086fc8f8037bf16f55f82c66b26a8b834f7349ec
+Gitweb:     http://git.kernel.org/tip/086fc8f8037bf16f55f82c66b26a8b834f7349ec
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Thu, 20 Dec 2012 23:44:27 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 31 Jan 2013 13:19:16 -0800
 
-On Thu, Jan 31, 2013 at 2:27 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Thu, 2013-01-31 at 14:00 -0800, dbasehore . wrote:
->> (Resending as plain text so the message is tracked on vger)
->>
->> Hi, thanks for reading through my patch.
->>
->> With regards to SCSI_SENSE_BUFFERSIZE, I'm following the precedent of
->> scsi_execute_req found in drivers/scsi/scsi_lib.c
->
-> I have no context for this: I don't recall making any comment on sense
-> buffers; what are you replying to?
->
-> James
->
->> It seems that it is used by the scsi_normalize_sense function which I
->> call in sd_resume_async. I just input SCSI_SENSE_BUFFERSIZE directly
->> there though. I didn't know if anything would change its behavior on a
->> lower level if I made sense_len = SCSI_SENSE_BUFFERSIZE, so I just
->> went with what was already done.
->>
->> I'll make sure the semantic fixes go into the final patch.
->>
->> Also, I forgot to mention one possible problem earlier. I understand
->> that some hard drives have a command buffer that can be executed by
->> the hard drive in an order it determines. Does anyone know of a
->> potential problem if the following happens?
->>
->> -resume finishes (hard drive not started yet)
->> -read/write sent to disk, inserted before start command
->>
->> Could this happen? If so, could it cause any problems?
->>
->> I've tested the possibility of a program trying to read/write from the
->> disk before it has started, and the read/write blocks until the disk
->> has actually been spun up. I don't know if there are specific hard
->> drives where this could be a problem though.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+x86/tlbflush.h: Define __native_flush_tlb_global_irq_disabled()
+
+This function is called in __native_flush_tlb_global() and after
+apply_microcode_early().
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1356075872-3054-8-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/tlbflush.h | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 0fee48e..50a7fc0 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -20,10 +20,20 @@ static inline void __native_flush_tlb(void)
+ 	native_write_cr3(native_read_cr3());
+ }
+ 
++static inline void __native_flush_tlb_global_irq_disabled(void)
++{
++	unsigned long cr4;
++
++	cr4 = native_read_cr4();
++	/* clear PGE */
++	native_write_cr4(cr4 & ~X86_CR4_PGE);
++	/* write old PGE again and flush TLBs */
++	native_write_cr4(cr4);
++}
++
+ static inline void __native_flush_tlb_global(void)
+ {
+ 	unsigned long flags;
+-	unsigned long cr4;
+ 
+ 	/*
+ 	 * Read-modify-write to CR4 - protect it from preemption and
+@@ -32,11 +42,7 @@ static inline void __native_flush_tlb_global(void)
+ 	 */
+ 	raw_local_irq_save(flags);
+ 
+-	cr4 = native_read_cr4();
+-	/* clear PGE */
+-	native_write_cr4(cr4 & ~X86_CR4_PGE);
+-	/* write old PGE again and flush TLBs */
+-	native_write_cr4(cr4);
++	__native_flush_tlb_global_irq_disabled();
+ 
+ 	raw_local_irq_restore(flags);
+ }
