@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab3AaAco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:32:44 -0500
-Received: from [216.32.181.184] ([216.32.181.184]:19661 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755313Ab3AaAck (ORCPT
+	id S1756710Ab3AaAdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:33:11 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:15414 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab3AaAdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:32:40 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI1432I1447Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 31 Jan 2013 08:31:20 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Remove unused variables
-Message-ID: <20130131003118.GC2765@S2101-09.ap.freescale.net>
-References: <1359576681-14797-1-git-send-email-thierry.reding@avionic-design.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1359576681-14797-1-git-send-email-thierry.reding@avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	Wed, 30 Jan 2013 19:33:09 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Wed, 30 Jan 2013 19:33:07 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Ruslan Bilovol <ruslan.bilovol@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com,
+        eduardo.valentin@ti.com
+Subject: Re: [RFC PATCH v3 1/2] ARM: kernel: update cpuinfo to print SoC model
+ name
+In-reply-to: <20130130232408.GL2637@n2100.arm.linux.org.uk>
+Message-id: <alpine.LFD.2.02.1301301932240.6300@xanadu.home>
+References: <1359558091-29251-1-git-send-email-ruslan.bilovol@ti.com>
+ <1359558091-29251-2-git-send-email-ruslan.bilovol@ti.com>
+ <alpine.LFD.2.02.1301301402330.6300@xanadu.home>
+ <20130130232408.GL2637@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 09:11:21PM +0100, Thierry Reding wrote:
-> Commit 3f175a6 (mmc: sdhci-esdhc-imx: remove ESDHC_CD_GPIO handling from
-> IO accessory) removed all the code that was using these variables, so it
-> is safe to drop them.
+On Wed, 30 Jan 2013, Russell King - ARM Linux wrote:
+
+> On Wed, Jan 30, 2013 at 02:07:53PM -0500, Nicolas Pitre wrote:
+> > On Wed, 30 Jan 2013, Ruslan Bilovol wrote:
+> > 
+> > > Currently, reading /proc/cpuinfo provides userspace with CPU ID of
+> > > the CPU carrying out the read from the file.
+> > > Userspace using this information may decide what module
+> > > to load or how to configure some specific (and processor-depended)
+> > > settings or so.
+> > > However, since really different SoCs can share same ARM core,
+> > > this information currently is not so useful.
+> > > For example, TI OMAP4460 and OMAP4470 SoCs show the same
+> > > information in the /proc/cpuinfo whereas they are different.
+> > > Since in most cases ARM CPU is a part of some system on a chip (SoC),
+> > > the "cpuinfo" file looks like exactly that place, where this
+> > > information have to be displayed.
+> > > 
+> > > So added new line "SoC name" in the "cpuinfo" output for system
+> > > on a chip name. It is placed between CPU information and machine
+> > > information, so the file structure looks gracefully (CPU-SoC-Hardware)
+> > > 
+> > > Example:
+> > > 
+> > > / # cat proc/cpuinfo
+> > > [...]
+> > > CPU variant     : 0x2
+> > > CPU part        : 0xc09
+> > > CPU revision    : 10
+> > > 
+> > > SoC name        : OMAP4470
+> > > 
+> > > Hardware        : OMAP4 Blaze Tablet
+> > 
+> > Please remove that extra blank line between "SoC name" and "Hardware".  
+> > The blank line after "CPU revision" is fine.
+> > 
+> > Also, please rename this to "System name".  Not all systems are "on 
+> > chip".  By using "System name" this is more universally useful.
 > 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> You may notice I've already suggested that this should be using the SoC
+> infrastructure to export this information, which was explicitly designed
+> to do this.
 
-Thanks for the fixing, Thierry.  But Chris has already queued a fix [1]
-from Fabio.
+Absolutely.  If a mechanism is already in place then it should be used.
 
-Shawn
 
-[1] http://thread.gmane.org/gmane.linux.kernel.mmc/18724
-
-> ---
->  drivers/mmc/host/sdhci-esdhc-imx.c | 5 -----
->  1 file changed, 5 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-> index ae68bc9..509be3a 100644
-> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
-> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-> @@ -144,10 +144,6 @@ static inline void esdhc_clrset_le(struct sdhci_host *host, u32 mask, u32 val, i
->  
->  static u32 esdhc_readl_le(struct sdhci_host *host, int reg)
->  {
-> -	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> -	struct pltfm_imx_data *imx_data = pltfm_host->priv;
-> -	struct esdhc_platform_data *boarddata = &imx_data->boarddata;
-> -
->  	u32 val = readl(host->ioaddr + reg);
->  
->  	if (unlikely(reg == SDHCI_CAPABILITIES)) {
-> @@ -178,7 +174,6 @@ static void esdhc_writel_le(struct sdhci_host *host, u32 val, int reg)
->  {
->  	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
->  	struct pltfm_imx_data *imx_data = pltfm_host->priv;
-> -	struct esdhc_platform_data *boarddata = &imx_data->boarddata;
->  	u32 data;
->  
->  	if (unlikely(reg == SDHCI_INT_ENABLE || reg == SDHCI_SIGNAL_ENABLE)) {
-> -- 
-> 1.8.1.2
-> 
-
+Nicolas
