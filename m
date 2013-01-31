@@ -1,84 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab3AaVst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 16:48:49 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59116 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab3AaVsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 16:48:47 -0500
-Date: Thu, 31 Jan 2013 22:48:41 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
-        Richard Weinberger <rw@linutronix.de>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 00/40] CPU hotplug rework - episode I
-In-Reply-To: <20130131122342.31b28664.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.02.1301312233480.11905@ionos>
-References: <20130131120348.372374706@linutronix.de> <20130131122342.31b28664.akpm@linux-foundation.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1755166Ab3AaVuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 16:50:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57849 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752052Ab3AaVuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 16:50:20 -0500
+From: Jan Kara <jack@suse.cz>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 0/6 RFC] Mapping range lock
+Date: Thu, 31 Jan 2013 22:49:48 +0100
+Message-Id: <1359668994-13433-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jan 2013, Andrew Morton wrote:
+  Hello,
 
-> On Thu, 31 Jan 2013 15:44:10 -0000
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > At the end hotplug should run through an array of callbacks on both
-> > sides with explicit core synchronization points. The ordering should
-> > look like this:
-> > 
-> > CPUHP_OFFLINE                   // Start state.
-> > CPUHP_PREP_<hardware>           // Kick CPU into life / let it die
-> > CPUHP_PREP_<datastructures>     // Get datastructures set up / freed.
-> > CPUHP_PREP_<threads>            // Create threads for cpu
-> > CPUHP_SYNC			// Synchronization point
-> > CPUHP_INIT_<hardware>		// Startup/teardown on the CPU (interrupts, timers ...)
-> > CPUHP_SCHED_<stuff on CPU>      // Unpark/park per cpu local threads on the CPU.
-> > CPUHP_ENABLE_<stuff_on_CPU>	// Enable/disable facilities 
-> > CPUHP_SYNC			// Synchronization point
-> > CPUHP_SCHED                     // Expose/remove CPU from general scheduler.
-> > CPUHP_ONLINE                    // Final state
-> 
-> What does CPUHP_SYNC do?
+  As I promised in my LSF/MM summit proposal here are initial patches
+implementing mapping range lock. There's ext3 converted to fully use the
+range locks, converting other filesystems shouldn't be difficult but I want
+to spend time on it only after we are sure what we want. The following part
+is copied from the LSF/MM proposal, below it are some performance numbers.
 
-This is a future step which makes sure that the cpu which controls the
-bringup and the teardown of the hotplugged cpu are synchronizing at
-some point. Right now, we have this synchronization burried somewhere
-in the architecture code and of course every arch does it different
-versus the generic bringup/teardown mechanisms.
- 
-> Methinks Tejun needed a cc on this lot ;)
+There are several different motivations for implementing mapping range
+locking:
 
-Not really. The workqueue hotplug scheme is today one of the sanest in
-that area. Earlier versions have been a prime example of hotplug hell!
+a) Punch hole is currently racy wrt mmap (page can be faulted in in the
+   punched range after page cache has been invalidated) leading to nasty
+   results as fs corruption (we can end up writing to already freed block),
+   user exposure of uninitialized data, etc. To fix this we need some new
+   mechanism of serializing hole punching and page faults.
 
-TJ has converted it via the notifier priorities to a symetric
-startup/teardown scheme already. So the conversion is a no brainer and
-no real change.
+b) There is an uncomfortable number of mechanisms serializing various paths
+   manipulating pagecache and data underlying it. We have i_mutex, page lock,
+   checks for page beyond EOF in pagefault code, i_dio_count for direct IO.
+   Different pairs of operations are serialized by different mechanisms and
+   not all the cases are covered. Case (a) above is likely the worst but DIO
+   vs buffered IO isn't ideal either (we provide only limited consistency).
+   The range locking should somewhat simplify serialization of pagecache
+   operations. So i_dio_count can be removed completely, i_mutex to certain
+   extent (we still need something for things like timestamp updates,
+   possibly for i_size changes although those can be dealt with I think).
 
-Sure, I should have spent the cycles to add every file owner to the cc
-list, but due to brain damage caused by decoding the current hotplug
-maze I skipped that painful exercise relying on you to fix it up for
-me :)
+c) i_mutex doesn't allow any paralellism of operations using it and some
+   filesystems workaround this for specific cases (e.g. DIO reads). Using
+   range locking allows for concurrent operations (e.g. writes, DIO) on
+   different parts of the file. Of course, range locking itself isn't
+   enough to make the parallelism possible. Filesystems still have to
+   somehow deal with the concurrency when manipulating inode allocation
+   data. But the range locking at least provides a common VFS mechanism for
+   serialization VFS itself needs and it's upto each filesystem to
+   serialize more if it needs to.
 
-Thanks,
+How it works:
+------------
 
-	tglx
+General idea is that range lock for range x-y prevents creation of pages in
+that range.
 
+In practice this means:
+----------------------
 
+All read paths adding page to page cache and grab_cache_page_write_begin()
+first take range lock for the index, then insert locked page, and finally
+unlock the range. See below on why buffered IO uses range locks on per-page
+basis.
 
+DIO gets range lock at the moment it submits bio for the range covering
+pages in the bio. Then pagecache is truncated and bio submitted. Range lock
+is unlocked once bio is completed.
+
+Punch hole for range x-y takes range lock for the range before truncating
+page cache and the lock is released after filesystem blocks for the range
+are freed.
+
+Truncate to size x is equivalent to punch hole for the range x - ~0UL.
+
+The reason why we take the range lock for buffered IO on per-page basis and
+for DIO for each bio separately is lock ordering with mmap_sem. Page faults
+need to instantiate page under mmap_sem. That establishes mmap_sem > range
+lock. Buffered IO takes mmap_sem when prefaulting pages so we cannot hold
+range lock at that moment. Similarly get_user_pages() in DIO code takes
+mmap_sem so we have be sure not to hold range lock when calling that.
+
+How much does it cost:
+---------------------
+
+There's a memory cost - an extra pointer and spinlock in struct
+address_space, 64 bytes on stack for buffered IO, truncate, punch hole, and
+dynamically allocated 72-byte structure per each BIO submitted by direct IO.
+
+And there's a cpu cost. I measured it on an 8 CPU machine with 4 GB of memory
+with ext2 (yes, I added support also for ext2 and used it for measurements as
+especially write results are much less noisy) over 1G ramdisk. The workloads
+were generated by FIO and were 1) read 800 MB file, 2) overwrite 800 MB file,
+3) mmap read 800 MB file. Each test was run 30 times.
+
+The results are here (times to complete in ms):
+	Vanilla				Range Locks
+	Avg		Stddev		Avg		Stddev
+READ	1133.566667	11.954590	1137.06666	7.827019
+WRITE	1069.300000	7.996458	1101.200000	8.607748
+MMAP	1416.733333	28.459250	1421.900000	30.636960
+
+So we see READ and MMAP time changes are in the noise (although for reads
+there seem to be about 1% cost if I compare more tests), for WRITE the cost
+barely stands out of the noise at ~3% (and here I verified with perf what's
+going on and indeed the range_lock() and range_unlock() calls cost in total
+close to 3% of CPU time).
+
+So the cost is noticeable. Is it a problem? Maybe, not sure... We could
+likely optimize the lock-single-page range case but I wanted to start
+simple and get some feedback first.
+
+								Honza
