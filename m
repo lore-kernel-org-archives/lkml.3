@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab3AaQZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 11:25:00 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:45413 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330Ab3AaQXD (ORCPT
+	id S1755446Ab3AaQZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 11:25:29 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:52751 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345Ab3AaQZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 11:23:03 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/9] HID: multitouch: fix Win8 protocol for Sharp like devices
-Date: Thu, 31 Jan 2013 17:22:26 +0100
-Message-Id: <1359649351-11092-5-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
+	Thu, 31 Jan 2013 11:25:27 -0500
+Date: Thu, 31 Jan 2013 16:25:26 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Afzal Mohammed <afzal@ti.com>
+cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH 3/4] ARM: OMAP2+: clock: DEFINE_STRUCT_CLK_FLAGS helper
+In-Reply-To: <abe7aceb564b97ab00b88b13a9aac487363e01c1.1358871018.git.afzal@ti.com>
+Message-ID: <alpine.DEB.2.00.1301311625120.32145@utopia.booyaka.com>
+References: <cover.1358871018.git.afzal@ti.com> <abe7aceb564b97ab00b88b13a9aac487363e01c1.1358871018.git.afzal@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Sharp LC-20FE1-W screen (04dd:9681) behaves like the Nexio 42".
-It may report out of ranges values that are filtered out by relying
-on the Contact Count HID field.
-Adding the quirk MT_QUIRK_CONTACT_CNT_ACCURATE makes hid-multitouch
-strongest against this kind of device, without breaking the current
-devices.
+On Tue, 22 Jan 2013, Afzal Mohammed wrote:
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/hid-multitouch.c | 1 +
- 1 file changed, 1 insertion(+)
+> DEFINE_STRUCT_CLK does not have the capability to set flags, define
+> DEFINE_STRUCT_CLK_FLAGS to handle flags. This is needed to add
+> SET_RATE_PARENT flag in statically defined lcd clock in am335x.
+> 
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index c9b8fe5..585a813 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -311,6 +311,7 @@ static void mt_feature_mapping(struct hid_device *hdev,
- 			*quirks |= MT_QUIRK_ALWAYS_VALID;
- 			*quirks |= MT_QUIRK_IGNORE_DUPLICATES;
- 			*quirks |= MT_QUIRK_HOVERING;
-+			*quirks |= MT_QUIRK_CONTACT_CNT_ACCURATE;
- 			*quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
- 			*quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
- 			*quirks &= ~MT_QUIRK_VALID_IS_CONFIDENCE;
--- 
-1.8.1
+Thanks, queued for 3.9.
 
+
+- Paul
