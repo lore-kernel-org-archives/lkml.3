@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab3AaEOp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 23:14:45 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:55798 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab3AaEOn (ORCPT
+	id S1757047Ab3AaETf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 23:19:35 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58538 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223Ab3AaETc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 23:14:43 -0500
+	Wed, 30 Jan 2013 23:19:32 -0500
+Date: Thu, 31 Jan 2013 04:19:32 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: aris@redhat.com
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v4 9/9] devcg: propagate local changes down the
+ hierarchy
+Message-ID: <20130131041932.GB14576@mail.hallyn.com>
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+ <20130130171102.390708521@napanee.usersys.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <51098229.7080508@wwwdotorg.org>
-References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
- <1359514939-15653-2-git-send-email-acourbot@nvidia.com> <51098229.7080508@wwwdotorg.org>
-From: Alexandre Courbot <acourbot@nvidia.com>
-Date: Thu, 31 Jan 2013 13:14:21 +0900
-X-Google-Sender-Auth: MNegYsAzZCj24IUF1H7eTDYqIr0
-Message-ID: <CAAVeFuJkJ4cftWvSvt1YJa6c48JyJPVTu=i18yMHptZMi3DAzg@mail.gmail.com>
-Subject: Re: [RFC 1/4] video: panel: add CLAA101WA01A panel support
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Mark Zhang <markz@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130130171102.390708521@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 5:27 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> So this looks like a reasonable binding to me. The one issue is that
-> it's very generic, and if we go this route, we'll probably end up with
-> tens or hundreds of identical or extremely similar simple bindings, and
-> associated drivers.
->
-> We can avoid this instead by defining something like a "simple-lcd"
-> binding, and associated driver, that will work for perhaps 90%, 95%,
-> 99%, even 100%(?) of panels.
+Quoting aris@redhat.com (aris@redhat.com):
+> +/**
+> + * propagate_behavior - propagates a change in the behavior down in hierarchy
+> + * @devcg_root: device cgroup that changed behavior
+> + *
+> + * returns: 0 in case of success, != 0 in case of error
+> + *
+> + * This is one of the two key functions for hierarchy implementation.
+> + * All cgroup's children recursively will have the behavior changed and
+> + * exceptions copied from the parent then its local behavior and exceptions
+> + * re-evaluated and applied if they're still allowed.  Refer to
+> + * Documentation/cgroups/devices.txt for more details.
+> + */
+> +static int propagate_behavior(struct dev_cgroup *devcg_root)
+> +{
+> +	struct cgroup *root = devcg_root->css.cgroup;
+> +	struct dev_cgroup *parent, *devcg, *tmp;
+> +	int rc = 0;
+> +	LIST_HEAD(pending);
+> +
+> +	get_online_devcg(root, &pending);
+> +
+> +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
+> +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
+> +
+> +		/* first copy parent's state */
+> +		devcg->behavior = parent->behavior;
+> +		dev_exception_clean(&devcg->exceptions);
+> +		rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
+> +		if (rc) {
+> +			devcg->behavior = DEVCG_DEFAULT_DENY;
+> +			break;
+> +		}
+> +
+> +		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
+> +		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
+> +			devcg->behavior = DEVCG_DEFAULT_DENY;
+> +		}
 
-That seems totally doable indeed. Actually the right way to do this
-might be by extending the simple DPI panel driver Laurent included in
-his patchset.
+I think you might need another special case here.  If A and it's
+child B are both ALLOW, and A switches to DENY, then if I read this
+right B will be switched to DENY, but its local->exceptions will
+not be cleared.  They won't be immediately applied, so at first it's
+ok.  But if B then adds an exception, what happens?  It'll call
+revalidate_exceptions on the full old list plus new exception.  If
+any exceptions aren't allowed by the parent then it won't be applied,
+but it's possible that it is allowed in the parent but (its sense
+now being inverted from blacklist to whitelist) not intended to be
+allowed in the child.  But there will be nothing to stop it.
 
-> Just like the above, but with:
->
-> compatible="simple-panel", "chunghwa,claa101wa01a"
->
-> instead, and the driver binding to "simple-panel" rather than
-> "chunghwa,claa101wa01a".
+So do you need
 
-Just out of curiosity, why don't we rather define
+	if (devcg->local.behavior == DEVCG_DEFAULT_ALLOW &&
+		devcg->behavior == DEVCG_DEFAULT_DENY) {
+		dev_exception_clean(&devcg->local.exceptions);
+	}
 
-compatible="chunghwa,claa101wa01a", "simple-panel"
+here?
 
-in that order? I thought DT compatible strings should go from more to
-less specific. The device would still bind to "simple-panel" if no
-more specific driver exists.
-
-> The driver can assume that a specific set of supplies (and perhaps
-> GPIOs) is always present, and that the /sequence/ of manipulating those
-> is fixed. This will avoid the need for anything like the power sequences
-> code. If a particular panel doesn't fit those assumptions, including the
-> exact sequence of manipulations for each state transition (which should
-> be documented in the binding) then it can get a custom driver, this also
-> avoiding having to define custom sequences in DT.
->
-> Things that might be parameterized/optional:
->
-> * Perhaps some GPIOs aren't always present.
-> * If some regulators aren't SW-controllable, DT should still provide a
-> fixed/dummy regulator so the driver doesn't care.
-
-How about making all regulators and GPIO optional in the driver?
-
-> * Wait times between regulator/GPIO/... manipulation could be specified
-> in DT.
-> * For panels without EDID, CDF DT bindings can provide the list of
-> supported modes, otherwise we assume that the display controller that
-> drives the panel has been told how to access the EDID, just like it
-> would for an "external" display.
-
-Excellent. Thanks for the feedback.
-
-Alex.
+> +		if (devcg->local.behavior == devcg->behavior)
+> +			rc = revalidate_exceptions(devcg);
+> +		if (rc)
+> +			break;
+> +		list_del_init(&devcg->propagate_pending);
+> +	}
+> +
+> +	return rc;
+> +}
