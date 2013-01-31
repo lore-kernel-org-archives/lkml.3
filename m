@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3AaWwd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:52:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63236 "EHLO mga09.intel.com"
+	id S1757356Ab3AaWwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:52:50 -0500
+Received: from mga14.intel.com ([143.182.124.37]:55890 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214Ab3AaWwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:52:20 -0500
+	id S1757305Ab3AaWw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:52:29 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="279285610"
+   d="scan'208";a="250983858"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 06/12] perf, x86: Support full width counting
-Date: Thu, 31 Jan 2013 14:51:44 -0800
-Message-Id: <1359672710-19528-7-git-send-email-andi@firstfloor.org>
+        jolsa@redhat.com, namhyung@kernel.org
+Subject: Basic perf PMU support for Haswell v2
+Date: Thu, 31 Jan 2013 14:51:38 -0800
+Message-Id: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
-References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+This is based on v7 of the full Haswell PMU support, but 
+ported to the latest perf/core and stripped down to the "basic support"
+as requested.  I consider all of this basic support for Haswell usage.
+although it's a bit more than what you need if you never use -e cpu//
+or -b options.  I decided to include LBRs in the basic support. 
 
-Recent Intel CPUs have a new alternative MSR range for perfctrs that allows
-writing the full counter width. Enable this range if the hardware reports it
-using a new capability bit. This lowers overhead of perf stat slightly because
-it has to do less interrupts to accumulate the counter value. On Haswell it
-also avoids some problems with TSX aborting when the end of the counter
-range is reached.
+Contains support for:
+- Basic Haswell PMU and PEBS support
+- Late unmasking of the PMI
+- Support for wide counters
+- New TSX counter flags, exported as sysfs attributes
+- Support for checkpointed counters.
+- New LBR flags, exported as new flags with tools support
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/include/uapi/asm/msr-index.h  |    3 +++
- arch/x86/kernel/cpu/perf_event.h       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
- 3 files changed, 10 insertions(+), 0 deletions(-)
+Available from 
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc hsw/pmu5-basics
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 433a59f..af41a77 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -163,6 +163,9 @@
- #define MSR_KNC_EVNTSEL0               0x00000028
- #define MSR_KNC_EVNTSEL1               0x00000029
- 
-+/* Alternative perfctr range with full access. */
-+#define MSR_IA32_PMC0			0x000004c1
-+
- /* AMD64 MSRs. Not complete. See the architecture manual for a more
-    complete list. */
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 1567b0d..ce2a863 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -278,6 +278,7 @@ union perf_capabilities {
- 		u64	pebs_arch_reg:1;
- 		u64	pebs_format:4;
- 		u64	smm_freeze:1;
-+		u64	fw_write:1;
- 	};
- 	u64	capabilities;
- };
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index f8d26c2..9e11295 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2248,5 +2248,11 @@ __init int intel_pmu_init(void)
- 		}
- 	}
- 
-+	/* Support full width counters using alternative MSR range */
-+	if (x86_pmu.intel_cap.fw_write) {
-+		x86_pmu.max_period = x86_pmu.cntval_mask;
-+		x86_pmu.perfctr = MSR_IA32_PMC0;
-+	}
-+
- 	return 0;
- }
--- 
-1.7.7.6
+For more details on the Haswell PMU please see the SDM (Vol 3A, Chapter 19.2)
+http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html
+For more details on TSX please see http://halobates.de/adding-lock-elision-to-linux.pdf
+or next week's LWN.
 
+v2: Addressed Stephane's feedback. See individual patches for details.
+
+-Andi
