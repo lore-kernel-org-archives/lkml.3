@@ -1,99 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab3AaWD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:03:58 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51520 "EHLO bear.ext.ti.com"
+	id S1756147Ab3AaWDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:03:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43589 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754839Ab3AaV6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 16:58:50 -0500
-From: Cyril Chemparathy <cyril@ti.com>
-To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <sboyd@codeaurora.org>, <will.deacon@arm.com>,
-        <paulmck@linux.vnet.ibm.com>, <nico@linaro.org>,
-        <catalin.marinas@arm.com>, <marc.zyngier@arm.com>,
-        <linus.walleij@linaro.org>, Cyril Chemparathy <cyril@ti.com>,
-        Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH v4 11/13] ARM: mm: cleanup checks for membank overlap with vmalloc area
-Date: Thu, 31 Jan 2013 16:58:30 -0500
-Message-ID: <1359669512-31276-12-git-send-email-cyril@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359669512-31276-1-git-send-email-cyril@ti.com>
-References: <1359669512-31276-1-git-send-email-cyril@ti.com>
+	id S1752703Ab3AaWDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:03:52 -0500
+Date: Thu, 31 Jan 2013 17:03:47 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v4 9/9] devcg: propagate local changes down the hierarchy
+Message-ID: <20130131220347.GO17632@redhat.com>
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+ <20130130171102.390708521@napanee.usersys.redhat.com>
+ <20130131043839.GA14726@mail.hallyn.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130131043839.GA14726@mail.hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Keystone platforms, physical memory is entirely outside the 32-bit
-addressible range.  Therefore, the (bank->start > ULONG_MAX) check below marks
-the entire system memory as highmem, and this causes unpleasentness all over.
+Hi Serge,
+On Thu, Jan 31, 2013 at 04:38:39AM +0000, Serge E. Hallyn wrote:
+> > @@ -610,9 +770,14 @@ 		case '\0':
+> >  		 */
+> >  		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+> >  			dev_exception_rm(devcgroup, &ex);
+> > -			return 0;
+> > +			rc = propagate_exception(devcgroup);
+> 
+> Let's say the default in both parent A and child B is ALLOW, and both
+> have a blacklist entry for "b 8:* rwm".  Now I
+> 
+> 	echo "b 8:* rwm" > A/devices.allow
+> 
+> removing the blacklist entry.  Here you are propagating that to the
+> child B, which I would argue is actually propagating a new allow to
+> a child.  Which you said you wouldn't do.
 
-This patch eliminates the extra bank start check (against ULONG_MAX) by
-checking bank->start against the physical address corresponding to vmalloc_min
-instead.
+yep, that's a bug. will fix it up
 
-In the process, this patch also cleans up parts of the highmem sanity check
-code by removing what has now become a redundant check for banks that entirely
-overlap with the vmalloc range.
+thanks!
 
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
----
- arch/arm/mm/mmu.c |   19 +------------------
- 1 file changed, 1 insertion(+), 18 deletions(-)
-
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index e8875cb..85ed732 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -935,15 +935,12 @@ void __init sanity_check_meminfo(void)
- 		struct membank *bank = &meminfo.bank[j];
- 		*bank = meminfo.bank[i];
- 
--		if (bank->start > ULONG_MAX)
--			highmem = 1;
--
--#ifdef CONFIG_HIGHMEM
- 		if (bank->start >= vmalloc_limit)
- 			highmem = 1;
- 
- 		bank->highmem = highmem;
- 
-+#ifdef CONFIG_HIGHMEM
- 		/*
- 		 * Split those memory banks which are partially overlapping
- 		 * the vmalloc area greatly simplifying things later.
-@@ -966,8 +963,6 @@ void __init sanity_check_meminfo(void)
- 			bank->size = vmalloc_limit - bank->start;
- 		}
- #else
--		bank->highmem = highmem;
--
- 		/*
- 		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
- 		 */
-@@ -980,18 +975,6 @@ void __init sanity_check_meminfo(void)
- 		}
- 
- 		/*
--		 * Check whether this memory bank would entirely overlap
--		 * the vmalloc area.
--		 */
--		if (bank->start >= vmalloc_limit) {
--			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
--			       "(vmalloc region overlap).\n",
--			       (unsigned long long)bank->start,
--			       (unsigned long long)bank->start + bank->size - 1);
--			continue;
--		}
--
--		/*
- 		 * Check whether this memory bank would partially overlap
- 		 * the vmalloc area.
- 		 */
 -- 
-1.7.9.5
+Aristeu
 
