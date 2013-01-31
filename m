@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab3AaR0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:26:53 -0500
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:48655 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab3AaR0s (ORCPT
+	id S1756140Ab3AaR1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:27:17 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60107
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754139Ab3AaRZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 12:26:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359510052-21360-1-git-send-email-wangyijing@huawei.com>
-References: <1359510052-21360-1-git-send-email-wangyijing@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 31 Jan 2013 10:26:26 -0700
-Message-ID: <CAErSpo6pQm+ytk5BMR_1cxL0DGcaKFROYUrwYjwY4UVhdhsTeg@mail.gmail.com>
-Subject: Re: [PATCH v4] PCI: Document PCIE BUS MPS parameters
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Rob Landley <rob@landley.net>, Jon Mason <jdmason@kudzu.us>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Andrew Murray <andrew.murray@arm.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 31 Jan 2013 12:25:46 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@au1.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 22/25] perf: Make EVENT_ATTR global
+Date: Thu, 31 Jan 2013 14:25:25 -0300
+Message-Id: <1359653128-10433-23-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
+References: <1359653128-10433-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 6:40 PM, Yijing Wang <wangyijing@huawei.com> wrote:
-> v0->v1: Update MPS parameters as non-arch and add MRRS
->                 description into pcie_bus_perf parameter suggested
->                 by Andrew Murray.
-> v1->v2: Update some semantic problems and add MPS and MRRS
->                 explanation suggested by Joe Lawrence and Randy Dunlap.
-> v2->v3: Update some semantic problems and the description
->                 of pcie_bus_safe and pcie_bus_peer2peer suggested
->                 by Bjorn Helgaas.
-> v3->v4: Update pcie_bus_safe description suggested by Jon Mason
->
-> Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
-> pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
-> These parameters were introduced by Jon Mason <jdmason@kudzu.us> at
-> commit 5f39e6705 and commit b03e7495a8.
->
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  Documentation/kernel-parameters.txt |   14 ++++++++++++++
->  1 files changed, 14 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 363e348..6ad9b95 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2227,6 +2227,20 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->                                 This sorting is done to get a device
->                                 order compatible with older (<= 2.4) kernels.
->                 nobfsort        Don't sort PCI devices into breadth-first order.
-> +               pcie_bus_tune_off       Disable PCIe MPS (Max Payload Size)
-> +                               tuning and use the BIOS-configured MPS defaults.
-> +               pcie_bus_safe   Set every device's MPS to the largest MPSS
-> +                               (Max Payload Size Support) common to all devices
-> +                               below the root complex.
-> +               pcie_bus_perf   Configure device MPS to the largest
-> +                               allowable MPS based on its parent bus. Also set
-> +                               MRRS (Max Read Request Size) to the largest supported
-> +                               value (no larger than the MPS that the device or bus
-> +                               can support) for best performance.
-> +               pcie_bus_peer2peer      Set every device's MPS to 128B, which
-> +                               every device is guaranteed to support. This
-> +                               configuration allows peer-to-peer DMA between any pair
-> +                               of devices possibly at the cost of reduced performance.
->                 cbiosize=nn[KMG]        The fixed amount of bus space which is
->                                 reserved for the CardBus bridge's IO window.
->                                 The default value is 256 bytes.
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-Added to pci/misc for v3.9 with the changes below.  If we need to
-change it more, let me know and I'll amend that branch.
+Rename EVENT_ATTR() to PMU_EVENT_ATTR() and make it global so it is
+available to all architectures.
 
-I tweaked the pcie_bus_safe text slightly.
+Further to allow architectures flexibility, have PMU_EVENT_ATTR() pass
+in the variable name as a parameter.
 
-The hot-plug case was mentioned in your early patches, but not in the
-v4 patch.  I think that's an important use case and we should provide
-some guidance if we can.  I know you have some patches in the works
-related to this, but as far as I can tell, the only want to ensure
-that hot-added devices will work correctly is to use
-pcie_bus_peer2peer so every MPS is set to 128.
+Changelog[v2]
+	- [Jiri Olsa] No need to define PMU_EVENT_PTR()
 
-The reason I think that is because in the pciehp_configure_device()
-path, where we configure MPS for newly-added devices, there's nothing
-that will change the MPS of any upstream bridges.  So we could have a
-root port with MPS=256 and we never change that, even if the new
-device only supports MPS=128.
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: linuxppc-dev@ozlabs.org
+Link: http://lkml.kernel.org/r/20130123062422.GC13720@us.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event.c | 13 +++----------
+ include/linux/perf_event.h       | 11 +++++++++++
+ 2 files changed, 14 insertions(+), 10 deletions(-)
 
-Hopefully we can make this smarter in the future, but the
-documentation should reflect the behavior of the current code.
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 6774c17..c0df5ed2 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1310,11 +1310,6 @@ static struct attribute_group x86_pmu_format_group = {
+ 	.attrs = NULL,
+ };
+ 
+-struct perf_pmu_events_attr {
+-	struct device_attribute attr;
+-	u64 id;
+-};
+-
+ /*
+  * Remove all undefined events (x86_pmu.event_map(id) == 0)
+  * out of events_attr attributes.
+@@ -1348,11 +1343,9 @@ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *at
+ #define EVENT_VAR(_id)  event_attr_##_id
+ #define EVENT_PTR(_id) &event_attr_##_id.attr.attr
+ 
+-#define EVENT_ATTR(_name, _id)					\
+-static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
+-	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
+-	.id   =  PERF_COUNT_HW_##_id,				\
+-};
++#define EVENT_ATTR(_name, _id)						\
++	PMU_EVENT_ATTR(_name, EVENT_VAR(_id), PERF_COUNT_HW_##_id,	\
++			events_sysfs_show)
+ 
+ EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
+ EVENT_ATTR(instructions,		INSTRUCTIONS		);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6bfb2faa..42adf01 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -817,6 +817,17 @@ do {									\
+ } while (0)
+ 
+ 
++struct perf_pmu_events_attr {
++	struct device_attribute attr;
++	u64 id;
++};
++
++#define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
++static struct perf_pmu_events_attr _var = {				\
++	.attr = __ATTR(_name, 0444, _show, NULL),			\
++	.id   =  _id,							\
++};
++
+ #define PMU_FORMAT_ATTR(_name, _format)					\
+ static ssize_t								\
+ _name##_show(struct device *dev,					\
+-- 
+1.8.1.1.361.gec3ae6e
 
-So let me know if any of the below is inaccurate.
-
-+               pcie_bus_safe   Set every device's MPS to the largest value
-+                               supported by all devices below the root complex.
-
-+               pcie_bus_peer2peer      Set every device's MPS to 128B, which
-+                               every device is guaranteed to support. This
-+                               configuration allows peer-to-peer DMA between
-+                               any pair of devices, possibly at the cost of
-+                               reduced performance.  This also guarantees
-+                               that hot-added devices will work.
