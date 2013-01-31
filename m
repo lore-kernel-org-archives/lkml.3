@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab3AaVvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 16:51:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57861 "EHLO mx2.suse.de"
+	id S1755326Ab3AaVvo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 16:51:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44434 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755273Ab3AaVua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 16:50:30 -0500
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, Jan Kara <jack@suse.cz>
-Subject: [PATCH 6/6] ext3: Convert ext3 to use mapping lock
-Date: Thu, 31 Jan 2013 22:49:54 +0100
-Message-Id: <1359668994-13433-7-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1359668994-13433-1-git-send-email-jack@suse.cz>
-References: <1359668994-13433-1-git-send-email-jack@suse.cz>
+	id S1755219Ab3AaVvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 16:51:42 -0500
+Message-ID: <510AE763.6090907@zytor.com>
+Date: Thu, 31 Jan 2013 13:51:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] rip out x86_32 NUMA remapping code
+References: <20130131005616.1C79F411@kernel.stglabs.ibm.com>
+In-Reply-To: <20130131005616.1C79F411@kernel.stglabs.ibm.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the filesystem to use mapping lock when truncating files and doing
-buffered writes. The rest is handled in the generic code.
+On 01/30/2013 04:56 PM, Dave Hansen wrote:
+> This code was an optimization for 32-bit NUMA systems.
+> 
+> It has probably been the cause of a number of subtle bugs over
+> the years, although the conditions to excite them would have
+> been hard to trigger.  Essentially, we remap part of the kernel
+> linear mapping area, and then sometimes part of that area gets
+> freed back in to the bootmem allocator.  If those pages get
+> used by kernel data structures (say mem_map[] or a dentry),
+> there's no big deal.  But, if anyone ever tried to use the
+> linear mapping for these pages _and_ cared about their physical
+> address, bad things happen.
+> 
+> For instance, say you passed __GFP_ZERO to the page allocator
+> and then happened to get handed one of these pages, it zero the
+> remapped page, but it would make a pte to the _old_ page.
+> There are probably a hundred other ways that it could screw
+> with things.
+> 
+> We don't need to hang on to performance optimizations for
+> these old boxes any more.  All my 32-bit NUMA systems are long
+> dead and buried, and I probably had access to more than most
+> people.
+> 
+> This code is causing real things to break today:
+> 
+> 	https://lkml.org/lkml/2013/1/9/376
+> 
+> I looked in to actually fixing this, but it requires surgery
+> to way too much brittle code, as well as stuff like
+> per_cpu_ptr_to_phys().
+> 
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/ext3/inode.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+I get a build failure on i386 allyesconfig with this patch:
 
-diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-index b176d42..1f5d5f1 100644
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -1261,6 +1261,7 @@ static int ext3_write_begin(struct file *file, struct address_space *mapping,
- 	index = pos >> PAGE_CACHE_SHIFT;
- 	from = pos & (PAGE_CACHE_SIZE - 1);
- 	to = from + len;
-+	flags |= AOP_FLAG_LOCK_MAPPING;
- 
- retry:
- 	page = grab_cache_page_write_begin(mapping, index, flags);
-@@ -3273,6 +3274,8 @@ int ext3_setattr(struct dentry *dentry, struct iattr *attr)
- 	struct inode *inode = dentry->d_inode;
- 	int error, rc = 0;
- 	const unsigned int ia_valid = attr->ia_valid;
-+	struct range_lock mapping_lock;
-+	int range_locked = 0;
- 
- 	error = inode_change_ok(inode, attr);
- 	if (error)
-@@ -3314,6 +3317,12 @@ int ext3_setattr(struct dentry *dentry, struct iattr *attr)
- 	    attr->ia_valid & ATTR_SIZE && attr->ia_size < inode->i_size) {
- 		handle_t *handle;
- 
-+		range_lock_init(&mapping_lock,
-+				attr->ia_size >> PAGE_CACHE_SHIFT,
-+				ULONG_MAX);
-+		range_lock(&inode->i_mapping->mapping_lock, &mapping_lock);
-+		range_locked = 1;
-+
- 		handle = ext3_journal_start(inode, 3);
- 		if (IS_ERR(handle)) {
- 			error = PTR_ERR(handle);
-@@ -3351,6 +3360,12 @@ int ext3_setattr(struct dentry *dentry, struct iattr *attr)
- 	    attr->ia_size != i_size_read(inode)) {
- 		truncate_setsize(inode, attr->ia_size);
- 		ext3_truncate(inode);
-+
-+		if (range_locked) {
-+			range_unlock(&inode->i_mapping->mapping_lock,
-+				     &mapping_lock);
-+			range_locked = 0;
-+		}
- 	}
- 
- 	setattr_copy(inode, attr);
-@@ -3360,6 +3375,8 @@ int ext3_setattr(struct dentry *dentry, struct iattr *attr)
- 		rc = ext3_acl_chmod(inode);
- 
- err_out:
-+	if (range_locked)
-+		range_unlock(&inode->i_mapping->mapping_lock, &mapping_lock);
- 	ext3_std_error(inode->i_sb, error);
- 	if (!error)
- 		error = rc;
--- 
-1.7.1
+arch/x86/power/built-in.o: In function `swsusp_arch_resume':
+(.text+0x14e4): undefined reference to `resume_map_numa_kva'
+
+It looks trivial to fix up; I assume resume_map_numa_kva() just goes
+away like it does in the non-NUMA case, but it would be nice if you
+could confirm that.
+
+	-hpa
 
