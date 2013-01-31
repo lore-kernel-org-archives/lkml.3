@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3AaLfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:35:06 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:43409 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab3AaLfA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 06:35:00 -0500
-Date: Thu, 31 Jan 2013 12:34:56 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC/PATCH] perf x86: Add off-core event constraints for
- Sandy/IvyBridge micro architecture
-Message-ID: <20130131113456.GE4587@gmail.com>
-References: <1359307995-30640-1-git-send-email-jolsa@redhat.com>
- <CABPqkBSKGMUAdbqRGUWoaMH1McLDGgZUfHw3P4BAAOLSDYjH8Q@mail.gmail.com>
- <20130129154918.GH8339@krava.brq.redhat.com>
+	id S1752361Ab3AaLo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:44:26 -0500
+Received: from mga02.intel.com ([134.134.136.20]:53906 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab3AaLoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 06:44:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,575,1355126400"; 
+   d="scan'208";a="255401733"
+From: "Woodhouse, David" <david.woodhouse@intel.com>
+To: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "kim.phillips@freescale.com" <kim.phillips@freescale.com>
+CC: "Woodhouse, David" <david.woodhouse@intel.com>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "daniel.santos@pobox.com" <daniel.santos@pobox.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robherring2@gmail.com" <robherring2@gmail.com>
+Subject: Re: [RFC] arm: use built-in byte swap function
+Thread-Topic: [RFC] arm: use built-in byte swap function
+Thread-Index: Ac3/qEqryq8jjbGdz0yFuzpMnvmBrg==
+Date: Thu, 31 Jan 2013 11:44:13 +0000
+Message-ID: <qqqkinln5frpbwne2vswtgsg.1359632635493@email.android.com>
+Reply-To: "Woodhouse, David" <david.woodhouse@intel.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <2CCF10BF028E064792A9A93E2C248FB1@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130129154918.GH8339@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0VBiQNA019942
+
+A quick test showed I only dropped 20 bytes from net/ipv4/built-in.o but that's with no 16-bit swap support (gcc 4.7).
 
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+--
+dwmw2
 
-> On Mon, Jan 28, 2013 at 06:49:55PM +0100, Stephane Eranian wrote:
-> > On Sun, Jan 27, 2013 at 6:33 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > > hi,
-> > > I was looking at the offcore stuff and it looks like we might
-> > > be missing some constraints for offcore response events on
-> > > Sandy/IvyBridge.
-> > >
-> > > The table 18.8.5 (Off-core Response Performance Monitoring)
-> > > in Intel SDM states PMC0 for 0xb7 and PMC3 for 0xbb, but
-> > > there's no other explanation or related description.
-> > >
-> > > I can't say/ack if the counters looks bad or right with or
-> > > without the patch so far.. so just curious ;-)
-> > >
-> > Those are artificial constraints which should not be there.
-> > Remember that offcore_rsp uses an extra MSR which has
-> > to be shared by all the counters on the PMU. So a way to
-> > handle the sharing of that extra MSR is to impose an
-> > artificial constraint on the event itself. If it can only run
-> > on one counter, then you get the management of the
-> > extra MSR for free, i.e., only one event gets it.
-> > 
-> > In perf_events, we use a more sophisticated dynamic scheme
-> > which does not use this artificial constraint. We can measure
-> > the event multiple times and share the extra MSR if possible
-> > (same value). Why multiple times you might ask? For instance,
-> > with different priv levels.
-> > 
-> > 
-> > Hope this helps.
-> 
-> nice, thanks a lot for explanation
-
-Would be nice to stick this into the code somewhere appropriate, 
-AFAICS this information only lives in older commit logs atm.
-
-Thanks,
-
-	Ingo
+(Apologies for HTML and top-posting; Android mailer is broken.)
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
