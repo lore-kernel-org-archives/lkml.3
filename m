@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab3AaWiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:38:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45029 "EHLO
+	id S1756998Ab3AaWjl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:39:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45043 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab3AaWiX (ORCPT
+	with ESMTP id S1754197Ab3AaWjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:38:23 -0500
-Date: Thu, 31 Jan 2013 14:38:10 -0800
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-da76f64e7eb28b718501d15c1b79af560b7ca4ea@git.kernel.org>
+	Thu, 31 Jan 2013 17:39:37 -0500
+Date: Thu, 31 Jan 2013 14:39:20 -0800
+From: tip-bot for Dave Hansen <dave@linux.vnet.ibm.com>
+Message-ID: <tip-f03574f2d5b2d6229dcdf2d322848065f72953c7@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+        dave@linux.vnet.ibm.com, stable@vger.kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1356075872-3054-13-git-send-email-fenghua.yu@intel.com>
-References: <1356075872-3054-13-git-send-email-fenghua.yu@intel.com>
+        dave@linux.vnet.ibm.com, tglx@linutronix.de, stable@vger.kernel.org,
+        hpa@linux.intel.com
+In-Reply-To: <20130131005616.1C79F411@kernel.stglabs.ibm.com>
+References: <20130131005616.1C79F411@kernel.stglabs.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86/Kconfig:
-  Make early microcode loading a configuration feature
-Git-Commit-ID: da76f64e7eb28b718501d15c1b79af560b7ca4ea
+Subject: [tip:x86/mm] x86-32, mm: Rip out x86_32 NUMA remapping code
+Git-Commit-ID: f03574f2d5b2d6229dcdf2d322848065f72953c7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,56 +29,280 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 14:38:16 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 14:39:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  da76f64e7eb28b718501d15c1b79af560b7ca4ea
-Gitweb:     http://git.kernel.org/tip/da76f64e7eb28b718501d15c1b79af560b7ca4ea
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Thu, 20 Dec 2012 23:44:32 -0800
+Commit-ID:  f03574f2d5b2d6229dcdf2d322848065f72953c7
+Gitweb:     http://git.kernel.org/tip/f03574f2d5b2d6229dcdf2d322848065f72953c7
+Author:     Dave Hansen <dave@linux.vnet.ibm.com>
+AuthorDate: Wed, 30 Jan 2013 16:56:16 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 31 Jan 2013 13:20:42 -0800
+CommitDate: Thu, 31 Jan 2013 14:12:30 -0800
 
-x86/Kconfig: Make early microcode loading a configuration feature
+x86-32, mm: Rip out x86_32 NUMA remapping code
 
-MICROCODE_INTEL_LIB, MICROCODE_INTEL_EARLY, and MICROCODE_EARLY are three new
-configurations to enable or disable the feature.
+This code was an optimization for 32-bit NUMA systems.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1356075872-3054-13-git-send-email-fenghua.yu@intel.com
+It has probably been the cause of a number of subtle bugs over
+the years, although the conditions to excite them would have
+been hard to trigger.  Essentially, we remap part of the kernel
+linear mapping area, and then sometimes part of that area gets
+freed back in to the bootmem allocator.  If those pages get
+used by kernel data structures (say mem_map[] or a dentry),
+there's no big deal.  But, if anyone ever tried to use the
+linear mapping for these pages _and_ cared about their physical
+address, bad things happen.
+
+For instance, say you passed __GFP_ZERO to the page allocator
+and then happened to get handed one of these pages, it zero the
+remapped page, but it would make a pte to the _old_ page.
+There are probably a hundred other ways that it could screw
+with things.
+
+We don't need to hang on to performance optimizations for
+these old boxes any more.  All my 32-bit NUMA systems are long
+dead and buried, and I probably had access to more than most
+people.
+
+This code is causing real things to break today:
+
+	https://lkml.org/lkml/2013/1/9/376
+
+I looked in to actually fixing this, but it requires surgery
+to way too much brittle code, as well as stuff like
+per_cpu_ptr_to_phys().
+
+[ hpa: Cc: this for -stable, since it is a memory corruption issue.
+  However, an alternative is to simply mark NUMA as depends BROKEN
+  rather than EXPERIMENTAL in the X86_32 subclause... ]
+
+Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org>
 ---
- arch/x86/Kconfig | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ arch/x86/Kconfig            |   4 --
+ arch/x86/mm/numa.c          |   3 -
+ arch/x86/mm/numa_32.c       | 161 --------------------------------------------
+ arch/x86/mm/numa_internal.h |   6 --
+ 4 files changed, 174 deletions(-)
 
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 79795af..e243da7 100644
+index 79795af..108efcb 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
-@@ -1029,6 +1029,24 @@ config MICROCODE_OLD_INTERFACE
- 	def_bool y
- 	depends on MICROCODE
+@@ -1253,10 +1253,6 @@ config NODES_SHIFT
+ 	  Specify the maximum number of NUMA Nodes available on the target
+ 	  system.  Increases memory reserved to accommodate various tables.
  
-+config MICROCODE_INTEL_LIB
-+	def_bool y
-+	depends on MICROCODE_INTEL
-+
-+config MICROCODE_INTEL_EARLY
-+	bool "Early load microcode"
-+	depends on MICROCODE_INTEL && BLK_DEV_INITRD
-+	default y
-+	help
-+	  This option provides functionality to read additional microcode data
-+	  at the beginning of initrd image. The data tells kernel to load
-+	  microcode to CPU's as early as possible. No functional change if no
-+	  microcode data is glued to the initrd, therefore it's safe to say Y.
-+
-+config MICROCODE_EARLY
-+	def_bool y
-+	depends on MICROCODE_INTEL_EARLY
-+
- config X86_MSR
- 	tristate "/dev/cpu/*/msr - Model-specific register support"
- 	---help---
+-config HAVE_ARCH_ALLOC_REMAP
+-	def_bool y
+-	depends on X86_32 && NUMA
+-
+ config ARCH_HAVE_MEMORY_PRESENT
+ 	def_bool y
+ 	depends on X86_32 && DISCONTIGMEM
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index b2313c6..61c2b6f 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -205,9 +205,6 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
+ 	if (end && (end - start) < NODE_MIN_SIZE)
+ 		return;
+ 
+-	/* initialize remap allocator before aligning to ZONE_ALIGN */
+-	init_alloc_remap(nid, start, end);
+-
+ 	start = roundup(start, ZONE_ALIGN);
+ 
+ 	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n",
+diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+index 534255a..73a6d73 100644
+--- a/arch/x86/mm/numa_32.c
++++ b/arch/x86/mm/numa_32.c
+@@ -73,167 +73,6 @@ unsigned long node_memmap_size_bytes(int nid, unsigned long start_pfn,
+ 
+ extern unsigned long highend_pfn, highstart_pfn;
+ 
+-#define LARGE_PAGE_BYTES (PTRS_PER_PTE * PAGE_SIZE)
+-
+-static void *node_remap_start_vaddr[MAX_NUMNODES];
+-void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
+-
+-/*
+- * Remap memory allocator
+- */
+-static unsigned long node_remap_start_pfn[MAX_NUMNODES];
+-static void *node_remap_end_vaddr[MAX_NUMNODES];
+-static void *node_remap_alloc_vaddr[MAX_NUMNODES];
+-
+-/**
+- * alloc_remap - Allocate remapped memory
+- * @nid: NUMA node to allocate memory from
+- * @size: The size of allocation
+- *
+- * Allocate @size bytes from the remap area of NUMA node @nid.  The
+- * size of the remap area is predetermined by init_alloc_remap() and
+- * only the callers considered there should call this function.  For
+- * more info, please read the comment on top of init_alloc_remap().
+- *
+- * The caller must be ready to handle allocation failure from this
+- * function and fall back to regular memory allocator in such cases.
+- *
+- * CONTEXT:
+- * Single CPU early boot context.
+- *
+- * RETURNS:
+- * Pointer to the allocated memory on success, %NULL on failure.
+- */
+-void *alloc_remap(int nid, unsigned long size)
+-{
+-	void *allocation = node_remap_alloc_vaddr[nid];
+-
+-	size = ALIGN(size, L1_CACHE_BYTES);
+-
+-	if (!allocation || (allocation + size) > node_remap_end_vaddr[nid])
+-		return NULL;
+-
+-	node_remap_alloc_vaddr[nid] += size;
+-	memset(allocation, 0, size);
+-
+-	return allocation;
+-}
+-
+-#ifdef CONFIG_HIBERNATION
+-/**
+- * resume_map_numa_kva - add KVA mapping to the temporary page tables created
+- *                       during resume from hibernation
+- * @pgd_base - temporary resume page directory
+- */
+-void resume_map_numa_kva(pgd_t *pgd_base)
+-{
+-	int node;
+-
+-	for_each_online_node(node) {
+-		unsigned long start_va, start_pfn, nr_pages, pfn;
+-
+-		start_va = (unsigned long)node_remap_start_vaddr[node];
+-		start_pfn = node_remap_start_pfn[node];
+-		nr_pages = (node_remap_end_vaddr[node] -
+-			    node_remap_start_vaddr[node]) >> PAGE_SHIFT;
+-
+-		printk(KERN_DEBUG "%s: node %d\n", __func__, node);
+-
+-		for (pfn = 0; pfn < nr_pages; pfn += PTRS_PER_PTE) {
+-			unsigned long vaddr = start_va + (pfn << PAGE_SHIFT);
+-			pgd_t *pgd = pgd_base + pgd_index(vaddr);
+-			pud_t *pud = pud_offset(pgd, vaddr);
+-			pmd_t *pmd = pmd_offset(pud, vaddr);
+-
+-			set_pmd(pmd, pfn_pmd(start_pfn + pfn,
+-						PAGE_KERNEL_LARGE_EXEC));
+-
+-			printk(KERN_DEBUG "%s: %08lx -> pfn %08lx\n",
+-				__func__, vaddr, start_pfn + pfn);
+-		}
+-	}
+-}
+-#endif
+-
+-/**
+- * init_alloc_remap - Initialize remap allocator for a NUMA node
+- * @nid: NUMA node to initizlie remap allocator for
+- *
+- * NUMA nodes may end up without any lowmem.  As allocating pgdat and
+- * memmap on a different node with lowmem is inefficient, a special
+- * remap allocator is implemented which can be used by alloc_remap().
+- *
+- * For each node, the amount of memory which will be necessary for
+- * pgdat and memmap is calculated and two memory areas of the size are
+- * allocated - one in the node and the other in lowmem; then, the area
+- * in the node is remapped to the lowmem area.
+- *
+- * As pgdat and memmap must be allocated in lowmem anyway, this
+- * doesn't waste lowmem address space; however, the actual lowmem
+- * which gets remapped over is wasted.  The amount shouldn't be
+- * problematic on machines this feature will be used.
+- *
+- * Initialization failure isn't fatal.  alloc_remap() is used
+- * opportunistically and the callers will fall back to other memory
+- * allocation mechanisms on failure.
+- */
+-void __init init_alloc_remap(int nid, u64 start, u64 end)
+-{
+-	unsigned long start_pfn = start >> PAGE_SHIFT;
+-	unsigned long end_pfn = end >> PAGE_SHIFT;
+-	unsigned long size, pfn;
+-	u64 node_pa, remap_pa;
+-	void *remap_va;
+-
+-	/*
+-	 * The acpi/srat node info can show hot-add memroy zones where
+-	 * memory could be added but not currently present.
+-	 */
+-	printk(KERN_DEBUG "node %d pfn: [%lx - %lx]\n",
+-	       nid, start_pfn, end_pfn);
+-
+-	/* calculate the necessary space aligned to large page size */
+-	size = node_memmap_size_bytes(nid, start_pfn, end_pfn);
+-	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
+-	size = ALIGN(size, LARGE_PAGE_BYTES);
+-
+-	/* allocate node memory and the lowmem remap area */
+-	node_pa = memblock_find_in_range(start, end, size, LARGE_PAGE_BYTES);
+-	if (!node_pa) {
+-		pr_warning("remap_alloc: failed to allocate %lu bytes for node %d\n",
+-			   size, nid);
+-		return;
+-	}
+-	memblock_reserve(node_pa, size);
+-
+-	remap_pa = memblock_find_in_range(min_low_pfn << PAGE_SHIFT,
+-					  max_low_pfn << PAGE_SHIFT,
+-					  size, LARGE_PAGE_BYTES);
+-	if (!remap_pa) {
+-		pr_warning("remap_alloc: failed to allocate %lu bytes remap area for node %d\n",
+-			   size, nid);
+-		memblock_free(node_pa, size);
+-		return;
+-	}
+-	memblock_reserve(remap_pa, size);
+-	remap_va = phys_to_virt(remap_pa);
+-
+-	/* perform actual remap */
+-	for (pfn = 0; pfn < size >> PAGE_SHIFT; pfn += PTRS_PER_PTE)
+-		set_pmd_pfn((unsigned long)remap_va + (pfn << PAGE_SHIFT),
+-			    (node_pa >> PAGE_SHIFT) + pfn,
+-			    PAGE_KERNEL_LARGE);
+-
+-	/* initialize remap allocator parameters */
+-	node_remap_start_pfn[nid] = node_pa >> PAGE_SHIFT;
+-	node_remap_start_vaddr[nid] = remap_va;
+-	node_remap_end_vaddr[nid] = remap_va + size;
+-	node_remap_alloc_vaddr[nid] = remap_va;
+-
+-	printk(KERN_DEBUG "remap_alloc: node %d [%08llx-%08llx) -> [%p-%p)\n",
+-	       nid, node_pa, node_pa + size, remap_va, remap_va + size);
+-}
+-
+ void __init initmem_init(void)
+ {
+ 	x86_numa_init();
+diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
+index 7178c3a..ad86ec9 100644
+--- a/arch/x86/mm/numa_internal.h
++++ b/arch/x86/mm/numa_internal.h
+@@ -21,12 +21,6 @@ void __init numa_reset_distance(void);
+ 
+ void __init x86_numa_init(void);
+ 
+-#ifdef CONFIG_X86_64
+-static inline void init_alloc_remap(int nid, u64 start, u64 end)	{ }
+-#else
+-void __init init_alloc_remap(int nid, u64 start, u64 end);
+-#endif
+-
+ #ifdef CONFIG_NUMA_EMU
+ void __init numa_emulation(struct numa_meminfo *numa_meminfo,
+ 			   int numa_dist_cnt);
