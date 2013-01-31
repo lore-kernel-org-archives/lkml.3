@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab3AaWx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:53:56 -0500
-Received: from mga09.intel.com ([134.134.136.24]:5377 "EHLO mga09.intel.com"
+	id S1757169Ab3AaWwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:52:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63948 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757233Ab3AaWwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:52:21 -0500
+	id S1755044Ab3AaWwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:52:05 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="279285612"
+   d="scan'208";a="255694433"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
         jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 07/12] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v4
-Date: Thu, 31 Jan 2013 14:51:45 -0800
-Message-Id: <1359672710-19528-8-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 02/12] perf, x86: Basic Haswell PMU support v3
+Date: Thu, 31 Jan 2013 14:51:40 -0800
+Message-Id: <1359672710-19528-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
 References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
@@ -26,97 +26,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With checkpointed counters there can be a situation where the counter
-is overflowing, aborts the transaction, is set back to a non overflowing
-checkpoint, causes interupt. The interrupt doesn't see the overflow
-because it has been checkpointed.  This is then a spurious PMI, typically with a
-ugly NMI message.  It can also lead to excessive aborts.
+Add basic Haswell PMU support.
 
-Avoid this problem by:
-- Using the full counter width for counting counters (previous patch)
-- Forbid sampling for checkpointed counters. It's not too useful anyways,
-checkpointing is mainly for counting.
-- On a PMI always set back checkpointed counters to zero.
+Similar to SandyBridge, but has a few new events. Further
+differences are handled in followon patches.
 
-v2: Add unlikely. Add comment
-v3: Allow large sampling periods with CP for KVM
-v4: Use event_is_checkpointed. Use EOPNOTSUPP. (Stephane Eranian)
+There are some new counter flags that need to be prevented
+from being set on fixed counters.
+
+Contains fixes from Stephane Eranian
+
+v2: Folded TSX bits into standard FIXED_EVENT_CONSTRAINTS
+v3: Use SNB LBR init code. Comment fix (Stephane Eranian)
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   39 ++++++++++++++++++++++++++++++++
- 1 files changed, 39 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/perf_event.h      |    3 +++
+ arch/x86/kernel/cpu/perf_event.h       |    5 ++++-
+ arch/x86/kernel/cpu/perf_event_intel.c |   31 ++++++++++++++++++++++++++++++-
+ 3 files changed, 37 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 4fabcdf..4003bb6 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -29,6 +29,9 @@
+ #define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
+ #define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
+ 
++#define HSW_INTX					(1ULL << 32)
++#define HSW_INTX_CHECKPOINTED				(1ULL << 33)
++
+ #define AMD_PERFMON_EVENTSEL_GUESTONLY			(1ULL << 40)
+ #define AMD_PERFMON_EVENTSEL_HOSTONLY			(1ULL << 41)
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 115c1ea..8941899 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -219,11 +219,14 @@ struct cpu_hw_events {
+  *  - inv
+  *  - edge
+  *  - cnt-mask
++ *  - intx
++ *  - intx_cp
+  *  The other filters are supported by fixed counters.
+  *  The any-thread option is supported starting with v3.
+  */
++#define FIXED_EVENT_FLAGS (X86_RAW_EVENT_MASK|HSW_INTX|HSW_INTX_CHECKPOINTED)
+ #define FIXED_EVENT_CONSTRAINT(c, n)	\
+-	EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
++	EVENT_CONSTRAINT(c, (1ULL << (32+n)), FIXED_EVENT_FLAGS)
+ 
+ /*
+  * Constraint on the Event code + UMask
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 9e11295..3d915e9 100644
+index 93b9e11..78045e5 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1072,6 +1072,11 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	__x86_pmu_enable_event(hwc, ARCH_PERFMON_EVENTSEL_ENABLE);
- }
+@@ -101,7 +101,7 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+ 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+ 	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+ 	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
+-	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
++	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.* */
+ 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+ 	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+ 	EVENT_CONSTRAINT_END
+@@ -133,6 +133,17 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+ 	EVENT_EXTRA_END
+ };
  
-+static inline bool event_is_checkpointed(struct perf_event *event)
++static struct event_constraint intel_hsw_event_constraints[] =
 +{
-+	return (event->hw.config & HSW_INTX_CHECKPOINTED) != 0;
-+}
++	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
++	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
++	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
++	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
++	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
++	EVENT_CONSTRAINT_END
++};
 +
- /*
-  * Save and restart an expired event. Called by NMI contexts,
-  * so it has to be careful about preempting normal event ops:
-@@ -1079,6 +1084,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
- int intel_pmu_save_and_restart(struct perf_event *event)
+ static u64 intel_pmu_event_map(int hw_event)
  {
- 	x86_perf_event_update(event);
-+	/*
-+	 * For a checkpointed counter always reset back to 0.  This
-+	 * avoids a situation where the counter overflows, aborts the
-+	 * transaction and is then set back to shortly before the
-+	 * overflow, and overflows and aborts again.
-+	 */
-+	if (unlikely(event_is_checkpointed(event))) {
-+		/* No race with NMIs because the counter should not be armed */
-+		wrmsrl(event->hw.event_base, 0);
-+		local64_set(&event->hw.prev_count, 0);
-+	}
- 	return x86_perf_event_set_period(event);
- }
+ 	return intel_perfmon_event_map[hw_event];
+@@ -2107,6 +2118,24 @@ __init int intel_pmu_init(void)
+ 		break;
  
-@@ -1162,6 +1178,15 @@ again:
- 		x86_pmu.drain_pebs(regs);
- 	}
  
-+	/*
-+ 	 * To avoid spurious interrupts with perf stat always reset checkpointed
-+ 	 * counters.
-+ 	 *
-+	 * XXX move somewhere else.
-+	 */
-+	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
-+		status |= (1ULL << 2);
++	case 60: /* Haswell Client */
++	case 70:
++	case 71:
++		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
++		       sizeof(hw_cache_event_ids));
 +
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
- 
-@@ -1616,6 +1641,20 @@ static int hsw_hw_config(struct perf_event *event)
- 	      event->attr.precise_ip > 0))
- 		return -EOPNOTSUPP;
- 
-+	if (event_is_checkpointed(event)) {
-+		/*
-+		 * Sampling of checkpointed events can cause situations where
-+		 * the CPU constantly aborts because of a overflow, which is
-+		 * then checkpointed back and ignored. Forbid checkpointing
-+		 * for sampling.
-+		 *
-+		 * But still allow a long sampling period, so that perf stat
-+		 * from KVM works.
-+		 */
-+		if (event->attr.sample_period > 0 &&
-+		    event->attr.sample_period < 0x7fffffff)
-+			return -EOPNOTSUPP;
-+	}
- 	return 0;
- }
- 
++		intel_pmu_lbr_init_snb();
++
++		x86_pmu.event_constraints = intel_hsw_event_constraints;
++
++		x86_pmu.extra_regs = intel_snb_extra_regs;
++		/* all extra regs are per-cpu when HT is on */
++		x86_pmu.er_flags |= ERF_HAS_RSP_1;
++		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
++
++		pr_cont("Haswell events, ");
++		break;
++
+ 	default:
+ 		switch (x86_pmu.version) {
+ 		case 1:
 -- 
 1.7.7.6
 
