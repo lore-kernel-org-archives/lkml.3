@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab3AaE1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 23:27:15 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:55241 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab3AaE1N (ORCPT
+	id S1757083Ab3AaE3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 23:29:55 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:37546 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab3AaE3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 23:27:13 -0500
+	Wed, 30 Jan 2013 23:29:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1301301855350.25423@eggly.anvils>
-References: <1359591980-29542-1-git-send-email-walken@google.com>
-	<1359591980-29542-3-git-send-email-walken@google.com>
-	<alpine.LNX.2.00.1301301855350.25423@eggly.anvils>
-Date: Wed, 30 Jan 2013 20:27:11 -0800
-Message-ID: <CANN689Et6381+mDby_HK9SP24hooSojoR__7w0AMvDv1K_aH-A@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mm: accelerate mm_populate() treatment of THP pages
-From: Michel Lespinasse <walken@google.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20130126005533.25808.23022.stgit@amt.stowe>
+References: <20130126005533.25808.23022.stgit@amt.stowe>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 30 Jan 2013 21:29:33 -0700
+Message-ID: <CAErSpo55CUnYxE7JF_Mcee4aXU6vcW=O7N_LbAAAjZxZ5puNcg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Extend interfaces to access PCIe capabilities registers
+To: Myron Stowe <myron.stowe@redhat.com>
+Cc: linux-pci@vger.kernel.org, jiang.liu@huawei.com, mcgrof@qca.qualcomm.com,
+        mcgrof@do-not-panic.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 7:05 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Wed, 30 Jan 2013, Michel Lespinasse wrote:
+On Fri, Jan 25, 2013 at 5:55 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
+> This series is a minor extension to Jiang Liu's recent efforts - [PATCH v3
+> 00/32] provide interfaces to access PCIe capabilities registers - which
+> adds an additional PCI Express accessor for obtaining a device's
+> Capabilities Register.
 >
->> This change adds a page_mask argument to follow_page.
->>
->> follow_page sets *page_mask to HPAGE_PMD_NR - 1 when it encounters a THP page,
->> and to 0 in other cases.
->>
->> __get_user_pages() makes use of this in order to accelerate populating
->> THP ranges - that is, when both the pages and vmas arrays are NULL,
->> we don't need to iterate HPAGE_PMD_NR times to cover a single THP page
->> (and we also avoid taking mm->page_table_lock that many times).
->>
->> Other follow_page() call sites can safely ignore the value returned in
->> *page_mask.
->>
->> Signed-off-by: Michel Lespinasse <walken@google.com>
+> Reference: https://lkml.org/lkml/2012/8/1/253
+> ---
 >
-> I certainly like the skipping.
+> Myron Stowe (2):
+>       PCI: Use PCI Express Capability accessors
+>       PCI: introduce accessor to retrieve PCIe Capabilities Register
 >
-> And (b) why can't we just omit the additional arg, and get it from the
-> page found?  You've explained the unreliability of the !FOLL_GET case
-> to me privately, but that needs to be spelt out in the commit comment
-> (and I'd love if we found a counter-argument, the extra arg of interest
-> to almost no-one does irritate me).
+>
+>  drivers/pci/access.c            |    4 ++--
+>  drivers/pci/pcie/portdrv_core.c |    2 +-
+>  include/linux/pci.h             |   11 ++++++++++-
+>  3 files changed, 13 insertions(+), 4 deletions(-)
 
-Right. My understanding is that after calling follow_page() without
-the FOLL_GET flag, you really can't do much with the returned page
-pointer other than checking it for IS_ERR(). We don't get a reference
-to the page, so it could get migrated away as soon as follow_page()
-releases the page table lock. In the most extreme case, the memory
-corresponding to that page could get offlined / dereferencing the page
-pointer could fail.
-
-I actually think the follow_page API is very error prone in this way,
-as the returned page pointer is very tempting to use, but can't be
-safely used. I almost wish we could return something like
-ERR_PTR(-ESTALE) or whatever, just to make remove any temptations of
-dereferencing that page pointer.
-
-Now I agree the extra argument isn't pretty, but I don't have any
-better ideas for communicating the size of the page that got touched.
-
-> But (a) if the additional arg has to exist, then I'd much prefer it
-> to be page_size than page_mask - I realize there's a tiny advantage to
-> subtracting 1 from an immediate than from a variable, but I don't think
-> it justifies the peculiar interface.  mask makes people think of masking.
-
-Yes, I started with a page_size in bytes and then I moved to the
-page_mask. I agree the performance advantage is tiny, and I don't mind
-switching back to bytes if people are happier with it.
-
-I think one benefit of the page_mask implementation might be that it's
-easier for people to see that page_increment will end up in the
-[1..HPAGE_PMD_NR] range. Would a page size in 4k page units work out ?
-(I'm just not sure how to call such a quantity, though).
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+I applied these to pci/misc for v3.9.  Thanks!
