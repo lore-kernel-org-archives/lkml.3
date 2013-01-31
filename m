@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab3AaRaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:30:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48046 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab3AaRZj (ORCPT
+	id S1756402Ab3AaRaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:30:10 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60084
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754429Ab3AaRZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Jan 2013 12:25:39 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,14 +15,14 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/25] perf header: Add HEADER_GROUP_DESC feature
-Date: Thu, 31 Jan 2013 14:25:08 -0300
-Message-Id: <1359653128-10433-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/25] perf ui/hist: Add support for event group view
+Date: Thu, 31 Jan 2013 14:25:14 -0300
+Message-Id: <1359653128-10433-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
 References: <1359653128-10433-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,254 +30,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Save group relationship information so that it can be restored when perf
-report is running.
+Show group member's overhead also when showing the leader's if event
+group is enabled.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1358845787-1350-10-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |   3 +
- tools/perf/util/header.c    | 164 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h    |   2 +
- 3 files changed, 169 insertions(+)
+ tools/perf/ui/hist.c       | 62 +++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/ui/stdio/hist.c |  2 ++
+ 2 files changed, 63 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 2ac690c..774c907 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -486,6 +486,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		goto out_delete_session;
- 	}
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 849c400..a47ce98 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -21,6 +21,53 @@ static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 		percent = 100.0 * get_field(he) / hists->stats.total_period;
  
-+	if (!evsel_list->nr_groups)
-+		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
+ 	ret = print_fn(hpp->buf, hpp->size, fmt, percent);
 +
- 	/*
- 	 * perf_session__delete(session) will be called at perf_record__exit()
- 	 */
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index f6081cb3..8022b52 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1085,6 +1085,52 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
- }
- 
- /*
-+ * File format:
-+ *
-+ * struct group_descs {
-+ *	u32	nr_groups;
-+ *	struct group_desc {
-+ *		char	name[];
-+ *		u32	leader_idx;
-+ *		u32	nr_members;
-+ *	}[nr_groups];
-+ * };
-+ */
-+static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
-+			    struct perf_evlist *evlist)
-+{
-+	u32 nr_groups = evlist->nr_groups;
-+	struct perf_evsel *evsel;
-+	int ret;
++	if (symbol_conf.event_group) {
++		int prev_idx, idx_delta;
++		struct perf_evsel *evsel = hists_to_evsel(hists);
++		struct hist_entry *pair;
++		int nr_members = evsel->nr_members;
 +
-+	ret = do_write(fd, &nr_groups, sizeof(nr_groups));
-+	if (ret < 0)
-+		return ret;
++		if (nr_members <= 1)
++			return ret;
 +
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 1) {
-+			const char *name = evsel->group_name ?: "{anon_group}";
-+			u32 leader_idx = evsel->idx;
-+			u32 nr_members = evsel->nr_members;
++		prev_idx = perf_evsel__group_idx(evsel);
 +
-+			ret = do_write_string(fd, name);
-+			if (ret < 0)
-+				return ret;
++		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
++			u64 period = get_field(pair);
++			u64 total = pair->hists->stats.total_period;
 +
-+			ret = do_write(fd, &leader_idx, sizeof(leader_idx));
-+			if (ret < 0)
-+				return ret;
++			if (!total)
++				continue;
 +
-+			ret = do_write(fd, &nr_members, sizeof(nr_members));
-+			if (ret < 0)
-+				return ret;
-+		}
-+	}
-+	return 0;
-+}
++			evsel = hists_to_evsel(pair->hists);
++			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
 +
-+/*
-  * default get_cpuid(): nothing gets recorded
-  * actual implementation must be in arch/$(ARCH)/util/header.c
-  */
-@@ -1447,6 +1493,31 @@ error:
- 	fprintf(fp, "# pmu mappings: unable to read\n");
- }
- 
-+static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
-+			     FILE *fp)
-+{
-+	struct perf_session *session;
-+	struct perf_evsel *evsel;
-+	u32 nr = 0;
-+
-+	session = container_of(ph, struct perf_session, header);
-+
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 1) {
-+			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
-+				perf_evsel__name(evsel));
-+
-+			nr = evsel->nr_members - 1;
-+		} else if (nr) {
-+			fprintf(fp, ",%s", perf_evsel__name(evsel));
-+
-+			if (--nr == 0)
-+				fprintf(fp, "}\n");
-+		}
-+	}
-+}
-+
- static int __event_process_build_id(struct build_id_event *bev,
- 				    char *filename,
- 				    struct perf_session *session)
-@@ -1961,6 +2032,98 @@ error:
- 	return -1;
- }
- 
-+static int process_group_desc(struct perf_file_section *section __maybe_unused,
-+			      struct perf_header *ph, int fd,
-+			      void *data __maybe_unused)
-+{
-+	size_t ret = -1;
-+	u32 i, nr, nr_groups;
-+	struct perf_session *session;
-+	struct perf_evsel *evsel, *leader = NULL;
-+	struct group_desc {
-+		char *name;
-+		u32 leader_idx;
-+		u32 nr_members;
-+	} *desc;
-+
-+	if (readn(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr_groups = bswap_32(nr_groups);
-+
-+	ph->env.nr_groups = nr_groups;
-+	if (!nr_groups) {
-+		pr_debug("group desc not available\n");
-+		return 0;
-+	}
-+
-+	desc = calloc(nr_groups, sizeof(*desc));
-+	if (!desc)
-+		return -1;
-+
-+	for (i = 0; i < nr_groups; i++) {
-+		desc[i].name = do_read_string(fd, ph);
-+		if (!desc[i].name)
-+			goto out_free;
-+
-+		if (readn(fd, &desc[i].leader_idx, sizeof(u32)) != sizeof(u32))
-+			goto out_free;
-+
-+		if (readn(fd, &desc[i].nr_members, sizeof(u32)) != sizeof(u32))
-+			goto out_free;
-+
-+		if (ph->needs_swap) {
-+			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
-+			desc[i].nr_members = bswap_32(desc[i].nr_members);
-+		}
-+	}
-+
-+	/*
-+	 * Rebuild group relationship based on the group_desc
-+	 */
-+	session = container_of(ph, struct perf_session, header);
-+	session->evlist->nr_groups = nr_groups;
-+
-+	i = nr = 0;
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (evsel->idx == (int) desc[i].leader_idx) {
-+			evsel->leader = evsel;
-+			/* {anon_group} is a dummy name */
-+			if (strcmp(desc[i].name, "{anon_group}"))
-+				evsel->group_name = desc[i].name;
-+			evsel->nr_members = desc[i].nr_members;
-+
-+			if (i >= nr_groups || nr > 0) {
-+				pr_debug("invalid group desc\n");
-+				goto out_free;
++			while (idx_delta--) {
++				/*
++				 * zero-fill group members in the middle which
++				 * have no sample
++				 */
++				ret += print_fn(hpp->buf + ret, hpp->size - ret,
++						fmt, 0.0);
 +			}
 +
-+			leader = evsel;
-+			nr = evsel->nr_members - 1;
-+			i++;
-+		} else if (nr) {
-+			/* This is a group member */
-+			evsel->leader = leader;
++			ret += print_fn(hpp->buf + ret, hpp->size - ret,
++					fmt, 100.0 * period / total);
 +
-+			nr--;
++			prev_idx = perf_evsel__group_idx(evsel);
++		}
++
++		idx_delta = nr_members - prev_idx - 1;
++
++		while (idx_delta--) {
++			/*
++			 * zero-fill group members at last which have no sample
++			 */
++			ret += print_fn(hpp->buf + ret, hpp->size - ret,
++					fmt, 0.0);
 +		}
 +	}
-+
-+	if (i != nr_groups || nr != 0) {
-+		pr_debug("invalid group desc\n");
-+		goto out_free;
-+	}
-+
-+	ret = 0;
-+out_free:
-+	while ((int) --i >= 0)
-+		free(desc[i].name);
-+	free(desc);
-+
-+	return ret;
-+}
-+
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -2000,6 +2163,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
- 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
- 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
-+	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
- };
+ 	return ret;
+ }
  
- struct header_print_data {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 20f0344..c9fc55c 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -29,6 +29,7 @@ enum {
- 	HEADER_NUMA_TOPOLOGY,
- 	HEADER_BRANCH_STACK,
- 	HEADER_PMU_MAPPINGS,
-+	HEADER_GROUP_DESC,
- 	HEADER_LAST_FEATURE,
- 	HEADER_FEAT_BITS	= 256,
- };
-@@ -79,6 +80,7 @@ struct perf_session_env {
- 	char			*numa_nodes;
- 	int			nr_pmu_mappings;
- 	char			*pmu_mappings;
-+	int			nr_groups;
- };
+@@ -40,6 +87,11 @@ static int hpp__header_##_type(struct perf_hpp *hpp)			\
+ {									\
+ 	int len = _min_width;						\
+ 									\
++	if (symbol_conf.event_group) {					\
++		struct perf_evsel *evsel = hpp->ptr;			\
++									\
++		len = max(len, evsel->nr_members * _unit_width);	\
++	}								\
+ 	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
+ }
  
- struct perf_header {
+@@ -48,6 +100,11 @@ static int hpp__width_##_type(struct perf_hpp *hpp __maybe_unused)	\
+ {									\
+ 	int len = _min_width;						\
+ 									\
++	if (symbol_conf.event_group) {					\
++		struct perf_evsel *evsel = hpp->ptr;			\
++									\
++		len = max(len, evsel->nr_members * _unit_width);	\
++	}								\
+ 	return len;							\
+ }
+ 
+@@ -438,12 +495,15 @@ unsigned int hists__sort_list_width(struct hists *hists)
+ 	struct perf_hpp_fmt *fmt;
+ 	struct sort_entry *se;
+ 	int i = 0, ret = 0;
++	struct perf_hpp dummy_hpp = {
++		.ptr	= hists_to_evsel(hists),
++	};
+ 
+ 	perf_hpp__for_each_format(fmt) {
+ 		if (i)
+ 			ret += 2;
+ 
+-		ret += fmt->width(NULL);
++		ret += fmt->width(&dummy_hpp);
+ 	}
+ 
+ 	list_for_each_entry(se, &hist_entry__sort_list, list)
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index f979829..ff1f60c 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -3,6 +3,7 @@
+ #include "../../util/util.h"
+ #include "../../util/hist.h"
+ #include "../../util/sort.h"
++#include "../../util/evsel.h"
+ 
+ 
+ static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
+@@ -347,6 +348,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 	struct perf_hpp dummy_hpp = {
+ 		.buf	= bf,
+ 		.size	= sizeof(bf),
++		.ptr	= hists_to_evsel(hists),
+ 	};
+ 	bool first = true;
+ 
 -- 
 1.8.1.1.361.gec3ae6e
 
