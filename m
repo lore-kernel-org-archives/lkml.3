@@ -1,99 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab3AaH2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 02:28:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:58085 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab3AaH2M (ORCPT
+	id S1754876Ab3AaHaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:30:12 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38155 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab3AaHaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 02:28:12 -0500
-Date: Thu, 31 Jan 2013 08:28:08 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/1] dma: pl330: Convert to devm_ioremap_resource()
-Message-ID: <20130131072808.GA2041@avionic-0098.mockup.avionic-design.de>
-References: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
+	Thu, 31 Jan 2013 02:30:10 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <510A1D5C.90705@jp.fujitsu.com>
+Date: Thu, 31 Jan 2013 16:29:32 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
-Content-Disposition: inline
-In-Reply-To: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:evaPukrACUegXxcUB7QPYNt2cTXgxHk599IqPPQx2vI
- kwHt42S+Xe8g9EyxoaHa1wZtHbuSOfPVaFSVi2v4jFTma/D4QE
- TX4oAUqrPg/+kGKPIkYZ4FgD3lvk74loeHa50jTvQnrQ7s1Vi9
- G7LTcq6tlQ6anDhEg61EZQwMg9yUNOdPG+8/CxYapXwqNQpT5F
- sx1IS51GjgPe/ucWAycRx8+MvYljNnQx1hAsMZTD/EdKsVfuIu
- 6PiY9E+gH5qW7RI2m0sADMni2Mezhy6mXH1BI8o7zg0Fe7w1N9
- MfkVPTUOxHHyM3+zEEGoXrEYAsnVEqVc2oBRo3Qq5yfysOI7L8
- qYXPtGQ4J/3booQ+yDTwl76BObVJBgdUmGE91+kxxNqCyF8Dn/
- 4hgy5+XkWhw02kF94MR0rLx18jaMftbx34=
+To: fli24 <fei.li@intel.com>
+CC: <rjw@sisk.pl>, <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <chuansheng.liu@intel.com>
+Subject: Re: [PATCH V3] suspend: enable freeze timeout configuration through
+ sys
+References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>  <1359527019.26790.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <1359608132.7918.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+In-Reply-To: <1359608132.7918.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---1yeeQ81UyVL57Vl7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Jan 31, 2013 at 12:37:04PM +0530, Sachin Kamat wrote:
-> Use the newly introduced devm_ioremap_resource() instead of
-> devm_request_and_ioremap() which provides more consistent error handling.
->=20
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+2013/01/31 13:55, fli24 wrote:
+>
+> At present, the value of timeout for freezing is 20s, which is
+> meaningless in case that one thread is frozen with mutex locked
+> and another thread is trying to lock the mutex, as this time of
+> freezing will fail unavoidably.
+> And if there is no new wakeup event registered, the system will
+> waste at most 20s for such meaningless trying of freezing.
+>
+> With this patch, the value of timeout can be configured to smaller
+> value, so such meaningless trying of freezing will be aborted in
+> earlier time, and later freezing can be also triggered in earlier
+> time. And more power will be saved.
+> In normal case on mobile phone, it costs real little time to freeze
+> processes. On some platform, it only costs about 20ms to freeze
+> user space processes and 10ms to freeze kernel freezable threads.
+>
+> Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
+> Signed-off-by: Li Fei <fei.li@intel.com>
 > ---
-> This change is based against linux-next tree (20130128).
-> This change however introduces the followign sparse warning:
-> drivers/dma/pl330.c:2883:22: warning: incorrect type in argument 1 (diffe=
-rent address spaces)
-> drivers/dma/pl330.c:2883:22:    expected void const *ptr
-> drivers/dma/pl330.c:2883:22:    got void [noderef] <asn:2>*base
-> drivers/dma/pl330.c:2884:34: warning: incorrect type in argument 1 (diffe=
-rent address spaces)
-> drivers/dma/pl330.c:2884:34:    expected void const *ptr
-> drivers/dma/pl330.c:2884:34:    got void [noderef] <asn:2>*base
+>   Documentation/power/freezing-of-tasks.txt |    5 +++++
+>   include/linux/freezer.h                   |    5 +++++
+>   kernel/power/main.c                       |   27 +++++++++++++++++++++++++++
+>   kernel/power/process.c                    |    4 ++--
+>   4 files changed, 39 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
+> index 6ec291e..85894d8 100644
+> --- a/Documentation/power/freezing-of-tasks.txt
+> +++ b/Documentation/power/freezing-of-tasks.txt
+> @@ -223,3 +223,8 @@ since they ask the freezer to skip freezing this task, since it is anyway
+>   only after the entire suspend/hibernation sequence is complete.
+>   So, to summarize, use [un]lock_system_sleep() instead of directly using
+>   mutex_[un]lock(&pm_mutex). That would prevent freezing failures.
+> +
+> +V. Miscellaneous
+> +/sys/power/pm_freeze_timeout controls how long it will cost at most to freeze
+> +all user space processes or all freezable kernel threads, in unit of millisecond.
+> +The default value is 20000, with range of unsigned integer.
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index e4238ce..5a24a33 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect */
+>   extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
+>
+>   /*
+> + * Timeout for stopping processes
+> + */
+> +extern unsigned int sys_freeze_process_timeout_msecs;
+> +
+> +/*
+>    * Check if a process has been frozen
+>    */
+>   static inline bool frozen(struct task_struct *p)
+> diff --git a/kernel/power/main.c b/kernel/power/main.c
+> index 1c16f91..453ead1 100644
+> --- a/kernel/power/main.c
+> +++ b/kernel/power/main.c
+> @@ -553,6 +553,30 @@ power_attr(pm_trace_dev_match);
+>
+>   #endif /* CONFIG_PM_TRACE */
+>
+> +#ifdef CONFIG_FREEZER
+> +static ssize_t pm_freeze_timeout_show(struct kobject *kobj,
+> +				      struct kobj_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "%u\n", sys_freeze_process_timeout_msecs);
+> +}
+> +
+> +static ssize_t pm_freeze_timeout_store(struct kobject *kobj,
+> +				       struct kobj_attribute *attr,
+> +				       const char *buf, size_t n)
+> +{
+> +	unsigned long val;
+> +
+> +	if (kstrtoul(buf, 10, &val))
+> +		return -EINVAL;
+> +
+> +	sys_freeze_process_timeout_msecs = val;
+> +	return n;
+> +}
+> +
+> +power_attr(pm_freeze_timeout);
+> +
+> +#endif	/* CONFIG_FREEZER*/
+> +
+>   static struct attribute * g[] = {
+>   	&state_attr.attr,
+>   #ifdef CONFIG_PM_TRACE
+> @@ -576,6 +600,9 @@ static struct attribute * g[] = {
+>   	&pm_print_times_attr.attr,
+>   #endif
+>   #endif
+> +#ifdef CONFIG_FREEZER
+> +	&pm_freeze_timeout_attr.attr,
+> +#endif
+>   	NULL,
+>   };
+>
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index d5a258b..ba45a26 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -21,7 +21,7 @@
+>   /*
+>    * Timeout for stopping processes
+>    */
 
-Yes, those are false positives. They can be fixed with the two patches I
-posted a few hours ago, starting here:
+> -#define TIMEOUT	(20 * HZ)
+> +unsigned int __read_mostly sys_freeze_process_timeout_msecs = 20000;
 
-	https://lkml.org/lkml/2013/1/30/455
+20000 does not mean 20 seconds since we can select HZ other than 1000.
+So (20 * HZ) is better than 20000.
 
-Note that the first patch is against sparse. The problem, in a nutshell,
-is that sparse complains that the pointer address spaces and noderef
-attributes differ. In the case of the IS_ERR() function and friends the
-attributes aren't relevant because only the pointer value is only used
-arithmetically. Unfortunately there is no way you can cast away these
-attributes without causing other warnings, so the solution is somewhat
-more complex.
+Thanks,
+Yasuaki Ishimatsu
 
-Thierry
+>
+>   static int try_to_freeze_tasks(bool user_only)
+>   {
+> @@ -36,7 +36,7 @@ static int try_to_freeze_tasks(bool user_only)
+>
+>   	do_gettimeofday(&start);
+>
+> -	end_time = jiffies + TIMEOUT;
+> +	end_time = jiffies + msecs_to_jiffies(sys_freeze_process_timeout_msecs);
+>
+>   	if (!user_only)
+>   		freeze_workqueues_begin();
+>
 
---1yeeQ81UyVL57Vl7
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRCh0IAAoJEN0jrNd/PrOhzzoQAI1tm565rkDzgZOMDtI4Pl0k
-wfJPsk7eeiWOCfhLdMRDjeiyaPnnuYPgf3ppbmuIhRDkoVS7C1uKZA30ZCl6ikVD
-xxmZdaNKwx+ZIK7O1ayX3GqxICKxG+xfhkOlQZuG7L7ge2UboLGtkom/9hU8QIiQ
-SIk0fZt8R0zwJmSWQjbUNE09mOwyADa9zBIGZoLaRVAblTgZIQh4Bkek6Ws/k6Xd
-5yj42AXVQIEw3f5PxaPDry6MVH0UNvINWLU+g6Kk/nluFwruKXPswZkQ0IVKwP7h
-QLXa/Kns6bf9VJ27t7mLBeU36shdRJGyBsx67+iazEe46paki93N7+6FLyvStSAb
-G+aC2wUMwUc2XfO+Oh5jzG5RtWeDDiIMCazjGnlZdKlSvyB3Y/3H4G07LiNqJzQu
-W14uK15ZEtvhrdmNBm+DqTVPwfaigdh2Sd5rnDBlP8IoOSJGcCqALdu8yrDPKpXI
-rkyhtaMIy1TrNpyCSRVH3BRrDFe5V0+a3dwf41I8fOfMRsn1S9aBRjXZ6mpzDA/Q
-ABFpHs43jzHdMC/NwJr0VwnoZRhOEKJS0aqgpJCg2R7LJRIJ7Z5i2R5cXs3sNH3u
-7qgnNX98oQJnQcXVogmOAQQ9k83cIfO7tC03cbIndfWJqMEb/3PjzLuRGvTwvKIb
-1tUVjVDB07lSmxzi5kcV
-=W1m4
------END PGP SIGNATURE-----
-
---1yeeQ81UyVL57Vl7--
