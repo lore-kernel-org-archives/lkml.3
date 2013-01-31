@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab3AaAKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:10:03 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47148 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab3AaAKA (ORCPT
+	id S1754355Ab3AaAOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:14:07 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59523 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab3AaAOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:10:00 -0500
-Message-ID: <5109B64D.9050904@oracle.com>
-Date: Wed, 30 Jan 2013 19:09:49 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	Wed, 30 Jan 2013 19:14:05 -0500
+Date: Thu, 31 Jan 2013 00:13:40 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: BUG: circular locking dependency detected
+Message-ID: <20130131001339.GC14801@flint.arm.linux.org.uk>
+References: <20130130200648.GA13298@flint.arm.linux.org.uk> <20130130215211.GA28418@flint.arm.linux.org.uk> <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com> <20130130221946.GA14801@flint.arm.linux.org.uk> <CA+55aFyRHK3dmwQf_mdfB18dmoaRZqBG9FvHRqTs7cqBjgUs+g@mail.gmail.com> <CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: torvalds@linux-foundation.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hlist: drop the node parameter from iterators
-References: <1358998645-20452-1-git-send-email-sasha.levin@oracle.com> <5108728E.5020901@oracle.com> <20130130154725.f7b40daa.akpm@linux-foundation.org>
-In-Reply-To: <20130130154725.f7b40daa.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2013 06:47 PM, Andrew Morton wrote:
-> On Tue, 29 Jan 2013 20:08:30 -0500
-> Sasha Levin <sasha.levin@oracle.com> wrote:
+On Thu, Jan 31, 2013 at 10:04:05AM +1000, Dave Airlie wrote:
+> On Thu, Jan 31, 2013 at 9:52 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Thu, Jan 31, 2013 at 9:19 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+> >>
+> >> So... what you seem to be telling me is that 3.9 is going to be a
+> >> release which issues lockdep complaints when the console blanks, and
+> >> you think that's acceptable?
+> >>
+> >> Adding Linus and Andrew so they're aware of this issue...
+> >
+> > Oh, we're extremely aware of it. And it's not a new issue, the locking
+> > problem have apparently been around forever, although I'm not sure why
+> > the lockdep splat itself started happening only recently.
+> >
+> > They'll make it into 3.9, it's 3.8 that won't have them. The patches
+> > initially caused way *worse* behavior than just a lockdep splat - they
+> > caused actual hard lockups (and that was *after* the initial series of
+> > fixes). That got fixed (hopefully for the last case!) fairly recently,
+> > and I'm not willing to take the scary patch-series that has had
+> > several problem cases.
 > 
->> Also, ping :)
->>
->> ...
->>
->>>  216 files changed, 1031 insertions(+), 1526 deletions(-)
-> 
-> Whimper.
-> 
-> I don't really see a sane way of avoiding a single huge atomic smash
-> here.  Normally we'd use a multistep process:
-> 
-> 1: Create a new and differently named macro, say "sasha_is_a_pita()".
-> 
-> 2: Convert hlist_for_each_entry() to sasha_is_a_pita() in as many
->    sites as we can.
-> 
-> 3: Once we think all sites are converted, delete the now-unused
->    hlist_for_each_entry() definition.
-> 
-> Problem is, there just isn't any other identifier we can use here apart
-> from hlist_for_each_entry().
-> 
-> I suppose we could add additional steps:
-> 
-> 4: Add hlist_for_each_entry(), which is identical to sasha_is_a_pita().
-> 
-> 5: Convert sasha_is_a_pita() to hlist_for_each_entry() in as many
->    sites as we can.
-> 
-> 6: Once we think all sites are converted, delete the now-unused
->    sasha_is_a_pita() definition.
-> 
-> But geeze.
-> 
-> 
-> The alternative is to do the huge atomic smash immediately after the
-> 3.9-rc1 release, when the amount of pending out-of-tree code is at a
-> minimum.
+> Well we didn't have any lock validation support before Daniel added it
+> a couple of kernels back,
+> so instead of hidden locking problems we've had from time began, we now have
+> lockdep detectable locking problems.
 
-I would accept a "it's not worth the effort" if you think it's not worth
-the effort. I don't have a secret diabolic plan to make Linus and yourself
-do a bunch of conflict merges because I like to see you suffer.
+Which may or may not be a good thing depending how you look at it; it
+means that once your kernel blanks, you get a lockdep dump.  At that
+point you lose lockdep checking for everything else because lockdep
+disables itself after the first dump.
 
-Regarding the multistep process, the downside there is that instead of
-dealing with conflicts once you'll be dealing with them twice: once when
-you move to the new macro, and once when you move back. If you think that's
-preferable we can do that.
-
-If not, should I send it over to you on -rc1?
-
-
-Thanks,
-Sasha
-
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
