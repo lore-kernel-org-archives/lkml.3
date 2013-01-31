@@ -1,53 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3AaKhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:37:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60574 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751604Ab3AaKhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:37:40 -0500
-Message-ID: <510A4967.5070009@suse.cz>
-Date: Thu, 31 Jan 2013 11:37:27 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753990Ab3AaKiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:38:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35946 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab3AaKiR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 05:38:17 -0500
+Date: Thu, 31 Jan 2013 02:36:05 -0800
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-e23c1a5578cf32ed3a7ac9dde59a2de0a52ff812@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+        mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+        mingo@elte.hu
+In-Reply-To: <1359060403-32422-1-git-send-email-jolsa@redhat.com>
+References: <1359060403-32422-1-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib traceevent: Handle dynamic array'
+ s element size properly
+Git-Commit-ID: e23c1a5578cf32ed3a7ac9dde59a2de0a52ff812
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 1/1] depmod: pass -P $CONFIG_SYMBOL_PREFIX
-References: <1359625303-11842-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1359625303-11842-1-git-send-email-james.hogan@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 02:36:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.1.2013 10:41, James Hogan wrote:
-> On architectures which have symbol prefixes, depmod emits lots of false
-> warnings like this:
-> 
-> WARNING: $module.ko needs unknown symbol $symbol
-> 
-> This is because depmod isn't being passed the -P <symbol_prefix>
-> arguments to specify the symbol prefix to ignore. This option is
-> included since the 3.13 release of module-init-tools.
-> 
-> Update scripts/depmod.sh to take extra arguments which are passed
-> through directly to depmod, and update the main Makefile to pass
-> -P $(CONFIG_SYMBOL_PREFIX to scripts/depmod.sh, but only if
-> CONFIG_SYMBOL_PREFIX is set and non-empty.
+Commit-ID:  e23c1a5578cf32ed3a7ac9dde59a2de0a52ff812
+Gitweb:     http://git.kernel.org/tip/e23c1a5578cf32ed3a7ac9dde59a2de0a52ff812
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Thu, 24 Jan 2013 21:46:43 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 25 Jan 2013 12:49:28 -0300
 
-OK.
+tools lib traceevent: Handle dynamic array's element size properly
 
+Fixing the dynamic array format field parsing.
 
-> scripts/depmod.sh also drops the -P arguments if depmod --version
-> reports module-init-tools with a version number < 3.13.
+Currently the event_read_fields function could segfault while parsing
+dynamic array other than string type. The reason is the event->pevent
+does not need to be set and gets dereferenced unconditionaly.
 
-You can replace the test with a simple
+Also adding proper initialization of field->elementsize based on the
+parsed dynamic type.
 
-"$DEPMOD" -P _ --help 2>/dev/null >/dev/null
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1359060403-32422-1-git-send-email-jolsa@redhat.com
+[ committer note: Made a char pointer parameter const, as requested by Steven ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/event-parse.c | 39 ++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 37 insertions(+), 2 deletions(-)
 
-Michal
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index bb8b3db..82b0606 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -1223,6 +1223,34 @@ static int field_is_long(struct format_field *field)
+ 	return 0;
+ }
+ 
++static unsigned int type_size(const char *name)
++{
++	/* This covers all FIELD_IS_STRING types. */
++	static struct {
++		const char *type;
++		unsigned int size;
++	} table[] = {
++		{ "u8",   1 },
++		{ "u16",  2 },
++		{ "u32",  4 },
++		{ "u64",  8 },
++		{ "s8",   1 },
++		{ "s16",  2 },
++		{ "s32",  4 },
++		{ "s64",  8 },
++		{ "char", 1 },
++		{ },
++	};
++	int i;
++
++	for (i = 0; table[i].type; i++) {
++		if (!strcmp(table[i].type, name))
++			return table[i].size;
++	}
++
++	return 0;
++}
++
+ static int event_read_fields(struct event_format *event, struct format_field **fields)
+ {
+ 	struct format_field *field = NULL;
+@@ -1232,6 +1260,8 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 	int count = 0;
+ 
+ 	do {
++		unsigned int size_dynamic = 0;
++
+ 		type = read_token(&token);
+ 		if (type == EVENT_NEWLINE) {
+ 			free_token(token);
+@@ -1390,6 +1420,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 				field->type = new_type;
+ 				strcat(field->type, " ");
+ 				strcat(field->type, field->name);
++				size_dynamic = type_size(field->name);
+ 				free_token(field->name);
+ 				strcat(field->type, brackets);
+ 				field->name = token;
+@@ -1478,10 +1509,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 		if (field->flags & FIELD_IS_ARRAY) {
+ 			if (field->arraylen)
+ 				field->elementsize = field->size / field->arraylen;
++			else if (field->flags & FIELD_IS_DYNAMIC)
++				field->elementsize = size_dynamic;
+ 			else if (field->flags & FIELD_IS_STRING)
+ 				field->elementsize = 1;
+-			else
+-				field->elementsize = event->pevent->long_size;
++			else if (field->flags & FIELD_IS_LONG)
++				field->elementsize = event->pevent ?
++						     event->pevent->long_size :
++						     sizeof(long);
+ 		} else
+ 			field->elementsize = field->size;
+ 
