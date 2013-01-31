@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3AaAdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:33:11 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:15414 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3AaAdJ (ORCPT
+	id S1755518Ab3AaAiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:38:09 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:58149 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab3AaAiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:33:09 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 30 Jan 2013 19:33:07 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ruslan Bilovol <ruslan.bilovol@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com,
-        eduardo.valentin@ti.com
-Subject: Re: [RFC PATCH v3 1/2] ARM: kernel: update cpuinfo to print SoC model
- name
-In-reply-to: <20130130232408.GL2637@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.02.1301301932240.6300@xanadu.home>
-References: <1359558091-29251-1-git-send-email-ruslan.bilovol@ti.com>
- <1359558091-29251-2-git-send-email-ruslan.bilovol@ti.com>
- <alpine.LFD.2.02.1301301402330.6300@xanadu.home>
- <20130130232408.GL2637@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 30 Jan 2013 19:38:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+icZUWdGCytVsNKK+gA7Sh-RKT-GPCHoRtPNfDw4_Hfh+ynyA@mail.gmail.com>
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+	<1359399845-10568-9-git-send-email-fweisbec@gmail.com>
+	<CA+icZUWdGCytVsNKK+gA7Sh-RKT-GPCHoRtPNfDw4_Hfh+ynyA@mail.gmail.com>
+Date: Thu, 31 Jan 2013 01:38:05 +0100
+Message-ID: <CAFTL4hyzAR0ztncwA0Hx=9P4MKYgUp1Uro8Lt2VjYPdM5Bd1Qg@mail.gmail.com>
+Subject: Re: [PATCH 8/8] cputime: Safely read cputime of full dynticks CPUs
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jan 2013, Russell King - ARM Linux wrote:
+2013/1/28 Sedat Dilek <sedat.dilek@gmail.com>:
+> On Mon, Jan 28, 2013 at 8:04 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> While remotely reading the cputime of a task running in a
+>> full dynticks CPU, the values stored in utime/stime fields
+>> of struct task_struct may be stale. Its values may be those
+>> of the last kernel <-> user transition time snapshot and
+>> we need to add the tickless time spent since this snapshot.
+>>
+>> To fix this, flush the cputime of the dynticks CPUs on
+>> kernel <-> user transition and record the time / context
+>> where we did this. Then on top of this snapshot and the current
+>> time, perform the fixup on the reader side from task_times()
+>> accessors.
+>>
+>> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+>> Cc: Namhyung Kim <namhyung.kim@lge.com>
+>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> [fixed kvm module related build errors]
+>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+>>
+>
+> Can you explain a bit what is the difference between "3.8-rc4-nohz3"
+> and "full-dynticks-cputime-for-mingo" patchsets?
 
-> On Wed, Jan 30, 2013 at 02:07:53PM -0500, Nicolas Pitre wrote:
-> > On Wed, 30 Jan 2013, Ruslan Bilovol wrote:
-> > 
-> > > Currently, reading /proc/cpuinfo provides userspace with CPU ID of
-> > > the CPU carrying out the read from the file.
-> > > Userspace using this information may decide what module
-> > > to load or how to configure some specific (and processor-depended)
-> > > settings or so.
-> > > However, since really different SoCs can share same ARM core,
-> > > this information currently is not so useful.
-> > > For example, TI OMAP4460 and OMAP4470 SoCs show the same
-> > > information in the /proc/cpuinfo whereas they are different.
-> > > Since in most cases ARM CPU is a part of some system on a chip (SoC),
-> > > the "cpuinfo" file looks like exactly that place, where this
-> > > information have to be displayed.
-> > > 
-> > > So added new line "SoC name" in the "cpuinfo" output for system
-> > > on a chip name. It is placed between CPU information and machine
-> > > information, so the file structure looks gracefully (CPU-SoC-Hardware)
-> > > 
-> > > Example:
-> > > 
-> > > / # cat proc/cpuinfo
-> > > [...]
-> > > CPU variant     : 0x2
-> > > CPU part        : 0xc09
-> > > CPU revision    : 10
-> > > 
-> > > SoC name        : OMAP4470
-> > > 
-> > > Hardware        : OMAP4 Blaze Tablet
-> > 
-> > Please remove that extra blank line between "SoC name" and "Hardware".  
-> > The blank line after "CPU revision" is fine.
-> > 
-> > Also, please rename this to "System name".  Not all systems are "on 
-> > chip".  By using "System name" this is more universally useful.
-> 
-> You may notice I've already suggested that this should be using the SoC
-> infrastructure to export this information, which was explicitly designed
-> to do this.
+3.8-rc4-nohz3 is the latest experimental tree that implements full
+dynticks. It includes an earlier version of full dynticks cputime and
+many other things to make the full dynticks possible: nohz printk,
+many tweaks on the scheduler and timers...etc
 
-Absolutely.  If a mechanism is already in place then it should be used.
+>
+> Does the latter need no more EXPORT_SYMBOL_GPL for vtime_guest_enter()
+> and vtime_guest_exit() when CONFIG_KVM=m (see [1])?
 
+It doesn't need export symbol on vtime_guest_() APIs, only on
+guest_enter and guest_exit.
 
-Nicolas
+Thanks.
