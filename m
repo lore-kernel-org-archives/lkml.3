@@ -1,204 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab3AaJOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 04:14:10 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31463 "EHLO mga02.intel.com"
+	id S1753758Ab3AaJTz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 04:19:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:55525 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641Ab3AaJOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 04:14:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,575,1355126400"; 
-   d="scan'208";a="278972567"
-From: "Li, Fei" <fei.li@intel.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: "rjw@sisk.pl" <rjw@sisk.pl>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: RE: [PATCH V3] suspend: enable freeze timeout configuration through
- sys
-Thread-Topic: [PATCH V3] suspend: enable freeze timeout configuration
- through sys
-Thread-Index: AQHN/29vZoB86dySZ064bV7yEexaV5hihHEAgACZg4A=
-Date: Thu, 31 Jan 2013 09:13:33 +0000
-Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE36343F0D19@SHSMSX102.ccr.corp.intel.com>
-References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-  <1359527019.26790.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <1359608132.7918.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <510A1D5C.90705@jp.fujitsu.com>
-In-Reply-To: <510A1D5C.90705@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753344Ab3AaJTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 04:19:52 -0500
+Date: Thu, 31 Jan 2013 10:21:46 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <rmk@arm.linux.org.uk>, Dave Airlie <airlied@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: BUG: circular locking dependency detected
+Message-ID: <20130131092146.GB3361@kroah.com>
+References: <20130130200648.GA13298@flint.arm.linux.org.uk>
+ <20130130215211.GA28418@flint.arm.linux.org.uk>
+ <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
+ <20130130221946.GA14801@flint.arm.linux.org.uk>
+ <CA+55aFyRHK3dmwQf_mdfB18dmoaRZqBG9FvHRqTs7cqBjgUs+g@mail.gmail.com>
+ <CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com>
+ <20130131001339.GC14801@flint.arm.linux.org.uk>
+ <CA+55aFxfeXWAiXV18qGgOk9+2HHiD7LUuyk55brHFXd+_c6eZQ@mail.gmail.com>
+ <20130131054002.GA3697@kroah.com>
+ <CAKMK7uGUrvh2dXza_b288kVdztiLjSCNpH304oBQgg_ZonEnzw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uGUrvh2dXza_b288kVdztiLjSCNpH304oBQgg_ZonEnzw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0V9EEJB019254
 
-> -----Original Message-----
-> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
-> Sent: Thursday, January 31, 2013 3:30 PM
-> To: Li, Fei
-> Cc: rjw@sisk.pl; akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
-> linux-pm@vger.kernel.org; Liu, Chuansheng
-> Subject: Re: [PATCH V3] suspend: enable freeze timeout configuration through
-> sys
+On Thu, Jan 31, 2013 at 09:21:16AM +0100, Daniel Vetter wrote:
+> On Thu, Jan 31, 2013 at 6:40 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Jan 31, 2013 at 11:26:53AM +1100, Linus Torvalds wrote:
+> >> On Thu, Jan 31, 2013 at 11:13 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+> >> >
+> >> > Which may or may not be a good thing depending how you look at it; it
+> >> > means that once your kernel blanks, you get a lockdep dump.  At that
+> >> > point you lose lockdep checking for everything else because lockdep
+> >> > disables itself after the first dump.
+> >>
+> >> Fair enough, we may want to revert the lockdep checking for
+> >> console_lock, and make re-enabling it part of the patch-series that
+> >> fixes the locking.
+> >>
+> >> Daniel/Dave? Does that sound reasonable?
 > 
-> 2013/01/31 13:55, fli24 wrote:
-> >
-> > At present, the value of timeout for freezing is 20s, which is
-> > meaningless in case that one thread is frozen with mutex locked
-> > and another thread is trying to lock the mutex, as this time of
-> > freezing will fail unavoidably.
-> > And if there is no new wakeup event registered, the system will
-> > waste at most 20s for such meaningless trying of freezing.
-> >
-> > With this patch, the value of timeout can be configured to smaller
-> > value, so such meaningless trying of freezing will be aborted in
-> > earlier time, and later freezing can be also triggered in earlier
-> > time. And more power will be saved.
-> > In normal case on mobile phone, it costs real little time to freeze
-> > processes. On some platform, it only costs about 20ms to freeze
-> > user space processes and 10ms to freeze kernel freezable threads.
-> >
-> > Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
-> > Signed-off-by: Li Fei <fei.li@intel.com>
-> > ---
-> >   Documentation/power/freezing-of-tasks.txt |    5 +++++
-> >   include/linux/freezer.h                   |    5 +++++
-> >   kernel/power/main.c                       |   27
-> +++++++++++++++++++++++++++
-> >   kernel/power/process.c                    |    4 ++--
-> >   4 files changed, 39 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/Documentation/power/freezing-of-tasks.txt
-> b/Documentation/power/freezing-of-tasks.txt
-> > index 6ec291e..85894d8 100644
-> > --- a/Documentation/power/freezing-of-tasks.txt
-> > +++ b/Documentation/power/freezing-of-tasks.txt
-> > @@ -223,3 +223,8 @@ since they ask the freezer to skip freezing this task,
-> since it is anyway
-> >   only after the entire suspend/hibernation sequence is complete.
-> >   So, to summarize, use [un]lock_system_sleep() instead of directly using
-> >   mutex_[un]lock(&pm_mutex). That would prevent freezing failures.
-> > +
-> > +V. Miscellaneous
-> > +/sys/power/pm_freeze_timeout controls how long it will cost at most to
-> freeze
-> > +all user space processes or all freezable kernel threads, in unit of millisecond.
-> > +The default value is 20000, with range of unsigned integer.
-> > diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> > index e4238ce..5a24a33 100644
-> > --- a/include/linux/freezer.h
-> > +++ b/include/linux/freezer.h
-> > @@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect
-> */
-> >   extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
-> >
-> >   /*
-> > + * Timeout for stopping processes
-> > + */
-> > +extern unsigned int sys_freeze_process_timeout_msecs;
-> > +
-> > +/*
-> >    * Check if a process has been frozen
-> >    */
-> >   static inline bool frozen(struct task_struct *p)
-> > diff --git a/kernel/power/main.c b/kernel/power/main.c
-> > index 1c16f91..453ead1 100644
-> > --- a/kernel/power/main.c
-> > +++ b/kernel/power/main.c
-> > @@ -553,6 +553,30 @@ power_attr(pm_trace_dev_match);
-> >
-> >   #endif /* CONFIG_PM_TRACE */
-> >
-> > +#ifdef CONFIG_FREEZER
-> > +static ssize_t pm_freeze_timeout_show(struct kobject *kobj,
-> > +				      struct kobj_attribute *attr, char *buf)
-> > +{
-> > +	return sprintf(buf, "%u\n", sys_freeze_process_timeout_msecs);
-> > +}
-> > +
-> > +static ssize_t pm_freeze_timeout_store(struct kobject *kobj,
-> > +				       struct kobj_attribute *attr,
-> > +				       const char *buf, size_t n)
-> > +{
-> > +	unsigned long val;
-> > +
-> > +	if (kstrtoul(buf, 10, &val))
-> > +		return -EINVAL;
-> > +
-> > +	sys_freeze_process_timeout_msecs = val;
-> > +	return n;
-> > +}
-> > +
-> > +power_attr(pm_freeze_timeout);
-> > +
-> > +#endif	/* CONFIG_FREEZER*/
-> > +
-> >   static struct attribute * g[] = {
-> >   	&state_attr.attr,
-> >   #ifdef CONFIG_PM_TRACE
-> > @@ -576,6 +600,9 @@ static struct attribute * g[] = {
-> >   	&pm_print_times_attr.attr,
-> >   #endif
-> >   #endif
-> > +#ifdef CONFIG_FREEZER
-> > +	&pm_freeze_timeout_attr.attr,
-> > +#endif
-> >   	NULL,
-> >   };
-> >
-> > diff --git a/kernel/power/process.c b/kernel/power/process.c
-> > index d5a258b..ba45a26 100644
-> > --- a/kernel/power/process.c
-> > +++ b/kernel/power/process.c
-> > @@ -21,7 +21,7 @@
-> >   /*
-> >    * Timeout for stopping processes
-> >    */
+> Yeah, sounds good.
 > 
-> > -#define TIMEOUT	(20 * HZ)
-> > +unsigned int __read_mostly sys_freeze_process_timeout_msecs = 20000;
+> > Reverting the patch is fine with me.  Just let me know so I can queue it
+> > up again for 3.9.
 > 
-> 20000 does not mean 20 seconds since we can select HZ other than 1000.
-> So (20 * HZ) is better than 20000.
->
-[Li, Fei] 
-Are you sure about this, (20*HZ) better than 20000, or you mean 20 * MSEC_PER_SEC?
-In fact, the usage of such variable has been changed as below in the patch:
-   end_time = jiffies + msecs_to_jiffies(sys_freeze_process_timeout_msecs)
-So I don't think it make sense to use msecs_to_jiffies(20*HZ).
+> Can you please also pick up the (currently) three locking fixups
+> around fbcon? Just so that we don't repeat the same fun where people
+> complain about lockdep splats, but the fixes are stuck somewhere. And
+> I guess Dave would be happy to not end up as fbcon maintainer ;-) He
+> has a git branch with them at
+> http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
+> though I have a small bikeshed on his last patch pending.
 
-If needed, I think we can refine it to use 20* MSEC_PER_SEC instead of 20000.
-How about your opinion?
+Care to just send me the patches through email when you all get done
+bikesheding?  And for some reason I thought Andrew was going to handle
+these fbcon patches, but if not, I'll be glad to take them.
 
-Thanks!
-Best Regards,
-Li Fei
+thanks,
 
-> Thanks,
-> Yasuaki Ishimatsu
->
-> >
-> >   static int try_to_freeze_tasks(bool user_only)
-> >   {
-> > @@ -36,7 +36,7 @@ static int try_to_freeze_tasks(bool user_only)
-> >
-> >   	do_gettimeofday(&start);
-> >
-> > -	end_time = jiffies + TIMEOUT;
-> > +	end_time = jiffies + msecs_to_jiffies(sys_freeze_process_timeout_msecs);
-> >
-> >   	if (!user_only)
-> >   		freeze_workqueues_begin();
-> >
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+greg k-h
