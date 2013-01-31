@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab3AaSuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 13:50:24 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:59620 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab3AaSuW (ORCPT
+	id S1756524Ab3AaSvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 13:51:47 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:35309 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab3AaSvo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 13:50:22 -0500
-Date: Thu, 31 Jan 2013 19:50:04 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 2/2] cpufreq: governors: Remove code redundancy between
- governors
-Message-ID: <20130131185004.GB20164@balto.lan>
-References: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
- <118c59263751862b1750ed9f96639a4e70069e66.1359653181.git.viresh.kumar@linaro.org>
+	Thu, 31 Jan 2013 13:51:44 -0500
+Date: Thu, 31 Jan 2013 04:25:35 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2 1/2] Fix wrong EOF compare
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Michal Nazarewicz <mina86@mina86.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andy Whitcroft <apw@shadowen.org>, Alexander Nyberg <alexn@dsv.su.se>
+References: <1357871401-7075-1-git-send-email-minchan@kernel.org>
+	<xa1tbocvby0s.fsf@mina86.com> <1358077473.32505.10@driftwood>
+	<50F2F9CD.6080904@infradead.org>
+In-Reply-To: <50F2F9CD.6080904@infradead.org> (from rdunlap@infradead.org on
+	Sun Jan 13 12:15:41 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1359627935.12062.1@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <118c59263751862b1750ed9f96639a4e70069e66.1359653181.git.viresh.kumar@linaro.org>
-X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 10:58:02PM +0530, Viresh Kumar wrote:
-> With the inclusion of following patches:
+On 01/13/2013 12:15:41 PM, Randy Dunlap wrote:
+> On 01/13/13 03:44, Rob Landley wrote:
+> > On 01/11/2013 08:21:55 AM, Michal Nazarewicz wrote:
+> >> On Fri, Jan 11 2013, Minchan Kim <minchan@kernel.org> wrote:
+> >> > The C standards allows the character type char to be singed or  
+> unsinged,
+> >> > depending on the platform and compiler. Most of systems uses  
+> signed char,
+> >> > but those based on PowerPC and ARM processors typically use  
+> unsigned char.
+> >> > This can lead to unexpected results when the variable is used to  
+> compare
+> >> > with EOF(-1). It happens my ARM system and this patch fixes it.
+> >> >
+> >> > Cc: Mel Gorman <mgorman@suse.de>
+> >> > Cc: Andy Whitcroft <apw@shadowen.org>
+> >> > Cc: Alexander Nyberg <alexn@dsv.su.se>
+> >> > Cc: Michal Nazarewicz <mina86@mina86.com>
+> >>
+> >> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> >>
+> >> > Cc: Randy Dunlap <rdunlap@infradead.org>
+> >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> >> > ---
+> >> >  Documentation/page_owner.c |    7 ++++---
+> >> >  1 file changed, 4 insertions(+), 3 deletions(-)
+> >
+> > My kernel tree doesn't have Documentation/page_owner.c, where do I  
+> find this file?
 > 
-> 9f4eb10 cpufreq: conservative: call dbs_check_cpu only when necessary
-> 772b4b1 cpufreq: ondemand: call dbs_check_cpu only when necessary
-> 
-> code redundancy is introduced again. Get rid of it.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
+> It's in -mm (mmotm), so Andrew can/should merge this ...
 
-Hi,
+Actually, why is a .c source file at the top level of Documentation?
 
-Tested-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+Example code is nice and all, but this name doesn't say "test" or  
+"example" or anything like that, and isn't collated into a subdirectory  
+with any kind of explanatory files like all the others are.
 
-Thanks,
-Fabio
-
--- 
-Fabio Baltieri
+Rob
