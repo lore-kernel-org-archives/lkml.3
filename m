@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab3AaDOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 22:14:42 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39123 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3AaDOj (ORCPT
+	id S1756882Ab3AaDPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 22:15:42 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58016 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756523Ab3AaDPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 22:14:39 -0500
+	Wed, 30 Jan 2013 22:15:40 -0500
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5109E189.7040105@jp.fujitsu.com>
-Date: Thu, 31 Jan 2013 12:14:17 +0900
+Message-ID: <5109E1C7.5020702@jp.fujitsu.com>
+Date: Thu, 31 Jan 2013 12:15:19 +0900
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
@@ -29,43 +29,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 acpi_bus_get_device() returns int not acpi_status.
 
-The patch change not to apply ACPI_FAILURE() to the return value of
+The patch change not to apply ACPI_SUCCESS() to the return value of
 acpi_bus_get_device().
 
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
-  drivers/acpi/device_pm.c |    6 +++---
-  1 file changed, 3 insertions(+), 3 deletions(-)
+  drivers/acpi/dock.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-pm/drivers/acpi/device_pm.c
+Index: linux-pm/drivers/acpi/dock.c
 ===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c	2013-01-31 11:04:30.000000000 +0900
-+++ linux-pm/drivers/acpi/device_pm.c	2013-01-31 11:28:51.366849592 +0900
-@@ -213,7 +213,7 @@ int acpi_pm_device_sleep_state(struct de
-  	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
-  	struct acpi_device *adev;
+--- linux-pm.orig/drivers/acpi/dock.c	2013-01-31 11:39:40.574849906 +0900
++++ linux-pm/drivers/acpi/dock.c	2013-01-31 11:50:11.329850213 +0900
+@@ -836,7 +836,7 @@ static ssize_t show_docked(struct device
   
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
-+	if (!handle || acpi_bus_get_device(handle, &adev)) {
-  		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
-  		return -ENODEV;
-  	}
-@@ -290,7 +290,7 @@ int acpi_pm_device_run_wake(struct devic
-  		return -EINVAL;
+  	struct dock_station *dock_station = dev->platform_data;
   
-  	handle = DEVICE_ACPI_HANDLE(phys_dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
-+	if (!handle || acpi_bus_get_device(handle, &adev)) {
-  		dev_dbg(phys_dev, "ACPI handle without context in %s!\n",
-  			__func__);
-  		return -ENODEV;
-@@ -334,7 +334,7 @@ int acpi_pm_device_sleep_wake(struct dev
-  		return -EINVAL;
-  
-  	handle = DEVICE_ACPI_HANDLE(dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
-+	if (!handle || acpi_bus_get_device(handle, &adev)) {
-  		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
-  		return -ENODEV;
-  	}
+-	if (ACPI_SUCCESS(acpi_bus_get_device(dock_station->handle, &tmp)))
++	if (!acpi_bus_get_device(dock_station->handle, &tmp))
+  		return snprintf(buf, PAGE_SIZE, "1\n");
+  	return snprintf(buf, PAGE_SIZE, "0\n");
+  }
 
