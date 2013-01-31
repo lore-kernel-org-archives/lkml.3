@@ -1,181 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab3AaN2L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 08:28:11 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51261 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab3AaN2I (ORCPT
+	id S1755050Ab3AaNiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 08:38:20 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:63943 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3AaNiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 08:28:08 -0500
-Message-ID: <510A70D7.8060109@ti.com>
-Date: Thu, 31 Jan 2013 15:25:43 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 31 Jan 2013 08:38:16 -0500
+X-Greylist: delayed 131460 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jan 2013 08:38:16 EST
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [RFC PATCH] Input: gpio_keys: Fix suspend/resume press event
- lost
-References: <1358774114-8281-1-git-send-email-ivan.khoronzhuk@ti.com> <20130121235718.GB16638@core.coreip.homeip.net> <20130122162434.5bcf3e14@notabene.brown> <5106A39A.5010402@ti.com> <20130129055122.2dcb9dd9@notabene.brown>
-In-Reply-To: <20130129055122.2dcb9dd9@notabene.brown>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.128]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+In-Reply-To: <CAF6AEGtH=RjmRjq0XuV345QG73a04xpD9V8JmxX_PO1v5awugg@mail.gmail.com>
+References: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com>
+	<1358253244-11453-3-git-send-email-maarten.lankhorst@canonical.com>
+	<CAF6AEGv2XqJB49Q-6BUtU80qMZx9tXHuwTV0Ds6c7L1J+4xwBw@mail.gmail.com>
+	<CAKMK7uGxbL=kZ1eeJYKVkCh0rz2gunmr8FBQWUNK5JsxMsjRgQ@mail.gmail.com>
+	<CAF6AEGtH=RjmRjq0XuV345QG73a04xpD9V8JmxX_PO1v5awugg@mail.gmail.com>
+Date: Thu, 31 Jan 2013 07:38:13 -0600
+Message-ID: <CAF6AEGu=mS7yYJjALGoDVUnbMzf0KyJhBjwT8hMJ1E=z9bJDOw@mail.gmail.com>
+Subject: Re: [PATCH 2/7] mutex: add support for reservation style locks
+From: Rob Clark <robdclark@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 08:51 PM, NeilBrown wrote:
-> On Mon, 28 Jan 2013 18:13:14 +0200 "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-> wrote:
->
->> On 01/22/2013 07:24 AM, NeilBrown wrote:
->>> On Mon, 21 Jan 2013 15:57:18 -0800 Dmitry Torokhov
->>> <dmitry.torokhov@gmail.com> wrote:
+On Wed, Jan 30, 2013 at 5:52 AM, Rob Clark <robdclark@gmail.com> wrote:
+> On Wed, Jan 30, 2013 at 5:08 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>> On Wed, Jan 30, 2013 at 2:07 AM, Rob Clark <robdclark@gmail.com> wrote:
+>>> ==========================
+>>> Basic problem statement:
+>>> ----- ------- ---------
+>>> GPU's do operations that commonly involve many buffers.  Those buffers
+>>> can be shared across contexts/processes, exist in different memory
+>>> domains (for example VRAM vs system memory), and so on.  And with
+>>> PRIME / dmabuf, they can even be shared across devices.  So there are
+>>> a handful of situations where the driver needs to wait for buffers to
+>>> become ready.  If you think about this in terms of waiting on a buffer
+>>> mutex for it to become available, this presents a problem because
+>>> there is no way to guarantee that buffers appear in a execbuf/batch in
+>>> the same order in all contexts.  That is directly under control of
+>>> userspace, and a result of the sequence of GL calls that an
+>>> application makes.  Which results in the potential for deadlock.  The
+>>> problem gets more complex when you consider that the kernel may need
+>>> to migrate the buffer(s) into VRAM before the GPU operates on the
+>>> buffer(s), which main in turn require evicting some other buffers (and
+>>> you don't want to evict other buffers which are already queued up to
+>>> the GPU), but for a simplified understanding of the problem you can
+>>> ignore this.
 >>>
->>>> Hi Ivan,
->>>>
->>>> On Mon, Jan 21, 2013 at 03:15:14PM +0200, Ivan Khoronzhuk wrote:
->>>>> Rebased on linux_omap/master.
->>>>>
->>>>> During suspend/resume the key press can be lost if time of resume
->>>>> sequence is significant.
->>>>>
->>>>> If press event cannot be remembered then the driver can read the
->>>>> current button state only in time of interrupt handling. But in some
->>>>> cases when time between IRQ and IRQ handler is significant we can
->>>>> read incorrect state. As a particular case, when device is in suspend
->>>>> we press wakupable key and up it back in a jiffy, the interrupt
->>>>> handler read the state of up but the interrupt source is press indeed.
->>>>> As a result, in a OS like android, we resume then suspend right away
->>>>> because the key state is not changed.
->>>>>
->>>>> This patch add to gpio_keys framework opportunity to recover lost of
->>>>> press key event at resuming. The variable "key_pressed" from
->>>>> gpio_button_data structure is not used for gpio keys, it is only used
->>>>> for gpio irq keys, so it is logically used to remember press lost
->>>>> while resuming.
->>>> The same could happen if you delay processing of interrupt long enough
->>>> during normal operation. If key is released by the time you get around
->>>> to reading it you will not see a key press.
->>>>
->>>> To me this sounds like you need to speed up your resume process so that
->>>> you can start serving interrupts quicker.
->>>>
->>> Agreed.  When I was looking at this I found that any genuine button press
->>> would have at least 70msec between press and release, while the device could
->>> wake up to the point of being able to handle interrupts in about 14msec.
->>> That is enough of a gap to make it pointless to try to 'fix' the code.
+>>> The algorithm that TTM came up with for dealing with this problem is
+>>> quite simple.  For each group of buffers (execbuf) that need to be
+>>> locked, the caller would be assigned a unique reservation_id, from a
+>>> global counter.  In case of deadlock in the process of locking all the
+>>> buffers associated with a execbuf, the one with the lowest
+>>> reservation_id wins, and the one with the higher reservation_id
+>>> unlocks all of the buffers that it has already locked, and then tries
+>>> again.
 >>>
->>> With enough verbose debugging enabled that 14msec can easily grow to
->>> hundreds, but then if  you have debugging enabled to can discipline yourself
->>> to hold the button for longer.
->>>
->>> Ivan: What sort of delay are you seeing between the button press and the
->>> interrupt routine running?  And can you measure how long the button is
->>> typically down for?
->>>
->>> NeilBrown
->> In my case I have the delay between the button press and the ISR
->> about 145ms. If the button down for 120ms the IRQ press event is
->> lost and if 160ms event is captured. I cannot speed up resume
->> process enough to guarantee correct work, so I wrote this fix.
+>>> Originally TTM implemented this algorithm on top of an event-queue and
+>>> atomic-ops, but Maarten Lankhorst realized that by merging this with
+>>> the mutex code we could take advantage of the existing mutex fast-path
+>>> code and result in a simpler solution, and so ticket_mutex was born.
+>>> (Well, there where also some additional complexities with the original
+>>> implementation when you start adding in cross-device buffer sharing
+>>> for PRIME.. Maarten could probably better explain.)
 >>
+>> I think the motivational writeup above is really nice, but the example
+>> code below is a bit wrong
+>>
+>>> How it is used:
+>>> --- -- -- -----
+>>>
+>>> A very simplified version:
+>>>
+>>>   int submit_execbuf(execbuf)
+>>>   {
+>>>       /* acquiring locks, before queuing up to GPU: */
+>>>       seqno = assign_global_seqno();
+>>>   retry:
+>>>       for (buf in execbuf->buffers) {
+>>>           ret = mutex_reserve_lock(&buf->lock, seqno);
+>>>           switch (ret) {
+>>>           case 0:
+>>>               /* we got the lock */
+>>>               break;
+>>>           case -EAGAIN:
+>>>               /* someone with a lower seqno, so unreserve and try again: */
+>>>               for (buf2 in reverse order starting before buf in
+>>> execbuf->buffers)
+>>>                   mutex_unreserve_unlock(&buf2->lock);
+>>>               goto retry;
+>>>           default:
+>>>               goto err;
+>>>           }
+>>>       }
+>>>
+>>>       /* now everything is good to go, submit job to GPU: */
+>>>       ...
+>>>   }
+>>>
+>>>   int finish_execbuf(execbuf)
+>>>   {
+>>>       /* when GPU is finished: */
+>>>       for (buf in execbuf->buffers)
+>>>           mutex_unreserve_unlock(&buf->lock);
+>>>   }
+>>> ==========================
+>>
+>> Since gpu command submission is all asnyc (hopefully at least) we
+>> don't unlock once it completes, but right away after the commands are
+>> submitted. Otherwise you wouldn't be able to submit new execbufs using
+>> the same buffer objects (and besides, holding locks while going back
+>> out to userspace is evil).
 >
-> 145ms does sound like a long time.
-> You should be able to get precise timings by putting a printk in various
-> parts of the code and ensuring the kernel logs are getting precise timestamps.
+> right.. but I was trying to simplify the explanation for non-gpu
+> folk.. maybe that was an over-simplification ;-)
 >
-> Then you could see if the delay is between resume starting and the ISR
-> running, or between the ISR and the gpio_work_func getting scheduled.
->
-> I assume that you don't have ->debounce_interval set....
->
-> If the ISR is running soon enough, it might be possible to read the GPIO from
-> the ISR - I think that would be a cleaner solution.
->
-> If not, then you will need something that interpolates an extra key press.
-> In that case I would suggest my original patch - it seems simpler than yours
-> and doesn't make a special case out of suspend.  As Dmitry said, any delay
-> could cause a problem.
-> My patch simply ensures that there is at least one button event for each
-> interrupt by generating an extra event for the inverse of the current button
-> position.  If that state had already been noticed, the input subsystem will
-> filter the extra event out so it won't be visible elsewhere.
->
-> For reference, my original patch is below.
->
-> NeilBrown
->
-> [PATCH] Input: gpio_keys - ensure we don't miss key-presses during resume.
->
-> If the latency of resume means we don't poll the key status until
-> after it has been released, we can lose the keypress which woke the
-> device.
->
-> So on each interrupt, record that a press is pending, and in that
-> case, report both the up and down event, ordered such that the second
-> event is that one that reflects the current state.
->
-> One event will normally be swallowed by the input layer if there was
-> no change, but the result will be that every interrupt will produce at
-> least one event.
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
->
-> diff --git a/drivers/input/keyboard/gpio_keys.c
-> b/drivers/input/keyboard/gpio_keys.c index 62bfce4..961e5e1 100644
-> --- a/drivers/input/keyboard/gpio_keys.c
-> +++ b/drivers/input/keyboard/gpio_keys.c
-> @@ -40,6 +40,7 @@ struct gpio_button_data {
->   	spinlock_t lock;
->   	bool disabled;
->   	bool key_pressed;
-> +	bool pending;
->   };
->   
->   struct gpio_keys_drvdata {
-> @@ -335,6 +336,14 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata) if (state)
->   			input_event(input, type, button->code, button->value); } else {
-> +		if (type == EV_KEY && bdata->pending) {
-> +			/* Before reporting the observed state, report the
-> +			 * alternate to be sure that a change is seen.
-> +			 */
-> +			bdata->pending = 0;
-> +			input_event(input, type, button->code, !state);
-> +			input_sync(input);
-> +		}
->   		input_event(input, type, button->code, !!state);
->   	}Yes it si
->   	input_sync(input);
-> @@ -361,6 +370,7 @@ static irqreturn_t gpio_keys_gpio_isr(int irq, void *dev_id)
->   	BUG_ON(irq != bdata->irq);
->   
-> +	bdata->pending = true;
->   	if (bdata->timer_debounce)
->   		mod_timer(&bdata->timer,
->   			jiffies + msecs_to_jiffies(bdata->timer_debounce));
 
-The delay is between resume starting and the ISR running,
-It is measured with oscilloscope between signal on button pin and
-before irq enabling. And I doubly checked it by printk() right in
-the ISR. So I cannot read the button state right in the ISR.
+Ok, a bit expanded version.. I meant to send this yesterday, but I forgot..
 
-Your patch is simpler but it doesn't take into account one situation.
-It is unlikely but what if the event is lost at 16:00 and reproduced
-at 17:30, in some cases it is better to lose the event than recover it
-out of time.
+============================
+Basic problem statement:
+----- ------- ---------
 
-My patch works only for suspend/resume and ensure that reproduced
-event is issued at time of lost.
+GPU's do operations that commonly involve many buffers.  Those buffers
+can be shared across contexts/processes, exist in different memory
+domains (for example VRAM vs system memory), and so on.  And with
+PRIME / dmabuf, they can even be shared across devices.  So there are
+a handful of situations where the driver needs to wait for buffers to
+become ready.  If you think about this in terms of waiting on a buffer
+mutex for it to become available, this presents a problem because
+there is no way to guarantee that buffers appear in a execbuf/batch in
+the same order in all contexts.  That is directly under control of
+userspace, and a result of the sequence of GL calls that an application
+makes.  Which results in the potential for deadlock.  The problem gets
+more complex when you consider that the kernel may need to migrate the
+buffer(s) into VRAM before the GPU operates on the buffer(s), which
+may in turn require evicting some other buffers (and you don't want to
+evict other buffers which are already queued up to the GPU), but for a
+simplified understanding of the problem you can ignore this.
+
+The algorithm that TTM came up with for dealing with this problem is
+quite simple.  For each group of buffers (execbuf) that need to be
+locked, the caller would be assigned a unique reservation_id, from a
+global counter.  In case of deadlock in the process of locking all the
+buffers associated with a execbuf, the one with the lowest
+reservation_id wins, and the one with the higher reservation_id
+unlocks all of the buffers that it has already locked, and then tries
+again.
+
+Originally TTM implemented this algorithm on top of an event-queue and
+atomic-ops, but Maarten Lankhorst realized that by merging this with
+the mutex code we could take advantage of the existing mutex fast-path
+code and result in a simpler solution, and so ticket_mutex was born.
+(Well, there where also some additional complexities with the original
+implementation when you start adding in cross-device buffer sharing
+for PRIME.. Maarten could probably better explain.)
 
 
--- 
-Regards,
-Ivan Khoronzhuk
+How it is used:
+--- -- -- -----
 
+A very simplified version:
+
+    int lock_execbuf(execbuf)
+    {
+        struct buf *res_buf = NULL;
+
+        /* acquiring locks, before queuing up to GPU: */
+        seqno = assign_global_seqno();
+
+    retry:
+        for (buf in execbuf->buffers) {
+            if (buf == res_buf) {
+                res_buf = NULL;
+                continue;
+            }
+            ret = mutex_reserve_lock(&buf->lock, seqno);
+            if (ret < 0)
+                goto err;
+        }
+
+        /* now everything is good to go, submit job to GPU: */
+        ...
+
+        return 0;
+
+    err:
+        for (all buf2 before buf in execbuf->buffers)
+            mutex_unreserve_unlock(&buf2->lock);
+        if (res_buf)
+            mutex_unreserve_unlock(&res_buf->lock);
+
+        if (ret == -EAGAIN) {
+            /* we lost out in a seqno race, lock and retry.. */
+            mutex_reserve_lock_slow(&buf->lock, seqno);
+            res_buf = buf;
+            goto retry;
+        }
+
+        return ret;
+    }
+
+    int unlock_execbuf(execbuf)
+    {
+        /* when GPU is finished; */
+        for (buf in execbuf->buffers)
+            mutex_unreserve_unlock(&buf->lock);
+    }
+
+
+What Really Happens:
+---- ------ -------
+
+(TODO maybe this should be Documentation/dma-fence-reservation.txt and
+this file should just refer to it??  Well, we can shuffle things around
+later..)
+
+In real life, you want to keep the GPU operating asynchronously to the
+CPU as much as possible, and not have to wait to queue up more work for
+the GPU until the previous work is finished.  So in practice, you are
+unlocking (unreserving) all the buffers once the execbuf is queued up
+to the GPU.  The dma-buf fence objects, and the reservation code which
+manages the fence objects (and is the primary user of ticket_mutex)
+takes care of the synchronization of different buffer users from this
+point.
+
+If you really left the buffers locked until you got some irq back from
+the GPU to let you know that the GPU was finished, then you would be
+unable to queue up more rendering involving the same buffer(s), which
+would be quite horrible for performance.
+
+To just understand ticket_mutex, you can probably ignore this section.
+If you want to make your driver share buffers with a GPU properly, then
+you really need to be using reservation/fence, so you should read on.
+
+NOTE: the reservation object and fence are split out from dma-buf so
+      that a driver can use them both for it's own internal buffers
+      and for imported dma-bufs, without having to create a dma-buf
+      for every internal buffer.
+
+For each rendering command queued up to the GPU, a fence object is
+created. You can think of the fence as a sort of waitqueue, except that
+(if it is supported by other devices waiting on the same buffer), it
+can be used for hw->hw signaling, so that CPU involvement is not
+required.  A fence object is a transient, one-use, object, with two
+states.  Initially it is created un-signaled.  And later after the hw
+is done with the operation, it becomes signaled.
+
+(TODO probably should refer to a different .txt with more details
+about fences, hw->hw vs hw->sw vs sw->sw signaling, etc)
+
+The same fence is attached to the reservation_object of all buffers
+involved in a rendering command.  In the fence_excl slot, if the buffer
+is being written to, otherwise in one of the fence_shared slots.  (A
+buffer can safely have many readers at once.)
+
+If when preparing to submit the rendering command, a buffer has an un-
+signaled exclusive fence attached, then there must be some way to wait
+for that fence to become signaled before the hw uses that buffer.  In
+the simple case, if that fence isn't one that the driver understands
+how to instruct the hw to wait for, then it must call fence_wait() to
+block until other devices have finished writing to the buffer.  But if
+the driver has a way to instruct the hw to wait until the fence is
+signaled, it can just emit commands to instruct the GPU to wait in
+order to avoid blocking.
+
+NOTE: in actuality, if the fence is created on the same ring, and you
+      therefore know that it will be signaled by the earlier render
+      command before the hw sees the current render command, then
+      inserting fence cmds to the hw can be skipped.
+
+============================
+
+It made me realize we also need some docs about fence/reservation..
+not sure if I'll get a chance before fosdem, but I can take a stab at
+that too
+
+BR,
+-R
