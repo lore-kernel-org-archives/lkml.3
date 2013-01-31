@@ -1,259 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab3AaLWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 06:22:48 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43999 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab3AaLWm (ORCPT
+	id S1754398Ab3AaLX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 06:23:28 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:45083 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab3AaLXZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 06:22:42 -0500
-From: Hebbar Gururaja <gururaja.hebbar@ti.com>
-To: <broonie@opensource.wolfsonmicro.com>, <alsa-devel@alsa-project.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <tony@atomide.com>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <rob@landley.net>,
-        <grant.likely@secretlab.ca>
-Subject: [PATCH v3 1/4] ASoC: tlv320aic3x: Convert mic bias to a supply widget
-Date: Thu, 31 Jan 2013 16:53:10 +0530
-Message-ID: <1359631394-9511-2-git-send-email-gururaja.hebbar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359631394-9511-1-git-send-email-gururaja.hebbar@ti.com>
-References: <1359631394-9511-1-git-send-email-gururaja.hebbar@ti.com>
+	Thu, 31 Jan 2013 06:23:25 -0500
+Date: Thu, 31 Jan 2013 11:23:03 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "mporter@ti.com" <mporter@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "nsekhar@ti.com" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "hs@denx.de" <hs@denx.de>, "ido@wizery.com" <ido@wizery.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/3] mmc: davinci_mmc: add DT support
+Message-ID: <20130131112303.GA7235@e106331-lin.cambridge.arm.com>
+References: <1359628387-14437-1-git-send-email-prakash.pm@ti.com>
+ <1359628387-14437-3-git-send-email-prakash.pm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1359628387-14437-3-git-send-email-prakash.pm@ti.com>
+Thread-Topic: [PATCH 2/3] mmc: davinci_mmc: add DT support
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 31 Jan 2013 11:23:08.0177 (UTC) FILETIME=[586BF810:01CDFFA5]
+X-MC-Unique: 113013111230902901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert MicBias widgets to supply widget.
+Hello,
 
-On tlv320aic3x, Mic bias power on/off shares the same register bits
-with output mic bias voltage.  So, when power on mic bias, we need
-reclaim it to voltage value.
+I have a few comments on the devicetree binding and the way it's parsed.
 
-Provide a new platform data so that the micbias voltage can be sent
-according to board requirement. Now since tlc320aic3x codec driver
-is DT aware, update dt files and functions to handle this new
-"micbias-vg"  platform data.
+On Thu, Jan 31, 2013 at 10:33:06AM +0000, Manjunathappa, Prakash wrote:
+> Adds device tree support for davinci_mmc. Also add
+> binding documentation.
+> Tested with non-dma PIO mode and without GPIO
+> card_detect/write_protect option because of
+> dependencies on EDMA and GPIO modules DT support.
+> 
+> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+> Cc: linux-mmc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: cjb@laptop.org
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: mporter@ti.com
+> ---
+>  .../devicetree/bindings/mmc/davinci_mmc.txt        |   23 +++++++
+>  drivers/mmc/host/davinci_mmc.c                     |   69 +++++++++++++++++++-
+>  2 files changed, 91 insertions(+), 1 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/davinci_mmc.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mmc/davinci_mmc.txt b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
+> new file mode 100644
+> index 0000000..144bee6
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
+> @@ -0,0 +1,23 @@
+> +* TI Highspeed MMC host controller for DaVinci
+> +
+> +The Highspeed MMC Host Controller on TI DaVinci family
+> +provides an interface for MMC, SD and SDIO types of memory cards.
+> +
+> +This file documents differences between the core properties described
+> +by mmc.txt and the properties used by the davinci_mmc driver.
+> +
+> +Required properties:
+> +- compatible:
+> + Should be "ti,davinci_mmc", for davinci controllers
 
-Because of sharing of bits, when enabling the micbias, voltage also
-needs to be updated. So use SND_SOC_DAPM_POST_PMU & SND_SOC_DAPM_PRE_PMD
-macro to create an event to handle this.
+"ti,davinci-mmc" (with '-' rather than '_') would be preferable.
 
-Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
----
-Changes in v3
-	 - New patch
+> +
+> +Optional properties:
+> +- bus-width: Number of data lines, can be <1>, <4>, or <8>, default <1>
+> +- max-frequency: maximum operating clock frequency.
 
-:100644 100644 e7b98f4... f47c3f5... M	Documentation/devicetree/bindings/sound/tlv320aic3x.txt
-:100644 100644 ffd9bc7... 9407fd0... M	include/sound/tlv320aic3x.h
-:100644 100644 4989143... 65d09d6... M	sound/soc/codecs/tlv320aic3x.c
-:100644 100644 6db3c41... e521ac3... M	sound/soc/codecs/tlv320aic3x.h
- .../devicetree/bindings/sound/tlv320aic3x.txt      |    6 ++
- include/sound/tlv320aic3x.h                        |   10 +++
- sound/soc/codecs/tlv320aic3x.c                     |   83 ++++++++++++++++++--
- sound/soc/codecs/tlv320aic3x.h                     |    4 +
- 4 files changed, 97 insertions(+), 6 deletions(-)
+You said you only described differences from mmc.txt, but this is listed in
+mmc.txt.
 
-diff --git a/Documentation/devicetree/bindings/sound/tlv320aic3x.txt b/Documentation/devicetree/bindings/sound/tlv320aic3x.txt
-index e7b98f4..f47c3f5 100644
---- a/Documentation/devicetree/bindings/sound/tlv320aic3x.txt
-+++ b/Documentation/devicetree/bindings/sound/tlv320aic3x.txt
-@@ -11,6 +11,12 @@ Optional properties:
- 
- - gpio-reset - gpio pin number used for codec reset
- - ai3x-gpio-func - <array of 2 int> - AIC3X_GPIO1 & AIC3X_GPIO2 Functionality
-+- ai3x-micbias-vg - MicBias Voltage required.
-+	1 - MICBIAS output is powered to 2.0V,
-+	2 - MICBIAS output is powered to 2.5V,
-+	3 - MICBIAS output is connected to AVDD,
-+	If this node is not mentioned or if the value is incorrect, then MicBias
-+	is powered down.
- 
- Example:
- 
-diff --git a/include/sound/tlv320aic3x.h b/include/sound/tlv320aic3x.h
-index ffd9bc7..9407fd0 100644
---- a/include/sound/tlv320aic3x.h
-+++ b/include/sound/tlv320aic3x.h
-@@ -46,6 +46,13 @@ enum {
- 	AIC3X_GPIO2_FUNC_BUTTON_PRESS_IRQ	= 15
- };
- 
-+enum aic3x_micbias_voltage {
-+	AIC3X_MICBIAS_OFF = 0,
-+	AIC3X_MICBIAS_2_0V = 1,
-+	AIC3X_MICBIAS_2_5V = 2,
-+	AIC3X_MICBIAS_AVDDV = 3,
-+};
-+
- struct aic3x_setup_data {
- 	unsigned int gpio_func[2];
- };
-@@ -53,6 +60,9 @@ struct aic3x_setup_data {
- struct aic3x_pdata {
- 	int gpio_reset; /* < 0 if not used */
- 	struct aic3x_setup_data *setup;
-+
-+	/* Selects the micbias voltage */
-+	enum aic3x_micbias_voltage micbias_vg;
- };
- 
- #endif
-diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
-index 4989143..65d09d6 100644
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -85,6 +85,9 @@ struct aic3x_priv {
- #define AIC3X_MODEL_33 1
- #define AIC3X_MODEL_3007 2
- 	u16 model;
-+
-+	/* Selects the micbias voltage */
-+	enum aic3x_micbias_voltage micbias_vg;
- };
- 
- /*
-@@ -195,6 +198,37 @@ static int snd_soc_dapm_put_volsw_aic3x(struct snd_kcontrol *kcontrol,
- 	return ret;
- }
- 
-+/*
-+ * mic bias power on/off share the same register bits with
-+ * output voltage of mic bias. when power on mic bias, we
-+ * need reclaim it to voltage value.
-+ * 0x0 = Powered off
-+ * 0x1 = MICBIAS output is powered to 2.0V,
-+ * 0x2 = MICBIAS output is powered to 2.5V
-+ * 0x3 = MICBIAS output is connected to AVDD
-+ */
-+static int mic_bias_event(struct snd_soc_dapm_widget *w,
-+	struct snd_kcontrol *kcontrol, int event)
-+{
-+	struct snd_soc_codec *codec = w->codec;
-+	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
-+
-+	switch (event) {
-+	case SND_SOC_DAPM_POST_PMU:
-+		/* change mic bias voltage to user defined */
-+		snd_soc_update_bits(codec, MICBIAS_CTRL,
-+				MICBIAS_LEVEL_MASK,
-+				aic3x->micbias_vg << MICBIAS_LEVEL_SHIFT);
-+		break;
-+
-+	case SND_SOC_DAPM_PRE_PMD:
-+		snd_soc_update_bits(codec, MICBIAS_CTRL,
-+				MICBIAS_LEVEL_MASK, 0);
-+		break;
-+	}
-+	return 0;
-+}
-+
- static const char *aic3x_left_dac_mux[] = { "DAC_L1", "DAC_L3", "DAC_L2" };
- static const char *aic3x_right_dac_mux[] = { "DAC_R1", "DAC_R3", "DAC_R2" };
- static const char *aic3x_left_hpcom_mux[] =
-@@ -596,12 +630,9 @@ static const struct snd_soc_dapm_widget aic3x_dapm_widgets[] = {
- 			 AIC3X_ASD_INTF_CTRLA, 0, 3, 3, 0),
- 
- 	/* Mic Bias */
--	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias 2V",
--			 MICBIAS_CTRL, 6, 3, 1, 0),
--	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias 2.5V",
--			 MICBIAS_CTRL, 6, 3, 2, 0),
--	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias AVDD",
--			 MICBIAS_CTRL, 6, 3, 3, 0),
-+	SND_SOC_DAPM_SUPPLY("Mic Bias", MICBIAS_CTRL, 6, 0,
-+			 mic_bias_event,
-+			 SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
- 
- 	/* Output mixers */
- 	SND_SOC_DAPM_MIXER("Left Line Mixer", SND_SOC_NOPM, 0, 0,
-@@ -1386,6 +1417,24 @@ static int aic3x_probe(struct snd_soc_codec *codec)
- 	if (aic3x->model == AIC3X_MODEL_3007)
- 		snd_soc_add_codec_controls(codec, &aic3x_classd_amp_gain_ctrl, 1);
- 
-+	/* set mic bias voltage */
-+	switch (aic3x->micbias_vg) {
-+	case AIC3X_MICBIAS_2_0V:
-+	case AIC3X_MICBIAS_2_5V:
-+	case AIC3X_MICBIAS_AVDDV:
-+		snd_soc_update_bits(codec, MICBIAS_CTRL,
-+				    MICBIAS_LEVEL_MASK,
-+				    (aic3x->micbias_vg) << MICBIAS_LEVEL_SHIFT);
-+		break;
-+	case AIC3X_MICBIAS_OFF:
-+		/*
-+		 * noting to do. target won't enter here. This is just to avoid
-+		 * compile time warning "warning: enumeration value
-+		 * 'AIC3X_MICBIAS_OFF' not handled in switch"
-+		 */
-+		break;
-+	}
-+
- 	aic3x_add_widgets(codec);
- 	list_add(&aic3x->list, &reset_list);
- 
-@@ -1461,6 +1510,7 @@ static int aic3x_i2c_probe(struct i2c_client *i2c,
- 	struct aic3x_setup_data *ai3x_setup;
- 	struct device_node *np = i2c->dev.of_node;
- 	int ret;
-+	u32 value;
- 
- 	aic3x = devm_kzalloc(&i2c->dev, sizeof(struct aic3x_priv), GFP_KERNEL);
- 	if (aic3x == NULL) {
-@@ -1474,6 +1524,7 @@ static int aic3x_i2c_probe(struct i2c_client *i2c,
- 	if (pdata) {
- 		aic3x->gpio_reset = pdata->gpio_reset;
- 		aic3x->setup = pdata->setup;
-+		aic3x->micbias_vg = pdata->micbias_vg;
- 	} else if (np) {
- 		ai3x_setup = devm_kzalloc(&i2c->dev, sizeof(*ai3x_setup),
- 								GFP_KERNEL);
-@@ -1493,6 +1544,26 @@ static int aic3x_i2c_probe(struct i2c_client *i2c,
- 			aic3x->setup = ai3x_setup;
- 		}
- 
-+		if (!of_property_read_u32(np, "ai3x-micbias-vg", &value)) {
-+			switch (value) {
-+			case 1 :
-+				aic3x->micbias_vg = AIC3X_MICBIAS_2_0V;
-+				break;
-+			case 2 :
-+				aic3x->micbias_vg = AIC3X_MICBIAS_2_5V;
-+				break;
-+			case 3 :
-+				aic3x->micbias_vg = AIC3X_MICBIAS_AVDDV;
-+				break;
-+			default :
-+				aic3x->micbias_vg = AIC3X_MICBIAS_OFF;
-+				dev_err(&i2c->dev, "Unsuitable MicBias voltage "
-+							"found in DT\n");
-+			}
-+		} else {
-+			aic3x->micbias_vg = AIC3X_MICBIAS_OFF;
-+		}
-+
- 	} else {
- 		aic3x->gpio_reset = -1;
- 	}
-diff --git a/sound/soc/codecs/tlv320aic3x.h b/sound/soc/codecs/tlv320aic3x.h
-index 6db3c41..e521ac3 100644
---- a/sound/soc/codecs/tlv320aic3x.h
-+++ b/sound/soc/codecs/tlv320aic3x.h
-@@ -238,6 +238,10 @@
- /* Default input volume */
- #define DEFAULT_GAIN    0x20
- 
-+/* MICBIAS Control Register */
-+#define MICBIAS_LEVEL_SHIFT	(6)
-+#define MICBIAS_LEVEL_MASK	(3 << 6)
-+
- /* headset detection / button API */
- 
- /* The AIC3x supports detection of stereo headsets (GND + left + right signal)
--- 
-1.7.9.5
+> +- caps: Check for Host capabilities in <linux/mmc/host.h>
+
+Is this a set of binary flags? Also, is this Linux-specific?
+
+I really don't think this should be in the devicetree binding. Why do you need
+this?
+
+> +- version: version of controller.
+
+This should be encoded as part of the compatible string.
+
+> +Example:
+> +	mmc1: mmc@0x4809c000 {
+> +		compatible = "ti,omap4-hsmmc";
+> +		reg = <0x4809c000 0x400>;
+> +		bus-width = <4>;
+> +	};
+
+It would be nice if the example referred to this binding rather than another.
+
+> diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
+> index 382b79d..ce6730d 100644
+> --- a/drivers/mmc/host/davinci_mmc.c
+> +++ b/drivers/mmc/host/davinci_mmc.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/dma-mapping.h>
+>  #include <linux/edma.h>
+>  #include <linux/mmc/mmc.h>
+> +#include <linux/of.h>
+>  
+>  #include <linux/platform_data/mmc-davinci.h>
+>  
+> @@ -1156,16 +1157,75 @@ static void __init init_mmcsd_host(struct mmc_davinci_host *host)
+>  
+>  	mmc_davinci_reset_ctrl(host, 0);
+>  }
+> +#ifdef CONFIG_OF
+> +static struct davinci_mmc_config
+> +	*mmc_of_get_pdata(struct platform_device *pdev)
+> +{
+> +	struct device_node *np;
+> +	struct davinci_mmc_config *pdata = NULL;
+> +	u32 data;
+> +	int ret;
+> +
+> +	pdata = pdev->dev.platform_data;
+> +	if (!pdata) {
+> +		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+> +		if (!pdata) {
+> +			dev_err(&pdev->dev, "Failed to allocate memory for struct davinci_mmc_config\n");
+> +			goto nodata;
+> +		}
+> +	}
+
+Why do you need to conditionally allocate this? This only seems to be called
+once.
+
+> +
+> +	np = pdev->dev.of_node;
+> +	if (!np)
+> +		goto nodata;
+
+Why not just return immediately here? You do nothing special at nodata.
+
+> +
+> +	ret = of_property_read_u32(np, "bus-width", &data);
+> +	if (ret)
+> +		dev_info(&pdev->dev, "wires not specified, defaulting to 4 bit mode\n");
+> +	pdata->wires = data;
+
+That dev_info doesn't seem to match up with what the next line is doing (data
+might not have been initialised). Also, unless I've misunderstood, it doesn't
+match up with the default of 1 mentioned in the binding doc.
+
+> +
+> +	ret = of_property_read_u32(np, "max-frequency", &data);
+> +	if (ret)
+> +		dev_info(&pdev->dev, "max-frequency not specified, defaulting to 25MHz\n");
+> +	pdata->max_freq = data;
+
+Again, the dev_info doesn't match up with the line below it. I notice
+the default's not one specified in the binding. Is this frequency chosen
+from the hardware docs, or is it an arbitrary choice. If not arbitrary,
+it might be worth specifying in the binding.
+
+
+> +
+> +	ret = of_property_read_u32(np, "caps", &data);
+> +	if (ret)
+> +		dev_info(&pdev->dev, "card capability not specified\n");
+> +	pdata->caps = data;
+
+Again, you may be using garbage data.
+
+> +
+> +	ret = of_property_read_u32(np, "version", &data);
+> +	if (ret)
+> +		dev_err(&pdev->dev, "version not specified\n");
+> +	pdata->version = data;
+
+And again, though I'd prefer to see this property go entirely.
+
+> +
+> +nodata:
+> +	return pdata;
+> +}
+> +
+> +#else
+> +static struct davinci_mmc_config
+> +	*mmc_of_get_pdata(struct platform_device *pdev)
+> +{
+> +	return pdev->dev.platform_data;
+> +}
+> +#endif
+
+This is poorly named if it's required for !CONFIG_OF.
+
+Why not change this to something like mmc_parse_pdata, returning an
+error code. For !CONFIG_OF, it can simply return 0, which should be less
+surprising for anyone else reading this code.
+
+>  
+>  static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+>  {
+> -	struct davinci_mmc_config *pdata = pdev->dev.platform_data;
+> +	struct davinci_mmc_config *pdata = NULL;
+>  	struct mmc_davinci_host *host = NULL;
+>  	struct mmc_host *mmc = NULL;
+>  	struct resource *r, *mem = NULL;
+>  	int ret = 0, irq = 0;
+>  	size_t mem_size;
+>  
+> +	pdata = mmc_of_get_pdata(pdev);
+> +	if (pdata == NULL) {
+> +		dev_err(&pdev->dev, "Can not get platform data\n");
+> +		return -ENOENT;
+> +	}
+> +
+>  	/* REVISIT:  when we're fully converted, fail if pdata is NULL */
+>  
+>  	ret = -ENODEV;
+> @@ -1403,11 +1463,18 @@ static const struct dev_pm_ops davinci_mmcsd_pm = {
+>  #define davinci_mmcsd_pm_ops NULL
+>  #endif
+>  
+> +static const struct of_device_id davinci_mmc_of_match[] = {
+> +	{.compatible = "ti,davinci_mmc", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, davinci_mmc_of_match);
+
+For supporting multiple versions, you could either use some auxdata
+here, or check each one in davince_mmcsd_probe.
+
+> +
+>  static struct platform_driver davinci_mmcsd_driver = {
+>  	.driver		= {
+>  		.name	= "davinci_mmc",
+>  		.owner	= THIS_MODULE,
+>  		.pm	= davinci_mmcsd_pm_ops,
+> +		.of_match_table = of_match_ptr(davinci_mmc_of_match),
+>  	},
+>  	.remove		= __exit_p(davinci_mmcsd_remove),
+>  };
+
+Where does davinci_mmcsd_probe get called from, and how is the
+of_match_table used? Should it not be set as .probe on the driver?
+
+Thanks,
+Mark.
+
 
