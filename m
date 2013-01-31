@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3AaTY7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 14:24:59 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:49680 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756609Ab3AaTYz (ORCPT
+	id S1756886Ab3AaTZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 14:25:07 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:45705 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756718Ab3AaTY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 14:24:55 -0500
+	Thu, 31 Jan 2013 14:24:58 -0500
 From: Ruslan Bilovol <ruslan.bilovol@ti.com>
 To: tony@atomide.com, linux@arm.linux.org.uk,
         linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ARM: OMAP2+: SoC name and revision unification
-Date: Thu, 31 Jan 2013 21:24:43 +0200
-Message-Id: <1359660284-5225-2-git-send-email-ruslan.bilovol@ti.com>
+Subject: [PATCH 2/2] ARM: OMAP2+: Export SoC information to userspace
+Date: Thu, 31 Jan 2013 21:24:44 +0200
+Message-Id: <1359660284-5225-3-git-send-email-ruslan.bilovol@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359660284-5225-1-git-send-email-ruslan.bilovol@ti.com>
 References: <1359660284-5225-1-git-send-email-ruslan.bilovol@ti.com>
@@ -21,266 +21,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a long story where for each new generation of
-OMAP we used different approaches for creating
-strings for SoCs names and revisions that this patch
-fixes. It makes future exporting of this information
-to SoC infrastructure easier.
+In some situations it is useful for userspace to
+know some SoC-specific information. For example,
+this may be used for deciding what kernel module to
+use or how to better configure some settings etc.
+This patch exports OMAP SoC information to userspace
+using existing in Linux kernel SoC infrastructure.
+
+This information can be read under
+/sys/devices/socX directory
 
 Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
 ---
- arch/arm/mach-omap2/id.c |   87 ++++++++++++++++++++++++++--------------------
- 1 file changed, 50 insertions(+), 37 deletions(-)
+ arch/arm/mach-omap2/Kconfig  |    1 +
+ arch/arm/mach-omap2/common.h |    8 ++++++
+ arch/arm/mach-omap2/id.c     |   65 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/io.c     |    1 +
+ 4 files changed, 75 insertions(+)
 
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index fe926e0..47da0bd 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -17,6 +17,7 @@ config ARCH_OMAP2PLUS
+ 	select PROC_DEVICETREE if PROC_FS
+ 	select SPARSE_IRQ
+ 	select USE_OF
++	select SOC_BUS
+ 	help
+ 	  Systems based on OMAP2, OMAP3, OMAP4 or OMAP5
+ 
+diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+index 948bcaa..2a6f866 100644
+--- a/arch/arm/mach-omap2/common.h
++++ b/arch/arm/mach-omap2/common.h
+@@ -111,6 +111,14 @@ void ti81xx_init_late(void);
+ void omap4430_init_late(void);
+ int omap2_common_pm_late_init(void);
+ 
++#ifdef CONFIG_SOC_BUS
++void omap_soc_device_init(void);
++#else
++static inline void omap_soc_device_init(void)
++{
++}
++#endif
++
+ #if defined(CONFIG_SOC_OMAP2420) || defined(CONFIG_SOC_OMAP2430)
+ void omap2xxx_restart(char mode, const char *cmd);
+ #else
 diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
-index 45cc7ed4..436fcf9 100644
+index 436fcf9..5724ee8 100644
 --- a/arch/arm/mach-omap2/id.c
 +++ b/arch/arm/mach-omap2/id.c
-@@ -31,8 +31,11 @@
- #define OMAP4_SILICON_TYPE_STANDARD		0x01
- #define OMAP4_SILICON_TYPE_PERFORMANCE		0x02
- 
-+#define OMAP_SOC_MAX_NAME_LENGTH		16
+@@ -18,6 +18,11 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <linux/slab.h>
 +
- static unsigned int omap_revision;
--static const char *cpu_rev;
-+static char cpu_name[OMAP_SOC_MAX_NAME_LENGTH];
-+static char cpu_rev[OMAP_SOC_MAX_NAME_LENGTH];
- u32 omap_features;
++#ifdef CONFIG_SOC_BUS
++#include <linux/sys_soc.h>
++#endif
  
- unsigned int omap_rev(void)
-@@ -169,9 +172,12 @@ void __init omap2xxx_check_revision(void)
- 		j = i;
- 	}
+ #include <asm/cputype.h>
  
--	pr_info("OMAP%04x", omap_rev() >> 16);
-+	sprintf(cpu_name, "OMAP%04x", omap_rev() >> 16);
-+	sprintf(cpu_rev, "ES%x", (omap_rev() >> 12) & 0xf);
+@@ -572,3 +577,63 @@ void __init omap2_set_globals_tap(u32 class, void __iomem *tap)
+ 	else
+ 		tap_prod_id = 0x0208;
+ }
 +
-+	pr_info("%s", cpu_name);
- 	if ((omap_rev() >> 8) & 0x0f)
--		pr_info("ES%x", (omap_rev() >> 12) & 0xf);
-+		pr_info("%s", cpu_rev);
- 	pr_info("\n");
- }
- 
-@@ -181,8 +187,7 @@ void __init omap2xxx_check_revision(void)
- 
- static void __init omap3_cpuinfo(void)
- {
--	const char *cpu_name;
--
-+	const char *omap3_cpu_name;
- 	/*
- 	 * OMAP3430 and OMAP3530 are assumed to be same.
- 	 *
-@@ -191,28 +196,30 @@ static void __init omap3_cpuinfo(void)
- 	 * and CPU class bits.
- 	 */
- 	if (cpu_is_omap3630()) {
--		cpu_name = "OMAP3630";
-+		omap3_cpu_name = "OMAP3630";
- 	} else if (soc_is_am35xx()) {
--		cpu_name = (omap3_has_sgx()) ? "AM3517" : "AM3505";
-+		omap3_cpu_name = (omap3_has_sgx()) ? "AM3517" : "AM3505";
- 	} else if (cpu_is_ti816x()) {
--		cpu_name = "TI816X";
-+		omap3_cpu_name = "TI816X";
- 	} else if (soc_is_am335x()) {
--		cpu_name =  "AM335X";
-+		omap3_cpu_name =  "AM335X";
- 	} else if (cpu_is_ti814x()) {
--		cpu_name = "TI814X";
-+		omap3_cpu_name = "TI814X";
- 	} else if (omap3_has_iva() && omap3_has_sgx()) {
- 		/* OMAP3430, OMAP3525, OMAP3515, OMAP3503 devices */
--		cpu_name = "OMAP3430/3530";
-+		omap3_cpu_name = "OMAP3430/3530";
- 	} else if (omap3_has_iva()) {
--		cpu_name = "OMAP3525";
-+		omap3_cpu_name = "OMAP3525";
- 	} else if (omap3_has_sgx()) {
--		cpu_name = "OMAP3515";
-+		omap3_cpu_name = "OMAP3515";
- 	} else {
--		cpu_name = "OMAP3503";
-+		omap3_cpu_name = "OMAP3503";
- 	}
- 
-+	sprintf(cpu_name, "%s", omap3_cpu_name);
++#ifdef CONFIG_SOC_BUS
 +
- 	/* Print verbose information */
--	pr_info("%s ES%s (", cpu_name, cpu_rev);
-+	pr_info("%s %s (", cpu_name, cpu_rev);
- 
- 	OMAP3_SHOW_FEATURE(l2cache);
- 	OMAP3_SHOW_FEATURE(iva);
-@@ -291,6 +298,7 @@ void __init ti81xx_check_features(void)
- 
- void __init omap3xxx_check_revision(void)
- {
-+	const char *omap3_cpu_rev;
- 	u32 cpuid, idcode;
- 	u16 hawkeye;
- 	u8 rev;
-@@ -303,7 +311,7 @@ void __init omap3xxx_check_revision(void)
- 	cpuid = read_cpuid(CPUID_ID);
- 	if ((((cpuid >> 4) & 0xfff) == 0xc08) && ((cpuid & 0xf) == 0x0)) {
- 		omap_revision = OMAP3430_REV_ES1_0;
--		cpu_rev = "1.0";
-+		omap3_cpu_rev = "ES1.0";
- 		return;
- 	}
- 
-@@ -324,26 +332,26 @@ void __init omap3xxx_check_revision(void)
- 		case 0: /* Take care of early samples */
- 		case 1:
- 			omap_revision = OMAP3430_REV_ES2_0;
--			cpu_rev = "2.0";
-+			omap3_cpu_rev = "ES2.0";
- 			break;
- 		case 2:
- 			omap_revision = OMAP3430_REV_ES2_1;
--			cpu_rev = "2.1";
-+			omap3_cpu_rev = "ES2.1";
- 			break;
- 		case 3:
- 			omap_revision = OMAP3430_REV_ES3_0;
--			cpu_rev = "3.0";
-+			omap3_cpu_rev = "ES3.0";
- 			break;
- 		case 4:
- 			omap_revision = OMAP3430_REV_ES3_1;
--			cpu_rev = "3.1";
-+			omap3_cpu_rev = "ES3.1";
- 			break;
- 		case 7:
- 		/* FALLTHROUGH */
- 		default:
- 			/* Use the latest known revision as default */
- 			omap_revision = OMAP3430_REV_ES3_1_2;
--			cpu_rev = "3.1.2";
-+			omap3_cpu_rev = "ES3.1.2";
- 		}
- 		break;
- 	case 0xb868:
-@@ -356,13 +364,13 @@ void __init omap3xxx_check_revision(void)
- 		switch (rev) {
- 		case 0:
- 			omap_revision = AM35XX_REV_ES1_0;
--			cpu_rev = "1.0";
-+			omap3_cpu_rev = "ES1.0";
- 			break;
- 		case 1:
- 		/* FALLTHROUGH */
- 		default:
- 			omap_revision = AM35XX_REV_ES1_1;
--			cpu_rev = "1.1";
-+			omap3_cpu_rev = "ES1.1";
- 		}
- 		break;
- 	case 0xb891:
-@@ -371,36 +379,36 @@ void __init omap3xxx_check_revision(void)
- 		switch(rev) {
- 		case 0: /* Take care of early samples */
- 			omap_revision = OMAP3630_REV_ES1_0;
--			cpu_rev = "1.0";
-+			omap3_cpu_rev = "1.0";
- 			break;
- 		case 1:
- 			omap_revision = OMAP3630_REV_ES1_1;
--			cpu_rev = "1.1";
-+			omap3_cpu_rev = "ES1.1";
- 			break;
- 		case 2:
- 		/* FALLTHROUGH */
- 		default:
- 			omap_revision = OMAP3630_REV_ES1_2;
--			cpu_rev = "1.2";
-+			omap3_cpu_rev = "ES1.2";
- 		}
- 		break;
- 	case 0xb81e:
- 		switch (rev) {
- 		case 0:
- 			omap_revision = TI8168_REV_ES1_0;
--			cpu_rev = "1.0";
-+			omap3_cpu_rev = "ES1.0";
- 			break;
- 		case 1:
- 		/* FALLTHROUGH */
- 		default:
- 			omap_revision = TI8168_REV_ES1_1;
--			cpu_rev = "1.1";
-+			omap3_cpu_rev = "ES1.1";
- 			break;
- 		}
- 		break;
- 	case 0xb944:
- 		omap_revision = AM335X_REV_ES1_0;
--		cpu_rev = "1.0";
-+		omap3_cpu_rev = "ES1.0";
- 		break;
- 	case 0xb8f2:
- 		switch (rev) {
-@@ -408,26 +416,27 @@ void __init omap3xxx_check_revision(void)
- 		/* FALLTHROUGH */
- 		case 1:
- 			omap_revision = TI8148_REV_ES1_0;
--			cpu_rev = "1.0";
-+			omap3_cpu_rev = "ES1.0";
- 			break;
- 		case 2:
- 			omap_revision = TI8148_REV_ES2_0;
--			cpu_rev = "2.0";
-+			omap3_cpu_rev = "ES2.0";
- 			break;
- 		case 3:
- 		/* FALLTHROUGH */
- 		default:
- 			omap_revision = TI8148_REV_ES2_1;
--			cpu_rev = "2.1";
-+			omap3_cpu_rev = "ES2.1";
- 			break;
- 		}
- 		break;
- 	default:
- 		/* Unknown default to latest silicon rev as default */
- 		omap_revision = OMAP3630_REV_ES1_2;
--		cpu_rev = "1.2";
-+		omap3_cpu_rev = "ES1.2";
- 		pr_warn("Warning: unknown chip type; assuming OMAP3630ES1.2\n");
- 	}
-+	sprintf(cpu_rev, "%s", omap3_cpu_rev);
- }
- 
- void __init omap4xxx_check_revision(void)
-@@ -502,8 +511,10 @@ void __init omap4xxx_check_revision(void)
- 		omap_revision = OMAP4430_REV_ES2_3;
- 	}
- 
--	pr_info("OMAP%04x ES%d.%d\n", omap_rev() >> 16,
--		((omap_rev() >> 12) & 0xf), ((omap_rev() >> 8) & 0xf));
-+	sprintf(cpu_name, "OMAP%04x", omap_rev() >> 16);
-+	sprintf(cpu_rev, "ES%d.%d", (omap_rev() >> 12) & 0xf,
-+						(omap_rev() >> 8) & 0xf);
-+	pr_info("%s %s\n", cpu_name, cpu_rev);
- }
- 
- void __init omap5xxx_check_revision(void)
-@@ -537,8 +548,10 @@ void __init omap5xxx_check_revision(void)
- 		omap_revision = OMAP5430_REV_ES1_0;
- 	}
- 
--	pr_info("OMAP%04x ES%d.0\n",
--			omap_rev() >> 16, ((omap_rev() >> 12) & 0xf));
-+	sprintf(cpu_name, "OMAP%04x", omap_rev() >> 16);
-+	sprintf(cpu_rev, "ES%d.0", (omap_rev() >> 12) & 0xf);
++static const char const *omap_types[] = {
++	[OMAP2_DEVICE_TYPE_TEST]	= "TST",
++	[OMAP2_DEVICE_TYPE_EMU]		= "EMU",
++	[OMAP2_DEVICE_TYPE_SEC]		= "HS",
++	[OMAP2_DEVICE_TYPE_GP]		= "GP",
++	[OMAP2_DEVICE_TYPE_BAD]		= "BAD",
++};
 +
-+	pr_info("%s %s\n", cpu_name, cpu_rev);
++static const char * __init omap_get_family(void)
++{
++	if (cpu_is_omap24xx())
++		return kasprintf(GFP_KERNEL, "OMAP2");
++	else if (cpu_is_omap34xx())
++		return kasprintf(GFP_KERNEL, "OMAP3");
++	else if (cpu_is_omap44xx())
++		return kasprintf(GFP_KERNEL, "OMAP4");
++	else if (soc_is_omap54xx())
++		return kasprintf(GFP_KERNEL, "OMAP5");
++	else
++		return kasprintf(GFP_KERNEL, "Unknown");
++}
++
++static ssize_t omap_get_type(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	return sprintf(buf, "%s\n", omap_types[omap_type()]);
++}
++
++static struct device_attribute omap_soc_attr =
++	__ATTR(type,  S_IRUGO, omap_get_type,  NULL);
++
++void __init omap_soc_device_init(void)
++{
++	struct device *parent;
++	struct soc_device *soc_dev;
++	struct soc_device_attribute *soc_dev_attr;
++
++	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
++	if (!soc_dev_attr)
++		return;
++
++	soc_dev_attr->machine  = cpu_name;
++	soc_dev_attr->family   = omap_get_family();
++	soc_dev_attr->revision = cpu_rev;
++
++	soc_dev = soc_device_register(soc_dev_attr);
++	if (IS_ERR_OR_NULL(soc_dev)) {
++		kfree(soc_dev_attr);
++		return;
++	}
++
++	parent = soc_device_to_device(soc_dev);
++	if (!IS_ERR_OR_NULL(parent))
++		device_create_file(parent, &omap_soc_attr);
++}
++#endif /* CONFIG_SOC_BUS */
+diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
+index 2c3fdd6..08003c1 100644
+--- a/arch/arm/mach-omap2/io.c
++++ b/arch/arm/mach-omap2/io.c
+@@ -602,6 +602,7 @@ void __init omap4430_init_late(void)
+ 	omap2_common_pm_late_init();
+ 	omap4_pm_init();
+ 	omap2_clk_enable_autoidle_all();
++	omap_soc_device_init();
  }
+ #endif
  
- /*
 -- 
 1.7.9.5
 
