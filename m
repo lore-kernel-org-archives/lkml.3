@@ -1,112 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab3AaINN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:13:13 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:62051 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab3AaINK (ORCPT
+	id S1755458Ab3AaIOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:14:08 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:52934 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab3AaIOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:13:10 -0500
-Date: Thu, 31 Jan 2013 09:13:05 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/1] dma: pl330: Convert to devm_ioremap_resource()
-Message-ID: <20130131081305.GB3171@avionic-0098.mockup.avionic-design.de>
-References: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
- <20130131072808.GA2041@avionic-0098.mockup.avionic-design.de>
- <CAK9yfHy3qV1b5c586ToHONBu3BQdkdM4hYbvJcofZ=kL70rZjA@mail.gmail.com>
+	Thu, 31 Jan 2013 03:14:05 -0500
+Message-ID: <510A27C8.3070909@suse.cz>
+Date: Thu, 31 Jan 2013 09:14:00 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
-Content-Disposition: inline
-In-Reply-To: <CAK9yfHy3qV1b5c586ToHONBu3BQdkdM4hYbvJcofZ=kL70rZjA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:F0uMLAvphNXtCtV7r6PIwYx9bwz4vP9ge7veWFUQGJZ
- kzS6bX+qx+dJ5I2UUEhkESgrOW1ZgwFxbR8ofJUYF7BohniyYs
- fn1y0Oszb4RU4yVLoOYmvK87DsUF9Ww/mULVzvNQfnbzDox6F1
- KyXd77u5P702zmsFMq++vmzrW9rkQP0g+RW61tmNuXapi2bJ85
- Bfdo07f1Uo3vsfRb1gI8uoOajGXGTLAnXtQeF16e3Ja1Nwh2yn
- ewOlbnItS4T6PXpNqeyNJljr54QgVmH98UNuan2gXtlfCao6UT
- AXigWwHcGyHlgmGmCKxhaElLl9YczE5GYgzk+gIUIsK//VsG5Z
- xz0gykhDzjKeXJKufcWYveB1D5VKHf52tXa2BBKDOYrOunem3s
- 6DIvewL7PxOmq56jKht3gzc0GeX1bEOlgY=
+To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+References: <20130129202848.GE25415@pd.tnic> <5109A8F1.9040707@suse.cz> <5109B11C.2010400@suse.cz> <5170962.qHnbnlVDfx@vostro.rjw.lan> <20130131070926.GC4926@pd.tnic>
+In-Reply-To: <20130131070926.GC4926@pd.tnic>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/31/2013 08:09 AM, Borislav Petkov wrote:
+> On Thu, Jan 31, 2013 at 01:54:56AM +0100, Rafael J. Wysocki wrote:
+>> On Thursday, January 31, 2013 12:47:40 AM Jiri Slaby wrote:
+>>> On 01/31/2013 12:12 AM, Jiri Slaby wrote:
+>>>> I think I will start with commenting parts of `power' script to see
+>>>> exactly which of the power savings cause this.
+>>>
+>>> ... NMI watchdog. If I remove it from the script, the problem
+>>> disappears. If I try it alone, I have those NMIs.
+>>
+>> Well, beats me. :-(
+>>
+>> I suspect that it doesn't quiesce itself sufficiently before image restoration
+>> and we get some crosstalk between the boot kernel and the image kernel.
+> 
+> Well, I did what Jiri said causes it:
+> 
+> echo 0 > /proc/sys/kernel/nmi_watchdog
+> 
+> No NMI.
+> 
+> BUT(!), if I start powertop and set all tunables in the "Tunables" tab
+> to "Good", then suspend to disk, when I resume I get the NMI and this
+> time the unknown reason is 0x3c. Sounds like this needs bisection...
+> Btw, this is latest -rc5 + tip/master and Jiri triggers it on 3.7-stable
+> ...
 
---qlTNgmc+xy1dBmNv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+And 3.6(.0) was the first one I _tried_ and had that issue too. Not sure
+if there is any bisect-good kernel to start with.
 
-On Thu, Jan 31, 2013 at 01:39:59PM +0530, Sachin Kamat wrote:
-> On 31 January 2013 12:58, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> > On Thu, Jan 31, 2013 at 12:37:04PM +0530, Sachin Kamat wrote:
-> >> Use the newly introduced devm_ioremap_resource() instead of
-> >> devm_request_and_ioremap() which provides more consistent error handli=
-ng.
-> >>
-> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> >> Cc: Vinod Koul <vinod.koul@intel.com>
-> >> Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> ---
-> >> This change is based against linux-next tree (20130128).
-> >> This change however introduces the followign sparse warning:
-> >> drivers/dma/pl330.c:2883:22: warning: incorrect type in argument 1 (di=
-fferent address spaces)
-> >> drivers/dma/pl330.c:2883:22:    expected void const *ptr
-> >> drivers/dma/pl330.c:2883:22:    got void [noderef] <asn:2>*base
-> >> drivers/dma/pl330.c:2884:34: warning: incorrect type in argument 1 (di=
-fferent address spaces)
-> >> drivers/dma/pl330.c:2884:34:    expected void const *ptr
-> >> drivers/dma/pl330.c:2884:34:    got void [noderef] <asn:2>*base
-> >
-> > Yes, those are false positives. They can be fixed with the two patches I
-> > posted a few hours ago, starting here:
-> >
-> >         https://lkml.org/lkml/2013/1/30/455
->=20
-> OK. That's great.
-> >
-> > Note that the first patch is against sparse. The problem, in a nutshell,
-> > is that sparse complains that the pointer address spaces and noderef
-> > attributes differ. In the case of the IS_ERR() function and friends the
-> > attributes aren't relevant because only the pointer value is only used
-> > arithmetically. Unfortunately there is no way you can cast away these
-> > attributes without causing other warnings, so the solution is somewhat
-> > more complex.
->=20
-> Thanks for the explaination.
-> However, is the patch for the dma relevant?
+> Btw, this e1000e thing has another problem: when I unplug the network
+> cable and replug it again, it cannot ping local network anymore.
+> Normally, when you plug the network cable back in, it does some sort if
+> link detection saying eth link is back up but it doesn't say it on that
+> box - only a reboot fixes it. Hmm.
 
-Yes, I forgot to add my Reviewed-by. Done now.
+I think this is what Konstantin fixes with his patches.
 
-Thierry
-
---qlTNgmc+xy1dBmNv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRCieRAAoJEN0jrNd/PrOh9rcP/1zye52YG4Q0LPwAmVuOgqHY
-BUbez/KFd6R65TK9gZEX0kgOeH+XPRur/kTD6qHase+SyuDlXRAURlIUKg5M3rwa
-bGeVOE/1UNSU7kq+j1o6NG7AqmE2m6ZgI+wz8AJxuIRWkYRX2fqH3crOqwVkK/Mc
-gIeTFxShjclY9WjhENc9rfULJlImC/ra2waH93Gbx2Q2sQdqApnz5b0HZ/wLFRz5
-t+O84wVlgyVgDIBCcvCuYUaWRaqNAkoqaK5D4MH2cLHjtLib8S3bOsP4hwhztmd0
-X86/oZa5dHXfm9EJhVgXb5L2UfZRaxHE0buqGIXmgI3ywqDiCnIMh2wtw8CwXxhR
-2Aa7PW8UlJd3RFeh6QlOgULdoShbsK+iEXeDDF8W70Pu8cQGEBKjHWW70eCwZWHe
-ZUc/dVF5suX34wWC3ENgiF7ACQGafB4zrGQsS3aIqkVInqE6ediKu6lV1UyvnOrv
-LyxL3yjvxzYGIILiJUQL2WVDz1ACvpOcfL3ji2xJnVk+F+cUiB+QEVIGd58BDsPJ
-XypOpC7d1ctyEL6QM2kfnOHJHb4DF7Mm/PK+ulz+WXFZCZPADVGZegUMqQDog5e4
-5IaeODywsPnp/SoLZbvilvtF/4MpfhfgBjuSp/MJ5mnBlqKeCNRPVYJ5DlWTMf8M
-uSC9qU+SSmCCoN2DhamB
-=YpKH
------END PGP SIGNATURE-----
-
---qlTNgmc+xy1dBmNv--
+-- 
+js
+suse labs
