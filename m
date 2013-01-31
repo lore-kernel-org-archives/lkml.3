@@ -1,160 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3AaXrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 18:47:53 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:44803 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab3AaXru convert rfc822-to-8bit (ORCPT
+	id S1754826Ab3AaXvz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 18:51:55 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:35059 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab3AaXvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 18:47:50 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Subject: RE: [RFC][PATCH v8 1/3] tracing: Add DEFINE_EVENT_FN() macro
-Thread-Topic: [RFC][PATCH v8 1/3] tracing: Add DEFINE_EVENT_FN() macro
-Thread-Index: Ac34JIJP5yTiNoBxQzmg232oa/IyfQIDzzOAAAmmh9A=
-Date: Thu, 31 Jan 2013 23:46:58 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A5E725@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A508B8@USINDEM103.corp.hds.com>
- <1359674549.5642.3.camel@gandalf.local.home>
-In-Reply-To: <1359674549.5642.3.camel@gandalf.local.home>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Jan 2013 18:51:52 -0500
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-01-31_06:2013-01-31,2013-01-31,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1301310176
+Date: Fri, 1 Feb 2013 00:51:51 +0100
+Message-ID: <CABPqkBSK_+v+16EPphRkWb+nqmxHwiV6gVo_5yfmqCV8-f062g@mail.gmail.com>
+Subject: [BUG] perf annotate: broken in pipe mode
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven,
+Hi,
 
-> As I wrote this patch, you need to add at the top of the message body:
-> 
-> From: Steven Rostedt <rostedt@goodmis.org>
-> 
-> And your Signed-off-by goes after mine. That is, the author of the patch, always goes first.
+Looks like perf annotate in pipe mode is totally broken nowadays.
+I tried this from tip.git:
 
-Thanks. I will fix it.
+$ perf record -o - noploop 5 >perf.data
+$ perf annotate -i i < perf.data
+Core dump
 
-Seiji
+Callstack looks as follows:
+0x000000000049f9e4 in add_hist_entry (hists=0x809708,
+entry=0x7fffffffde60, al=0x7fffffffdff0, period=1) at util/hist.c:297
+297 while (*p != NULL) {
+:t
+[Current thread is 1 (Thread 0x7ffff7fc9980 (LWP 13292))]
+(gdb) bt
+#0  0x000000000049f9e4 in add_hist_entry (hists=0x809708,
+entry=0x7fffffffde60, al=0x7fffffffdff0, period=1) at util/hist.c:297
+#1  0x000000000049fcca in __hists__add_entry (self=0x809708,
+al=0x7fffffffdff0, sym_parent=0x0, period=1) at util/hist.c:395
+#2  0x00000000004171b0 in perf_evsel__add_sample (evsel=0x809660,
+sample=0x7fffffffe0e0, al=0x7fffffffdff0, ann=0x7fffffffe750) at
+builtin-annotate.c:65
+#3  0x0000000000417394 in process_sample_event (tool=0x7fffffffe750,
+event=0x80af70, sample=0x7fffffffe0e0, evsel=0x809660,
+machine=0x8093c8) at builtin-annotate.c:102
+#4  0x000000000048c56d in perf_session_deliver_event
+(session=0x8092e0, event=0x80af70, sample=0x7fffffffe0e0,
+tool=0x7fffffffe750, file_offset=11688)
+    at util/session.c:870
+#5  0x000000000048cb20 in perf_session__process_event
+(session=0x8092e0, event=0x80af70, tool=0x7fffffffe750,
+file_offset=11688) at util/session.c:986
+#6  0x000000000048cf75 in __perf_session__process_pipe_events
+(self=0x8092e0, tool=0x7fffffffe750) at util/session.c:1120
 
-> -----Original Message-----
-> From: Steven Rostedt [mailto:rostedt@goodmis.org]
-> Sent: Thursday, January 31, 2013 6:22 PM
-> To: Seiji Aguchi
-> Cc: x86@kernel.org; H. Peter Anvin (hpa@zytor.com); linux-kernel@vger.kernel.org; Thomas Gleixner (tglx@linutronix.de);
-> 'mingo@elte.hu' (mingo@elte.hu); Borislav Petkov (bp@alien8.de); Satoru Moriya; dle-develop@lists.sourceforge.net; linux-
-> edac@vger.kernel.org; Luck, Tony (tony.luck@intel.com)
-> Subject: Re: [RFC][PATCH v8 1/3] tracing: Add DEFINE_EVENT_FN() macro
-> 
-> Hi Seiji,
-> 
-> As I wrote this patch, you need to add at the top of the message body:
-> 
-> From: Steven Rostedt <rostedt@goodmis.org>
-> 
-> And your Signed-off-by goes after mine. That is, the author of the patch, always goes first.
-> 
-> -- Steve
-> 
-> 
-> On Mon, 2013-01-21 at 22:13 +0000, Seiji Aguchi wrote:
-> > Each TRACE_EVENT() adds several helper functions. If two or more trace
-> > events share the same structure and print format, they can also share
-> > most of these helper functions and save a lot of space from duplicate
-> > code. This is why the
-> > DECLARE_EVENT_CLASS() and DEFINE_EVENT() were created.
-> >
-> > Some events require a trigger to be called at registering and
-> > unregistering of the event and to do so they use TRACE_EVENT_FN().
-> >
-> > If multiple events require a trigger, they currently have no choice
-> > but to use
-> > TRACE_EVENT_FN() as there's no DEFINE_EVENT_FN() available. This
-> > unfortunately causes a lot of wasted duplicate code created.
-> >
-> > By adding a DEFINE_EVENT_FN(), these events can still use a
-> > DECLARE_EVENT_CLASS() and then define their own triggers.
-> >
-> > Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  include/linux/tracepoint.h   |    2 ++
-> >  include/trace/define_trace.h |    5 +++++
-> >  include/trace/ftrace.h       |    4 ++++
-> >  3 files changed, 11 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-> > index 2f322c3..9bf59e5 100644
-> > --- a/include/linux/tracepoint.h
-> > +++ b/include/linux/tracepoint.h
-> > @@ -378,6 +378,8 @@ static inline void
-> > tracepoint_synchronize_unregister(void)
-> >  #define DECLARE_EVENT_CLASS(name, proto, args, tstruct, assign, print)
-> >  #define DEFINE_EVENT(template, name, proto, args)		\
-> >  	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
-> > +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)\
-> > +	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
-> >  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
-> >  	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
-> >  #define DEFINE_EVENT_CONDITION(template, name, proto,		\
-> > diff --git a/include/trace/define_trace.h
-> > b/include/trace/define_trace.h index 1905ca8..02e1003 100644
-> > --- a/include/trace/define_trace.h
-> > +++ b/include/trace/define_trace.h
-> > @@ -44,6 +44,10 @@
-> >  #define DEFINE_EVENT(template, name, proto, args) \
-> >  	DEFINE_TRACE(name)
-> >
-> > +#undef DEFINE_EVENT_FN
-> > +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg) \
-> > +	DEFINE_TRACE_FN(name, reg, unreg)
-> > +
-> >  #undef DEFINE_EVENT_PRINT
-> >  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
-> >  	DEFINE_TRACE(name)
-> > @@ -91,6 +95,7 @@
-> >  #undef TRACE_EVENT_CONDITION
-> >  #undef DECLARE_EVENT_CLASS
-> >  #undef DEFINE_EVENT
-> > +#undef DEFINE_EVENT_FN
-> >  #undef DEFINE_EVENT_PRINT
-> >  #undef DEFINE_EVENT_CONDITION
-> >  #undef TRACE_HEADER_MULTI_READ
-> > diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h index
-> > 40dc5e8..7bab676 100644
-> > --- a/include/trace/ftrace.h
-> > +++ b/include/trace/ftrace.h
-> > @@ -71,6 +71,10 @@
-> >  	static struct ftrace_event_call	__used		\
-> >  	__attribute__((__aligned__(4))) event_##name
-> >
-> > +#undef DEFINE_EVENT_FN
-> > +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)	\
-> > +	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
-> > +
-> >  #undef DEFINE_EVENT_PRINT
-> >  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
-> >  	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
-> 
+Looks like the session->evlist is not properly initialized in pipe
+mode or that evsel->hists
+is bogus because it crashes due to evsel->hists->entries_in == NULL.
+Don't know how
+you can get there.
 
+Anybody has a clue?
