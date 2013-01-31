@@ -1,244 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab3AaVCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 16:02:52 -0500
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:12017
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751734Ab3AaVCr (ORCPT
+	id S1754435Ab3AaVSZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 16:18:25 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:37252 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab3AaVSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 16:02:47 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI1432I4015Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz177df4h17326ah8275bh8275dhz2dh2a8h668h839h944hd24he5bhf0ah1220h1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h1155h)
-Date: Thu, 31 Jan 2013 14:59:47 -0600
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "Woodhouse, David" <david.woodhouse@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [RFC] arm: use built-in byte swap function
-Message-ID: <20130131145947.f62474a0600848df86548b96@freescale.com>
-In-Reply-To: <20130131092801.GV23505@n2100.arm.linux.org.uk>
-References: <20130128193033.8a0b0a871150c99247f05a95@freescale.com>
-	<20130129083522.GA14302@pd.tnic>
-	<1359478014.3529.157.camel@shinybook.infradead.org>
-	<20130129174249.GB25415@pd.tnic>
-	<1359482147.3529.161.camel@shinybook.infradead.org>
-	<20130129181046.GC25415@pd.tnic>
-	<1359541333.3529.186.camel@shinybook.infradead.org>
-	<20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com>
-	<20130131092801.GV23505@n2100.arm.linux.org.uk>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+	Thu, 31 Jan 2013 16:18:23 -0500
+Date: Thu, 31 Jan 2013 22:18:18 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] rwsem-spinlock: let rwsem write lock stealable
+Message-ID: <20130131211818.GA13195@gmail.com>
+References: <1359537244-20588-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <CANN689GwGh2sHwoP66JjoXs2ZMQAXbVpA0MHQahWq5M+baNfSQ@mail.gmail.com>
+ <20130131124004.GA12678@yliu-dev.sh.intel.com>
+ <20130131131228.GB6627@gmail.com>
+ <20130131143626.GB12678@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/mixed; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+In-Reply-To: <20130131143626.GB12678@yliu-dev.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jan 2013 09:28:01 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-> On Wed, Jan 30, 2013 at 08:09:00PM -0600, Kim Phillips wrote:
-> > The savings come mostly from device-tree related code, and some
-> > from drivers.
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+
+* Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+
+> On Thu, Jan 31, 2013 at 02:12:28PM +0100, Ingo Molnar wrote:
+> > 
+> > * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+> > 
+> > > BTW, mind to tell a nice test case for mmap_sem?
+> > 
+> > this one was write-hitting on mmap_sem pretty hard, last I 
+> > checked:
+> > 
+> >   http://people.redhat.com/mingo/threaded-mmap-stresstest/
 > 
-> You forget that IP networking is all big endian, so these will be using
-> the byte swapping too (search it for htons/ntohs/htonl/ntohl).
-
-As David mentioned, there isn't much gain from net/ code.
-
-> > v2:
-> > - at91 and lpd270 builds fixed by limiting to ARMv6 and above
-> >   (i.e., ARM cores that have support for the 'rev' instruction).
-> >   Otherwise, the compiler emits calls to libgcc's __bswapsi2 on
-> >   these ARMv4/v5 builds (and arch ARM doesn't link with libgcc).
+> Thanks!
 > 
-> Which compiler version?  gcc 4.5.4 doesn't do this, except for the 16-bit
-> swap, so I doubt that any later compiler does.
+> Is there any pass condition? I tested a while, at least I 
+> found no oops or any noisy from dmesg output. Is that OK?
 
-I've tried both gcc 4.6.3 [1] and 4.6.4 [2].  If you can point me to
-a 4.5.x, I'll try that, too, but as it stands now, if one moves the
-code added to swab.h below outside of its armv6 protection,
-gcc adds calls to __bswapsi2.
+Yeah, not crashing and not hanging is the expected behavior.
 
-> > --- a/arch/arm/include/uapi/asm/swab.h
-> > +++ b/arch/arm/include/uapi/asm/swab.h
-> > @@ -50,4 +50,14 @@ static inline __attribute_const__ __u32 __arch_swab32(__u32 x)
-> >  
-> >  #endif
-> >  
-> > +#if defined(__KERNEL__) && __LINUX_ARM_ARCH__ >= 6
-> > +#if GCC_VERSION >= 40600
-> > +#define __HAVE_BUILTIN_BSWAP32__
-> > +#define __HAVE_BUILTIN_BSWAP64__
-> > +#endif
-> > +#if GCC_VERSION >= 40800
-> > +#define __HAVE_BUILTIN_BSWAP16__
-> > +#endif
-> > +#endif
+> Well, sometimes, it will quit peacefully. Sometimes it will 
+> not. ps -eo 'pid, state,wchan,comm' shows that it is sleeping 
+> at futex_wait_queue_me().
 > 
-> If this is __KERNEL__ only, it should not be in a uapi header.  UAPI
-> headers get exported to userland, this is not userland interface code.
-> IT should be in arch/arm/include/asm/swab.h
+> NOTE: this happens both with or w/o this patch. Thus it may 
+> not an issue introduced by this patch?
 
-right, I've fixed this and Boris' remove the help text comment, and
-made a v3:
+hm, that's unexpected - it's expected to loop infinitely. I have 
+a newer version (attached) - is that exiting too?
 
->From 18c86580efba42d2680f2947867722705292f80a Mon Sep 17 00:00:00 2001
-From: Kim Phillips <kim.phillips@freescale.com>
-Date: Mon, 28 Jan 2013 19:30:33 -0600
-Subject: [PATCH] arm: use built-in byte swap function
+Maybe this triggers spuriously:
 
-Enable the compiler intrinsic for byte swapping on arch ARM.  This
-allows the compiler to detect and be able to optimize out byte
-swappings, e.g. in big endian to big endian moves.
+        if (!info->si_addr)
+                raise(SIGABRT); /* Allow GDB backtrace */
 
-A ARCH_DEFINES_BUILTIN_BSWAP is added to allow an ARCH to select
-it when it wants to control HAVE_BUILTIN_BSWAPxx definitions over
-those in the generic compiler headers.  It can be dependent on a
-combination of byte swapping instruction availability, the
-instruction set version, and the state of support in different
-compiler versions.
-
-AFAICT, arm gcc got __builtin_bswap{32,64} support in 4.6,
-and for the 16-bit version in 4.8.
-
-This has a tiny benefit on vmlinux text size (gcc 4.6.4):
-
-multi_v7_defconfig:
-   text    data     bss     dec     hex filename
-3135208  188396  203344 3526948  35d124 vmlinux
-multi_v7_defconfig with builtin_bswap:
-   text    data     bss     dec     hex filename
-3135112  188396  203344 3526852  35d0c4 vmlinux
-
-exynos_defconfig:
-   text    data     bss     dec     hex filename
-4286605  360564  223172 4870341  4a50c5 vmlinux
-exynos_defconfig with builtin_bswap:
-   text    data     bss     dec     hex filename
-4286405  360564  223172 4870141  4a4ffd vmlinux
-
-The savings come mostly from device-tree related code, and some
-from drivers.
-
-Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
----
-akin to: http://comments.gmane.org/gmane.linux.kernel.cross-arch/16016
-
-based on linux-next-20130128.  Depends on commit "compiler-gcc{3,4}.h:
-Use GCC_VERSION macro" by Daniel Santos <daniel.santos@pobox.com>,
-currently in the akpm branch.
-
-v3:
-- moved out of uapi swab.h into arch/arm/include/asm/swab.h
-- moved ARCH_DEFINES_BUILTIN_BSWAP help text into commit message
-- moved GCC_VERSION >= 40800 ifdef into GCC_VERSION >= 40600 block
-
-v2:
-- at91 and lpd270 builds fixed by limiting to ARMv6 and above
-  (i.e., ARM cores that have support for the 'rev' instruction).
-  Otherwise, the compiler emits calls to libgcc's __bswapsi2 on
-  these ARMv4/v5 builds (and arch ARM doesn't link with libgcc).
-  All ARM defconfigs now have the same build status as they did
-  without this patch (some are broken on linux-next).
-
-- move ARM check from generic compiler.h to arch ARM's swab.h.
-  - pretty sure it should be limited to __KERNEL__ builds
-
-- add new ARCH_DEFINES_BUILTIN_BSWAP (see Kconfig help).
-  - if set, generic compiler header does not set HAVE_BUILTIN_BSWAPxx
-  - not too sure about this having to be a new CONFIG_, but it's hard
-    to find a place for it given linux/compiler.h doesn't include any
-    arch-specific files.
-
-- move new selects to end of CONFIG_ARM's Kconfig select list,
-  as is done in David Woodhouse's original patchseries for ppc/x86.
-
- arch/Kconfig                  |    4 ++++
- arch/arm/Kconfig              |    2 ++
- arch/arm/include/asm/swab.h   |    8 ++++++++
- include/linux/compiler-gcc4.h |    3 ++-
- 4 files changed, 16 insertions(+), 1 deletion(-)
-
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 40e2b12..bc5ed77 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -141,6 +141,10 @@ config ARCH_USE_BUILTIN_BSWAP
- 	 instructions should set this. And it shouldn't hurt to set it
- 	 on architectures that don't have such instructions.
- 
-+config ARCH_DEFINES_BUILTIN_BSWAP
-+       depends on ARCH_USE_BUILTIN_BSWAP
-+       bool
-+
- config HAVE_SYSCALL_WRAPPERS
- 	bool
- 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 73027aa..b5868c2 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -57,6 +57,8 @@ config ARM
- 	select CLONE_BACKWARDS
- 	select OLD_SIGSUSPEND3
- 	select OLD_SIGACTION
-+	select ARCH_USE_BUILTIN_BSWAP
-+	select ARCH_DEFINES_BUILTIN_BSWAP
- 	help
- 	  The ARM series is a line of low-power-consumption RISC chip designs
- 	  licensed by ARM Ltd and targeted at embedded applications and
-diff --git a/arch/arm/include/asm/swab.h b/arch/arm/include/asm/swab.h
-index 537fc9b..e56acff 100644
---- a/arch/arm/include/asm/swab.h
-+++ b/arch/arm/include/asm/swab.h
-@@ -34,5 +34,13 @@ static inline __attribute_const__ __u32 __arch_swab32(__u32 x)
- }
- #define __arch_swab32 __arch_swab32
- 
-+#if GCC_VERSION >= 40600
-+#define __HAVE_BUILTIN_BSWAP32__
-+#define __HAVE_BUILTIN_BSWAP64__
-+#if GCC_VERSION >= 40800
-+#define __HAVE_BUILTIN_BSWAP16__
-+#endif
-+#endif
-+
- #endif
- #endif
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 68b162d..fce39cb 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -66,7 +66,8 @@
- #endif
- 
- 
--#ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
-+#if defined(CONFIG_ARCH_USE_BUILTIN_BSWAP) && \
-+    !defined(CONFIG_ARCH_DEFINES_BUILTIN_BSWAP)
- #if GCC_VERSION >= 40400
- #define __HAVE_BUILTIN_BSWAP32__
- #define __HAVE_BUILTIN_BSWAP64__
--- 
-1.7.9.7
+although then you should see the SIGABRT as an irregular exit 
+IIRC.
 
 Thanks,
 
-Kim
+	Ingo
 
-[1] http://kernel.org/pub/tools/crosstool/files/bin/x86_64/
+--UlVJffcvxoiEqYs2
+Content-Type: application/x-gzip
+Content-Disposition: attachment; filename="threaded-mmap-stresstest.tar.gz"
+Content-Transfer-Encoding: base64
 
-[2] http://ftp.denx.de/pub/eldk/5.2.1/targets/armv7a/
+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
+Xw/9D9m3ldsAUAAA
 
+--UlVJffcvxoiEqYs2--
