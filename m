@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab3AaG6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 01:58:43 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60965 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479Ab3AaG6l (ORCPT
+	id S1753495Ab3AaHBA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:01:00 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:55749 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab3AaHA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 01:58:41 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-d6-510a161fb520
-From: Namhyung Kim <namhyung@kernel.org>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        tglx@linutronix.de
-Subject: Re: [RFC 2/2] sched/fair: prefer a CPU in the "lowest" idle state
-References: <1359580757-4121-1-git-send-email-bigeasy@linutronix.de>
-	<1359580757-4121-3-git-send-email-bigeasy@linutronix.de>
-	<5109D313.1020409@linux.vnet.ibm.com>
-	<8738xiue31.fsf@sejong.aot.lge.com>
-	<510A1198.2070803@linux.vnet.ibm.com>
-Date: Thu, 31 Jan 2013 15:58:38 +0900
-In-Reply-To: <510A1198.2070803@linux.vnet.ibm.com> (Michael Wang's message of
-	"Thu, 31 Jan 2013 14:39:20 +0800")
-Message-ID: <87txpxu9cx.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 31 Jan 2013 02:00:58 -0500
+Date: Thu, 31 Jan 2013 08:00:53 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Remove unused variables
+Message-ID: <20130131070052.GA31996@avionic-0098.mockup.avionic-design.de>
+References: <1359576681-14797-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130131003118.GC2765@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2fHTh5uZTiUOsy+g"
+Content-Disposition: inline
+In-Reply-To: <20130131003118.GC2765@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:6CXiggzheuzFbGAZf4CrUzjHAULG2Y+aAg0JrhYOMW+
+ pb+IZtzUcVUoaz3Q/btMNmK1lnIqhrrSOraJXMlQPy5GXFaNYs
+ JMraJa/ZZzue3h4C+ClPMZSEnl7nrmfNcZ/Z8lISIA15UP14LK
+ 12703zVUTt+Lb6u0pgZQTJCfltv7DUjWQ8ZOs3yOgsjEFsSyqF
+ zYmFJXAK3eDcapFDOM8YB4CHLIO+vdxyyL8ljNw4RNxLfsJwY3
+ dLE/wXfjTe3Kysn+KscQ2soY839mraNBXGY0cJG14Yy2Hi1TDs
+ BYTSQBcajmZns8cEcq7NeA9PX4TeJp4bKpgkiLCri6RWZoY97v
+ +n0UDxvMr0aOCThBd7vIBkyCsZv+LqjfiyLp1sBP9xOPyHlkE3
+ 0YMg0UA7wvjRP6lNe8niCKMzv4RhazIlK7OwJLbOKJ1/qwYtp0
+ vB/Pd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jan 2013 14:39:20 +0800, Michael Wang wrote:
-> On 01/31/2013 01:16 PM, Namhyung Kim wrote:
->> Anyway, I have an idea with this in mind.  It's like adding a new "idle
->> load" to each idle cpu rather than special casing the idle cpus like
->> above.  IOW an idle cpu will get very small load weight depends on how
->> deep it's slept so that it can be compared to other cpus in a same way
->> but we can find prefered (lowest load) cpu among the idle cpus.
->> 
->> The simple way I can think of is adding idle_level to a rq load in
->> weighted_cpuload():
->> 
->> static unsigned long weighted_cpuload(const int cpu)
->> {
->> 	return cpu_rq(cpu)->load.weight + cpuidle_get_state(cpu);
->> }
->
-> Hmm... then we don't need changes in find_idlest_cpu(), just compare the
-> load as before, but it works only when the appendix state value is
-> smaller than the lowest load of one task, which is 15 currently, I'm not
-> sure whether we have the promise...
 
-You said about a nice 19 process, right?  But I found that SCHED_IDLE
-task will have weight of 3. :(
+--2fHTh5uZTiUOsy+g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  #define WEIGHT_IDLEPRIO                3
+On Thu, Jan 31, 2013 at 08:31:20AM +0800, Shawn Guo wrote:
+> On Wed, Jan 30, 2013 at 09:11:21PM +0100, Thierry Reding wrote:
+> > Commit 3f175a6 (mmc: sdhci-esdhc-imx: remove ESDHC_CD_GPIO handling from
+> > IO accessory) removed all the code that was using these variables, so it
+> > is safe to drop them.
+> >=20
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>=20
+> Thanks for the fixing, Thierry.  But Chris has already queued a fix [1]
+> from Fabio.
 
+Okay, great!
 
-But AFAIK the number of states in cpuidle is usually less than 10 so maybe
-we can change the weight then, but there's no promise...
+Thierry
 
-Thanks,
-Namhyung
+--2fHTh5uZTiUOsy+g
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRChakAAoJEN0jrNd/PrOhJVcP/iRLLWTBvjx8oYRKO0g0kdT0
+RcBbvEO4vJfSQk6zbt/1989U3+zqYj7iMhZIDTOKS/ObMVkWpR/TbKLt2DgRMGo1
+AhEMCTAVdXgtORjR6+xG+rmvcAtG2xFR4xJS0gUu2KHD+Jsdsa+cYbR35jX0Wcea
+CyhlUIxxliSKaodukFJyCXp1XvJZoJoJd6Cz6cpMMlH6TvxrgWwlH1aLX1m9TDoL
+9D7rd/opLfcnKA09rx5KBH8lscT2ViJfXJKG2n2Tmf5bWtnesQ4THURaH57EwOOL
+gvwYxY2JbjP2m97kOoRmAuj5p4jP+0eCyIU3S+KXa1OZwxGkDbqDkRPmhSxm7plo
+cDkpeelKHianVoFYWGivc+LXOSI22Soq8leoeq4+cuGYAXWmiLq0kA2qtyfLzBCY
+Caon2qU+PsNCipwrckA5XCgvzsLFcckXdcO5DGkJqeF46Z5jHsbHD4dquoAU+r1I
+GZFXZUlRAF9C93X2i8XxqU3wwIiKjWwHzwCxaFisYbd/A+6mAqY4KV6/FPTdPL82
+rUyDZ5r2k6D//H74ZC/PpM/zJeFPQVgmMMkqhF/3ZPK71ly2DbW02EHOA3R48G0L
+if4bCqHFl7LytzitbZiLN4JWBRENm+BJvCkva5Ag/hOyxuI3J8yXFgFZPOWSRlGp
+SFFw0+emMxKs6IWl1LqX
+=EGEG
+-----END PGP SIGNATURE-----
+
+--2fHTh5uZTiUOsy+g--
