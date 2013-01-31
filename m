@@ -1,131 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab3AaJmt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 04:42:49 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:53440 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752950Ab3AaJms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 04:42:48 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Michal Marek <mmarek@suse.cz>,
-        <linux-kbuild@vger.kernel.org>, Mike Frysinger <vapier@gentoo.org>,
-        "Yoshinori Sato" <ysato@users.sourceforge.jp>,
-        <uclinux-dist-devel@blackfin.uclinux.org>
-Subject: [PATCH 1/1] depmod: pass -P $CONFIG_SYMBOL_PREFIX
-Date: Thu, 31 Jan 2013 09:41:43 +0000
-Message-ID: <1359625303-11842-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1753805Ab3AaJpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 04:45:05 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:27608 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752950Ab3AaJo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 04:44:59 -0500
+X-IronPort-AV: E=Sophos;i="4.84,575,1355068800"; 
+   d="scan'208";a="6671513"
+Message-ID: <510A3CE6.202@cn.fujitsu.com>
+Date: Thu, 31 Jan 2013 17:44:06 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_31_09_42_44
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>    <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>   <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>  <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com> <1359622123.1391.19.camel@kernel>
+In-Reply-To: <1359622123.1391.19.camel@kernel>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/31 17:43:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/31 17:43:47,
+	Serialize complete at 2013/01/31 17:43:47
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On architectures which have symbol prefixes, depmod emits lots of false
-warnings like this:
+Hi Simon,
 
-WARNING: $module.ko needs unknown symbol $symbol
+On 01/31/2013 04:48 PM, Simon Jeons wrote:
+> Hi Tang,
+> On Thu, 2013-01-31 at 15:10 +0800, Tang Chen wrote:
+>
+> 1. IIUC, there is a button on machine which supports hot-remove memory,
+> then what's the difference between press button and echo to /sys?
 
-This is because depmod isn't being passed the -P <symbol_prefix>
-arguments to specify the symbol prefix to ignore. This option is
-included since the 3.13 release of module-init-tools.
+No important difference, I think. Since I don't have the machine you are
+saying, I cannot surely answer you. :)
+AFAIK, pressing the button means trigger the hotplug from hardware, sysfs
+is just another entrance. At last, they will run into the same code.
 
-Update scripts/depmod.sh to take extra arguments which are passed
-through directly to depmod, and update the main Makefile to pass
--P $(CONFIG_SYMBOL_PREFIX to scripts/depmod.sh, but only if
-CONFIG_SYMBOL_PREFIX is set and non-empty.
+> 2. Since kernel memory is linear mapping(I mean direct mapping part),
+> why can't put kernel direct mapping memory into one memory device, and
+> other memory into the other devices?
 
-scripts/depmod.sh also drops the -P arguments if depmod --version
-reports module-init-tools with a version number < 3.13.
+We cannot do that because in that way, we will lose NUMA performance.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: uclinux-dist-devel@blackfin.uclinux.org
----
-My shell-fu isn't great, so all comments for improvements appreciated.
+If you know NUMA, you will understand the following example:
 
- Makefile          |    6 +++++-
- scripts/depmod.sh |   27 +++++++++++++++++++++++----
- 2 files changed, 28 insertions(+), 5 deletions(-)
+node0:                    node1:
+    cpu0~cpu15                cpu16~cpu31
+    memory0~memory511         memory512~memory1023
 
-diff --git a/Makefile b/Makefile
-index 2d3c92c..89e41d4 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1394,10 +1394,14 @@ quiet_cmd_rmdirs = $(if $(wildcard $(rm-dirs)),CLEAN   $(wildcard $(rm-dirs)))
- quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files)))
-       cmd_rmfiles = rm -f $(rm-files)
- 
-+ifneq ($(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX)),)
-+  depmod_args = -P $(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-+endif
-+
- # Run depmod only if we have System.map and depmod is executable
- quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
-       cmd_depmod = $(CONFIG_SHELL) $(srctree)/scripts/depmod.sh $(DEPMOD) \
--                   $(KERNELRELEASE)
-+                   $(KERNELRELEASE) $(depmod_args)
- 
- # Create temporary dir for module support files
- # clean it up only when building all modules
-diff --git a/scripts/depmod.sh b/scripts/depmod.sh
-index 2ae4817..4f3747f 100755
---- a/scripts/depmod.sh
-+++ b/scripts/depmod.sh
-@@ -2,16 +2,35 @@
- #
- # A depmod wrapper used by the toplevel Makefile
- 
--if test $# -ne 2; then
--	echo "Usage: $0 /sbin/depmod <kernelrelease>" >&2
-+if test $# -lt 2; then
-+	echo "Usage: $0 /sbin/depmod <kernelrelease> [args]" >&2
- 	exit 1
- fi
- DEPMOD=$1
--KERNELRELEASE=$2
-+shift
-+KERNELRELEASE=$1
-+shift
- 
- if ! test -r System.map -a -x "$DEPMOD"; then
- 	exit 0
- fi
-+
-+# older versions of depmod don't support -P <symbol-prefix>
-+# support was added in module-init-tools 3.13
-+if test "$1" = "-P"; then
-+	release=$("$DEPMOD" --version)
-+	package=$(echo "$release" | cut -d' ' -f 1)
-+	if test "$package" = "module-init-tools"; then
-+		version=$(echo "$release" | cut -d' ' -f 2)
-+		later=$({ echo "$version"; echo "3.13"; } | sort -V | tail -n 1)
-+		if test "$later" != "$version"; then
-+			# module-init-tools < 3.13, drop the next 2 args
-+			shift
-+			shift
-+		fi
-+	fi
-+fi
-+
- # older versions of depmod require the version string to start with three
- # numbers, so we cheat with a symlink here
- depmod_hack_needed=true
-@@ -30,7 +49,7 @@ if $depmod_hack_needed; then
- 	KERNELRELEASE=99.98.$KERNELRELEASE
- fi
- 
--set -- -ae -F System.map
-+set -- -ae -F System.map "$@"
- if test -n "$INSTALL_MOD_PATH"; then
- 	set -- "$@" -b "$INSTALL_MOD_PATH"
- fi
--- 
-1.7.7.6
+cpu16~cpu31 access memory16~memory1023 much faster than memory0~memory511.
+If we set direct mapping area in node0, and movable area in node1, then
+the kernel code running on cpu16~cpu31 will have to access 
+memory0~memory511.
+This is a terrible performance down.
 
+>As you know x86_64 don't need
+> highmem, IIUC, all kernel memory will linear mapping in this case. Is my
+> idea available? If is correct, x86_32 can't implement in the same way
+> since highmem(kmap/kmap_atomic/vmalloc) can map any address, so it's
+> hard to focus kernel memory on single memory device.
 
+Sorry, I'm not quite familiar with x86_32 box.
+
+> 3. In current implementation, if memory hotplug just need memory
+> subsystem and ACPI codes support? Or also needs firmware take part in?
+> Hope you can explain in details, thanks in advance. :)
+
+We need firmware take part in, such as SRAT in ACPI BIOS, or the firmware
+based memory migration mentioned by Liu Jiang.
+
+So far, I only know this. :)
+
+> 4. What's the status of memory hotplug? Apart from can't remove kernel
+> memory, other things are fully implementation?
+
+I think the main job is done for now. And there are still bugs to fix.
+And this functionality is not stable.
+
+Thanks. :)
