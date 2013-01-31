@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab3AaWDa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:03:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44596 "EHLO mail.zytor.com"
+	id S1755299Ab3AaV6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 16:58:50 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55540 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547Ab3AaWD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:03:26 -0500
-Message-ID: <510AEA20.8040407@zytor.com>
-Date: Thu, 31 Jan 2013 14:03:12 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752100Ab3AaV6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 16:58:48 -0500
+From: Cyril Chemparathy <cyril@ti.com>
+To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <sboyd@codeaurora.org>, <will.deacon@arm.com>,
+        <paulmck@linux.vnet.ibm.com>, <nico@linaro.org>,
+        <catalin.marinas@arm.com>, <marc.zyngier@arm.com>,
+        <linus.walleij@linaro.org>, Cyril Chemparathy <cyril@ti.com>,
+        Vitaly Andrianov <vitalya@ti.com>
+Subject: [PATCH v4 07/13] ARM: LPAE: define ARCH_LOW_ADDRESS_LIMIT for bootmem
+Date: Thu, 31 Jan 2013 16:58:26 -0500
+Message-ID: <1359669512-31276-8-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359669512-31276-1-git-send-email-cyril@ti.com>
+References: <1359669512-31276-1-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] rip out x86_32 NUMA remapping code
-References: <20130131005616.1C79F411@kernel.stglabs.ibm.com> <510AE763.6090907@zytor.com> <CAE9FiQVn6_QZi3fNQ-JHYiR-7jeDJ5hT0SyT_+zVvfOj=PzF3w@mail.gmail.com> <510AE92B.8020605@zytor.com> <CAE9FiQUCB3CDB9kB6ojYRLHHjxgoRqmNFrcjkH1RNHjSHUZ4uQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQUCB3CDB9kB6ojYRLHHjxgoRqmNFrcjkH1RNHjSHUZ4uQ@mail.gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 02:01 PM, Yinghai Lu wrote:
-> On Thu, Jan 31, 2013 at 1:59 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 01/31/2013 01:55 PM, Yinghai Lu wrote:
->>> On Thu, Jan 31, 2013 at 1:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>> I get a build failure on i386 allyesconfig with this patch:
->>>>
->>>> arch/x86/power/built-in.o: In function `swsusp_arch_resume':
->>>> (.text+0x14e4): undefined reference to `resume_map_numa_kva'
->>>>
->>>> It looks trivial to fix up; I assume resume_map_numa_kva() just goes
->>>> away like it does in the non-NUMA case, but it would be nice if you
->>>> could confirm that.
->>>
->>> the patches does not seem to complete.
->>>
->>> at least, it does not remove
->>>
->>> arch/x86/mm/numa.c:     nd = alloc_remap(nid, nd_size);
->>>
->>
->> ... which will just return NULL because alloc_remap turns into an inline
->> just returning NULL.  So the compiled code is correct, but the source
->> code is needlessly messy.
-> 
-> yes...
-> 
-> It still left #ifdefCONFIG_HAVE_ARCH_ALLOC_REMAP there.
-> 
-> #ifdef CONFIG_HAVE_ARCH_ALLOC_REMAP
-> extern void *alloc_remap(int nid, unsigned long size);
-> #else
-> static inline void *alloc_remap(int nid, unsigned long size)
-> {
->         return NULL;
-> }
-> #endif /* CONFIG_HAVE_ARCH_ALLOC_REMAP */
-> 
-> should throw them all away.
-> 
+This patch adds an architecture defined override for ARCH_LOW_ADDRESS_LIMIT.
+On PAE systems, the absence of this override causes bootmem to incorrectly
+limit itself to 32-bit addressable physical memory.
 
-That is arch-independent code, and the tile architecture still uses it.
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+---
+ arch/arm/include/asm/memory.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Makes one wonder how much it will get tested going forward, especially
-with the x86-32 implementation clearly lacking in that department.
-
-	-hpa
+diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+index 73cf03a..8825abb 100644
+--- a/arch/arm/include/asm/memory.h
++++ b/arch/arm/include/asm/memory.h
+@@ -275,6 +275,8 @@ static inline __deprecated void *bus_to_virt(unsigned long x)
+ #define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
+ #define virt_addr_valid(kaddr)	((unsigned long)(kaddr) >= PAGE_OFFSET && (unsigned long)(kaddr) < (unsigned long)high_memory)
+ 
++#define ARCH_LOW_ADDRESS_LIMIT		PHYS_MASK
++
+ #endif
+ 
+ #include <asm-generic/memory_model.h>
+-- 
+1.7.9.5
 
