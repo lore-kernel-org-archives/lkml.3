@@ -1,214 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab3AaRZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:25:57 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60111
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755143Ab3AaRZu (ORCPT
+	id S1756063Ab3AaR0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:26:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48085 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3AaRZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 12:25:50 -0500
+	Thu, 31 Jan 2013 12:25:49 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@au1.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        linuxppc-dev@ozlabs.org, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>, linuxppc-dev@ozlabs.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 23/25] perf/POWER7: Make generic event translations available in sysfs
-Date: Thu, 31 Jan 2013 14:25:26 -0300
-Message-Id: <1359653128-10433-24-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        acme@ghostprotocols.net, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/25] perf/core improvements and fixes
+Date: Thu, 31 Jan 2013 14:25:03 -0300
+Message-Id: <1359653128-10433-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
-References: <1359653128-10433-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Hi Ingo,
 
-Make the generic perf events in POWER7 available via sysfs.
+	Please consider pulling,
 
-	$ ls /sys/bus/event_source/devices/cpu/events
-	branch-instructions
-	branch-misses
-	cache-misses
-	cache-references
-	cpu-cycles
-	instructions
-	stalled-cycles-backend
-	stalled-cycles-frontend
+- Arnaldo
 
-	$ cat /sys/bus/event_source/devices/cpu/events/cache-misses
-	event=0x400f0
+The following changes since commit 152fefa921535665f95840c08062844ab2f5593e:
 
-This patch is based on commits that implement this functionality on x86.
-Eg:
-	commit a47473939db20e3961b200eb00acf5fcf084d755
-	Author: Jiri Olsa <jolsa@redhat.com>
-	Date:   Wed Oct 10 14:53:11 2012 +0200
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-01-31 10:20:14 +0100)
 
-	    perf/x86: Make hardware event translations available in sysfs
+are available in the git repository at:
 
-Changelog:[v2]
-	[Jiri Osla] Drop EVENT_ID() macro since it is only used once.
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Anton Blanchard <anton@au1.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: linuxppc-dev@ozlabs.org
-Link: http://lkml.kernel.org/r/20130123062454.GD13720@us.ibm.com
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 2ac3634a7e1c8eedc961030c87c5c36ebd5bbf8e:
+
+  perf: Document the ABI of perf sysfs entries (2013-01-31 13:07:51 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+. Make some POWER7 events available in sysfs, equivalent to
+  what was done on x86, from Sukadev Bhattiprolu.
+
+. Add event group view, from Namyung Kim:
+
+  To use it, 'perf record' should group events when recording. And then perf
+  report parses the saved group relation from file header and prints them
+  together if --group option is provided.  You can use 'perf evlist' command to
+  see event group information:
+
+    $ perf record -e '{ref-cycles,cycles}' noploop 1
+    [ perf record: Woken up 2 times to write data ]
+    [ perf record: Captured and wrote 0.385 MB perf.data (~16807 samples) ]
+
+    $ perf evlist --group
+    {ref-cycles,cycles}
+
+  With this example, default perf report will show you each event
+  separately like this:
+
+    $ perf report
+    ...
+    # group: {ref-cycles,cycles}
+    # ========
+    # Samples: 3K of event 'ref-cycles'
+    # Event count (approx.): 3153797218
+    #
+    # Overhead  Command      Shared Object                      Symbol
+    # ........  .......  .................  ..........................
+        99.84%  noploop  noploop            [.] main
+         0.07%  noploop  ld-2.15.so         [.] strcmp
+         0.03%  noploop  [kernel.kallsyms]  [k] timerqueue_del
+         0.03%  noploop  [kernel.kallsyms]  [k] sched_clock_cpu
+         0.02%  noploop  [kernel.kallsyms]  [k] account_user_time
+         0.01%  noploop  [kernel.kallsyms]  [k] __alloc_pages_nodemask
+         0.00%  noploop  [kernel.kallsyms]  [k] native_write_msr_safe
+
+    # Samples: 3K of event 'cycles'
+    # Event count (approx.): 3722310525
+    #
+    # Overhead  Command      Shared Object                     Symbol
+    # ........  .......  .................  .........................
+        99.76%  noploop  noploop            [.] main
+         0.11%  noploop  [kernel.kallsyms]  [k] _raw_spin_lock
+         0.06%  noploop  [kernel.kallsyms]  [k] find_get_page
+         0.03%  noploop  [kernel.kallsyms]  [k] sched_clock_cpu
+         0.02%  noploop  [kernel.kallsyms]  [k] rcu_check_callbacks
+         0.02%  noploop  [kernel.kallsyms]  [k] __current_kernel_time
+         0.00%  noploop  [kernel.kallsyms]  [k] native_write_msr_safe
+
+  In this case the event group information will be shown in the end of
+  header area.  So you can use --group option to enable event group view.
+
+    $ perf report --group
+    ...
+    # group: {ref-cycles,cycles}
+    # ========
+    # Samples: 7K of event 'anon group { ref-cycles, cycles }'
+    # Event count (approx.): 6876107743
+    #
+    #         Overhead  Command      Shared Object                      Symbol
+    # ................  .......  .................  ..........................
+        99.84%  99.76%  noploop  noploop            [.] main
+         0.07%   0.00%  noploop  ld-2.15.so         [.] strcmp
+         0.03%   0.00%  noploop  [kernel.kallsyms]  [k] timerqueue_del
+         0.03%   0.03%  noploop  [kernel.kallsyms]  [k] sched_clock_cpu
+         0.02%   0.00%  noploop  [kernel.kallsyms]  [k] account_user_time
+         0.01%   0.00%  noploop  [kernel.kallsyms]  [k] __alloc_pages_nodemask
+         0.00%   0.00%  noploop  [kernel.kallsyms]  [k] native_write_msr_safe
+         0.00%   0.11%  noploop  [kernel.kallsyms]  [k] _raw_spin_lock
+         0.00%   0.06%  noploop  [kernel.kallsyms]  [k] find_get_page
+         0.00%   0.02%  noploop  [kernel.kallsyms]  [k] rcu_check_callbacks
+         0.00%   0.02%  noploop  [kernel.kallsyms]  [k] __current_kernel_time
+
+  As you can see the Overhead column now contains both of ref-cycles and
+  cycles and header line shows group information also - 'anon group {
+  ref-cycles, cycles }'.  The output is sorted by period of group leader
+  first.
+
+  If perf.data file doesn't contain group information, this --group
+  option does nothing.  So if you want enable event group view by
+  default you can set it in ~/.perfconfig file:
+
+    $ cat ~/.perfconfig
+    [report]
+    group = true
+
+  It can be overridden with command line if you want:
+
+    $ perf report --no-group
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- Documentation/ABI/stable/sysfs-devices-cpu-events |  0
- arch/powerpc/include/asm/perf_event_server.h      | 23 +++++++++++++++
- arch/powerpc/perf/core-book3s.c                   | 12 ++++++++
- arch/powerpc/perf/power7-pmu.c                    | 34 +++++++++++++++++++++++
- 4 files changed, 69 insertions(+)
- create mode 100644 Documentation/ABI/stable/sysfs-devices-cpu-events
 
-diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
-new file mode 100644
-index 0000000..e69de29
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index 9710be3..b9b6c55 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -11,6 +11,7 @@
- 
- #include <linux/types.h>
- #include <asm/hw_irq.h>
-+#include <linux/device.h>
- 
- #define MAX_HWEVENTS		8
- #define MAX_EVENT_ALTERNATIVES	8
-@@ -35,6 +36,7 @@ struct power_pmu {
- 	void		(*disable_pmc)(unsigned int pmc, unsigned long mmcr[]);
- 	int		(*limited_pmc_event)(u64 event_id);
- 	u32		flags;
-+	const struct attribute_group	**attr_groups;
- 	int		n_generic;
- 	int		*generic_events;
- 	int		(*cache_events)[PERF_COUNT_HW_CACHE_MAX]
-@@ -109,3 +111,24 @@ extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
-  * If an event_id is not subject to the constraint expressed by a particular
-  * field, then it will have 0 in both the mask and value for that field.
-  */
-+
-+extern ssize_t power_events_sysfs_show(struct device *dev,
-+				struct device_attribute *attr, char *page);
-+
-+/*
-+ * EVENT_VAR() is same as PMU_EVENT_VAR with a suffix.
-+ *
-+ * Having a suffix allows us to have aliases in sysfs - eg: the generic
-+ * event 'cpu-cycles' can have two entries in sysfs: 'cpu-cycles' and
-+ * 'PM_CYC' where the latter is the name by which the event is known in
-+ * POWER CPU specification.
-+ */
-+#define	EVENT_VAR(_id, _suffix)		event_attr_##_id##_suffix
-+#define	EVENT_PTR(_id, _suffix)		&EVENT_VAR(_id, _suffix)
-+
-+#define	EVENT_ATTR(_name, _id, _suffix)					\
-+	PMU_EVENT_ATTR(_name, EVENT_VAR(_id, _suffix), PME_PM_##_id,	\
-+			power_events_sysfs_show)
-+
-+#define	GENERIC_EVENT_ATTR(_name, _id)	EVENT_ATTR(_name, _id, _g)
-+#define	GENERIC_EVENT_PTR(_id)		EVENT_PTR(_id, _g)
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index aa2465e..fa476d5 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1305,6 +1305,16 @@ static int power_pmu_event_idx(struct perf_event *event)
- 	return event->hw.idx;
- }
- 
-+ssize_t power_events_sysfs_show(struct device *dev,
-+				struct device_attribute *attr, char *page)
-+{
-+	struct perf_pmu_events_attr *pmu_attr;
-+
-+	pmu_attr = container_of(attr, struct perf_pmu_events_attr, attr);
-+
-+	return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
-+}
-+
- struct pmu power_pmu = {
- 	.pmu_enable	= power_pmu_enable,
- 	.pmu_disable	= power_pmu_disable,
-@@ -1537,6 +1547,8 @@ int __cpuinit register_power_pmu(struct power_pmu *pmu)
- 	pr_info("%s performance monitor hardware support registered\n",
- 		pmu->name);
- 
-+	power_pmu.attr_groups = ppmu->attr_groups;
-+
- #ifdef MSR_HV
- 	/*
- 	 * Use FCHV to ignore kernel events if MSR.HV is set.
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index eebb36d..269bf24 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -374,6 +374,39 @@ static int power7_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 	},
- };
- 
-+
-+GENERIC_EVENT_ATTR(cpu-cycles,			CYC);
-+GENERIC_EVENT_ATTR(stalled-cycles-frontend,	GCT_NOSLOT_CYC);
-+GENERIC_EVENT_ATTR(stalled-cycles-backend,	CMPLU_STALL);
-+GENERIC_EVENT_ATTR(instructions,		INST_CMPL);
-+GENERIC_EVENT_ATTR(cache-references,		LD_REF_L1);
-+GENERIC_EVENT_ATTR(cache-misses,		LD_MISS_L1);
-+GENERIC_EVENT_ATTR(branch-instructions,		BRU_FIN);
-+GENERIC_EVENT_ATTR(branch-misses,		BRU_MPRED);
-+
-+static struct attribute *power7_events_attr[] = {
-+	GENERIC_EVENT_PTR(CYC),
-+	GENERIC_EVENT_PTR(GCT_NOSLOT_CYC),
-+	GENERIC_EVENT_PTR(CMPLU_STALL),
-+	GENERIC_EVENT_PTR(INST_CMPL),
-+	GENERIC_EVENT_PTR(LD_REF_L1),
-+	GENERIC_EVENT_PTR(LD_MISS_L1),
-+	GENERIC_EVENT_PTR(BRU_FIN),
-+	GENERIC_EVENT_PTR(BRU_MPRED),
-+	NULL
-+};
-+
-+
-+static struct attribute_group power7_pmu_events_group = {
-+	.name = "events",
-+	.attrs = power7_events_attr,
-+};
-+
-+static const struct attribute_group *power7_pmu_attr_groups[] = {
-+	&power7_pmu_events_group,
-+	NULL,
-+};
-+
- static struct power_pmu power7_pmu = {
- 	.name			= "POWER7",
- 	.n_counter		= 6,
-@@ -385,6 +418,7 @@ static struct power_pmu power7_pmu = {
- 	.get_alternatives	= power7_get_alternatives,
- 	.disable_pmc		= power7_disable_pmc,
- 	.flags			= PPMU_ALT_SIPR,
-+	.attr_groups		= power7_pmu_attr_groups,
- 	.n_generic		= ARRAY_SIZE(power7_generic_events),
- 	.generic_events		= power7_generic_events,
- 	.cache_events		= &power7_cache_events,
--- 
-1.8.1.1.361.gec3ae6e
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (2):
+      perf top: Stop using exit()
+      perf top: Delete maps on exit
 
+Namhyung Kim (18):
+      perf tools: Keep group information
+      perf tests: Add group test conditions
+      perf header: Add HEADER_GROUP_DESC feature
+      perf report: Make another loop for linking group hists
+      perf hists: Resort hist entries using group members for output
+      perf ui/hist: Consolidate hpp helpers
+      perf hists browser: Convert hpp helpers to a function
+      perf gtk/browser: Convert hpp helpers to a function
+      perf ui/hist: Add support for event group view
+      perf hists browser: Move coloring logic to hpp functions
+      perf hists browser: Add suppport for event group view
+      perf gtk/browser: Add support for event group view
+      perf gtk/browser: Trim column header string when event group enabled
+      perf report: Bypass non-leader events when event group is enabled
+      perf report: Show group description when event group is enabled
+      perf report: Add --group option
+      perf report: Add report.group config option
+      perf evlist: Add --group option
+
+Sukadev Bhattiprolu (5):
+      perf/Power7: Use macros to identify perf events
+      perf: Make EVENT_ATTR global
+      perf/POWER7: Make generic event translations available in sysfs
+      perf/POWER7: Make some POWER7 events available in sysfs
+      perf: Document the ABI of perf sysfs entries
+
+ .../testing/sysfs-bus-event_source-devices-events  |  62 +++++
+ arch/powerpc/include/asm/perf_event_server.h       |  26 ++
+ arch/powerpc/perf/core-book3s.c                    |  12 +
+ arch/powerpc/perf/power7-pmu.c                     |  80 +++++-
+ arch/x86/kernel/cpu/perf_event.c                   |  13 +-
+ include/linux/perf_event.h                         |  11 +
+ tools/perf/Documentation/perf-evlist.txt           |   4 +
+ tools/perf/Documentation/perf-report.txt           |   3 +
+ tools/perf/builtin-evlist.c                        |   7 +
+ tools/perf/builtin-record.c                        |   3 +
+ tools/perf/builtin-report.c                        |  47 +++-
+ tools/perf/builtin-top.c                           |  62 +++--
+ tools/perf/tests/parse-events.c                    |  28 ++
+ tools/perf/ui/browsers/hists.c                     | 217 ++++++++++++---
+ tools/perf/ui/gtk/hists.c                          | 130 +++++++--
+ tools/perf/ui/hist.c                               | 306 ++++++++++-----------
+ tools/perf/ui/stdio/hist.c                         |   2 +
+ tools/perf/util/evlist.c                           |   7 +-
+ tools/perf/util/evlist.h                           |   1 +
+ tools/perf/util/evsel.c                            |  49 +++-
+ tools/perf/util/evsel.h                            |  16 ++
+ tools/perf/util/header.c                           | 164 +++++++++++
+ tools/perf/util/header.h                           |   2 +
+ tools/perf/util/hist.c                             |  59 +++-
+ tools/perf/util/parse-events.c                     |   1 +
+ tools/perf/util/parse-events.h                     |   1 +
+ tools/perf/util/parse-events.y                     |  10 +
+ tools/perf/util/symbol.h                           |   3 +-
+ 28 files changed, 1059 insertions(+), 267 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-events
