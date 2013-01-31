@@ -1,43 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab3AaQAB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 11:00:01 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:47285 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3AaP76 (ORCPT
+	id S1755162Ab3AaQBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 11:01:20 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:58008 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab3AaQBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 10:59:58 -0500
+	Thu, 31 Jan 2013 11:01:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <510A8F9C.5090306@gmail.com>
-References: <1359562210-26536-1-git-send-email-jiang.liu@huawei.com>
-	<1359562210-26536-2-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQU2LvEjTpbjs+LUb=vU7XDC_76OEo5irR_Bn_DjvfgQ0w@mail.gmail.com>
-	<510A8F9C.5090306@gmail.com>
-Date: Thu, 31 Jan 2013 07:59:57 -0800
-X-Google-Sender-Auth: 3hEfAt7kpdU6--uW1YNxbQYJX0o
-Message-ID: <CAE9FiQXBOj7wCJkXPoBDPiVNH7K0iQPExfrWhAuzwVcyrN+ZZQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] acpiphp: remove dead code for PCI host bridge hotplug
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DF0AF15@sausexdag04.amd.com>
+References: <CA+55aFx5ZyFtd59ygn6ja5X-3ZyRvhfJLqtNKyF_mH3+-kSjKg@mail.gmail.com>
+	<CAKocOOPr4wddCmDEWKmsKsKeTc3m779opuN_qRb4yiL63KVZ8A@mail.gmail.com>
+	<CAKocOOPp1PA-n_=xdPuBSBKaKiREqhgeo02QqWpP-oX7vnN_YA@mail.gmail.com>
+	<CAKocOOOpDb=0XgX-uhDbBjOF7qK_M5MA31q9ScD0yTat0QRquQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC30FE7@sausexdag04.amd.com>
+	<CAKocOONuFvcik229+1B0oeaBnQG7seZPeYf99xqduFa6kBZhOw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF083DE@sausexdag04.amd.com>
+	<CAKocOOMxAYw-XO-6XGteKb8NyHDq4_BdZn2njUNBh+a73wrFGA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF084EA@sausexdag04.amd.com>
+	<CAKocOOOYKAZPH1+W3usfRUh68594e8YKqBUORo2c5bCCCYDh0A@mail.gmail.com>
+	<CAKocOOOaWSvWZkhLNBx9u6M5nOu39wUgnS-a9Srsbp5BTcdh1A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF086E6@sausexdag04.amd.com>
+	<CAKocOOMD9i7TtzoH3c2pDXqSRXV8RB1qmqp_QxftCpfK763CqA@mail.gmail.com>
+	<CAKocOONFpPBQH=naKdmrXa1ijpzf=0jonKuUWbw3NhEeumfM=A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A266@sausexdag04.amd.com>
+	<CAKocOOPsvh=jOXLahe6ukjpyjOOqt9tRdwELxv8i0_Vi1xqQkA@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A37D@sausexdag04.amd.com>
+	<CAKocOOORwoUAStDmFPhW1--WhAJaEzEmG-=tZ1sgkWKsquq=rQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0A3B7@sausexdag04.amd.com>
+	<CAKocOOMxbZXjL_qxQQD+-Z7ocJ1tR7UDEDr+2uSSfjhihik6VA@mail.gmail.com>
+	<CAKocOOOHcaYoUQ6Z1yC9T0o9=qaMas3mVzrD8iEnycLJd3nxVQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0ABD0@sausexdag04.amd.com>
+	<CAKocOOMSRZysoKh9Lkgj-3_WsRq9Q6Oo0wJneUStjD+g+WgzAQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0AC95@sausexdag04.amd.com>
+	<CAKocOOPoZ2HqxSz=PB68wpZxd6z8Byv1Yfj3nArt1z+3ViuNNQ@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DF0AF15@sausexdag04.amd.com>
+Date: Thu, 31 Jan 2013 09:01:16 -0700
+Message-ID: <CAKocOOMivziOF3ntKiwgH8Pc-d8h5sdykeJS7mKQ6vPe6Y=guA@mail.gmail.com>
+Subject: Re: Linux 3.8-rc4
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 7:37 AM, Jiang Liu <liuj97@gmail.com> wrote:
+On Thu, Jan 31, 2013 at 7:56 AM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> -----Original Message-----
+>> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>> Sent: Wednesday, January 30, 2013 4:12 PM
+>> To: Deucher, Alexander
+>> Cc: Linus Torvalds; Linux Kernel Mailing List
+>> Subject: Re: Linux 3.8-rc4
+>>
+>> On Wed, Jan 30, 2013 at 8:53 AM, Deucher, Alexander
+>> <Alexander.Deucher@amd.com> wrote:
+>> >> -----Original Message-----
+>> >> From: Shuah Khan [mailto:shuahkhan@gmail.com]
+>> >> Sent: Wednesday, January 30, 2013 10:35 AM
+>> >> To: Deucher, Alexander
+>> >> Cc: Linus Torvalds; Linux Kernel Mailing List
+>> >> Subject: Re: Linux 3.8-rc4
+>> >>
+>> >> On Wed, Jan 30, 2013 at 6:31 AM, Deucher, Alexander
+>> >> <Alexander.Deucher@amd.com> wrote:
+>> >>
+>> >> >>
+>> >> >> ok. I did more debugging in rv515_mc_stop() and here is what's
+>> >> >> happening. It has two display controllers and one of them is enabled
+>> >> >> and the other is in disabled state when AVIVO_D1CRTC_CONTROL is
+>> >> >> checked. The current code doesn't blank the disabled crtc. However, it
+>> >> >> needs to be blanked to avoid DMAR faults it appears. I think that is
+>> >> >> what the original code prior to
+>> >> >> 6253e4c75d96006c06b9ac8f417eba873de2497b commit was doing:
+>> >> >>
+>> >> >> -       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 1);
+>> >> >> -       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 1);
+>> >> >> -       WREG32(R_006080_D1CRTC_CONTROL, 0);
+>> >> >> -       WREG32(R_006880_D2CRTC_CONTROL, 0);
+>> >> >> -       WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 0);
+>> >> >> -       WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
+>> >> >> -       WREG32(R_000330_D1VGA_CONTROL, 0);
+>> >> >> -       WREG32(R_000338_D2VGA_CONTROL, 0);
+>> >> >>
+>> >> >> Anyways, here is the diff for the change (by no means a patch) I made
+>> >> >> that fixed the problem:
+>> >> >
+>> >> > Unfortunately, that just fixes the problem by causing an additional delay
+>> >> since the wait_for_vblank() and get_frame_count() loops will timeout
+>> since
+>> >> the secondary display is disabled.  The previous code disabled the displays
+>> >> completely while the new code just disables the memory request
+>> interface
+>> >> so that the display timing stays on to avoid additional flicker at startup or
+>> GPU
+>> >> reset.  For some reason on your system there seems to be a delay in
+>> getting
+>> >> the memory request interface to stop.
+>> >> >
+>> >> > Alex
+>> >>
+>> >> Right. That makes sense and yes the annoying flicker went away. :) Can
+>> >> you think of something that can address systems that would need more
+>> >> time to get the memory request interface to stop such as mine?
+>> >
+>> > Does adding an additional radeon_mc_wait_for_idle(rdev) call at the end
+>> of rv515_mc_stop() help?  Can you find out what the minimum delay
+>> required for your system is?
+>> >
+>> > Alex
+>>
+>> Adding radeon_mc_wait_for_idle(rdev) call at the end of
+>> rv515_mc_stop() - didn't help.
+>>
+>> I tried with adding udelay() with delay values of 1,10, and 50, and
+>> 100 at the end of rv515_mc_stop(). 100 is the minimum that fixed the
+>> DMAR faults.
 >
-> So I think the code in handle_hotplug_event_bridge() to handle P2P hot-addition
-> is dead. Yijing has helped to test the code by faking ACPI CUSTOM_METHOD, and it
-> does work as expected.
+> I guess we can just add the delay.  I've tried all the ways I know of to get proper feedback from the hardware.
+>
+> Alex
+>
 
-ok, then.
+Do you want me to send a patch with delay()? Would you like to see the
+delay specific to this chipset which is RV620? That said if you think
+of other ideas to try instead of delay, I can continue the debug and
+testing effort.
 
-It would be better if you can append some print out from Yijing's test
-in the changelog.
-
-Thanks
-
-Yinghai
+-- Shuah
