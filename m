@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab3AaWKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:10:18 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:54215 "EHLO e7.ny.us.ibm.com"
+	id S1755931Ab3AaWK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:10:27 -0500
+Received: from mail.sf-mail.de ([62.27.20.61]:51715 "EHLO mail.sf-mail.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab3AaWKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:10:13 -0500
-Message-ID: <510AEBA9.8090804@linux.vnet.ibm.com>
-Date: Thu, 31 Jan 2013 14:09:45 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
+	id S1755635Ab3AaWKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:10:24 -0500
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
 To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Yinghai Lu <yinghai@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [RFC][PATCH] rip out x86_32 NUMA remapping code
-References: <20130131005616.1C79F411@kernel.stglabs.ibm.com> <510AE763.6090907@zytor.com> <CAE9FiQVn6_QZi3fNQ-JHYiR-7jeDJ5hT0SyT_+zVvfOj=PzF3w@mail.gmail.com> <510AE92B.8020605@zytor.com> <CAE9FiQUCB3CDB9kB6ojYRLHHjxgoRqmNFrcjkH1RNHjSHUZ4uQ@mail.gmail.com> <510AEA20.8040407@zytor.com>
-In-Reply-To: <510AEA20.8040407@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13013122-5806-0000-0000-00001F023442
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>,
+        autofs@vger.kernel.org
+Subject: Re: [PATCH] parisc: unbreak automounter support on 64-bit kernel with 32-bit userspace
+Date: Thu, 31 Jan 2013 23:10:10 +0100
+Message-ID: <1470501.uiZyX6kBKo@donald.sf-tec.de>
+User-Agent: KMail/4.9.5 (Linux/3.7.1-17-desktop; KDE/4.9.5; i686; ; )
+In-Reply-To: <510AE623.7000609@zytor.com>
+References: <20130131200110.GA6032@p100.box> <1359668524.2468.12.camel@dabdike> <510AE623.7000609@zytor.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart6267936.Gb1GP3pgWl"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 02:03 PM, H. Peter Anvin wrote:
-> That is arch-independent code, and the tile architecture still uses it.
+
+--nextPart6267936.Gb1GP3pgWl
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="UTF-8"
+
+H. Peter Anvin wrote:
+> On 01/31/2013 01:42 PM, James Bottomley wrote:
+> > On Thu, 2013-01-31 at 13:29 -0800, H. Peter Anvin wrote:
+> >> On 01/31/2013 12:26 PM, James Bottomley wrote:
+> >>> [adding autofs list and maintainer for their perusal and ack, although
+> >>> this is an obvious fix to me
+> >>> 
+> >>> James]
+> >> 
+> >> The #if list probably should be inverted, and only specific platforms
+> >> should have unsigned long...
+> > 
+> > The whitelist is 64 bit only platforms, like ia64, isn't it?  So yes,
+> > they're far less numerous.
 > 
-> Makes one wonder how much it will get tested going forward, especially
-> with the x86-32 implementation clearly lacking in that department.
+> Correct.  It is basically the 64-bit platforms without any 32-bit
+> userspace, like Alpha and IA64.
 
-Yeah, I left the tile one because it wasn't obvious how it was being
-used over there.  It _probably_ has the same bugs that x86 does.
+Arm64? Should this be a CONFIG_ARCH_CAN_HAVE_32BIT_USERSPACE that would cover 
+this? And may e.g. be used to remove compat_ioctl on those archs, too?
 
-I'll refresh the patch fixing some of the compile issues and resend.
+Eike
+--nextPart6267936.Gb1GP3pgWl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEABECAAYFAlEK68kACgkQXKSJPmm5/E6d6ACfQXJciVY9c8+cXb/hw98Spx9d
+jh8Anj+sHsqqiRcYfHzgCgV2g7s3DiQ5
+=HJ+k
+-----END PGP SIGNATURE-----
+
+--nextPart6267936.Gb1GP3pgWl--
 
