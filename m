@@ -1,138 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3AaHL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 02:11:59 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:22255 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973Ab3AaHL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 02:11:57 -0500
-X-IronPort-AV: E=Sophos;i="4.84,574,1355068800"; 
-   d="scan'208";a="6670554"
-Message-ID: <510A18FA.2010107@cn.fujitsu.com>
-Date: Thu, 31 Jan 2013 15:10:50 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>   <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>  <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com> <1359613162.1587.0.camel@kernel>
-In-Reply-To: <1359613162.1587.0.camel@kernel>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/31 15:10:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/31 15:10:44,
-	Serialize complete at 2013/01/31 15:10:44
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754195Ab3AaHQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:16:16 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33588 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab3AaHQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 02:16:13 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: sachin.kamat@linaro.org, Vinod Koul <vinod.koul@intel.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/1] dma: pl330: Convert to devm_ioremap_resource()
+Date: Thu, 31 Jan 2013 12:37:04 +0530
+Message-Id: <1359616024-11640-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 02:19 PM, Simon Jeons wrote:
-> Hi Tang,
-> On Thu, 2013-01-31 at 11:31 +0800, Tang Chen wrote:
->> Hi Simon,
->>
->> Please see below. :)
->>
->> On 01/31/2013 09:22 AM, Simon Jeons wrote:
->>>
->>> Sorry, I still confuse. :(
->>> update node_states[N_NORMAL_MEMORY] to node_states[N_MEMORY] or
->>> node_states[N_NORMAL_MEMOR] present 0...ZONE_MOVABLE?
->>>
->>> node_states is what? node_states[N_NORMAL_MEMOR] or
->>> node_states[N_MEMORY]?
->>
->> Are you asking what node_states[] is ?
->>
->> node_states[] is an array of nodemask,
->>
->>       extern nodemask_t node_states[NR_NODE_STATES];
->>
->> For example, node_states[N_NORMAL_MEMOR] represents which nodes have
->> normal memory.
->> If N_MEMORY == N_HIGH_MEMORY == N_NORMAL_MEMORY, node_states[N_MEMORY] is
->> node_states[N_NORMAL_MEMOR]. So it represents which nodes have 0 ...
->> ZONE_MOVABLE.
->>
->
-> Sorry, how can nodes_state[N_NORMAL_MEMORY] represents a node have 0 ...
-> *ZONE_MOVABLE*, the comment of enum nodes_states said that
-> N_NORMAL_MEMORY just means the node has regular memory.
->
+Use the newly introduced devm_ioremap_resource() instead of
+devm_request_and_ioremap() which provides more consistent error handling.
 
-Hi Simon,
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+This change is based against linux-next tree (20130128).
+This change however introduces the followign sparse warning:
+drivers/dma/pl330.c:2883:22: warning: incorrect type in argument 1 (different address spaces)
+drivers/dma/pl330.c:2883:22:    expected void const *ptr
+drivers/dma/pl330.c:2883:22:    got void [noderef] <asn:2>*base
+drivers/dma/pl330.c:2884:34: warning: incorrect type in argument 1 (different address spaces)
+drivers/dma/pl330.c:2884:34:    expected void const *ptr
+drivers/dma/pl330.c:2884:34:    got void [noderef] <asn:2>*base
+---
+ drivers/dma/pl330.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-Let's say it in this way.
-
-If we don't have CONFIG_HIGHMEM, N_HIGH_MEMORY == N_NORMAL_MEMORY. We 
-don't have a separate
-macro to represent highmem because we don't have highmem.
-This is easy to understand, right ?
-
-Now, think it just like above:
-If we don't have CONFIG_MOVABLE_NODE, N_MEMORY == N_HIGH_MEMORY == 
-N_NORMAL_MEMORY.
-This means we don't allow a node to have only movable memory, not we 
-don't have movable memory.
-A node could have normal memory and movable memory. So 
-nodes_state[N_NORMAL_MEMORY] represents
-a node have 0 ... *ZONE_MOVABLE*.
-
-I think the point is: CONFIG_MOVABLE_NODE means we allow a node to have 
-only movable memory.
-So without CONFIG_MOVABLE_NODE, it doesn't mean a node cannot have 
-movable memory. It means
-the node cannot have only movable memory. It can have normal memory and 
-movable memory.
-
-1) With CONFIG_MOVABLE_NODE:
-    N_NORMAL_MEMORY: nodes who have normal memory.
-                     normal memory only
-                     normal and highmem
-                     normal and highmem and movablemem
-                     normal and movablemem
-    N_MEMORY: nodes who has memory (any memory)
-                     normal memory only
-                     normal and highmem
-                     normal and highmem and movablemem
-                     normal and movablemem ---------------- We can have 
-movablemem.
-                     highmem only -------------------------
-                     highmem and movablemem ---------------
-                     movablemem only ---------------------- We can have 
-movablemem only.    ***
-
-2) With out CONFIG_MOVABLE_NODE:
-    N_MEMORY == N_NORMAL_MEMORY: (Here, I omit N_HIGH_MEMORY)
-                     normal memory only
-                     normal and highmem
-                     normal and highmem and movablemem
-                     normal and movablemem ---------------- We can have 
-movablemem.
-                     No movablemem only ------------------- We cannot 
-have movablemem only. ***
-
-The semantics is not that clear here. So we can only try to understand 
-it from the code where
-we use N_MEMORY. :)
-
-That is my understanding of this.
-
-Thanks. :)
-
-
-
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 316a43e..142fe4d 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -25,6 +25,7 @@
+ #include <linux/amba/pl330.h>
+ #include <linux/scatterlist.h>
+ #include <linux/of.h>
++#include <linux/err.h>
+ 
+ #include "dmaengine.h"
+ #define PL330_MAX_CHAN		8
+@@ -2878,9 +2879,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	pi->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
+ 
+ 	res = &adev->res;
+-	pi->base = devm_request_and_ioremap(&adev->dev, res);
+-	if (!pi->base)
+-		return -ENXIO;
++	pi->base = devm_ioremap_resource(&adev->dev, res);
++	if (IS_ERR(pi->base))
++		return PTR_ERR(pi->base);
+ 
+ 	amba_set_drvdata(adev, pdmac);
+ 
+-- 
+1.7.4.1
 
