@@ -1,147 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab3AaIRU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:17:20 -0500
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:64714 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3AaIRP (ORCPT
+	id S1753008Ab3AaIVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:21:19 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:34994 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3AaIVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:17:15 -0500
-Message-ID: <1359620228.1391.0.camel@kernel>
-Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Date: Thu, 31 Jan 2013 02:17:08 -0600
-In-Reply-To: <510A18FA.2010107@cn.fujitsu.com>
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
-	   <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>
-	  <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>
-	 <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jan 2013 03:21:18 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20130131054002.GA3697@kroah.com>
+References: <20130130200648.GA13298@flint.arm.linux.org.uk>
+	<20130130215211.GA28418@flint.arm.linux.org.uk>
+	<CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
+	<20130130221946.GA14801@flint.arm.linux.org.uk>
+	<CA+55aFyRHK3dmwQf_mdfB18dmoaRZqBG9FvHRqTs7cqBjgUs+g@mail.gmail.com>
+	<CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com>
+	<20130131001339.GC14801@flint.arm.linux.org.uk>
+	<CA+55aFxfeXWAiXV18qGgOk9+2HHiD7LUuyk55brHFXd+_c6eZQ@mail.gmail.com>
+	<20130131054002.GA3697@kroah.com>
+Date: Thu, 31 Jan 2013 09:21:16 +0100
+Message-ID: <CAKMK7uGUrvh2dXza_b288kVdztiLjSCNpH304oBQgg_ZonEnzw@mail.gmail.com>
+Subject: Re: BUG: circular locking dependency detected
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <rmk@arm.linux.org.uk>, Dave Airlie <airlied@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tang,
-On Thu, 2013-01-31 at 15:10 +0800, Tang Chen wrote:
-> On 01/31/2013 02:19 PM, Simon Jeons wrote:
-> > Hi Tang,
-> > On Thu, 2013-01-31 at 11:31 +0800, Tang Chen wrote:
-> >> Hi Simon,
-> >>
-> >> Please see below. :)
-> >>
-> >> On 01/31/2013 09:22 AM, Simon Jeons wrote:
-> >>>
-> >>> Sorry, I still confuse. :(
-> >>> update node_states[N_NORMAL_MEMORY] to node_states[N_MEMORY] or
-> >>> node_states[N_NORMAL_MEMOR] present 0...ZONE_MOVABLE?
-> >>>
-> >>> node_states is what? node_states[N_NORMAL_MEMOR] or
-> >>> node_states[N_MEMORY]?
-> >>
-> >> Are you asking what node_states[] is ?
-> >>
-> >> node_states[] is an array of nodemask,
-> >>
-> >>       extern nodemask_t node_states[NR_NODE_STATES];
-> >>
-> >> For example, node_states[N_NORMAL_MEMOR] represents which nodes have
-> >> normal memory.
-> >> If N_MEMORY == N_HIGH_MEMORY == N_NORMAL_MEMORY, node_states[N_MEMORY] is
-> >> node_states[N_NORMAL_MEMOR]. So it represents which nodes have 0 ...
-> >> ZONE_MOVABLE.
-> >>
-> >
-> > Sorry, how can nodes_state[N_NORMAL_MEMORY] represents a node have 0 ...
-> > *ZONE_MOVABLE*, the comment of enum nodes_states said that
-> > N_NORMAL_MEMORY just means the node has regular memory.
-> >
-> 
-> Hi Simon,
-> 
-> Let's say it in this way.
-> 
-> If we don't have CONFIG_HIGHMEM, N_HIGH_MEMORY == N_NORMAL_MEMORY. We 
-> don't have a separate
-> macro to represent highmem because we don't have highmem.
-> This is easy to understand, right ?
-> 
-> Now, think it just like above:
-> If we don't have CONFIG_MOVABLE_NODE, N_MEMORY == N_HIGH_MEMORY == 
-> N_NORMAL_MEMORY.
-> This means we don't allow a node to have only movable memory, not we 
-> don't have movable memory.
-> A node could have normal memory and movable memory. So 
-> nodes_state[N_NORMAL_MEMORY] represents
-> a node have 0 ... *ZONE_MOVABLE*.
-> 
-> I think the point is: CONFIG_MOVABLE_NODE means we allow a node to have 
-> only movable memory.
-> So without CONFIG_MOVABLE_NODE, it doesn't mean a node cannot have 
-> movable memory. It means
-> the node cannot have only movable memory. It can have normal memory and 
-> movable memory.
-> 
-> 1) With CONFIG_MOVABLE_NODE:
->     N_NORMAL_MEMORY: nodes who have normal memory.
->                      normal memory only
->                      normal and highmem
->                      normal and highmem and movablemem
->                      normal and movablemem
->     N_MEMORY: nodes who has memory (any memory)
->                      normal memory only
->                      normal and highmem
->                      normal and highmem and movablemem
->                      normal and movablemem ---------------- We can have 
-> movablemem.
->                      highmem only -------------------------
->                      highmem and movablemem ---------------
->                      movablemem only ---------------------- We can have 
-> movablemem only.    ***
-> 
-> 2) With out CONFIG_MOVABLE_NODE:
->     N_MEMORY == N_NORMAL_MEMORY: (Here, I omit N_HIGH_MEMORY)
->                      normal memory only
->                      normal and highmem
->                      normal and highmem and movablemem
->                      normal and movablemem ---------------- We can have 
-> movablemem.
->                      No movablemem only ------------------- We cannot 
-> have movablemem only. ***
-> 
-> The semantics is not that clear here. So we can only try to understand 
-> it from the code where
-> we use N_MEMORY. :)
-> 
-> That is my understanding of this.
+On Thu, Jan 31, 2013 at 6:40 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Jan 31, 2013 at 11:26:53AM +1100, Linus Torvalds wrote:
+>> On Thu, Jan 31, 2013 at 11:13 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+>> >
+>> > Which may or may not be a good thing depending how you look at it; it
+>> > means that once your kernel blanks, you get a lockdep dump.  At that
+>> > point you lose lockdep checking for everything else because lockdep
+>> > disables itself after the first dump.
+>>
+>> Fair enough, we may want to revert the lockdep checking for
+>> console_lock, and make re-enabling it part of the patch-series that
+>> fixes the locking.
+>>
+>> Daniel/Dave? Does that sound reasonable?
 
-Thanks for your clarify, very clear now. :)
+Yeah, sounds good.
 
-> 
-> Thanks. :)
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Reverting the patch is fine with me.  Just let me know so I can queue it
+> up again for 3.9.
 
-
+Can you please also pick up the (currently) three locking fixups
+around fbcon? Just so that we don't repeat the same fun where people
+complain about lockdep splats, but the fixes are stuck somewhere. And
+I guess Dave would be happy to not end up as fbcon maintainer ;-) He
+has a git branch with them at
+http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
+though I have a small bikeshed on his last patch pending.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
