@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab3AaWAj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:00:39 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:40832 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756387Ab3AaWAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 17:00:11 -0500
+	id S1756898Ab3AaWA5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 17:00:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756147Ab3AaWAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:00:51 -0500
+Date: Thu, 31 Jan 2013 17:00:37 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v4 9/9] devcg: propagate local changes down the hierarchy
+Message-ID: <20130131220036.GN17632@redhat.com>
+References: <20130130171101.060853036@napanee.usersys.redhat.com>
+ <20130130171102.390708521@napanee.usersys.redhat.com>
+ <20130131041932.GB14576@mail.hallyn.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1301312233480.11905@ionos>
-References: <20130131120348.372374706@linutronix.de> <20130131122342.31b28664.akpm@linux-foundation.org>
- <alpine.LFD.2.02.1301312233480.11905@ionos>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 1 Feb 2013 08:59:49 +1100
-X-Google-Sender-Auth: nYl-uZ6kM_q1mG4hH368Py0IssI
-Message-ID: <CA+55aFx=cv+HxKGx+oQk4iLnnTGO7P0u3+DnvuOWbYzM-wvEeQ@mail.gmail.com>
-Subject: Re: [patch 00/40] CPU hotplug rework - episode I
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
-        Richard Weinberger <rw@linutronix.de>,
-        Magnus Damm <magnus.damm@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130131041932.GB14576@mail.hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 8:48 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> Methinks Tejun needed a cc on this lot ;)
->
-> Not really.
+On Thu, Jan 31, 2013 at 04:19:32AM +0000, Serge E. Hallyn wrote:
+> Quoting aris@redhat.com (aris@redhat.com):
+> > +/**
+> > + * propagate_behavior - propagates a change in the behavior down in hierarchy
+> > + * @devcg_root: device cgroup that changed behavior
+> > + *
+> > + * returns: 0 in case of success, != 0 in case of error
+> > + *
+> > + * This is one of the two key functions for hierarchy implementation.
+> > + * All cgroup's children recursively will have the behavior changed and
+> > + * exceptions copied from the parent then its local behavior and exceptions
+> > + * re-evaluated and applied if they're still allowed.  Refer to
+> > + * Documentation/cgroups/devices.txt for more details.
+> > + */
+> > +static int propagate_behavior(struct dev_cgroup *devcg_root)
+> > +{
+> > +	struct cgroup *root = devcg_root->css.cgroup;
+> > +	struct dev_cgroup *parent, *devcg, *tmp;
+> > +	int rc = 0;
+> > +	LIST_HEAD(pending);
+> > +
+> > +	get_online_devcg(root, &pending);
+> > +
+> > +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
+> > +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
+> > +
+> > +		/* first copy parent's state */
+> > +		devcg->behavior = parent->behavior;
+> > +		dev_exception_clean(&devcg->exceptions);
+> > +		rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
+> > +		if (rc) {
+> > +			devcg->behavior = DEVCG_DEFAULT_DENY;
+> > +			break;
+> > +		}
+> > +
+> > +		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
+> > +		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
+> > +			devcg->behavior = DEVCG_DEFAULT_DENY;
+> > +		}
+> 
+> I think you might need another special case here.  If A and it's
+> child B are both ALLOW, and A switches to DENY, then if I read this
+> right B will be switched to DENY, but its local->exceptions will
+> not be cleared.  They won't be immediately applied, so at first it's
+> ok.  But if B then adds an exception, what happens?  It'll call
+> revalidate_exceptions on the full old list plus new exception.  If
+> any exceptions aren't allowed by the parent then it won't be applied,
+> but it's possible that it is allowed in the parent but (its sense
+> now being inverted from blacklist to whitelist) not intended to be
+> allowed in the child.  But there will be nothing to stop it.
+> 
+> So do you need
+> 
+> 	if (devcg->local.behavior == DEVCG_DEFAULT_ALLOW &&
+> 		devcg->behavior == DEVCG_DEFAULT_DENY) {
+> 		dev_exception_clean(&devcg->local.exceptions);
+> 	}
+> 
+> here?
+> 
+> > +		if (devcg->local.behavior == devcg->behavior)
+> > +			rc = revalidate_exceptions(devcg);
 
-I think we want as many people as possible cc'd on this. You may think
-it's an obvious improvement, but maybe it's just because you now
-understand the code because you wrote it yourself, not because it's
-*actually* better.
+I think:
+		else
+			dev_exception_clean(&devcg->local.exceptions);
 
-Having some explicitly documented states may be nice, but do we need
-eleven of them? And do we want to expose them? At least not for the
-f*cking notifiers, I hope. Notifiers are a disgrace, and almost all of
-them are a major design mistake. They all have locking problems, the
-introduce internal arbitrary API's that are hard to fix later (because
-you have random people who decided to hook into them, which is the
-whole *point* of those notifier chains).
+here instead
 
-Since the patches themselves weren't cc'd, I don't know if you
-actually made each state transition do those insane notifiers or not,
-but I seriously hope you didn't. With that many states, hopefully the
-idea is that you don't have any notifiers at all, and you just then
-call the people associated with a particular state directly. Yes? No?
+-- 
+Aristeu
 
-Because if this adds tons of new notifiers, I'm going to say that we
-need about a hundred people signing off on the patches.  Part of your
-explanation made me think you got rid of the notifiers, but then it
-became clear that you just renamed them as "state callbacks". If
-that's some generic exposed interface, I'll NAK it. No way in hell do
-we want to expose eleven states with some random generic "SMP state
-callback interface". F*ck no.
-
-                Linus
