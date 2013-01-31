@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab3AaKpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:45:47 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42210 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954Ab3AaKpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:45:44 -0500
+	id S1754793Ab3AaKqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:46:23 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:36008 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275Ab3AaKpq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 05:45:46 -0500
 From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
 To: <linux-mmc@vger.kernel.org>
 CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
@@ -16,9 +17,9 @@ CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <ido@wizery.com>, <gregkh@linuxfoundation.org>,
         "Manjunathappa, Prakash" <prakash.pm@ti.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] ARM: davinci: da850: add mmc DT entries
-Date: Thu, 31 Jan 2013 16:03:07 +0530
-Message-ID: <1359628387-14437-4-git-send-email-prakash.pm@ti.com>
+Subject: [PATCH 2/3] mmc: davinci_mmc: add DT support
+Date: Thu, 31 Jan 2013 16:03:06 +0530
+Message-ID: <1359628387-14437-3-git-send-email-prakash.pm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359628387-14437-1-git-send-email-prakash.pm@ti.com>
 References: <1359628387-14437-1-git-send-email-prakash.pm@ti.com>
@@ -28,9 +29,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DT entry for MMC. Also add entry for pinmux information.
-Tested on da850-evm without card detect and EDMA support as
-DT support for GPIO and EDMA are yet come.
+Adds device tree support for davinci_mmc. Also add
+binding documentation.
+Tested with non-dma PIO mode and without GPIO
+card_detect/write_protect option because of
+dependencies on EDMA and GPIO modules DT support.
 
 Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
 Cc: linux-mmc@vger.kernel.org
@@ -40,68 +43,150 @@ Cc: davinci-linux-open-source@linux.davincidsp.com
 Cc: devicetree-discuss@lists.ozlabs.org
 Cc: cjb@laptop.org
 Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: mporter@ti.com
 ---
- arch/arm/boot/dts/da850-evm.dts |   13 +++++++++++++
- arch/arm/boot/dts/da850.dtsi    |   15 +++++++++++++++
- 2 files changed, 28 insertions(+), 0 deletions(-)
+ .../devicetree/bindings/mmc/davinci_mmc.txt        |   23 +++++++
+ drivers/mmc/host/davinci_mmc.c                     |   69 +++++++++++++++++++-
+ 2 files changed, 91 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mmc/davinci_mmc.txt
 
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index fa04152..51c87e7 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -30,6 +30,19 @@
- 		rtc0: rtc@1c23000 {
- 			status = "okay";
- 		};
-+		mmc0: mmc@1c40000 {
-+			status = "okay";
-+			bus-width = <4>;
-+			max-frequency = <50000000>;
-+			/*
-+			 * BIT(1) MMC_CAP_MMC_HIGHSPEED
-+			 * BIT(2) MMC_CAP_SD_HIGHSPEED
-+			 */
-+			caps = <6>;
-+			version = <1>;
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&mmc0_pins>;
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		status = "okay";
-diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-index 099c81e..5978a83 100644
---- a/arch/arm/boot/dts/da850.dtsi
-+++ b/arch/arm/boot/dts/da850.dtsi
-@@ -56,6 +56,15 @@
- 					0x30 0x01100000  0x0ff00000
- 				>;
- 			};
-+			mmc0_pins: pinmux_mmc_pins {
-+				pinctrl-single,bits = <
-+					/* MMCSD0_DAT[3] MMCSD0_DAT[2]
-+					 * MMCSD0_DAT[1] MMCSD0_DAT[0]
-+					 * MMCSD0_CMD    MMCSD0_CLK
-+					 */
-+					0x28 0x00222222  0x00ffffff
-+				>;
-+			};
- 		};
- 		serial0: serial@1c42000 {
- 			compatible = "ns16550a";
-@@ -88,6 +97,12 @@
- 				      19>;
- 			status = "disabled";
- 		};
-+		mmc0: mmc@1c40000 {
-+			compatible = "ti,davinci_mmc";
-+			reg = <0x40000 0x1000>;
-+			interrupts = <16>;
-+			status = "disabled";
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		compatible = "ti,davinci-nand";
+diff --git a/Documentation/devicetree/bindings/mmc/davinci_mmc.txt b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
+new file mode 100644
+index 0000000..144bee6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
+@@ -0,0 +1,23 @@
++* TI Highspeed MMC host controller for DaVinci
++
++The Highspeed MMC Host Controller on TI DaVinci family
++provides an interface for MMC, SD and SDIO types of memory cards.
++
++This file documents differences between the core properties described
++by mmc.txt and the properties used by the davinci_mmc driver.
++
++Required properties:
++- compatible:
++ Should be "ti,davinci_mmc", for davinci controllers
++
++Optional properties:
++- bus-width: Number of data lines, can be <1>, <4>, or <8>, default <1>
++- max-frequency: maximum operating clock frequency.
++- caps: Check for Host capabilities in <linux/mmc/host.h>
++- version: version of controller.
++Example:
++	mmc1: mmc@0x4809c000 {
++		compatible = "ti,omap4-hsmmc";
++		reg = <0x4809c000 0x400>;
++		bus-width = <4>;
++	};
+diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
+index 382b79d..ce6730d 100644
+--- a/drivers/mmc/host/davinci_mmc.c
++++ b/drivers/mmc/host/davinci_mmc.c
+@@ -34,6 +34,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/edma.h>
+ #include <linux/mmc/mmc.h>
++#include <linux/of.h>
+ 
+ #include <linux/platform_data/mmc-davinci.h>
+ 
+@@ -1156,16 +1157,75 @@ static void __init init_mmcsd_host(struct mmc_davinci_host *host)
+ 
+ 	mmc_davinci_reset_ctrl(host, 0);
+ }
++#ifdef CONFIG_OF
++static struct davinci_mmc_config
++	*mmc_of_get_pdata(struct platform_device *pdev)
++{
++	struct device_node *np;
++	struct davinci_mmc_config *pdata = NULL;
++	u32 data;
++	int ret;
++
++	pdata = pdev->dev.platform_data;
++	if (!pdata) {
++		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++		if (!pdata) {
++			dev_err(&pdev->dev, "Failed to allocate memory for struct davinci_mmc_config\n");
++			goto nodata;
++		}
++	}
++
++	np = pdev->dev.of_node;
++	if (!np)
++		goto nodata;
++
++	ret = of_property_read_u32(np, "bus-width", &data);
++	if (ret)
++		dev_info(&pdev->dev, "wires not specified, defaulting to 4 bit mode\n");
++	pdata->wires = data;
++
++	ret = of_property_read_u32(np, "max-frequency", &data);
++	if (ret)
++		dev_info(&pdev->dev, "max-frequency not specified, defaulting to 25MHz\n");
++	pdata->max_freq = data;
++
++	ret = of_property_read_u32(np, "caps", &data);
++	if (ret)
++		dev_info(&pdev->dev, "card capability not specified\n");
++	pdata->caps = data;
++
++	ret = of_property_read_u32(np, "version", &data);
++	if (ret)
++		dev_err(&pdev->dev, "version not specified\n");
++	pdata->version = data;
++
++nodata:
++	return pdata;
++}
++
++#else
++static struct davinci_mmc_config
++	*mmc_of_get_pdata(struct platform_device *pdev)
++{
++	return pdev->dev.platform_data;
++}
++#endif
+ 
+ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+ {
+-	struct davinci_mmc_config *pdata = pdev->dev.platform_data;
++	struct davinci_mmc_config *pdata = NULL;
+ 	struct mmc_davinci_host *host = NULL;
+ 	struct mmc_host *mmc = NULL;
+ 	struct resource *r, *mem = NULL;
+ 	int ret = 0, irq = 0;
+ 	size_t mem_size;
+ 
++	pdata = mmc_of_get_pdata(pdev);
++	if (pdata == NULL) {
++		dev_err(&pdev->dev, "Can not get platform data\n");
++		return -ENOENT;
++	}
++
+ 	/* REVISIT:  when we're fully converted, fail if pdata is NULL */
+ 
+ 	ret = -ENODEV;
+@@ -1403,11 +1463,18 @@ static const struct dev_pm_ops davinci_mmcsd_pm = {
+ #define davinci_mmcsd_pm_ops NULL
+ #endif
+ 
++static const struct of_device_id davinci_mmc_of_match[] = {
++	{.compatible = "ti,davinci_mmc", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, davinci_mmc_of_match);
++
+ static struct platform_driver davinci_mmcsd_driver = {
+ 	.driver		= {
+ 		.name	= "davinci_mmc",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= davinci_mmcsd_pm_ops,
++		.of_match_table = of_match_ptr(davinci_mmc_of_match),
+ 	},
+ 	.remove		= __exit_p(davinci_mmcsd_remove),
+ };
 -- 
 1.7.4.1
 
