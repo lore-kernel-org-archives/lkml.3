@@ -1,112 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab3AaDcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 22:32:35 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:32263 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752908Ab3AaDcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 22:32:33 -0500
-X-IronPort-AV: E=Sophos;i="4.84,574,1355068800"; 
-   d="scan'208";a="6668775"
-Message-ID: <5109E59F.5080104@cn.fujitsu.com>
-Date: Thu, 31 Jan 2013 11:31:43 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756925Ab3AaDmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 22:42:08 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52002 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755496Ab3AaDmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 22:42:05 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5109E7EA.5010507@jp.fujitsu.com>
+Date: Thu, 31 Jan 2013 12:41:30 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>  <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com> <1359595344.1557.13.camel@kernel>
-In-Reply-To: <1359595344.1557.13.camel@kernel>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/31 11:31:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/31 11:31:21,
-	Serialize complete at 2013/01/31 11:31:21
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 2/2] ACPI / scan: Clean up acpi_bus_get_parent()
+References: <1451967.YMyGeCCNtu@vostro.rjw.lan> <7667918.svVNymu9rt@vostro.rjw.lan>
+In-Reply-To: <7667918.svVNymu9rt@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
-
-Please see below. :)
-
-On 01/31/2013 09:22 AM, Simon Jeons wrote:
+2013/01/31 7:04, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> Sorry, I still confuse. :(
-> update node_states[N_NORMAL_MEMORY] to node_states[N_MEMORY] or
-> node_states[N_NORMAL_MEMOR] present 0...ZONE_MOVABLE?
+> Make acpi_bus_get_parent() more straightforward and remove an
+> unnecessary local variable ret from it.
 >
-> node_states is what? node_states[N_NORMAL_MEMOR] or
-> node_states[N_MEMORY]?
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
 
-Are you asking what node_states[] is ?
+Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-node_states[] is an array of nodemask,
-
-     extern nodemask_t node_states[NR_NODE_STATES];
-
-For example, node_states[N_NORMAL_MEMOR] represents which nodes have 
-normal memory.
-If N_MEMORY == N_HIGH_MEMORY == N_NORMAL_MEMORY, node_states[N_MEMORY] is
-node_states[N_NORMAL_MEMOR]. So it represents which nodes have 0 ... 
-ZONE_MOVABLE.
-
-
-> Why check !z1->wait_table in function move_pfn_range_left and function
-> __add_zone? I think zone->wait_table is initialized in
-> free_area_init_core, which will be called during system initialization
-> and hotadd_new_pgdat path.
-
-I think,
-
-free_area_init_core(), in the for loop,
-  |--> size = zone_spanned_pages_in_node();
-  |--> if (!size)
-               continue;  ----------------  If zone is empty, we jump 
-out the for loop.
-  |--> init_currently_empty_zone()
-
-So, if the zone is empty, wait_table is not initialized.
-
-In move_pfn_range_left(z1, z2), we move pages from z2 to z1. But z1 
-could be empty.
-So we need to check it and initialize z1->wait_table because we are 
-moving pages into it.
-
-
-> There is a zone populated check in function online_pages. But zone is
-> populated in free_area_init_core which will be called during system
-> initialization and hotadd_new_pgdat path. Why still need this check?
+>   drivers/acpi/scan.c |   16 +++++-----------
+>   1 file changed, 5 insertions(+), 11 deletions(-)
+>
+> Index: test/drivers/acpi/scan.c
+> ===================================================================
+> --- test.orig/drivers/acpi/scan.c
+> +++ test/drivers/acpi/scan.c
+> @@ -871,29 +871,23 @@ EXPORT_SYMBOL(acpi_bus_unregister_driver
+>      -------------------------------------------------------------------------- */
+>   static struct acpi_device *acpi_bus_get_parent(acpi_handle handle)
+>   {
+> +	struct acpi_device *device = NULL;
+>   	acpi_status status;
+> -	int ret;
+> -	struct acpi_device *device;
+>
+>   	/*
+>   	 * Fixed hardware devices do not appear in the namespace and do not
+>   	 * have handles, but we fabricate acpi_devices for them, so we have
+>   	 * to deal with them specially.
+>   	 */
+> -	if (handle == NULL)
+> +	if (!handle)
+>   		return acpi_root;
+>
+>   	do {
+>   		status = acpi_get_parent(handle, &handle);
+> -		if (status == AE_NULL_ENTRY)
+> -			return NULL;
+>   		if (ACPI_FAILURE(status))
+> -			return acpi_root;
+> -
+> -		ret = acpi_bus_get_device(handle, &device);
+> -		if (ret == 0)
+> -			return device;
+> -	} while (1);
+> +			return status == AE_NULL_ENTRY ? NULL : acpi_root;
+> +	} while (acpi_bus_get_device(handle, &device));
+> +	return device;
+>   }
+>
+>   acpi_status
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
 
-Because we could also rebuild zone list when we offline pages.
-
-__offline_pages()
-  |--> zone->present_pages -= offlined_pages;
-  |--> if (!populated_zone(zone)) {
-               build_all_zonelists(NULL, NULL);
-       }
-
-If the zone is empty, and other zones on the same node is not empty, the 
-node
-won't be offlined, and next time we online pages of this zone, the pgdat 
-won't
-be initialized again, and we need to check populated_zone(zone) when 
-onlining
-pages.
-
-Thanks. :)
 
