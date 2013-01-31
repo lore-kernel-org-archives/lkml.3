@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3AaK0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:26:43 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39532 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752941Ab3AaK0k (ORCPT
+	id S1753317Ab3AaKbD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:31:03 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:48989 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3AaKa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:26:40 -0500
-Date: Thu, 31 Jan 2013 18:26:29 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Brian Lilly <brian@crystalfontz.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: spi-gpio: fix compilation warning on 64 bits systems
-Message-ID: <20130131102626.GC11078@opensource.wolfsonmicro.com>
-References: <1359627176-22706-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 31 Jan 2013 05:30:59 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kVXhAStRUZ/+rrGn"
-Content-Disposition: inline
-In-Reply-To: <1359627176-22706-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAFTL4hyBhnPL3NkN=V+6pUQr9jQN6E+XREq0y+A6-fVQW4V5bQ@mail.gmail.com>
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+	<1359399845-10568-9-git-send-email-fweisbec@gmail.com>
+	<CA+icZUWdGCytVsNKK+gA7Sh-RKT-GPCHoRtPNfDw4_Hfh+ynyA@mail.gmail.com>
+	<CAFTL4hyzAR0ztncwA0Hx=9P4MKYgUp1Uro8Lt2VjYPdM5Bd1Qg@mail.gmail.com>
+	<CA+icZUWJSZT+TUMynsFKd-_3x-TMB=NeK+6f2cWsi6-g82rWKA@mail.gmail.com>
+	<CAFTL4hyBhnPL3NkN=V+6pUQr9jQN6E+XREq0y+A6-fVQW4V5bQ@mail.gmail.com>
+Date: Thu, 31 Jan 2013 11:30:59 +0100
+Message-ID: <CA+icZUXeUE24MkUg_4hVKvi54EUWGM43hOMz_A8sLJ46Xzgp+g@mail.gmail.com>
+Subject: Re: [PATCH 8/8] cputime: Safely read cputime of full dynticks CPUs
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 31, 2013 at 11:12 AM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> 2013/1/31 Sedat Dilek <sedat.dilek@gmail.com>:
+>> On Thu, Jan 31, 2013 at 1:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>> 2013/1/28 Sedat Dilek <sedat.dilek@gmail.com>:
+>>>> On Mon, Jan 28, 2013 at 8:04 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>>>> While remotely reading the cputime of a task running in a
+>>>>> full dynticks CPU, the values stored in utime/stime fields
+>>>>> of struct task_struct may be stale. Its values may be those
+>>>>> of the last kernel <-> user transition time snapshot and
+>>>>> we need to add the tickless time spent since this snapshot.
+>>>>>
+>>>>> To fix this, flush the cputime of the dynticks CPUs on
+>>>>> kernel <-> user transition and record the time / context
+>>>>> where we did this. Then on top of this snapshot and the current
+>>>>> time, perform the fixup on the reader side from task_times()
+>>>>> accessors.
+>>>>>
+>>>>> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>>>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>>>> Cc: Ingo Molnar <mingo@kernel.org>
+>>>>> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+>>>>> Cc: Namhyung Kim <namhyung.kim@lge.com>
+>>>>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>>>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>>>> Cc: Peter Zijlstra <peterz@infradead.org>
+>>>>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>>>> [fixed kvm module related build errors]
+>>>>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+>>>>>
+>>>>
+>>>> Can you explain a bit what is the difference between "3.8-rc4-nohz3"
+>>>> and "full-dynticks-cputime-for-mingo" patchsets?
+>>>
+>>> 3.8-rc4-nohz3 is the latest experimental tree that implements full
+>>> dynticks. It includes an earlier version of full dynticks cputime and
+>>> many other things to make the full dynticks possible: nohz printk,
+>>> many tweaks on the scheduler and timers...etc
+>>>
+>>
+>> So, dynticks-cputime will go into 3.9?
+>
+> I can't say "will" but I hope.
+>
+>> What about the other parts? Coming later?
+>
+> May be the printk part will go into 3.9. Linus ignored my pull request
+> so may be we'll get more chances if it goes through Ingo.
+>
 
---kVXhAStRUZ/+rrGn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I still dunno all parts of dynticks and their correlation.
+AFAICS they seem to be independent, can't say if it is "complete" with
+dynticks-cputime-only.
 
-On Thu, Jan 31, 2013 at 11:12:56AM +0100, Maxime Ripard wrote:
-> SPI_GPIO_NO_MOSI and SPI_GPIO_NO_MISO flags are type casted to unsigned
-> long, yet, they are to be stored in an unsigned int field in the
-> spi_gpio_platform_data structure.
+Was that dynticks stuff ever advertised for Linux-Next inclusion?
+Or wnt through any "mingo-next" tree?
+AFAICS, better chances these ways!
 
-Applied, thanks.
+- Sedat -
 
---kVXhAStRUZ/+rrGn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRCkbLAAoJELSic+t+oim94joP/A7CJ99nrjA7PLqE8WfXIbLG
-cp0Iu9nXfGZ79WrG661hJWA6WBhdWwd3gcmJLOC8Zi2HlcdxSX3fewwWqWCXkaDU
-tGgFLrbk4mU7YJD28HJuJSRB+Shc8n+b93ler08YFLUI9e4b3OAQT8fgi1kkrkyI
-T2cOjLhIsS2YzfVxKIY/kBfXTHOy+D5o2TgxwSVsfWbHfhFobMgd5rGhqNgtCMQK
-zdvPWKlR6g0tezUhOWcb4Hz1JFWjeMKnpZ28egaSjE0uclO3lrImfouRYAXP71Wi
-efs/Df+fROflu3Eqa+4OZs+702memFr6icx940In9JMCun1q4Xv5LQUDAibOewmZ
-C66GXi71uO44JwyVkVBtXH0Cen6KOiVG8V/638p614Vo/0zxGhsNRl0r/kKDCri/
-K7eVBlx3ZYELYI6/vL1ZFgOCMBah9jy34q42L5/opsLMH+GYED11pungxIoKSGUj
-zUeqRb0CvPxxRmhiydZ+Ch0Dj3E49hmkqahi55lXY43uAdp9F8FRS3URh3qWbrcP
-y5upCKyBoP5/PQSQgfjGsbrwfyQNJpcvvEWHFumCKl3i/mZlBTGvQei6+kWGf9Oc
-8rSzZXAcS66cJHfq0GRvwgKvlDHV1jHDvd95wXu0ZUGu+9iBawMbWnVI9QfR0QJ0
-CSrI/wrNpkV474zJ4Ygn
-=lQsy
------END PGP SIGNATURE-----
-
---kVXhAStRUZ/+rrGn--
+> And the rest will come later.
