@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab3AaETf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 23:19:35 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58538 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab3AaETc (ORCPT
+	id S1757021Ab3AaEYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 23:24:42 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:54281 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab3AaEYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 23:19:32 -0500
-Date: Thu, 31 Jan 2013 04:19:32 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: aris@redhat.com
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v4 9/9] devcg: propagate local changes down the
- hierarchy
-Message-ID: <20130131041932.GB14576@mail.hallyn.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
+	Wed, 30 Jan 2013 23:24:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130130171102.390708521@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5109EA2A.8020204@gmail.com>
+References: <1359514939-15653-1-git-send-email-acourbot@nvidia.com>
+ <1359514939-15653-2-git-send-email-acourbot@nvidia.com> <5108C9C1.1090707@gmail.com>
+ <51098064.7030902@wwwdotorg.org> <5109EA2A.8020204@gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 31 Jan 2013 13:24:19 +0900
+Message-ID: <CAAVeFuJf9Ww7g8Q9RAG9Na1SZq2-n2MMxcAEBek52ZVG7RpL7g@mail.gmail.com>
+Subject: Re: [RFC 1/4] video: panel: add CLAA101WA01A panel support
+To: Mark Zhang <nvmarkzhang@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Mark Zhang <markz@nvidia.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting aris@redhat.com (aris@redhat.com):
-> +/**
-> + * propagate_behavior - propagates a change in the behavior down in hierarchy
-> + * @devcg_root: device cgroup that changed behavior
-> + *
-> + * returns: 0 in case of success, != 0 in case of error
-> + *
-> + * This is one of the two key functions for hierarchy implementation.
-> + * All cgroup's children recursively will have the behavior changed and
-> + * exceptions copied from the parent then its local behavior and exceptions
-> + * re-evaluated and applied if they're still allowed.  Refer to
-> + * Documentation/cgroups/devices.txt for more details.
-> + */
-> +static int propagate_behavior(struct dev_cgroup *devcg_root)
-> +{
-> +	struct cgroup *root = devcg_root->css.cgroup;
-> +	struct dev_cgroup *parent, *devcg, *tmp;
-> +	int rc = 0;
-> +	LIST_HEAD(pending);
-> +
-> +	get_online_devcg(root, &pending);
-> +
-> +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-> +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-> +
-> +		/* first copy parent's state */
-> +		devcg->behavior = parent->behavior;
-> +		dev_exception_clean(&devcg->exceptions);
-> +		rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-> +		if (rc) {
-> +			devcg->behavior = DEVCG_DEFAULT_DENY;
-> +			break;
-> +		}
-> +
-> +		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
-> +		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
-> +			devcg->behavior = DEVCG_DEFAULT_DENY;
-> +		}
+On Thu, Jan 31, 2013 at 12:51 PM, Mark Zhang <nvmarkzhang@gmail.com> wrote:
+>> DDC access is a property of the display controller, not the panel
+>> itself. The panel might be hooked up to a display controller's DDC/I2C
+>> channel as the target, but it isn't the host/controller of the DDC/I2C
+>> channel. As such, placing the nvidia,ddc property into the display
+>> controller node makes sense.
+>>
+>
+> Yes, DC triggers the DDC access and is the host of the DDC/I2C channel.
+> So I think it's reasonable to put nvidia,ddc property into the display
+> controller node. But the video mode info in EDID which be fetched via
+> DDC is the property of the panel, so this info should be provided by
+> panel driver. Actually display controller cares about the video modes,
+> not the way to get these info. So I think it's better to do the whole
+> work like this:
+>
+> 1) display controller relied on CDF to call "display_entity_get_modes"
+> 2) panel driver calls the function which is hooked to display controller
+> to get the video modes via DDC.
+> 3) if the video modes can't be fetched via DDC, panel driver provides
+> the info(either by hard-coded or defined in DT) anyway
 
-I think you might need another special case here.  If A and it's
-child B are both ALLOW, and A switches to DENY, then if I read this
-right B will be switched to DENY, but its local->exceptions will
-not be cleared.  They won't be immediately applied, so at first it's
-ok.  But if B then adds an exception, what happens?  It'll call
-revalidate_exceptions on the full old list plus new exception.  If
-any exceptions aren't allowed by the parent then it won't be applied,
-but it's possible that it is allowed in the parent but (its sense
-now being inverted from blacklist to whitelist) not intended to be
-allowed in the child.  But there will be nothing to stop it.
+This would require a callback dedicated to this in display_entity and
+would break its simple design.
 
-So do you need
+> Just like I said above, display controller should not query DDC
+> directly. Since CDF already defines these for us, display controller
+> should call CDF's functions, like: display_entity_get_modes,
+> display_entity_get_size... I think this is the key difference I wanna
+> talk about. And also in this way, display controller doesn't need to
+> care about this 2 steps logics, just call "display_entity_get_modes" is OK.
 
-	if (devcg->local.behavior == DEVCG_DEFAULT_ALLOW &&
-		devcg->behavior == DEVCG_DEFAULT_DENY) {
-		dev_exception_clean(&devcg->local.exceptions);
-	}
+Well the fact is that it *is* the display controller that queries DDC
+directly. The panel is just a bus here, and the EDID EEPROM could
+perfectly work without it. If you model what you described with DT
+nodes, I'm afraid you will end up with something both complex (with DC
+node referencing panel node and back again for the EDID bus) and that
+does not picture reality accurately.
 
-here?
-
-> +		if (devcg->local.behavior == devcg->behavior)
-> +			rc = revalidate_exceptions(devcg);
-> +		if (rc)
-> +			break;
-> +		list_del_init(&devcg->propagate_pending);
-> +	}
-> +
-> +	return rc;
-> +}
+Alex.
