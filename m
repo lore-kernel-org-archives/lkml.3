@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab3AaMas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 07:30:48 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:55713 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab3AaMap (ORCPT
+	id S1753156Ab3AaMeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 07:34:18 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:56244 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769Ab3AaMeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 07:30:45 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vincent Stehle <v-stehle@ti.com>
-Subject: [PATCH] USB: musb: Correct Kconfig in order to avoid non compilable selection
-Date: Thu, 31 Jan 2013 13:30:40 +0100
-Message-ID: <1359635440-20322-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 31 Jan 2013 07:34:16 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/1] ASoC: Ux500: Fix build error pertaining to missing include file
+Date: Thu, 31 Jan 2013 12:34:00 +0000
+Message-Id: <1359635640-1932-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently it is possible to have:
-USB_MUSB_OMAP2PLUS=m
-TWL4030_USB=y
+Some compilers complain when building sound for MOP500:
 
-which would result compile time error due to missing symbols.
+sound/soc/ux500/mop500.c:27:27:
+        fatal error: mop500_ab8500.h: No such file or directory
 
-With this change USB_MUSB_OMAP2PLUS and TWL4030_USB will be in sync.
+That file is actually in the local directory rather than include.
 
-Reported-by: Vincent Stehle <v-stehle@ti.com>
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
-Hi Felipe,
+ sound/soc/ux500/mop500.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I have also noticed that we have similar issue around USB_MUSB_HDRC,
-CONFIG_USB_MUSB_TUSB6010 and CONFIG_USB_TUSB_OMAP_DMA. You can easily have a
-combination of y/m of these to have non compilable kernel.
-I have tried to fix it but my Kconfig skills are not adequate for it ;)
-
-Regards,
-Peter
-
- drivers/usb/musb/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-index 23a0b7f..a3fa19c 100644
---- a/drivers/usb/musb/Kconfig
-+++ b/drivers/usb/musb/Kconfig
-@@ -9,8 +9,6 @@ config USB_MUSB_HDRC
- 	depends on USB && USB_GADGET
- 	select NOP_USB_XCEIV if (ARCH_DAVINCI || MACH_OMAP3EVM || BLACKFIN)
- 	select NOP_USB_XCEIV if (SOC_TI81XX || SOC_AM33XX)
--	select TWL4030_USB if MACH_OMAP_3430SDP
--	select TWL6030_USB if MACH_OMAP_4430SDP || MACH_OMAP4_PANDA
- 	select USB_OTG_UTILS
- 	help
- 	  Say Y here if your system has a dual role high speed USB
-@@ -49,6 +47,8 @@ config USB_MUSB_TUSB6010
- config USB_MUSB_OMAP2PLUS
- 	tristate "OMAP2430 and onwards"
- 	depends on ARCH_OMAP2PLUS
-+	select TWL4030_USB if MACH_OMAP_3430SDP
-+	select TWL6030_USB if MACH_OMAP_4430SDP || MACH_OMAP4_PANDA
+diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
+index ae69907..204b899 100644
+--- a/sound/soc/ux500/mop500.c
++++ b/sound/soc/ux500/mop500.c
+@@ -24,7 +24,7 @@
+ #include "ux500_pcm.h"
+ #include "ux500_msp_dai.h"
  
- config USB_MUSB_AM35X
- 	tristate "AM35x"
+-#include <mop500_ab8500.h>
++#include "mop500_ab8500.h"
+ 
+ /* Define the whole MOP500 soundcard, linking platform to the codec-drivers  */
+ struct snd_soc_dai_link mop500_dai_links[] = {
 -- 
-1.8.1.1
+1.7.9.5
 
