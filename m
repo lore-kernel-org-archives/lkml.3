@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab3AaSpb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 13:45:31 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:65243 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756165Ab3AaSpD (ORCPT
+	id S1756780Ab3AaSp6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 13:45:58 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43764 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755207Ab3AaSpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 13:45:03 -0500
-Date: Thu, 31 Jan 2013 19:44:49 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 1/2] cpufreq: governors: Get rid of dbs_data->enable field
-Message-ID: <20130131184449.GA20164@balto.lan>
-References: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
-X-Operating-System: Linux balto 3.8.0-rc3-00668-g55706d3 x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 Jan 2013 13:45:53 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Shaohua Li <shli@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: next-20130128 lockdep whinge in sys_swapon()
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1359657914_4017P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 31 Jan 2013 13:45:14 -0500
+Message-ID: <5595.1359657914@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.510ABBBC.0014,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 10:58:01PM +0530, Viresh Kumar wrote:
-> CPUFREQ_GOV_START/STOP are called only once for all policy->cpus and hence we
-> don't need to adapt cpufreq_governor_dbs() routine for multiple calls.
-> 
-> So, this patch removes dbs_data->enable field entirely. And rearrange code a
-> bit.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> Hi Fabio,
-> 
-> I have fixed all the pending issues, but haven't checked these patches. Can you
-> please add your tested-by (obviously after testing them) ?
-> 
-> Compile tested only.
+--==_Exmh_1359657914_4017P
+Content-Type: text/plain; charset=us-ascii
 
-Hello Viresh, thanks for getting this done... looks much cleaner now!
+Seen in my linux-next dmesg.  I'm suspecting commit ac07b1ffc:
 
-I tested both patches on my ux500 setup (dual Cortex-A9) and it seems to
-run correctly on both CPU load changes and CPU hotplug, so:
+commit ac07b1ffc27d575013041fb5277dab02c661d9c2
+Author: Shaohua Li <shli@kernel.org>
+Date:   Thu Jan 24 13:13:50 2013 +1100
 
-Tested-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+    swap: add per-partition lock for swapfile
 
-As a sidenote, I noticed just now that since:
+as (a) it was OK in -20130117, and (b) 'git blame mm/swapfile.c | grep 2013'
+shows that commit as the vast majority of changes.
 
-bc92bea cpufreq: Notify governors when cpus are hot-[un]plugged
+[   42.498669] INFO: trying to register non-static key.
+[   42.498670] the code is fine but needs lockdep annotation.
+[   42.498671] turning off the locking correctness validator.
+[   42.498674] Pid: 1035, comm: swapon Not tainted 3.8.0-rc5-next-20130128 #52
+[   42.498675] Call Trace:
+[   42.498681]  [<ffffffff81073dc8>] register_lock_class+0x103/0x2ad
+[   42.498685]  [<ffffffff812493ad>] ? __list_add_rcu+0xc4/0xdf
+[   42.498688]  [<ffffffff81075573>] __lock_acquire+0x108/0xd63
+[   42.498691]  [<ffffffff810b482b>] ? trace_preempt_on+0x12/0x2f
+[   42.498695]  [<ffffffff81608e6e>] ? sub_preempt_count+0x31/0x43
+[   42.498699]  [<ffffffff810fda36>] ? sys_swapon+0x6f9/0x9d9
+[   42.498701]  [<ffffffff810764f2>] lock_acquire+0xc7/0x14a
+[   42.498703]  [<ffffffff810fda62>] ? sys_swapon+0x725/0x9d9
+[   42.498706]  [<ffffffff81605023>] _raw_spin_lock+0x34/0x41
+[   42.498708]  [<ffffffff810fda62>] ? sys_swapon+0x725/0x9d9
+[   42.498710]  [<ffffffff810fda62>] sys_swapon+0x725/0x9d9
+[   42.498712]  [<ffffffff8107520a>] ? trace_hardirqs_on_caller+0x149/0x165
+[   42.498715]  [<ffffffff8160be92>] system_call_fastpath+0x16/0x1b
+[   42.498719] Adding 2097148k swap on /dev/mapper/vg_blackice-swap.  Priority:-1 extents:1 across:2097148k
 
-governor's sampling_rate gets reset to default every time you hotplug a
-CPU (the one you read/write on
-/sys/devices/system/cpu/cpufreq/ondemand/sampling_rate).
+Somebody care to sprinkle the appropriate annotations on that code?
 
-If you need further tests, I'll be back on Monday.
+--==_Exmh_1359657914_4017P
+Content-Type: application/pgp-signature
 
-Thanks,
-Fabio
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
--- 
-Fabio Baltieri
+iQIVAwUBUQq7ugdmEQWDXROgAQKt3g/9F4yr/b69rt372P1tQKoIutq2R7IPJP5u
+nF0InlWjs0WHvnRHMwzV8ppTtrTJ7J1f33HZbwydrTl1HzKS/GZbctNNbIgUvs84
+a6XNM+2zYQmhcDndxgj5bc+hCHiO2aNS80i7gQ4NhIV7JePCWVc+mBdh3X0I0B25
+2ynj8tswIYpdILOU4xGfVlTNKFipnTpKJrAtN5Ve8FLuoFOG+uUbHrg03pWjKApb
+A6p64ZP7tHVy8tP10P5g0RfGucwXj0vfZHkGMHZ/ThN0wl4/Dpay0+4xfWiEosmb
+ZJzPO0B9Y7JkAf6XnG3kEt5km9qt+3czyjT6GrWQRSPGEYZxw41wDI0Z+sLYCeon
+x5w5bODZJUGyaUhoNTxsAtQ3U22wAzUiwycjZ3qX21q7uPUPlMQIUdcimhV2pxC1
+OvltdmceUVmzpKCcbBKVPLdH7gdlwS1P6Bo4xM/DynN6D8juY3vS/gqfsIC6tIIE
+wDQ/NtzO+mIGviN20lla88AvRbK2rzpyZa4fo4Ys26v0Cp0YIOcjj2Zh9e7UcJur
+/1yeOrbYfUphr5Z5BXMZrx23EJthfvEmsqjdwLP2Ex0TcVVqu7Y77bqWu3h8LiVm
+y08WDBoyzn4Pf2D38I/ADXl1D75j7hAonstE7Lu8+qDWwRvbL3/ZCLYCzA2JlYvv
+5DNNQ1bduOo=
+=qfQ8
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1359657914_4017P--
+
