@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab3AaRZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 12:25:47 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60085
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754438Ab3AaRZj (ORCPT
+	id S1755991Ab3AaR0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 12:26:53 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:48655 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997Ab3AaR0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 12:25:39 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/25] perf report: Add report.group config option
-Date: Thu, 31 Jan 2013 14:25:22 -0300
-Message-Id: <1359653128-10433-20-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
-In-Reply-To: <1359653128-10433-1-git-send-email-acme@infradead.org>
-References: <1359653128-10433-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 31 Jan 2013 12:26:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1359510052-21360-1-git-send-email-wangyijing@huawei.com>
+References: <1359510052-21360-1-git-send-email-wangyijing@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 31 Jan 2013 10:26:26 -0700
+Message-ID: <CAErSpo6pQm+ytk5BMR_1cxL0DGcaKFROYUrwYjwY4UVhdhsTeg@mail.gmail.com>
+Subject: Re: [PATCH v4] PCI: Document PCIE BUS MPS parameters
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Rob Landley <rob@landley.net>, Jon Mason <jdmason@kudzu.us>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Andrew Murray <andrew.murray@arm.com>,
+        Joe Lawrence <Joe.Lawrence@stratus.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Tue, Jan 29, 2013 at 6:40 PM, Yijing Wang <wangyijing@huawei.com> wrote:
+> v0->v1: Update MPS parameters as non-arch and add MRRS
+>                 description into pcie_bus_perf parameter suggested
+>                 by Andrew Murray.
+> v1->v2: Update some semantic problems and add MPS and MRRS
+>                 explanation suggested by Joe Lawrence and Randy Dunlap.
+> v2->v3: Update some semantic problems and the description
+>                 of pcie_bus_safe and pcie_bus_peer2peer suggested
+>                 by Bjorn Helgaas.
+> v3->v4: Update pcie_bus_safe description suggested by Jon Mason
+>
+> Document PCIE BUS MPS parameters pcie_bus_tune_off, pcie_bus_safe,
+> pcie_bus_peer2peer, pcie_bus_perf into Documentation/kernel-parameters.txt.
+> These parameters were introduced by Jon Mason <jdmason@kudzu.us> at
+> commit 5f39e6705 and commit b03e7495a8.
+>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  Documentation/kernel-parameters.txt |   14 ++++++++++++++
+>  1 files changed, 14 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 363e348..6ad9b95 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2227,6 +2227,20 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>                                 This sorting is done to get a device
+>                                 order compatible with older (<= 2.4) kernels.
+>                 nobfsort        Don't sort PCI devices into breadth-first order.
+> +               pcie_bus_tune_off       Disable PCIe MPS (Max Payload Size)
+> +                               tuning and use the BIOS-configured MPS defaults.
+> +               pcie_bus_safe   Set every device's MPS to the largest MPSS
+> +                               (Max Payload Size Support) common to all devices
+> +                               below the root complex.
+> +               pcie_bus_perf   Configure device MPS to the largest
+> +                               allowable MPS based on its parent bus. Also set
+> +                               MRRS (Max Read Request Size) to the largest supported
+> +                               value (no larger than the MPS that the device or bus
+> +                               can support) for best performance.
+> +               pcie_bus_peer2peer      Set every device's MPS to 128B, which
+> +                               every device is guaranteed to support. This
+> +                               configuration allows peer-to-peer DMA between any pair
+> +                               of devices possibly at the cost of reduced performance.
+>                 cbiosize=nn[KMG]        The fixed amount of bus space which is
+>                                 reserved for the CardBus bridge's IO window.
+>                                 The default value is 256 bytes.
 
-Add report.group config option for setting default value of event
-group view.  It affects the report output only if perf.data contains
-event group info.
+Added to pci/misc for v3.9 with the changes below.  If we need to
+change it more, let me know and I'll amend that branch.
 
-A user can write .perfconfig file like below to enable group view by
-default:
+I tweaked the pcie_bus_safe text slightly.
 
-  $ cat ~/.perfconfig
-  [report]
-  group = true
+The hot-plug case was mentioned in your early patches, but not in the
+v4 patch.  I think that's an important use case and we should provide
+some guidance if we can.  I know you have some patches in the works
+related to this, but as far as I can tell, the only want to ensure
+that hot-added devices will work correctly is to use
+pcie_bus_peer2peer so every MPS is set to 128.
 
-And it can be disabled through command line:
+The reason I think that is because in the pciehp_configure_device()
+path, where we configure MPS for newly-added devices, there's nothing
+that will change the MPS of any upstream bridges.  So we could have a
+root port with MPS=256 and we never change that, even if the new
+device only supports MPS=128.
 
-  $ perf report --no-group
+Hopefully we can make this smarter in the future, but the
+documentation should reflect the behavior of the current code.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-19-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-report.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+So let me know if any of the below is inaccurate.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 9ef3842..0d22187 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -8,6 +8,7 @@
- #include "builtin.h"
- 
- #include "util/util.h"
-+#include "util/cache.h"
- 
- #include "util/annotate.h"
- #include "util/color.h"
-@@ -54,6 +55,16 @@ struct perf_report {
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
- 
-+static int perf_report_config(const char *var, const char *value, void *cb)
-+{
-+	if (!strcmp(var, "report.group")) {
-+		symbol_conf.event_group = perf_config_bool(var, value);
-+		return 0;
-+	}
-+
-+	return perf_default_config(var, value, cb);
-+}
-+
- static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 					struct addr_location *al,
- 					struct perf_sample *sample,
-@@ -677,6 +688,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_END()
- 	};
- 
-+	perf_config(perf_report_config, NULL);
-+
- 	argc = parse_options(argc, argv, options, report_usage, 0);
- 
- 	if (report.use_stdio)
--- 
-1.8.1.1.361.gec3ae6e
++               pcie_bus_safe   Set every device's MPS to the largest value
++                               supported by all devices below the root complex.
 
++               pcie_bus_peer2peer      Set every device's MPS to 128B, which
++                               every device is guaranteed to support. This
++                               configuration allows peer-to-peer DMA between
++                               any pair of devices, possibly at the cost of
++                               reduced performance.  This also guarantees
++                               that hot-added devices will work.
