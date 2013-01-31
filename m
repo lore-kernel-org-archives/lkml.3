@@ -1,162 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab3AaC5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 21:57:40 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:37973
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753300Ab3AaC5h (ORCPT
+	id S1756016Ab3AaDFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 22:05:40 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:40457 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300Ab3AaDFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 21:57:37 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h1155h)
-From: Anson Huang <b20788@freescale.com>
-To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <broonie@opensource.wolfsonmicro.com>, <shawn.guo@linaro.org>,
-        Anson Huang <b20788@freescale.com>
-Subject: [PATCH V2] regulators: anatop: add set_voltage_time_sel interface
-Date: Thu, 31 Jan 2013 10:57:06 -0500
-Message-ID: <1359647826-26239-1-git-send-email-b20788@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 30 Jan 2013 22:05:34 -0500
+Date: Wed, 30 Jan 2013 19:05:29 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michel Lespinasse <walken@google.com>
+cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm: accelerate mm_populate() treatment of THP
+ pages
+In-Reply-To: <1359591980-29542-3-git-send-email-walken@google.com>
+Message-ID: <alpine.LNX.2.00.1301301855350.25423@eggly.anvils>
+References: <1359591980-29542-1-git-send-email-walken@google.com> <1359591980-29542-3-git-send-email-walken@google.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-some of anatop's regulators(cpu, vddpu and vddsoc) have
-register settings about LDO's step time, which will impact
-the LDO ramp up speed, need to use set_voltage_time_sel
-interface to add necessary delay everytime LDOs' voltage
-is increased.
+On Wed, 30 Jan 2013, Michel Lespinasse wrote:
 
-offset 0x170:
-bit [24-25]: cpu
-bit [26-27]: vddpu
-bit [28-29]: vddsoc
+> This change adds a page_mask argument to follow_page.
+> 
+> follow_page sets *page_mask to HPAGE_PMD_NR - 1 when it encounters a THP page,
+> and to 0 in other cases.
+> 
+> __get_user_pages() makes use of this in order to accelerate populating
+> THP ranges - that is, when both the pages and vmas arrays are NULL,
+> we don't need to iterate HPAGE_PMD_NR times to cover a single THP page
+> (and we also avoid taking mm->page_table_lock that many times).
+> 
+> Other follow_page() call sites can safely ignore the value returned in
+> *page_mask.
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-field definition:
-0'b00: 64 cycles of 24M clock;
-0'b01: 128 cycles of 24M clock;
-0'b02: 256 cycles of 24M clock;
-0'b03: 512 cycles of 24M clock;
+I certainly like the skipping.
 
-Signed-off-by: Anson Huang <b20788@freescale.com>
----
- .../bindings/regulator/anatop-regulator.txt        |    8 ++++
- drivers/regulator/anatop-regulator.c               |   42 ++++++++++++++++++++
- 2 files changed, 50 insertions(+)
+But (a) if the additional arg has to exist, then I'd much prefer it
+to be page_size than page_mask - I realize there's a tiny advantage to
+subtracting 1 from an immediate than from a variable, but I don't think
+it justifies the peculiar interface.  mask makes people think of masking.
 
-diff --git a/Documentation/devicetree/bindings/regulator/anatop-regulator.txt b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
-index 357758c..758eae2 100644
---- a/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
-@@ -9,6 +9,11 @@ Required properties:
- - anatop-min-voltage: Minimum voltage of this regulator
- - anatop-max-voltage: Maximum voltage of this regulator
- 
-+Optional properties:
-+- anatop-delay-reg-offset: Anatop MFD step time register offset
-+- anatop-delay-bit-shift: Bit shift for the step time register
-+- anatop-delay-bit-width: Number of bits used in the step time register
-+
- Any property defined as part of the core regulator
- binding, defined in regulator.txt, can also be used.
- 
-@@ -23,6 +28,9 @@ Example:
- 		anatop-reg-offset = <0x140>;
- 		anatop-vol-bit-shift = <9>;
- 		anatop-vol-bit-width = <5>;
-+		anatop-delay-reg-offset = <0x170>;
-+		anatop-delay-bit-shift = <24>;
-+		anatop-delay-bit-width = <2>;
- 		anatop-min-bit-val = <1>;
- 		anatop-min-voltage = <725000>;
- 		anatop-max-voltage = <1300000>;
-diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-index 8f39cac..fe79d24 100644
---- a/drivers/regulator/anatop-regulator.c
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -31,12 +31,18 @@
- #include <linux/regulator/driver.h>
- #include <linux/regulator/of_regulator.h>
- 
-+#define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
-+#define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
-+
- struct anatop_regulator {
- 	const char *name;
- 	u32 control_reg;
- 	struct regmap *anatop;
- 	int vol_bit_shift;
- 	int vol_bit_width;
-+	u32 delay_reg;
-+	int delay_bit_shift;
-+	int delay_bit_width;
- 	int min_bit_val;
- 	int min_voltage;
- 	int max_voltage;
-@@ -55,6 +61,33 @@ static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
- 	return regulator_set_voltage_sel_regmap(reg, selector);
- }
- 
-+static int anatop_regmap_set_voltage_time_sel(struct regulator_dev *reg,
-+	unsigned int old_sel,
-+	unsigned int new_sel)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	u32 val;
-+	int ret = 0;
-+
-+	/* check whether need to care about LDO ramp up speed */
-+	if (anatop_reg->delay_bit_width) {
-+		/*
-+		 * the delay for LDO ramp up time is
-+		 * based on the register setting, we need
-+		 * to calculate how many steps LDO need to
-+		 * ramp up, and how much delay needed. (us)
-+		 */
-+		regmap_read(anatop_reg->anatop, anatop_reg->delay_reg, &val);
-+		val = (val >> anatop_reg->delay_bit_shift) &
-+			((1 << anatop_reg->delay_bit_width) - 1);
-+		ret = new_sel > old_sel ? (new_sel - old_sel) *
-+			((LDO_RAMP_UP_UNIT_IN_CYCLES << val) /
-+			LDO_RAMP_UP_FREQ_IN_MHZ + 1) : 0;
-+	}
-+
-+	return ret;
-+}
-+
- static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
- {
- 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-@@ -67,6 +100,7 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
- 
- static struct regulator_ops anatop_rops = {
- 	.set_voltage_sel = anatop_regmap_set_voltage_sel,
-+	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
- 	.get_voltage_sel = anatop_regmap_get_voltage_sel,
- 	.list_voltage = regulator_list_voltage_linear,
- 	.map_voltage = regulator_map_voltage_linear,
-@@ -143,6 +177,14 @@ static int anatop_regulator_probe(struct platform_device *pdev)
- 		goto anatop_probe_end;
- 	}
- 
-+	/* read LDO ramp up setting, only for core reg */
-+	of_property_read_u32(np, "anatop-delay-reg-offset",
-+			     &sreg->delay_reg);
-+	of_property_read_u32(np, "anatop-delay-bit-width",
-+			     &sreg->delay_bit_width);
-+	of_property_read_u32(np, "anatop-delay-bit-shift",
-+			     &sreg->delay_bit_shift);
-+
- 	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage) / 25000 + 1
- 			    + sreg->min_bit_val;
- 	rdesc->min_uV = sreg->min_voltage;
--- 
-1.7.9.5
+And (b) why can't we just omit the additional arg, and get it from the
+page found?  You've explained the unreliability of the !FOLL_GET case
+to me privately, but that needs to be spelt out in the commit comment
+(and I'd love if we found a counter-argument, the extra arg of interest
+to almost no-one does irritate me).
 
+Hugh
 
+> 
+> ---
+>  arch/ia64/xen/xencomm.c    |  3 ++-
+>  arch/powerpc/kernel/vdso.c |  9 +++++----
+>  arch/s390/mm/pgtable.c     |  3 ++-
+>  include/linux/mm.h         |  2 +-
+>  mm/ksm.c                   | 10 +++++++---
+>  mm/memory.c                | 25 +++++++++++++++++++------
+>  mm/migrate.c               |  7 +++++--
+>  mm/mlock.c                 |  4 +++-
+>  8 files changed, 44 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/ia64/xen/xencomm.c b/arch/ia64/xen/xencomm.c
+> index 73d903ca2d64..c5dcf3a574e9 100644
+> --- a/arch/ia64/xen/xencomm.c
+> +++ b/arch/ia64/xen/xencomm.c
+> @@ -44,6 +44,7 @@ xencomm_vtop(unsigned long vaddr)
+>  {
+>  	struct page *page;
+>  	struct vm_area_struct *vma;
+> +	long page_mask;
+>  
+>  	if (vaddr == 0)
+>  		return 0UL;
+> @@ -98,7 +99,7 @@ xencomm_vtop(unsigned long vaddr)
+>  		return ~0UL;
+>  
+>  	/* We assume the page is modified.  */
+> -	page = follow_page(vma, vaddr, FOLL_WRITE | FOLL_TOUCH);
+> +	page = follow_page(vma, vaddr, FOLL_WRITE | FOLL_TOUCH, &page_mask);
+>  	if (IS_ERR_OR_NULL(page))
+>  		return ~0UL;
+>  
+> diff --git a/arch/powerpc/kernel/vdso.c b/arch/powerpc/kernel/vdso.c
+> index 1b2076f049ce..a529502d60f9 100644
+> --- a/arch/powerpc/kernel/vdso.c
+> +++ b/arch/powerpc/kernel/vdso.c
+> @@ -156,6 +156,7 @@ static void dump_one_vdso_page(struct page *pg, struct page *upg)
+>  static void dump_vdso_pages(struct vm_area_struct * vma)
+>  {
+>  	int i;
+> +	long page_mask;
+>  
+>  	if (!vma || is_32bit_task()) {
+>  		printk("vDSO32 @ %016lx:\n", (unsigned long)vdso32_kbase);
+> @@ -163,8 +164,8 @@ static void dump_vdso_pages(struct vm_area_struct * vma)
+>  			struct page *pg = virt_to_page(vdso32_kbase +
+>  						       i*PAGE_SIZE);
+>  			struct page *upg = (vma && vma->vm_mm) ?
+> -				follow_page(vma, vma->vm_start + i*PAGE_SIZE, 0)
+> -				: NULL;
+> +				follow_page(vma, vma->vm_start + i*PAGE_SIZE,
+> +					    0, &page_mask) : NULL;
+>  			dump_one_vdso_page(pg, upg);
+>  		}
+>  	}
+> @@ -174,8 +175,8 @@ static void dump_vdso_pages(struct vm_area_struct * vma)
+>  			struct page *pg = virt_to_page(vdso64_kbase +
+>  						       i*PAGE_SIZE);
+>  			struct page *upg = (vma && vma->vm_mm) ?
+> -				follow_page(vma, vma->vm_start + i*PAGE_SIZE, 0)
+> -				: NULL;
+> +				follow_page(vma, vma->vm_start + i*PAGE_SIZE,
+> +					    0, &page_mask) : NULL;
+>  			dump_one_vdso_page(pg, upg);
+>  		}
+>  	}
+> diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+> index ae44d2a34313..63e897a6cf45 100644
+> --- a/arch/s390/mm/pgtable.c
+> +++ b/arch/s390/mm/pgtable.c
+> @@ -792,9 +792,10 @@ void thp_split_vma(struct vm_area_struct *vma)
+>  {
+>  	unsigned long addr;
+>  	struct page *page;
+> +	long page_mask;
+>  
+>  	for (addr = vma->vm_start; addr < vma->vm_end; addr += PAGE_SIZE) {
+> -		page = follow_page(vma, addr, FOLL_SPLIT);
+> +		page = follow_page(vma, addr, FOLL_SPLIT, &page_mask);
+>  	}
+>  }
+>  
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index d5716094f191..6dc0ce370df5 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1636,7 +1636,7 @@ int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+>  			unsigned long pfn);
+>  
+>  struct page *follow_page(struct vm_area_struct *, unsigned long address,
+> -			unsigned int foll_flags);
+> +			 unsigned int foll_flags, long *page_mask);
+>  #define FOLL_WRITE	0x01	/* check pte is writable */
+>  #define FOLL_TOUCH	0x02	/* mark page accessed */
+>  #define FOLL_GET	0x04	/* do get_page on page */
+> diff --git a/mm/ksm.c b/mm/ksm.c
+> index 51573858938d..76dfb7133aa4 100644
+> --- a/mm/ksm.c
+> +++ b/mm/ksm.c
+> @@ -330,10 +330,11 @@ static int break_ksm(struct vm_area_struct *vma, unsigned long addr)
+>  {
+>  	struct page *page;
+>  	int ret = 0;
+> +	long page_mask;
+>  
+>  	do {
+>  		cond_resched();
+> -		page = follow_page(vma, addr, FOLL_GET);
+> +		page = follow_page(vma, addr, FOLL_GET, &page_mask);
+>  		if (IS_ERR_OR_NULL(page))
+>  			break;
+>  		if (PageKsm(page))
+> @@ -427,13 +428,14 @@ static struct page *get_mergeable_page(struct rmap_item *rmap_item)
+>  	unsigned long addr = rmap_item->address;
+>  	struct vm_area_struct *vma;
+>  	struct page *page;
+> +	long page_mask;
+>  
+>  	down_read(&mm->mmap_sem);
+>  	vma = find_mergeable_vma(mm, addr);
+>  	if (!vma)
+>  		goto out;
+>  
+> -	page = follow_page(vma, addr, FOLL_GET);
+> +	page = follow_page(vma, addr, FOLL_GET, &page_mask);
+>  	if (IS_ERR_OR_NULL(page))
+>  		goto out;
+>  	if (PageAnon(page) || page_trans_compound_anon(page)) {
+> @@ -1289,6 +1291,7 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
+>  	struct mm_slot *slot;
+>  	struct vm_area_struct *vma;
+>  	struct rmap_item *rmap_item;
+> +	long page_mask;
+>  
+>  	if (list_empty(&ksm_mm_head.mm_list))
+>  		return NULL;
+> @@ -1342,7 +1345,8 @@ next_mm:
+>  		while (ksm_scan.address < vma->vm_end) {
+>  			if (ksm_test_exit(mm))
+>  				break;
+> -			*page = follow_page(vma, ksm_scan.address, FOLL_GET);
+> +			*page = follow_page(vma, ksm_scan.address, FOLL_GET,
+> +					    &page_mask);
+>  			if (IS_ERR_OR_NULL(*page)) {
+>  				ksm_scan.address += PAGE_SIZE;
+>  				cond_resched();
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 381b78c20d84..1becba27c28a 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1470,7 +1470,7 @@ EXPORT_SYMBOL_GPL(zap_vma_ptes);
+>   * by a page descriptor (see also vm_normal_page()).
+>   */
+>  struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+> -			unsigned int flags)
+> +			 unsigned int flags, long *page_mask)
+>  {
+>  	pgd_t *pgd;
+>  	pud_t *pud;
+> @@ -1480,6 +1480,8 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+>  	struct page *page;
+>  	struct mm_struct *mm = vma->vm_mm;
+>  
+> +	*page_mask = 0;
+> +
+>  	page = follow_huge_addr(mm, address, flags & FOLL_WRITE);
+>  	if (!IS_ERR(page)) {
+>  		BUG_ON(flags & FOLL_GET);
+> @@ -1526,6 +1528,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+>  				page = follow_trans_huge_pmd(vma, address,
+>  							     pmd, flags);
+>  				spin_unlock(&mm->page_table_lock);
+> +				*page_mask = HPAGE_PMD_NR - 1;
+>  				goto out;
+>  			}
+>  		} else
+> @@ -1680,6 +1683,7 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  {
+>  	long i;
+>  	unsigned long vm_flags;
+> +	long page_mask;
+>  
+>  	if (nr_pages <= 0)
+>  		return 0;
+> @@ -1757,6 +1761,7 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  				get_page(page);
+>  			}
+>  			pte_unmap(pte);
+> +			page_mask = 0;
+>  			goto next_page;
+>  		}
+>  
+> @@ -1774,6 +1779,7 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  		do {
+>  			struct page *page;
+>  			unsigned int foll_flags = gup_flags;
+> +			long page_increm;
+>  
+>  			/*
+>  			 * If we have a pending SIGKILL, don't keep faulting
+> @@ -1783,7 +1789,8 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  				return i ? i : -ERESTARTSYS;
+>  
+>  			cond_resched();
+> -			while (!(page = follow_page(vma, start, foll_flags))) {
+> +			while (!(page = follow_page(vma, start, foll_flags,
+> +						    &page_mask))) {
+>  				int ret;
+>  				unsigned int fault_flags = 0;
+>  
+> @@ -1857,13 +1864,19 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  
+>  				flush_anon_page(vma, page, start);
+>  				flush_dcache_page(page);
+> +				page_mask = 0;
+>  			}
+>  next_page:
+> -			if (vmas)
+> +			if (vmas) {
+>  				vmas[i] = vma;
+> -			i++;
+> -			start += PAGE_SIZE;
+> -			nr_pages--;
+> +				page_mask = 0;
+> +			}
+> +			page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
+> +			if (page_increm > nr_pages)
+> +				page_increm = nr_pages;
+> +			i += page_increm;
+> +			start += page_increm * PAGE_SIZE;
+> +			nr_pages -= page_increm;
+>  		} while (nr_pages && start < vma->vm_end);
+>  	} while (nr_pages);
+>  	return i;
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index c38778610aa8..daa5726c9c46 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -1124,6 +1124,7 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+>  	int err;
+>  	struct page_to_node *pp;
+>  	LIST_HEAD(pagelist);
+> +	long page_mask;
+>  
+>  	down_read(&mm->mmap_sem);
+>  
+> @@ -1139,7 +1140,8 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+>  		if (!vma || pp->addr < vma->vm_start || !vma_migratable(vma))
+>  			goto set_status;
+>  
+> -		page = follow_page(vma, pp->addr, FOLL_GET|FOLL_SPLIT);
+> +		page = follow_page(vma, pp->addr, FOLL_GET | FOLL_SPLIT,
+> +				   &page_mask);
+>  
+>  		err = PTR_ERR(page);
+>  		if (IS_ERR(page))
+> @@ -1291,6 +1293,7 @@ static void do_pages_stat_array(struct mm_struct *mm, unsigned long nr_pages,
+>  				const void __user **pages, int *status)
+>  {
+>  	unsigned long i;
+> +	long page_mask;
+>  
+>  	down_read(&mm->mmap_sem);
+>  
+> @@ -1304,7 +1307,7 @@ static void do_pages_stat_array(struct mm_struct *mm, unsigned long nr_pages,
+>  		if (!vma || addr < vma->vm_start)
+>  			goto set_status;
+>  
+> -		page = follow_page(vma, addr, 0);
+> +		page = follow_page(vma, addr, 0, &page_mask);
+>  
+>  		err = PTR_ERR(page);
+>  		if (IS_ERR(page))
+> diff --git a/mm/mlock.c b/mm/mlock.c
+> index e1fa9e4b0a66..2694f17cca2d 100644
+> --- a/mm/mlock.c
+> +++ b/mm/mlock.c
+> @@ -223,6 +223,7 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
+>  			     unsigned long start, unsigned long end)
+>  {
+>  	unsigned long addr;
+> +	long page_mask;
+>  
+>  	lru_add_drain();
+>  	vma->vm_flags &= ~VM_LOCKED;
+> @@ -236,7 +237,8 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
+>  		 * suits munlock very well (and if somehow an abnormal page
+>  		 * has sneaked into the range, we won't oops here: great).
+>  		 */
+> -		page = follow_page(vma, addr, FOLL_GET | FOLL_DUMP);
+> +		page = follow_page(vma, addr, FOLL_GET | FOLL_DUMP,
+> +				   &page_mask);
+>  		if (page && !IS_ERR(page)) {
+>  			lock_page(page);
+>  			munlock_vma_page(page);
+> -- 
+> 1.8.1
+> 
