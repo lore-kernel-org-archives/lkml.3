@@ -1,151 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab3AaA0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:26:41 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:53030 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924Ab3AaA03 (ORCPT
+	id S1756800Ab3AaA1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:27:17 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:34210 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716Ab3AaA1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:26:29 -0500
-From: Michel Lespinasse <walken@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 3/3] mm: accelerate munlock() treatment of THP pages
-Date: Wed, 30 Jan 2013 16:26:20 -0800
-Message-Id: <1359591980-29542-4-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359591980-29542-1-git-send-email-walken@google.com>
-References: <1359591980-29542-1-git-send-email-walken@google.com>
+	Wed, 30 Jan 2013 19:27:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130131001339.GC14801@flint.arm.linux.org.uk>
+References: <20130130200648.GA13298@flint.arm.linux.org.uk>
+ <20130130215211.GA28418@flint.arm.linux.org.uk> <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
+ <20130130221946.GA14801@flint.arm.linux.org.uk> <CA+55aFyRHK3dmwQf_mdfB18dmoaRZqBG9FvHRqTs7cqBjgUs+g@mail.gmail.com>
+ <CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com> <20130131001339.GC14801@flint.arm.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 31 Jan 2013 11:26:53 +1100
+X-Google-Sender-Auth: ER9wyMI1_F4xOFDjx4XzfjJ4z3U
+Message-ID: <CA+55aFxfeXWAiXV18qGgOk9+2HHiD7LUuyk55brHFXd+_c6eZQ@mail.gmail.com>
+Subject: Re: BUG: circular locking dependency detected
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-munlock_vma_pages_range() was always incrementing addresses by PAGE_SIZE
-at a time. When munlocking THP pages (or the huge zero page), this resulted
-in taking the mm->page_table_lock 512 times in a row.
+On Thu, Jan 31, 2013 at 11:13 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+>
+> Which may or may not be a good thing depending how you look at it; it
+> means that once your kernel blanks, you get a lockdep dump.  At that
+> point you lose lockdep checking for everything else because lockdep
+> disables itself after the first dump.
 
-We can do better by making use of the page_mask returned by follow_page
-(for the huge zero page case), or the size of the page munlock_vma_page()
-operated on (for the true THP page case).
+Fair enough, we may want to revert the lockdep checking for
+console_lock, and make re-enabling it part of the patch-series that
+fixes the locking.
 
-Note - I am sending this as RFC only for now as I can't currently put
-my finger on what if anything prevents split_huge_page() from operating
-concurrently on the same page as munlock_vma_page(), which would mess
-up our NR_MLOCK statistics. Is this a latent bug or is there a subtle
-point I missed here ?
+Daniel/Dave? Does that sound reasonable?
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
-
----
- mm/internal.h |  2 +-
- mm/mlock.c    | 32 ++++++++++++++++++++------------
- 2 files changed, 21 insertions(+), 13 deletions(-)
-
-diff --git a/mm/internal.h b/mm/internal.h
-index 1c0c4cc0fcf7..ee85efad03c5 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -195,7 +195,7 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
-  * must be called with vma's mmap_sem held for read or write, and page locked.
-  */
- extern void mlock_vma_page(struct page *page);
--extern void munlock_vma_page(struct page *page);
-+extern long munlock_vma_page(struct page *page);
- 
- /*
-  * Clear the page's PageMlocked().  This can be useful in a situation where
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 2694f17cca2d..5cd7e5a258da 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -102,13 +102,14 @@ void mlock_vma_page(struct page *page)
-  * can't isolate the page, we leave it for putback_lru_page() and vmscan
-  * [page_referenced()/try_to_unmap()] to deal with.
-  */
--void munlock_vma_page(struct page *page)
-+long munlock_vma_page(struct page *page)
- {
-+	long nr_pages = hpage_nr_pages(page);
-+
- 	BUG_ON(!PageLocked(page));
- 
- 	if (TestClearPageMlocked(page)) {
--		mod_zone_page_state(page_zone(page), NR_MLOCK,
--				    -hpage_nr_pages(page));
-+		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
- 		if (!isolate_lru_page(page)) {
- 			int ret = SWAP_AGAIN;
- 
-@@ -141,6 +142,8 @@ void munlock_vma_page(struct page *page)
- 				count_vm_event(UNEVICTABLE_PGMUNLOCKED);
- 		}
- 	}
-+
-+	return nr_pages;
- }
- 
- /**
-@@ -159,7 +162,6 @@ long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 		unsigned long start, unsigned long end, int *nonblocking)
- {
- 	struct mm_struct *mm = vma->vm_mm;
--	unsigned long addr = start;
- 	long nr_pages = (end - start) / PAGE_SIZE;
- 	int gup_flags;
- 
-@@ -185,7 +187,7 @@ long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 	if (vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC))
- 		gup_flags |= FOLL_FORCE;
- 
--	return __get_user_pages(current, mm, addr, nr_pages, gup_flags,
-+	return __get_user_pages(current, mm, start, nr_pages, gup_flags,
- 				NULL, NULL, nonblocking);
- }
- 
-@@ -222,14 +224,12 @@ static int __mlock_posix_error_return(long retval)
- void munlock_vma_pages_range(struct vm_area_struct *vma,
- 			     unsigned long start, unsigned long end)
- {
--	unsigned long addr;
--	long page_mask;
--
--	lru_add_drain();
- 	vma->vm_flags &= ~VM_LOCKED;
- 
--	for (addr = start; addr < end; addr += PAGE_SIZE) {
-+	while (start < end) {
- 		struct page *page;
-+		long page_mask, page_increm;
-+
- 		/*
- 		 * Although FOLL_DUMP is intended for get_dump_page(),
- 		 * it just so happens that its special treatment of the
-@@ -237,14 +237,22 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
- 		 * suits munlock very well (and if somehow an abnormal page
- 		 * has sneaked into the range, we won't oops here: great).
- 		 */
--		page = follow_page(vma, addr, FOLL_GET | FOLL_DUMP,
-+		page = follow_page(vma, start, FOLL_GET | FOLL_DUMP,
- 				   &page_mask);
- 		if (page && !IS_ERR(page)) {
- 			lock_page(page);
--			munlock_vma_page(page);
-+			lru_add_drain();
-+			/*
-+			 * Any THP page found by follow_page() may have gotten
-+			 * split before reaching munlock_vma_page(), so we
-+			 * need to recompute the page_mask here.
-+			 */
-+			page_mask = munlock_vma_page(page);
- 			unlock_page(page);
- 			put_page(page);
- 		}
-+		page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
-+		start += page_increm * PAGE_SIZE;
- 		cond_resched();
- 	}
- }
--- 
-1.8.1
+              Linus
