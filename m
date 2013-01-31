@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab3AaHXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 02:23:51 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:44012 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab3AaHXs (ORCPT
+	id S1754826Ab3AaHYZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:24:25 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:38393 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab3AaHYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 02:23:48 -0500
-Date: Thu, 31 Jan 2013 08:23:32 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Seth Heasley <seth.heasley@intel.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>
-Subject: Re: [PATCH v2] i2c-i801: SMBus patch for Intel Avoton DeviceIDs
-Message-ID: <20130131082332.1f3235c6@endymion.delvare>
-In-Reply-To: <1359595532-5365-1-git-send-email-seth.heasley@intel.com>
-References: <1359595532-5365-1-git-send-email-seth.heasley@intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jan 2013 02:24:23 -0500
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAFTL4hyzAR0ztncwA0Hx=9P4MKYgUp1Uro8Lt2VjYPdM5Bd1Qg@mail.gmail.com>
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+	<1359399845-10568-9-git-send-email-fweisbec@gmail.com>
+	<CA+icZUWdGCytVsNKK+gA7Sh-RKT-GPCHoRtPNfDw4_Hfh+ynyA@mail.gmail.com>
+	<CAFTL4hyzAR0ztncwA0Hx=9P4MKYgUp1Uro8Lt2VjYPdM5Bd1Qg@mail.gmail.com>
+Date: Thu, 31 Jan 2013 08:24:22 +0100
+Message-ID: <CA+icZUWJSZT+TUMynsFKd-_3x-TMB=NeK+6f2cWsi6-g82rWKA@mail.gmail.com>
+Subject: Re: [PATCH 8/8] cputime: Safely read cputime of full dynticks CPUs
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jan 2013 17:25:32 -0800, Seth Heasley wrote:
-> This patch adds the PCU SMBus DeviceID for the Intel Avoton SOC.
-> 
-> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-> ---
-> Change notes for v2:
-> * corrected order of DeviceID defines
-> 
->  Documentation/i2c/busses/i2c-i801 |    1 +
->  drivers/i2c/busses/Kconfig        |    1 +
->  drivers/i2c/busses/i2c-i801.c     |    3 +++
->  3 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-> index 157416e..8d71d57 100644
-> --- a/Documentation/i2c/busses/i2c-i801
-> +++ b/Documentation/i2c/busses/i2c-i801
-> @@ -22,6 +22,7 @@ Supported adapters:
->    * Intel Panther Point (PCH)
->    * Intel Lynx Point (PCH)
->    * Intel Lynx Point-LP (PCH)
-> +  * Intel Avoton (SOC)
->     Datasheets: Publicly available at the Intel website
->  
->  On Intel Patsburg and later chipsets, both the normal host SMBus controller
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index bdca511..77d2887 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -106,6 +106,7 @@ config I2C_I801
->  	    Panther Point (PCH)
->  	    Lynx Point (PCH)
->  	    Lynx Point-LP (PCH)
-> +	    Avoton (SOC)
->  
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called i2c-i801.
-> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-> index 3092387..b00c29d 100644
-> --- a/drivers/i2c/busses/i2c-i801.c
-> +++ b/drivers/i2c/busses/i2c-i801.c
-> @@ -53,6 +53,7 @@
->    Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
->    Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
->    Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
-> +  Avoton (SOC)          0x1f3c     32     hard     yes     yes     yes
->  
->    Features supported by this driver:
->    Software PEC                     no
-> @@ -162,6 +163,7 @@
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1	0x1d71
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2	0x1d72
->  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
-> +#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
->  #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
->  #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
->  #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-> @@ -798,6 +800,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_AVOTON_SMBUS) },
->  	{ 0, }
->  };
->  
+On Thu, Jan 31, 2013 at 1:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2013/1/28 Sedat Dilek <sedat.dilek@gmail.com>:
+>> On Mon, Jan 28, 2013 at 8:04 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>> While remotely reading the cputime of a task running in a
+>>> full dynticks CPU, the values stored in utime/stime fields
+>>> of struct task_struct may be stale. Its values may be those
+>>> of the last kernel <-> user transition time snapshot and
+>>> we need to add the tickless time spent since this snapshot.
+>>>
+>>> To fix this, flush the cputime of the dynticks CPUs on
+>>> kernel <-> user transition and record the time / context
+>>> where we did this. Then on top of this snapshot and the current
+>>> time, perform the fixup on the reader side from task_times()
+>>> accessors.
+>>>
+>>> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>> Cc: Ingo Molnar <mingo@kernel.org>
+>>> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+>>> Cc: Namhyung Kim <namhyung.kim@lge.com>
+>>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>> Cc: Peter Zijlstra <peterz@infradead.org>
+>>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>> [fixed kvm module related build errors]
+>>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+>>>
+>>
+>> Can you explain a bit what is the difference between "3.8-rc4-nohz3"
+>> and "full-dynticks-cputime-for-mingo" patchsets?
+>
+> 3.8-rc4-nohz3 is the latest experimental tree that implements full
+> dynticks. It includes an earlier version of full dynticks cputime and
+> many other things to make the full dynticks possible: nohz printk,
+> many tweaks on the scheduler and timers...etc
+>
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+So, dynticks-cputime will go into 3.9?
+What about the other parts? Coming later?
 
--- 
-Jean Delvare
+>>
+>> Does the latter need no more EXPORT_SYMBOL_GPL for vtime_guest_enter()
+>> and vtime_guest_exit() when CONFIG_KVM=m (see [1])?
+>
+> It doesn't need export symbol on vtime_guest_() APIs, only on
+> guest_enter and guest_exit.
+>
+
+I verified this by building by myself.
+
+- Sedat -
+
+> Thanks.
