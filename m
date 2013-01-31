@@ -1,103 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab3AaXoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 18:44:06 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33859 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab3AaXoE (ORCPT
+	id S1754223Ab3AaXrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 18:47:53 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:44803 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab3AaXru convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 18:44:04 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <510B018D.4050800@jp.fujitsu.com>
-Date: Fri, 1 Feb 2013 08:43:09 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 31 Jan 2013 18:47:50 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: RE: [RFC][PATCH v8 1/3] tracing: Add DEFINE_EVENT_FN() macro
+Thread-Topic: [RFC][PATCH v8 1/3] tracing: Add DEFINE_EVENT_FN() macro
+Thread-Index: Ac34JIJP5yTiNoBxQzmg232oa/IyfQIDzzOAAAmmh9A=
+Date: Thu, 31 Jan 2013 23:46:58 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A5E725@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A508B8@USINDEM103.corp.hds.com>
+ <1359674549.5642.3.camel@gandalf.local.home>
+In-Reply-To: <1359674549.5642.3.camel@gandalf.local.home>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [RESEND PATCH 1/4] ACPI/PM: Fix acpi_bus_get_device() check in
- drivers/acpi/device_pm.c
-References: <1451967.YMyGeCCNtu@vostro.rjw.lan> <5109E189.7040105@jp.fujitsu.com> <5109E366.4090703@jp.fujitsu.com> <3199804.hxRfeorGhh@vostro.rjw.lan>
-In-Reply-To: <3199804.hxRfeorGhh@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-31_06:2013-01-31,2013-01-31,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1301310176
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Steven,
 
-2013/02/01 5:21, Rafael J. Wysocki wrote:
-> On Thursday, January 31, 2013 12:22:14 PM Yasuaki Ishimatsu wrote:
->> I fogot to change subject. So I resend a patch.
->
-> I have applied patches [1-3/4] to my bleeding-edge branch,
+> As I wrote this patch, you need to add at the top of the message body:
+> 
+> From: Steven Rostedt <rostedt@goodmis.org>
+> 
+> And your Signed-off-by goes after mine. That is, the author of the patch, always goes first.
 
-Thanks.
+Thanks. I will fix it.
 
-> but please note that
-> something (probably your MUA) added a space in front of every line originally
-> starting with a space.
+Seiji
 
-I apologize for bothering you.
-
-Thanks,
-Yasuaki Ishimatsu
-
->
-> Thanks,
-> Rafael
->
->
->> ---
->> acpi_bus_get_device() returns int not acpi_status.
->>
->> The patch change not to apply ACPI_FAILURE() to the return value of
->> acpi_bus_get_device().
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> ---
->>    drivers/acpi/device_pm.c |    6 +++---
->>    1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> Index: linux-pm/drivers/acpi/device_pm.c
->> ===================================================================
->> --- linux-pm.orig/drivers/acpi/device_pm.c	2013-01-31 11:04:30.000000000 +0900
->> +++ linux-pm/drivers/acpi/device_pm.c	2013-01-31 11:28:51.366849592 +0900
->> @@ -213,7 +213,7 @@ int acpi_pm_device_sleep_state(struct de
->>    	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
->>    	struct acpi_device *adev;
->>
->> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
->> +	if (!handle || acpi_bus_get_device(handle, &adev)) {
->>    		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
->>    		return -ENODEV;
->>    	}
->> @@ -290,7 +290,7 @@ int acpi_pm_device_run_wake(struct devic
->>    		return -EINVAL;
->>
->>    	handle = DEVICE_ACPI_HANDLE(phys_dev);
->> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
->> +	if (!handle || acpi_bus_get_device(handle, &adev)) {
->>    		dev_dbg(phys_dev, "ACPI handle without context in %s!\n",
->>    			__func__);
->>    		return -ENODEV;
->> @@ -334,7 +334,7 @@ int acpi_pm_device_sleep_wake(struct dev
->>    		return -EINVAL;
->>
->>    	handle = DEVICE_ACPI_HANDLE(dev);
->> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
->> +	if (!handle || acpi_bus_get_device(handle, &adev)) {
->>    		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
->>    		return -ENODEV;
->>    	}
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+> -----Original Message-----
+> From: Steven Rostedt [mailto:rostedt@goodmis.org]
+> Sent: Thursday, January 31, 2013 6:22 PM
+> To: Seiji Aguchi
+> Cc: x86@kernel.org; H. Peter Anvin (hpa@zytor.com); linux-kernel@vger.kernel.org; Thomas Gleixner (tglx@linutronix.de);
+> 'mingo@elte.hu' (mingo@elte.hu); Borislav Petkov (bp@alien8.de); Satoru Moriya; dle-develop@lists.sourceforge.net; linux-
+> edac@vger.kernel.org; Luck, Tony (tony.luck@intel.com)
+> Subject: Re: [RFC][PATCH v8 1/3] tracing: Add DEFINE_EVENT_FN() macro
+> 
+> Hi Seiji,
+> 
+> As I wrote this patch, you need to add at the top of the message body:
+> 
+> From: Steven Rostedt <rostedt@goodmis.org>
+> 
+> And your Signed-off-by goes after mine. That is, the author of the patch, always goes first.
+> 
+> -- Steve
+> 
+> 
+> On Mon, 2013-01-21 at 22:13 +0000, Seiji Aguchi wrote:
+> > Each TRACE_EVENT() adds several helper functions. If two or more trace
+> > events share the same structure and print format, they can also share
+> > most of these helper functions and save a lot of space from duplicate
+> > code. This is why the
+> > DECLARE_EVENT_CLASS() and DEFINE_EVENT() were created.
+> >
+> > Some events require a trigger to be called at registering and
+> > unregistering of the event and to do so they use TRACE_EVENT_FN().
+> >
+> > If multiple events require a trigger, they currently have no choice
+> > but to use
+> > TRACE_EVENT_FN() as there's no DEFINE_EVENT_FN() available. This
+> > unfortunately causes a lot of wasted duplicate code created.
+> >
+> > By adding a DEFINE_EVENT_FN(), these events can still use a
+> > DECLARE_EVENT_CLASS() and then define their own triggers.
+> >
+> > Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  include/linux/tracepoint.h   |    2 ++
+> >  include/trace/define_trace.h |    5 +++++
+> >  include/trace/ftrace.h       |    4 ++++
+> >  3 files changed, 11 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> > index 2f322c3..9bf59e5 100644
+> > --- a/include/linux/tracepoint.h
+> > +++ b/include/linux/tracepoint.h
+> > @@ -378,6 +378,8 @@ static inline void
+> > tracepoint_synchronize_unregister(void)
+> >  #define DECLARE_EVENT_CLASS(name, proto, args, tstruct, assign, print)
+> >  #define DEFINE_EVENT(template, name, proto, args)		\
+> >  	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+> > +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)\
+> > +	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+> >  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+> >  	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+> >  #define DEFINE_EVENT_CONDITION(template, name, proto,		\
+> > diff --git a/include/trace/define_trace.h
+> > b/include/trace/define_trace.h index 1905ca8..02e1003 100644
+> > --- a/include/trace/define_trace.h
+> > +++ b/include/trace/define_trace.h
+> > @@ -44,6 +44,10 @@
+> >  #define DEFINE_EVENT(template, name, proto, args) \
+> >  	DEFINE_TRACE(name)
+> >
+> > +#undef DEFINE_EVENT_FN
+> > +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg) \
+> > +	DEFINE_TRACE_FN(name, reg, unreg)
+> > +
+> >  #undef DEFINE_EVENT_PRINT
+> >  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+> >  	DEFINE_TRACE(name)
+> > @@ -91,6 +95,7 @@
+> >  #undef TRACE_EVENT_CONDITION
+> >  #undef DECLARE_EVENT_CLASS
+> >  #undef DEFINE_EVENT
+> > +#undef DEFINE_EVENT_FN
+> >  #undef DEFINE_EVENT_PRINT
+> >  #undef DEFINE_EVENT_CONDITION
+> >  #undef TRACE_HEADER_MULTI_READ
+> > diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h index
+> > 40dc5e8..7bab676 100644
+> > --- a/include/trace/ftrace.h
+> > +++ b/include/trace/ftrace.h
+> > @@ -71,6 +71,10 @@
+> >  	static struct ftrace_event_call	__used		\
+> >  	__attribute__((__aligned__(4))) event_##name
+> >
+> > +#undef DEFINE_EVENT_FN
+> > +#define DEFINE_EVENT_FN(template, name, proto, args, reg, unreg)	\
+> > +	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+> > +
+> >  #undef DEFINE_EVENT_PRINT
+> >  #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+> >  	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+> 
 
