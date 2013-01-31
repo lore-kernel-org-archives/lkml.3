@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab3AaXxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 18:53:32 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:64689 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab3AaXxb (ORCPT
+	id S1755142Ab3AaX5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 18:57:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42170 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab3AaX52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 18:53:31 -0500
-Date: Thu, 31 Jan 2013 15:53:20 -0800
-From: Tejun Heo <tj@kernel.org>
-To: David Teigland <teigland@redhat.com>
-Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        Christine Caulfield <ccaulfie@redhat.com>, cluster-devel@redhat.com
-Subject: Re: [PATCH 10/14] dlm: don't use idr_remove_all()
-Message-ID: <20130131235320.GN6824@mtj.dyndns.org>
-References: <1359163872-1949-1-git-send-email-tj@kernel.org>
- <1359163872-1949-11-git-send-email-tj@kernel.org>
- <20130128155723.GC16789@redhat.com>
- <20130129151317.GA11609@redhat.com>
- <20130130212417.GJ24014@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130130212417.GJ24014@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 Jan 2013 18:57:28 -0500
+Date: Thu, 31 Jan 2013 15:57:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/6] lib: Implement range locks
+Message-Id: <20130131155726.05d09b21.akpm@linux-foundation.org>
+In-Reply-To: <1359668994-13433-2-git-send-email-jack@suse.cz>
+References: <1359668994-13433-1-git-send-email-jack@suse.cz>
+	<1359668994-13433-2-git-send-email-jack@suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, David.
+On Thu, 31 Jan 2013 22:49:49 +0100
+Jan Kara <jack@suse.cz> wrote:
 
-Sorry about the delay.
-
-On Wed, Jan 30, 2013 at 04:24:18PM -0500, David Teigland wrote:
-> > Unfortunately, the list_for_each_entry doesn't seem to be clearing
-> > everything.  I've seen "warning: recover_list_count 39" at the end of that
-> > function.
+> Implement range locking using interval tree.
 > 
-> I don't want to pretend to understand the internals of this idr code, but
-> it's not clear that idr_for_each is equivalent to idr_for_each_entry when
-> iterating through all id values.  The "++id" in idr_for_each_entry looks
-> like it could lead to some missed entries?  The comment about idr_get_next
-> returning the "next number to given id" sounds like an entry with an id of
-> "++id" would be missed.
+> ...
+>
+> +void range_lock(struct range_lock_tree *tree, struct range_lock *lock)
+> +{
+> +	struct interval_tree_node *node;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&tree->lock, flags);
+> +	node = interval_tree_iter_first(&tree->root, lock->node.start,
+> +					lock->node.last);
+> +	while (node) {
+> +		lock->blocking_ranges++;
+> +		node = interval_tree_iter_next(node, lock->node.start,
+> +					       lock->node.last);
+> +	}
+> +	interval_tree_insert(&lock->node, &tree->root);
+> +	/* Do we need to go to sleep? */
+> +	while (lock->blocking_ranges) {
+> +		lock->task = current;
+> +		__set_current_state(TASK_UNINTERRUPTIBLE);
+> +		spin_unlock_irqrestore(&tree->lock, flags);
+> +		schedule();
+> +		spin_lock_irqsave(&tree->lock, flags);
+> +	}
+> +	spin_unlock_irqrestore(&tree->lock, flags);
+> +}
+>
+> ...
+>
+> +void range_unlock(struct range_lock_tree *tree, struct range_lock *lock)
+> +{
+> +	struct interval_tree_node *node;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&tree->lock, flags);
+> +	interval_tree_remove(&lock->node, &tree->root);
+> +	node = interval_tree_iter_first(&tree->root, lock->node.start,
+> +					lock->node.last);
+> +	while (node) {
+> +		range_lock_unblock((struct range_lock *)node);
+> +		node = interval_tree_iter_next(node, lock->node.start,
+> +					       lock->node.last);
+> +	}
+> +	spin_unlock_irqrestore(&tree->lock, flags);
+> +}
 
-The function description is misleading.  The function does search
-inclusive range and needs explicit cursor increment to make progress.
-Weird that it doesn't work.  Looking into it.  I'll write when I know
-more.
+What are the worst-case interrupt-off durations here?
 
-Thanks!
+I note that the new exported functions in this patchset are
+refreshingly free of documentation ;)
 
--- 
-tejun
