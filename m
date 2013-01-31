@@ -1,104 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab3AaIBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:01:23 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:55449 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab3AaIBW (ORCPT
+	id S1755221Ab3AaICB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:02:01 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:59568 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755101Ab3AaIB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:01:22 -0500
-Date: Thu, 31 Jan 2013 03:01:10 -0500 (EST)
-From: CAI Qian <caiqian@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, linux-xfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Message-ID: <2103902716.11642129.1359619270232.JavaMail.root@redhat.com>
-In-Reply-To: <20130131040748.GH32297@disturbed.disaster>
-Subject: Re: 3.8-rc5 xfs corruption
+	Thu, 31 Jan 2013 03:01:57 -0500
+Date: Thu, 31 Jan 2013 08:01:51 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 4/4] pinctrl/abx500: destroy mutex if returning early due
+ to error
+Message-ID: <20130131080151.GA5301@gmail.com>
+References: <1359574822-15729-1-git-send-email-linus.walleij@stericsson.com>
+ <51097E35.6080100@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.13.37]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51097E35.6080100@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 30 Jan 2013, Stephen Warren wrote:
 
-
------ Original Message -----
-> From: "Dave Chinner" <david@fromorbit.com>
-> To: "CAI Qian" <caiqian@redhat.com>
-> Cc: xfs@oss.sgi.com, linux-xfs@vger.kernel.org, "linux-kernel" <linux-kernel@vger.kernel.org>
-> Sent: Thursday, January 31, 2013 12:07:48 PM
-> Subject: Re: 3.8-rc5 xfs corruption
-> 
-> On Wed, Jan 30, 2013 at 10:16:47PM -0500, CAI Qian wrote:
-> > Hello,
+> On 01/30/2013 12:40 PM, Linus Walleij wrote:
+> > From: Lee Jones <lee.jones@linaro.org>
 > > 
-> > (Sorry to post to xfs mailing lists but unsure about which one is
-> > the
-> > best for this.)
+> > Current failure path neglects to mutex_destroy() before returning
+> > an error due to an invalid parameter or an error received from
+> > gpiochip_add(). This patch aims to remedy that behaviour.
 > 
-> Trimmed to just xfs@oss.sgi.com.
-Thanks for quick response, Dave.
+> > diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
 > 
-> > I have seen something like this once during testing on a system
-> > with a
-> > EMC VNX FC/multipath back-end.
+> > @@ -1155,11 +1155,13 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+> >  	default:
+> >  		dev_err(&pdev->dev, "Unsupported pinctrl sub driver (%d)\n",
+> >  				(int) platid->driver_data);
+> > +		mutex_destroy(&pct->lock);
+> >  		return -EINVAL;
 > 
-> This is a trace from the verifier code that was added in 3.8-rc1 so
-> I doubt it has anything to do with any problem you've seen in the
-> past....
+> Especially given there's already a label out_free which performs this
+> mutex_destroy(), those last two lines would be better as:
 > 
-> Can you tell us what workload you were running and what hardware you
-> are using as per:
-> 
-> http://xfs.org/index.php/XFS_FAQ#Q:_What_information_should_I_include_when_reporting_a_problem.3F
-This was the system,
-- AMD Opteron(tm) Processor 4130 (1 socket, 4 cores)
-- PowerEdge R415 
-- 8G memory
-- mptsas local disks
+> ret = -EINVAL;
+> goto out_free;
 
-Software version,
-- xfsprogs-3.1.10
+Yes, that's one way of doing it. I figured it was 6 of one and half a
+dozen of the other to be honest.
 
-The workload was running some fs_mark, syscalls tests, some nfs/cifs
-connectathon tests, memory, libhugetlbfs tests, and some dynamic debug
-(Documentation/dynamic-debug-howto.txt) tests.
-> 
-> As it is, if you mounted the filesystem after this problem was
-> detected, log recovery probably propagated it to disk. I'd suggest
-> that you run xfs_repair -n on the device and post the output so we
-> can see if any corruption has actaully made it to disk. If no
-> corruption made it to disk, it's possible that we've got the
-> incorrect verifier attached to the buffer.
-The system was taken away from me, so I can only occupy it again later
-if needed.
+Either I:
 
-Regards,
-CAI Qian
+ +           mutex_destroy(&pct->lock);
+
+Or:
+
+ +           ret = -EINVAL; 
+ +           goto out_free;
+ -           return -EINVAL;
+
+I figured the smallest diff would be best. To be honest, I'm not
+bothered either way. If it offends you, I can do it the other way, no
+problem. Just let me know quick, so I can get the fixed up patch to
+Linus.
+
+NB: There is no 'out_free:' at this point, it has already been
+removed.
+
+I'll leave it up to you.
+
+> >  	}
+> >  
+> >  	if (!pct->soc) {
+> >  		dev_err(&pdev->dev, "Invalid SOC data\n");
+> > +		mutex_destroy(&pct->lock);
+> >  		return -EINVAL;
 > 
-> > [ 3025.063024] ffff8801a0d50000: 2e 2e 2f 2e 2e 2f 75 73 72 2f 6c
-> > 69 62 2f 6d 6f  ../../usr/lib/mo
+> Same there.
 > 
-> The start of a block contains a path and the only
-> type of block that can contain this format of metadata is remote
-> symlink block. Remote symlink blocks don't have a verifier attached
-> to them as there is nothing that can currently be used to verify
-> them as correct.
+> >  	}
+> >  
+> > @@ -1176,6 +1178,7 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+> >  	ret = gpiochip_add(&pct->chip);
+> >  	if (ret) {
+> >  		dev_err(&pdev->dev, "unable to add gpiochip: %d\n", ret);
+> > +		mutex_destroy(&pct->lock);
+> >  		goto out_rem_irq;
 > 
-> I can't see exactly how this can occur as stale buffers have the
-> verifier ops cleared before being returned to the new user, and
-> newly allocated xfs_bufs are zeroed before being initialised. I
-> really need to know what you are doing to be able to get to the
-> bottom of it....
-> 
-> Cheers,
-> 
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-> 
+> And here, just change the goto target to out_free rather than adding the
+> mutex_destroy() call.
+
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
