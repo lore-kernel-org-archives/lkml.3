@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab3AaU04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 15:26:56 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49716 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753398Ab3AaU0z (ORCPT
+	id S1753742Ab3AaUba (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 15:31:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3380 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab3AaUb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 15:26:55 -0500
-Message-ID: <1359664008.2468.5.camel@dabdike>
-Subject: Re: [PATCH] parisc: unbreak automounter support on 64-bit kernel
- with 32-bit userspace
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Helge Deller <deller@gmx.de>
-Cc: linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Kent <raven@themaw.net>, autofs@vger.kernel.org
-Date: Fri, 01 Feb 2013 07:26:48 +1100
-In-Reply-To: <20130131200110.GA6032@p100.box>
-References: <20130131200110.GA6032@p100.box>
+	Thu, 31 Jan 2013 15:31:28 -0500
+X-Authority-Analysis: v=2.0 cv=QcjkT7nv c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=vsatO2oQjdEhW-gp-PQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359664285.9820.1.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.4.28-rt40
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Thu, 31 Jan 2013 15:31:25 -0500
 Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.2 
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding autofs list and maintainer for their perusal and ack, although
-this is an obvious fix to me
 
-James]
-On Thu, 2013-01-31 at 21:01 +0100, Helge Deller wrote:
-> Similiar to other 64 bit Linux targets autofs_wqt_t needs to be of type int
-> which has a size of 32 bits on 32- and 64-bit parisc kernels.
-> 
-> Signed-off-by: Helge Deller <deller@gmx.de>
-> 
-> diff --git a/include/uapi/linux/auto_fs.h b/include/uapi/linux/auto_fs.h
-> index 77cdba9..d551754 100644
-> --- a/include/uapi/linux/auto_fs.h
-> +++ b/include/uapi/linux/auto_fs.h
-> @@ -43,7 +43,7 @@
->   */
->  
->  #if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
-> - || defined(__powerpc__) || defined(__s390__)
-> + || defined(__powerpc__) || defined(__s390__) || defined(__hppa__)
->  typedef unsigned int autofs_wqt_t;
->  #else
->  typedef unsigned long autofs_wqt_t;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-parisc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Dear RT Folks,
+
+I'm pleased to announce the 3.4.28-rt40 stable release.
+
+
+This release is just an update to the new stable 3.4.28 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: d83b09ef3f433d70a68429803a3abd89fcb16c17
+
+
+Or to build 3.4.28-rt40 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.28.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.28-rt40.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
 
 
