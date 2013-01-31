@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104Ab3AaW1p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 17:27:45 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50209 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756898Ab3AaW1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757081Ab3AaW1m (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 31 Jan 2013 17:27:42 -0500
-Message-ID: <1359671257.7527.4.camel@dabdike>
-Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "dbasehore ." <dbasehore@chromium.org>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, jgarzik@pobox.com,
-        linux-ide@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Fri, 01 Feb 2013 09:27:37 +1100
-In-Reply-To: <CAGAzgso4cJHM+CNV0nCu6zUmq=xUstbsguynUp+hyx581LcHJg@mail.gmail.com>
-References: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
-	 <50D5C473.2030902@mvista.com>
-	 <CAGAzgso4cJHM+CNV0nCu6zUmq=xUstbsguynUp+hyx581LcHJg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from terminus.zytor.com ([198.137.202.10]:44862 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756898Ab3AaW1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 17:27:39 -0500
+Date: Thu, 31 Jan 2013 14:27:28 -0800
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Message-ID: <tip-d288e1cf8e62f3e4034f1f021f047009c4ac0b3c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1356075872-3054-4-git-send-email-fenghua.yu@intel.com>
+References: <1356075872-3054-4-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/microcode] x86/common.c: Make have_cpuid_p()
+  a global function
+Git-Commit-ID: d288e1cf8e62f3e4034f1f021f047009c4ac0b3c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 14:27:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-31 at 14:00 -0800, dbasehore . wrote:
-> (Resending as plain text so the message is tracked on vger)
-> 
-> Hi, thanks for reading through my patch.
-> 
-> With regards to SCSI_SENSE_BUFFERSIZE, I'm following the precedent of
-> scsi_execute_req found in drivers/scsi/scsi_lib.c
+Commit-ID:  d288e1cf8e62f3e4034f1f021f047009c4ac0b3c
+Gitweb:     http://git.kernel.org/tip/d288e1cf8e62f3e4034f1f021f047009c4ac0b3c
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Thu, 20 Dec 2012 23:44:23 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 31 Jan 2013 13:18:58 -0800
 
-I have no context for this: I don't recall making any comment on sense
-buffers; what are you replying to?
+x86/common.c: Make have_cpuid_p() a global function
 
-James
+Remove static declaration in have_cpuid_p() to make it a global function. The
+function will be called in early loading microcode.
 
-> It seems that it is used by the scsi_normalize_sense function which I
-> call in sd_resume_async. I just input SCSI_SENSE_BUFFERSIZE directly
-> there though. I didn't know if anything would change its behavior on a
-> lower level if I made sense_len = SCSI_SENSE_BUFFERSIZE, so I just
-> went with what was already done.
-> 
-> I'll make sure the semantic fixes go into the final patch.
-> 
-> Also, I forgot to mention one possible problem earlier. I understand
-> that some hard drives have a command buffer that can be executed by
-> the hard drive in an order it determines. Does anyone know of a
-> potential problem if the following happens?
-> 
-> -resume finishes (hard drive not started yet)
-> -read/write sent to disk, inserted before start command
-> 
-> Could this happen? If so, could it cause any problems?
-> 
-> I've tested the possibility of a program trying to read/write from the
-> disk before it has started, and the read/write blocks until the disk
-> has actually been spun up. I don't know if there are specific hard
-> drives where this could be a problem though.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1356075872-3054-4-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/processor.h | 8 ++++++++
+ arch/x86/kernel/cpu/common.c     | 9 +++------
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
-
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index bdee8bd..3cdf4aa 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -190,6 +190,14 @@ extern void init_amd_cacheinfo(struct cpuinfo_x86 *c);
+ extern void detect_extended_topology(struct cpuinfo_x86 *c);
+ extern void detect_ht(struct cpuinfo_x86 *c);
+ 
++#ifdef CONFIG_X86_32
++extern int have_cpuid_p(void);
++#else
++static inline int have_cpuid_p(void)
++{
++	return 1;
++}
++#endif
+ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
+ 				unsigned int *ecx, unsigned int *edx)
+ {
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 9c3ab43..d7fd246 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -37,6 +37,8 @@
+ #include <asm/mce.h>
+ #include <asm/msr.h>
+ #include <asm/pat.h>
++#include <asm/microcode.h>
++#include <asm/microcode_intel.h>
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+ #include <asm/uv/uv.h>
+@@ -213,7 +215,7 @@ static inline int flag_is_changeable_p(u32 flag)
+ }
+ 
+ /* Probe for the CPUID instruction */
+-static int __cpuinit have_cpuid_p(void)
++int __cpuinit have_cpuid_p(void)
+ {
+ 	return flag_is_changeable_p(X86_EFLAGS_ID);
+ }
+@@ -249,11 +251,6 @@ static inline int flag_is_changeable_p(u32 flag)
+ {
+ 	return 1;
+ }
+-/* Probe for the CPUID instruction */
+-static inline int have_cpuid_p(void)
+-{
+-	return 1;
+-}
+ static inline void squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
+ {
+ }
