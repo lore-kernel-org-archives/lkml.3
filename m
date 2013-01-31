@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab3AaUvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 15:51:40 -0500
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:64918 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab3AaUvh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 15:51:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359647903-15801-2-git-send-email-larsi@wh2.tu-dresden.de>
-References: <1359647903-15801-1-git-send-email-larsi@wh2.tu-dresden.de>
-	<1359647903-15801-2-git-send-email-larsi@wh2.tu-dresden.de>
-Date: Thu, 31 Jan 2013 21:51:36 +0100
-Message-ID: <CACRpkda_HjzWNMD1H_a_fsWtbRWuTDsutS8kndb9jY31qf7Yyg@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/1] gpio: mcp23s08: convert driver to DT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lars Poeschel <larsi@wh2.tu-dresden.de>
-Cc: poeschel@lemonage.de, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rob@landley.net, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net, w.sang@pengutronix.de,
-        ben-linux@fluff.org, linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754578Ab3AaUwS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 15:52:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753814Ab3AaUwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 15:52:16 -0500
+Message-ID: <1359665532.7958.3.camel@ul30vt.home>
+Subject: Re: [PATCH] x86, x2apic: Only WARN on broken BIOSes inside a
+ virtual guest
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Prarit Bhargava <prarit@redhat.com>
+Date: Thu, 31 Jan 2013 13:52:12 -0700
+In-Reply-To: <20130131200024.GB1757@redhat.com>
+References: <1359650435-73586-1-git-send-email-dzickus@redhat.com>
+	 <20130131185200.GA1757@redhat.com> <20130131193427.GP98867@redhat.com>
+	 <20130131200024.GB1757@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 4:58 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> wrote:
+On Thu, 2013-01-31 at 22:00 +0200, Gleb Natapov wrote:
+> On Thu, Jan 31, 2013 at 02:34:27PM -0500, Don Zickus wrote:
+> > On Thu, Jan 31, 2013 at 08:52:00PM +0200, Gleb Natapov wrote:
+> > > > http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+> > > > 
+> > > > After talking with folks, the threat of irq injections on virtual guests
+> > > > made sense.  However, when discussing if this was possible on bare metal
+> > > > machines, we could not come up with a plausible scenario.
+> > > > 
+> > > The irq injections is something that a guest with assigned device does
+> > > to attack a hypervisor it runs on. Interrupt remapping protects host
+> > > from this attack. According to pdf above if x2apic is disabled in a
+> > > hypervisor interrupt remapping can be bypassed and leave host vulnerable
+> > > to guest attack. This means that situation is exactly opposite: warning
+> > > has sense on a bare metal, but not in a guest. I am not sure that there is
+> > > a hypervisor that emulates interrupt remapping device though and without
+> > > it the warning cannot be triggered in a guest.
+> > 
+> > Ah, it makes sense.  Not sure how I got it backwards then.  So my patch is
+> > pointless then?  I'll asked for it to be dropped.
+> Yes, it is backwards.
+> 
+> > 
+> > >From my previous discussions with folks, is that KVM was protected from
+> > this type of attack.  Is that still true?
+> > 
+> Copying Alex. He said that to use device assignment without interrupt
+> remapping customer needs to opt-in explicitly. Not sure what happens
+> with interrupt remapping but with x2apic disabled.
 
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
-> @@ -0,0 +1,27 @@
-> +Microchip MCP2308/MCP23S08/MCP23017/MCP23S17 driver for
-> +8-/16-bit I/O expander with serial interface (I2C/SPI)
-> +
-> +Required properties:
-> +- compatible : Should be "mcp,mcp23s08-gpio", "mcp,mcp23s17-gpio",
-> +                       "mcp,mcp23008-gpio" or "mcp,mcp23017-gpio"
-> +- base : The first gpio number that should be assigned by this chip.
+Per the paper above, compatibility format is only vulnerable if EIM
+(Extended Interrupt Mode) is clear (x2APIC not enabled) and CFIS in the
+global command register is set.  The latter is never set.
 
-No. We do not tie the global GPIO numbers into the device tree.
+> The problem is not limited to virtualization BTW. Any vfio user may
+> attack kernel without interrupt remapping so vfio has the same opt-in.
 
-In the DT GPIOs are referenced by ampersand <&gpio0 1 2>
-notation referring to the instance, so as you realize DT itself
-has no need for that number.
+Yep.  Thanks,
 
-Further it is not OS-neutral.
+Alex
 
-You have to find another way to handle this in the driver code.
-In worst case: use AUXDATA.
 
-Yours,
-Linus Walleij
