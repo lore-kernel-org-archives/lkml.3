@@ -1,303 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab3AaGsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 01:48:52 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:49979 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793Ab3AaGsu (ORCPT
+	id S1752013Ab3AaG6n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 01:58:43 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60965 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479Ab3AaG6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 01:48:50 -0500
-From: chenggang <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: chenggang <chenggang.qin@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chenggang Qin <chenggang.qcg@alibaba-inc.com>
-Subject: [PATCH] Add a python script to statistic direct io behavior
-Date: Thu, 31 Jan 2013 14:48:24 +0800
-Message-Id: <1359614904-3688-1-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 31 Jan 2013 01:58:41 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-d6-510a161fb520
+From: Namhyung Kim <namhyung@kernel.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        tglx@linutronix.de
+Subject: Re: [RFC 2/2] sched/fair: prefer a CPU in the "lowest" idle state
+References: <1359580757-4121-1-git-send-email-bigeasy@linutronix.de>
+	<1359580757-4121-3-git-send-email-bigeasy@linutronix.de>
+	<5109D313.1020409@linux.vnet.ibm.com>
+	<8738xiue31.fsf@sejong.aot.lge.com>
+	<510A1198.2070803@linux.vnet.ibm.com>
+Date: Thu, 31 Jan 2013 15:58:38 +0900
+In-Reply-To: <510A1198.2070803@linux.vnet.ibm.com> (Michael Wang's message of
+	"Thu, 31 Jan 2013 14:39:20 +0800")
+Message-ID: <87txpxu9cx.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chenggang.qin@gmail.com
+On Thu, 31 Jan 2013 14:39:20 +0800, Michael Wang wrote:
+> On 01/31/2013 01:16 PM, Namhyung Kim wrote:
+>> Anyway, I have an idea with this in mind.  It's like adding a new "idle
+>> load" to each idle cpu rather than special casing the idle cpus like
+>> above.  IOW an idle cpu will get very small load weight depends on how
+>> deep it's slept so that it can be compared to other cpus in a same way
+>> but we can find prefered (lowest load) cpu among the idle cpus.
+>> 
+>> The simple way I can think of is adding idle_level to a rq load in
+>> weighted_cpuload():
+>> 
+>> static unsigned long weighted_cpuload(const int cpu)
+>> {
+>> 	return cpu_rq(cpu)->load.weight + cpuidle_get_state(cpu);
+>> }
+>
+> Hmm... then we don't need changes in find_idlest_cpu(), just compare the
+> load as before, but it works only when the appendix state value is
+> smaller than the lowest load of one task, which is 15 currently, I'm not
+> sure whether we have the promise...
 
-This patch depends on a prev patch: https://lkml.org/lkml/2013/1/29/47
+You said about a nice 19 process, right?  But I found that SCHED_IDLE
+task will have weight of 3. :(
 
-If the engineers want to analyze the direct io behavior of some applications
-without source code, perf tools with some appropriate tracepoints events in the
-VFS subsystem are excellent choice.
+  #define WEIGHT_IDLEPRIO                3
 
-Many database systems use their own page cache subsystems and use the direct IO
-to access the disks. Sometimes, the system engineers need to know the misses rate
-of the database system's page cache. This requirements can be satisfied by recording
-the database's file access behavior through the way of direct IO. So, we use 2
-tracepoint events to record the system wide's direct IO behavior. The 2 tracepoint
-events are:
-1) vfs:direct_io_read
-2) vfs:direct_io_write
-they were introduced by the patch: https://lkml.org/lkml/2013/1/29/47
-The script direct-io.py are introduced by this patch can record the 2 tracepoint
-events, analyse the sample data, and give a concise report.
 
-usage:
-	"perf script record direct-io\n"
-	"perf script report direct-io [comm|pid]\n"
+But AFAIK the number of states in cpuidle is usually less than 10 so maybe
+we can change the weight then, but there's no promise...
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@alibaba-inc.com>
----
- tools/perf/scripts/python/bin/direct-io-record |    2 +
- tools/perf/scripts/python/bin/direct-io-report |   21 +++
- tools/perf/scripts/python/direct-io.py         |  185 ++++++++++++++++++++++++
- 3 files changed, 208 insertions(+)
- create mode 100755 tools/perf/scripts/python/bin/direct-io-record
- create mode 100644 tools/perf/scripts/python/bin/direct-io-report
- create mode 100644 tools/perf/scripts/python/direct-io.py
-
-diff --git a/tools/perf/scripts/python/bin/direct-io-record b/tools/perf/scripts/python/bin/direct-io-record
-new file mode 100755
-index 0000000..4857097
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/direct-io-record
-@@ -0,0 +1,2 @@
-+#!/bin/bash
-+perf record -e vfs:direct_io_read -e vfs:direct_io_write $@
-diff --git a/tools/perf/scripts/python/bin/direct-io-report b/tools/perf/scripts/python/bin/direct-io-report
-new file mode 100644
-index 0000000..828d9c6
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/direct-io-report
-@@ -0,0 +1,21 @@
-+#!/bin/bash
-+# description: direct_io statistic
-+# args: [comm|pid]
-+n_args=0
-+for i in "$@"
-+do
-+    if expr match "$i" "-" > /dev/null ; then
-+	break
-+    fi
-+    n_args=$(( $n_args + 1 ))
-+done
-+if [ "$n_args" -gt 1 ] ; then
-+    echo "usage: perf script report direct-io [comm|pid]"
-+    exit
-+fi
-+
-+if [ "$n_args" -gt 0 ] ; then
-+    comm=$1
-+    shift
-+fi
-+perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/direct-io.py $comm
-diff --git a/tools/perf/scripts/python/direct-io.py b/tools/perf/scripts/python/direct-io.py
-new file mode 100644
-index 0000000..321ff8e
---- /dev/null
-+++ b/tools/perf/scripts/python/direct-io.py
-@@ -0,0 +1,185 @@
-+# direct IO counts
-+# (c) 2013, Chenggang Qin <chenggang.qcg@alibaba-inc.com>
-+# Licensed under the terms of the GNU GPL License version 2
-+
-+# Displays system-wide file direct IO behavior.
-+# It helps us to investigate which processes trigger a direct IO,
-+# and what files are accessed by these processes.
-+#
-+# options
-+# comm, pid: show details of the file r/w behavior of a special process.
-+
-+import os, sys
-+
-+sys.path.append(os.environ['PERF_EXEC_PATH'] + \
-+	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
-+
-+from perf_trace_context import *
-+from Core import *
-+from Util import *
-+
-+usage = "perf script record direct-io\n" \
-+	"perf script report direct-io [comm|pid]\n"
-+
-+for_comm = None
-+for_pid = None
-+pid_2_comm = None
-+
-+if len(sys.argv) > 2:
-+	sys.exit(usage)
-+
-+if len(sys.argv) > 1:
-+	try:
-+		for_pid = int(sys.argv[1])
-+	except:
-+		for_comm = sys.argv[1]
-+
-+file_write = autodict()
-+file_read = autodict()
-+
-+file_write_bytes = autodict()
-+file_read_bytes = autodict()
-+
-+comm_read_info = autodict()
-+comm_write_info = autodict()
-+
-+wevent_count = 0
-+revent_count = 0
-+
-+comm_revent_count = 0;
-+comm_wevent_count = 0;
-+
-+def trace_begin():
-+	print "Press control+C to stop and show the summary"
-+
-+def trace_end():
-+	if (for_comm is not None) or (for_pid is not None):
-+		print_direct_io_event_for_comm()
-+	else:
-+		print_direct_io_event_totals()
-+
-+def vfs__direct_io_write(event_name, context, common_cpu,
-+	common_secs, common_nsecs, common_pid, common_comm,
-+	pos, bytes, fname):
-+	global wevent_count
-+	global comm_wevent_count
-+	global pid_2_comm
-+
-+	if (for_comm is not None) or (for_pid is not None):
-+		if (common_comm != for_comm) and (common_pid != for_pid):
-+			return
-+		else:
-+			if (pid_2_comm is None) and (for_pid is not None):
-+				pid_2_comm = common_comm
-+			comm_write_info[comm_wevent_count] = (common_pid, \
-+					common_cpu, common_secs, common_nsecs, \
-+					fname, pos, bytes)
-+			comm_wevent_count += 1
-+			return
-+
-+	wevent_count += 1
-+	try:
-+		file_write[(common_pid, common_comm, fname)] += 1
-+		file_write_bytes[(common_pid, common_comm, fname)] += bytes
-+	except TypeError:
-+		file_write[(common_pid, common_comm, fname)] = 1
-+		file_write_bytes[(common_pid, common_comm, fname)] = bytes
-+
-+def vfs__direct_io_read(event_name, context, common_cpu,
-+	common_secs, common_nsecs, common_pid, common_comm,
-+	pos, bytes, fname):
-+	global revent_count
-+	global comm_revent_count
-+	global pid_2_comm
-+
-+	if (for_comm is not None) or (for_pid is not None):
-+		if (common_comm != for_comm) and (common_pid != for_pid):
-+			return
-+		else:
-+			if (pid_2_comm is None) and (for_pid is not None):
-+				pid_2_comm = common_comm
-+			comm_read_info[comm_revent_count] = (common_pid, \
-+					common_cpu, common_secs, common_nsecs, \
-+					fname, pos, bytes)
-+			comm_revent_count += 1
-+			return
-+
-+	try:
-+		revent_count += 1
-+		file_read[(common_pid, common_comm, fname)] += 1
-+		file_read_bytes[(common_pid, common_comm, fname)] += bytes
-+	except TypeError:
-+		file_read[(common_pid, common_comm, fname)] = 1
-+		file_read_bytes[(common_pid, common_comm, fname)] = bytes
-+
-+def print_direct_io_event_totals():
-+	clear_term()
-+	print "\nDirect IO:\n\n",
-+	print "All read events: %d\n" % (revent_count)
-+	print "%5s %20s  %40s %10s %10s\n" % ("pid", "comm", "read file", "count", "Bytes"),
-+	print "%5s %20s  %40s %10s %10s\n" % ("-----", "----------",\
-+					      "----------", "----------", \
-+					      "----------"),
-+
-+	for tuple, val in sorted(file_read.iteritems(), key = lambda(k, v): (v, k), \
-+				 reverse = True):
-+		try:
-+			print "%5d  %20s %40s %10d %10d\n" % \
-+			      (tuple[0], tuple[1], tuple[2][:40], val, \
-+			      file_read_bytes[tuple[0], tuple[1], tuple[2]])
-+		except TypeError:
-+			pass
-+
-+	print "\n\n"
-+
-+	print "All write events: %d\n" % (wevent_count)
-+	print "%5s %20s  %40s %10s %10s\n" % ("pid", "comm", "write file", "count", "Bytes"),
-+	print "%5s %20s  %40s %10s %10s\n" % ("-----", "----------",\
-+					      "----------", "----------", \
-+					      "----------"),
-+
-+	for tuple, val in sorted(file_write.iteritems(), key = lambda(k, v): (v, k), \
-+				reverse = True):
-+		try:
-+			print "%5d  %20s %40s %10d %10d\n" % \
-+			      (tuple[0], tuple[1], tuple[2][:40], val, \
-+			      file_write_bytes[tuple[0], tuple[1], tuple[2]])
-+		except TypeError:
-+			pass
-+
-+def print_direct_io_event_for_comm():
-+	if for_comm is not None:
-+		print "Direct IO record for %s:\n" % (for_comm)
-+	else:
-+		print "Direct IO record for %s (pid: %d):\n" % (pid_2_comm, for_pid)
-+	print "Number of read: %d\n" % (comm_revent_count)
-+	print "%5s %3s %16s %40s %10s %10s\n" % ("pid", "cpu", "timestamp", "file name", \
-+						 "position", "Bytes")
-+	print "%5s %3s %16s %40s %10s %10s\n" % ("-----", "---", "----------", \
-+						 "----------", "----------", \
-+						 "----------"),
-+
-+	for i in range(0, comm_revent_count):
-+		try:
-+			print "%5d %3d %6d.%9d %40s %10s %10s\n" % (comm_read_info[i][0], \
-+				comm_read_info[i][1], comm_read_info[i][2], \
-+				comm_read_info[i][3], comm_read_info[i][4], \
-+				comm_read_info[i][5], comm_read_info[i][6])
-+		except TypeError:
-+			pass
-+
-+	print "\nNumber of write: %d\n" % (comm_wevent_count)
-+	print "%5s %3s %16s %40s %10s %10s\n" % ("pid", "cpu", "timestamp", "file name", \
-+						 "position", "Bytes")
-+	print "%5s %3s %16s %40s %10s %10s\n" % ("-----", "---", "----------", \
-+						 "----------", "----------", \
-+						 "----------"),
-+	for i in range(0, comm_wevent_count):
-+		try:
-+			print "%5d %3d %6d.%9d %40s %10s %10s\n" % (comm_write_info[i][0], \
-+				comm_write_info[i][1], comm_write_info[i][2], \
-+				comm_write_info[i][3], comm_write_info[i][4], \
-+				comm_write_info[i][5], comm_write_info[i][6])
-+		except TypeError:
-+			pass
-+
--- 
-1.7.9.5
-
+Thanks,
+Namhyung
