@@ -1,68 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab3AaHJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 02:09:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35398 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751562Ab3AaHJq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 02:09:46 -0500
-Date: Thu, 31 Jan 2013 15:09:39 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: fsl: Fix multiple symbol definitions
-Message-ID: <20130131070937.GF7663@opensource.wolfsonmicro.com>
-References: <1359577471-15029-1-git-send-email-thierry.reding@avionic-design.de>
- <20130131014214.GD2765@S2101-09.ap.freescale.net>
- <20130131070658.GB31996@avionic-0098.mockup.avionic-design.de>
+	id S1754240Ab3AaHL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 02:11:59 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:22255 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751973Ab3AaHL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 02:11:57 -0500
+X-IronPort-AV: E=Sophos;i="4.84,574,1355068800"; 
+   d="scan'208";a="6670554"
+Message-ID: <510A18FA.2010107@cn.fujitsu.com>
+Date: Thu, 31 Jan 2013 15:10:50 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s5/bjXLgkIwAv6Hi"
-Content-Disposition: inline
-In-Reply-To: <20130131070658.GB31996@avionic-0098.mockup.avionic-design.de>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>   <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>  <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com> <1359613162.1587.0.camel@kernel>
+In-Reply-To: <1359613162.1587.0.camel@kernel>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/31 15:10:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/31 15:10:44,
+	Serialize complete at 2013/01/31 15:10:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/31/2013 02:19 PM, Simon Jeons wrote:
+> Hi Tang,
+> On Thu, 2013-01-31 at 11:31 +0800, Tang Chen wrote:
+>> Hi Simon,
+>>
+>> Please see below. :)
+>>
+>> On 01/31/2013 09:22 AM, Simon Jeons wrote:
+>>>
+>>> Sorry, I still confuse. :(
+>>> update node_states[N_NORMAL_MEMORY] to node_states[N_MEMORY] or
+>>> node_states[N_NORMAL_MEMOR] present 0...ZONE_MOVABLE?
+>>>
+>>> node_states is what? node_states[N_NORMAL_MEMOR] or
+>>> node_states[N_MEMORY]?
+>>
+>> Are you asking what node_states[] is ?
+>>
+>> node_states[] is an array of nodemask,
+>>
+>>       extern nodemask_t node_states[NR_NODE_STATES];
+>>
+>> For example, node_states[N_NORMAL_MEMOR] represents which nodes have
+>> normal memory.
+>> If N_MEMORY == N_HIGH_MEMORY == N_NORMAL_MEMORY, node_states[N_MEMORY] is
+>> node_states[N_NORMAL_MEMOR]. So it represents which nodes have 0 ...
+>> ZONE_MOVABLE.
+>>
+>
+> Sorry, how can nodes_state[N_NORMAL_MEMORY] represents a node have 0 ...
+> *ZONE_MOVABLE*, the comment of enum nodes_states said that
+> N_NORMAL_MEMORY just means the node has regular memory.
+>
 
---s5/bjXLgkIwAv6Hi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Simon,
 
-On Thu, Jan 31, 2013 at 08:06:58AM +0100, Thierry Reding wrote:
+Let's say it in this way.
 
-> That does indeed look much better than fiddling with the Makefile. My
-> automated ARM builds of linux-next were failing for a few days because
-> of this, so I guess the fix (as well as the MMC one) just hadn't made it
-> into linux-next yet.
+If we don't have CONFIG_HIGHMEM, N_HIGH_MEMORY == N_NORMAL_MEMORY. We 
+don't have a separate
+macro to represent highmem because we don't have highmem.
+This is easy to understand, right ?
 
-The last -next was on the 29th, once it's rebuilt the fix should be
-there.
+Now, think it just like above:
+If we don't have CONFIG_MOVABLE_NODE, N_MEMORY == N_HIGH_MEMORY == 
+N_NORMAL_MEMORY.
+This means we don't allow a node to have only movable memory, not we 
+don't have movable memory.
+A node could have normal memory and movable memory. So 
+nodes_state[N_NORMAL_MEMORY] represents
+a node have 0 ... *ZONE_MOVABLE*.
 
---s5/bjXLgkIwAv6Hi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I think the point is: CONFIG_MOVABLE_NODE means we allow a node to have 
+only movable memory.
+So without CONFIG_MOVABLE_NODE, it doesn't mean a node cannot have 
+movable memory. It means
+the node cannot have only movable memory. It can have normal memory and 
+movable memory.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+1) With CONFIG_MOVABLE_NODE:
+    N_NORMAL_MEMORY: nodes who have normal memory.
+                     normal memory only
+                     normal and highmem
+                     normal and highmem and movablemem
+                     normal and movablemem
+    N_MEMORY: nodes who has memory (any memory)
+                     normal memory only
+                     normal and highmem
+                     normal and highmem and movablemem
+                     normal and movablemem ---------------- We can have 
+movablemem.
+                     highmem only -------------------------
+                     highmem and movablemem ---------------
+                     movablemem only ---------------------- We can have 
+movablemem only.    ***
 
-iQIcBAEBAgAGBQJRChioAAoJELSic+t+oim9VREP/ik7S6DHy8qnVVYRbHIcbpG9
-AzLpAmttnJjG4gr9PM3nqdUe5n8oah1/eLrf6RcIlryoS1rVkUDPNvcmMqtdmWdx
-9hHQmyJZ3exop9m8sMkQKnKac1VSTBgRTRRgPkxt4RIW1rYQ7t6Uzh+ASawjQB/X
-LQoLyinxu1jvq+kYizBWYEU5MEeFK/HoikyYkFp1x0oCojkVq6tF1xHQZgep3EjV
-Y+bJUX0rKEh6Naga40xWF1swgAwegEAqEHPvme53ktGSUxRE3wpCCFTEmh+aWTXV
-gv3U2SmQ+v+C3O2A8denmoKe8CGyccIKabCbbXfxg+DrXElNaIgi8X0ENFPINBc7
-qnFjGbJEh0al9AWlD2nPt1ijPviR26BH2tl+vis7B/I7YB6pHJ5CBGaVtMfzZh2A
-JazDw2U/RIE4sNvReHgKzgIh3lHFIRzABoPS+OUw+yiCgm8PkMIGqns5i+icfDAG
-Eyet+kdJ7cdRPPiKHruENk3Rc/2GyUKvCCNDU5qDqMG1YqNtHJzgk1RDBnx+p6Tu
-eUMDHUZa81n6dslYSyhNId9V6jBh2pH53K3KJmog/U/Q+s6dlIrtCGjrY04UCn6I
-HBUDJgEoU30dHFhrrbGDCoVWkpnU7a4O0LUy9GJYybsK4nIoUkf5Jx3ereJe40qS
-A15uF+QKNHZYpd/t8uOW
-=m/1B
------END PGP SIGNATURE-----
+2) With out CONFIG_MOVABLE_NODE:
+    N_MEMORY == N_NORMAL_MEMORY: (Here, I omit N_HIGH_MEMORY)
+                     normal memory only
+                     normal and highmem
+                     normal and highmem and movablemem
+                     normal and movablemem ---------------- We can have 
+movablemem.
+                     No movablemem only ------------------- We cannot 
+have movablemem only. ***
 
---s5/bjXLgkIwAv6Hi--
+The semantics is not that clear here. So we can only try to understand 
+it from the code where
+we use N_MEMORY. :)
+
+That is my understanding of this.
+
+Thanks. :)
+
+
+
+
