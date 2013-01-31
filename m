@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3AaKl0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 05:41:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36026 "EHLO
+	id S1753891Ab3AaKma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 05:42:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36044 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab3AaKlZ (ORCPT
+	with ESMTP id S1751582Ab3AaKm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 05:41:25 -0500
-Date: Thu, 31 Jan 2013 02:40:47 -0800
+	Thu, 31 Jan 2013 05:42:28 -0500
+Date: Thu, 31 Jan 2013 02:41:57 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-42ldngi973f4ssvzlklo8t2k@git.kernel.org>
+Message-ID: <tip-eeeljnecpi0zi5s7ux1mzdv9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,8 +19,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kmem: Use memdup()
-Git-Commit-ID: 8d9233f205e8855dc762665e28012354cd46af45
+Subject: [tip:perf/core] perf header: Stop using die()
+  calls when processing tracing data
+Git-Commit-ID: 2caa48a24061b1f8e8dab43ea3292a608a15e3c9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,21 +30,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 02:40:53 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 31 Jan 2013 02:42:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8d9233f205e8855dc762665e28012354cd46af45
-Gitweb:     http://git.kernel.org/tip/8d9233f205e8855dc762665e28012354cd46af45
+Commit-ID:  2caa48a24061b1f8e8dab43ea3292a608a15e3c9
+Gitweb:     http://git.kernel.org/tip/2caa48a24061b1f8e8dab43ea3292a608a15e3c9
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 24 Jan 2013 22:24:57 -0300
+AuthorDate: Thu, 24 Jan 2013 22:34:33 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 25 Jan 2013 12:49:28 -0300
+CommitDate: Fri, 25 Jan 2013 12:49:29 -0300
 
-perf kmem: Use memdup()
+perf header: Stop using die() calls when processing tracing data
 
-Instead of hand coded equivalent.
+The callers of this function (perf_event__process_tracing_data) already
+handles a negative value return as error, so just use pr_err() to log
+the problem and return -1 instead of panic'ing.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -53,36 +56,42 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-42ldngi973f4ssvzlklo8t2k@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-eeeljnecpi0zi5s7ux1mzdv9@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kmem.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/util/header.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index c746108..46878da 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -17,6 +17,7 @@
- #include "util/debug.h"
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index fccd69d..e17a8fe 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2921,16 +2921,22 @@ int perf_event__process_tracing_data(union perf_event *event,
+ 				 session->repipe);
+ 	padding = PERF_ALIGN(size_read, sizeof(u64)) - size_read;
  
- #include <linux/rbtree.h>
-+#include <linux/string.h>
+-	if (readn(session->fd, buf, padding) < 0)
+-		die("reading input file");
++	if (readn(session->fd, buf, padding) < 0) {
++		pr_err("%s: reading input file", __func__);
++		return -1;
++	}
+ 	if (session->repipe) {
+ 		int retw = write(STDOUT_FILENO, buf, padding);
+-		if (retw <= 0 || retw != padding)
+-			die("repiping tracing data padding");
++		if (retw <= 0 || retw != padding) {
++			pr_err("%s: repiping tracing data padding", __func__);
++			return -1;
++		}
+ 	}
  
- struct alloc_stat;
- typedef int (*sort_fn_t)(struct alloc_stat *, struct alloc_stat *);
-@@ -618,12 +619,11 @@ static int sort_dimension__add(const char *tok, struct list_head *list)
+-	if (size_read + padding != size)
+-		die("tracing data size mismatch");
++	if (size_read + padding != size) {
++		pr_err("%s: tracing data size mismatch", __func__);
++		return -1;
++	}
  
- 	for (i = 0; i < NUM_AVAIL_SORTS; i++) {
- 		if (!strcmp(avail_sorts[i]->name, tok)) {
--			sort = malloc(sizeof(*sort));
-+			sort = memdup(avail_sorts[i], sizeof(*avail_sorts[i]));
- 			if (!sort) {
--				pr_err("%s: malloc failed\n", __func__);
-+				pr_err("%s: memdup failed\n", __func__);
- 				return -1;
- 			}
--			memcpy(sort, avail_sorts[i], sizeof(*sort));
- 			list_add_tail(&sort->list, list);
- 			return 0;
- 		}
+ 	perf_evlist__prepare_tracepoint_events(session->evlist,
+ 					       session->pevent);
