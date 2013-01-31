@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab3AaTri (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 14:47:38 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:60931 "EHLO mx12.netapp.com"
+	id S1755473Ab3AaTwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 14:52:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39830 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754092Ab3AaTrg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 14:47:36 -0500
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="14854572"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Please pull NFS client fixes
-Thread-Topic: [GIT PULL] Please pull NFS client fixes
-Thread-Index: AQHN/+vPEgsGD+BXpk2K+D2lU8xfwg==
-Date: Thu, 31 Jan 2013 19:47:33 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91834580F@sacexcmbx05-prd.hq.netapp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <970CE31FBF7F064288D60D09B831D53C@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1751688Ab3AaTwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 14:52:43 -0500
+Date: Thu, 31 Jan 2013 13:52:25 -0600
+From: Clark Williams <williams@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2 0/2] move sysctl bits into new header and add a SCHED_RR
+ tuning knob
+Message-ID: <20130131135225.6f32af1a@redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/ebZMPOYnUqIywEa90E8NXxX"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-The following changes since commit 949db153b6466c6f7cad5a427ecea94985927311:
+--Sig_/ebZMPOYnUqIywEa90E8NXxX
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-  Linux 3.8-rc5 (2013-01-25 11:57:28 -0800)
 
-are available in the git repository at:
+Ingo,
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.8-4
+On your suggestion, I created the directory include/linux/sched and created=
+=20
+include/linux/sched/sysctl.h, which contains all the sysctl scheduler bits =
+(plus a=20
+few autogroup prototype definitions). If there are still objections we can =
+create
+autogroup.h or some other more generic entry in include/linux/sched and mov=
+e them
+there (or even back to include/linux/sched.h).
 
-for you to fetch changes up to c489ee290bdbbace6bb63ebe6ebd4dd605819495:
+The second patch is just adding the SCHED_RR tuning knob to the new sysctl =
+header
+and the code changes to core.c, rt.c and sysctl.c.=20
 
-  NFSv4.1: Handle NFS4ERR_DELAY when resetting the NFSv4.1 session (2013-01-30 17:45:15 -0500)
+I saw a few other things that might be candidates for a new file in the sch=
+ed dir,
+things like NO_HZ and CGROUPS but wanted to get this in place first.=20
 
-----------------------------------------------------------------
-NFS client bugfixe for Linux 3.8
+Clark Williams (2):
+  sched: create new scheduler include dir and move sysctl defs there
+  sched/rt:  add a tuning knob to allow changing SCHED_RR timeslice
 
-- Error reporting in nfs_xdev_mount incorrectly maps all errors to ENOMEM
-- Fix an NFSv4 refcounting issue
-- Fix a mount failure when the server reboots during NFSv4 trunking discovery
-- NFSv4.1 mounts may need to run the lease recovery thread.
-- Don't silently fail setattr() requests on mountpoints
-- Fix a SUNRPC socket/transport livelock and priority queue issue
-- We must handle NFS4ERR_DELAY when resetting the NFSv4.1 session.
+ include/linux/sched.h        | 108 +------------------------------------
+ include/linux/sched/sysctl.h | 126 +++++++++++++++++++++++++++++++++++++++=
+++++
+ kernel/sched/core.c          |  19 +++++++
+ kernel/sched/rt.c            |   6 ++-
+ kernel/sysctl.c              |   8 +++
+ 5 files changed, 158 insertions(+), 109 deletions(-)
+ create mode 100644 include/linux/sched/sysctl.h
 
-----------------------------------------------------------------
-Trond Myklebust (7):
-      NFS: Fix error reporting in nfs_xdev_mount
-      NFSv4: Fix NFSv4 reference counting for trunked sessions
-      NFSv4: Fix NFSv4 trunking discovery
-      NFSv4.1: Ensure that nfs41_walk_client_list() does start lease recovery
-      NFS: Don't silently fail setattr() requests on mountpoints
-      SUNRPC: When changing the queue priority, ensure that we change the owner
-      NFSv4.1: Handle NFS4ERR_DELAY when resetting the NFSv4.1 session
+--=20
+1.7.11.7
 
- fs/nfs/namespace.c  | 20 +++++++++++++++++
- fs/nfs/nfs4client.c | 62 ++++++++++++++++++++++-------------------------------
- fs/nfs/nfs4state.c  | 22 ++++++++++++-------
- fs/nfs/super.c      | 22 ++++++++-----------
- net/sunrpc/sched.c  | 18 +++++++++++++++-
- 5 files changed, 86 insertions(+), 58 deletions(-)
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+--Sig_/ebZMPOYnUqIywEa90E8NXxX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlEKy3kACgkQHyuj/+TTEp3N4ACgoEgPikjIFBwpHGOO+K1opcOB
+Iv4AmwQ+Th+Ds9p2QPp6Q49MzzgdkkVw
+=uckW
+-----END PGP SIGNATURE-----
+
+--Sig_/ebZMPOYnUqIywEa90E8NXxX--
