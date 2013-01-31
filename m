@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab3AaSfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 13:35:18 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:59208 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753309Ab3AaSfQ (ORCPT
+	id S1756223Ab3AaSiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 13:38:20 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:59551 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab3AaSiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 13:35:16 -0500
-Message-ID: <1359657310.6022.4.camel@x61.thuisdomein>
-Subject: [PATCH v2] PCI: pciehp: drop ENTRY messages
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 31 Jan 2013 19:35:10 +0100
-In-Reply-To: <1450113.teKM2dvJbO@vostro.rjw.lan>
-References: <1359367251.883.13.camel@x61.thuisdomein>
-	 <CAErSpo7grYijCUZGWGM4jao+MUqXYQ66q1az6bbKPMX4_Jwcyg@mail.gmail.com>
-	 <1450113.teKM2dvJbO@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 31 Jan 2013 18:35:10.0343 (UTC) FILETIME=[B33C9970:01CDFFE1]
-X-RcptDomain: vger.kernel.org
+	Thu, 31 Jan 2013 13:38:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <6099377.PFvsxPeyib@vostro.rjw.lan>
+References: <1451967.YMyGeCCNtu@vostro.rjw.lan>
+	<6099377.PFvsxPeyib@vostro.rjw.lan>
+Date: Thu, 31 Jan 2013 10:38:17 -0800
+X-Google-Sender-Auth: lOlTe8bJmha20GpRTygLdRelQy8
+Message-ID: <CAE9FiQXPaMCSyH72qqu-NvPbPkeUbQq5Dcb_SdKz6SEiSmdR7Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ACPI / scan: Fix acpi_bus_get_device() check in acpi_match_device()
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In each suspend and resume cycle my laptop prints these messages at
-KERN_INFO level:
-    pciehp 0000:00:1c.1:pcie04: pciehp_suspend ENTRY
-    pciehp 0000:00:1c.0:pcie04: pciehp_suspend ENTRY
+On Wed, Jan 30, 2013 at 2:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Since acpi_bus_get_device() returns int and not acpi_status, change
+> acpi_match_device() so that it doesn't apply ACPI_FAILURE() to the
+> return value of acpi_bus_get_device().
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/scan.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -491,9 +491,9 @@ const struct acpi_device_id *acpi_match_
+>                                                const struct device *dev)
+>  {
+>         struct acpi_device *adev;
+> +       acpi_handle handle = ACPI_HANDLE(dev);
+>
+> -       if (!ids || !ACPI_HANDLE(dev)
+> -           || ACPI_FAILURE(acpi_bus_get_device(ACPI_HANDLE(dev), &adev)))
+> +       if (!ids || !handle || acpi_bus_get_device(handle, &adev))
+>                 return NULL;
+>
+>         return __acpi_match_device(adev, ids);
+>
 
-and
-    pciehp 0000:00:1c.0:pcie04: pciehp_resume ENTRY
-    pciehp 0000:00:1c.1:pcie04: pciehp_resume ENTRY
-
-Drop these messages, that were probably used to debug the suspend and
-resume code, but now serve no purpose.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) v1 was called "PCI: pciehp: hide ENTRY messages behind ctrl_dbg()".
-But Bjorn and Rafael prefer to drop these messages completely.
-
-1) Not even compile tested!
-
- drivers/pci/hotplug/pciehp_core.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
-index 939bd1d..7d72c5e 100644
---- a/drivers/pci/hotplug/pciehp_core.c
-+++ b/drivers/pci/hotplug/pciehp_core.c
-@@ -293,7 +293,6 @@ static void pciehp_remove(struct pcie_device *dev)
- #ifdef CONFIG_PM
- static int pciehp_suspend (struct pcie_device *dev)
- {
--	dev_info(&dev->device, "%s ENTRY\n", __func__);
- 	return 0;
- }
- 
-@@ -303,7 +302,6 @@ static int pciehp_resume (struct pcie_device *dev)
- 	struct slot *slot;
- 	u8 status;
- 
--	dev_info(&dev->device, "%s ENTRY\n", __func__);
- 	ctrl = get_service_data(dev);
- 
- 	/* reinitialize the chipset's event detection logic */
--- 
-1.7.11.7
-
+Acked-by: Yinghai Lu <yinghai@kernel.org>
