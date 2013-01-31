@@ -1,82 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab3AaFer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 00:34:47 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5049 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941Ab3AaFep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 00:34:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,574,1355126400"; 
-   d="scan'208";a="284500882"
-Date: Thu, 31 Jan 2013 13:35:35 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v8 2/4] block: add runtime pm helpers
-Message-ID: <20130131053535.GA14627@aaronlu.sh.intel.com>
-References: <1359538494-2936-3-git-send-email-aaron.lu@intel.com>
- <Pine.LNX.4.44L0.1301301053210.1709-100000@iolanthe.rowland.org>
+	id S1754156Ab3AaFf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 00:35:57 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64630 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab3AaFfz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 00:35:55 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-98-510a02b9cb83
+Date: Thu, 31 Jan 2013 14:35:54 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv4 2/7] zsmalloc: promote to lib/
+Message-ID: <20130131053554.GD23548@blaptop>
+References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130129145134.813672cf.akpm@linux-foundation.org>
+ <51094A39.8050206@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1301301053210.1709-100000@iolanthe.rowland.org>
+In-Reply-To: <51094A39.8050206@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 10:54:53AM -0500, Alan Stern wrote:
-> On Wed, 30 Jan 2013, Aaron Lu wrote:
+On Wed, Jan 30, 2013 at 10:28:41AM -0600, Seth Jennings wrote:
+> On 01/29/2013 04:51 PM, Andrew Morton wrote:
+> > On Tue, 29 Jan 2013 15:40:22 -0600
+> > Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+> > 
+> >> This patch promotes the slab-based zsmalloc memory allocator
+> >> from the staging tree to lib/
+> > 
+> > Hate to rain on the parade, but...  we haven't reviewed zsmalloc
+> > yet.  At least, I haven't, and I haven't seen others do so.
+> > 
+> > So how's about we forget that zsmalloc was previously in staging and
+> > send the zsmalloc code out for review?  With a very good changelog
+> > explaining why it exists, what problems it solves, etc.
+> > 
+> > 
+> > I peeked.
+> > 
+> > Don't answer any of the below questions - they are examples of
+> > concepts which should be accessible to readers of the
+> > hopefully-forthcoming very-good-changelog.
+> > 
+> > - kmap_atomic() returns a void* - there's no need to cast its return value.
+> > 
+> > - Remove private MAX(), use the (much better implemented) max().
+> > 
+> > - It says "This was one of the major issues with its predecessor
+> >   (xvmalloc)", but drivers/staging/ramster/xvmalloc.c is still in the tree.
+> > 
+> > - USE_PGTABLE_MAPPING should be done via Kconfig.
+> > 
+> > - USE_PGTABLE_MAPPING is interesting and the changelog should go into
+> >   some details.  What are the pros and cons here?  Why do the two
+> >   options exist?  Can we eliminate one mode or the other?
+> > 
+> > - Various functions are obscure and would benefit from explanatory
+> >   comments.  Good comments explain "why it exists", more than "what it
+> >   does".
+> > 
+> >   These include get_size_class_index, get_fullness_group,
+> >   insert_zspage, remove_zspage, fix_fullness_group.
+> > 
+> >   Also a description of this handle encoding thing - what do these
+> >   "handles" refer to?  Why is stuff being encoded into them and how?
+> > 
+> > - I don't understand how the whole thing works :( If I allocate a
+> >   16 kbyte object with zs_malloc(), what do I get?  16k of
+> >   contiguous memory?  How can it do that if
+> >   USE_PGTABLE_MAPPING=false?  Obviously it can't so it's doing
+> >   something else.  But what?
+> > 
+> > - What does zs_create_pool() do and how do I use it?  It appears
+> >   to create a pool of all possible object sizes.  But why do we need
+> >   more than one such pool kernel-wide?
+> > 
+> > - I tried to work out the actual value of ZS_SIZE_CLASSES but it
+> >   made my head spin.
+> > 
+> > - We really really don't want to merge zsmalloc!  It would be far
+> >   better to use an existing allocator (perhaps after modifying it)
+> >   than to add yet another new one.  The really-good-changelog should
+> >   be compelling on this point, please.
+> > 
+> > See, I (and I assume others) are totally on first base here and we need
+> > to get through this before we can get onto zswap.  Sorry. 
+> > drivers/staging is where code goes to be ignored :(
 > 
-> > From: Lin Ming <ming.m.lin@intel.com>
-> > 
-> > Add runtime pm helper functions:
-> > 
-> > void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-> >   - Initialization function for drivers to call.
-> > 
-> > int blk_pre_runtime_suspend(struct request_queue *q)
-> >   - If any requests are in the queue, mark last busy and return -EBUSY.
-> >     Otherwise set q->rpm_status to RPM_SUSPENDING and return 0.
-> > 
-> > void blk_post_runtime_suspend(struct request_queue *q, int err)
-> >   - If the suspend succeeded then set q->rpm_status to RPM_SUSPENDED.
-> >     Otherwise set it to RPM_ACTIVE.
-> > 
-> > void blk_pre_runtime_resume(struct request_queue *q)
-> >   - Set q->rpm_status to RPM_RESUMING.
-> > 
-> > void blk_post_runtime_resume(struct request_queue *q, int err)
-> >   - If the resume succeeded then set q->rpm_status to RPM_ACTIVE
-> >     and call __blk_run_queue, then mark last busy and autosuspend.
-> >     Otherwise set q->rpm_status to RPM_SUSPENDED.
-> > 
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> I've noticed :-/
 > 
-> > +void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-> > +{
-> > +	q->dev = dev;
-> > +	q->rpm_status = RPM_ACTIVE;
-> > +	pm_runtime_set_autosuspend_delay(q->dev, -1);
-> > +	pm_runtime_use_autosuspend(q->dev);
-> > +	pm_runtime_mark_last_busy(q->dev);
-> > +	pm_runtime_autosuspend(q->dev);
-> 
-> This last line is no longer needed.  It can't do anything useful, since 
-> autosuspends are disabled (the delay is -1).
+> Thank you very much for your review!  I'll work with Nitin and Minchan
+> to beef up the documentation so that the answers to your questions are
+> more readily apparent in the code/comments.
 
-Right, thanks.
-And the mark_last_busy can probably be removed too, it didn't make much
-sense here and we can add "driver should call pm_runtime_mark_last_busy
-and pm_runtime_autosuspend in its runtime idle callback" to the kernel
-doc. What do you think?
+Actually, Kconfig of USE_PGTABLE_MAPPING is my plan.
+Will do it if anyone has no objection.
 
-Thanks,
-Aaron
-
+-- 
+Kind regards,
+Minchan Kim
