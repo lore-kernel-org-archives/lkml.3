@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3AaI2X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 03:28:23 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:40259 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab3AaI2U (ORCPT
+	id S1753265Ab3AaIba (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 03:31:30 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:50143 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab3AaIb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 03:28:20 -0500
-Message-ID: <510A2B1C.1060108@suse.cz>
-Date: Thu, 31 Jan 2013 09:28:12 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	Thu, 31 Jan 2013 03:31:28 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-References: <20130129202848.GE25415@pd.tnic> <5109A8F1.9040707@suse.cz> <5109B11C.2010400@suse.cz> <5170962.qHnbnlVDfx@vostro.rjw.lan> <20130131070926.GC4926@pd.tnic>
-In-Reply-To: <20130131070926.GC4926@pd.tnic>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1359620064-14751-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1359620064-14751-1-git-send-email-fabio.baltieri@linaro.org>
+Date: Thu, 31 Jan 2013 14:01:27 +0530
+Message-ID: <CAKohponV-PPO8sqF=rzONLzPi7q-YFOPbrQgoBcNt_NjTJO6WQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: governors: implement generic policy_is_shared
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 08:09 AM, Borislav Petkov wrote:
-> On Thu, Jan 31, 2013 at 01:54:56AM +0100, Rafael J. Wysocki wrote:
->> On Thursday, January 31, 2013 12:47:40 AM Jiri Slaby wrote:
->>> On 01/31/2013 12:12 AM, Jiri Slaby wrote:
->>>> I think I will start with commenting parts of `power' script to see
->>>> exactly which of the power savings cause this.
->>>
->>> ... NMI watchdog. If I remove it from the script, the problem
->>> disappears. If I try it alone, I have those NMIs.
->>
->> Well, beats me. :-(
->>
->> I suspect that it doesn't quiesce itself sufficiently before image restoration
->> and we get some crosstalk between the boot kernel and the image kernel.
-> 
-> Well, I did what Jiri said causes it:
-> 
-> echo 0 > /proc/sys/kernel/nmi_watchdog
-> 
-> No NMI.
-> 
-> BUT(!), if I start powertop and set all tunables in the "Tunables" tab
-> to "Good", then suspend to disk, when I resume I get the NMI and this
-> time the unknown reason is 0x3c. Sounds like this needs bisection...
+On 31 January 2013 13:44, Fabio Baltieri <fabio.baltieri@linaro.org> wrote:
+> Implement a generic helper function policy_is_shared() to replace the
+> current dbs_sw_coordinated_cpus() at cpufreq level, so that it can be
+> used by code other than cpufreq governors.
+>
+> Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq_conservative.c | 2 +-
+>  drivers/cpufreq/cpufreq_governor.c     | 8 --------
+>  drivers/cpufreq/cpufreq_governor.h     | 1 -
+>  drivers/cpufreq/cpufreq_ondemand.c     | 2 +-
+>  include/linux/cpufreq.h                | 5 +++++
 
-And, does it happen if you switch all of them but NMI wtd in there?
+Great,
 
-And if I pass nmi_watchdog=0 to the image kernel, it should be gone I guess.
+But, you missed few places:
 
--- 
-js
-suse labs
+drivers/cpufreq/acpi-cpufreq.c:        if (bios_with_sw_any_bug &&
+cpumask_weight(policy->cpus) == 1) {
+drivers/cpufreq/cpufreq_stats.c:       if (policy &&
+(cpumask_weight(policy->cpus) == 1)) {
+
+get these fixed too and add my
+
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
