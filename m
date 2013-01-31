@@ -1,95 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab3AaBm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 20:42:26 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:31235
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751365Ab3AaBmY (ORCPT
+	id S1754344Ab3AaBsj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 20:48:39 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:39324 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab3AaBsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 20:42:24 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI1432I4015Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 31 Jan 2013 09:42:17 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: fsl: Fix multiple symbol definitions
-Message-ID: <20130131014214.GD2765@S2101-09.ap.freescale.net>
-References: <1359577471-15029-1-git-send-email-thierry.reding@avionic-design.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1359577471-15029-1-git-send-email-thierry.reding@avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	Wed, 30 Jan 2013 20:48:35 -0500
+Message-ID: <1359596310.15120.102.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v2 02/12] ACPI: Add sys_hotplug.h for system device
+ hotplug framework
+From: Toshi Kani <toshi.kani@hp.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
+        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Wed, 30 Jan 2013 18:38:30 -0700
+In-Reply-To: <20130130045153.GE30002@kroah.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+	 <3236298.SULt2IKQv6@vostro.rjw.lan>
+	 <1358188929.14145.69.camel@misato.fc.hp.com>
+	 <4116384.4pypaK248y@vostro.rjw.lan>
+	 <1358191290.14145.88.camel@misato.fc.hp.com>
+	 <20130130045153.GE30002@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 09:24:31PM +0100, Thierry Reding wrote:
-> Commit 25b8d31 (ASoC: fsl: fix multiple definition of init_module) fixed
-> a build error due to multiple symbol definitions when building as a
-> module. However, it causes the build to break when the driver is builtin
-> because the imx-pcm.o object is included multiple times. Solve the issue
-> by adding imx-pcm.o to each of the modules that require it, but only add
-> it to the kernel once when one or both drivers are builtin.
+On Tue, 2013-01-29 at 23:51 -0500, Greg KH wrote:
+> On Mon, Jan 14, 2013 at 12:21:30PM -0700, Toshi Kani wrote:
+> > On Mon, 2013-01-14 at 20:07 +0100, Rafael J. Wysocki wrote:
+> > > On Monday, January 14, 2013 11:42:09 AM Toshi Kani wrote:
+> > > > On Mon, 2013-01-14 at 19:47 +0100, Rafael J. Wysocki wrote:
+> > > > > On Monday, January 14, 2013 08:53:53 AM Toshi Kani wrote:
+> > > > > > On Fri, 2013-01-11 at 22:25 +0100, Rafael J. Wysocki wrote:
+> > > > > > > On Thursday, January 10, 2013 04:40:20 PM Toshi Kani wrote:
+> > > > > > > > Added include/acpi/sys_hotplug.h, which is ACPI-specific system
+> > > > > > > > device hotplug header and defines the order values of ACPI-specific
+> > > > > > > > handlers.
+> > > > > > > > 
+> > > > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > > > > ---
+> > > > > > > >  include/acpi/sys_hotplug.h |   48 ++++++++++++++++++++++++++++++++++++++++++++
+> > > > > > > >  1 file changed, 48 insertions(+)
+> > > > > > > >  create mode 100644 include/acpi/sys_hotplug.h
+> > > > > > > > 
+> > > > > > > > diff --git a/include/acpi/sys_hotplug.h b/include/acpi/sys_hotplug.h
+> > > > > > > > new file mode 100644
+> > > > > > > > index 0000000..ad80f61
+> > > > > > > > --- /dev/null
+> > > > > > > > +++ b/include/acpi/sys_hotplug.h
+> > > > > > > > @@ -0,0 +1,48 @@
+> > > > > > > > +/*
+> > > > > > > > + * sys_hotplug.h - ACPI System device hot-plug framework
+> > > > > > > > + *
+> > > > > > > > + * Copyright (C) 2012 Hewlett-Packard Development Company, L.P.
+> > > > > > > > + *	Toshi Kani <toshi.kani@hp.com>
+> > > > > > > > + *
+> > > > > > > > + * This program is free software; you can redistribute it and/or modify
+> > > > > > > > + * it under the terms of the GNU General Public License version 2 as
+> > > > > > > > + * published by the Free Software Foundation.
+> > > > > > > > + */
+> > > > > > > > +
+> > > > > > > > +#ifndef _ACPI_SYS_HOTPLUG_H
+> > > > > > > > +#define _ACPI_SYS_HOTPLUG_H
+> > > > > > > > +
+> > > > > > > > +#include <linux/list.h>
+> > > > > > > > +#include <linux/device.h>
+> > > > > > > > +#include <linux/sys_hotplug.h>
+> > > > > > > > +
+> > > > > > > > +/*
+> > > > > > > > + * System device hot-plug operation proceeds in the following order.
+> > > > > > > > + *   Validate phase -> Execute phase -> Commit phase
+> > > > > > > > + *
+> > > > > > > > + * The order values below define the calling sequence of ACPI-specific
+> > > > > > > > + * handlers for each phase in ascending order.  The order value of
+> > > > > > > > + * platform-neutral handlers are defined in <linux/sys_hotplug.h>.
+> > > > > > > > + */
+> > > > > > > > +
+> > > > > > > > +/* Add Validate order values */
+> > > > > > > > +#define SHP_ACPI_BUS_ADD_VALIDATE_ORDER		0	/* must be first */
+> > > > > > > > +
+> > > > > > > > +/* Add Execute order values */
+> > > > > > > > +#define SHP_ACPI_BUS_ADD_EXECUTE_ORDER		10
+> > > > > > > > +#define SHP_ACPI_RES_ADD_EXECUTE_ORDER		20
+> > > > > > > > +
+> > > > > > > > +/* Add Commit order values */
+> > > > > > > > +#define SHP_ACPI_BUS_ADD_COMMIT_ORDER		10
+> > > > > > > > +
+> > > > > > > > +/* Delete Validate order values */
+> > > > > > > > +#define SHP_ACPI_BUS_DEL_VALIDATE_ORDER		0	/* must be first */
+> > > > > > > > +#define SHP_ACPI_RES_DEL_VALIDATE_ORDER		10
+> > > > > > > > +
+> > > > > > > > +/* Delete Execute order values */
+> > > > > > > > +#define SHP_ACPI_BUS_DEL_EXECUTE_ORDER		100
+> > > > > > > > +
+> > > > > > > > +/* Delete Commit order values */
+> > > > > > > > +#define SHP_ACPI_BUS_DEL_COMMIT_ORDER		100
+> > > > > > > > +
+> > > > > > > > +#endif	/* _ACPI_SYS_HOTPLUG_H */
+> > > > > > > > --
+> > > > > > > 
+> > > > > > > Why did you use the particular values above?
+> > > > > > 
+> > > > > > The ordering values above are used to define the relative order among
+> > > > > > handlers.  For instance, the 100 for SHP_ACPI_BUS_DEL_EXECUTE_ORDER can
+> > > > > > potentially be 21 since it is still larger than 20 for
+> > > > > > SHP_MEM_DEL_EXECUTE_ORDER defined in linux/sys_hotplug.h.  I picked 100
+> > > > > > so that more platform-neutral handlers can be added in between 20 and
+> > > > > > 100 in future.
+> > > > > 
+> > > > > I thought so, but I don't think it's a good idea to add gaps like this.
+> > > > 
+> > > > OK, I will use an equal gap of 10 for all values.  So, the 100 in the
+> > > > above example will be changed to 30.  
+> > > 
+> > > I wonder why you want to have those gaps at all.
+> > 
+> > Oh, I see.  I think some gap is helpful since it allows a new handler to
+> > come between without recompiling other modules.  For instance, OEM
+> > vendors may want to add their own handlers with loadable modules after
+> > the kernel is distributed.
 > 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-
-Thanks, Thierry.  The Kconfig is already complex.  To avoid having them
-even more complex, I have chosen to revert my patch and have a little
-surgery on the code [1] to make it match the Kconfig rational.
-
-Shawn
-
-[1] http://thread.gmane.org/gmane.linux.alsa.devel/105018
-
-> ---
->  sound/soc/fsl/Makefile | 21 ++++++++++++---------
->  1 file changed, 12 insertions(+), 9 deletions(-)
+> No, we don't support such a model, sorry, just make it a sequence of
+> numbers and go from there.  If a vendor wants to modify the kernel to
+> add new values, they can rebuild the core code as well.
 > 
-> diff --git a/sound/soc/fsl/Makefile b/sound/soc/fsl/Makefile
-> index ec14579..8446d49 100644
-> --- a/sound/soc/fsl/Makefile
-> +++ b/sound/soc/fsl/Makefile
-> @@ -30,21 +30,24 @@ obj-$(CONFIG_SND_MPC52xx_SOC_EFIKA) += efika-audio-fabric.o
->  # i.MX Platform Support
->  snd-soc-imx-ssi-objs := imx-ssi.o
->  snd-soc-imx-audmux-objs := imx-audmux.o
-> -snd-soc-imx-pcm-objs := imx-pcm.o
-> -ifneq ($(CONFIG_SND_SOC_IMX_PCM_FIQ),)
-> -	snd-soc-imx-pcm-objs += imx-pcm-fiq.o
-> -endif
-> -ifneq ($(CONFIG_SND_SOC_IMX_PCM_DMA),)
-> -	snd-soc-imx-pcm-objs += imx-pcm-dma.o
-> -endif
->  
->  obj-$(CONFIG_SND_SOC_IMX_SSI) += snd-soc-imx-ssi.o
->  obj-$(CONFIG_SND_SOC_IMX_AUDMUX) += snd-soc-imx-audmux.o
->  
->  obj-$(CONFIG_SND_SOC_IMX_PCM_FIQ) += snd-soc-imx-pcm-fiq.o
-> -snd-soc-imx-pcm-fiq-y := imx-pcm-fiq.o imx-pcm.o
-> +snd-soc-imx-pcm-fiq-y := imx-pcm-fiq.o
-> +ifeq ($(CONFIG_SND_SOC_IMX_PCM_FIQ),m)
-> +snd-soc-imx-pcm-fiq-y += imx-pcm.o
-> +else
-> +obj-$(CONFIG_SND_SOC_IMX_PCM_FIQ) += imx-pcm.o
-> +endif
->  obj-$(CONFIG_SND_SOC_IMX_PCM_DMA) += snd-soc-imx-pcm-dma.o
-> -snd-soc-imx-pcm-dma-y := imx-pcm-dma.o imx-pcm.o
-> +snd-soc-imx-pcm-dma-y := imx-pcm-dma.o
-> +ifeq ($(CONFIG_SND_SOC_IMX_PCM_DMA),m)
-> +snd-soc-imx-pcm-dma-y := imx-pcm.o
-> +else
-> +obj-$(CONFIG_SND_SOC_IMX_PCM_DMA) += imx-pcm.o
-> +endif
->  
->  # i.MX Machine Support
->  snd-soc-eukrea-tlv320-objs := eukrea-tlv320.o
-> -- 
-> 1.8.1.2
-> 
+> I really don't like the whole idea of values in the first place, can't
+> we just do things in the correct order in the code, and not be driven by
+> random magic values?
+
+OK, I will define all the values with enum, which is something like
+below.  I think it is more manageable in this way as we do not have to
+define magic values.
+
+enum shp_add_order {
+    /* Validate Phase */
+    SHP_FW_BUS_ADD_VALIDATE_ORDER,
+
+    /* Execute Phase */
+    SHP_FW_BUS_ADD_EXECUTE_ORDER,
+    SHP_FW_RES_ADD_EXECUTE_ORDER,
+    SHP_MEM_ADD_EXECUTE_ORDER,
+    SHP_CPU_ADD_EXECUTE_ORDER,
+
+    /* Commit Phase */
+    SHP_ADD_COMMIT_BASE_ORDER,
+    SHP_FW_BUS_ADD_COMMIT_ORDER,
+};
+
+Thanks,
+-Toshi
+
+
+
+
 
