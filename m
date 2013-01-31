@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab3AaFf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 00:35:57 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64630 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab3AaFfz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 00:35:55 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-98-510a02b9cb83
-Date: Thu, 31 Jan 2013 14:35:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv4 2/7] zsmalloc: promote to lib/
-Message-ID: <20130131053554.GD23548@blaptop>
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1359495627-30285-3-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130129145134.813672cf.akpm@linux-foundation.org>
- <51094A39.8050206@linux.vnet.ibm.com>
+	id S1754201Ab3AaFiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 00:38:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50866 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956Ab3AaFiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 00:38:06 -0500
+Date: Thu, 31 Jan 2013 06:40:02 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King <rmk@arm.linux.org.uk>, Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: BUG: circular locking dependency detected
+Message-ID: <20130131054002.GA3697@kroah.com>
+References: <20130130200648.GA13298@flint.arm.linux.org.uk>
+ <20130130215211.GA28418@flint.arm.linux.org.uk>
+ <CAKMK7uHEggaGfLTq4c3MfY7csQSFpb=kRwdbJUQMN9Cz9K=V4A@mail.gmail.com>
+ <20130130221946.GA14801@flint.arm.linux.org.uk>
+ <CA+55aFyRHK3dmwQf_mdfB18dmoaRZqBG9FvHRqTs7cqBjgUs+g@mail.gmail.com>
+ <CAPM=9tz6YBh2o3T8Ogt4K=wxSrC3Jc4PCJMzfpbyY=B132fA5g@mail.gmail.com>
+ <20130131001339.GC14801@flint.arm.linux.org.uk>
+ <CA+55aFxfeXWAiXV18qGgOk9+2HHiD7LUuyk55brHFXd+_c6eZQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51094A39.8050206@linux.vnet.ibm.com>
+In-Reply-To: <CA+55aFxfeXWAiXV18qGgOk9+2HHiD7LUuyk55brHFXd+_c6eZQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 10:28:41AM -0600, Seth Jennings wrote:
-> On 01/29/2013 04:51 PM, Andrew Morton wrote:
-> > On Tue, 29 Jan 2013 15:40:22 -0600
-> > Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
-> > 
-> >> This patch promotes the slab-based zsmalloc memory allocator
-> >> from the staging tree to lib/
-> > 
-> > Hate to rain on the parade, but...  we haven't reviewed zsmalloc
-> > yet.  At least, I haven't, and I haven't seen others do so.
-> > 
-> > So how's about we forget that zsmalloc was previously in staging and
-> > send the zsmalloc code out for review?  With a very good changelog
-> > explaining why it exists, what problems it solves, etc.
-> > 
-> > 
-> > I peeked.
-> > 
-> > Don't answer any of the below questions - they are examples of
-> > concepts which should be accessible to readers of the
-> > hopefully-forthcoming very-good-changelog.
-> > 
-> > - kmap_atomic() returns a void* - there's no need to cast its return value.
-> > 
-> > - Remove private MAX(), use the (much better implemented) max().
-> > 
-> > - It says "This was one of the major issues with its predecessor
-> >   (xvmalloc)", but drivers/staging/ramster/xvmalloc.c is still in the tree.
-> > 
-> > - USE_PGTABLE_MAPPING should be done via Kconfig.
-> > 
-> > - USE_PGTABLE_MAPPING is interesting and the changelog should go into
-> >   some details.  What are the pros and cons here?  Why do the two
-> >   options exist?  Can we eliminate one mode or the other?
-> > 
-> > - Various functions are obscure and would benefit from explanatory
-> >   comments.  Good comments explain "why it exists", more than "what it
-> >   does".
-> > 
-> >   These include get_size_class_index, get_fullness_group,
-> >   insert_zspage, remove_zspage, fix_fullness_group.
-> > 
-> >   Also a description of this handle encoding thing - what do these
-> >   "handles" refer to?  Why is stuff being encoded into them and how?
-> > 
-> > - I don't understand how the whole thing works :( If I allocate a
-> >   16 kbyte object with zs_malloc(), what do I get?  16k of
-> >   contiguous memory?  How can it do that if
-> >   USE_PGTABLE_MAPPING=false?  Obviously it can't so it's doing
-> >   something else.  But what?
-> > 
-> > - What does zs_create_pool() do and how do I use it?  It appears
-> >   to create a pool of all possible object sizes.  But why do we need
-> >   more than one such pool kernel-wide?
-> > 
-> > - I tried to work out the actual value of ZS_SIZE_CLASSES but it
-> >   made my head spin.
-> > 
-> > - We really really don't want to merge zsmalloc!  It would be far
-> >   better to use an existing allocator (perhaps after modifying it)
-> >   than to add yet another new one.  The really-good-changelog should
-> >   be compelling on this point, please.
-> > 
-> > See, I (and I assume others) are totally on first base here and we need
-> > to get through this before we can get onto zswap.  Sorry. 
-> > drivers/staging is where code goes to be ignored :(
+On Thu, Jan 31, 2013 at 11:26:53AM +1100, Linus Torvalds wrote:
+> On Thu, Jan 31, 2013 at 11:13 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+> >
+> > Which may or may not be a good thing depending how you look at it; it
+> > means that once your kernel blanks, you get a lockdep dump.  At that
+> > point you lose lockdep checking for everything else because lockdep
+> > disables itself after the first dump.
 > 
-> I've noticed :-/
+> Fair enough, we may want to revert the lockdep checking for
+> console_lock, and make re-enabling it part of the patch-series that
+> fixes the locking.
 > 
-> Thank you very much for your review!  I'll work with Nitin and Minchan
-> to beef up the documentation so that the answers to your questions are
-> more readily apparent in the code/comments.
+> Daniel/Dave? Does that sound reasonable?
 
-Actually, Kconfig of USE_PGTABLE_MAPPING is my plan.
-Will do it if anyone has no objection.
+Reverting the patch is fine with me.  Just let me know so I can queue it
+up again for 3.9.
 
--- 
-Kind regards,
-Minchan Kim
+thanks,
+
+greg k-h
