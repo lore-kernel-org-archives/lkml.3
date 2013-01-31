@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab3AaA2D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Jan 2013 19:28:03 -0500
-Received: from mga09.intel.com ([134.134.136.24]:41391 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754183Ab3AaA2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Jan 2013 19:28:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,572,1355126400"; 
-   d="scan'208";a="255170054"
-From: Seth Heasley <seth.heasley@intel.com>
-To: Jean Delvare <khali@linux-fr.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
-        Seth Heasley <seth.heasley@intel.com>
-Subject: [PATCH v2] i2c-i801: SMBus patch for Intel Avoton DeviceIDs
-Date: Wed, 30 Jan 2013 17:25:32 -0800
-Message-Id: <1359595532-5365-1-git-send-email-seth.heasley@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1756238Ab3AaAb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Jan 2013 19:31:27 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:43554 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab3AaAbZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Jan 2013 19:31:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANN689HUyc4WyM5irQ6ru+80tf=Fk53QH3ynNJFSTg2ig3dk9A@mail.gmail.com>
+References: <1357145418.5429.17.camel@mesosphere.localdomain>
+	<CANN689HqKWf2SdE+HHQum9ukpwj6HbQoh66fZciWZuQVaJaUxQ@mail.gmail.com>
+	<1357232977.1886.17.camel@mesosphere.localdomain>
+	<20130104115748.GA8830@google.com>
+	<1357368032.1927.5.camel@mesosphere.localdomain>
+	<CANN689HUyc4WyM5irQ6ru+80tf=Fk53QH3ynNJFSTg2ig3dk9A@mail.gmail.com>
+Date: Wed, 30 Jan 2013 16:31:23 -0800
+Message-ID: <CANN689G7KgUFQLNnukfHL5JSW-Zu=WuzVbyhYBJUxEsUUyDHMQ@mail.gmail.com>
+Subject: Re: mmap() scalability in the presence of the MAP_POPULATE flag
+From: Michel Lespinasse <walken@google.com>
+To: Roman Dubtsov <dubtsov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the PCU SMBus DeviceID for the Intel Avoton SOC.
+Hi Roman,
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
----
-Change notes for v2:
-* corrected order of DeviceID defines
+On Fri, Jan 4, 2013 at 11:43 PM, Michel Lespinasse <walken@google.com> wrote:
+> On Fri, Jan 4, 2013 at 10:40 PM, Roman Dubtsov <dubtsov@gmail.com> wrote:
+>> - POPULATE_VIA_LOOP -- makes the test populate memory using a loop
+>> - POPULATE_VIA_MMAP -- makes the test populate memory via MAP_POPULATE
+>>
+> Heh, very interesting. As it turns out, the problem gets MUCH worse as
+> the number of threads increase.
+>
+> In the POPULATE_VIA_MMAP, follow_page() is called at 4KB increment
+> addresses, and it takes the mm->page_table_lock 511 times out of 512
+> (that is, every time it falls within a huge page that's just been
+> populated). So all OMP_NUM_THREADS threads are constantly bouncing
+> over the mm->page_table_lock, and getting terrible performance as a
+> result.
 
- Documentation/i2c/busses/i2c-i801 |    1 +
- drivers/i2c/busses/Kconfig        |    1 +
- drivers/i2c/busses/i2c-i801.c     |    3 +++
- 3 files changed, 5 insertions(+), 0 deletions(-)
+FYI, the patchset I just sent out ("fixes for large mm_populate() and
+munlock() operations") takes care of this and brings POPULATE_VIA_MMAP
+performance up where it should be.
 
-diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-index 157416e..8d71d57 100644
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -22,6 +22,7 @@ Supported adapters:
-   * Intel Panther Point (PCH)
-   * Intel Lynx Point (PCH)
-   * Intel Lynx Point-LP (PCH)
-+  * Intel Avoton (SOC)
-    Datasheets: Publicly available at the Intel website
- 
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index bdca511..77d2887 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -106,6 +106,7 @@ config I2C_I801
- 	    Panther Point (PCH)
- 	    Lynx Point (PCH)
- 	    Lynx Point-LP (PCH)
-+	    Avoton (SOC)
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index 3092387..b00c29d 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -53,6 +53,7 @@
-   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
-   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
-   Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
-+  Avoton (SOC)          0x1f3c     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -162,6 +163,7 @@
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1	0x1d71
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2	0x1d72
- #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
-+#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
- #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
- #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
- #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-@@ -798,6 +800,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_AVOTON_SMBUS) },
- 	{ 0, }
- };
- 
+Thanks a lot for the report, as I hadn't noticed this issue before :)
+
 -- 
-1.7.4.4
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
