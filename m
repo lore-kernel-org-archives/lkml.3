@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212Ab3BASYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 13:24:47 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:47761 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab3BASWd (ORCPT
+	id S1757364Ab3BASYt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 13:24:49 -0500
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:37826 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755273Ab3BASWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 13:22:33 -0500
+	Fri, 1 Feb 2013 13:22:31 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v7 06/10] ARM: dts: add AM33XX EDMA support
-Date: Fri,  1 Feb 2013 13:22:51 -0500
-Message-Id: <1359742975-10421-7-git-send-email-mporter@ti.com>
+Subject: [PATCH v7 05/10] dmaengine: edma: Add TI EDMA device tree binding
+Date: Fri,  1 Feb 2013 13:22:50 -0500
+Message-Id: <1359742975-10421-6-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359742975-10421-1-git-send-email-mporter@ti.com>
 References: <1359742975-10421-1-git-send-email-mporter@ti.com>
@@ -37,45 +37,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds AM33XX EDMA support to the am33xx.dtsi as documented in
-Documentation/devicetree/bindings/dma/ti-edma.txt
+The binding definition is based on the generic DMA controller
+binding.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ Documentation/devicetree/bindings/dma/ti-edma.txt |   49 +++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index c2f14e8..e711ffb 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -87,6 +87,26 @@
- 			reg = <0x48200000 0x1000>;
- 		};
- 
-+		edma: edma@49000000 {
-+			compatible = "ti,edma3";
-+			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-+			reg =	<0x49000000 0x10000>,
-+				<0x44e10f90 0x10>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <12 13 14>;
-+			#dma-cells = <1>;
-+			dma-channels = <64>;
-+			ti,edma-regions = <4>;
-+			ti,edma-slots = <256>;
-+			ti,edma-queue-tc-map = <0 0
-+						1 1
-+						2 2>;
-+			ti,edma-queue-priority-map = <0 0
-+						      1 1
-+						      2 2>;
-+			ti,edma-default-queue = <0>;
-+		};
+diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+new file mode 100644
+index 0000000..075a60e3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+@@ -0,0 +1,49 @@
++TI EDMA
 +
- 		gpio1: gpio@44e07000 {
- 			compatible = "ti,omap4-gpio";
- 			ti,hwmods = "gpio1";
++Required properties:
++- compatible : "ti,edma3"
++- ti,hwmods: Name of the hwmods associated to the EDMA
++- ti,edma-regions: Number of regions
++- ti,edma-slots: Number of slots
++- ti,edma-queue-tc-map: List of transfer control to queue mappings
++- ti,edma-queue-priority-map: List of queue priority mappings
++- ti,edma-default-queue: Default queue value
++
++Optional properties:
++- ti,edma-reserved-channels: List of reserved channel regions
++- ti,edma-reserved-slots: List of reserved slot regions
++- ti,edma-xbar-event-map: Crossbar event to channel map
++
++Example:
++
++edma: edma@49000000 {
++	reg = <0x49000000 0x10000>;
++	interrupt-parent = <&intc>;
++	interrupts = <12 13 14>;
++	compatible = "ti,edma3";
++	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++	#dma-cells = <1>;
++	dma-channels = <64>;
++	ti,edma-regions = <4>;
++	ti,edma-slots = <256>;
++	ti,edma-reserved-channels = <0  2
++				     14 2
++				     26 6
++				     48 4
++				     56 8>;
++	ti,edma-reserved-slots = <0  2
++				  14 2
++				  26 6
++				  48 4
++				  56 8
++				  64 127>;
++	ti,edma-queue-tc-map = <0 0
++				1 1
++				2 2>;
++	ti,edma-queue-priority-map = <0 0
++				      1 1
++				      2 2>;
++	ti,edma-default-queue = <0>;
++	ti,edma-xbar-event-map = <1 12
++				  2 13>;
++};
 -- 
 1.7.9.5
 
