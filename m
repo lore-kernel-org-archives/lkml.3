@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab3BANMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:12:03 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45070 "EHLO mail.kernel.org"
+	id S1422627Ab3BANMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:12:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45111 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757458Ab3BANL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:11:59 -0500
+	id S1757641Ab3BANMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:12:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Rattray <crattray@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 50/89] ASoC: wm2200: correct mixer values and text
-Date: Fri,  1 Feb 2013 14:08:05 +0100
-Message-Id: <20130201130211.100498689@linuxfoundation.org>
+        Anderson Lizardo <anderson.lizardo@openbossa.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 51/89] Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
+Date: Fri,  1 Feb 2013 14:08:06 +0100
+Message-Id: <20130201130211.164716512@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,36 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Rattray <crattray@opensource.wolfsonmicro.com>
+From: Anderson Lizardo <anderson.lizardo@openbossa.org>
 
-commit a80cc734282805e15b5e023751a4d02f7ffbcc91 upstream.
+commit 0a9ab9bdb3e891762553f667066190c1d22ad62b upstream.
 
-Signed-off-by: Chris Rattray <crattray@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The length parameter should be sizeof(req->name) - 1 because there is no
+guarantee that string provided by userspace will contain the trailing
+'\0'.
+
+Can be easily reproduced by manually setting req->name to 128 non-zero
+bytes prior to ioctl(HIDPCONNADD) and checking the device name setup on
+input subsystem:
+
+$ cat /sys/devices/pnp0/00\:04/tty/ttyS0/hci0/hci0\:1/input8/name
+AAAAAA[...]AAAAAAAAf0:af:f0:af:f0:af
+
+("f0:af:f0:af:f0:af" is the device bluetooth address, taken from "phys"
+field in struct hid_device due to overflow.)
+
+Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm2200.c |    3 ---
- 1 file changed, 3 deletions(-)
+ net/bluetooth/hidp/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm2200.c
-+++ b/sound/soc/codecs/wm2200.c
-@@ -897,8 +897,6 @@ static const char *wm2200_mixer_texts[]
- 	"EQR",
- 	"LHPF1",
- 	"LHPF2",
--	"LHPF3",
--	"LHPF4",
- 	"DSP1.1",
- 	"DSP1.2",
- 	"DSP1.3",
-@@ -931,7 +929,6 @@ static int wm2200_mixer_values[] = {
- 	0x25,
- 	0x50,   /* EQ */
- 	0x51,
--	0x52,
- 	0x60,   /* LHPF1 */
- 	0x61,   /* LHPF2 */
- 	0x68,   /* DSP1 */
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -931,7 +931,7 @@ static int hidp_setup_hid(struct hidp_se
+ 	hid->version = req->version;
+ 	hid->country = req->country;
+ 
+-	strncpy(hid->name, req->name, 128);
++	strncpy(hid->name, req->name, sizeof(req->name) - 1);
+ 	strncpy(hid->phys, batostr(&bt_sk(session->ctrl_sock->sk)->src), 64);
+ 	strncpy(hid->uniq, batostr(&bt_sk(session->ctrl_sock->sk)->dst), 64);
+ 
 
 
