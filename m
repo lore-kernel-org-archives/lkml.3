@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3BAAxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 19:53:50 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52769 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab3BAAxr (ORCPT
+	id S1753515Ab3BABHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 20:07:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38320 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751264Ab3BABHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 19:53:47 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <510B1200.3000509@jp.fujitsu.com>
-Date: Fri, 1 Feb 2013 09:53:20 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: <daniel@ffwll.ch>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        <dri-devel@lists.freedesktop.org>
-Subject: Re: [UPDATE][PATCH 4/4] GPU/i915: Fix acpi_bus_get_device() check
- in drivers/gpu/drm/i915/intel_opregion.c
-References: <1451967.YMyGeCCNtu@vostro.rjw.lan> <6099377.PFvsxPeyib@vostro.rjw.lan> <5109E11A.5030400@jp.fujitsu.com> <5109E2AF.2000107@jp.fujitsu.com> <5109E49E.1070005@jp.fujitsu.com> <20130131100330.GE5885@phenom.ffwll.local> <510B1168.2080401@jp.fujitsu.com>
-In-Reply-To: <510B1168.2080401@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jan 2013 20:07:50 -0500
+Message-ID: <1359680851.31386.51.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Bug#695182: [RFC] Reproducible OOM with just a few sleeps
+From: Ben Hutchings <ben@decadent.org.uk>
+To: paul.szabo@sydney.edu.au
+Cc: 695182@bugs.debian.org, dave@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, pavel@ucw.cz
+Date: Fri, 01 Feb 2013 01:07:31 +0000
+In-Reply-To: <201301312306.r0VN6tBx012280@como.maths.usyd.edu.au>
+References: <201301312306.r0VN6tBx012280@como.maths.usyd.edu.au>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-SWzmCrfY7h298Vl8qUCB"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/02/01 9:50, Yasuaki Ishimatsu wrote:
-> 2013/01/31 19:03, Daniel Vetter wrote:
->> On Thu, Jan 31, 2013 at 12:27:26PM +0900, Yasuaki Ishimatsu wrote:
->>> I forgot to change subject. So I resend a patch.
->>>
->>> ---
->>> acpi_bus_get_device() returns int not acpi_status.
->>>
->>> The patch change not to apply ACPI_FAILURE() to the return value of
->>> acpi_bus_get_device().
->>>
->>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> I've tried to apply this to drm-intel-next-queued, but git am didn't
->> really like your patch - it failed to apply. Can you please rebase to the
->> drm-intel-next-queued branch from
->>
->> git://people.freedesktop.org/~danvet/drm-intel
->>
->> and please resubmit the patch, preferrably formatted with git
->> format-patch?
->
-> My mailer added a space in the patch. I updated the patch.
-> How abot it?
->
-> ---
-> acpi_bus_get_device() returns int not acpi_status.
->
-> The patch change not to apply ACPI_FAILURE() to the return value of
-> acpi_bus_get_device().
->
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
->   drivers/gpu/drm/i915/intel_opregion.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-> index 7741c22..4d33874 100644
-> --- a/drivers/gpu/drm/i915/intel_opregion.c
-> +++ b/drivers/gpu/drm/i915/intel_opregion.c
-> @@ -347,7 +347,7 @@ static void intel_didl_outputs(struct drm_device *dev)
->       int i = 0;
->
->       handle = DEVICE_ACPI_HANDLE(&dev->pdev->dev);
-> -    if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev)))
-> +    if (!handle || acpi_bus_get_device(handle, &acpi_dev))
->           return;
->
->       if (acpi_is_video_device(acpi_dev))
->
 
-Oops. My mailer added a space again...
-I'll check my mailer again.
+--=-SWzmCrfY7h298Vl8qUCB
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Yasuaki Ishimatsu
+On Fri, 2013-02-01 at 10:06 +1100, paul.szabo@sydney.edu.au wrote:
+> Dear Ben,
+>=20
+> > Based on your experience I might propose to change the automatic kernel
+> > selection for i386 so that we use 'amd64' on a system with >16GB RAM an=
+d
+> > a capable processor.
+>=20
+> Don't you mean change to amd64 for >4GB (or any RAM), never using PAE?
+> PAE is broken for any amount of RAM.
+[...]
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+No it isn't.
 
+Ben.
 
+--=20
+Ben Hutchings
+Everything should be made as simple as possible, but not simpler.
+                                                           - Albert Einstei=
+n
+
+--=-SWzmCrfY7h298Vl8qUCB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUQsVU+e/yOyVhhEJAQqXog/+IVILgiQ4pXEQYLwTdIem3AggO4Vjg5iJ
+Uball4sfs1ap0/LRygbr2MuvI40S9HQQYeBOU3AL5Y9dNvWdrIPjgsz5URseiyaF
+M4TQQ7IBj88rPBUIWzClnmmZ0Qp6HfOKvh/8ezr/geH4eHjtwB9o6VnBUAMV/zhh
+3JarsI+cL2dGDtW/11HZRq3KhCStSlVtVpCoA5Ocj2dVnPcgbt01HD/ByEk0KUWQ
+rdkQtCk/7PVJebiLyRchqpSo25SEwUoHIZh2q9z2QsRlSW9oBXeDW9clg8NHMF1R
+LbgPZNfSQrQLlK+3peA3wszJu3YcZxeLhIzdIN69KJb79DAG2ab4NuglxBV0i7Zj
+Pnk1UHMCoOcI2ZDtbdk+ssa0YSKYFFCPovQj6Lz0mTg9VxmqFv1uISh36hsQ5Hbl
+uT2t1q7vxSyYxzYQOqe6kQwtxIDJEtz8E+gYj54ACCuMDvH50UDVwV2yQRt00v47
+G6Ydr5yEajHV7xDMYO7xSF5X8dmQ6M3GlgaHwPp8t/lbE5CW5dUNwzeJNFdAMygV
+VytjvArlBFxVT3+ir4uhIIUdwqQk8dfRbjU8dbDi1nMIgSxX4okYap3IvjYtt5T3
+1b5iOm0vLnfOVZDQZB9N2xNO3uiNy++cHRllQqVWGO8hq0YvhIf6mIMGKPzltSxy
+BIcBxVNcE58=
+=xVrj
+-----END PGP SIGNATURE-----
+
+--=-SWzmCrfY7h298Vl8qUCB--
