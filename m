@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422719Ab3BANMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:12:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45277 "EHLO mail.kernel.org"
+	id S1422735Ab3BANMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:12:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45296 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422670Ab3BANMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:12:38 -0500
+	id S1422670Ab3BANMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:12:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Trond Myklebust <Trond.Myklebust@netapp.com>,
         Chuck Lever <chuck.lever@oracle.com>,
         Ben Greear <greearb@candelatech.com>
-Subject: [ 55/89] NFSv4: Fix NFSv4 reference counting for trunked sessions
-Date: Fri,  1 Feb 2013 14:08:10 +0100
-Message-Id: <20130201130211.460279617@linuxfoundation.org>
+Subject: [ 57/89] NFSv4.1: Ensure that nfs41_walk_client_list() does start lease recovery
+Date: Fri,  1 Feb 2013 14:08:12 +0100
+Message-Id: <20130201130211.599535721@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -29,11 +29,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 4ae19c2dd713edb7b8ad3d4ab9d234ed5dcb6b98 upstream.
+commit 65436ec0c8e344d9b23302b686e418f2a7b7cf7b upstream.
 
-The reference counting in nfs4_init_client assumes wongly that it
-is safe for nfs4_discover_server_trunking() to return a pointer to a
-nfs_client prior to bumping the reference count.
+We do need to start the lease recovery thread prior to waiting for the
+client initialisation to complete in NFSv4.1.
 
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Cc: Chuck Lever <chuck.lever@oracle.com>
@@ -41,91 +40,29 @@ Cc: Ben Greear <greearb@candelatech.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c |   31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ fs/nfs/nfs4client.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 --- a/fs/nfs/nfs4client.c
 +++ b/fs/nfs/nfs4client.c
-@@ -235,11 +235,10 @@ struct nfs_client *nfs4_init_client(stru
- 	error = nfs4_discover_server_trunking(clp, &old);
- 	if (error < 0)
- 		goto error;
-+	nfs_put_client(clp);
- 	if (clp != old) {
- 		clp->cl_preserve_clid = true;
--		nfs_put_client(clp);
- 		clp = old;
--		atomic_inc(&clp->cl_count);
- 	}
+@@ -439,14 +439,17 @@ int nfs41_walk_client_list(struct nfs_cl
+ 				nfs_put_client(prev);
+ 			prev = pos;
  
- 	return clp;
-@@ -305,7 +304,7 @@ int nfs40_walk_client_list(struct nfs_cl
- 		.clientid	= new->cl_clientid,
- 		.confirm	= new->cl_confirm,
- 	};
--	int status;
-+	int status = -NFS4ERR_STALE_CLIENTID;
- 
- 	spin_lock(&nn->nfs_client_lock);
- 	list_for_each_entry_safe(pos, n, &nn->nfs_client_list, cl_share_link) {
-@@ -331,28 +330,28 @@ int nfs40_walk_client_list(struct nfs_cl
- 
- 		if (prev)
- 			nfs_put_client(prev);
-+		prev = pos;
- 
- 		status = nfs4_proc_setclientid_confirm(pos, &clid, cred);
--		if (status == 0) {
-+		switch (status) {
-+		case -NFS4ERR_STALE_CLIENTID:
-+			break;
-+		case 0:
- 			nfs4_swap_callback_idents(pos, new);
- 
--			nfs_put_client(pos);
-+			prev = NULL;
- 			*result = pos;
- 			dprintk("NFS: <-- %s using nfs_client = %p ({%d})\n",
- 				__func__, pos, atomic_read(&pos->cl_count));
--			return 0;
--		}
--		if (status != -NFS4ERR_STALE_CLIENTID) {
--			nfs_put_client(pos);
--			dprintk("NFS: <-- %s status = %d, no result\n",
--				__func__, status);
--			return status;
-+		default:
-+			goto out;
++			nfs4_schedule_lease_recovery(pos);
+ 			status = nfs_wait_client_init_complete(pos);
+ 			if (status < 0) {
+ 				nfs_put_client(pos);
+ 				spin_lock(&nn->nfs_client_lock);
+ 				continue;
+ 			}
+-
++			status = pos->cl_cons_state;
+ 			spin_lock(&nn->nfs_client_lock);
++			if (status < 0)
++				continue;
  		}
  
- 		spin_lock(&nn->nfs_client_lock);
--		prev = pos;
- 	}
-+	spin_unlock(&nn->nfs_client_lock);
- 
-+out:
- 	/*
- 	 * No matching nfs_client found.  This should be impossible,
- 	 * because the new nfs_client has already been added to
-@@ -362,9 +361,8 @@ int nfs40_walk_client_list(struct nfs_cl
- 	 */
- 	if (prev)
- 		nfs_put_client(prev);
--	spin_unlock(&nn->nfs_client_lock);
--	pr_err("NFS: %s Error: no matching nfs_client found\n", __func__);
--	return -NFS4ERR_STALE_CLIENTID;
-+	dprintk("NFS: <-- %s status = %d\n", __func__, status);
-+	return status;
- }
- 
- #ifdef CONFIG_NFS_V4_1
-@@ -472,6 +470,7 @@ int nfs41_walk_client_list(struct nfs_cl
- 		if (!nfs4_match_serverowners(pos, new))
- 			continue;
- 
-+		atomic_inc(&pos->cl_count);
- 		spin_unlock(&nn->nfs_client_lock);
- 		dprintk("NFS: <-- %s using nfs_client = %p ({%d})\n",
- 			__func__, pos, atomic_read(&pos->cl_count));
+ 		if (pos->rpc_ops != new->rpc_ops)
 
 
