@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab3BANJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:09:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44576 "EHLO mail.kernel.org"
+	id S1757171Ab3BANJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:09:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44597 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757065Ab3BANJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:09:14 -0500
+	id S1757232Ab3BANJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:09:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 22/89] s390/thp: implement pmdp_set_wrprotect()
-Date: Fri,  1 Feb 2013 14:07:37 +0100
-Message-Id: <20130201130209.071347084@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Ben Widawsky <ben@bwidawsk.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 24/89] drm/i915: GFX_MODE Flush TLB Invalidate Mode must be 1 for scanline waits
+Date: Fri,  1 Feb 2013 14:07:39 +0100
+Message-Id: <20130201130209.228535311@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,47 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit be3286507dab888d4aad9f91fd6ff5202b24cd5b upstream.
+commit f05bb0c7b624252a5e768287e340e8e45df96e42 upstream.
 
-On s390, an architecture-specific implementation of the function
-pmdp_set_wrprotect() is missing and the generic version is currently
-being used. The generic version does not flush the tlb as it would be
-needed on s390 when modifying an active pmd, which can lead to subtle
-tlb errors on s390 when using transparent hugepages.
+On SNB, if bit 13 of GFX_MODE, Flush TLB Invalidate Mode, is not set to 1,
+the hardware can not program the scanline values. Those scanline values
+then control when the signal is sent from the display engine to the render
+ring for MI_WAIT_FOR_EVENTs. Note setting this bit means that TLB
+invalidations must be performed explicitly through the appropriate bits
+being set in PIPE_CONTROL.
 
-This patch adds an s390-specific implementation of pmdp_set_wrprotect()
-including the missing tlb flush.
-
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=52311
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Ben Widawsky <ben@bwidawsk.net>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/pgtable.h |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1365,6 +1365,18 @@ static inline void pmdp_invalidate(struc
- 	__pmd_idte(address, pmdp);
- }
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -515,6 +515,11 @@ static int init_render_ring(struct intel
+ 	if (INTEL_INFO(dev)->gen >= 6)
+ 		I915_WRITE(MI_MODE, _MASKED_BIT_ENABLE(ASYNC_FLIP_PERF_DISABLE));
  
-+#define __HAVE_ARCH_PMDP_SET_WRPROTECT
-+static inline void pmdp_set_wrprotect(struct mm_struct *mm,
-+				      unsigned long address, pmd_t *pmdp)
-+{
-+	pmd_t pmd = *pmdp;
++	/* Required for the hardware to program scanline values for waiting */
++	if (INTEL_INFO(dev)->gen == 6)
++		I915_WRITE(GFX_MODE,
++			   _MASKED_BIT_ENABLE(GFX_TLB_INVALIDATE_ALWAYS));
 +
-+	if (pmd_write(pmd)) {
-+		__pmd_idte(address, pmdp);
-+		set_pmd_at(mm, address, pmdp, pmd_wrprotect(pmd));
-+	}
-+}
-+
- static inline pmd_t mk_pmd_phys(unsigned long physpage, pgprot_t pgprot)
- {
- 	pmd_t __pmd;
+ 	if (IS_GEN7(dev))
+ 		I915_WRITE(GFX_MODE_GEN7,
+ 			   _MASKED_BIT_DISABLE(GFX_TLB_INVALIDATE_ALWAYS) |
 
 
