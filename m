@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677Ab3BAUws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:52:48 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:48390 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387Ab3BAUwe (ORCPT
+	id S1757734Ab3BAUw7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:52:59 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:51109 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757650Ab3BAUwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:52:34 -0500
+	Fri, 1 Feb 2013 15:52:45 -0500
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com,
         sjenning@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
         rcj@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org
-Subject: [PATCH 06/16] zcache: Make the debug code use pr_debug
-Date: Fri,  1 Feb 2013 15:52:09 -0500
-Message-Id: <1359751939-23584-7-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 16/16] zcache/zbud: Fix __init mismatch
+Date: Fri,  1 Feb 2013 15:52:19 -0500
+Message-Id: <1359751939-23584-17-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1359751939-23584-1-git-send-email-konrad.wilk@oracle.com>
 References: <1359751939-23584-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,111 +22,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-as if you are debugging this driver you would be using 'debug'
-on the command line anyhow - and this would dump the debug
-data on the proper loglevel.
+We get:
+WARNING: drivers/staging/zcache/zcache.o(.text+0x13a1): Section mismatch
+in reference from the function zcache_init() to the function
+.init.text:zbud_init()
+The function zcache_init() references
+the function __init zbud_init().
+This is often because zcache_init lacks a __init
+annotation or the annotation of zbud_init is wrong.
 
-While at it also remove the unconditional #define ZCACHE_DEBUG.
+And this fixes it.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/staging/zcache/zcache-main.c | 69 +++++++++++++++++-------------------
- 1 file changed, 33 insertions(+), 36 deletions(-)
+ drivers/staging/zcache/zbud.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index bf59c4d..3fd1561 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -349,56 +349,53 @@ static int zcache_debugfs_init(void)
- #undef	zdfs64
- #endif
- 
--#define ZCACHE_DEBUG
--#ifdef ZCACHE_DEBUG
- /* developers can call this in case of ooms, e.g. to find memory leaks */
- void zcache_dump(void)
- {
--	pr_info("zcache: obj_count=%u\n", zcache_obj_count);
--	pr_info("zcache: obj_count_max=%u\n", zcache_obj_count_max);
--	pr_info("zcache: objnode_count=%u\n", zcache_objnode_count);
--	pr_info("zcache: objnode_count_max=%u\n", zcache_objnode_count_max);
--	pr_info("zcache: flush_total=%u\n", zcache_flush_total);
--	pr_info("zcache: flush_found=%u\n", zcache_flush_found);
--	pr_info("zcache: flobj_total=%u\n", zcache_flobj_total);
--	pr_info("zcache: flobj_found=%u\n", zcache_flobj_found);
--	pr_info("zcache: failed_eph_puts=%u\n", zcache_failed_eph_puts);
--	pr_info("zcache: failed_pers_puts=%u\n", zcache_failed_pers_puts);
--	pr_info("zcache: failed_get_free_pages=%u\n",
-+	pr_debug("zcache: obj_count=%u\n", zcache_obj_count);
-+	pr_debug("zcache: obj_count_max=%u\n", zcache_obj_count_max);
-+	pr_debug("zcache: objnode_count=%u\n", zcache_objnode_count);
-+	pr_debug("zcache: objnode_count_max=%u\n", zcache_objnode_count_max);
-+	pr_debug("zcache: flush_total=%u\n", zcache_flush_total);
-+	pr_debug("zcache: flush_found=%u\n", zcache_flush_found);
-+	pr_debug("zcache: flobj_total=%u\n", zcache_flobj_total);
-+	pr_debug("zcache: flobj_found=%u\n", zcache_flobj_found);
-+	pr_debug("zcache: failed_eph_puts=%u\n", zcache_failed_eph_puts);
-+	pr_debug("zcache: failed_pers_puts=%u\n", zcache_failed_pers_puts);
-+	pr_debug("zcache: failed_get_free_pages=%u\n",
- 				zcache_failed_getfreepages);
--	pr_info("zcache: failed_alloc=%u\n", zcache_failed_alloc);
--	pr_info("zcache: put_to_flush=%u\n", zcache_put_to_flush);
--	pr_info("zcache: compress_poor=%u\n", zcache_compress_poor);
--	pr_info("zcache: mean_compress_poor=%u\n",
-+	pr_debug("zcache: failed_alloc=%u\n", zcache_failed_alloc);
-+	pr_debug("zcache: put_to_flush=%u\n", zcache_put_to_flush);
-+	pr_debug("zcache: compress_poor=%u\n", zcache_compress_poor);
-+	pr_debug("zcache: mean_compress_poor=%u\n",
- 				zcache_mean_compress_poor);
--	pr_info("zcache: eph_ate_tail=%u\n", zcache_eph_ate_tail);
--	pr_info("zcache: eph_ate_tail_failed=%u\n",
-+	pr_debug("zcache: eph_ate_tail=%u\n", zcache_eph_ate_tail);
-+	pr_debug("zcache: eph_ate_tail_failed=%u\n",
- 				zcache_eph_ate_tail_failed);
--	pr_info("zcache: pers_ate_eph=%u\n", zcache_pers_ate_eph);
--	pr_info("zcache: pers_ate_eph_failed=%u\n",
-+	pr_debug("zcache: pers_ate_eph=%u\n", zcache_pers_ate_eph);
-+	pr_debug("zcache: pers_ate_eph_failed=%u\n",
- 				zcache_pers_ate_eph_failed);
--	pr_info("zcache: evicted_eph_zpages=%u\n", zcache_evicted_eph_zpages);
--	pr_info("zcache: evicted_eph_pageframes=%u\n",
-+	pr_debug("zcache: evicted_eph_zpages=%u\n", zcache_evicted_eph_zpages);
-+	pr_debug("zcache: evicted_eph_pageframes=%u\n",
- 				zcache_evicted_eph_pageframes);
--	pr_info("zcache: eph_pageframes=%u\n", zcache_eph_pageframes);
--	pr_info("zcache: eph_pageframes_max=%u\n", zcache_eph_pageframes_max);
--	pr_info("zcache: pers_pageframes=%u\n", zcache_pers_pageframes);
--	pr_info("zcache: pers_pageframes_max=%u\n",
-+	pr_debug("zcache: eph_pageframes=%u\n", zcache_eph_pageframes);
-+	pr_debug("zcache: eph_pageframes_max=%u\n", zcache_eph_pageframes_max);
-+	pr_debug("zcache: pers_pageframes=%u\n", zcache_pers_pageframes);
-+	pr_debug("zcache: pers_pageframes_max=%u\n",
- 				zcache_pers_pageframes_max);
--	pr_info("zcache: eph_zpages=%u\n", zcache_eph_zpages);
--	pr_info("zcache: eph_zpages_max=%u\n", zcache_eph_zpages_max);
--	pr_info("zcache: pers_zpages=%u\n", zcache_pers_zpages);
--	pr_info("zcache: pers_zpages_max=%u\n", zcache_pers_zpages_max);
--	pr_info("zcache: eph_zbytes=%llu\n",
-+	pr_debug("zcache: eph_zpages=%u\n", zcache_eph_zpages);
-+	pr_debug("zcache: eph_zpages_max=%u\n", zcache_eph_zpages_max);
-+	pr_debug("zcache: pers_zpages=%u\n", zcache_pers_zpages);
-+	pr_debug("zcache: pers_zpages_max=%u\n", zcache_pers_zpages_max);
-+	pr_debug("zcache: eph_zbytes=%llu\n",
- 				(unsigned long long)zcache_eph_zbytes);
--	pr_info("zcache: eph_zbytes_max=%llu\n",
-+	pr_debug("zcache: eph_zbytes_max=%llu\n",
- 				(unsigned long long)zcache_eph_zbytes_max);
--	pr_info("zcache: pers_zbytes=%llu\n",
-+	pr_debug("zcache: pers_zbytes=%llu\n",
- 				(unsigned long long)zcache_pers_zbytes);
--	pr_info("zcache: pers_zbytes_max=%llu\n",
-+	pr_debug("zcache: pers_zbytes_max=%llu\n",
- 			(unsigned long long)zcache_pers_zbytes_max);
+diff --git a/drivers/staging/zcache/zbud.c b/drivers/staging/zcache/zbud.c
+index e139cd6..9aa5bd8 100644
+--- a/drivers/staging/zcache/zbud.c
++++ b/drivers/staging/zcache/zbud.c
+@@ -1077,7 +1077,7 @@ out:
+ 	return ret;
  }
--#endif
  
- /*
-  * zcache core code starts here
+-void __init zbud_init(void)
++void zbud_init(void)
+ {
+ 	int i;
+ 
 -- 
 1.7.11.7
 
