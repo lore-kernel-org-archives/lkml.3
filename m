@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab3BANwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:52:12 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34155 "EHLO
+	id S1756742Ab3BANxD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:53:03 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34165 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab3BANwJ (ORCPT
+	with ESMTP id S1754869Ab3BANxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:52:09 -0500
-Date: Fri, 1 Feb 2013 14:52:07 +0100 (CET)
+	Fri, 1 Feb 2013 08:53:00 -0500
+Date: Fri, 1 Feb 2013 14:52:54 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Tommi Rantala <tt.rantala@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: clock_nanosleep() task_struct leak
-In-Reply-To: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1302011450160.11905@ionos>
-References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Veen <arjan@infradead.org>, Paul@jasper.es
+Subject: Re: [patch 09/40] cpu: hotplug: Implement setup/removal interface
+In-Reply-To: <CAJd=RBCn0bM2rkXD3C6+7UZxFGO=fT7JNAcG-3SjR_zuGOZiCw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1302011452340.11905@ionos>
+References: <20130131120348.372374706@linutronix.de> <20130131120742.098044736@linutronix.de> <CAJd=RBCn0bM2rkXD3C6+7UZxFGO=fT7JNAcG-3SjR_zuGOZiCw@mail.gmail.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,25 +30,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2601;0cOn Fri, 1 Feb 2013, Tommi Rantala wrote:
-
-> Hello,
+On Fri, 1 Feb 2013, Hillf Danton wrote:
+> On Thu, Jan 31, 2013 at 8:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > +/**
+> > +       for_each_present_cpu(cpu) {
+> > +               int ret, cpustate = per_cpu(cpuhp_state, cpu);
 > 
-> Trinity discovered a task_struct leak with clock_nanosleep(), reproducible with:
-> 
-> -----8<-----8<-----8<-----
-> #include <time.h>
-> 
-> static const struct timespec req;
-> 
-> int main(void) {
->         return clock_nanosleep(CLOCK_PROCESS_CPUTIME_ID,
->                         TIMER_ABSTIME, &req, NULL);
-> }
-> -----8<-----8<-----8<-----
+> s/ret,//
 
-Groan. That code probably has more than that leak burried inside.
-
-Thanks,
-
-	tglx
+Duh, yes.
