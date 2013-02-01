@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab3BAGK0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 01:10:26 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:38962 "EHLO zene.cmpxchg.org"
+	id S1753568Ab3BAGL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 01:11:56 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37207 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243Ab3BAGKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 01:10:22 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch] mm: mlock: document scary-looking stack expansion mlock chain
-Date: Fri,  1 Feb 2013 01:10:13 -0500
-Message-Id: <1359699013-7160-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.11.7
+	id S1750918Ab3BAGLy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 01:11:54 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Subject: RE: [PATCH] ARM: dts: AM33XX: Corrects typo in interrupt field in
+ SPI node
+Thread-Topic: [PATCH] ARM: dts: AM33XX: Corrects typo in interrupt field in
+ SPI node
+Thread-Index: AQHOAD8knbrBxv0KA0WXQhruWf/YdphkgqzQ
+Date: Fri, 1 Feb 2013 06:10:25 +0000
+Deferred-Delivery: Fri, 1 Feb 2013 06:10:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EA6977C@DBDE01.ent.ti.com>
+References: <1359697047-1816-1-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1359697047-1816-1-git-send-email-avinashphilip@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fact that mlock calls get_user_pages, and get_user_pages might
-call mlock when expanding a stack looks like a potential recursion.
+On Fri, Feb 01, 2013 at 11:07:27, Philip, Avinash wrote:
+> DT field of "interrupts" was mentioned wrongly as "interrupt" in SPI
+> node. This went unnoticed as spi-omap2 driver not making use of
+> interrupt. Fixes the typo.
+> 
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 
-However, mlock makes sure the requested range is already contained
-within a vma, so no stack expansion will actually happen from mlock.
+Reported-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
 
-Should this ever change: the stack expansion mlocks only the newly
-expanded range and so will not result in recursive expansion.
+Typo mistake was reported by Vaibhav. I forgot to mention "Reported-by"
+tag while posting. Add the same on his behalf.
 
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/mlock.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Thanks
+Avinash
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index b1647fb..78c4924 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -185,6 +185,10 @@ long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 	if (vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC))
- 		gup_flags |= FOLL_FORCE;
- 
-+	/*
-+	 * We made sure addr is within a VMA, so the following will
-+	 * not result in a stack expansion that recurses back here.
-+	 */
- 	return __get_user_pages(current, mm, addr, nr_pages, gup_flags,
- 				NULL, NULL, nonblocking);
- }
--- 
-1.7.11.7
+> ---
+>  arch/arm/boot/dts/am33xx.dtsi |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index fbcb90b..cece3ad 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -309,7 +309,7 @@
+>  			#address-cells = <1>;
+>  			#size-cells = <0>;
+>  			reg = <0x48030000 0x400>;
+> -			interrupt = <65>;
+> +			interrupts = <65>;
+>  			ti,spi-num-cs = <2>;
+>  			ti,hwmods = "spi0";
+>  			status = "disabled";
+> @@ -320,7 +320,7 @@
+>  			#address-cells = <1>;
+>  			#size-cells = <0>;
+>  			reg = <0x481a0000 0x400>;
+> -			interrupt = <125>;
+> +			interrupts = <125>;
+>  			ti,spi-num-cs = <2>;
+>  			ti,hwmods = "spi1";
+>  			status = "disabled";
+> -- 
+> 1.7.9.5
+> 
+> 
 
