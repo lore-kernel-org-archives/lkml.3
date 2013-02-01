@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab3BAOUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 09:20:47 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47528 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473Ab3BAOUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 09:20:45 -0500
-Message-ID: <510BCF29.7000104@oracle.com>
-Date: Fri, 01 Feb 2013 09:20:25 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	id S1756993Ab3BAOVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 09:21:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52590 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755473Ab3BAOVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 09:21:38 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>, "Quadros, Roger" <rogerq@ti.com>
+CC: "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "eballetbo@gmail.com" <eballetbo@gmail.com>,
+        "javier@dowhile0.org" <javier@dowhile0.org>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robertcnelson@gmail.com" <robertcnelson@gmail.com>
+Subject: RE: [PATCH v2 00/30] USB: omap-ehci: Move PHY management to PHY
+ driver
+Thread-Topic: [PATCH v2 00/30] USB: omap-ehci: Move PHY management to PHY
+ driver
+Thread-Index: AQHN/Ur6hep/al+UlEy0NYuQSkHsCphhyDTA//+xUACAAAdUAIAAXITggAM0eHA=
+Date: Fri, 1 Feb 2013 14:21:18 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA9FF9C@DBDE01.ent.ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA95DF0@DBDE01.ent.ti.com>
+ <510916B2.7080509@ti.com> <20130130131504.GU15258@arwen.pp.htv.fi>
+ <C8443D0743D26F4388EA172BF4E2A7A93EA95E97@DBDE01.ent.ti.com>
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EA95E97@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: mingo@redhat.com, peterz@infradead.org, paulus@samba.org,
-        acme@ghostprotocols.net, penberg@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] liblock: public headers for mutex implementation
-References: <1359694058-24452-1-git-send-email-sasha.levin@oracle.com> <1359694058-24452-3-git-send-email-sasha.levin@oracle.com> <20130201095701.GA23061@gmail.com>
-In-Reply-To: <20130201095701.GA23061@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r11ELhPb027741
 
-On 02/01/2013 04:57 AM, Ingo Molnar wrote:
-> 
-> * Sasha Levin <sasha.levin@oracle.com> wrote:
-> 
->> These headers provide the same API as their pthread mutex counterparts.
->>
->> The design here is to allow to easily switch to liblock lock validation
->> just by adding a "liblock_" to pthread_mutex_*() calls, which means that
->> it's easy to integrate liblock into existing codebases.
-> 
-> I'd suggest to name the user-space counterpart 'liblockdep', to 
-> make it clear that this is user-space lockdep.
+Hi Felipe, Roger,
 
-Agreed. Pekka also mentioned that liblock sounds to much like lib-block, so
-renaming it to liblockdep will take care of that :)
+On Wed, Jan 30, 2013 at 18:49:17, Mohammed, Afzal wrote:
+> On Wed, Jan 30, 2013 at 18:45:04, Balbi, Felipe wrote:
+> > On Wed, Jan 30, 2013 at 02:48:50PM +0200, Roger Quadros wrote:
 
-> Regarding pthread_mutex_t checking, I think what we *really* 
-> want is a wrapper that can be activated via:
-> 
-> #define __USE_LIBLOCKDEP
-> 
-> And which then takes over the pthread primitives via:
-> 
->   #define pthread_mutex_lock liblockdep_pthread_mutex_lock
-> 
-> or so.
-> 
-> That way the source code only needs a __USE_LIBLOCKDEP in one or 
-> two key places and checking is activated.
+> > > I would appreciate if someone who knows more about beaglebone can help
+> > > with verification.
 
-There are 2 issues I see with that:
- - api calls which are liblockdep specific (liblockdep_init() for example) would
-still have to be wrapped somehow in the new code.
- - LIBLOCKDEP_PTHREAD_MUTEX_INIT(mtx) doesn't only change the name of the original
-pthread mutex initializer, it also starts requiring the mutex name as parameter so
-that it could pass it on to lockdep.
+> > Right, Afzal if you have the bone could you help Roger validating ?
 
-Dealing with these two will mean that there's a '#ifdef __USE_LIBLOCKDEP' both in
-the lib and in the source code that uses it, which might be a bit confusing.
+> I am not in a position to validate it, in the middle of another task.
 
-Either way, I'll resend the patch with these changes so we'll have a better view
-of how it would look.
+Ok, I tested this, usb first instance of beagle bone works as in mainline.
 
+Regards
+Afzal
 
-Thanks,
-Sasha
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
