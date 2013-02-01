@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422781Ab3BANNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:13:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45383 "EHLO mail.kernel.org"
+	id S1422711Ab3BANNZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:13:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45371 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422772Ab3BANNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:13:24 -0500
+	id S1160996Ab3BANNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:13:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Greear <greearb@candelatech.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Chuck Lever <chuck.lever@oracle.com>
-Subject: [ 56/89] NFSv4: Fix NFSv4 trunking discovery
-Date: Fri,  1 Feb 2013 14:08:11 +0100
-Message-Id: <20130201130211.532198444@linuxfoundation.org>
+        Matt Fleming <matt.fleming@intel.com>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Colin Ian King <colin.king@canonical.com>,
+        Steve Langasek <steve.langasek@canonical.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 63/89] samsung-laptop: Disable on EFI hardware
+Date: Fri,  1 Feb 2013 14:08:18 +0100
+Message-Id: <20130201130212.021088536@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,112 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 202c312dba7d95b96493b412c606163a0cd83984 upstream.
+commit e0094244e41c4d0c7ad69920681972fc45d8ce34 upstream.
 
-If walking the list in nfs4[01]_walk_client_list fails, then the most
-likely explanation is that the server dropped the clientid before we
-actually managed to confirm it. As long as our nfs_client is the very
-last one in the list to be tested, the caller can be assured that this
-is the case when the final return value is NFS4ERR_STALE_CLIENTID.
+It has been reported that running this driver on some Samsung laptops
+with EFI can cause those machines to become bricked as detailed in the
+following report,
 
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
+	https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
+
+There have also been reports of this driver causing Machine Check
+Exceptions on recent EFI-enabled Samsung laptops,
+
+	https://bugzilla.kernel.org/show_bug.cgi?id=47121
+
+So disable it if booting from EFI since this driver relies on
+grovelling around in the BIOS memory map which isn't going to work.
+
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Colin Ian King <colin.king@canonical.com>
+Cc: Steve Langasek <steve.langasek@canonical.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c |   26 +++++++-------------------
- fs/nfs/nfs4state.c  |    8 ++------
- 2 files changed, 9 insertions(+), 25 deletions(-)
+ drivers/platform/x86/samsung-laptop.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -351,14 +351,8 @@ int nfs40_walk_client_list(struct nfs_cl
- 	}
- 	spin_unlock(&nn->nfs_client_lock);
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -26,6 +26,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/debugfs.h>
+ #include <linux/ctype.h>
++#include <linux/efi.h>
+ #include <acpi/video.h>
  
-+	/* No match found. The server lost our clientid */
- out:
--	/*
--	 * No matching nfs_client found.  This should be impossible,
--	 * because the new nfs_client has already been added to
--	 * nfs_client_list by nfs_get_client().
--	 *
--	 * Don't BUG(), since the caller is holding a mutex.
--	 */
- 	if (prev)
- 		nfs_put_client(prev);
- 	dprintk("NFS: <-- %s status = %d\n", __func__, status);
-@@ -429,7 +423,7 @@ int nfs41_walk_client_list(struct nfs_cl
- {
- 	struct nfs_net *nn = net_generic(new->cl_net, nfs_net_id);
- 	struct nfs_client *pos, *n, *prev = NULL;
--	int error;
-+	int status = -NFS4ERR_STALE_CLIENTID;
+ /*
+@@ -1544,6 +1545,9 @@ static int __init samsung_init(void)
+ 	struct samsung_laptop *samsung;
+ 	int ret;
  
- 	spin_lock(&nn->nfs_client_lock);
- 	list_for_each_entry_safe(pos, n, &nn->nfs_client_list, cl_share_link) {
-@@ -445,8 +439,8 @@ int nfs41_walk_client_list(struct nfs_cl
- 				nfs_put_client(prev);
- 			prev = pos;
- 
--			error = nfs_wait_client_init_complete(pos);
--			if (error < 0) {
-+			status = nfs_wait_client_init_complete(pos);
-+			if (status < 0) {
- 				nfs_put_client(pos);
- 				spin_lock(&nn->nfs_client_lock);
- 				continue;
-@@ -479,16 +473,10 @@ int nfs41_walk_client_list(struct nfs_cl
- 		return 0;
- 	}
- 
--	/*
--	 * No matching nfs_client found.  This should be impossible,
--	 * because the new nfs_client has already been added to
--	 * nfs_client_list by nfs_get_client().
--	 *
--	 * Don't BUG(), since the caller is holding a mutex.
--	 */
-+	/* No matching nfs_client found. */
- 	spin_unlock(&nn->nfs_client_lock);
--	pr_err("NFS: %s Error: no matching nfs_client found\n", __func__);
--	return -NFS4ERR_STALE_CLIENTID;
-+	dprintk("NFS: <-- %s status = %d\n", __func__, status);
-+	return status;
- }
- #endif	/* CONFIG_NFS_V4_1 */
- 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -136,16 +136,11 @@ int nfs40_discover_server_trunking(struc
- 	clp->cl_confirm = clid.confirm;
- 
- 	status = nfs40_walk_client_list(clp, result, cred);
--	switch (status) {
--	case -NFS4ERR_STALE_CLIENTID:
--		set_bit(NFS4CLNT_LEASE_CONFIRM, &clp->cl_state);
--	case 0:
-+	if (status == 0) {
- 		/* Sustain the lease, even if it's empty.  If the clientid4
- 		 * goes stale it's of no use for trunking discovery. */
- 		nfs4_schedule_state_renewal(*result);
--		break;
- 	}
--
- out:
- 	return status;
- }
-@@ -1850,6 +1845,7 @@ again:
- 	case -ETIMEDOUT:
- 	case -EAGAIN:
- 		ssleep(1);
-+	case -NFS4ERR_STALE_CLIENTID:
- 		dprintk("NFS: %s after status %d, retrying\n",
- 			__func__, status);
- 		goto again;
++	if (efi_enabled(EFI_BOOT))
++		return -ENODEV;
++
+ 	quirks = &samsung_unknown;
+ 	if (!force && !dmi_check_system(samsung_dmi_table))
+ 		return -ENODEV;
 
 
