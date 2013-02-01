@@ -1,171 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab3BACUd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:20:33 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:42580 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab3BACUb (ORCPT
+	id S1753603Ab3BACXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 21:23:12 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:27674 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab3BACXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:20:31 -0500
-Message-ID: <510B25FF.3010702@huawei.com>
-Date: Fri, 1 Feb 2013 10:18:39 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 31 Jan 2013 21:23:11 -0500
+Message-ID: <510B270C.5000603@tilera.com>
+Date: Thu, 31 Jan 2013 21:23:08 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, <akpm@linux-foundation.org>,
-        <rientjes@google.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <kosaki.motohiro@jp.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <hpa@zytor.com>, <linfeng@cn.fujitsu.com>, <laijs@cn.fujitsu.com>,
-        <mgorman@suse.de>, <yinghai@kernel.org>, <glommer@parallels.com>,
-        <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
-        <sparclinux@vger.kernel.org>
-Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>       <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>      <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>     <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>    <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com>   <1359628705.2048.5.camel@kernel> <510B1B4B.5080207@huawei.com>  <1359682576.3574.1.camel@kernel> <510B20F2.20906@huawei.com> <1359684403.1303.3.camel@kernel>
-In-Reply-To: <1359684403.1303.3.camel@kernel>
-Content-Type: text/plain; charset="UTF-8"
+To: Tejun Heo <tj@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: kernel/cgroup_freezer.c:151:3: error: 'system_freezing_cnt' undeclared
+References: <510aa746.fVU8ZdQ2hys/RwjS%fengguang.wu@intel.com> <20130131231433.GM6824@mtj.dyndns.org> <510B1051.5010200@tilera.com> <20130201005225.GQ6824@mtj.dyndns.org>
+In-Reply-To: <20130201005225.GQ6824@mtj.dyndns.org>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/1 10:06, Simon Jeons wrote:
+On 1/31/2013 7:52 PM, Tejun Heo wrote:
+> Hello, Chris.
+>
+> On Thu, Jan 31, 2013 at 07:46:09PM -0500, Chris Metcalf wrote:
+>> That seems reasonable to me, but I'm happy to experiment with
+>> including Kconfig.freezer from the arch/tile/Kconfig if that feels
+>> like a better solution.
+> AFAICS, there's nothing arch specific about freezer and cgroup_freezer
+> could be useful even without powersaving, so maybe give it a shot?
 
-> Hi Jianguo,
-> On Fri, 2013-02-01 at 09:57 +0800, Jianguo Wu wrote:
->> On 2013/2/1 9:36, Simon Jeons wrote:
->>
->>> On Fri, 2013-02-01 at 09:32 +0800, Jianguo Wu wrote:
->>>> On 2013/1/31 18:38, Simon Jeons wrote:
->>>>
->>>>> Hi Tang,
->>>>> On Thu, 2013-01-31 at 17:44 +0800, Tang Chen wrote:
->>>>>> Hi Simon,
->>>>>>
->>>>>> On 01/31/2013 04:48 PM, Simon Jeons wrote:
->>>>>>> Hi Tang,
->>>>>>> On Thu, 2013-01-31 at 15:10 +0800, Tang Chen wrote:
->>>>>>>
->>>>>>> 1. IIUC, there is a button on machine which supports hot-remove memory,
->>>>>>> then what's the difference between press button and echo to /sys?
->>>>>>
->>>>>> No important difference, I think. Since I don't have the machine you are
->>>>>> saying, I cannot surely answer you. :)
->>>>>> AFAIK, pressing the button means trigger the hotplug from hardware, sysfs
->>>>>> is just another entrance. At last, they will run into the same code.
->>>>>>
->>>>>>> 2. Since kernel memory is linear mapping(I mean direct mapping part),
->>>>>>> why can't put kernel direct mapping memory into one memory device, and
->>>>>>> other memory into the other devices?
->>>>>>
->>>>>> We cannot do that because in that way, we will lose NUMA performance.
->>>>>>
->>>>>> If you know NUMA, you will understand the following example:
->>>>>>
->>>>>> node0:                    node1:
->>>>>>     cpu0~cpu15                cpu16~cpu31
->>>>>>     memory0~memory511         memory512~memory1023
->>>>>>
->>>>>> cpu16~cpu31 access memory16~memory1023 much faster than memory0~memory511.
->>>>>> If we set direct mapping area in node0, and movable area in node1, then
->>>>>> the kernel code running on cpu16~cpu31 will have to access 
->>>>>> memory0~memory511.
->>>>>> This is a terrible performance down.
->>>>>
->>>>> So if config NUMA, kernel memory will not be linear mapping anymore? For
->>>>> example, 
->>>>>
->>>>> Node 0  Node 1 
->>>>>
->>>>> 0 ~ 10G 11G~14G
->>>>>
->>>>> kernel memory only at Node 0? Can part of kernel memory also at Node 1?
->>>>>
->>>>> How big is kernel direct mapping memory in x86_64? Is there max limit?
->>>>
->>>>
->>>> Max kernel direct mapping memory in x86_64 is 64TB.
->>>
->>> For example, I have 8G memory, all of them will be direct mapping for
->>> kernel? then userspace memory allocated from where?
->>
->> Direct mapping memory means you can use __va() and pa(), but not means that them
->> can be only used by kernel, them can be used by user-space too, as long as them are free.
-> 
-> IIUC, the benefit of va() and pa() is just for quick get
-> virtual/physical address, it takes advantage of linear mapping. But mmu
-> still need to go through pgd/pud/pmd/pte, correct?
+It builds with the following change.  Look good to you?
 
-Yes.
+commit 8c9632acfaea4cf6ae064d8291eea989b0df2bcf
+Author: Chris Metcalf <cmetcalf@tilera.com>
+Date:   Thu Jan 31 21:21:36 2013 -0500
 
-> 
+    tile: include kernel/Kconfig.freezer in tile Kconfig
 
->>
->>>
->>>>
->>>>> It seems that only around 896MB on x86_32. 
->>>>>
->>>>>>
->>>>>>> As you know x86_64 don't need
->>>>>>> highmem, IIUC, all kernel memory will linear mapping in this case. Is my
->>>>>>> idea available? If is correct, x86_32 can't implement in the same way
->>>>>>> since highmem(kmap/kmap_atomic/vmalloc) can map any address, so it's
->>>>>>> hard to focus kernel memory on single memory device.
->>>>>>
->>>>>> Sorry, I'm not quite familiar with x86_32 box.
->>>>>>
->>>>>>> 3. In current implementation, if memory hotplug just need memory
->>>>>>> subsystem and ACPI codes support? Or also needs firmware take part in?
->>>>>>> Hope you can explain in details, thanks in advance. :)
->>>>>>
->>>>>> We need firmware take part in, such as SRAT in ACPI BIOS, or the firmware
->>>>>> based memory migration mentioned by Liu Jiang.
->>>>>
->>>>> Is there any material about firmware based memory migration?
->>>>>
->>>>>>
->>>>>> So far, I only know this. :)
->>>>>>
->>>>>>> 4. What's the status of memory hotplug? Apart from can't remove kernel
->>>>>>> memory, other things are fully implementation?
->>>>>>
->>>>>> I think the main job is done for now. And there are still bugs to fix.
->>>>>> And this functionality is not stable.
->>>>>>
->>>>>> Thanks. :)
->>>>>
->>>>>
->>>>> --
->>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>>>> see: http://www.linux-mm.org/ .
->>>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>>>>
->>>>> .
->>>>>
->>>>
->>>>
->>>>
->>>
->>>
->>>
->>> .
->>>
->>
->>
->>
-> 
-> 
-> 
-> .
-> 
+    Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 1adb853..d9072ba 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -142,6 +142,8 @@ config ARCH_DEFCONFIG
 
+ source "init/Kconfig"
+
++source "kernel/Kconfig.freezer"
++
+ menu "Tilera-specific configuration"
+
+ config NR_CPUS
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
