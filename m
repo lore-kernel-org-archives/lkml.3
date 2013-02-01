@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab3BAOIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 09:08:43 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:46509 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756713Ab3BAOIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 09:08:41 -0500
-Date: Fri, 1 Feb 2013 09:08:37 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Eric Sandeen <sandeen@redhat.com>
-Subject: Re: ext4-next: Backport of jbd2 fixes?
-Message-ID: <20130201140837.GB1438@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Ext4 Developers List <linux-ext4@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Eric Sandeen <sandeen@redhat.com>
-References: <CA+icZUU=Ra4j6-dWbfP2fZDfRb+onQWo3HrejMsqTYO4v62o1A@mail.gmail.com>
+	id S1030185Ab3BAOKT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 09:10:19 -0500
+Received: from linux-sh.org ([111.68.239.195]:54267 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756713Ab3BAOKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 09:10:16 -0500
+Date: Fri, 1 Feb 2013 23:09:28 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Hideki EIRAKU <hdk@igel.co.jp>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 0/4] Renesas IPMMU driver for sh7372, sh73a0 and
+ r8a7740
+Message-ID: <20130201140927.GA12216@linux-sh.org>
+References: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
+ <20130201135633.GH25591@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+icZUU=Ra4j6-dWbfP2fZDfRb+onQWo3HrejMsqTYO4v62o1A@mail.gmail.com>
+In-Reply-To: <20130201135633.GH25591@8bytes.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 10:33:04AM +0100, Sedat Dilek wrote:
-> Hi Ted,
+On Fri, Feb 01, 2013 at 02:56:33PM +0100, Joerg Roedel wrote:
+> On Mon, Jan 21, 2013 at 07:54:25PM +0900, Hideki EIRAKU wrote:
+> > Hideki EIRAKU (4):
+> >   iommu/shmobile: Add iommu driver for Renesas IPMMU modules
+> >   ARM: mach-shmobile: sh7372: Add IPMMU device
+> >   ARM: mach-shmobile: sh73a0: Add IPMMU device
+> >   ARM: mach-shmobile: r8a7740: Add IPMMU device
 > 
-> will those JBD2 fixes in ext4.git#dev [1] get also into mainline kernel(s)?
+> Paul, Magnus, any opinions on patches 2-4? Can you ACK them when they
+> are ok for you?
 > 
-> [ Cut-n-paste out of tig ]
-> 
-> 2013-01-31 13:00 Theodore Ts'o      │ o jbd2: track request delay statistics
-> 2013-01-30 00:41 Theodore Ts'o      │ o jbd2: commit as soon as
-> possible after log_start_commit <--- T-b-me (Linux-Next + 3.8-rc5+)
-> 2013-01-30 00:39 Eric Sandeen       │ o jbd2: don't wake kjournald
-> unnecessarily <--- T-b-me (Linux-Next + 3.8-rc5+)
-> 
-> I see no "CC: linux-stable"... and none of my Tested-by#s :-).
+No strong opinions one way or the other, patches 2-4 don't really do
+anything of significance.
 
-I might be willing to add a cc linux-stable to Eric's commit, since
-it's pretty simple and it does fix a very long-standing performance
-regression.  But technically these commits are intended to be
-***performance*** improvements.  The fact that your inherently
-dangerous use of using loop devices over FUSE happens to not deadlock
-when doing a suspend/resume after applying this patch is nice, but it
-is absolutely an unintended side effect.
-
-It doesn't change the fact that it's inherently dangerous, and it may
-break at any one time, and I would be surprised if kernel developers
-would be willing to stand behind this as as a supported
-configurations.  If this is something Ubuntu is doing, and you have a
-support contract with Ubuntu, I suggest you ask them to look into
-this.
-
-						- Ted
+Acked-by: Paul Mundt <lethal@linux-sh.org>
