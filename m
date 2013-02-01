@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab3BASWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 13:22:42 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:48830 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756936Ab3BASW3 (ORCPT
+	id S1757315Ab3BASX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 13:23:27 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:34297 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757156Ab3BASWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 13:22:29 -0500
+	Fri, 1 Feb 2013 13:22:41 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v7 04/10] dmaengine: edma: enable build for AM33XX
-Date: Fri,  1 Feb 2013 13:22:49 -0500
-Message-Id: <1359742975-10421-5-git-send-email-mporter@ti.com>
+Subject: [PATCH v7 10/10] ARM: dts: add AM33XX SPI DMA support
+Date: Fri,  1 Feb 2013 13:22:55 -0500
+Message-Id: <1359742975-10421-11-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359742975-10421-1-git-send-email-mporter@ti.com>
 References: <1359742975-10421-1-git-send-email-mporter@ti.com>
@@ -37,26 +37,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable TI EDMA option on OMAP.
+Adds DMA resources to the AM33XX SPI nodes.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- drivers/dma/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/am33xx.dtsi |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 0b408bb..239020b 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -220,7 +220,7 @@ config SIRF_DMA
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index e711ffb..ddf702a 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -328,6 +328,11 @@
+ 			interrupt = <65>;
+ 			ti,spi-num-cs = <2>;
+ 			ti,hwmods = "spi0";
++			dmas = <&edma 16
++				&edma 17
++				&edma 18
++				&edma 19>;
++			dma-names = "tx0", "rx0", "tx1", "rx1";
+ 			status = "disabled";
+ 		};
  
- config TI_EDMA
- 	tristate "TI EDMA support"
--	depends on ARCH_DAVINCI
-+	depends on ARCH_DAVINCI || ARCH_OMAP
- 	select DMA_ENGINE
- 	select DMA_VIRTUAL_CHANNELS
- 	default n
+@@ -339,6 +344,11 @@
+ 			interrupt = <125>;
+ 			ti,spi-num-cs = <2>;
+ 			ti,hwmods = "spi1";
++			dmas = <&edma 42
++				&edma 43
++				&edma 44
++				&edma 45>;
++			dma-names = "tx0", "rx0", "tx1", "rx1";
+ 			status = "disabled";
+ 		};
+ 
 -- 
 1.7.9.5
 
