@@ -1,189 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab3BAIdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:33:36 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58129 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab3BAIde (ORCPT
+	id S1755951Ab3BAImW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:42:22 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63123 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab3BAImS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:33:34 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <510B7DC6.10803@jp.fujitsu.com>
-Date: Fri, 1 Feb 2013 17:33:10 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 03:42:18 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-98-510b7fe677ba
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
+        namhyung.kim@lge.com
+Subject: Re: [PATCH 0/2] perf: add new uncore command
+References: <1359640479-5289-1-git-send-email-eranian@google.com>
+Date: Fri, 01 Feb 2013 17:42:13 +0900
+In-Reply-To: <1359640479-5289-1-git-send-email-eranian@google.com> (Stephane
+	Eranian's message of "Thu, 31 Jan 2013 14:54:37 +0100")
+Message-ID: <878v78togq.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Felipe Balbi <balbi@ti.com>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] block: partition: optimize memory allocation in check_partition
-References: <1359688060-12964-1-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1359688060-12964-1-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/02/01 12:07, Ming Lei wrote:
-> Currently, sizeof(struct parsed_partitions) may be 64KB in 32bit arch,
-> so it is easy to trigger page allocation failure by check_partition,
-> especially in hotplug block device situation(such as, USB mass storage,
-> MMC card, ...), and Felipe Balbi has observed the failure.
-> 
-> This patch does below optimizations on the allocation of struct
-> parsed_partitions to try to address the issue:
-> 
-> - make parsed_partitions.parts as pointer so that the pointed memory
-> can fit in 32KB buffer, then approximate 32KB memory can be saved
-> 
-> - vmalloc the buffer pointed by parsed_partitions.parts because
-> 32KB is still a bit big for kmalloc
-> 
-> - given that many devices have the partition count limit, so only
-> allocate disk_max_parts() partitions instead of 256 partitions
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->   block/partition-generic.c |    2 +-
->   block/partitions/check.c  |   35 ++++++++++++++++++++++++++++++-----
->   block/partitions/check.h  |    4 +++-
->   3 files changed, 34 insertions(+), 7 deletions(-)
-> 
-> diff --git a/block/partition-generic.c b/block/partition-generic.c
-> index f1d1451..043d0bd 100644
-> --- a/block/partition-generic.c
-> +++ b/block/partition-generic.c
-> @@ -525,7 +525,7 @@ rescan:
->   			md_autodetect_dev(part_to_dev(part)->devt);
->   #endif
->   	}
-> -	kfree(state);
-> +	release_partitions(state);
->   	return 0;
->   }
+Hi, Stephane
 
-Do you check all kfree(state)?
+On Thu, 31 Jan 2013 14:54:37 +0100, Stephane Eranian wrote:
+> This patchset adds a new command to perf: perf uncore.
+> It is used to measure processor socket-level metrics
+> on a system-wide basis and at all priv levels.
+>
+> The command comes with a set of predefined key metrics
+> which are useful to measure multi-socket system imbalance
+> and various bandwidths.
+>
+> The following metrics are currently defined:
+>   - memory bandwidth (Nehalem, Westmere, SandyBridge-EP)
+>   - PCIe bandwidth (SandyBridge-EP)
+>   - QPI bandwidth (SandyBridge-EP)
+>   - C-state residency (SandyBridge-EP)
+>
+> Others can be added in the future.
+>
+> The command provides options to modify the unit of the metrics
+> (default: MB/s for bandwidth).
+>
+> Example on Nehalem:
+>
+>  # perf uncore
+>  #------------------------------
+>  #           Socket0           |
+>  #------------------------------
+>  #        RAM Bandwidth        |
+>  #            Wr             Rd|
+>  #          MB/s           MB/s|
+>  #------------------------------
+>          4954.99       14897.29
+>          4953.97       14894.56
+>          4947.52       14874.97
+>
+> To make plotting easier, the output can be augmented with a timestamp:
+>
+>  # perf uncore -T
+>  #----------------------------------------
+>  #         |           Socket0           |
+>  #         |------------------------------
+>  #   Time  |        RAM Bandwidth        |
+>  #    in   |            Wr             Rd|
+>  #   secs  |          MB/s           MB/s|
+>  #----------------------------------------
+>           1        4952.50       14890.49
+>           2        4955.55       14900.19
+>           3        4949.13       14879.60
+>           4        4954.66       14896.26
+>
+> The code is split between generic layer (builtin-uncore.c) and
+> an arch specific layer (arch/*/util/uncore.c). All events are
+> hardcoded because they don't change for a given processor and
+> metric computation requires combining multiple events.
 
-# block/partition-generic.c
-414 int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
-415 {
-416         struct parsed_partitions *state = NULL;
-417         struct hd_struct *part;
-418         int p, highest, res;
-419 rescan:
-420         if (state && !IS_ERR(state)) {
-421                 kfree(state);
-422                 state = NULL;
-423         }   
+>From a quick glancing, I think this is basically what perf stat does
+with selected events, right?  As we now have your interval printing I
+can't find much difference.
 
-At least, you should use release_partitions() instead of kfree() here.
+And there's a patchset [1] from Jiri to support some kind of formula -
+yeah, now I've written the correct spelling. :) - that might fit to this
+purpose if you provide suitable formula file IMHO.  So I guess we don't
+need to have another command and can reuse perf stat, no?
 
 Thanks,
-Yasuaki Ishimatsu
-
->   
-> diff --git a/block/partitions/check.c b/block/partitions/check.c
-> index bc90867..86c9450 100644
-> --- a/block/partitions/check.c
-> +++ b/block/partitions/check.c
-> @@ -14,6 +14,7 @@
->    */
->   
->   #include <linux/slab.h>
-> +#include <linux/vmalloc.h>
->   #include <linux/ctype.h>
->   #include <linux/genhd.h>
->   
-> @@ -106,18 +107,43 @@ static int (*check_part[])(struct parsed_partitions *) = {
->   	NULL
->   };
->   
-> +static struct parsed_partitions *allocate_partitions(int nr)
-> +{
-> +	struct parsed_partitions *state;
-> +
-> +	state = kzalloc(sizeof(*state), GFP_KERNEL);
-> +	if (!state)
-> +		return NULL;
-> +
-> +	state->parts = vzalloc(nr * sizeof(state->parts[0]));
-> +	if (!state->parts) {
-> +		kfree(state);
-> +		return NULL;
-> +	}
-> +
-> +	return state;
-> +}
-> +
-> +void release_partitions(struct parsed_partitions *state)
-> +{
-> +	vfree(state->parts);
-> +	kfree(state);
-> +}
-> +
->   struct parsed_partitions *
->   check_partition(struct gendisk *hd, struct block_device *bdev)
->   {
->   	struct parsed_partitions *state;
->   	int i, res, err;
->   
-> -	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
-> +	i = disk_max_parts(hd);
-> +	state = allocate_partitions(i);
->   	if (!state)
->   		return NULL;
-> +	state->limit = i;
->   	state->pp_buf = (char *)__get_free_page(GFP_KERNEL);
->   	if (!state->pp_buf) {
-> -		kfree(state);
-> +		release_partitions(state);
->   		return NULL;
->   	}
->   	state->pp_buf[0] = '\0';
-> @@ -128,10 +154,9 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
->   	if (isdigit(state->name[strlen(state->name)-1]))
->   		sprintf(state->name, "p");
->   
-> -	state->limit = disk_max_parts(hd);
->   	i = res = err = 0;
->   	while (!res && check_part[i]) {
-> -		memset(&state->parts, 0, sizeof(state->parts));
-> +		memset(state->parts, 0, state->limit * sizeof(state->parts[0]));
->   		res = check_part[i++](state);
->   		if (res < 0) {
->   			/* We have hit an I/O error which we don't report now.
-> @@ -161,6 +186,6 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
->   	printk(KERN_INFO "%s", state->pp_buf);
->   
->   	free_page((unsigned long)state->pp_buf);
-> -	kfree(state);
-> +	release_partitions(state);
->   	return ERR_PTR(res);
->   }
-> diff --git a/block/partitions/check.h b/block/partitions/check.h
-> index 52b1003..4fefdbb 100644
-> --- a/block/partitions/check.h
-> +++ b/block/partitions/check.h
-> @@ -15,13 +15,15 @@ struct parsed_partitions {
->   		int flags;
->   		bool has_info;
->   		struct partition_meta_info info;
-> -	} parts[DISK_MAX_PARTS];
-> +	} *parts;
->   	int next;
->   	int limit;
->   	bool access_beyond_eod;
->   	char *pp_buf;
->   };
->   
-> +void release_partitions(struct parsed_partitions *state);
-> +
->   struct parsed_partitions *
->   check_partition(struct gendisk *, struct block_device *);
->   
-> 
+Namhyung
 
 
+[1] http://lwn.net/Articles/532634/
