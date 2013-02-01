@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab3BAIM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:12:29 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:51518 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab3BAIMM (ORCPT
+	id S1756280Ab3BAIMj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:12:39 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:56619 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab3BAIM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:12:12 -0500
+	Fri, 1 Feb 2013 03:12:29 -0500
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Nick Dyer <nick.dyer@itdev.co.uk>
 Cc: Joonyoung Shim <jy0922.shim@samsung.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olofj@chromium.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 03/10] Input: atmel_mxt_ts - refactor input device creation
-Date: Fri,  1 Feb 2013 16:11:45 +0800
-Message-Id: <1359706312-24642-4-git-send-email-djkurtz@chromium.org>
+        linux-kernel@vger.kernel.org, olofj@chromium.org
+Subject: [PATCH 08/10] Input: atmel_mxt_ts - wait for CHG assert in mxt_check_bootloader
+Date: Fri,  1 Feb 2013 16:11:50 +0800
+Message-Id: <1359706312-24642-9-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359706312-24642-1-git-send-email-djkurtz@chromium.org>
 References: <1359706312-24642-1-git-send-email-djkurtz@chromium.org>
@@ -25,148 +24,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move input device initialization to its own helper function.
-This is in preparation of a future patch that makes input device
-conditional on the device not being in its bootloader.
+From: Benson Leung <bleung@chromium.org>
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+The driver should not immediately read bootloader status when
+in Application Update Mode. The CHG line will assert when the device
+has made a state transition and is ready to report a new status
+via i2c.
+
+This change adds a wait for completion in mxt_check_bootloader,
+and changes the mxt_interrupt handler to signal the completion.
+
+Signed-off-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c | 91 ++++++++++++++++++--------------
- 1 file changed, 50 insertions(+), 41 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c | 63 ++++++++++++++++++++++++++++----
+ 1 file changed, 55 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 84f0408..9afc26e 100644
+index be96be3..d0f91ff 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -1111,52 +1111,23 @@ static void mxt_input_close(struct input_dev *dev)
- 	mxt_stop(data);
+@@ -13,6 +13,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/init.h>
++#include <linux/completion.h>
+ #include <linux/delay.h>
+ #include <linux/firmware.h>
+ #include <linux/i2c.h>
+@@ -251,6 +252,9 @@ struct mxt_data {
+ 	u8 T6_reportid;
+ 	u8 T9_reportid_min;
+ 	u8 T9_reportid_max;
++
++	/* for fw update in bootloader */
++	struct completion bl_completion;
+ };
+ 
+ static void mxt_free_object_table(struct mxt_data *data);
+@@ -381,19 +385,58 @@ static int mxt_i2c_transfer(struct i2c_client *client, struct i2c_msg *msgs,
+ 	return ret;
  }
  
--static int mxt_probe(struct i2c_client *client,
--		const struct i2c_device_id *id)
-+static int mxt_input_dev_create(struct mxt_data *data)
+-static int mxt_check_bootloader(struct i2c_client *client,
+-				     unsigned int state)
++static int mxt_wait_for_chg(struct mxt_data *data, unsigned int timeout_ms)
  {
--	const struct mxt_platform_data *pdata = client->dev.platform_data;
--	struct mxt_data *data;
- 	struct input_dev *input_dev;
- 	int error;
- 	unsigned int num_mt_slots;
- 
--	if (!pdata)
--		return -EINVAL;
--
--	data = kzalloc(sizeof(struct mxt_data), GFP_KERNEL);
--	if (!data) {
--		dev_err(&client->dev, "Failed to allocate memory\n");
-+	data->input_dev = input_dev = input_allocate_device();
-+	if (!input_dev)
- 		return -ENOMEM;
--	}
--
--	input_dev = input_allocate_device();
--	if (!input_dev) {
--		dev_err(&client->dev, "Failed to allocate memory\n");
--		error = -ENOMEM;
--		goto err_free_mem;
--	}
- 
- 	input_dev->name = "Atmel maXTouch Touchscreen";
--	snprintf(data->phys, sizeof(data->phys), "i2c-%u-%04x/input0",
--		 client->adapter->nr, client->addr);
- 	input_dev->phys = data->phys;
--
- 	input_dev->id.bustype = BUS_I2C;
--	input_dev->dev.parent = &client->dev;
-+	input_dev->dev.parent = &data->client->dev;
- 	input_dev->open = mxt_input_open;
- 	input_dev->close = mxt_input_close;
- 
--	data->client = client;
--	data->input_dev = input_dev;
--	data->pdata = pdata;
--	data->irq = client->irq;
--
--	mxt_calc_resolution(data);
--
--	error = mxt_initialize(data);
--	if (error)
--		goto err_free_mem;
--
- 	__set_bit(EV_ABS, input_dev->evbit);
- 	__set_bit(EV_KEY, input_dev->evbit);
- 	__set_bit(BTN_TOUCH, input_dev->keybit);
-@@ -1172,10 +1143,8 @@ static int mxt_probe(struct i2c_client *client,
- 	/* For multi touch */
- 	num_mt_slots = data->T9_reportid_max - data->T9_reportid_min + 1;
- 	error = input_mt_init_slots(input_dev, num_mt_slots, 0);
--	if (error) {
--		input_free_device(input_dev);
--		goto err_free_object;
--	}
-+	if (error)
-+		goto err_free_device;
- 
- 	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR,
- 			     0, MXT_MAX_AREA, 0, 0);
-@@ -1187,14 +1156,54 @@ static int mxt_probe(struct i2c_client *client,
- 			     0, 255, 0, 0);
- 
- 	input_set_drvdata(input_dev, data);
--	i2c_set_clientdata(client, data);
- 
- 	error = input_register_device(input_dev);
--	if (error) {
--		input_free_device(input_dev);
--		goto err_free_object;
-+	if (error)
-+		goto err_free_device;
++	struct device *dev = &data->client->dev;
++	struct completion *comp = &data->bl_completion;
++	unsigned long timeout = msecs_to_jiffies(timeout_ms);
++	long ret;
 +
++	ret = wait_for_completion_interruptible_timeout(comp, timeout);
++	if (ret < 0) {
++		dev_err(dev, "Wait for completion interrupted.\n");
++		/*
++		 * TODO: handle -EINTR better by terminating fw update process
++		 * before returning to userspace by writing length 0x000 to
++		 * device (iff we are in WAITING_FRAME_DATA state).
++		 */
++		return -EINTR;
++	} else if (ret == 0) {
++		dev_err(dev, "Wait for completion timed out.\n");
++		return -ETIMEDOUT;
++	}
 +	return 0;
-+
-+err_free_device:
-+	input_free_device(data->input_dev);
-+	data->input_dev = NULL;
-+	return error;
 +}
 +
-+static int __devinit mxt_probe(struct i2c_client *client,
-+		const struct i2c_device_id *id)
++static int mxt_check_bootloader(struct mxt_data *data, unsigned int state)
 +{
-+	const struct mxt_platform_data *pdata = client->dev.platform_data;
-+	struct mxt_data *data;
-+	int error;
++	struct i2c_client *client = data->client;
+ 	u8 val;
+ 	int ret;
+ 
+ recheck:
++	if (state != MXT_WAITING_BOOTLOAD_CMD) {
++		/*
++		 * In application update mode, the interrupt
++		 * line signals state transitions. We must wait for the
++		 * CHG assertion before reading the status byte.
++		 * Once the status byte has been read, the line is deasserted.
++		 */
++		int ret = mxt_wait_for_chg(data, 300);
++		if (ret) {
++			dev_err(&client->dev, "Update wait error %d\n", ret);
++			return ret;
++		}
++	}
 +
-+	if (!pdata)
-+		return -EINVAL;
-+
-+	data = kzalloc(sizeof(struct mxt_data), GFP_KERNEL);
-+	if (!data) {
-+		dev_err(&client->dev, "Failed to allocate memory\n");
-+		return -ENOMEM;
+ 	ret = mxt_i2c_recv(client, &val, 1);
+ 	if (ret)
+ 		return ret;
+ 
+ 	switch (state) {
+ 	case MXT_WAITING_BOOTLOAD_CMD:
++		dev_info(&client->dev, "bootloader version: %d\n",
++			 val & MXT_BOOT_STATUS_MASK);
+ 	case MXT_WAITING_FRAME_DATA:
+ 		val &= ~MXT_BOOT_STATUS_MASK;
+ 		break;
+@@ -672,8 +715,11 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 	u8 reportid;
+ 	bool update_input = false;
+ 
+-	if (mxt_in_bootloader(data))
++	if (mxt_in_bootloader(data)) {
++		/* bootloader state transition completion */
++		complete(&data->bl_completion);
+ 		goto end;
++	}
+ 
+ 	do {
+ 		if (mxt_read_message(data, &message)) {
+@@ -1072,18 +1118,18 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 		goto out;
  	}
  
-+	snprintf(data->phys, sizeof(data->phys), "i2c-%u-%04x/input0",
-+		 client->adapter->nr, client->addr);
+-	ret = mxt_check_bootloader(client, MXT_WAITING_BOOTLOAD_CMD);
++	ret = mxt_check_bootloader(data, MXT_WAITING_BOOTLOAD_CMD);
+ 	if (ret)
+ 		goto out;
+ 
++	INIT_COMPLETION(data->bl_completion);
+ 	/* Unlock bootloader */
+ 	ret = mxt_unlock_bootloader(client);
+ 	if (ret)
+ 		goto out;
+ 
+ 	while (pos < fw->size) {
+-		ret = mxt_check_bootloader(client,
+-						MXT_WAITING_FRAME_DATA);
++		ret = mxt_check_bootloader(data, MXT_WAITING_FRAME_DATA);
+ 		if (ret)
+ 			goto out;
+ 
+@@ -1099,8 +1145,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 		if (ret)
+ 			goto out;
+ 
+-		ret = mxt_check_bootloader(client,
+-						MXT_FRAME_CRC_PASS);
++		ret = mxt_check_bootloader(data, MXT_FRAME_CRC_PASS);
+ 		if (ret)
+ 			goto out;
+ 
+@@ -1264,6 +1309,8 @@ static int __devinit mxt_probe(struct i2c_client *client,
+ 	data->pdata = pdata;
+ 	data->irq = client->irq;
+ 
++	init_completion(&data->bl_completion);
 +
-+	data->client = client;
-+	i2c_set_clientdata(client, data);
-+
-+	data->pdata = pdata;
-+	data->irq = client->irq;
-+
-+	mxt_calc_resolution(data);
-+
-+	error = mxt_initialize(data);
-+	if (error)
-+		goto err_free_mem;
-+
-+	error = mxt_input_dev_create(data);
-+	if (error)
-+		goto err_free_object;
-+
- 	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
- 				     pdata->irqflags | IRQF_ONESHOT,
- 				     client->name, data);
+ 	mxt_calc_resolution(data);
+ 
+ 	if (mxt_in_bootloader(data)) {
 -- 
 1.8.1
 
