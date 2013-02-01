@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3BAMzd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 07:55:33 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:44565 "EHLO relay.sw.ru"
+	id S1756750Ab3BAMzk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:55:40 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:38408 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756058Ab3BAMz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 07:55:27 -0500
-Subject: [PATCH 3/4] nfsd: disable usermode helper client tracker in container
+	id S1756613Ab3BAMzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 07:55:33 -0500
+Subject: [PATCH 4/4] nfsd: enable NFSv4 state in containers
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 01 Feb 2013 15:56:22 +0300
-Message-ID: <20130201125622.3257.22985.stgit@localhost.localdomain>
+Date: Fri, 01 Feb 2013 15:56:27 +0300
+Message-ID: <20130201125627.3257.33391.stgit@localhost.localdomain>
 In-Reply-To: <20130201125210.3257.46454.stgit@localhost.localdomain>
 References: <20130201125210.3257.46454.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,34 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This tracker uses khelper kthread to execute binaries.
-Execution itself is done from kthread context - i.e. global root is used.
-This is not suitable for containers with own root.
-So, disable this tracker for a while.
-
-Note: one of possible solutions can be pass "init" callback to khelper, which
-will swap root to desired one.
+Currently, NFSd is ready to operate in network namespace based containers.
+So let's drop check for "init_net" and make it able to fly.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/nfs4recover.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ fs/nfsd/nfs4state.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-index ba6fdd4..e0ae1cf 100644
---- a/fs/nfsd/nfs4recover.c
-+++ b/fs/nfsd/nfs4recover.c
-@@ -1185,6 +1185,12 @@ bin_to_hex_dup(const unsigned char *src, int srclen)
- static int
- nfsd4_umh_cltrack_init(struct net __attribute__((unused)) *net)
- {
-+	/* XXX: The usermode helper s not working in container yet. */
-+	if (net != &init_net) {
-+		WARN(1, KERN_ERR "NFSD: attempt to initialize umh client "
-+			"tracking in a container!\n");
-+		return -EINVAL;
-+	}
- 	return nfsd4_umh_cltrack_upcall("init", NULL, NULL);
- }
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 4db46aa..b7e2bc4 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -4914,16 +4914,6 @@ nfs4_state_start_net(struct net *net)
+ 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 	int ret;
  
+-	/*
+-	 * FIXME: For now, we hang most of the pernet global stuff off of
+-	 * init_net until nfsd is fully containerized. Eventually, we'll
+-	 * need to pass a net pointer into this function, take a reference
+-	 * to that instead and then do most of the rest of this on a per-net
+-	 * basis.
+-	 */
+-	if (net != &init_net)
+-		return -EINVAL;
+-
+ 	ret = nfs4_state_create_net(net);
+ 	if (ret)
+ 		return ret;
 
