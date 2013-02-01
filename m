@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab3BANK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:10:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44902 "EHLO mail.kernel.org"
+	id S1757386Ab3BANLI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:11:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44924 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757168Ab3BANKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:10:53 -0500
+	id S1757168Ab3BANLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:11:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 37/89] ath9k: remove the WARN_ON that triggers if generating a beacon fails
-Date: Fri,  1 Feb 2013 14:07:52 +0100
-Message-Id: <20130201130210.190538413@linuxfoundation.org>
+Subject: [ 39/89] ath9k: fix rx flush handling
+Date: Fri,  1 Feb 2013 14:07:54 +0100
+Message-Id: <20130201130210.330784948@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -28,29 +28,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felix Fietkau <nbd@openwrt.org>
 
-commit 3adcf20afb585993ffee24de36d1975f6b26b120 upstream.
+commit 4b883f021b9ccf2df3d14425e6e610281fb6a35e upstream.
 
-During teardown, mac80211 will not return a new beacon. This is normal and
-handled properly in the driver, so there's no need to spam the user with a kernel
-warning here.
+Right now the rx flush is not doing anything useful on AR9003+, as it only
+works if the buffers in the rx FIFO have not been purged yet, as is done
+by ath_stoprecv.
+
+To fix this, always call ath_flushrecv from within ath_stoprecv before
+the FIFO is emptied, but still after the hw receive path has been stopped.
+
+This ensures that frames received (and ACKed by the hardware) shortly before
+a reset will be seen by the software, which should improve A-MPDU session
+stability.
 
 Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/beacon.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/ath9k.h |    1 -
+ drivers/net/wireless/ath/ath9k/main.c  |   16 +++-------------
+ drivers/net/wireless/ath/ath9k/recv.c  |   16 +++++++++-------
+ 3 files changed, 12 insertions(+), 21 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/beacon.c
-+++ b/drivers/net/wireless/ath/ath9k/beacon.c
-@@ -360,7 +360,6 @@ void ath9k_beacon_tasklet(unsigned long
- 		return;
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -326,7 +326,6 @@ struct ath_rx {
  
- 	bf = ath9k_beacon_generate(sc->hw, vif);
--	WARN_ON(!bf);
+ int ath_startrecv(struct ath_softc *sc);
+ bool ath_stoprecv(struct ath_softc *sc);
+-void ath_flushrecv(struct ath_softc *sc);
+ u32 ath_calcrxfilter(struct ath_softc *sc);
+ int ath_rx_init(struct ath_softc *sc, int nbufs);
+ void ath_rx_cleanup(struct ath_softc *sc);
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -181,7 +181,7 @@ static void ath_restart_work(struct ath_
+ 	ath_start_ani(sc);
+ }
  
- 	if (sc->beacon.bmisscnt != 0) {
- 		ath_dbg(common, BSTUCK, "resume beacon xmit after %u misses\n",
+-static bool ath_prepare_reset(struct ath_softc *sc, bool retry_tx, bool flush)
++static bool ath_prepare_reset(struct ath_softc *sc, bool retry_tx)
+ {
+ 	struct ath_hw *ah = sc->sc_ah;
+ 	bool ret = true;
+@@ -203,14 +203,6 @@ static bool ath_prepare_reset(struct ath
+ 	if (!ath_drain_all_txq(sc, retry_tx))
+ 		ret = false;
+ 
+-	if (!flush) {
+-		if (ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
+-			ath_rx_tasklet(sc, 1, true);
+-		ath_rx_tasklet(sc, 1, false);
+-	} else {
+-		ath_flushrecv(sc);
+-	}
+-
+ 	tasklet_enable(&sc->intr_tq);
+ 
+ 	return ret;
+@@ -265,7 +257,6 @@ static int ath_reset_internal(struct ath
+ 	struct ath_common *common = ath9k_hw_common(ah);
+ 	struct ath9k_hw_cal_data *caldata = NULL;
+ 	bool fastcc = true;
+-	bool flush = false;
+ 	int r;
+ 
+ 	__ath_cancel_work(sc);
+@@ -279,11 +270,10 @@ static int ath_reset_internal(struct ath
+ 
+ 	if (!hchan) {
+ 		fastcc = false;
+-		flush = true;
+ 		hchan = ah->curchan;
+ 	}
+ 
+-	if (!ath_prepare_reset(sc, retry_tx, flush))
++	if (!ath_prepare_reset(sc, retry_tx))
+ 		fastcc = false;
+ 
+ 	ath_dbg(common, CONFIG, "Reset to %u MHz, HT40: %d fastcc: %d\n",
+@@ -820,7 +810,7 @@ static void ath9k_stop(struct ieee80211_
+ 		ath9k_hw_cfg_gpio_input(ah, ah->led_pin);
+ 	}
+ 
+-	ath_prepare_reset(sc, false, true);
++	ath_prepare_reset(sc, false);
+ 
+ 	if (sc->rx.frag) {
+ 		dev_kfree_skb_any(sc->rx.frag);
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -472,6 +472,13 @@ start_recv:
+ 	return 0;
+ }
+ 
++static void ath_flushrecv(struct ath_softc *sc)
++{
++	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
++		ath_rx_tasklet(sc, 1, true);
++	ath_rx_tasklet(sc, 1, false);
++}
++
+ bool ath_stoprecv(struct ath_softc *sc)
+ {
+ 	struct ath_hw *ah = sc->sc_ah;
+@@ -482,6 +489,8 @@ bool ath_stoprecv(struct ath_softc *sc)
+ 	ath9k_hw_setrxfilter(ah, 0);
+ 	stopped = ath9k_hw_stopdmarecv(ah, &reset);
+ 
++	ath_flushrecv(sc);
++
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
+ 		ath_edma_stop_recv(sc);
+ 	else
+@@ -498,13 +507,6 @@ bool ath_stoprecv(struct ath_softc *sc)
+ 	return stopped && !reset;
+ }
+ 
+-void ath_flushrecv(struct ath_softc *sc)
+-{
+-	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
+-		ath_rx_tasklet(sc, 1, true);
+-	ath_rx_tasklet(sc, 1, false);
+-}
+-
+ static bool ath_beacon_dtim_pending_cab(struct sk_buff *skb)
+ {
+ 	/* Check whether the Beacon frame has DTIM indicating buffered bc/mc */
 
 
