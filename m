@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab3BALSn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 06:18:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56718 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3BALSm (ORCPT
+	id S1030178Ab3BALXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 06:23:17 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:34608 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755941Ab3BALXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 06:18:42 -0500
+	Fri, 1 Feb 2013 06:23:12 -0500
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Philip Avinash <avinashphilip@ti.com>
+Cc: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, nsekhar@ti.com,
+        linux-kernel@vger.kernel.org, vaibhav.bedia@ti.com,
+        gururaja.hebbar@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: dts: AM33XX: Corrects typo in interrupt field in SPI node
+References: <1359697047-1816-1-git-send-email-avinashphilip@ti.com>
+Date: Fri, 01 Feb 2013 12:23:05 +0100
+In-Reply-To: <1359697047-1816-1-git-send-email-avinashphilip@ti.com> (Philip
+	Avinash's message of "Fri, 1 Feb 2013 11:07:27 +0530")
+Message-ID: <8738xg8ehy.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <510B7DC6.10803@jp.fujitsu.com>
-References: <1359688060-12964-1-git-send-email-ming.lei@canonical.com>
-	<510B7DC6.10803@jp.fujitsu.com>
-Date: Fri, 1 Feb 2013 19:18:39 +0800
-Message-ID: <CACVXFVOcRh7oFKNXV8jM8TYw833ErkS=Le9UnZEGAhbRi8=5aA@mail.gmail.com>
-Subject: Re: [PATCH] block: partition: optimize memory allocation in check_partition
-From: Ming Lei <ming.lei@canonical.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Felipe Balbi <balbi@ti.com>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 4:33 PM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
+>>>>> "Philip" == Philip Avinash <avinashphilip@ti.com> writes:
 
-> At least, you should use release_partitions() instead of kfree() here.
+ Philip> DT field of "interrupts" was mentioned wrongly as "interrupt" in SPI
+ Philip> node. This went unnoticed as spi-omap2 driver not making use of
+ Philip> interrupt. Fixes the typo.
 
-Good catch, thank you for pointing it out, and I will post v1 later
-with the update.
+ Philip> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 
-Thanks,
---
-Ming Lei
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+
+-- 
+Bye, Peter Korsgaard
