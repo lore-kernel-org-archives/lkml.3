@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab3BAISW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:18:22 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:63337 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3BAISU (ORCPT
+	id S1755761Ab3BAIVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:21:48 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:47642 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab3BAIVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:18:20 -0500
-Message-ID: <510B7A3C.2070301@synopsys.com>
-Date: Fri, 1 Feb 2013 13:48:04 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 1 Feb 2013 03:21:44 -0500
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: linux-net for ARC port
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com> <5102BB38.3050207@imgtec.com> <201301260025.10020.arnd@arndb.de> <51062460.9060902@synopsys.com> <20130130074452.f67abeeaae3a00d046f5699f@canb.auug.org.au>
-In-Reply-To: <20130130074452.f67abeeaae3a00d046f5699f@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.164]
+Reply-To: sedat.dilek@gmail.com
+Date: Fri, 1 Feb 2013 09:21:43 +0100
+Message-ID: <CA+icZUW5tBotrZT9QtNPao-3rEccohBW8a4diS2nJ+ONgTWLaQ@mail.gmail.com>
+Subject: Re: Revert "console: implement lockdep support for console_lock"
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi Dave,
 
-On Wednesday 30 January 2013 02:14 AM, Stephen Rothwell wrote:
-> Hi Vineet,
->
-> On Mon, 28 Jan 2013 12:40:24 +0530 Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->> Stephen, can you please add the following branch (rebased off 3.8-rc5) to linux-next
->>
->> git://github.com/foss-for-synopsys-dwc-arc-processors/linux.git  arc-next
-> Added from today (though there may not be a linux-next release today).
+people having the fbcon-locking-fixes [1] in their local GIT tree can
+revert this change?
 
-When is the next linux-next release going to happen - I can't see the arc port in
-there yet !
+commit ff0d05bf73620eb7dc8aee7423e992ef87870bdf
+Refs: v3.8-rc5-194-gff0d05b
+Author:     Dave Airlie <airlied@gmail.com>
+AuthorDate: Thu Jan 31 14:27:03 2013 +1100
+Commit:     Dave Airlie <airlied@gmail.com>
+CommitDate: Thu Jan 31 15:46:56 2013 +1100
 
-Thx,
--Vineet
+    Revert "console: implement lockdep support for console_lock"
 
+    This reverts commit daee779718a319ff9f83e1ba3339334ac650bb22.
+
+    I'll requeue this after the console locking fixes, so lockdep
+    is useful again for people until fbcon is fixed.
+
+    Signed-off-by: Dave Airlie <airlied@redhat.com>
+
+Thanks!
+
+Regards,
+- Sedat
+
+[1] http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
