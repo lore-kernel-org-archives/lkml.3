@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab3BAMy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 07:54:28 -0500
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:34418 "EHLO smtp2.it.da.ut.ee"
+	id S1755143Ab3BAMzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:55:18 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:9221 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879Ab3BAMyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 07:54:25 -0500
-X-Greylist: delayed 1764 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Feb 2013 07:54:25 EST
-Date: Fri, 1 Feb 2013 14:24:58 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Alex Deucher <alexander.deucher@amd.com>
-cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Radeon RV100 init fails with specific card+mobo - IRQ problem
-Message-ID: <alpine.SOC.1.00.1302011321220.17427@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1750879Ab3BAMzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 07:55:15 -0500
+Subject: [PATCH v2 0/4] nfsd: make is works in a container
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Fri, 01 Feb 2013 15:56:05 +0300
+Message-ID: <20130201125210.3257.46454.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a test PC with AMD 760MPX chipset (Tyan S2466 Tiger MPX board) 
-and Radeon RV100-based AGP card where radeon KMS modesetting does not 
-work (does not work with any kernel tried so far (2.6.32, 3.2, 3.7, 
-3.8-rc6).
+This patch set finally enables NFSd in container.
+I've tested it in container with it's own root, and also pid, net and mount
+namespaces.
 
->From dmesg with drm.debug=0xc 
+There are some limitations, which are listed below:
+1) only nfsdclt client tracker supported for container. It's deprecated and
+going to be removed soon. UMH tracker requires switching root. Legacy tracker
+requires something like RB tree of opened inodes to make sure, that any
+recovery directory will be opened only once.
+2) Enabled versions are controlled globally (should be fixed).
+3) Server should be stopped by writing "0" to
+/proc/fs/nfsd/threads instead of sending signals to NFSd threads (they are
+working in init_pid). Sending signals will either won't work if container wich
+its own pid namespace, or will kill all nfsd threads for all containers in
+init_pid namesapce.
+4) Currently, if container was stopped without stopping NFS server (i.e. it's
+init was killed), NFSd kthreads will remain running. One of possible solutions
+is to not hold network by NFSd service sockets, but register oer-net callback
+and kill all the threads on network namespace exit.
+5) NFSd filesystem superblock holds network namespace. I.e. if some process
+will hold container's NFSd supeblock, then sthe whole container's network
+naemspace will stay alive even is container is destroyed already.
 
-[    3.209617] agpgart-amdk7 0000:00:00.0: AMD 760MP chipset
-[    3.325408] agpgart-amdk7 0000:00:00.0: AGP aperture is 512M @ 0xc0000000
-[...]
-[    3.529106] [drm] Initialized drm 1.1.0 20060810
-[    3.797715] [drm] radeon defaulting to kernel modesetting.
-[    3.797817] [drm] radeon kernel modesetting enabled.
-[    3.799108] [drm] initializing kernel modesetting (RV100 0x1002:0x5159 0x1787:0x0F02).
-[    3.799277] [drm] register mmio base: 0xB2000000
-[    3.799354] [drm] register mmio size: 65536
-[    3.799629] agpgart-amdk7 0000:00:00.0: AGP 2.0 bridge
-[    3.799718] agpgart-amdk7 0000:00:00.0: putting AGP V2 device into 4x mode
-[    3.799811] radeon 0000:01:05.0: putting AGP V2 device into 4x mode
-[    3.799900] radeon 0000:01:05.0: GTT: 512M 0xC0000000 - 0xDFFFFFFF
-[    3.799985] radeon 0000:01:05.0: VRAM: 128M 0x00000000E0000000 - 0x00000000E7FFFFFF (64M used)
-[    3.800187] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[    3.800268] [drm] Driver supports precise vblank timestamp query.
-[    3.800350] radeon 0000:01:05.0: Fatal error during GPU init
-[    3.800432] [drm] radeon: finishing device.
-[    3.800509] [TTM] Memory type 2 has not been initialized
-[    3.800590] [drm] radeon: cp finalized
-[    3.800756] radeon: probe of 0000:01:05.0 failed with error -22
+There may be more limitations, which are not clear to me yet.
+
+v2:
+1) removed root swap - deprecated
+2) rebased on current tree
+
+The following series implements...
+
+---
+
+Stanislav Kinsbursky (4):
+      nfsd: containerize NFSd filesystem
+      nfsd: use proper net while reading "exports" file
+      nfsd: disable usermode helper client tracker in container
+      nfsd: enable NFSv4 state in containers
 
 
-01:05.0 VGA compatible controller [0300]: Advanced Micro Devices [AMD] nee ATI RV100 QY [Radeon 7000/VE] [1002:5159] (prog-if 00 [VGA controller])
-        Subsystem: Hightech Information System Ltd. Device [1787:0f02]
-        Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping+ SERR- FastB2B+ DisINTx-
-        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Region 0: Memory at e0000000 (32-bit, prefetchable) [size=128M]
-        Region 1: I/O ports at 2000 [size=256]
-        Region 2: Memory at b2000000 (32-bit, non-prefetchable) [size=64K]
-        [virtual] Expansion ROM at b2020000 [disabled] [size=128K]
-        Capabilities: [58] AGP version 2.0
-                Status: RQ=48 Iso- ArqSz=0 Cal=0 SBA+ ITACoh- GART64- HTrans- 64bit- FW- AGP3- Rate=x1,x2,x4
-                Command: RQ=16 ArqSz=0 Cal=0 SBA+ AGP+ GART64- 64bit- FW- Rate=x4
-        Capabilities: [50] Power Management version 2
-                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+ fs/nfsd/nfs4recover.c |    6 ++++
+ fs/nfsd/nfs4state.c   |   10 ------
+ fs/nfsd/nfsctl.c      |   77 +++++++++++++++++++++++++++++++++++++------------
+ fs/nfsd/nfssvc.c      |    5 +--
+ 4 files changed, 66 insertions(+), 32 deletions(-)
 
-Adding some printks reveals it calls
-r100_init() -> radeon_irq_kms_init() -> drm_irq_install() -> 
-drm_dev_to_irq() and that fails. So no IRQ, no KMS.
-
-lspci does not show Interrupt like on some other PCI devices. 
-/proc/interrupts obviously does not contain the irq since we do not 
-register any yet.
-
-There is no BIOS option of "Enable IRQ for VGA" or similar (BIOS is 
-latest). Could this be the problem?
-
-What can I do to get KMS working on this computer?
-
--- 
-Meelis Roos (mroos@linux.ee)
