@@ -1,100 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab3BAJHt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:07:49 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:43279 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755626Ab3BAJHj (ORCPT
+	id S1756115Ab3BAJJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:09:18 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:33693 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab3BAJJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:07:39 -0500
-Message-ID: <510B85C7.8030105@tao.ma>
-Date: Fri, 01 Feb 2013 17:07:19 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 04:09:07 -0500
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: How to online remove an error scsi disk from the system?
-References: <510B5CFC.2040801@tao.ma> <510B749E.8020501@acm.org>
-In-Reply-To: <510B749E.8020501@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAKMK7uEFCm5JPD9bg4uO9K_q-w0=9GWzRLoB9H-_=ZR7NxA9=A@mail.gmail.com>
+References: <CA+icZUW5tBotrZT9QtNPao-3rEccohBW8a4diS2nJ+ONgTWLaQ@mail.gmail.com>
+	<CAKMK7uEFCm5JPD9bg4uO9K_q-w0=9GWzRLoB9H-_=ZR7NxA9=A@mail.gmail.com>
+Date: Fri, 1 Feb 2013 10:09:05 +0100
+Message-ID: <CA+icZUVDGmbozG4mrvJm2gKKQvddhsZ_hym=DpzhX1t-dKxExg@mail.gmail.com>
+Subject: Re: Revert "console: implement lockdep support for console_lock"
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 03:54 PM, Bart Van Assche wrote:
-> On 02/01/13 07:13, Tao Ma wrote:
->>     In our product system, we have several sata disks attached to one
->> machine. So when one of the disk fails, the jbd2(yes, we use ext4) will
->> hang forever and we will get something in /var/log/messages like below.
->> It seems to me that the io sent to the scsi layer is never returned back
->> with -EIO which is a little bit surprised for me(It should be a timeout
->> somewhere, right?). We have tried echo "offline" >
->> /sys/block/sdl/device/state, but it doesn't work. So is there any way
->> for us to let the scsi device returns all the io requests back with EIO
->> so that all the end_io can be called accordingly? Am I missing something
->> here?
-> 
-> Please note that I'm not familiar with SAS. But I found this in
-> drivers/scsi/scsi_proc.c:
-> 
->  * proc_scsi_write - handle writes to /proc/scsi/scsi
->  * @file: not used
->  * @buf: buffer to write
->  * @length: length of buf, at most PAGE_SIZE
->  * @ppos: not used
->  *
->  * Description: this provides a legacy mechanism to add or remove
->  * devices by Host, Channel, ID, and Lun.  To use,
->  * "echo 'scsi add-single-device 0 1 2 3' > /proc/scsi/scsi" or
->  * "echo 'scsi remove-single-device 0 1 2 3' > /proc/scsi/scsi" with
->  * "0 1 2 3" replaced by the Host, Channel, Id, and Lun.
-Sorry, it doesn't work since it will also send some IOs to the scsi. And
-it hangs...
+On Fri, Feb 1, 2013 at 9:42 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> On Fri, Feb 1, 2013 at 9:21 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> people having the fbcon-locking-fixes [1] in their local GIT tree can
+>> revert this change?
+>
+> Yeah, if you have all the fixes reverting this is fine and appreciated
+> to increase testing. Dave will probably push the revert himself to
+> drm-next soon.
 
-bash          D 0000000000000000     0 57479  57477 0x00000000
- ffff8817fee2dba0 0000000000000086 0000000000000000 0000000000000002
- ffffffff817c4ed5 0000000000015f40 ffff88180c7e45f8 ffff88180c7e4040
- ffffffff81a2d020 ffff88180c7e45f8 000000010fa4af09 0000000000000004
-Call Trace:
- [<ffffffff8123eecf>] ? string+0x3f/0xd0
- [<ffffffff8123fdc2>] ? vsnprintf+0x242/0x580
- [<ffffffff811a0b14>] ? fsnotify_clear_marks_by_inode+0x34/0xf0
- [<ffffffff811d33c0>] ? sysfs_delete_inode+0x0/0x60
- [<ffffffff814aa5c5>] rwsem_down_failed_common+0x95/0x1c0
- [<ffffffff814aa746>] rwsem_down_read_failed+0x26/0x30
- [<ffffffff81241814>] call_rwsem_down_read_failed+0x14/0x30
- [<ffffffff812385a0>] ? kobject_release+0x0/0x1f0
- [<ffffffff814a9cd4>] ? down_read+0x24/0x30
- [<ffffffff81167794>] get_super+0x74/0xc0
- [<ffffffff8119aa9e>] fsync_bdev+0x1e/0x60
- [<ffffffff812253ce>] invalidate_partition+0x2e/0x60
- [<ffffffff811d0bfe>] del_gendisk+0x3e/0x130
- [<ffffffff813070da>] ? device_del+0x16a/0x1a0
- [<ffffffff8132f437>] sd_remove+0x67/0xb0
- [<ffffffff8130adcf>] __device_release_driver+0x6f/0xe0
- [<ffffffff8130ae6d>] device_release_driver+0x2d/0x40
- [<ffffffff8130a723>] bus_remove_device+0x83/0xe0
- [<ffffffff8130709f>] device_del+0x12f/0x1a0
- [<ffffffff8132a7f5>] __scsi_remove_device+0xa5/0xb0
- [<ffffffff8132a830>] scsi_remove_device+0x30/0x50
- [<ffffffff8132cc3f>] proc_scsi_write+0x23f/0x280
- [<ffffffff81182869>] ? mntput_no_expire+0x39/0xd0
- [<ffffffff811c482f>] proc_reg_write+0x7f/0xc0
- [<ffffffff81165c6c>] vfs_write+0xcc/0x1a0
- [<ffffffff81165e25>] sys_write+0x55/0x90
- [<ffffffff8100b032>] system_call_fastpath+0x16/0x1b
+[ CCing Ingo ]
 
+The revert is now in -rc6.
 
-Thanks,
-Tao
-> 
-> Bart.
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Hmmm, I have here...
 
+     CONFIG_LOCKDEP_SUPPORT=y
+
+Excerpts from the revert [1]:
+[...]
+-#ifdef CONFIG_LOCKDEP
+-static struct lockdep_map console_lock_dep_map = {
+-       .name = "console_lock"
+-};
+-#endif
+[...]
+
+Checking for CONFIG_LOCKDEP ...
+
+[ lib/Kconfig.debug ]
+...
+config LOCKDEP
+        bool
+        depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT &&
+STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+        select STACKTRACE
+        select FRAME_POINTER if !MIPS && !PPC && !ARM_UNWIND && !S390
+&& !MICROBLAZE
+        select KALLSYMS
+        select KALLSYMS_ALL
+...
+
+---> No help text.
+---> Missing pointer to <file:Documentation/lockdep-design.txt>.
+
+[ arch/x86/Kconfig ]
+...
+config LOCKDEP_SUPPORT
+        def_bool y
+...
+
+I would have expected a check for CONFIG_LOCKDEP_SUPPORT.
+This is BTW with Linux v3.8-rc5!
+
+- Sedat -
+
+[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=ff0d05bf73620eb7dc8aee7423e992ef87870bdf
+[2] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=Documentation/lockdep-design.txt
+
+> -Daniel
+>
+>>
+>> commit ff0d05bf73620eb7dc8aee7423e992ef87870bdf
+>> Refs: v3.8-rc5-194-gff0d05b
+>> Author:     Dave Airlie <airlied@gmail.com>
+>> AuthorDate: Thu Jan 31 14:27:03 2013 +1100
+>> Commit:     Dave Airlie <airlied@gmail.com>
+>> CommitDate: Thu Jan 31 15:46:56 2013 +1100
+>>
+>>     Revert "console: implement lockdep support for console_lock"
+>>
+>>     This reverts commit daee779718a319ff9f83e1ba3339334ac650bb22.
+>>
+>>     I'll requeue this after the console locking fixes, so lockdep
+>>     is useful again for people until fbcon is fixed.
+>>
+>>     Signed-off-by: Dave Airlie <airlied@redhat.com>
+>>
+>> Thanks!
+>>
+>> Regards,
+>> - Sedat
+>>
+>> [1] http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
+>
+>
+>
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
