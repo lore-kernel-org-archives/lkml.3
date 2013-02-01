@@ -1,118 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab3BAFoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 00:44:07 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:46811 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab3BAFoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 00:44:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <d9de945975ad2064693275335b4022c8efd013e3.1359697315.git.viresh.kumar@linaro.org>
-References: <d9de945975ad2064693275335b4022c8efd013e3.1359697315.git.viresh.kumar@linaro.org>
-Date: Fri, 1 Feb 2013 11:14:03 +0530
-Message-ID: <CAKohpon8=u2vxNFG0dBJbfpEiu_6kfEQUJyjecw1TxuL6O8WvQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: governors: Reset tunables only for cpufreq_unregister_governor()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        fabio.baltieri@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: multipart/mixed; boundary=f46d04478a8924dbed04d4a33b4d
+	id S1755396Ab3BAFoO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 00:44:14 -0500
+Received: from mga01.intel.com ([192.55.52.88]:55431 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753872Ab3BAFoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 00:44:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
+   d="scan'208";a="285161958"
+Message-ID: <1359697446.2241.95.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] Thermal: Fix to use read critical temperature when
+ required
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        durgadoss.r@intel.com
+Date: Fri, 01 Feb 2013 13:44:06 +0800
+In-Reply-To: <1357690739-17009-1-git-send-email-amit.daniel@samsung.com>
+References: <1357690739-17009-1-git-send-email-amit.daniel@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d04478a8924dbed04d4a33b4d
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, 2013-01-08 at 16:18 -0800, Amit Daniel Kachhap wrote:
+> This patch modifies the code to use get_crit_temp instead of
+> the normal get_trip_temp when critical threshold point is crossed
+> or queried about.
+> 
 
-On 1 February 2013 11:12, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Currently, whenever governor->governor() is called for CPUFRREQ_GOV_START event
-> we reset few tunables of governor. Which isn't correct, as this routine is
-> called for every cpu hot-[un]plugging event. We should actually be resetting
-> these only when the governor module is removed and re-installed.
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+is there any problem in the current code?
 
-ARM Mails are broken, please apply attached patch.
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>  drivers/thermal/thermal_sys.c |   15 +++++++++++++--
+>  1 file changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index ecdfc7d..0dc6403 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -345,7 +345,10 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
+>  {
+>  	long trip_temp;
+>  
+> -	tz->ops->get_trip_temp(tz, trip, &trip_temp);
+> +	if (tz->ops->get_crit_temp)
+> +		tz->ops->get_crit_temp(tz, &trip_temp);
+> +	else
+> +		tz->ops->get_trip_temp(tz, trip, &trip_temp);
+>  
+handle_critical_trips() can handle both active and hot trip points.
+this change will break HOT trip point.
 
---f46d04478a8924dbed04d4a33b4d
-Content-Type: application/octet-stream; 
-	name="0001-cpufreq-governors-Reset-tunables-only-for-cpufreq_un.patch"
-Content-Disposition: attachment; 
-	filename="0001-cpufreq-governors-Reset-tunables-only-for-cpufreq_un.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hcmwqtp60
+>  	/* If we have not crossed the trip_temp, we do not care. */
+>  	if (tz->temperature < trip_temp)
+> @@ -550,6 +553,7 @@ trip_point_temp_show(struct device *dev, struct device_attribute *attr,
+>  	struct thermal_zone_device *tz = to_thermal_zone(dev);
+>  	int trip, ret;
+>  	long temperature;
+> +	enum thermal_trip_type type;
+>  
+>  	if (!tz->ops->get_trip_temp)
+>  		return -EPERM;
+> @@ -557,7 +561,14 @@ trip_point_temp_show(struct device *dev, struct device_attribute *attr,
+>  	if (!sscanf(attr->attr.name, "trip_point_%d_temp", &trip))
+>  		return -EINVAL;
+>  
+> -	ret = tz->ops->get_trip_temp(tz, trip, &temperature);
+> +	ret = tz->ops->get_trip_type(tz, trip, &type);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (type == THERMAL_TRIP_CRITICAL && tz->ops->get_crit_temp)
+> +		ret = tz->ops->get_crit_temp(tz, &temperature);
+> +	else
+> +		ret = tz->ops->get_trip_temp(tz, trip, &temperature);
+>  
 
-RnJvbSBkOWRlOTQ1OTc1YWQyMDY0NjkzMjc1MzM1YjQwMjJjOGVmZDAxM2UzIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8ZDlkZTk0NTk3NWFkMjA2NDY5MzI3NTMzNWI0MDIy
-YzhlZmQwMTNlMy4xMzU5Njk3MzE1LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
-VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogRnJpLCAxIEZlYiAy
-MDEzIDEwOjM2OjIzICswNTMwClN1YmplY3Q6IFtQQVRDSF0gY3B1ZnJlcTogZ292ZXJub3JzOiBS
-ZXNldCB0dW5hYmxlcyBvbmx5IGZvcgogY3B1ZnJlcV91bnJlZ2lzdGVyX2dvdmVybm9yKCkKCkN1
-cnJlbnRseSwgd2hlbmV2ZXIgZ292ZXJub3ItPmdvdmVybm9yKCkgaXMgY2FsbGVkIGZvciBDUFVG
-UlJFUV9HT1ZfU1RBUlQgZXZlbnQKd2UgcmVzZXQgZmV3IHR1bmFibGVzIG9mIGdvdmVybm9yLiBX
-aGljaCBpc24ndCBjb3JyZWN0LCBhcyB0aGlzIHJvdXRpbmUgaXMKY2FsbGVkIGZvciBldmVyeSBj
-cHUgaG90LVt1bl1wbHVnZ2luZyBldmVudC4gV2Ugc2hvdWxkIGFjdHVhbGx5IGJlIHJlc2V0dGlu
-Zwp0aGVzZSBvbmx5IHdoZW4gdGhlIGdvdmVybm9yIG1vZHVsZSBpcyByZW1vdmVkIGFuZCByZS1p
-bnN0YWxsZWQuCgpTaWduZWQtb2ZmLWJ5OiBWaXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5h
-cm8ub3JnPgotLS0KIGRyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMgICAgICAgICAgfCAgNCArKysr
-CiBkcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcV9nb3Zlcm5vci5jIHwgMjQgKysrKysrKysrKysrKysr
-Ky0tLS0tLS0tCiBpbmNsdWRlL2xpbnV4L2NwdWZyZXEuaCAgICAgICAgICAgIHwgIDEgKwogMyBm
-aWxlcyBjaGFuZ2VkLCAyMSBpbnNlcnRpb25zKCspLCA4IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdp
-dCBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMgYi9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcS5j
-CmluZGV4IDhkNTIxNDIyLi45NjU2NDIwIDEwMDY0NAotLS0gYS9kcml2ZXJzL2NwdWZyZXEvY3B1
-ZnJlcS5jCisrKyBiL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMKQEAgLTE1NjEsNiArMTU2MSw5
-IEBAIHN0YXRpYyBpbnQgX19jcHVmcmVxX2dvdmVybm9yKHN0cnVjdCBjcHVmcmVxX3BvbGljeSAq
-cG9saWN5LAogCQkJCQkJcG9saWN5LT5jcHUsIGV2ZW50KTsKIAlyZXQgPSBwb2xpY3ktPmdvdmVy
-bm9yLT5nb3Zlcm5vcihwb2xpY3ksIGV2ZW50KTsKIAorCWlmICghcG9saWN5LT5nb3Zlcm5vci0+
-aW5pdGlhbGl6ZWQgJiYgKGV2ZW50ID09IENQVUZSRVFfR09WX1NUQVJUKSkKKwkJcG9saWN5LT5n
-b3Zlcm5vci0+aW5pdGlhbGl6ZWQgPSAxOworCiAJLyogd2Uga2VlcCBvbmUgbW9kdWxlIHJlZmVy
-ZW5jZSBhbGl2ZSBmb3IKIAkJCWVhY2ggQ1BVIGdvdmVybmVkIGJ5IHRoaXMgQ1BVICovCiAJaWYg
-KChldmVudCAhPSBDUFVGUkVRX0dPVl9TVEFSVCkgfHwgcmV0KQpAQCAtMTU4NCw2ICsxNTg3LDcg
-QEAgaW50IGNwdWZyZXFfcmVnaXN0ZXJfZ292ZXJub3Ioc3RydWN0IGNwdWZyZXFfZ292ZXJub3Ig
-KmdvdmVybm9yKQogCiAJbXV0ZXhfbG9jaygmY3B1ZnJlcV9nb3Zlcm5vcl9tdXRleCk7CiAKKwln
-b3Zlcm5vci0+aW5pdGlhbGl6ZWQgPSAwOwogCWVyciA9IC1FQlVTWTsKIAlpZiAoX19maW5kX2dv
-dmVybm9yKGdvdmVybm9yLT5uYW1lKSA9PSBOVUxMKSB7CiAJCWVyciA9IDA7CmRpZmYgLS1naXQg
-YS9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcV9nb3Zlcm5vci5jIGIvZHJpdmVycy9jcHVmcmVxL2Nw
-dWZyZXFfZ292ZXJub3IuYwppbmRleCA3YWFhOWIxLi43OTc5NWM0IDEwMDY0NAotLS0gYS9kcml2
-ZXJzL2NwdWZyZXEvY3B1ZnJlcV9nb3Zlcm5vci5jCisrKyBiL2RyaXZlcnMvY3B1ZnJlcS9jcHVm
-cmVxX2dvdmVybm9yLmMKQEAgLTI1NCwxMSArMjU0LDYgQEAgaW50IGNwdWZyZXFfZ292ZXJub3Jf
-ZGJzKHN0cnVjdCBkYnNfZGF0YSAqZGJzX2RhdGEsCiAJCQlyZXR1cm4gcmM7CiAJCX0KIAotCQkv
-KiBwb2xpY3kgbGF0ZW5jeSBpcyBpbiBuUy4gQ29udmVydCBpdCB0byB1UyBmaXJzdCAqLwotCQls
-YXRlbmN5ID0gcG9saWN5LT5jcHVpbmZvLnRyYW5zaXRpb25fbGF0ZW5jeSAvIDEwMDA7Ci0JCWlm
-IChsYXRlbmN5ID09IDApCi0JCQlsYXRlbmN5ID0gMTsKLQogCQkvKgogCQkgKiBjb25zZXJ2YXRp
-dmUgZG9lcyBub3QgaW1wbGVtZW50IG1pY3JvIGxpa2Ugb25kZW1hbmQKIAkJICogZ292ZXJub3Is
-IHRodXMgd2UgYXJlIGJvdW5kIHRvIGppZmZlcy9IWgpAQCAtMjcwLDIwICsyNjUsMzMgQEAgaW50
-IGNwdWZyZXFfZ292ZXJub3JfZGJzKHN0cnVjdCBkYnNfZGF0YSAqZGJzX2RhdGEsCiAJCQljcHVm
-cmVxX3JlZ2lzdGVyX25vdGlmaWVyKGNzX29wcy0+bm90aWZpZXJfYmxvY2ssCiAJCQkJCUNQVUZS
-RVFfVFJBTlNJVElPTl9OT1RJRklFUik7CiAKLQkJCWRic19kYXRhLT5taW5fc2FtcGxpbmdfcmF0
-ZSA9IE1JTl9TQU1QTElOR19SQVRFX1JBVElPICoKLQkJCQlqaWZmaWVzX3RvX3VzZWNzKDEwKTsK
-KwkJCWlmICghcG9saWN5LT5nb3Zlcm5vci0+aW5pdGlhbGl6ZWQpCisJCQkJZGJzX2RhdGEtPm1p
-bl9zYW1wbGluZ19yYXRlID0KKwkJCQkJTUlOX1NBTVBMSU5HX1JBVEVfUkFUSU8gKgorCQkJCQlq
-aWZmaWVzX3RvX3VzZWNzKDEwKTsKIAkJfSBlbHNlIHsKIAkJCW9kX2Ric19pbmZvLT5yYXRlX211
-bHQgPSAxOwogCQkJb2RfZGJzX2luZm8tPnNhbXBsZV90eXBlID0gT0RfTk9STUFMX1NBTVBMRTsK
-IAkJCW9kX29wcy0+cG93ZXJzYXZlX2JpYXNfaW5pdF9jcHUoY3B1KTsKLQkJCW9kX3R1bmVycy0+
-aW9faXNfYnVzeSA9IG9kX29wcy0+aW9fYnVzeSgpOworCisJCQlpZiAoIXBvbGljeS0+Z292ZXJu
-b3ItPmluaXRpYWxpemVkKQorCQkJCW9kX3R1bmVycy0+aW9faXNfYnVzeSA9IG9kX29wcy0+aW9f
-YnVzeSgpOwogCQl9CiAKKwkJaWYgKHBvbGljeS0+Z292ZXJub3ItPmluaXRpYWxpemVkKQorCQkJ
-Z290byB1bmxvY2s7CisKKwkJLyogcG9saWN5IGxhdGVuY3kgaXMgaW4gblMuIENvbnZlcnQgaXQg
-dG8gdVMgZmlyc3QgKi8KKwkJbGF0ZW5jeSA9IHBvbGljeS0+Y3B1aW5mby50cmFuc2l0aW9uX2xh
-dGVuY3kgLyAxMDAwOworCQlpZiAobGF0ZW5jeSA9PSAwKQorCQkJbGF0ZW5jeSA9IDE7CisKIAkJ
-LyogQnJpbmcga2VybmVsIGFuZCBIVyBjb25zdHJhaW50cyB0b2dldGhlciAqLwogCQlkYnNfZGF0
-YS0+bWluX3NhbXBsaW5nX3JhdGUgPSBtYXgoZGJzX2RhdGEtPm1pbl9zYW1wbGluZ19yYXRlLAog
-CQkJCU1JTl9MQVRFTkNZX01VTFRJUExJRVIgKiBsYXRlbmN5KTsKIAkJKnNhbXBsaW5nX3JhdGUg
-PSBtYXgoZGJzX2RhdGEtPm1pbl9zYW1wbGluZ19yYXRlLCBsYXRlbmN5ICoKIAkJCQlMQVRFTkNZ
-X01VTFRJUExJRVIpOwordW5sb2NrOgogCQltdXRleF91bmxvY2soJmRic19kYXRhLT5tdXRleCk7
-CiAKIAkJLyogSW5pdGlhdGUgdGltZXIgdGltZSBzdGFtcCAqLwpkaWZmIC0tZ2l0IGEvaW5jbHVk
-ZS9saW51eC9jcHVmcmVxLmggYi9pbmNsdWRlL2xpbnV4L2NwdWZyZXEuaAppbmRleCBmZWIzNjBj
-Li42YmYzZjJkIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2NwdWZyZXEuaAorKysgYi9pbmNs
-dWRlL2xpbnV4L2NwdWZyZXEuaApAQCAtMTgzLDYgKzE4Myw3IEBAIHN0YXRpYyBpbmxpbmUgdW5z
-aWduZWQgbG9uZyBjcHVmcmVxX3NjYWxlKHVuc2lnbmVkIGxvbmcgb2xkLCB1X2ludCBkaXYsIHVf
-aW50IG11CiAKIHN0cnVjdCBjcHVmcmVxX2dvdmVybm9yIHsKIAljaGFyCW5hbWVbQ1BVRlJFUV9O
-QU1FX0xFTl07CisJaW50CWluaXRpYWxpemVkOwogCWludAkoKmdvdmVybm9yKQkoc3RydWN0IGNw
-dWZyZXFfcG9saWN5ICpwb2xpY3ksCiAJCQkJIHVuc2lnbmVkIGludCBldmVudCk7CiAJc3NpemVf
-dAkoKnNob3dfc2V0c3BlZWQpCShzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSwKLS0gCjEu
-Ny4xMi5yYzIuMTguZzYxYjQ3MmUKCg==
---f46d04478a8924dbed04d4a33b4d--
+what's the benefit of using .get_crit_temp() instead of .get_trip_temp()
+for CRITICAL trip points here?
+.get_trip_point can also get the critical trip point temperature.
+
+instead, I think we could remove .get_crit_temp callback.
+for hwmon sysfs, we just need to use get_trip_type to find the critical
+trip point.
+
+thanks,
+rui
+
