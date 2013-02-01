@@ -1,224 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab3BABdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 20:33:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:28066 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639Ab3BABdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 20:33:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="279408946"
-From: "Li, Fei" <fei.li@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        anish singh <anish198519851985@gmail.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: RE: [PATCH V3] suspend: enable freeze timeout configuration through
- sys
-Thread-Topic: [PATCH V3] suspend: enable freeze timeout configuration
- through sys
-Thread-Index: AQHN/29vZoB86dySZ064bV7yEexaV5hihHEAgACZg4D//45ogIAA04AAgACwmlA=
-Date: Fri, 1 Feb 2013 01:33:28 +0000
-Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE36343F0F00@SHSMSX102.ccr.corp.intel.com>
-References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <BEC9F67575FA1E429CA7CF5AE9BE36343F0D19@SHSMSX102.ccr.corp.intel.com>
- <CAK7N6vpdmLv-G3q-m9nbWs1jV-s=k9c4gQ-wKOZsMGZrm4AhVw@mail.gmail.com>
- <1503699.1Mx8Tt0bYE@vostro.rjw.lan>
-In-Reply-To: <1503699.1Mx8Tt0bYE@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1754156Ab3BABfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 20:35:13 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38494 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab3BABfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 20:35:10 -0500
+Message-ID: <510B1B4B.5080207@huawei.com>
+Date: Fri, 1 Feb 2013 09:32:59 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, <akpm@linux-foundation.org>,
+        <rientjes@google.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <kosaki.motohiro@jp.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <wency@cn.fujitsu.com>,
+        <hpa@zytor.com>, <linfeng@cn.fujitsu.com>, <laijs@cn.fujitsu.com>,
+        <mgorman@suse.de>, <yinghai@kernel.org>, <glommer@parallels.com>,
+        <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
+        <sparclinux@vger.kernel.org>
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>     <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>    <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>   <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>  <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com> <1359628705.2048.5.camel@kernel>
+In-Reply-To: <1359628705.2048.5.camel@kernel>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r111Y34O023262
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Friday, February 01, 2013 6:29 AM
-> To: anish singh; Li, Fei
-> Cc: Yasuaki Ishimatsu; akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
-> linux-pm@vger.kernel.org; Liu, Chuansheng
-> Subject: Re: [PATCH V3] suspend: enable freeze timeout configuration through
-> sys
+On 2013/1/31 18:38, Simon Jeons wrote:
+
+> Hi Tang,
+> On Thu, 2013-01-31 at 17:44 +0800, Tang Chen wrote:
+>> Hi Simon,
+>>
+>> On 01/31/2013 04:48 PM, Simon Jeons wrote:
+>>> Hi Tang,
+>>> On Thu, 2013-01-31 at 15:10 +0800, Tang Chen wrote:
+>>>
+>>> 1. IIUC, there is a button on machine which supports hot-remove memory,
+>>> then what's the difference between press button and echo to /sys?
+>>
+>> No important difference, I think. Since I don't have the machine you are
+>> saying, I cannot surely answer you. :)
+>> AFAIK, pressing the button means trigger the hotplug from hardware, sysfs
+>> is just another entrance. At last, they will run into the same code.
+>>
+>>> 2. Since kernel memory is linear mapping(I mean direct mapping part),
+>>> why can't put kernel direct mapping memory into one memory device, and
+>>> other memory into the other devices?
+>>
+>> We cannot do that because in that way, we will lose NUMA performance.
+>>
+>> If you know NUMA, you will understand the following example:
+>>
+>> node0:                    node1:
+>>     cpu0~cpu15                cpu16~cpu31
+>>     memory0~memory511         memory512~memory1023
+>>
+>> cpu16~cpu31 access memory16~memory1023 much faster than memory0~memory511.
+>> If we set direct mapping area in node0, and movable area in node1, then
+>> the kernel code running on cpu16~cpu31 will have to access 
+>> memory0~memory511.
+>> This is a terrible performance down.
 > 
-> On Thursday, January 31, 2013 03:22:25 PM anish singh wrote:
-> > On Thu, Jan 31, 2013 at 2:43 PM, Li, Fei <fei.li@intel.com> wrote:
-> > >> -----Original Message-----
-> > >> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
-> > >> Sent: Thursday, January 31, 2013 3:30 PM
-> > >> To: Li, Fei
-> > >> Cc: rjw@sisk.pl; akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
-> > >> linux-pm@vger.kernel.org; Liu, Chuansheng
-> > >> Subject: Re: [PATCH V3] suspend: enable freeze timeout configuration
-> through
-> > >> sys
-> > >>
-> > >> 2013/01/31 13:55, fli24 wrote:
-> > >> >
-> > >> > At present, the value of timeout for freezing is 20s, which is
-> > >> > meaningless in case that one thread is frozen with mutex locked
-> > >> > and another thread is trying to lock the mutex, as this time of
-> > >> > freezing will fail unavoidably.
-> > >> > And if there is no new wakeup event registered, the system will
-> > >> > waste at most 20s for such meaningless trying of freezing.
-> > >> >
-> > >> > With this patch, the value of timeout can be configured to smaller
-> > >> > value, so such meaningless trying of freezing will be aborted in
-> > >> > earlier time, and later freezing can be also triggered in earlier
-> > >> > time. And more power will be saved.
-> > >> > In normal case on mobile phone, it costs real little time to freeze
-> > >> > processes. On some platform, it only costs about 20ms to freeze
-> > >> > user space processes and 10ms to freeze kernel freezable threads.
-> > >> >
-> > >> > Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
-> > >> > Signed-off-by: Li Fei <fei.li@intel.com>
-> > >> > ---
-> > >> >   Documentation/power/freezing-of-tasks.txt |    5 +++++
-> > >> >   include/linux/freezer.h                   |    5 +++++
-> > >> >   kernel/power/main.c                       |   27
-> > >> +++++++++++++++++++++++++++
-> > >> >   kernel/power/process.c                    |    4 ++--
-> > >> >   4 files changed, 39 insertions(+), 2 deletions(-)
-> > >> >
-> > >> > diff --git a/Documentation/power/freezing-of-tasks.txt
-> > >> b/Documentation/power/freezing-of-tasks.txt
-> > >> > index 6ec291e..85894d8 100644
-> > >> > --- a/Documentation/power/freezing-of-tasks.txt
-> > >> > +++ b/Documentation/power/freezing-of-tasks.txt
-> > >> > @@ -223,3 +223,8 @@ since they ask the freezer to skip freezing this
-> task,
-> > >> since it is anyway
-> > >> >   only after the entire suspend/hibernation sequence is complete.
-> > >> >   So, to summarize, use [un]lock_system_sleep() instead of directly using
-> > >> >   mutex_[un]lock(&pm_mutex). That would prevent freezing failures.
-> > >> > +
-> > >> > +V. Miscellaneous
-> > >> > +/sys/power/pm_freeze_timeout controls how long it will cost at most to
-> > >> freeze
-> > >> > +all user space processes or all freezable kernel threads, in unit of
-> millisecond.
-> > >> > +The default value is 20000, with range of unsigned integer.
-> > >> > diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> > >> > index e4238ce..5a24a33 100644
-> > >> > --- a/include/linux/freezer.h
-> > >> > +++ b/include/linux/freezer.h
-> > >> > @@ -13,6 +13,11 @@ extern bool pm_freezing;         /* PM
-> freezing in effect
-> > >> */
-> > >> >   extern bool pm_nosig_freezing;            /* PM nosig freezing in
-> effect */
-> > >> >
-> > >> >   /*
-> > >> > + * Timeout for stopping processes
-> > >> > + */
-> > >> > +extern unsigned int sys_freeze_process_timeout_msecs;
-> > >> > +
-> > >> > +/*
-> > >> >    * Check if a process has been frozen
-> > >> >    */
-> > >> >   static inline bool frozen(struct task_struct *p)
-> > >> > diff --git a/kernel/power/main.c b/kernel/power/main.c
-> > >> > index 1c16f91..453ead1 100644
-> > >> > --- a/kernel/power/main.c
-> > >> > +++ b/kernel/power/main.c
-> > >> > @@ -553,6 +553,30 @@ power_attr(pm_trace_dev_match);
-> > >> >
-> > >> >   #endif /* CONFIG_PM_TRACE */
-> > >> >
-> > >> > +#ifdef CONFIG_FREEZER
-> > >> > +static ssize_t pm_freeze_timeout_show(struct kobject *kobj,
-> > >> > +                                 struct kobj_attribute *attr, char
-> *buf)
-> > >> > +{
-> > >> > +   return sprintf(buf, "%u\n", sys_freeze_process_timeout_msecs);
-> > >> > +}
-> > >> > +
-> > >> > +static ssize_t pm_freeze_timeout_store(struct kobject *kobj,
-> > >> > +                                  struct kobj_attribute *attr,
-> > >> > +                                  const char *buf, size_t n)
-> > >> > +{
-> > >> > +   unsigned long val;
-> > >> > +
-> > >> > +   if (kstrtoul(buf, 10, &val))
-> > >> > +           return -EINVAL;
-> > >> > +
-> > >> > +   sys_freeze_process_timeout_msecs = val;
-> > >> > +   return n;
-> > >> > +}
-> > >> > +
-> > >> > +power_attr(pm_freeze_timeout);
-> > >> > +
-> > >> > +#endif     /* CONFIG_FREEZER*/
-> > >> > +
-> > >> >   static struct attribute * g[] = {
-> > >> >     &state_attr.attr,
-> > >> >   #ifdef CONFIG_PM_TRACE
-> > >> > @@ -576,6 +600,9 @@ static struct attribute * g[] = {
-> > >> >     &pm_print_times_attr.attr,
-> > >> >   #endif
-> > >> >   #endif
-> > >> > +#ifdef CONFIG_FREEZER
-> > >> > +   &pm_freeze_timeout_attr.attr,
-> > >> > +#endif
-> > >> >     NULL,
-> > >> >   };
-> > >> >
-> > >> > diff --git a/kernel/power/process.c b/kernel/power/process.c
-> > >> > index d5a258b..ba45a26 100644
-> > >> > --- a/kernel/power/process.c
-> > >> > +++ b/kernel/power/process.c
-> > >> > @@ -21,7 +21,7 @@
-> > >> >   /*
-> > >> >    * Timeout for stopping processes
-> > >> >    */
-> > >>
-> > >> > -#define TIMEOUT    (20 * HZ)
-> > >> > +unsigned int __read_mostly sys_freeze_process_timeout_msecs =
-> 20000;
-> > >>
-> > >> 20000 does not mean 20 seconds since we can select HZ other than 1000.
-> > >> So (20 * HZ) is better than 20000.
-> > >>
-> > > [Li, Fei]
-> > > Are you sure about this, (20*HZ) better than 20000, or you mean 20 *
-> MSEC_PER_SEC?
-> > Yasuaki  mean HZ value will not always be 1000.The value of HZ differs for
-> each
-> >  supported architecture. In fact, on some supported architectures,
-> > it even differs between machine types.
-> > When writing kernel code, never assume that HZ has any given value.
-> > Right now you are assuming that the delay will be always 20 seconds because
-> of
-> > your assumption of HZ.
+> So if config NUMA, kernel memory will not be linear mapping anymore? For
+> example, 
 > 
-> That's correct, the initial value should be 20 * HZ (i.e. as before).
-[Li, Fei] 
-Yes, you are right, and IMHO it's already as this in the patch, 
-as 20 * HZ == msecs_to_jiffies(20000), with the current definition MSEC_PER_SEC
-of 1000L. I'll update the default value as 20 * MSEC_PER_SEC in patch V4.
+> Node 0  Node 1 
+> 
+> 0 ~ 10G 11G~14G
+> 
+> kernel memory only at Node 0? Can part of kernel memory also at Node 1?
+> 
+> How big is kernel direct mapping memory in x86_64? Is there max limit?
 
-> Besides, the name of the variable doesn't need to be _that_ long.
-> What about freeze_timeout_msecs?
-[Li, Fei] 
-Agree with you, and will update it in patch V4.
 
-Thanks and Regards,
-Li Fei
+Max kernel direct mapping memory in x86_64 is 64TB.
 
-> Rafael
+> It seems that only around 896MB on x86_32. 
+> 
+>>
+>>> As you know x86_64 don't need
+>>> highmem, IIUC, all kernel memory will linear mapping in this case. Is my
+>>> idea available? If is correct, x86_32 can't implement in the same way
+>>> since highmem(kmap/kmap_atomic/vmalloc) can map any address, so it's
+>>> hard to focus kernel memory on single memory device.
+>>
+>> Sorry, I'm not quite familiar with x86_32 box.
+>>
+>>> 3. In current implementation, if memory hotplug just need memory
+>>> subsystem and ACPI codes support? Or also needs firmware take part in?
+>>> Hope you can explain in details, thanks in advance. :)
+>>
+>> We need firmware take part in, such as SRAT in ACPI BIOS, or the firmware
+>> based memory migration mentioned by Liu Jiang.
+> 
+> Is there any material about firmware based memory migration?
+> 
+>>
+>> So far, I only know this. :)
+>>
+>>> 4. What's the status of memory hotplug? Apart from can't remove kernel
+>>> memory, other things are fully implementation?
+>>
+>> I think the main job is done for now. And there are still bugs to fix.
+>> And this functionality is not stable.
+>>
+>> Thanks. :)
 > 
 > 
 > --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> .
+> 
+
+
+
