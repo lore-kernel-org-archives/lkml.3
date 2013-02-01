@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756495Ab3BAJqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:46:06 -0500
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:63806 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316Ab3BAJqF (ORCPT
+	id S1756597Ab3BAJqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:46:36 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:36543 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375Ab3BAJqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:46:05 -0500
+	Fri, 1 Feb 2013 04:46:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359211016-24097-3-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1359211016-24097-4-git-send-email-maxime.ripard@free-electrons.com>
 References: <1359211016-24097-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1359211016-24097-3-git-send-email-maxime.ripard@free-electrons.com>
-Date: Fri, 1 Feb 2013 10:46:04 +0100
-Message-ID: <CACRpkdY-htzc15Y77DMddb3dcK4kAeaMSU5663OeFPSF5a9jcA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] pinctrl: sunxi: Document sun5i pins functions
+	<1359211016-24097-4-git-send-email-maxime.ripard@free-electrons.com>
+Date: Fri, 1 Feb 2013 10:46:33 +0100
+Message-ID: <CACRpkdbruAP+sLQ3_v8x=0M6NmLTujWOx1nc8ce7deEOa8M+3Q@mail.gmail.com>
+Subject: Re: [PATCH 3/5] ARM: pinctrl: sunxi: Add the pinctrl pin set for
+ Allwinner A10
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>
 Cc: linux-arm-kernel@lists.infradead.org, Alejandro Mery <amery@geeks.cl>,
@@ -26,10 +27,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Sat, Jan 26, 2013 at 3:36 PM, Maxime Ripard
 <maxime.ripard@free-electrons.com> wrote:
 
+> Since the Allwinner SoCs variants don't have the same set of pins to
+> handle, we need to declare the pin ranges available.
+>
 > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/pinctrl/pinctrl-sunxi.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
 
 Applied to my allwinner branch.
 
