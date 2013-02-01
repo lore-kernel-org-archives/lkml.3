@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab3BAKoG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:44:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54878 "EHLO mx1.redhat.com"
+	id S1030235Ab3BAKoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:44:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60000 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756165Ab3BAKn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:43:58 -0500
+	id S1756852Ab3BAKoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:44:11 -0500
 From: Lukas Czerner <lczerner@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
         Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH 03/18] ext4: use ->invalidatepage() length argument
-Date: Fri,  1 Feb 2013 11:43:29 +0100
-Message-Id: <1359715424-32318-4-git-send-email-lczerner@redhat.com>
+Subject: [PATCH 09/18] reiserfs: use ->invalidatepage() length argument
+Date: Fri,  1 Feb 2013 11:43:35 +0100
+Message-Id: <1359715424-32318-10-git-send-email-lczerner@redhat.com>
 In-Reply-To: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
 References: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,214 +21,51 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ->invalidatepage() aop now accepts range to invalidate so we can make
-use of it in all ext4 invalidatepage routines.
+use of it in reiserfs_invalidatepage()
 
 Signed-off-by: Lukas Czerner <lczerner@redhat.com>
 ---
- fs/ext4/inode.c             |   47 ++++++++++++++++++++++++++++++------------
- include/trace/events/ext4.h |   22 +++++++++++---------
- 2 files changed, 45 insertions(+), 24 deletions(-)
+ fs/reiserfs/inode.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index a3be92c..eb61fb7 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1289,21 +1289,28 @@ static void ext4_da_release_space(struct inode *inode, int to_free)
- }
- 
- static void ext4_da_page_release_reservation(struct page *page,
--					     unsigned long offset)
-+					     unsigned int offset,
-+					     unsigned int length)
- {
- 	int to_release = 0;
- 	struct buffer_head *head, *bh;
- 	unsigned int curr_off = 0;
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index 5ca4fb4..cf949b9 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -2975,11 +2975,13 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
+ 	struct buffer_head *head, *bh, *next;
  	struct inode *inode = page->mapping->host;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+	unsigned int stop = offset + length;
- 	int num_clusters;
- 	ext4_fsblk_t lblk;
- 
-+	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
-+
- 	head = page_buffers(page);
- 	bh = head;
- 	do {
- 		unsigned int next_off = curr_off + bh->b_size;
- 
-+		if (next_off > stop)
-+			break;
-+
- 		if ((offset <= curr_off) && (buffer_delay(bh))) {
- 			to_release++;
- 			clear_buffer_delay(bh);
-@@ -2709,7 +2716,7 @@ static void ext4_da_invalidatepage(struct page *page, unsigned int offset,
- 	if (!page_has_buffers(page))
- 		goto out;
- 
--	ext4_da_page_release_reservation(page, offset);
-+	ext4_da_page_release_reservation(page, offset, length);
- 
- out:
- 	ext4_invalidatepage(page, offset, length);
-@@ -2860,22 +2867,33 @@ ext4_readpages(struct file *file, struct address_space *mapping,
- 	return mpage_readpages(mapping, pages, nr_pages, ext4_get_block);
- }
- 
--static void ext4_invalidatepage_free_endio(struct page *page, unsigned long offset)
-+static void ext4_invalidatepage_free_endio(struct page *page,
-+					   unsigned int offset,
-+					   unsigned int length)
- {
- 	struct buffer_head *head, *bh;
  	unsigned int curr_off = 0;
 +	unsigned int stop = offset + length;
++	int partial_page = (offset || length < PAGE_CACHE_SIZE);
+ 	int ret = 1;
  
- 	if (!page_has_buffers(page))
- 		return;
-+
-+	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
-+
- 	head = bh = page_buffers(page);
- 	do {
-+		unsigned int next_off = curr_off + bh->b_size;
-+
-+		if (next_off > stop)
-+			return;
-+
- 		if (offset <= curr_off && test_clear_buffer_uninit(bh)
- 					&& bh->b_private) {
- 			ext4_free_io_end(bh->b_private);
- 			bh->b_private = NULL;
- 			bh->b_end_io = NULL;
- 		}
--		curr_off = curr_off + bh->b_size;
-+		curr_off = next_off;
- 		bh = bh->b_this_page;
- 	} while (bh != head);
- }
-@@ -2883,35 +2901,35 @@ static void ext4_invalidatepage_free_endio(struct page *page, unsigned long offs
- static void ext4_invalidatepage(struct page *page, unsigned int offset,
- 				unsigned int length)
- {
--	trace_ext4_invalidatepage(page, offset);
-+	trace_ext4_invalidatepage(page, offset, length);
+ 	BUG_ON(!PageLocked(page));
  
- 	/*
- 	 * free any io_end structure allocated for buffers to be discarded
- 	 */
- 	if (ext4_should_dioread_nolock(page->mapping->host))
--		ext4_invalidatepage_free_endio(page, offset);
-+		ext4_invalidatepage_free_endio(page, offset, length);
- 
- 	/* No journalling happens on data buffers when this function is used */
- 	WARN_ON(page_has_buffers(page) && buffer_jbd(page_buffers(page)));
- 
--	block_invalidatepage(page, offset, PAGE_CACHE_SIZE - offset);
-+	block_invalidatepage(page, offset, length);
- }
- 
- static int __ext4_journalled_invalidatepage(struct page *page,
--					    unsigned long offset)
-+					    unsigned int offset,
-+					    unsigned int length)
- {
- 	journal_t *journal = EXT4_JOURNAL(page->mapping->host);
- 
--	trace_ext4_journalled_invalidatepage(page, offset);
-+	trace_ext4_journalled_invalidatepage(page, offset, length);
- 
- 	/*
- 	 * If it's a full truncate we just forget about the pending dirtying
- 	 */
 -	if (offset == 0)
-+	if (offset == 0 && length == PAGE_CACHE_SIZE)
++	if (!partial_page)
  		ClearPageChecked(page);
  
--	return jbd2_journal_invalidatepage(journal, page, offset,
--					   PAGE_CACHE_SIZE - offset);
-+	return jbd2_journal_invalidatepage(journal, page, offset, length);
- }
+ 	if (!page_has_buffers(page))
+@@ -2991,6 +2993,9 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
+ 		unsigned int next_off = curr_off + bh->b_size;
+ 		next = bh->b_this_page;
  
- /* Wrapper for aops... */
-@@ -2919,7 +2937,7 @@ static void ext4_journalled_invalidatepage(struct page *page,
- 					   unsigned int offset,
- 					   unsigned int length)
- {
--	WARN_ON(__ext4_journalled_invalidatepage(page, offset) < 0);
-+	WARN_ON(__ext4_journalled_invalidatepage(page, offset, length) < 0);
- }
- 
- static int ext4_releasepage(struct page *page, gfp_t wait)
-@@ -4351,7 +4369,8 @@ static void ext4_wait_for_tail_page_commit(struct inode *inode)
- 				      inode->i_size >> PAGE_CACHE_SHIFT);
- 		if (!page)
- 			return;
--		ret = __ext4_journalled_invalidatepage(page, offset);
-+		ret = __ext4_journalled_invalidatepage(page, offset,
-+						PAGE_CACHE_SIZE - offset);
- 		unlock_page(page);
- 		page_cache_release(page);
- 		if (ret != -EBUSY)
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index 7e8c36b..6ab6f8a 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -452,16 +452,16 @@ DEFINE_EVENT(ext4__page_op, ext4_releasepage,
- );
- 
- DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
--	TP_PROTO(struct page *page, unsigned long offset),
-+	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
- 
--	TP_ARGS(page, offset),
-+	TP_ARGS(page, offset, length),
- 
- 	TP_STRUCT__entry(
- 		__field(	dev_t,	dev			)
- 		__field(	ino_t,	ino			)
- 		__field(	pgoff_t, index			)
--		__field(	unsigned long, offset		)
--
-+		__field(	unsigned int, offset		)
-+		__field(	unsigned int, length		)
- 	),
- 
- 	TP_fast_assign(
-@@ -469,24 +469,26 @@ DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
- 		__entry->ino	= page->mapping->host->i_ino;
- 		__entry->index	= page->index;
- 		__entry->offset	= offset;
-+		__entry->length	= length;
- 	),
- 
--	TP_printk("dev %d,%d ino %lu page_index %lu offset %lu",
-+	TP_printk("dev %d,%d ino %lu page_index %lu offset %u length %u",
- 		  MAJOR(__entry->dev), MINOR(__entry->dev),
- 		  (unsigned long) __entry->ino,
--		  (unsigned long) __entry->index, __entry->offset)
-+		  (unsigned long) __entry->index,
-+		  __entry->offset, __entry->length)
- );
- 
- DEFINE_EVENT(ext4_invalidatepage_op, ext4_invalidatepage,
--	TP_PROTO(struct page *page, unsigned long offset),
-+	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
- 
--	TP_ARGS(page, offset)
-+	TP_ARGS(page, offset, length)
- );
- 
- DEFINE_EVENT(ext4_invalidatepage_op, ext4_journalled_invalidatepage,
--	TP_PROTO(struct page *page, unsigned long offset),
-+	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
- 
--	TP_ARGS(page, offset)
-+	TP_ARGS(page, offset, length)
- );
- 
- TRACE_EVENT(ext4_discard_blocks,
++		if (next_off > stop)
++			goto out;
++
+ 		/*
+ 		 * is this block fully invalidated?
+ 		 */
+@@ -3009,7 +3014,7 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
+ 	 * The get_block cached value has been unconditionally invalidated,
+ 	 * so real IO is not possible anymore.
+ 	 */
+-	if (!offset && ret) {
++	if (!partial_page && ret) {
+ 		ret = try_to_release_page(page, 0);
+ 		/* maybe should BUG_ON(!ret); - neilb */
+ 	}
 -- 
 1.7.7.6
 
