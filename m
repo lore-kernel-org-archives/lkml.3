@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422751Ab3BAKvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:51:12 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39219 "EHLO mail.kernel.org"
+	id S1422765Ab3BAKvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:51:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39231 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422738Ab3BAKvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:51:07 -0500
+	id S1422738Ab3BAKvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:51:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Borislav Petkov <bp@suse.de>
-Subject: [ 22/33] EDAC: Test correct variable in ->store function
-Date: Fri,  1 Feb 2013 11:49:27 +0100
-Message-Id: <20130201104726.235135333@linuxfoundation.org>
+        Chris Rattray <crattray@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 23/33] ASoC: wm2200: correct mixer values and text
+Date: Fri,  1 Feb 2013 11:49:28 +0100
+Message-Id: <20130201104726.299080105@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
@@ -25,30 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Chris Rattray <crattray@opensource.wolfsonmicro.com>
 
-commit 8024c4c0b1057d1cd811fc9c3f88f81de9729fcd upstream.
+commit a80cc734282805e15b5e023751a4d02f7ffbcc91 upstream.
 
-We're testing for ->show but calling ->store().
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Chris Rattray <crattray@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_pci_sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm2200.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/edac/edac_pci_sysfs.c
-+++ b/drivers/edac/edac_pci_sysfs.c
-@@ -257,7 +257,7 @@ static ssize_t edac_pci_dev_store(struct
- 	struct edac_pci_dev_attribute *edac_pci_dev;
- 	edac_pci_dev = (struct edac_pci_dev_attribute *)attr;
- 
--	if (edac_pci_dev->show)
-+	if (edac_pci_dev->store)
- 		return edac_pci_dev->store(edac_pci_dev->value, buffer, count);
- 	return -EIO;
- }
+--- a/sound/soc/codecs/wm2200.c
++++ b/sound/soc/codecs/wm2200.c
+@@ -897,8 +897,6 @@ static const char *wm2200_mixer_texts[]
+ 	"EQR",
+ 	"LHPF1",
+ 	"LHPF2",
+-	"LHPF3",
+-	"LHPF4",
+ 	"DSP1.1",
+ 	"DSP1.2",
+ 	"DSP1.3",
+@@ -931,7 +929,6 @@ static int wm2200_mixer_values[] = {
+ 	0x25,
+ 	0x50,   /* EQ */
+ 	0x51,
+-	0x52,
+ 	0x60,   /* LHPF1 */
+ 	0x61,   /* LHPF2 */
+ 	0x68,   /* DSP1 */
 
 
