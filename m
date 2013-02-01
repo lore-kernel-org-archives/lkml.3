@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757706Ab3BAVBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 16:01:18 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:59847 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757534Ab3BAVAt (ORCPT
+	id S1757752Ab3BAVBj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 16:01:39 -0500
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:63080 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757477Ab3BAVAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 16:00:49 -0500
+	Fri, 1 Feb 2013 16:00:47 -0500
 From: Matt Porter <mporter@ti.com>
 To: Venkatraman S <svenkatr@ti.com>, Chris Ball <cjb@laptop.org>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -19,9 +19,9 @@ Cc: Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Jon Hunter <jon-hunter@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 2/3] mmc: omap_hsmmc: Skip platform_get_resource_byname() for dt case
-Date: Fri,  1 Feb 2013 16:01:18 -0500
-Message-Id: <1359752479-29427-3-git-send-email-mporter@ti.com>
+Subject: [PATCH 1/3] mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
+Date: Fri,  1 Feb 2013 16:01:17 -0500
+Message-Id: <1359752479-29427-2-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359752479-29427-1-git-send-email-mporter@ti.com>
 References: <1359752479-29427-1-git-send-email-mporter@ti.com>
@@ -29,61 +29,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Convert dmaengine channel requests to use
+dma_request_slave_channel_compat(). This supports platforms booting
+with or without DT populated.
 
-MMC driver probe will abort for DT case because of failed
-platform_get_resource_byname() lookup. Fix it by skipping resource
-byname lookup for device tree build.
-
-Issue is hidden because hwmod popullates the IO resources which
-helps to succeed platform_get_resource_byname() and probe.
-
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Matt Porter <mporter@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
+ drivers/mmc/host/omap_hsmmc.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index e79b12d..8ae1225 100644
+index bc58078..e79b12d 100644
 --- a/drivers/mmc/host/omap_hsmmc.c
 +++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- 	omap_hsmmc_conf_bus_power(host);
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
--	if (!res) {
--		dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
--		ret = -ENXIO;
--		goto err_irq;
--	}
--	tx_req = res->start;
-+	if (!pdev->dev.of_node) {
-+		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
-+		if (!res) {
-+			dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
-+			ret = -ENXIO;
-+			goto err_irq;
-+		}
-+		tx_req = res->start;
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
--	if (!res) {
--		dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
--		ret = -ENXIO;
--		goto err_irq;
-+		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
-+		if (!res) {
-+			dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
-+			ret = -ENXIO;
-+			goto err_irq;
-+		}
-+		rx_req = res->start;
- 	}
--	rx_req = res->start;
- 
+@@ -1915,14 +1915,20 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
  	dma_cap_zero(mask);
  	dma_cap_set(DMA_SLAVE, mask);
+ 
+-	host->rx_chan = dma_request_channel(mask, omap_dma_filter_fn, &rx_req);
++	host->rx_chan =
++		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
++						 &rx_req, &pdev->dev, "rx");
++
+ 	if (!host->rx_chan) {
+ 		dev_err(mmc_dev(host->mmc), "unable to obtain RX DMA engine channel %u\n", rx_req);
+ 		ret = -ENXIO;
+ 		goto err_irq;
+ 	}
+ 
+-	host->tx_chan = dma_request_channel(mask, omap_dma_filter_fn, &tx_req);
++	host->tx_chan =
++		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
++						 &tx_req, &pdev->dev, "tx");
++
+ 	if (!host->tx_chan) {
+ 		dev_err(mmc_dev(host->mmc), "unable to obtain TX DMA engine channel %u\n", tx_req);
+ 		ret = -ENXIO;
 -- 
 1.7.9.5
 
