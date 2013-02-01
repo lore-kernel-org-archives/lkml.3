@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3BAJBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:01:51 -0500
-Received: from sr-smtp.usish.com ([210.5.144.203]:60746 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab3BAJBr (ORCPT
+	id S1755892Ab3BAJGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:06:03 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:53004 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab3BAJFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:01:47 -0500
-X-Greylist: delayed 609 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Feb 2013 04:01:47 EST
-From: "Jack Wang" <jack_wang@usish.com>
-To: "'Tao Ma'" <tm@tao.ma>, <linux-scsi@vger.kernel.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-References: <510B5CFC.2040801@tao.ma>
-In-Reply-To: <510B5CFC.2040801@tao.ma>
-Subject: RE: How to online remove an error scsi disk from the system?
-Date: Fri, 1 Feb 2013 16:50:19 +0800
-Message-ID: <008101ce0059$2a4976b0$7edc6410$@com>
+	Fri, 1 Feb 2013 04:05:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac4AQzmhm4xqWd9rRhWaNFSfIB4xlAAFKd6A
-Content-Language: zh-cn
+In-Reply-To: <20130129160337.28754.31558.stgit@localhost.localdomain>
+References: <20130129160337.28754.31558.stgit@localhost.localdomain>
+Date: Fri, 1 Feb 2013 10:05:54 +0100
+X-Google-Sender-Auth: fpI-tFaWB2FOt516UufXiWz1AHc
+Message-ID: <CAAxaTiMGRTDe1g1HScQf8gKL4ygwt2iQbbNsbAQKDwY5KOHTkw@mail.gmail.com>
+Subject: Re: [PATCH 2 1/2] coccicheck: Allow the user to give a V= (verbose) argument
+From: Nicolas Palix <nicolas.palix@imag.fr>
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, cocci@systeme.lip6.fr
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-	In our product system, we have several sata disks attached to one
-machine. So when one of the disk fails, the jbd2(yes, we use ext4) will hang
-forever and we will get something in /var/log/messages like below.
-It seems to me that the io sent to the scsi layer is never returned back
-with -EIO which is a little bit surprised for me(It should be a timeout
-somewhere, right?). We have tried echo "offline" >
-/sys/block/sdl/device/state, but it doesn't work. So is there any way for us
-to let the scsi device returns all the io requests back with EIO so that all
-the end_io can be called accordingly? Am I missing something here?
+On Tue, Jan 29, 2013 at 5:03 PM, Bernd Schubert
+<bernd.schubert@itwm.fraunhofer.de> wrote:
+> Do not run with verbosity on/off depending on the ONLINE variable,
+> which gets set with C=1 or C=2, but allow the user to set the
+> verbosity using kernel default make V= paramemter.
+> Verbosity is off by default now.
+>
+>
+> Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+> CC: Julia Lawall <Julia.Lawall@lip6.fr>
+> CC: Nicolas Palix <nicolas.palix@imag.fr>
+Acked-by: Nicolas Palix <nicolas.palix@imag.fr>
 
-Thanks,
-Tao
-[Jack Wang] 
-Hi Tao,
+> CC: cocci@systeme.lip6.fr
+> CC: Michal Marek <mmarek@suse.cz>
+> ---
+>  Documentation/coccinelle.txt |    4 ++++
+>  scripts/coccicheck           |   11 ++++++++++-
+>  2 files changed, 14 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
+> index cf44eb6..dffa2d6 100644
+> --- a/Documentation/coccinelle.txt
+> +++ b/Documentation/coccinelle.txt
+> @@ -87,6 +87,10 @@ As any static code analyzer, Coccinelle produces false
+>  positives. Thus, reports must be carefully checked, and patches
+>  reviewed.
+>
+> +To enable verbose messages set the V= variable, for example:
+> +
+> +   make coccicheck MODE=report V=1
+> +
+>
+>   Using Coccinelle with a single semantic patch
+>  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> diff --git a/scripts/coccicheck b/scripts/coccicheck
+> index 1a49d1c..f8f15a2 100755
+> --- a/scripts/coccicheck
+> +++ b/scripts/coccicheck
+> @@ -2,6 +2,15 @@
+>
+>  SPATCH="`which ${SPATCH:=spatch}`"
+>
+> +# The verbosity may be set by the environmental parameter V=
+> +# as for example with 'make V=1 coccicheck'
+> +
+> +if [ -n "$V" -a "$V" != "0" ]; then
+> +       VERBOSE=1
+> +else
+> +       VERBOSE=0
+> +fi
+> +
+>  if [ "$C" = "1" -o "$C" = "2" ]; then
+>      ONLINE=1
+>
+> @@ -55,7 +64,7 @@ coccinelle () {
+>  #
+>  #    $SPATCH -D $MODE $FLAGS -parse_cocci $COCCI $OPT > /dev/null
+>
+> -    if [ "$ONLINE" = "0" ] ; then
+> +    if [ $VERBOSE -ne 0 ] ; then
+>
+>         FILE=`echo $COCCI | sed "s|$srctree/||"`
+>
+>
 
-Have you tried:
- echo 1 > /sys/block/sdv/device/delete
- echo "- - -" > /sys/class/scsi_host/host
 
-another way is :
-find out which phy the disk attached to and:
-echo 1 > /sys/class/sas_phy/phy-x:x:x/link_reset
 
-Jack
-
+-- 
+Nicolas Palix
