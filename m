@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab3BAUXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:23:35 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:39079 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756728Ab3BAUXa (ORCPT
+	id S1757506Ab3BAUXi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:23:38 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:64258 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756728Ab3BAUXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:23:30 -0500
+	Fri, 1 Feb 2013 15:23:35 -0500
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com,
         sjenning@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org, ngupta@vflare.org, rcj@linux.vnet.ibm.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org
-Subject: [PATCH 08/15] xen/tmem: Remove the subsys call.
-Date: Fri,  1 Feb 2013 15:22:57 -0500
-Message-Id: <1359750184-23408-9-git-send-email-konrad.wilk@oracle.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: [PATCH 13/15] frontswap: Get rid of swap_lock dependency
+Date: Fri,  1 Feb 2013 15:23:02 -0500
+Message-Id: <1359750184-23408-14-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
 References: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
@@ -23,33 +25,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We get:
-drivers/xen/xen-selfballoon.c:577:134: warning: initialization from incompatible pointer type [enabled by default]
+From: Minchan Kim <minchan@kernel.org>
 
-We actually do not need this function to be called
-before tmem is loaded. So lets remove the subsys_init.
+Frontswap initialization routine depends on swap_lock, which want
+to be atomic about frontswap's first appearance.
+IOW, frontswap is not present and will fail all calls OR frontswap is
+fully functional but if new swap_info_struct isn't registered
+by enable_swap_info, swap subsystem doesn't start I/O so there is no
+race
+between init procedure and page I/O working on frontswap.
 
-If tmem is built in as a module this is still OK as
-xen_selfballoon_init ends up being exported and can
-be called by the tmem module.
+So let's remove unncessary swap_lock dependency.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+[v1: Rebased on my branch, reworked to work with backends loading late]
+[v2: Added a check for !map]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad@darnok.org>
+
+squash
 ---
- drivers/xen/xen-selfballoon.c | 4 ----
- 1 file changed, 4 deletions(-)
+ include/linux/frontswap.h |  6 +++---
+ mm/frontswap.c            | 12 +++++++++---
+ mm/swapfile.c             |  7 ++++++-
+ 3 files changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
-index 6965e9b..f2ef569 100644
---- a/drivers/xen/xen-selfballoon.c
-+++ b/drivers/xen/xen-selfballoon.c
-@@ -572,7 +572,3 @@ int xen_selfballoon_init(bool use_selfballooning, bool use_frontswap_selfshrink)
- 	return 0;
+diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
+index 612c176..3d72f14 100644
+--- a/include/linux/frontswap.h
++++ b/include/linux/frontswap.h
+@@ -20,7 +20,7 @@ extern void frontswap_writethrough(bool);
+ #define FRONTSWAP_HAS_EXCLUSIVE_GETS
+ extern void frontswap_tmem_exclusive_gets(bool);
+ 
+-extern void __frontswap_init(unsigned type);
++extern void __frontswap_init(unsigned type, unsigned long *map);
+ extern int __frontswap_store(struct page *page);
+ extern int __frontswap_load(struct page *page);
+ extern void __frontswap_invalidate_page(unsigned, pgoff_t);
+@@ -122,9 +122,9 @@ static inline void frontswap_invalidate_area(unsigned type)
+ 	__frontswap_invalidate_area(type);
  }
- EXPORT_SYMBOL(xen_selfballoon_init);
--
--#ifndef CONFIG_XEN_TMEM_MODULE
--subsys_initcall(xen_selfballoon_init);
--#endif
+ 
+-static inline void frontswap_init(unsigned type)
++static inline void frontswap_init(unsigned type, unsigned long *map)
+ {
+-	__frontswap_init(type);
++	__frontswap_init(type, map);
+ }
+ 
+ #endif /* _LINUX_FRONTSWAP_H */
+diff --git a/mm/frontswap.c b/mm/frontswap.c
+index ebf4c18..8254a6a 100644
+--- a/mm/frontswap.c
++++ b/mm/frontswap.c
+@@ -127,8 +127,13 @@ struct frontswap_ops *frontswap_register_ops(struct frontswap_ops *ops)
+ 	int i;
+ 
+ 	for (i = 0; i < MAX_SWAPFILES; i++) {
+-		if (test_and_clear_bit(i, need_init))
++		if (test_and_clear_bit(i, need_init)) {
++			struct swap_info_struct *sis = swap_info[i];
++			/* enable_swap_info _should_ have set it! */
++			if (!sis->frontswap_map)
++				return ERR_PTR(-EINVAL);
+ 			ops->init(i);
++		}
+ 	}
+ 	/*
+ 	 * We MUST have frontswap_ops set _after_ the frontswap_init's
+@@ -166,14 +171,15 @@ EXPORT_SYMBOL(frontswap_tmem_exclusive_gets);
+  *
+  * Can be called without any backend driver is registered.
+  */
+-void __frontswap_init(unsigned type)
++void __frontswap_init(unsigned type, unsigned long *map)
+ {
+ 	struct swap_info_struct *sis = swap_info[type];
+ 
+ 	if (static_key_false(&frontswap_key)) {
+ 		BUG_ON(sis == NULL);
+-		if (sis->frontswap_map == NULL)
++		if (!map)
+ 			return;
++		frontswap_map_set(sis, map);
+ 		frontswap_ops->init(type);
+ 	}
+ 	else {
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index e97a0e5..c1c3a62 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1454,6 +1454,10 @@ static void _enable_swap_info(struct swap_info_struct *p, int prio,
+ 	else
+ 		p->prio = --least_priority;
+ 	p->swap_map = swap_map;
++	/*
++	 * This is required for frontswap to handle backends loading
++	 * after the swap has been activated.
++	 */
+ 	frontswap_map_set(p, frontswap_map);
+ 	p->flags |= SWP_WRITEOK;
+ 	nr_swap_pages += p->pages;
+@@ -1477,9 +1481,9 @@ static void enable_swap_info(struct swap_info_struct *p, int prio,
+ 				unsigned char *swap_map,
+ 				unsigned long *frontswap_map)
+ {
++	frontswap_init(p->type, frontswap_map);
+ 	spin_lock(&swap_lock);
+ 	_enable_swap_info(p, prio, swap_map, frontswap_map);
+-	frontswap_init(p->type);
+ 	spin_unlock(&swap_lock);
+ }
+ 
+@@ -1589,6 +1593,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	p->swap_map = NULL;
+ 	p->flags = 0;
+ 	frontswap_invalidate_area(type);
++	frontswap_map_set(p, NULL);
+ 	spin_unlock(&swap_lock);
+ 	mutex_unlock(&swapon_mutex);
+ 	vfree(swap_map);
 -- 
 1.7.11.7
 
