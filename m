@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab3BAWPv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 17:15:51 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16869 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877Ab3BAWPr (ORCPT
+	id S1757903Ab3BAWQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 17:16:42 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:46959 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757877Ab3BAWQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 17:15:47 -0500
-X-Authority-Analysis: v=2.0 cv=NqdTgrhJ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_-1zCJSF_OMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=vw99MyFtH44A:10 a=BQGkFRdVqiR5tP4QpmMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359756944.5642.50.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH v8 2/3] trace,x86: add x86 irq vector tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Date: Fri, 01 Feb 2013 17:15:44 -0500
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A5F834@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A508CE@USINDEM103.corp.hds.com>
-	 <1359752614.5642.49.camel@gandalf.local.home>
-	 <A5ED84D3BB3A384992CBB9C77DEDA4D414A5F834@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Feb 2013 17:16:38 -0500
+Message-ID: <510C3EC5.3060709@linaro.org>
+Date: Fri, 01 Feb 2013 23:16:37 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Len Brown <lenb@kernel.org>
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] intel_idle: stop using driver_data for static flags
+References: <1359691896-23567-1-git-send-email-lenb@kernel.org> <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com> <510B8059.5040609@linaro.org> <510C0C22.4000801@kernel.org>
+In-Reply-To: <510C0C22.4000801@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-01 at 21:06 +0000, Seiji Aguchi wrote:
-> > > +#include <asm/hw_irq.h>
-> > > +#include <asm/desc.h>
-> > > +
-> > > +static struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
-> > > +				    (unsigned long) trace_idt_table };
-> > > +
-> > > +#ifndef CONFIG_X86_64
-> > > +gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
-> > > +					= { { { { 0, 0 } } }, };
-> > > +#endif
-> > > +
-> > > +static struct desc_ptr orig_idt_descr[NR_CPUS];
-> > 
-> > BTW, this should be:
-> > 
-> > static DEFINE_PER_CPU(struct desc_ptr, orig_idt_descr);
-> > 
-> > And look at the patch I made about the NMI/DEBUG trap handling to see how to use it.
+On 02/01/2013 07:40 PM, Len Brown wrote:
+> On 02/01/2013 03:44 AM, Daniel Lezcano wrote:
+>> On 02/01/2013 05:11 AM, Len Brown wrote:
+>>> From: Len Brown <len.brown@intel.com>
+>>>
+>>> The commit, 4202735e8ab6ecfb0381631a0d0b58fefe0bd4e2
+>>> (cpuidle: Split cpuidle_state structure and move per-cpu statistics fields)
+>>> observed that the MWAIT flags for Cn on every processor to date were the
+>>> same, and created get_driver_data() to supply them.
+>>>
+>>> Unfortunately, that assumption is false, going forward.
+>>> So here we restore the MWAIT flags to the cpuidle_state table.
+>>> However, instead restoring the old "driver_data" field,
+>>> we put the flags into the existing "flags" field,
+>>> where they probalby should have lived all along.
+>>
+>> Removing the driver_data is a good thing but I am not sure it is the
+>> case by moving the MWAIT flags to the cpuidle_state's flags field. We
+>> are mixing arch specific flags with a generic code.
+>>
+>> This is prone to errors because new flags could appear for the cpuidle
+>> core code and could collide with the arch specific flags.
+>>
+>> Wouldn't make sense to add a private field in the struct cpuidle_state
+>> structure to let the driver/arch specific to store whatever is needed ?
+>>
+>> struct cpuidle_state {
+>>
+>> 	...
+>> 	unsigned long private;
+>> 	...
+>>
+>> }
 > 
-> Thanks.
-> I'm looking at your patch right now and will update my patch.
+> The top half of the flags are reserved for the driver,
+> as noted by the definition of CPUIDLE_DRIVER_FLAGS_MASK
+> with the generic flag definitions:
+> 
+> #define CPUIDLE_FLAG_TIME_VALID (0x01) /* is residency time measurable? */
+> #define CPUIDLE_FLAG_COUPLED    (0x02) /* state applies to multiple cpus */
+> 
+> #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
+> 
+> intel_idle already uses a driver-specific flag:
+> 
+> #define CPUIDLE_FLAG_TLB_FLUSHED        0x10000
+> 
+> This patch just uses 4 more bits along with that one.
 
-Also, don't forget to add the mutex protection that I suggested in
-another email.
+Ok. In this case it would make sense to move this flag out of the
+generic core code to the intel_idle.c file ? and move the [dec/en]coding
+macro flags_2_MWAIT_EAX and MWAIT_EAX_2_flags (with a more appropriate
+name for a generic code) to the cpuidle.h file ?
 
-Thanks,
+  -- Daniel
 
--- Steve
 
+
+> Sure, if we run out of space, we can add an additional field.
+> But I don't see an immediate need for it.
+> 
+> thanks,
+> Len Brown
+> Intel Open Source Technology Center
+> 
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
