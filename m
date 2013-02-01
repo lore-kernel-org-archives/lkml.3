@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161143Ab3BAKsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:48:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38776 "EHLO mail.kernel.org"
+	id S1161157Ab3BAKs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:48:58 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38786 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161098Ab3BAKss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:48:48 -0500
+	id S1161098Ab3BAKsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:48:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Abdallah Chatila <abdallah.chatila@ericsson.com>
-Subject: [ 15/15] x86/Sandy Bridge: Sandy Bridge workaround depends on CONFIG_PCI
-Date: Fri,  1 Feb 2013 11:48:48 +0100
-Message-Id: <20130201104757.599002119@linuxfoundation.org>
+        Wang YanQing <udknight@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Beulich <jbeulich@suse.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
+        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com
+Subject: [ 12/15] smp: Fix SMP function call empty cpu mask race
+Date: Fri,  1 Feb 2013 11:48:45 +0100
+Message-Id: <20130201104757.351177183@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104756.470588207@linuxfoundation.org>
 References: <20130201104756.470588207@linuxfoundation.org>
@@ -27,38 +31,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Wang YanQing <udknight@gmail.com>
 
-commit e43b3cec711a61edf047adf6204d542f3a659ef8 upstream.
+commit f44310b98ddb7f0d06550d73ed67df5865e3eda5 upstream.
 
-early_pci_allowed() and read_pci_config_16() are only available if
-CONFIG_PCI is defined.
+I get the following warning every day with v3.7, once or
+twice a day:
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
+  [ 2235.186027] WARNING: at /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x2f/0xb8()
+
+As explained by Linus as well:
+
+ |
+ | Once we've done the "list_add_rcu()" to add it to the
+ | queue, we can have (another) IPI to the target CPU that can
+ | now see it and clear the mask.
+ |
+ | So by the time we get to actually send the IPI, the mask might
+ | have been cleared by another IPI.
+ |
+
+This patch also fixes a system hang problem, if the data->cpumask
+gets cleared after passing this point:
+
+        if (WARN_ONCE(!mask, "empty IPI mask"))
+                return;
+
+then the problem in commit 83d349f35e1a ("x86: don't send an IPI to
+the empty set of CPU's") will happen again.
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: peterz@infradead.org
+Cc: mina86@mina86.org
+Cc: srivatsa.bhat@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/20130126075357.GA3205@udknight
+[ Tidied up the changelog and the comment in the code. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/setup.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/smp.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -633,6 +633,7 @@ static unsigned reserve_low = CONFIG_X86
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -31,6 +31,7 @@ struct call_function_data {
+ 	struct call_single_data	csd;
+ 	atomic_t		refs;
+ 	cpumask_var_t		cpumask;
++	cpumask_var_t		cpumask_ipi;
+ };
  
- static bool __init snb_gfx_workaround_needed(void)
- {
-+#ifdef CONFIG_PCI
- 	int i;
- 	u16 vendor, devid;
- 	static const u16 snb_ids[] = {
-@@ -657,6 +658,7 @@ static bool __init snb_gfx_workaround_ne
- 	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
- 		if (devid == snb_ids[i])
- 			return true;
-+#endif
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
+@@ -54,6 +55,9 @@ hotplug_cfd(struct notifier_block *nfb,
+ 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
+ 				cpu_to_node(cpu)))
+ 			return notifier_from_errno(-ENOMEM);
++		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
++				cpu_to_node(cpu)))
++			return notifier_from_errno(-ENOMEM);
+ 		break;
  
- 	return false;
- }
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -63,6 +67,7 @@ hotplug_cfd(struct notifier_block *nfb,
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+ 		free_cpumask_var(cfd->cpumask);
++		free_cpumask_var(cfd->cpumask_ipi);
+ 		break;
+ #endif
+ 	};
+@@ -524,6 +529,12 @@ void smp_call_function_many(const struct
+ 		return;
+ 	}
+ 
++	/*
++	 * After we put an entry into the list, data->cpumask
++	 * may be cleared again when another CPU sends another IPI for
++	 * a SMP function call, so data->cpumask will be zero.
++	 */
++	cpumask_copy(data->cpumask_ipi, data->cpumask);
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+ 	 * Place entry at the _HEAD_ of the list, so that any cpu still
+@@ -547,7 +558,7 @@ void smp_call_function_many(const struct
+ 	smp_mb();
+ 
+ 	/* Send a message to all CPUs in the map */
+-	arch_send_call_function_ipi_mask(data->cpumask);
++	arch_send_call_function_ipi_mask(data->cpumask_ipi);
+ 
+ 	/* Optionally wait for the CPUs to complete */
+ 	if (wait)
 
 
