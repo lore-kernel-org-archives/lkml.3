@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422854Ab3BAKvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:51:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39456 "EHLO mail.kernel.org"
+	id S1422870Ab3BAKv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:51:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39519 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422840Ab3BAKvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:51:44 -0500
+	id S1422840Ab3BAKvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:51:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 29/33] x86/msr: Add capabilities check
-Date: Fri,  1 Feb 2013 11:49:34 +0100
-Message-Id: <20130201104726.718617540@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 21/33] ALSA: hda - Add a fixup for Packard-Bell desktop with ALC880
+Date: Fri,  1 Feb 2013 11:49:26 +0100
+Message-Id: <20130201104726.168569583@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
@@ -29,52 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c903f0456bc69176912dee6dd25c6a66ee1aed00 upstream.
+commit 0712eea349d8e2b6d0e44b94a752d999319027fb upstream.
 
-At the moment the MSR driver only relies upon file system
-checks. This means that anything as root with any capability set
-can write to MSRs. Historically that wasn't very interesting but
-on modern processors the MSRs are such that writing to them
-provides several ways to execute arbitary code in kernel space.
-Sample code and documentation on doing this is circulating and
-MSR attacks are used on Windows 64bit rootkits already.
+A Packard-Bell desktop machine gives no proper pin configuration from
+BIOS.  It's almost equivalent with the 6stack+fp standard config, just
+take the existing fixup.
 
-In the Linux case you still need to be able to open the device
-file so the impact is fairly limited and reduces the security of
-some capability and security model based systems down towards
-that of a generic "root owns the box" setup.
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=901846
 
-Therefore they should require CAP_SYS_RAWIO to prevent an
-elevation of capabilities. The impact of this is fairly minimal
-on most setups because they don't have heavy use of
-capabilities. Those using SELinux, SMACK or AppArmor rules might
-want to consider if their rulesets on the MSR driver could be
-tighter.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/msr.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -174,6 +174,9 @@ static int msr_open(struct inode *inode,
- 	unsigned int cpu;
- 	struct cpuinfo_x86 *c;
- 
-+	if (!capable(CAP_SYS_RAWIO))
-+		return -EPERM;
-+
- 	cpu = iminor(file->f_path.dentry->d_inode);
- 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
- 		return -ENXIO;	/* No such CPU */
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4741,6 +4741,7 @@ static const struct snd_pci_quirk alc880
+ 	SND_PCI_QUIRK(0x1584, 0x9077, "Uniwill P53", ALC880_FIXUP_VOL_KNOB),
+ 	SND_PCI_QUIRK(0x161f, 0x203d, "W810", ALC880_FIXUP_W810),
+ 	SND_PCI_QUIRK(0x161f, 0x205d, "Medion Rim 2150", ALC880_FIXUP_MEDION_RIM),
++	SND_PCI_QUIRK(0x1631, 0xe011, "PB 13201056", ALC880_FIXUP_6ST),
+ 	SND_PCI_QUIRK(0x1734, 0x107c, "FSC F1734", ALC880_FIXUP_F1734),
+ 	SND_PCI_QUIRK(0x1734, 0x1094, "FSC Amilo M1451G", ALC880_FIXUP_FUJITSU),
+ 	SND_PCI_QUIRK(0x1734, 0x10ac, "FSC AMILO Xi 1526", ALC880_FIXUP_F1734),
 
 
