@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab3BAVMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 16:12:03 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:52275 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757227Ab3BAVL7 (ORCPT
+	id S1757619Ab3BAVMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 16:12:34 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:42270 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757473Ab3BAVMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 16:11:59 -0500
-Message-ID: <1359752988.22968.16.camel@thor.lan>
-Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Fri, 01 Feb 2013 16:09:48 -0500
-In-Reply-To: <CANK3SE25kcgSu2dwKtQKU6-wvryC4qNQJu_nj3NPJHQTTC0oXw@mail.gmail.com>
-References: <CANK3SE09VqvshdLrV4xp2W8BHZqLmuz-pV9jQVj7tbk1JBX+9g@mail.gmail.com>
-	 <Pine.LNX.4.44L0.1301311002190.1876-100000@iolanthe.rowland.org>
-	 <CANK3SE25kcgSu2dwKtQKU6-wvryC4qNQJu_nj3NPJHQTTC0oXw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Fri, 1 Feb 2013 16:12:31 -0500
+X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Feb 2013 16:12:31 EST
+MIME-Version: 1.0
+In-Reply-To: <1359733687.17807.7.camel@joe-AO722>
+References: <20130201154306.GA28473@kroah.com>
+	<1359733687.17807.7.camel@joe-AO722>
+Date: Fri, 1 Feb 2013 23:07:26 +0200
+Message-ID: <CAJL_dMuMnq0=4vv0GriQqUhwnR=gwcnok3rXTsanVYZ5cdLfkQ@mail.gmail.com>
+Subject: Re: [PATCH] SubmittingPatches: add penalty for forcing a maintainer
+ to edit a patch
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-01 at 19:13 +0000, Mark Einon wrote:
-> On 31 January 2013 15:04, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Wed, 30 Jan 2013, Mark Einon wrote:
-> >
-> >> >> > >> This patch fixes the kernel warning generated when putting an MSI MS-1727
-> >> >> > >> GT740 laptop into suspend mode. The call sequence in this case calls
-> >> >> > >> free_irq() twice, once in pci_remove() and once then in pci_suspend().
-> >> >> > >
-> >> >> > > You mean /first/ in pci_suspend() and /then/ in pci_remove() on the
-> >> >> > > already suspended devices, right?
-> >> >> >
-> >> >> > Yes, I did. The call sequence is suspend then resume. My bad.
-> >> >
-> >> > Why does the pci_suspend routine call free_irq() at all?  As far as I
-> >> > know, it's not supposed to do that.  Won't the device continue to use
-> >> > the same IRQ after it is resumed?
-> >>
-> >> This sounds reasonable to me - I think we could probably get rid of
-> >> the request_irq() call from resume, and use
-> >> disable_irq()/enable_irq()?
-> >
-> > Why mess around with IRQ settings at all?  Just have the suspend
-> > routine tell the controller to stop generating them.
-> >
-> > Alan Stern
-> >
-> 
-> I looked into doing this; using context_stop() to stop the controller running.
-> 
-> However, removing the enable_irq() from pci_resume() involves not
-> calling ohci_enable() (as it is also the fw_card_driver.enable
-> function, and can't easily be modified). As this call involves a lot
-> of register writes and I have no devices to test, I decided against
-> it.
-> 
-> I'll send an updated patch for consideration that merely uses a bool
-> to stop the irq being freed twice - crude, but it works without
-> changing too much code.
+Joe, read lkml and decide after that.
+I fully apove the pathch.
 
-Hi Mark,
+Reviewed-by: Anca Emanuel <anca.emanuel@gmail.com>
 
-I think what Alan means is that the suspend/resume code should just
-mask/unmask interrupts at the OHCI controller, via the OHCI
-IntEventClear/Set registers (naturally, saving the current mask and
-restoring it on resume).
+Review-requested-by: Joe Perches <joe@perches.com>
 
-Of course, there's a lot more to do with an OHCI controller -- as you
-note. Like stopping running DMA contexts :)  And restarting them on
-resume.
 
-I'd do it, but I'm buried to my eyeballs in tty right now -- not fun. I
-can _eventually_ do this as I need to address problems with the FW643
-anyway at some point, but it's going to be a little while.
+Comments:
+You have 3 kernels to maintain as stable, plus drivers, plus etc.
+If somebody post something without reading the docs, and you have to
+repeat to them the same, again and more, then you MUST give an beer.
 
-In the meantime, I'm a little confused: you say you can't test this code
-because you have no hardware; but then how'd you trip this bug?
-
-Regards,
-Peter Hurley
-
+On Fri, Feb 1, 2013 at 5:48 PM, Joe Perches <joe@perches.com> wrote:
+> On Fri, 2013-02-01 at 16:43 +0100, Greg Kroah-Hartman wrote:
+>> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>
+>> Maintainers have to hand-edit patches (body of patches and changelog
+>> entries) all the time.  There needs to be some kind of penalty put into
+>> place to keep developers from abusing maintainers.
+>
+> No, there doesn't.
+>
+> It's funny as a joke, it's not as an actual patch.
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
