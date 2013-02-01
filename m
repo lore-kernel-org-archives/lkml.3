@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423089Ab3BANQT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:16:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45867 "EHLO mail.kernel.org"
+	id S1423104Ab3BANQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:16:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45887 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422651Ab3BANQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:16:15 -0500
+	id S1422651Ab3BANQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:16:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Hargrove <phhargrove@lbl.gov>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <js1304@gmail.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 89/89] slub: assign refcount for kmalloc_caches
-Date: Fri,  1 Feb 2013 14:08:44 +0100
-Message-Id: <20130201130213.892451010@linuxfoundation.org>
+        Feng Gao <gfree.wind@gmail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 82/89] netfilter: xt_hashlimit: fix race that results in duplicated entries
+Date: Fri,  1 Feb 2013 14:08:37 +0100
+Message-Id: <20130201130213.388508268@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,49 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: CAI Qian <caiqian@redhat.com>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-This is for stable-3.7.y only and this problem has already been solved
-in mainline through some slab/slub re-work which isn't suitable to
-backport here. See create_kmalloc_cache() in mm/slab_common.c there.
+commit 09181842b000344b1205801df3aa5b726c03cc62 upstream.
 
-commit cce89f4f6911286500cf7be0363f46c9b0a12ce0('Move kmem_cache
-refcounting to common code') moves some refcount manipulation code to
-common code. Unfortunately, it also removed refcount assignment for
-kmalloc_caches. So, kmalloc_caches's refcount is initially 0.
-This makes erroneous situation.
+Two packets may race to create the same entry in the hashtable,
+double check if this packet lost race. This double checking only
+happens in the path of the packet that creates the hashtable for
+first time.
 
-Paul Hargrove report that when he create a 8-byte kmem_cache and
-destory it, he encounter below message.
-'Objects remaining in kmalloc-8 on kmem_cache_close()'
+Note that, with this patch, no packet drops occur if the race happens.
 
-8-byte kmem_cache merge with 8-byte kmalloc cache and refcount is
-increased by one. So, resulting refcount is 1. When destroy it, it hit
-refcount = 0, then kmem_cache_close() is executed and error message is
-printed.
-
-This patch assign initial refcount 1 to kmalloc_caches, so fix this
-erroneous situation.
-
-Reported-by: Paul Hargrove <phhargrove@lbl.gov>
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Reported-by: Feng Gao <gfree.wind@gmail.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slub.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/netfilter/xt_hashlimit.c |   25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3279,6 +3279,7 @@ static struct kmem_cache *__init create_
- 	if (kmem_cache_open(s, flags))
- 		goto panic;
+--- a/net/netfilter/xt_hashlimit.c
++++ b/net/netfilter/xt_hashlimit.c
+@@ -157,11 +157,22 @@ dsthash_find(const struct xt_hashlimit_h
+ /* allocate dsthash_ent, initialize dst, put in htable and lock it */
+ static struct dsthash_ent *
+ dsthash_alloc_init(struct xt_hashlimit_htable *ht,
+-		   const struct dsthash_dst *dst)
++		   const struct dsthash_dst *dst, bool *race)
+ {
+ 	struct dsthash_ent *ent;
  
-+	s->refcount = 1;
- 	list_add(&s->list, &slab_caches);
- 	return s;
+ 	spin_lock(&ht->lock);
++
++	/* Two or more packets may race to create the same entry in the
++	 * hashtable, double check if this packet lost race.
++	 */
++	ent = dsthash_find(ht, dst);
++	if (ent != NULL) {
++		spin_unlock(&ht->lock);
++		*race = true;
++		return ent;
++	}
++
+ 	/* initialize hash with random val at the time we allocate
+ 	 * the first hashtable entry */
+ 	if (unlikely(!ht->rnd_initialized)) {
+@@ -588,6 +599,7 @@ hashlimit_mt(const struct sk_buff *skb,
+ 	unsigned long now = jiffies;
+ 	struct dsthash_ent *dh;
+ 	struct dsthash_dst dst;
++	bool race = false;
+ 	u32 cost;
  
+ 	if (hashlimit_init_dst(hinfo, &dst, skb, par->thoff) < 0)
+@@ -596,13 +608,18 @@ hashlimit_mt(const struct sk_buff *skb,
+ 	rcu_read_lock_bh();
+ 	dh = dsthash_find(hinfo, &dst);
+ 	if (dh == NULL) {
+-		dh = dsthash_alloc_init(hinfo, &dst);
++		dh = dsthash_alloc_init(hinfo, &dst, &race);
+ 		if (dh == NULL) {
+ 			rcu_read_unlock_bh();
+ 			goto hotdrop;
++		} else if (race) {
++			/* Already got an entry, update expiration timeout */
++			dh->expires = now + msecs_to_jiffies(hinfo->cfg.expire);
++			rateinfo_recalc(dh, now, hinfo->cfg.mode);
++		} else {
++			dh->expires = jiffies + msecs_to_jiffies(hinfo->cfg.expire);
++			rateinfo_init(dh, hinfo);
+ 		}
+-		dh->expires = jiffies + msecs_to_jiffies(hinfo->cfg.expire);
+-		rateinfo_init(dh, hinfo);
+ 	} else {
+ 		/* update expiration timeout */
+ 		dh->expires = now + msecs_to_jiffies(hinfo->cfg.expire);
 
 
