@@ -1,76 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab3BAC5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:57:30 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39012 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752131Ab3BAC52 (ORCPT
+	id S1754136Ab3BADER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 22:04:17 -0500
+Received: from mail.windriver.com ([147.11.1.11]:45488 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab3BADEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:57:28 -0500
-Message-ID: <1359687434.31386.53.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Bug#695182: [RFC] Reproducible OOM with just a few sleeps
-From: Ben Hutchings <ben@decadent.org.uk>
-To: paul.szabo@sydney.edu.au
-Cc: 695182@bugs.debian.org, dave@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, pavel@ucw.cz
-Date: Fri, 01 Feb 2013 02:57:14 +0000
-In-Reply-To: <201302010212.r112C6UQ005134@como.maths.usyd.edu.au>
-References: <201302010212.r112C6UQ005134@como.maths.usyd.edu.au>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-ZEwXyXCb20IX49watm2+"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 31 Jan 2013 22:04:15 -0500
+Message-ID: <510B22C2.90606@windriver.com>
+Date: Thu, 31 Jan 2013 20:04:50 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Cong Ding <dinggnu@gmail.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Tiejun Chen <tiejun.chen@windriver.com>,
+        Michael Neuling <mikey@neuling.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] powerpc: kernel/kgdb.c: fix memory leakage
+References: <1358184395-31418-1-git-send-email-dinggnu@gmail.com>
+In-Reply-To: <1358184395-31418-1-git-send-email-dinggnu@gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/14/2013 11:26 AM, Cong Ding wrote:
+> the variable backup_current_thread_info isn't freed before existing the
+> function.
+> 
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> ---
+>  arch/powerpc/kernel/kgdb.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
+> index 8747447..5ca82cd 100644
+> --- a/arch/powerpc/kernel/kgdb.c
+> +++ b/arch/powerpc/kernel/kgdb.c
+> @@ -154,12 +154,12 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
+>  static int kgdb_singlestep(struct pt_regs *regs)
+>  {
+>  	struct thread_info *thread_info, *exception_thread_info;
+> -	struct thread_info *backup_current_thread_info = \
+> -		(struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
+> +	struct thread_info *backup_current_thread_info;
 
---=-ZEwXyXCb20IX49watm2+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2013-02-01 at 13:12 +1100, paul.szabo@sydney.edu.au wrote:
-> Dear Ben,
->=20
-> >> PAE is broken for any amount of RAM.
-> >
-> > No it isn't.
->=20
-> Could I please ask you to expand on that?
 
-I already did, a few messages back.
+Woh...  This is definitely wrong.  You have found a problem for sure,
+but this is not the right way to fix it.
 
-Ben.
+It is not a good idea to kmalloc while single stepping because you can
+hang the kernel if you single step any operation in kmalloc().
 
---=20
-Ben Hutchings
-Everything should be made as simple as possible, but not simpler.
-                                                           - Albert Einstei=
-n
+I am in the process of going through all the kgdb mails from the last
+few months while I had been away from the project, so I didn't catch
+this one and I see it has upstream commit (fefd9e6f8).  I'll submit
+another patch to fix this the right way and use a static variable.
+This is ok to use a static variable here because this is not something
+we can recursively call at a single CPU level.
 
---=-ZEwXyXCb20IX49watm2+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+If Ben prefers we not burn the memory unless kgdb is active we can
+kmalloc / kfree the space we need at the time that kgdb is
+initialized.  Else we can go with this patch you see below.  We'll see
+what Ben desires.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-----
+diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
+index a7bc752..bb12c8b 100644
+--- a/arch/powerpc/kernel/kgdb.c
++++ b/arch/powerpc/kernel/kgdb.c
+@@ -151,15 +151,16 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
+ 	return 1;
+ }
+ 
++static struct thread_info kgdb_backup_thread_info[NR_CPUS];
++
+ static int kgdb_singlestep(struct pt_regs *regs)
+ {
+ 	struct thread_info *thread_info, *exception_thread_info;
+-	struct thread_info *backup_current_thread_info;
++	int cpu = raw_smp_processor_id();
+ 
+ 	if (user_mode(regs))
+ 		return 0;
+ 
+-	backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
+ 	/*
+ 	 * On Book E and perhaps other processors, singlestep is handled on
+ 	 * the critical exception stack.  This causes current_thread_info()
+@@ -175,7 +176,7 @@ static int kgdb_singlestep(struct pt_regs *regs)
+ 
+ 	if (thread_info != exception_thread_info) {
+ 		/* Save the original current_thread_info. */
+-		memcpy(backup_current_thread_info, exception_thread_info, sizeof *thread_info);
++		memcpy(&kgdb_backup_thread_info[cpu], exception_thread_info, sizeof *thread_info);
+ 		memcpy(exception_thread_info, thread_info, sizeof *thread_info);
+ 	}
+ 
+@@ -183,9 +184,8 @@ static int kgdb_singlestep(struct pt_regs *regs)
+ 
+ 	if (thread_info != exception_thread_info)
+ 		/* Restore current_thread_info lastly. */
+-		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
++		memcpy(exception_thread_info, &kgdb_backup_thread_info[cpu], sizeof *thread_info);
+ 
+-	kfree(backup_current_thread_info);
+ 	return 1;
+ }
+ 
 
-iQIVAwUAUQsvCue/yOyVhhEJAQpY9xAA08DsjOdfHz1Ho5Ym3ZlqZWBQmBficolW
-h0Z4XDj5YN8tQ4DPdgAGzjXwi3mVzl2GC3GcyVirYpBxbrOVx1u0dX787e25jLyq
-tjZe7iGlds8/Klqmg3iqK2M0TJbm/3oH3C5gBsY9mBI+lwYdi7Fuh+rQivHNfy6N
-M1tniykaFL2UiiccRBop2HKJg67SEXe38fxtLe9ZYNljGsY83tOugipALVW56ane
-HQjNjRjv62iZMAatEppLa9gc719dUAE2CivrCPOILx91C+ToraOLVWREB9zwwTpY
-7K0Nor73Q8ITbgwX0fdPE5Cm5zFeJEfgokn5vB8PTYvlI3/E6BX8erkS0whAxSo6
-h/7hG6PrzJ6XcGTxCtjbn5qWHeUXwjDU6v28ipRDBlifMkJJ2HVXncoBKBJr4dHR
-uHmppAWMZIAkTOum0XJx5LfAGwkHzZX0BnTNfh8ygop17ffybnelC64JqCBgabU/
-29lbndNR9Pp4g/Mmr6jxGrsHgyZg1ADJbrudq/M7cWd7abihx/Gy46CO5CpowwF9
-R0KG3bX0AMRc2sfZDdTg0UOLiE8ZMV2prm/EpuaLyyNiJTW5/vpodbVuN55Soy2d
-O46r1fsHHdNMT2VDYS0Z+kmY2BWMRgsCDkhj1HBby330XGym3TGgcU1dsxmsIm6Z
-C84O7PiEOyM=
-=yNYO
------END PGP SIGNATURE-----
+-----
 
---=-ZEwXyXCb20IX49watm2+--
+
+Thanks,
+Jason.
+
+
+>  
+>  	if (user_mode(regs))
+>  		return 0;
+>  
+> +	backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
+>  	/*
+>  	 * On Book E and perhaps other processors, singlestep is handled on
+>  	 * the critical exception stack.  This causes current_thread_info()
+> @@ -185,6 +185,7 @@ static int kgdb_singlestep(struct pt_regs *regs)
+>  		/* Restore current_thread_info lastly. */
+>  		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
+>  
+> +	kfree(backup_current_thread_info);
+>  	return 1;
+>  }
+>  
+> 
+
