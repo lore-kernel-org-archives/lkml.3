@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab3BAJti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:49:38 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:49709 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703Ab3BAJtd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:49:33 -0500
+	id S1756512Ab3BAJwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:52:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756235Ab3BAJwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 04:52:17 -0500
+Message-ID: <510B904B.4050508@redhat.com>
+Date: Fri, 01 Feb 2013 09:52:11 +0000
+From: "Bryn M. Reeves" <bmr@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <510B436A.20808@wwwdotorg.org>
-References: <1359627939-2685-1-git-send-email-sachin.kamat@linaro.org>
-	<1359627939-2685-3-git-send-email-sachin.kamat@linaro.org>
-	<510AA318.5060208@wwwdotorg.org>
-	<CAK9yfHzSq8SpKXQYtFd1Ds+N-AoH+H+BdWrPsPT=OwSPdst1WA@mail.gmail.com>
-	<510B436A.20808@wwwdotorg.org>
-Date: Fri, 1 Feb 2013 15:19:32 +0530
-Message-ID: <CAK9yfHzJvOC_wvsxvapi7rATq97QX-6exOyqjNTSguhh3RLVvQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] serial: tegra: Convert to devm_ioremap_resource()
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, thierry.reding@avionic-design.de,
-        gregkh@linuxfoundation.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bart Van Assche <bvanassche@acm.org>
+CC: Tao Ma <tm@tao.ma>, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: How to online remove an error scsi disk from the system?
+References: <510B5CFC.2040801@tao.ma> <510B749E.8020501@acm.org>
+In-Reply-To: <510B749E.8020501@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 February 2013 09:54, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>
->> The entire series is merged in Greg's driver-core tree [1] and I
->> presume all other associated patches would also be picked up by him.
->> Isn't it Greg?
->>
->> [1] git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
->
-> The Tegra serial driver went through Greg's TTY tree. I assume that goes
-> direct to Linus not through driver-core.git first.
+On 02/01/2013 07:54 AM, Bart Van Assche wrote:
+>   * proc_scsi_write - handle writes to /proc/scsi/scsi
+>   * @file: not used
+>   * @buf: buffer to write
+>   * @length: length of buf, at most PAGE_SIZE
+>   * @ppos: not used
+>   *
+>   * Description: this provides a legacy mechanism to add or remove
+>   * devices by Host, Channel, ID, and Lun.  To use,
+>   * "echo 'scsi add-single-device 0 1 2 3' > /proc/scsi/scsi" or
+>   * "echo 'scsi remove-single-device 0 1 2 3' > /proc/scsi/scsi" with
+>   * "0 1 2 3" replaced by the Host, Channel, Id, and Lun.
 
-Right. But AFAIK for this specific change he has carried the patches
-in the device-core tree irrespective of the subsystem.
+The proc interface is deprecated; this can all be done via sysfs today, 
+e.g.:
+
+echo 1 > /sys/block/sdc/device/delete
+
+Is equivalent to issuing scsi remove-single-device to proc.
+
+Regards,
+Bryn.
 
 
--- 
-With warm regards,
-Sachin
