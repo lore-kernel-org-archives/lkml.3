@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423007Ab3BANPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:15:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45791 "EHLO mail.kernel.org"
+	id S1422993Ab3BANPH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:15:07 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45771 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422817Ab3BANPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:15:12 -0500
+	id S1422817Ab3BANPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:15:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Haibo Xi <haibbo@gmail.com>, Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 73/89] netfilter: nf_ct_reasm: fix conntrack reassembly expire code
-Date: Fri,  1 Feb 2013 14:08:28 +0100
-Message-Id: <20130201130212.740166465@linuxfoundation.org>
+        "Vitaly E. Lavrov" <lve@guap.ru>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 81/89] netfilter: xt_hashlimit: fix namespace destroy path
+Date: Fri,  1 Feb 2013 14:08:36 +0100
+Message-Id: <20130201130213.310470041@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -25,43 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Haibo Xi <haibbo@gmail.com>
+From: "Vitaly E. Lavrov" <lve@guap.ru>
 
-commit 97cf00e93cc24898493e7a058105e3215257ee04 upstream.
+commit 32263dd1b43378b4f7d7796ed713f77e95f27e8a upstream.
 
-Commit b836c99fd6c9 (ipv6: unify conntrack reassembly expire
-code with standard one) use the standard IPv6 reassembly
-code(ip6_expire_frag_queue) to handle conntrack reassembly expire.
+recent_net_exit() is called before recent_mt_destroy() in the
+destroy path of network namespaces. Make sure there are no entries
+in the parent proc entry xt_recent before removing it.
 
-In ip6_expire_frag_queue, it invoke dev_get_by_index_rcu to get
-which device received this expired packet.so we must save ifindex
-when NF_conntrack get this packet.
-
-With this patch applied, I can see ICMP Time Exceeded sent
-from the receiver when the sender sent out 1/2 fragmented
-IPv6 packet.
-
-Signed-off-by: Haibo Xi <haibbo@gmail.com>
+Signed-off-by: Vitaly E. Lavrov <lve@guap.ru>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv6/netfilter/nf_conntrack_reasm.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/netfilter/xt_hashlimit.c |   29 +++++++++++++++++++++++++----
+ 1 file changed, 25 insertions(+), 4 deletions(-)
 
---- a/net/ipv6/netfilter/nf_conntrack_reasm.c
-+++ b/net/ipv6/netfilter/nf_conntrack_reasm.c
-@@ -311,7 +311,10 @@ found:
+--- a/net/netfilter/xt_hashlimit.c
++++ b/net/netfilter/xt_hashlimit.c
+@@ -318,7 +318,10 @@ static void htable_destroy(struct xt_has
+ 		parent = hashlimit_net->ipt_hashlimit;
  	else
- 		fq->q.fragments = skb;
+ 		parent = hashlimit_net->ip6t_hashlimit;
+-	remove_proc_entry(hinfo->pde->name, parent);
++
++	if(parent != NULL)
++		remove_proc_entry(hinfo->pde->name, parent);
++
+ 	htable_selective_cleanup(hinfo, select_all);
+ 	vfree(hinfo);
+ }
+@@ -856,6 +859,27 @@ static int __net_init hashlimit_proc_net
  
--	skb->dev = NULL;
-+	if (skb->dev) {
-+		fq->iif = skb->dev->ifindex;
-+		skb->dev = NULL;
-+	}
- 	fq->q.stamp = skb->tstamp;
- 	fq->q.meat += skb->len;
- 	if (payload_len > fq->q.max_size)
+ static void __net_exit hashlimit_proc_net_exit(struct net *net)
+ {
++	struct xt_hashlimit_htable *hinfo;
++	struct hlist_node *pos;
++	struct proc_dir_entry *pde;
++	struct hashlimit_net *hashlimit_net = hashlimit_pernet(net);
++
++	/* recent_net_exit() is called before recent_mt_destroy(). Make sure
++	 * that the parent xt_recent proc entry is is empty before trying to
++	 * remove it.
++	 */
++	mutex_lock(&hashlimit_mutex);
++	pde = hashlimit_net->ipt_hashlimit;
++	if (pde == NULL)
++		pde = hashlimit_net->ip6t_hashlimit;
++
++	hlist_for_each_entry(hinfo, pos, &hashlimit_net->htables, node)
++		remove_proc_entry(hinfo->pde->name, pde);
++
++	hashlimit_net->ipt_hashlimit = NULL;
++	hashlimit_net->ip6t_hashlimit = NULL;
++	mutex_unlock(&hashlimit_mutex);
++
+ 	proc_net_remove(net, "ipt_hashlimit");
+ #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+ 	proc_net_remove(net, "ip6t_hashlimit");
+@@ -872,9 +896,6 @@ static int __net_init hashlimit_net_init
+ 
+ static void __net_exit hashlimit_net_exit(struct net *net)
+ {
+-	struct hashlimit_net *hashlimit_net = hashlimit_pernet(net);
+-
+-	BUG_ON(!hlist_empty(&hashlimit_net->htables));
+ 	hashlimit_proc_net_exit(net);
+ }
+ 
 
 
