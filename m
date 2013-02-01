@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030237Ab3BANNF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:13:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45310 "EHLO mail.kernel.org"
+	id S1422704Ab3BANMj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:12:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45226 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422640Ab3BANMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:12:54 -0500
+	id S1422653Ab3BANMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:12:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 58/89] NFSv4.1: Handle NFS4ERR_DELAY when resetting the NFSv4.1 session
-Date: Fri,  1 Feb 2013 14:08:13 +0100
-Message-Id: <20130201130211.671464910@linuxfoundation.org>
+Subject: [ 53/89] NFS: Fix error reporting in nfs_xdev_mount
+Date: Fri,  1 Feb 2013 14:08:08 +0100
+Message-Id: <20130201130211.310468494@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,44 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit c489ee290bdbbace6bb63ebe6ebd4dd605819495 upstream.
+commit dee972b967ae111ad5705733de17a3bfc4632311 upstream.
 
-NFS4ERR_DELAY is a legal reply when we call DESTROY_SESSION. It
-usually means that the server is busy handling an unfinished RPC
-request. Just sleep for a second and then retry.
-We also need to be able to handle the NFS4ERR_BACK_CHAN_BUSY return
-value. If the NFS server has outstanding callbacks, we just want to
-similarly sleep & retry.
+Currently, nfs_xdev_mount converts all errors from clone_server() to
+ENOMEM, which can then leak to userspace (for instance to 'mount'). Fix that.
+Also ensure that if nfs_fs_mount_common() returns an error, we
+don't dprintk(0)...
+
+The regression originated in commit 3d176e3fe4f6dc379b252bf43e2e146a8f7caf01
+(NFS: Use nfs_fs_mount_common() for xdev mounts)
 
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ fs/nfs/super.c |   24 ++++++++++--------------
+ 1 file changed, 10 insertions(+), 14 deletions(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1997,8 +1997,18 @@ static int nfs4_reset_session(struct nfs
- 	nfs4_begin_drain_session(clp);
- 	cred = nfs4_get_exchange_id_cred(clp);
- 	status = nfs4_proc_destroy_session(clp->cl_session, cred);
--	if (status && status != -NFS4ERR_BADSESSION &&
--	    status != -NFS4ERR_DEADSESSION) {
-+	switch (status) {
-+	case 0:
-+	case -NFS4ERR_BADSESSION:
-+	case -NFS4ERR_DEADSESSION:
-+		break;
-+	case -NFS4ERR_BACK_CHAN_BUSY:
-+	case -NFS4ERR_DELAY:
-+		set_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state);
-+		status = 0;
-+		ssleep(1);
-+		goto out;
-+	default:
- 		status = nfs4_recovery_handle_error(clp, status);
- 		goto out;
- 	}
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2576,27 +2576,23 @@ nfs_xdev_mount(struct file_system_type *
+ 	struct nfs_server *server;
+ 	struct dentry *mntroot = ERR_PTR(-ENOMEM);
+ 	struct nfs_subversion *nfs_mod = NFS_SB(data->sb)->nfs_client->cl_nfs_mod;
+-	int error;
+ 
+-	dprintk("--> nfs_xdev_mount_common()\n");
++	dprintk("--> nfs_xdev_mount()\n");
+ 
+ 	mount_info.mntfh = mount_info.cloned->fh;
+ 
+ 	/* create a new volume representation */
+ 	server = nfs_mod->rpc_ops->clone_server(NFS_SB(data->sb), data->fh, data->fattr, data->authflavor);
+-	if (IS_ERR(server)) {
+-		error = PTR_ERR(server);
+-		goto out_err;
+-	}
+-
+-	mntroot = nfs_fs_mount_common(server, flags, dev_name, &mount_info, nfs_mod);
+-	dprintk("<-- nfs_xdev_mount_common() = 0\n");
+-out:
+-	return mntroot;
+ 
+-out_err:
+-	dprintk("<-- nfs_xdev_mount_common() = %d [error]\n", error);
+-	goto out;
++	if (IS_ERR(server))
++		mntroot = ERR_CAST(server);
++	else
++		mntroot = nfs_fs_mount_common(server, flags,
++				dev_name, &mount_info, nfs_mod);
++
++	dprintk("<-- nfs_xdev_mount() = %ld\n",
++			IS_ERR(mntroot) ? PTR_ERR(mntroot) : 0L);
++	return mntroot;
+ }
+ 
+ #if IS_ENABLED(CONFIG_NFS_V4)
 
 
