@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab3BARyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 12:54:53 -0500
-Received: from mail-gh0-f179.google.com ([209.85.160.179]:34248 "EHLO
-	mail-gh0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757098Ab3BARyw (ORCPT
+	id S1757332Ab3BAR4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 12:56:33 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:63124 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045Ab3BAR4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 12:54:52 -0500
-Date: Fri, 1 Feb 2013 15:54:45 -0200
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2013-02-01
-Message-ID: <20130201175445.GE4733@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20130201174019.GD4733@joana>
+	Fri, 1 Feb 2013 12:56:30 -0500
+Date: Fri, 1 Feb 2013 12:56:26 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sboyd@codeaurora.org, Will Deacon <will.deacon@arm.com>,
+        paulmck@linux.vnet.ibm.com, Catalin Marinas <catalin.marinas@arm.com>,
+        marc.zyngier@arm.com, linus.walleij@linaro.org
+Subject: Re: [PATCH v4 00/13] ARM LPAE Fixes - Part 1
+In-Reply-To: <510BE9BC.9090701@ti.com>
+Message-ID: <alpine.LFD.2.02.1302011246080.6300@xanadu.home>
+References: <1359669512-31276-1-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1301312252230.6300@xanadu.home> <510BDAED.8060805@ti.com> <20130201151410.GR23505@n2100.arm.linux.org.uk> <510BE9BC.9090701@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uh9ZiVrAOUUm9fzH"
-Content-Disposition: inline
-In-Reply-To: <20130201174019.GD4733@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 1 Feb 2013, Cyril Chemparathy wrote:
 
---uh9ZiVrAOUUm9fzH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 02/01/2013 10:14 AM, Russell King - ARM Linux wrote:
+> > On Fri, Feb 01, 2013 at 10:10:37AM -0500, Cyril Chemparathy wrote:
+> > > With this, I ran simple network and filesystem performance tests to
+> > > compare the code-patching vs. non-code-patching variants.  These tests
+> > > didn't yield any significant performance difference between the two on
+> > > an ARMv7 (Cortex-A8) platform.
+> > 
+> > It's not network and fs activity that this kind of stuff is likely to
+> > show up in, but more to do with walking pages tables and the like -
+> > remember that page tables are stored using physical addresses, and any
+> > walks of them have to convert those physical addresses to virtual
+> > addresses and back again.
+> > 
+> > So, things like page scanning for eviction (eg, page aging, page
+> > faults even those which just re-use a page from the page cache) have
+> > to use the v:p / p:v translation macros.
+> > 
+> 
+> Thanks, Russell.  Any recommendations on how to best benchmark this?
 
-Hi John,
+Well, the benchmark issue can be side-stepped altogether.  We know that 
+the assembly patching is the best thing that can be done, and we do have 
+most of it already.
 
-* Gustavo Padovan <gustavo@padovan.org> [2013-02-01 15:40:19 -0200]:
+As previously stated, the p2v patching may remain essentially identical 
+to what we have right now.  Since the result is a 32-bit value, the 
+current code should just work.
 
-> Hi John,
->=20
-> Here goes another batch intended for 3.9, the majority of the patch here =
-are
-> from Johan who is fixing many issues in the management interface that have
-> appeared lately. The rest of the patches are just small improvements, fix=
-es
-> and clean ups.
+On the v2p side, it's just a matter of adding two instructions around 
+the existing one (which should be turned into an adds).  The first is a 
+mov to load the high bits of PHYS_OFFSET which are likely to be 
+representable with a simple immediate operand, and the third one would 
+be a simple adc with #0 which doesn't need any patching.
 
-I had a brain shutdown moment and forgot to rebase against wireless-next.
-SO the pull request is actually much smaller.
 
-Please pull!
-
-	Gustavo
-
----
-The following changes since commit c331997b6c9ad7f4b8075e6e60d3caa6e36f5938:
-
-  wil6210: fix wil_vring_init_tx status (2013-01-30 15:07:19 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next fo=
-r-upstream
-
-for you to fetch changes up to a3d09356491d637548dbe815ddb966f52ec9e53a:
-
-  Bluetooth: Refactor mgmt_pending_foreach (2013-02-01 15:50:18 -0200)
-
-----------------------------------------------------------------
-Andre Guedes (3):
-      Bluetooth: Reduce critical section in sco_conn_ready
-      Bluetooth: Remove unneeded locking
-      Bluetooth: Refactor mgmt_pending_foreach
-
-Johan Hedberg (11):
-      Bluetooth: Store UUIDs in the same order that they were added
-      Bluetooth: Simplify UUIDs clearing code
-      Bluetooth: Keep track of UUID type upon addition
-      Bluetooth: Simplify UUID removal code
-      Bluetooth: Simplify UUID16 list generation for EIR
-      Bluetooth: Remove useless eir_len variable from EIR creation
-      Bluetooth: Refactor UUID-16 list generation into its own function
-      Bluetooth: Add support for 32-bit UUIDs in EIR data
-      Bluetooth: Add support for 128-bit UUIDs in EIR data
-      Bluetooth: Fix link security setting when powering on
-      Bluetooth: Increment Management interface revision
-
- include/net/bluetooth/hci_core.h |   1 +
- net/bluetooth/hci_core.c         |  10 +-
- net/bluetooth/hci_event.c        |   4 -
- net/bluetooth/mgmt.c             | 219 +++++++++++++++++++++++++----------=
-------
- net/bluetooth/sco.c              |  18 ++--
- 5 files changed, 150 insertions(+), 102 deletions(-)
-
---uh9ZiVrAOUUm9fzH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRDAFlAAoJEPs3PUX4s20oOrwQAK5PnopbfD6PgTAewSGXmr1I
-3gkO2h4uu38e8qw53NaOspLSdy+DnfRjVuWcaEncniotPYeXuBnrUQ6jizyx6CpT
-4P1zlAFkS3nzMd5sSbIfgSHhYssVgG9bFP5Pll3+tOFHntIfyTqJE1pBSjOdMUCp
-ZnoqbuKIq8zY337JyMStNNskI+6XLHKvJ0R7BAbZmEIXgBXuDyn1MuR8OX0jIJ8J
-id19iFWDaOHBoxNIClScjUpiiSVTLqqnC5CYDdY1pDrQSvV45opTVj8fvwcE967W
-fmB8hz7Us2qEDJdJOvuN8Tjy5h0NOeVf/AN/sNWHfT5Td5UWn2L8S3o3Vyt/+9Gv
-YuUPLMyb5P6Pf6PLBCT+N7KULzrW8gGVf3vmgnntJcsTw/AwsoOSf7i2JHgwoeu1
-yRo4lva090RB5kOPCwwMYW8oxgWJKT0YeFIOTACHvu0dxfQpcvbGfI2KSg19fgsV
-1ld3E0sY8IrL//RUIjibHe9Dv60uyXbmc0RGH2YyjCO+QAl79ASune91OQ39jy+5
-5zdSVgrvQNZiNLUTDl7lAXs65cdCkr98llvzHcqTqBra5eOKHk8SxSiDeLbHj7UX
-otTvqtVkkKnyraj09H7w+MU/7Qnh9Qgqw0nG5KCIiaciBtz2kK3uLvAHOeiNx1be
-oebkm/WksHblOd5NobFv
-=pfe3
------END PGP SIGNATURE-----
-
---uh9ZiVrAOUUm9fzH--
+Nicolas
