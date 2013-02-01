@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab3BASlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 13:41:24 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37257 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754766Ab3BASlW (ORCPT
+	id S1757200Ab3BASpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 13:45:55 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:42076 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600Ab3BASpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 13:41:22 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19y+WO5kFaAQgOTDEAmQ3tq
-Date: Fri, 1 Feb 2013 10:41:08 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Matt Porter <mporter@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
- arm/common
-Message-ID: <20130201184107.GM22517@atomide.com>
-References: <1359742975-10421-1-git-send-email-mporter@ti.com>
- <1359742975-10421-2-git-send-email-mporter@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359742975-10421-2-git-send-email-mporter@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 1 Feb 2013 13:45:54 -0500
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 0/6] Add P state driver for Intel Core Processors
+Date: Fri,  1 Feb 2013 10:45:34 -0800
+Message-Id: <1359744343-18690-1-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matt Porter <mporter@ti.com> [130201 10:25]:
-> Move mach-davinci/dma.c to common/edma.c so it can be used
-> by OMAP (specifically AM33xx) as well.
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-I think this should rather go to drivers/dma/?
+This driver implements a scaling driver with an internal governor for
+Intel Core processors.  The driver follows the same model as the
+Transmeta scaling driver (longrun.c) and implements the setpolicy()
+instead of target().  Scaling drivers that implement setpolicy() are
+assmuned to implement internal governors by the cpufreq core. All the
+logic for selecting the current P state is contained within the driver
+no external governor is used by the cpufreq core.
 
-Tony
+At the moment only Intel SandyBridge processors are supported. As
+testing on SandyBridge+ processors is completed support will be added
+to the driver.
+
+New sysfs files for controlling P state selection have been added to
+/sys/devices/system/cpu/intel_pstate/
+      max_perf_pct: limits the maximum P state that will be requested by
+      the driver stated as a percentage of the avail performance.
+    
+      min_perf_pct: limits the minimum P state that will be  requested by
+      the driver stated as a percentage of the avail performance.
+    
+      no_turbo: limits the driver to selecting P states below the turbo
+      frequency range.
+
+The units for these for these files are purposely abstract and stated
+in terms of available performance and not frequency.  In idea that
+frequency can be set to a single frequency is a fiction for Intel Core
+processors. Even if the scaling driver selects a single P state the
+actual frequency the processor will run at is selected by the
+processor itself.
+
+Based on v3.8-rc5.
+Patches 1-5:
+     Fix issues related to scaling drivers that implement the
+     setpolicy() interface instead of target() when CONFIG_SMP and
+     CONFIG_HOTPLUG_CPU are set.
+
+Patch 6:
+     The driver and associated config glue.
+
+Dirk Brandewie (6):
+  cpufreq: Retrieve current frequency from scaling drivers with
+    internal governors
+  cpufreq: Only query drivers that implement cpufreq_driver.target()
+  cpufreq: Do not track governor name for scaling drivers with internal
+    governors.
+  cpufreq_stats: Do not track policies without associated governors.
+  cpufreq: balance out cpufreq_cpu_{get,put} for scaling drivers using
+    setpolicy
+  cpufreq/x86: Add P-state driver for sandy bridge.
+
+ drivers/cpufreq/Kconfig.x86     |   18 +
+ drivers/cpufreq/Makefile        |    1 +
+ drivers/cpufreq/cpufreq.c       |   43 ++-
+ drivers/cpufreq/cpufreq_stats.c |    4 +-
+ drivers/cpufreq/intel_pstate.c  |  830 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 880 insertions(+), 16 deletions(-)
+ create mode 100644 drivers/cpufreq/intel_pstate.c
+
+-- 
+1.7.7.6
+
