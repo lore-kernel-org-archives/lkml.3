@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757420Ab3BATQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 14:16:29 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:54863 "EHLO
+	id S1757417Ab3BATSO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 14:18:14 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:58200 "EHLO
 	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754766Ab3BATQ2 (ORCPT
+	with ESMTP id S1753600Ab3BATSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 14:16:28 -0500
+	Fri, 1 Feb 2013 14:18:12 -0500
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 50.131.214.131
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18TfI3yAFxNUTCXRgZKjmAZ
-Date: Fri, 1 Feb 2013 11:16:24 -0800
+X-MHO-User: U2FsdGVkX18va54qvVWRSwzOaCMyMoLc
+Date: Fri, 1 Feb 2013 11:18:10 -0800
 From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, rob.herring@calxeda.com,
-        rob@landley.net, b-cousson@ti.com, linux-usb@vger.kernel.org,
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: balbi@ti.com, linux-usb@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org
-Subject: Re: [PATCH v2 2/4] ARM: OMAP: devices: create device for usb part
- of control module
-Message-ID: <20130201191624.GR22517@atomide.com>
-References: <1358777308-2409-1-git-send-email-kishon@ti.com>
- <1358777308-2409-3-git-send-email-kishon@ti.com>
- <20130123112422.GF29258@arwen.pp.htv.fi>
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        eballetbo@gmail.com, javier@dowhile0.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH v2 3/6] ARM: OMAP: USB: Add phy binding information
+Message-ID: <20130201191810.GS22517@atomide.com>
+References: <1359081206-5602-1-git-send-email-kishon@ti.com>
+ <1359081206-5602-4-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130123112422.GF29258@arwen.pp.htv.fi>
+In-Reply-To: <1359081206-5602-4-git-send-email-kishon@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [130123 03:27]:
-> Hi,
-> 
-> On Mon, Jan 21, 2013 at 07:38:26PM +0530, Kishon Vijay Abraham I wrote:
-> > A seperate driver has been added to handle the usb part of control
-> > module. A device for the above driver is created here, using the register
-> > address information to be used by the driver for powering on the PHY and
-> > for writing to the mailbox.
-> > 
-> > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> 
-> Tony ? Without this we won't have the control module driver.
+* Kishon Vijay Abraham I <kishon@ti.com> [130124 18:36]:
+> This is w.r.t the changes in PHY library to support adding and getting
+> multiple PHYs of the same type. In the new design, the
+> binding information between the PHY and the USB controller should be
+> specified in the platform specific initialization code. So it's been
+> done here for OMAP platforms.
 
-Looks OK to me, but please see my other reply regarding on
-you setting up some immutable branches to avoid pointless
-merge conflicts.
+This looks OK to me, but should be queued by Felipe in his
+minimal USB platform_data changes branch that I can pull in too
+to avoid pointless merge conflicts.
 
 Regards,
 
