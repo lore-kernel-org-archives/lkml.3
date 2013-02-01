@@ -1,118 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab3BAI3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:29:13 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:63006 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755953Ab3BAI3J (ORCPT
+	id S1755721Ab3BAIdg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:33:36 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58129 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab3BAIde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:29:09 -0500
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Chung-Yih Wang <cywang@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH] Input: synaptics - fix 1->3 contact transition reporting
-Date: Fri,  1 Feb 2013 16:29:00 +0800
-Message-Id: <1359707340-13033-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.8.1
+	Fri, 1 Feb 2013 03:33:34 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <510B7DC6.10803@jp.fujitsu.com>
+Date: Fri, 1 Feb 2013 17:33:10 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Ming Lei <ming.lei@canonical.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Felipe Balbi <balbi@ti.com>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] block: partition: optimize memory allocation in check_partition
+References: <1359688060-12964-1-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1359688060-12964-1-git-send-email-ming.lei@canonical.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Investigating the following gesture highlighted two slight implementation
-errors with choosing which slots to report in which slot when multiple
-contacts are present:
+2013/02/01 12:07, Ming Lei wrote:
+> Currently, sizeof(struct parsed_partitions) may be 64KB in 32bit arch,
+> so it is easy to trigger page allocation failure by check_partition,
+> especially in hotplug block device situation(such as, USB mass storage,
+> MMC card, ...), and Felipe Balbi has observed the failure.
+> 
+> This patch does below optimizations on the allocation of struct
+> parsed_partitions to try to address the issue:
+> 
+> - make parsed_partitions.parts as pointer so that the pointed memory
+> can fit in 32KB buffer, then approximate 32KB memory can be saved
+> 
+> - vmalloc the buffer pointed by parsed_partitions.parts because
+> 32KB is still a bit big for kmalloc
+> 
+> - given that many devices have the partition count limit, so only
+> allocate disk_max_parts() partitions instead of 256 partitions
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>   block/partition-generic.c |    2 +-
+>   block/partitions/check.c  |   35 ++++++++++++++++++++++++++++++-----
+>   block/partitions/check.h  |    4 +++-
+>   3 files changed, 34 insertions(+), 7 deletions(-)
+> 
+> diff --git a/block/partition-generic.c b/block/partition-generic.c
+> index f1d1451..043d0bd 100644
+> --- a/block/partition-generic.c
+> +++ b/block/partition-generic.c
+> @@ -525,7 +525,7 @@ rescan:
+>   			md_autodetect_dev(part_to_dev(part)->devt);
+>   #endif
+>   	}
+> -	kfree(state);
+> +	release_partitions(state);
+>   	return 0;
+>   }
 
-Action                 SGM  AGM (MTB slot:Contact)
-1. Touch contact 0    (0:0)
-2. Touch contact 1    (0:0, 1:1)
-3. Lift  contact 0    (1:1)
-4. Touch contacts 2,3 (0:2, 1:3)
+Do you check all kfree(state)?
 
-In step 4, slot 1 was not being cleared first, which means the same
-tracking ID was being used for reporting both the old contact 1 and the
-new contact 3.  This could result in "drumroll", where the old contact 1
-would appear to suddenly jump to new finger 3 position.
+# block/partition-generic.c
+414 int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
+415 {
+416         struct parsed_partitions *state = NULL;
+417         struct hd_struct *part;
+418         int p, highest, res;
+419 rescan:
+420         if (state && !IS_ERR(state)) {
+421                 kfree(state);
+422                 state = NULL;
+423         }   
 
-Similarly, if contacts 2 & 3 are not detected at the same sample, step 4
-is split into two:
+At least, you should use release_partitions() instead of kfree() here.
 
-Action                SGM  AGM  (MTB slot:contact)
-1. Touch contact 0   (0:0)
-2. Touch contact 1   (0:0, 1:1)
-3. Lift  contact 0   (1:1)
-4. Touch contact 2   (0:2, 1:1)
-5. Touch contact 3   (0:2, 1:3)
+Thanks,
+Yasuaki Ishimatsu
 
-In this case, there was also a bug.  In step 4, when contact 1 moves from
-SGM to AGM and contact 2 is first reported in SGM, slot 0 was actually
-empty.  So slot 0 can be used to report the new SGM (contact 0),
-immediately.  Since it was empty, contact 2 in slot 0 will get a new
-tracking ID.
+>   
+> diff --git a/block/partitions/check.c b/block/partitions/check.c
+> index bc90867..86c9450 100644
+> --- a/block/partitions/check.c
+> +++ b/block/partitions/check.c
+> @@ -14,6 +14,7 @@
+>    */
+>   
+>   #include <linux/slab.h>
+> +#include <linux/vmalloc.h>
+>   #include <linux/ctype.h>
+>   #include <linux/genhd.h>
+>   
+> @@ -106,18 +107,43 @@ static int (*check_part[])(struct parsed_partitions *) = {
+>   	NULL
+>   };
+>   
+> +static struct parsed_partitions *allocate_partitions(int nr)
+> +{
+> +	struct parsed_partitions *state;
+> +
+> +	state = kzalloc(sizeof(*state), GFP_KERNEL);
+> +	if (!state)
+> +		return NULL;
+> +
+> +	state->parts = vzalloc(nr * sizeof(state->parts[0]));
+> +	if (!state->parts) {
+> +		kfree(state);
+> +		return NULL;
+> +	}
+> +
+> +	return state;
+> +}
+> +
+> +void release_partitions(struct parsed_partitions *state)
+> +{
+> +	vfree(state->parts);
+> +	kfree(state);
+> +}
+> +
+>   struct parsed_partitions *
+>   check_partition(struct gendisk *hd, struct block_device *bdev)
+>   {
+>   	struct parsed_partitions *state;
+>   	int i, res, err;
+>   
+> -	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
+> +	i = disk_max_parts(hd);
+> +	state = allocate_partitions(i);
+>   	if (!state)
+>   		return NULL;
+> +	state->limit = i;
+>   	state->pp_buf = (char *)__get_free_page(GFP_KERNEL);
+>   	if (!state->pp_buf) {
+> -		kfree(state);
+> +		release_partitions(state);
+>   		return NULL;
+>   	}
+>   	state->pp_buf[0] = '\0';
+> @@ -128,10 +154,9 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
+>   	if (isdigit(state->name[strlen(state->name)-1]))
+>   		sprintf(state->name, "p");
+>   
+> -	state->limit = disk_max_parts(hd);
+>   	i = res = err = 0;
+>   	while (!res && check_part[i]) {
+> -		memset(&state->parts, 0, sizeof(state->parts));
+> +		memset(state->parts, 0, state->limit * sizeof(state->parts[0]));
+>   		res = check_part[i++](state);
+>   		if (res < 0) {
+>   			/* We have hit an I/O error which we don't report now.
+> @@ -161,6 +186,6 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
+>   	printk(KERN_INFO "%s", state->pp_buf);
+>   
+>   	free_page((unsigned long)state->pp_buf);
+> -	kfree(state);
+> +	release_partitions(state);
+>   	return ERR_PTR(res);
+>   }
+> diff --git a/block/partitions/check.h b/block/partitions/check.h
+> index 52b1003..4fefdbb 100644
+> --- a/block/partitions/check.h
+> +++ b/block/partitions/check.h
+> @@ -15,13 +15,15 @@ struct parsed_partitions {
+>   		int flags;
+>   		bool has_info;
+>   		struct partition_meta_info info;
+> -	} parts[DISK_MAX_PARTS];
+> +	} *parts;
+>   	int next;
+>   	int limit;
+>   	bool access_beyond_eod;
+>   	char *pp_buf;
+>   };
+>   
+> +void release_partitions(struct parsed_partitions *state);
+> +
+>   struct parsed_partitions *
+>   check_partition(struct gendisk *, struct block_device *);
+>   
+> 
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/mouse/synaptics.c | 30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index b6c6838..47159d8 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -722,11 +722,13 @@ static void synaptics_report_mt_data(struct psmouse *psmouse,
- 	default:
- 		/*
- 		 * If the finger slot contained in SGM is valid, and either
--		 * hasn't changed, or is new, then report SGM in MTB slot 0.
-+		 * hasn't changed, or is new, or the old SGM has now moved to
-+		 * AGM, then report SGM in MTB slot 0.
- 		 * Otherwise, empty MTB slot 0.
- 		 */
- 		if (mt_state->sgm != -1 &&
--		    (mt_state->sgm == old->sgm || old->sgm == -1))
-+		    (mt_state->sgm == old->sgm ||
-+		     old->sgm == -1 || mt_state->agm == old->sgm))
- 			synaptics_report_slot(dev, 0, sgm);
- 		else
- 			synaptics_report_slot(dev, 0, NULL);
-@@ -735,9 +737,31 @@ static void synaptics_report_mt_data(struct psmouse *psmouse,
- 		 * If the finger slot contained in AGM is valid, and either
- 		 * hasn't changed, or is new, then report AGM in MTB slot 1.
- 		 * Otherwise, empty MTB slot 1.
-+		 *
-+		 * However, in the case where the AGM is new, make sure that
-+		 * that it is either the same as the old SGM, or there was no
-+		 * SGM.
-+		 *
-+		 * Otherwise, if the SGM was just 1, and the new AGM is 2, then
-+		 * the new AGM will keep the old SGM's tracking ID, which can
-+		 * cause apparent drumroll.  This happens if in the following
-+		 * valid finger sequence:
-+		 *
-+		 *  Action                 SGM  AGM (MTB slot:Contact)
-+		 *  1. Touch contact 0    (0:0)
-+		 *  2. Touch contact 1    (0:0, 1:1)
-+		 *  3. Lift  contact 0    (1:1)
-+		 *  4. Touch contacts 2,3 (0:2, 1:3)
-+		 *
-+		 * In step 4, contact 3, in AGM must not be given the same
-+		 * tracking ID as contact 1 had in step 3.  To avoid this,
-+		 * the first agm with contact 3 is dropped and slot 1 is
-+		 * invalidated (tracking ID = -1).
- 		 */
- 		if (mt_state->agm != -1 &&
--		    (mt_state->agm == old->agm || old->agm == -1))
-+		    (mt_state->agm == old->agm ||
-+		     (old->agm == -1 &&
-+		      (old->sgm == -1 || mt_state->agm == old->sgm))))
- 			synaptics_report_slot(dev, 1, agm);
- 		else
- 			synaptics_report_slot(dev, 1, NULL);
--- 
-1.8.1
 
