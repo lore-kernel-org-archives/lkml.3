@@ -1,138 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab3BARrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 12:47:10 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:59796 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab3BARrH (ORCPT
+	id S1757328Ab3BARrf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 12:47:35 -0500
+Received: from slan-550-85.anhosting.com ([174.127.110.175]:48449 "EHLO
+	slan-550-85.anhosting.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757085Ab3BARrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 12:47:07 -0500
-Message-ID: <510BFF7A.4000804@linux.vnet.ibm.com>
-Date: Fri, 01 Feb 2013 11:46:34 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 12:47:33 -0500
+Date: Fri, 1 Feb 2013 18:47:29 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Feng Gao <gfree.wind@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Netfilter Development Mailing list 
+	<netfilter-devel@vger.kernel.org>
+Subject: Re: [ 82/89] netfilter: xt_hashlimit: fix race that results in
+ duplicated entries
+Message-ID: <20130201174729.GA5254@localhost>
+References: <20130201130207.444989281@linuxfoundation.org>
+ <20130201130213.388508268@linuxfoundation.org>
+ <CA+6hz4qjj3wGgo-m50=qRxAN+OGUXKfUfgRp7Pys7NixgwQ3vQ@mail.gmail.com>
+ <20130201163455.GB4908@localhost>
+ <CA+6hz4rbzeDtYx9-sMDdgt2QxpcpGLrEBwezaEush1gb_W-o4w@mail.gmail.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv4 3/7] zswap: add to mm/
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359495627-30285-4-git-send-email-sjenning@linux.vnet.ibm.com> <20130131070716.GF23548@blaptop> <510AC0C6.4020705@linux.vnet.ibm.com> <20130201023821.GB6262@blaptop> <510BDFBD.7090808@linux.vnet.ibm.com>
-In-Reply-To: <510BDFBD.7090808@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020117-5406-0000-0000-000004CCDA24
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+6hz4rbzeDtYx9-sMDdgt2QxpcpGLrEBwezaEush1gb_W-o4w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - slan-550-85.anhosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 60rpm.tv
+X-Get-Message-Sender-Via: slan-550-85.anhosting.com: authenticated_id: p@60rpm.tv
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 09:31 AM, Seth Jennings wrote:
-> On 01/31/2013 08:38 PM, Minchan Kim wrote:
->> On Thu, Jan 31, 2013 at 01:06:46PM -0600, Seth Jennings wrote:
->>> On 01/31/2013 01:07 AM, Minchan Kim wrote:
->>>> On Tue, Jan 29, 2013 at 03:40:23PM -0600, Seth Jennings wrote:
->>>>> zswap is a thin compression backend for frontswap. It receives
->>>>> pages from frontswap and attempts to store them in a compressed
->>>>> memory pool, resulting in an effective partial memory reclaim and
->>>>> dramatically reduced swap device I/O.
->>>>>
->>>>> Additionally, in most cases, pages can be retrieved from this
->>>>> compressed store much more quickly than reading from tradition
->>>>> swap devices resulting in faster performance for many workloads.
->>>>>
->>>>> This patch adds the zswap driver to mm/
->>>>>
->>>>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>>>> ---
->>>>>  mm/Kconfig  |  15 ++
->>>>>  mm/Makefile |   1 +
->>>>>  mm/zswap.c  | 656 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>>  3 files changed, 672 insertions(+)
->>>>>  create mode 100644 mm/zswap.c
->>>>>
->>>>> diff --git a/mm/Kconfig b/mm/Kconfig
->>>>> index 278e3ab..14b9acb 100644
->>>>> --- a/mm/Kconfig
->>>>> +++ b/mm/Kconfig
->>>>> @@ -446,3 +446,18 @@ config FRONTSWAP
->>>>>  	  and swap data is stored as normal on the matching swap device.
->>>>>  
->>>>>  	  If unsure, say Y to enable frontswap.
->>>>> +
->>>>> +config ZSWAP
->>>>> +	bool "In-kernel swap page compression"
->>>>> +	depends on FRONTSWAP && CRYPTO
->>>>> +	select CRYPTO_LZO
->>>>> +	select ZSMALLOC
->>>>
->>>> Again, I'm asking why zswap should have a dependent on CRPYTO?
->>>> Couldn't we support it as a option? I'd like to use zswap without CRYPTO
->>>> like zram.
->>>
->>> The reason we need CRYPTO is that zswap uses it to support a pluggable
->>> compression model.  zswap can use any compressor that has a crypto API
->>> driver.  zswap has _symbol dependencies_ on CRYPTO.  If it isn't
->>> selected, the build breaks.
->>
->> I think we can factor out compressoin part and remove dependency
->> at compile time by Kconfig. No?
-> 
-> I'm still not following.  How would one "factor out" the crypto API
-> dependency when we use it to access the compressor modules.
-> 
-> The only thing I can think you're saying is to hack up the code with
-> ifdefs to call the lzo code directly based on a Kconfig option.  I
-> really hope you aren't saying that though :-/
+On Sat, Feb 02, 2013 at 12:56:17AM +0800, Feng Gao wrote:
+[...]
+> So I wonder How could I commit the patch to kernel directly or how to
+> let owner could adopt my fix directly next time?
 
-Looking into this more, I found out that INET also selects CRYPTO, so
-unless the kernel is not doing networking, CRYPTO will be enabled
-anyway.  EXT4 also selects it.
+There is no "file owners" in the Linux kernel, we have subsystem
+maintainers that take care of entire source code sub-trees.
 
-> 
->> Of course, if we disable CRYPTO in Kconfig,
->> we lost pluggable model but not a problem for embedded system.
-> 
-> The pluggable model is _very_ necessary for us because we use it to
-> access our hardware compression accelerator.  We do not use lzo in
-> that case.  We use 842 (crypto/842.c and drivers/crypto/nx/nx-842.c).
-> 
-> I'm not sure why we are misunderstanding on this.  Is there a specific
-> objection to depending the crypto API here? I understand that you are
-> thinking about embedded systems.  Does the enabling CRYPTO and
-> CRYPTO_LZO add significant size to the kernel or something?
+You have to send your patches to the corresponding mailing list for
+that subsystem. In the specific case of Netfilter, you have to send
+your patches to the netfilter-devel mailing list. Make sure your patch
+comes with a description and a valid Signed-off-by. If the patch is
+not complete, you risk that it passes overlook since patchwork [1]
+does not register it.
 
-If size is the concern, I did a quick size diff between a vmlinux with
-and without CRYPTO:
-			
-		text	data	bss	dec
-CRYPTO=n	4747622	602704	7774208	13124534
-CRYPTO=y	4755437	602960	7774208	13132605
-diff		7815	256	0	8071
+If your patch is a fix, you can send it anytime. If it is an
+enhancement, you have to check if the merge window is open.
 
-Bottom line is CRYPTO adds about 8k to vmlinux.
+The maintainer will get back to you with some ACK/NACK feedback after
+some time, if you don't get any, you are free to retry. You can CC
+maintainers to attract their attention. You can check the MAINTAINERS
+under the linux tree to find the appropriate person.
 
-Thanks,
-Seth
+Regards.
 
->Just trying to understand why this is a problem.
-> 
-> Thanks,
-> Seth
-> 
->>
->> Anyway, If it's a burden for you at a moment, I'm not going to insist on it.
->> Will do it for myself.
-> 
-> 
-> 
-
+[1] http://patchwork.ozlabs.org/project/netfilter-devel/list/
