@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab3BACnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:43:15 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:8721 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752492Ab3BACnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:43:12 -0500
-X-IronPort-AV: E=Sophos;i="4.84,579,1355068800"; 
-   d="scan'208";a="6674106"
-Message-ID: <510B2B8A.7040407@cn.fujitsu.com>
-Date: Fri, 01 Feb 2013 10:42:18 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Jianguo Wu <wujianguo@huawei.com>, akpm@linux-foundation.org,
-        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>       <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>      <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>     <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>    <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com>   <1359628705.2048.5.camel@kernel> <510B1B4B.5080207@huawei.com>  <1359682576.3574.1.camel@kernel> <510B20F9.10408@cn.fujitsu.com> <1359685040.1303.6.camel@kernel>
-In-Reply-To: <1359685040.1303.6.camel@kernel>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/01 10:41:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/01 10:41:55,
-	Serialize complete at 2013/02/01 10:41:55
+	id S1754229Ab3BACo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 21:44:57 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50061 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab3BACoz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 21:44:55 -0500
+Date: Thu, 31 Jan 2013 18:44:46 -0800
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] [PATCH] PVH linux: Use ballooning to allocate grant
+ table pages
+Message-ID: <20130131184446.654a2289@mantra.us.oracle.com>
+In-Reply-To: <20130131183015.13bc2bff@mantra.us.oracle.com>
+References: <20130131183015.13bc2bff@mantra.us.oracle.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+On Thu, 31 Jan 2013 18:30:15 -0800
+Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
 
-On 02/01/2013 10:17 AM, Simon Jeons wrote:
->> For example:
->>
->>                                          64TB, what ever
->>      xxxTB, what ever
->> logic address space:     |_____kernel_______|_________user_________________|
->>                                          \  \  /  /
->>                                           \  /\  /
->> physical address space:              |___\/__\/_____________|  4GB or
->> 8GB, what ever
->>                                             *****
->
-> How much address space user process can have on x86_64? Also 8GB?
+> This patch fixes a fixme in Linux to use alloc_xenballooned_pages() to
+> allocate pfns for grant table pages instead of kmalloc. This also
+> simplifies add to physmap on the xen side a bit.
 
-Usually, we don't say that.
+Looking at it again, I realized rc should be signed in gnttab_resume().
+Below again. Thanks.
 
-8GB is your physical memory, right ?
-But kernel space and user space is the logic conception in OS. They are 
-in logic
-address space.
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-So both the kernel space and the user space can use all the physical memory.
-But if the page is already in use by either of them, the other one 
-cannot use it.
-For example, some pages are direct mapped to kernel, and is in use by 
-kernel, the
-user space cannot map it.
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 9c0019d..7a630bb 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -47,6 +47,7 @@
+ #include <xen/grant_table.h>
+ #include <xen/interface/memory.h>
+ #include <xen/hvc-console.h>
++#include <xen/balloon.h>
+ #include <asm/xen/hypercall.h>
+ #include <asm/xen/interface.h>
+ 
+@@ -1138,27 +1139,42 @@ static void gnttab_request_version(void)
+ 		grant_table_version);
+ }
+ 
++static int xlated_setup_gnttab_pages(int numpages, void **addr)
++{
++	int i, rc;
++	unsigned long pfns[numpages];
++	struct page *pages[numpages];
++
++	rc = alloc_xenballooned_pages(numpages, pages, 0);
++	if (rc != 0) {
++		pr_warn("%s Could not balloon alloc %d pfns rc:%d\n", __func__,
++			numpages, rc);
++		return -ENOMEM;
++	}
++	for (i = 0; i < numpages; i++)
++		pfns[i] = page_to_pfn(pages[i]);
++
++	rc = arch_gnttab_map_shared(pfns, numpages, numpages, addr);
++	return rc;
++}
++
+ int gnttab_resume(void)
+ {
++	int rc;
+ 	unsigned int max_nr_gframes;
+-	char *kmsg = "Failed to kmalloc pages for pv in hvm grant frames\n";
+ 
+ 	gnttab_request_version();
+ 	max_nr_gframes = gnttab_max_grant_frames();
+ 	if (max_nr_gframes < nr_grant_frames)
+ 		return -ENOSYS;
+ 
+-	/* PVH note: xen will free existing kmalloc'd mfn in
+-	 * XENMEM_add_to_physmap. TBD/FIXME: use xen ballooning instead of
+-	 * kmalloc(). */
+ 	if (xen_pv_domain() && xen_feature(XENFEAT_auto_translated_physmap) &&
+ 	    !gnttab_shared.addr) {
+-		gnttab_shared.addr =
+-			kmalloc(max_nr_gframes * PAGE_SIZE, GFP_KERNEL);
+-		if (!gnttab_shared.addr) {
+-			pr_warn("%s", kmsg);
+-			return -ENOMEM;
+-		}
++
++		rc = xlated_setup_gnttab_pages(max_nr_gframes,
++					       &gnttab_shared.addr);
++		if (rc != 0)
++			return rc;
+ 	}
+ 	if (xen_pv_domain())
+ 		return gnttab_map(0, nr_grant_frames - 1);
 
->
->>
->> The ***** part physical is mapped to user space in the process' own
->> pagetable.
->> It is also direct mapped in kernel's pagetable. So the kernel can also
->> access it. :)
->
-> But how to protect user process not modify kernel memory?
 
-This is the job of CPU. On intel cpus, user space code is running in 
-level 3, and
-kernel space code is running in level 0. So the code in level 3 cannot 
-access the data
-segment in level 0.
 
-Thanks. :)
