@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161342Ab3BAKuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:50:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39133 "EHLO mail.kernel.org"
+	id S1161368Ab3BAKub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:50:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39153 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161226Ab3BAKuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:50:16 -0500
+	id S1161354Ab3BAKu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:50:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jaroslav Skarvada <jskarvad@redhat.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 14/33] iwlegacy: fix IBSS cleanup
-Date: Fri,  1 Feb 2013 11:49:19 +0100
-Message-Id: <20130201104725.670932664@linuxfoundation.org>
+        =?ISO-8859-15?q?C=C3=A9dric=20Debarge?= <cedric.debarge@acksys.fr>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 16/33] mac80211: fix FT roaming
+Date: Fri,  1 Feb 2013 11:49:21 +0100
+Message-Id: <20130201104725.811149175@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,105 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit fa4cffcba9e13798ed7c6b8526b91b1631ecb53e upstream.
+commit 1626e0fa740dec8665a973cf2349405cdfeb46dc upstream.
 
-We do not correctly change interface type when switching from
-IBSS mode to STA mode, that results in microcode errors.
+During FT roaming, wpa_supplicant attempts to set the
+key before association. This used to be rejected, but
+as a side effect of my commit 66e67e418908442389d3a9e
+("mac80211: redesign auth/assoc") the key was accepted
+causing hardware crypto to not be used for it as the
+station isn't added to the driver yet.
 
-Resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=886946
+It would be possible to accept the key and then add it
+to the driver when the station has been added. However,
+this may run into issues with drivers using the state-
+based station adding if they accept the key only after
+association like it used to be.
 
-Reported-by: Jaroslav Skarvada <jskarvad@redhat.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+For now, revert to the behaviour from before the auth
+and assoc change.
+
+Reported-by: Cédric Debarge <cedric.debarge@acksys.fr>
+Tested-by: Cédric Debarge <cedric.debarge@acksys.fr>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlegacy/common.c |   35 +++++++++++++--------------------
- 1 file changed, 14 insertions(+), 21 deletions(-)
+ net/mac80211/cfg.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlegacy/common.c
-+++ b/drivers/net/wireless/iwlegacy/common.c
-@@ -3957,17 +3957,21 @@ il_connection_init_rx_config(struct il_p
- 
- 	memset(&il->staging, 0, sizeof(il->staging));
- 
--	if (!il->vif) {
-+	switch (il->iw_mode) {
-+	case NL80211_IFTYPE_UNSPECIFIED:
- 		il->staging.dev_type = RXON_DEV_TYPE_ESS;
--	} else if (il->vif->type == NL80211_IFTYPE_STATION) {
-+		break;
-+	case NL80211_IFTYPE_STATION:
- 		il->staging.dev_type = RXON_DEV_TYPE_ESS;
- 		il->staging.filter_flags = RXON_FILTER_ACCEPT_GRP_MSK;
--	} else if (il->vif->type == NL80211_IFTYPE_ADHOC) {
-+		break;
-+	case NL80211_IFTYPE_ADHOC:
- 		il->staging.dev_type = RXON_DEV_TYPE_IBSS;
- 		il->staging.flags = RXON_FLG_SHORT_PREAMBLE_MSK;
- 		il->staging.filter_flags =
- 		    RXON_FILTER_BCON_AWARE_MSK | RXON_FILTER_ACCEPT_GRP_MSK;
--	} else {
-+		break;
-+	default:
- 		IL_ERR("Unsupported interface type %d\n", il->vif->type);
- 		return;
- 	}
-@@ -4550,8 +4554,7 @@ out:
- EXPORT_SYMBOL(il_mac_add_interface);
- 
- static void
--il_teardown_interface(struct il_priv *il, struct ieee80211_vif *vif,
--		      bool mode_change)
-+il_teardown_interface(struct il_priv *il, struct ieee80211_vif *vif)
- {
- 	lockdep_assert_held(&il->mutex);
- 
-@@ -4560,9 +4563,7 @@ il_teardown_interface(struct il_priv *il
- 		il_force_scan_end(il);
- 	}
- 
--	if (!mode_change)
--		il_set_mode(il);
--
-+	il_set_mode(il);
- }
- 
- void
-@@ -4575,8 +4576,8 @@ il_mac_remove_interface(struct ieee80211
- 
- 	WARN_ON(il->vif != vif);
- 	il->vif = NULL;
--
--	il_teardown_interface(il, vif, false);
-+	il->iw_mode = NL80211_IFTYPE_UNSPECIFIED;
-+	il_teardown_interface(il, vif);
- 	memset(il->bssid, 0, ETH_ALEN);
- 
- 	D_MAC80211("leave\n");
-@@ -4685,18 +4686,10 @@ il_mac_change_interface(struct ieee80211
- 	}
- 
- 	/* success */
--	il_teardown_interface(il, vif, true);
- 	vif->type = newtype;
- 	vif->p2p = false;
--	err = il_set_mode(il);
--	WARN_ON(err);
--	/*
--	 * We've switched internally, but submitting to the
--	 * device may have failed for some reason. Mask this
--	 * error, because otherwise mac80211 will not switch
--	 * (and set the interface type back) and we'll be
--	 * out of sync with it.
--	 */
-+	il->iw_mode = newtype;
-+	il_teardown_interface(il, vif);
- 	err = 0;
- 
- out:
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -151,7 +151,17 @@ static int ieee80211_add_key(struct wiph
+ 			sta = sta_info_get(sdata, mac_addr);
+ 		else
+ 			sta = sta_info_get_bss(sdata, mac_addr);
+-		if (!sta) {
++		/*
++		 * The ASSOC test makes sure the driver is ready to
++		 * receive the key. When wpa_supplicant has roamed
++		 * using FT, it attempts to set the key before
++		 * association has completed, this rejects that attempt
++		 * so it will set the key again after assocation.
++		 *
++		 * TODO: accept the key if we have a station entry and
++		 *       add it to the device after the station.
++		 */
++		if (!sta || !test_sta_flag(sta, WLAN_STA_ASSOC)) {
+ 			ieee80211_key_free(sdata->local, key);
+ 			err = -ENOENT;
+ 			goto out_unlock;
 
 
