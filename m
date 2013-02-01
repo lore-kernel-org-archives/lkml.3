@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab3BAKky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:40:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51795 "EHLO
+	id S1756626Ab3BAKl6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:41:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51809 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3BAKkv (ORCPT
+	with ESMTP id S1755644Ab3BAKl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:40:51 -0500
-Date: Fri, 1 Feb 2013 02:40:27 -0800
+	Fri, 1 Feb 2013 05:41:56 -0500
+Date: Fri, 1 Feb 2013 02:41:38 -0800
 From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-a8bb559bd4eff5c71601e2e61a4bd1deef44a03c@git.kernel.org>
+Message-ID: <tip-6e1f601a10cbaa5cda869f844292dd81c519a8e7@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
@@ -18,11 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
         a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
         namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1358845787-1350-4-git-send-email-namhyung@kernel.org>
-References: <1358845787-1350-4-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1358845787-1350-5-git-send-email-namhyung@kernel.org>
+References: <1358845787-1350-5-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf header: Add HEADER_GROUP_DESC feature
-Git-Commit-ID: a8bb559bd4eff5c71601e2e61a4bd1deef44a03c
+Subject: [tip:perf/core] perf report:
+  Make another loop for linking group hists
+Git-Commit-ID: 6e1f601a10cbaa5cda869f844292dd81c519a8e7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,22 +32,26 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:40:34 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:41:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a8bb559bd4eff5c71601e2e61a4bd1deef44a03c
-Gitweb:     http://git.kernel.org/tip/a8bb559bd4eff5c71601e2e61a4bd1deef44a03c
+Commit-ID:  6e1f601a10cbaa5cda869f844292dd81c519a8e7
+Gitweb:     http://git.kernel.org/tip/6e1f601a10cbaa5cda869f844292dd81c519a8e7
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 22 Jan 2013 18:09:31 +0900
+AuthorDate: Tue, 22 Jan 2013 18:09:32 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Thu, 31 Jan 2013 13:07:44 -0300
 
-perf header: Add HEADER_GROUP_DESC feature
+perf report: Make another loop for linking group hists
 
-Save group relationship information so that it can be restored when perf
-report is running.
+Now the event grouping viewing requires linking all member hists in a
+group to the leader's.  Thus hists__output_resort should be called after
+linking all events in evlist.
+
+Introduce symbol_conf.event_group flag to determine whether the feature
+is enabled or not.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
@@ -55,241 +60,56 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1358845787-1350-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |   3 +
- tools/perf/util/header.c    | 164 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h    |   2 +
- 3 files changed, 169 insertions(+)
+ tools/perf/builtin-report.c | 13 ++++++++++++-
+ tools/perf/util/symbol.h    |  3 ++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 2ac690c..774c907 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -486,6 +486,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		goto out_delete_session;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 47a8644..fd2503a 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -416,8 +416,16 @@ static int __cmd_report(struct perf_report *rep)
+ 			hists->symbol_filter_str = rep->symbol_filter_str;
+ 
+ 		hists__collapse_resort(hists);
+-		hists__output_resort(hists);
+ 		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
++
++		/* Non-group events are considered as leader */
++		if (symbol_conf.event_group &&
++		    !perf_evsel__is_group_leader(pos)) {
++			struct hists *leader_hists = &pos->leader->hists;
++
++			hists__match(leader_hists, hists);
++			hists__link(leader_hists, hists);
++		}
  	}
  
-+	if (!evsel_list->nr_groups)
-+		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
-+
- 	/*
- 	 * perf_session__delete(session) will be called at perf_record__exit()
- 	 */
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index f6081cb..8022b52 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1085,6 +1085,52 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
- }
+ 	if (nr_samples == 0) {
+@@ -425,6 +433,9 @@ static int __cmd_report(struct perf_report *rep)
+ 		goto out_delete;
+ 	}
  
- /*
-+ * File format:
-+ *
-+ * struct group_descs {
-+ *	u32	nr_groups;
-+ *	struct group_desc {
-+ *		char	name[];
-+ *		u32	leader_idx;
-+ *		u32	nr_members;
-+ *	}[nr_groups];
-+ * };
-+ */
-+static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
-+			    struct perf_evlist *evlist)
-+{
-+	u32 nr_groups = evlist->nr_groups;
-+	struct perf_evsel *evsel;
-+	int ret;
++	list_for_each_entry(pos, &session->evlist->entries, node)
++		hists__output_resort(&pos->hists);
 +
-+	ret = do_write(fd, &nr_groups, sizeof(nr_groups));
-+	if (ret < 0)
-+		return ret;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 1) {
-+			const char *name = evsel->group_name ?: "{anon_group}";
-+			u32 leader_idx = evsel->idx;
-+			u32 nr_members = evsel->nr_members;
-+
-+			ret = do_write_string(fd, name);
-+			if (ret < 0)
-+				return ret;
-+
-+			ret = do_write(fd, &leader_idx, sizeof(leader_idx));
-+			if (ret < 0)
-+				return ret;
-+
-+			ret = do_write(fd, &nr_members, sizeof(nr_members));
-+			if (ret < 0)
-+				return ret;
-+		}
-+	}
-+	return 0;
-+}
-+
-+/*
-  * default get_cpuid(): nothing gets recorded
-  * actual implementation must be in arch/$(ARCH)/util/header.c
-  */
-@@ -1447,6 +1493,31 @@ error:
- 	fprintf(fp, "# pmu mappings: unable to read\n");
- }
- 
-+static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
-+			     FILE *fp)
-+{
-+	struct perf_session *session;
-+	struct perf_evsel *evsel;
-+	u32 nr = 0;
-+
-+	session = container_of(ph, struct perf_session, header);
-+
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 1) {
-+			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
-+				perf_evsel__name(evsel));
-+
-+			nr = evsel->nr_members - 1;
-+		} else if (nr) {
-+			fprintf(fp, ",%s", perf_evsel__name(evsel));
-+
-+			if (--nr == 0)
-+				fprintf(fp, "}\n");
-+		}
-+	}
-+}
-+
- static int __event_process_build_id(struct build_id_event *bev,
- 				    char *filename,
- 				    struct perf_session *session)
-@@ -1961,6 +2032,98 @@ error:
- 	return -1;
- }
- 
-+static int process_group_desc(struct perf_file_section *section __maybe_unused,
-+			      struct perf_header *ph, int fd,
-+			      void *data __maybe_unused)
-+{
-+	size_t ret = -1;
-+	u32 i, nr, nr_groups;
-+	struct perf_session *session;
-+	struct perf_evsel *evsel, *leader = NULL;
-+	struct group_desc {
-+		char *name;
-+		u32 leader_idx;
-+		u32 nr_members;
-+	} *desc;
-+
-+	if (readn(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr_groups = bswap_32(nr_groups);
-+
-+	ph->env.nr_groups = nr_groups;
-+	if (!nr_groups) {
-+		pr_debug("group desc not available\n");
-+		return 0;
-+	}
-+
-+	desc = calloc(nr_groups, sizeof(*desc));
-+	if (!desc)
-+		return -1;
-+
-+	for (i = 0; i < nr_groups; i++) {
-+		desc[i].name = do_read_string(fd, ph);
-+		if (!desc[i].name)
-+			goto out_free;
-+
-+		if (readn(fd, &desc[i].leader_idx, sizeof(u32)) != sizeof(u32))
-+			goto out_free;
-+
-+		if (readn(fd, &desc[i].nr_members, sizeof(u32)) != sizeof(u32))
-+			goto out_free;
-+
-+		if (ph->needs_swap) {
-+			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
-+			desc[i].nr_members = bswap_32(desc[i].nr_members);
-+		}
-+	}
-+
-+	/*
-+	 * Rebuild group relationship based on the group_desc
-+	 */
-+	session = container_of(ph, struct perf_session, header);
-+	session->evlist->nr_groups = nr_groups;
-+
-+	i = nr = 0;
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (evsel->idx == (int) desc[i].leader_idx) {
-+			evsel->leader = evsel;
-+			/* {anon_group} is a dummy name */
-+			if (strcmp(desc[i].name, "{anon_group}"))
-+				evsel->group_name = desc[i].name;
-+			evsel->nr_members = desc[i].nr_members;
-+
-+			if (i >= nr_groups || nr > 0) {
-+				pr_debug("invalid group desc\n");
-+				goto out_free;
-+			}
-+
-+			leader = evsel;
-+			nr = evsel->nr_members - 1;
-+			i++;
-+		} else if (nr) {
-+			/* This is a group member */
-+			evsel->leader = leader;
-+
-+			nr--;
-+		}
-+	}
-+
-+	if (i != nr_groups || nr != 0) {
-+		pr_debug("invalid group desc\n");
-+		goto out_free;
-+	}
-+
-+	ret = 0;
-+out_free:
-+	while ((int) --i >= 0)
-+		free(desc[i].name);
-+	free(desc);
-+
-+	return ret;
-+}
-+
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -2000,6 +2163,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
- 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
- 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
-+	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
- };
- 
- struct header_print_data {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 20f0344..c9fc55c 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -29,6 +29,7 @@ enum {
- 	HEADER_NUMA_TOPOLOGY,
- 	HEADER_BRANCH_STACK,
- 	HEADER_PMU_MAPPINGS,
-+	HEADER_GROUP_DESC,
- 	HEADER_LAST_FEATURE,
- 	HEADER_FEAT_BITS	= 256,
- };
-@@ -79,6 +80,7 @@ struct perf_session_env {
- 	char			*numa_nodes;
- 	int			nr_pmu_mappings;
- 	char			*pmu_mappings;
-+	int			nr_groups;
- };
- 
- struct perf_header {
+ 	if (use_browser > 0) {
+ 		if (use_browser == 1) {
+ 			perf_evlist__tui_browse_hists(session->evlist, help,
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index d97377a..b62ca37 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -96,7 +96,8 @@ struct symbol_conf {
+ 			initialized,
+ 			kptr_restrict,
+ 			annotate_asm_raw,
+-			annotate_src;
++			annotate_src,
++			event_group;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
