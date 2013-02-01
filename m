@@ -1,90 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3BACPh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:15:37 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45070 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570Ab3BACPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:15:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="255858643"
-Date: Fri, 1 Feb 2013 10:16:28 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] rwsem-spinlock: let rwsem write lock stealable
-Message-ID: <20130201021628.GC12678@yliu-dev.sh.intel.com>
-References: <1359537244-20588-1-git-send-email-yuanhan.liu@linux.intel.com>
- <CANN689GwGh2sHwoP66JjoXs2ZMQAXbVpA0MHQahWq5M+baNfSQ@mail.gmail.com>
- <20130131124004.GA12678@yliu-dev.sh.intel.com>
- <20130131131228.GB6627@gmail.com>
- <20130131143626.GB12678@yliu-dev.sh.intel.com>
- <20130131211818.GA13195@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130131211818.GA13195@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754044Ab3BACRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 21:17:30 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:32930 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab3BACR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 21:17:27 -0500
+Message-ID: <1359685040.1303.6.camel@kernel>
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>, akpm@linux-foundation.org,
+        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Date: Thu, 31 Jan 2013 20:17:20 -0600
+In-Reply-To: <510B20F9.10408@cn.fujitsu.com>
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+	      <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>
+	     <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>
+	    <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>
+	   <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com>
+	  <1359628705.2048.5.camel@kernel> <510B1B4B.5080207@huawei.com>
+	 <1359682576.3574.1.camel@kernel> <510B20F9.10408@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 10:18:18PM +0100, Ingo Molnar wrote:
+Hi Tang,
+On Fri, 2013-02-01 at 09:57 +0800, Tang Chen wrote:
+> On 02/01/2013 09:36 AM, Simon Jeons wrote:
+> > On Fri, 2013-02-01 at 09:32 +0800, Jianguo Wu wrote:
+> >>>
+> >>> So if config NUMA, kernel memory will not be linear mapping anymore? For
+> >>> example,
+> >>>
+> >>> Node 0  Node 1
+> >>>
+> >>> 0 ~ 10G 11G~14G
 > 
-> * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+> It has nothing to do with linear mapping, I think.
 > 
-> > On Thu, Jan 31, 2013 at 02:12:28PM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> > > 
-> > > > BTW, mind to tell a nice test case for mmap_sem?
-> > > 
-> > > this one was write-hitting on mmap_sem pretty hard, last I 
-> > > checked:
-> > > 
-> > >   http://people.redhat.com/mingo/threaded-mmap-stresstest/
-> > 
-> > Thanks!
-> > 
-> > Is there any pass condition? I tested a while, at least I 
-> > found no oops or any noisy from dmesg output. Is that OK?
+> >>>
+> >>> kernel memory only at Node 0? Can part of kernel memory also at Node 1?
 > 
-> Yeah, not crashing and not hanging is the expected behavior.
+> Please refer to find_zone_movable_pfns_for_nodes().
 
-Good to know.
+I see, thanks. :)
+
+> The kernel is not only on node0. It uses all the online nodes evenly. :)
+> 
+> >>>
+> >>> How big is kernel direct mapping memory in x86_64? Is there max limit?
+> >>
+> >>
+> >> Max kernel direct mapping memory in x86_64 is 64TB.
+> >
+> > For example, I have 8G memory, all of them will be direct mapping for
+> > kernel? then userspace memory allocated from where?
+> 
+> I think you misunderstood what Wu tried to say. :)
+> 
+> The kernel mapped that large space, it doesn't mean it is using that 
+> large space.
+> The mapping is to make kernel be able to access all the memory, not for 
+> the kernel
+> to use only. User space can also use the memory, but each process has 
+> its own mapping.
+> 
+> For example:
+> 
+>                                         64TB, what ever 
+>     xxxTB, what ever
+> logic address space:     |_____kernel_______|_________user_________________|
+>                                         \  \  /  /
+>                                          \  /\  /
+> physical address space:              |___\/__\/_____________|  4GB or 
+> 8GB, what ever
+>                                            *****
+
+How much address space user process can have on x86_64? Also 8GB?
 
 > 
-> > Well, sometimes, it will quit peacefully. Sometimes it will 
-> > not. ps -eo 'pid, state,wchan,comm' shows that it is sleeping 
-> > at futex_wait_queue_me().
-> > 
-> > NOTE: this happens both with or w/o this patch. Thus it may 
-> > not an issue introduced by this patch?
-> 
-> hm, that's unexpected - it's expected to loop infinitely.
+> The ***** part physical is mapped to user space in the process' own 
+> pagetable.
+> It is also direct mapped in kernel's pagetable. So the kernel can also 
+> access it. :)
 
-Reall sorry about that. My bad. I modify the code a bit: removed the two
-//, so that thread will exit after count > 1000000.
+But how to protect user process not modify kernel memory?
 
-Sorry again :(
-
-	--yliu
-
-> I have 
-> a newer version (attached) - is that exiting too?
 > 
-> Maybe this triggers spuriously:
+> >
+> >>
+> >>> It seems that only around 896MB on x86_32.
+> >>>
+> >>>>
+> >>>> We need firmware take part in, such as SRAT in ACPI BIOS, or the firmware
+> >>>> based memory migration mentioned by Liu Jiang.
+> >>>
+> >>> Is there any material about firmware based memory migration?
 > 
->         if (!info->si_addr)
->                 raise(SIGABRT); /* Allow GDB backtrace */
+> No, I don't have any because this is a functionality of machine from HUAWEI.
+> I think you can ask Liu Jiang or Wu Jianguo to share some with you. :)
 > 
-> although then you should see the SIGABRT as an irregular exit 
-> IIRC.
-> 
-> Thanks,
-> 
-> 	Ingo
+> Thanks. :)
 
 
