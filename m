@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423045Ab3BANPm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:15:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45824 "EHLO mail.kernel.org"
+	id S1423033Ab3BANPi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:15:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45811 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422817Ab3BANPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:15:36 -0500
+	id S1423014Ab3BANP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:15:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        canqun zhang <canqunzhang@gmail.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
+        Miroslav Kratochvil <exa.exa@gmail.com>, Dave Jones <davej@redhat.com>,
+        Harald Reindl <h.reindl@thelounge.net>,
+        Eric Dumazet <edumazet@google.com>,
         Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 85/89] netfilter: nf_conntrack: fix BUG_ON while removing nf_conntrack with netns
-Date: Fri,  1 Feb 2013 14:08:40 +0100
-Message-Id: <20130201130213.609279020@linuxfoundation.org>
+Subject: [ 84/89] netfilter: xt_recent: avoid high order page allocations
+Date: Fri,  1 Feb 2013 14:08:39 +0100
+Message-Id: <20130201130213.541910151@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,72 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 1e47ee8367babe6a5e8adf44a714c7086657b87e upstream.
+commit 2727de76041b2064c0b74f00a2a89678fb3efafc upstream.
 
-canqun zhang reported that we're hitting BUG_ON in the
-nf_conntrack_destroy path when calling kfree_skb while
-rmmod'ing the nf_conntrack module.
+xt_recent can try high order page allocations and this can fail.
 
-Currently, the nf_ct_destroy hook is being set to NULL in the
-destroy path of conntrack.init_net. However, this is a problem
-since init_net may be destroyed before any other existing netns
-(we cannot assume any specific ordering while releasing existing
-netns according to what I read in recent emails).
+iptables: page allocation failure: order:9, mode:0xc0d0
 
-Thanks to Gao feng for initial patch to address this issue.
+It also wastes about half the allocated space because of kmalloc()
+power-of-two roundups and struct recent_table layout.
 
-Reported-by: canqun zhang <canqunzhang@gmail.com>
-Acked-by: Gao feng <gaofeng@cn.fujitsu.com>
+Use vmalloc() instead to save space and be less prone to allocation
+errors when memory is fragmented.
+
+Reported-by: Miroslav Kratochvil <exa.exa@gmail.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Harald Reindl <h.reindl@thelounge.net>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/netfilter/nf_conntrack_core.h |    2 ++
- net/netfilter/nf_conntrack_core.c         |    9 +++++----
- net/netfilter/nf_conntrack_standalone.c   |    1 +
- 3 files changed, 8 insertions(+), 4 deletions(-)
+ net/netfilter/xt_recent.c |   23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
 
---- a/include/net/netfilter/nf_conntrack_core.h
-+++ b/include/net/netfilter/nf_conntrack_core.h
-@@ -31,6 +31,8 @@ extern void nf_conntrack_cleanup(struct
- extern int nf_conntrack_proto_init(struct net *net);
- extern void nf_conntrack_proto_fini(struct net *net);
+--- a/net/netfilter/xt_recent.c
++++ b/net/netfilter/xt_recent.c
+@@ -29,6 +29,7 @@
+ #include <linux/skbuff.h>
+ #include <linux/inet.h>
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
+ #include <net/net_namespace.h>
+ #include <net/netns/generic.h>
  
-+extern void nf_conntrack_cleanup_end(void);
-+
- extern bool
- nf_ct_get_tuple(const struct sk_buff *skb,
- 		unsigned int nhoff,
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -1383,11 +1383,12 @@ void nf_conntrack_cleanup(struct net *ne
- 	synchronize_net();
- 	nf_conntrack_proto_fini(net);
- 	nf_conntrack_cleanup_net(net);
-+}
+@@ -310,6 +311,14 @@ out:
+ 	return ret;
+ }
  
--	if (net_eq(net, &init_net)) {
--		RCU_INIT_POINTER(nf_ct_destroy, NULL);
--		nf_conntrack_cleanup_init_net();
--	}
-+void nf_conntrack_cleanup_end(void)
++static void recent_table_free(void *addr)
 +{
-+	RCU_INIT_POINTER(nf_ct_destroy, NULL);
-+	nf_conntrack_cleanup_init_net();
- }
- 
- void *nf_ct_alloc_hashtable(unsigned int *sizep, int nulls)
---- a/net/netfilter/nf_conntrack_standalone.c
-+++ b/net/netfilter/nf_conntrack_standalone.c
-@@ -571,6 +571,7 @@ static int __init nf_conntrack_standalon
- static void __exit nf_conntrack_standalone_fini(void)
++	if (is_vmalloc_addr(addr))
++		vfree(addr);
++	else
++		kfree(addr);
++}
++
+ static int recent_mt_check(const struct xt_mtchk_param *par,
+ 			   const struct xt_recent_mtinfo_v1 *info)
  {
- 	unregister_pernet_subsys(&nf_conntrack_net_ops);
-+	nf_conntrack_cleanup_end();
- }
+@@ -322,6 +331,7 @@ static int recent_mt_check(const struct
+ #endif
+ 	unsigned int i;
+ 	int ret = -EINVAL;
++	size_t sz;
  
- module_init(nf_conntrack_standalone_init);
+ 	if (unlikely(!hash_rnd_inited)) {
+ 		get_random_bytes(&hash_rnd, sizeof(hash_rnd));
+@@ -360,8 +370,11 @@ static int recent_mt_check(const struct
+ 		goto out;
+ 	}
+ 
+-	t = kzalloc(sizeof(*t) + sizeof(t->iphash[0]) * ip_list_hash_size,
+-		    GFP_KERNEL);
++	sz = sizeof(*t) + sizeof(t->iphash[0]) * ip_list_hash_size;
++	if (sz <= PAGE_SIZE)
++		t = kzalloc(sz, GFP_KERNEL);
++	else
++		t = vzalloc(sz);
+ 	if (t == NULL) {
+ 		ret = -ENOMEM;
+ 		goto out;
+@@ -377,14 +390,14 @@ static int recent_mt_check(const struct
+ 	uid = make_kuid(&init_user_ns, ip_list_uid);
+ 	gid = make_kgid(&init_user_ns, ip_list_gid);
+ 	if (!uid_valid(uid) || !gid_valid(gid)) {
+-		kfree(t);
++		recent_table_free(t);
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+ 	pde = proc_create_data(t->name, ip_list_perms, recent_net->xt_recent,
+ 		  &recent_mt_fops, t);
+ 	if (pde == NULL) {
+-		kfree(t);
++		recent_table_free(t);
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
+@@ -435,7 +448,7 @@ static void recent_mt_destroy(const stru
+ 			remove_proc_entry(t->name, recent_net->xt_recent);
+ #endif
+ 		recent_table_flush(t);
+-		kfree(t);
++		recent_table_free(t);
+ 	}
+ 	mutex_unlock(&recent_mutex);
+ }
 
 
