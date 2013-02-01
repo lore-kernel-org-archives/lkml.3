@@ -1,188 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030268Ab3BALEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 06:04:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030202Ab3BAKoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:44:16 -0500
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH 11/18] Revert "ext4: remove no longer used functions in inode.c"
-Date: Fri,  1 Feb 2013 11:43:37 +0100
-Message-Id: <1359715424-32318-12-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
-References: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
+	id S1161006Ab3BALEn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 06:04:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52315 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030202Ab3BALEf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 06:04:35 -0500
+Date: Fri, 1 Feb 2013 03:04:11 -0800
+From: tip-bot for Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Message-ID: <tip-2ac3634a7e1c8eedc961030c87c5c36ebd5bbf8e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, robert.richter@amd.com,
+        anton@au1.ibm.com, ak@linux.intel.com, tglx@linutronix.de,
+        sukadev@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, robert.richter@amd.com,
+        anton@au1.ibm.com, ak@linux.intel.com, sukadev@linux.vnet.ibm.com,
+        tglx@linutronix.de
+In-Reply-To: <20130123062645.GG13720@us.ibm.com>
+References: <20130123062645.GG13720@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Document the ABI of perf sysfs entries
+Git-Commit-ID: 2ac3634a7e1c8eedc961030c87c5c36ebd5bbf8e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 03:04:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit ccb4d7af914e0fe9b2f1022f8ea6c300463fd5e6.
+Commit-ID:  2ac3634a7e1c8eedc961030c87c5c36ebd5bbf8e
+Gitweb:     http://git.kernel.org/tip/2ac3634a7e1c8eedc961030c87c5c36ebd5bbf8e
+Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+AuthorDate: Tue, 22 Jan 2013 22:26:45 -0800
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 31 Jan 2013 13:07:51 -0300
 
-This commit reintroduces functions ext4_block_truncate_page() and
-ext4_block_zero_page_range() which has been previously removed in favour
-of ext4_discard_partial_page_buffers().
+perf: Document the ABI of perf sysfs entries
 
-In future commits we want to reintroduce those function and remove
-ext4_discard_partial_page_buffers() since it is duplicating some code
-and also partially duplicating work of truncate_pagecache_range(),
-moreover the old implementation was much clearer.
+This patchset addes two new sets of files to sysfs for POWER architecture.
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+	- perf event config format in /sys/devices/cpu/format/event
+	- generic and POWER-specific perf events in /sys/devices/cpu/events/
+
+The format of the first file is already documented in:
+
+	sysfs-bus-event_source-devices-format
+
+Document the format of the second set of files '/sys/devices/cpu/events/*'
+which would also become part of the ABI.
+
+Changelog[v4]:
+	[Jiri Olsa]: Mention that multiple event= like terms can be specified
+	in the 'events' file.
+	[Jiri Olsa]: Remove the documentation for the 'config format' file
+	as it is already documented in 'Documentation/ABI/testing/'.
+	[Jiri Olsa]: Move ABI documentation from 'stable/' to 'testing/'
+
+Changelog[v3]:
+	[Greg KH] Include ABI documentation.
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: linuxppc-dev@ozlabs.org
+Link: http://lkml.kernel.org/r/20130123062645.GG13720@us.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- fs/ext4/ext4.h  |    4 ++
- fs/ext4/inode.c |  120 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 124 insertions(+), 0 deletions(-)
+ .../testing/sysfs-bus-event_source-devices-events  | 62 ++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 8462eb3..4246a55 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2086,6 +2086,10 @@ extern int ext4_alloc_da_blocks(struct inode *inode);
- extern void ext4_set_aops(struct inode *inode);
- extern int ext4_writepage_trans_blocks(struct inode *);
- extern int ext4_chunk_trans_blocks(struct inode *, int nrblocks);
-+extern int ext4_block_truncate_page(handle_t *handle,
-+		struct address_space *mapping, loff_t from);
-+extern int ext4_block_zero_page_range(handle_t *handle,
-+		struct address_space *mapping, loff_t from, loff_t length);
- extern int ext4_discard_partial_page_buffers(handle_t *handle,
- 		struct address_space *mapping, loff_t from,
- 		loff_t length, int flags);
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index eb61fb7..5ccf556 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3552,6 +3552,126 @@ next:
- 	return err;
- }
- 
-+/*
-+ * ext4_block_truncate_page() zeroes out a mapping from file offset `from'
-+ * up to the end of the block which corresponds to `from'.
-+ * This required during truncate. We need to physically zero the tail end
-+ * of that block so it doesn't yield old data if the file is later grown.
-+ */
-+int ext4_block_truncate_page(handle_t *handle,
-+		struct address_space *mapping, loff_t from)
-+{
-+	unsigned offset = from & (PAGE_CACHE_SIZE-1);
-+	unsigned length;
-+	unsigned blocksize;
-+	struct inode *inode = mapping->host;
+diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+new file mode 100644
+index 0000000..0adeb52
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -0,0 +1,62 @@
++What:		/sys/devices/cpu/events/
++		/sys/devices/cpu/events/branch-misses
++		/sys/devices/cpu/events/cache-references
++		/sys/devices/cpu/events/cache-misses
++		/sys/devices/cpu/events/stalled-cycles-frontend
++		/sys/devices/cpu/events/branch-instructions
++		/sys/devices/cpu/events/stalled-cycles-backend
++		/sys/devices/cpu/events/instructions
++		/sys/devices/cpu/events/cpu-cycles
 +
-+	blocksize = inode->i_sb->s_blocksize;
-+	length = blocksize - (offset & (blocksize - 1));
++Date:		2013/01/08
 +
-+	return ext4_block_zero_page_range(handle, mapping, from, length);
-+}
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
 +
-+/*
-+ * ext4_block_zero_page_range() zeros out a mapping of length 'length'
-+ * starting from file offset 'from'.  The range to be zero'd must
-+ * be contained with in one block.  If the specified range exceeds
-+ * the end of the block it will be shortened to end of the block
-+ * that cooresponds to 'from'
-+ */
-+int ext4_block_zero_page_range(handle_t *handle,
-+		struct address_space *mapping, loff_t from, loff_t length)
-+{
-+	ext4_fsblk_t index = from >> PAGE_CACHE_SHIFT;
-+	unsigned offset = from & (PAGE_CACHE_SIZE-1);
-+	unsigned blocksize, max, pos;
-+	ext4_lblk_t iblock;
-+	struct inode *inode = mapping->host;
-+	struct buffer_head *bh;
-+	struct page *page;
-+	int err = 0;
++Description:	Generic performance monitoring events
 +
-+	page = find_or_create_page(mapping, from >> PAGE_CACHE_SHIFT,
-+				   mapping_gfp_mask(mapping) & ~__GFP_FS);
-+	if (!page)
-+		return -ENOMEM;
++		A collection of performance monitoring events that may be
++		supported by many/most CPUs. These events can be monitored
++		using the 'perf(1)' tool.
 +
-+	blocksize = inode->i_sb->s_blocksize;
-+	max = blocksize - (offset & (blocksize - 1));
++		The contents of each file would look like:
 +
-+	/*
-+	 * correct length if it does not fall between
-+	 * 'from' and the end of the block
-+	 */
-+	if (length > max || length < 0)
-+		length = max;
++			event=0xNNNN
 +
-+	iblock = index << (PAGE_CACHE_SHIFT - inode->i_sb->s_blocksize_bits);
++		where 'N' is a hex digit and the number '0xNNNN' shows the
++		"raw code" for the perf event identified by the file's
++		"basename".
 +
-+	if (!page_has_buffers(page))
-+		create_empty_buffers(page, blocksize, 0);
 +
-+	/* Find the buffer that contains "offset" */
-+	bh = page_buffers(page);
-+	pos = blocksize;
-+	while (offset >= pos) {
-+		bh = bh->b_this_page;
-+		iblock++;
-+		pos += blocksize;
-+	}
++What: 		/sys/devices/cpu/events/PM_LD_MISS_L1
++		/sys/devices/cpu/events/PM_LD_REF_L1
++		/sys/devices/cpu/events/PM_CYC
++		/sys/devices/cpu/events/PM_BRU_FIN
++		/sys/devices/cpu/events/PM_GCT_NOSLOT_CYC
++		/sys/devices/cpu/events/PM_BRU_MPRED
++		/sys/devices/cpu/events/PM_INST_CMPL
++		/sys/devices/cpu/events/PM_CMPLU_STALL
 +
-+	err = 0;
-+	if (buffer_freed(bh)) {
-+		BUFFER_TRACE(bh, "freed: skip");
-+		goto unlock;
-+	}
++Date:		2013/01/08
 +
-+	if (!buffer_mapped(bh)) {
-+		BUFFER_TRACE(bh, "unmapped");
-+		ext4_get_block(inode, iblock, bh, 0);
-+		/* unmapped? It's a hole - nothing to do */
-+		if (!buffer_mapped(bh)) {
-+			BUFFER_TRACE(bh, "still unmapped");
-+			goto unlock;
-+		}
-+	}
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++		Linux Powerpc mailing list <linuxppc-dev@ozlabs.org>
 +
-+	/* Ok, it's mapped. Make sure it's up-to-date */
-+	if (PageUptodate(page))
-+		set_buffer_uptodate(bh);
++Description:	POWER-systems specific performance monitoring events
 +
-+	if (!buffer_uptodate(bh)) {
-+		err = -EIO;
-+		ll_rw_block(READ, 1, &bh);
-+		wait_on_buffer(bh);
-+		/* Uhhuh. Read error. Complain and punt. */
-+		if (!buffer_uptodate(bh))
-+			goto unlock;
-+	}
++		A collection of performance monitoring events that may be
++		supported by the POWER CPU. These events can be monitored
++		using the 'perf(1)' tool.
 +
-+	if (ext4_should_journal_data(inode)) {
-+		BUFFER_TRACE(bh, "get write access");
-+		err = ext4_journal_get_write_access(handle, bh);
-+		if (err)
-+			goto unlock;
-+	}
++		These events may not be supported by other CPUs.
 +
-+	zero_user(page, offset, length);
++		The contents of each file would look like:
 +
-+	BUFFER_TRACE(bh, "zeroed end of block");
++			event=0xNNNN
 +
-+	err = 0;
-+	if (ext4_should_journal_data(inode)) {
-+		err = ext4_handle_dirty_metadata(handle, inode, bh);
-+	} else
-+		mark_buffer_dirty(bh);
++		where 'N' is a hex digit and the number '0xNNNN' shows the
++		"raw code" for the perf event identified by the file's
++		"basename".
 +
-+unlock:
-+	unlock_page(page);
-+	page_cache_release(page);
-+	return err;
-+}
-+
- int ext4_can_truncate(struct inode *inode)
- {
- 	if (S_ISREG(inode->i_mode))
--- 
-1.7.7.6
-
++		Further, multiple terms like 'event=0xNNNN' can be specified
++		and separated with comma. All available terms are defined in
++		the /sys/bus/event_source/devices/<dev>/format file.
