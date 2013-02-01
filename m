@@ -1,71 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3BALOB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 06:14:01 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:39839 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755883Ab3BALOA (ORCPT
+	id S1756640Ab3BALSn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 06:18:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56718 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab3BALSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 06:14:00 -0500
-Message-ID: <510BA370.1040309@tao.ma>
-Date: Fri, 01 Feb 2013 19:13:52 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 06:18:42 -0500
 MIME-Version: 1.0
-To: "Bryn M. Reeves" <bmr@redhat.com>
-CC: Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: How to online remove an error scsi disk from the system?
-References: <510B5CFC.2040801@tao.ma> <510B749E.8020501@acm.org> <510B904B.4050508@redhat.com> <510B9213.1040508@tao.ma> <510B93EE.8000304@redhat.com>
-In-Reply-To: <510B93EE.8000304@redhat.com>
+In-Reply-To: <510B7DC6.10803@jp.fujitsu.com>
+References: <1359688060-12964-1-git-send-email-ming.lei@canonical.com>
+	<510B7DC6.10803@jp.fujitsu.com>
+Date: Fri, 1 Feb 2013 19:18:39 +0800
+Message-ID: <CACVXFVOcRh7oFKNXV8jM8TYw833ErkS=Le9UnZEGAhbRi8=5aA@mail.gmail.com>
+Subject: Re: [PATCH] block: partition: optimize memory allocation in check_partition
+From: Ming Lei <ming.lei@canonical.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Felipe Balbi <balbi@ti.com>,
+        stable@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 06:07 PM, Bryn M. Reeves wrote:
-> On 02/01/2013 09:59 AM, Tao Ma wrote:
->> yes, but the result is the same. It will do some IO first which will
->> cause this command hang.
-> 
-> You seem to have a problem with either the device/adapter or in the
-> driver. The backtrace you posted shows that jbd2 (ext4) is still waiting
-> on IO that's been submitted to an mpt2sas or mpt3sas adapter (I only
-> know that because I recognise their log messages - you should try to
-> include relevant details like this when seeking assistance).
-This should be  a mpt2sas adapter
-#lsmod|grep mpt
-mptctl                 96789  0
-mptbase                97052  1 mptctl
-mpt2sas               164962  18
-scsi_transport_sas     35232  3 isci,libsas,mpt2sas
-raid_class              4746  1 mpt2sas
+On Fri, Feb 1, 2013 at 4:33 PM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
 
-The system has 12 sata disks. What else do you need? I am willing to
-provide any details you want.
+> At least, you should use release_partitions() instead of kfree() here.
 
-> 
-> The adapter/driver hasn't completed the IO and it looks like the SCSI
-> layer is trying to abort it. Depending on the state of the driver and
-> hardware your only option might be to reboot (or physically hot remove
-> the device if your hardware allows it).
-OK, so let me describe the situation here. This is one of our storage
-system. So 12 2TB sata disk in one box, normally when one disk fails, we
-just want to remove it from the system by *software*, and then continue
-to use the 11 disks left. We have found that sometimes an unsuccessful
-umount or some actions against this disk can lead to some bad
-situation(Say some very high load because many processes are 'D'ed). So
-ideally if we can remove this device successfully, all the ios to this
-disk will fail and there will be no 'D' processes and the loadavg will
-also be low.
-> 
-> You don't mention the versions of the kernel and driver you're using -
-> if the system is in production I would suggest contacting who ever
-> normally provides support for the kernel and distribution that you are
-> running.
-We use CentOS6.2 and the kernel version is 2.6.32-220.23.1.
+Good catch, thank you for pointing it out, and I will post v1 later
+with the update.
 
 Thanks,
-Tao
+--
+Ming Lei
