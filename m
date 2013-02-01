@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab3BANHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:07:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44300 "EHLO mail.kernel.org"
+	id S1757007Ab3BANHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:07:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44279 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757075Ab3BANHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:07:40 -0500
+	id S932067Ab3BANHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:07:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 10/89] ARM: S3C64XX: Fix up IRQ mapping for balblair on Cragganmore
-Date: Fri,  1 Feb 2013 14:07:25 +0100
-Message-Id: <20130201130208.201001679@linuxfoundation.org>
+        Luciano Coelho <coelho@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [ 08/89] ARM: OMAP2+: omap4-panda: add UART2 muxing for WiLink shared transport
+Date: Fri,  1 Feb 2013 14:07:23 +0100
+Message-Id: <20130201130208.071206270@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,31 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+From: Luciano Coelho <coelho@ti.com>
 
-commit b86dc0d8c12bbb9fed3f392c284bdc7114ce00c1 upstream.
+commit 7662a9c60fee25d7234da4be6d8eab2b2ac88448 upstream.
 
-We are using S3C_EINT(4) instead of S3C_EINT(5).
+Add the UART2 muxing data to the board file (this used to be,
+erroneously, done in the bootloader).
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Luciano Coelho <coelho@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-s3c64xx/mach-crag6410-module.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-omap2/board-omap4panda.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/arm/mach-s3c64xx/mach-crag6410-module.c
-+++ b/arch/arm/mach-s3c64xx/mach-crag6410-module.c
-@@ -39,7 +39,7 @@ static struct spi_board_info wm1253_devs
- 		.bus_num	= 0,
- 		.chip_select	= 0,
- 		.mode		= SPI_MODE_0,
--		.irq		= S3C_EINT(5),
-+		.irq		= S3C_EINT(4),
- 		.controller_data = &wm0010_spi_csinfo,
- 	},
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -402,6 +402,12 @@ static struct omap_board_mux board_mux[]
+ 		  OMAP_PULL_ENA),
+ 	OMAP4_MUX(ABE_MCBSP1_FSX, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
+ 
++	/* UART2 - BT/FM/GPS shared transport */
++	OMAP4_MUX(UART2_CTS,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
++	OMAP4_MUX(UART2_RTS,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
++	OMAP4_MUX(UART2_RX,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
++	OMAP4_MUX(UART2_TX,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
++
+ 	{ .reg_offset = OMAP_MUX_TERMINATOR },
  };
+ 
 
 
