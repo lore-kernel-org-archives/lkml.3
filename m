@@ -1,422 +1,419 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab3BATzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 14:55:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756523Ab3BATzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 14:55:42 -0500
-Date: Fri, 1 Feb 2013 14:09:58 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v5 9/9] devcg: propagate local changes down the hierarchy
-Message-ID: <20130201190958.GP17632@redhat.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
+	id S1757352Ab3BAUAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:00:11 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:55749 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757125Ab3BAUAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 15:00:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130131043839.GA14726@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 1 Feb 2013 15:00:06 -0500
+Message-ID: <CAK8PzVk8g1-jDhVmZ+jLCcw23DmDANYdxVrzuDBNPqhTVq8zqw@mail.gmail.com>
+Subject: Backport of Balance-ALB patch from 3.8-rc2 (567b871e503316b0927e54a3d7c86d50b722d955)
+ to kernels 3.0, 3.2, 3.4, 3.7.
+From: "Matthew O'Connor" <liquidhorse@gmail.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devcg: propagate local changes down the hierarchy
+Original patch by Zheng Li.  Backported to kernel series 3.0, 3.2,
+3.4, and 3.7.  Original patch details:
 
-This patch makes all changes propagate down in hierarchy respecting when
-possible local configurations.
+>From 567b871e503316b0927e54a3d7c86d50b722d955 Mon Sep 17 00:00:00 2001
+From: "zheng.li" <zheng.x.li@oracle.com>
+Date: Tue, 27 Nov 2012 23:57:04 +0000
+Subject: [PATCH] bonding: rlb mode of bond should not alter ARP originating
+ via bridge
 
-Behavior changes will clean up exceptions in all the children except when the
-parent changes the behavior from allow to deny and the child's behavior was
-already deny, in which case the local exceptions will be reused. The inverse
-is not possible: you can't have a parent with behavior deny and a child with
-behavior accept.
+Do not modify or load balance ARP packets passing through balance-alb
+mode (wherein the ARP did not originate locally, and arrived via a bridge).
 
-New exceptions allowing additional access to devices won't be propagated, but
-it'll be possible to add an exception to access all of part of the newly
-allowed device(s).
+Modifying pass-through ARP replies causes an incorrect MAC address
+to be placed into the ARP packet, rendering peers unable to communicate
+with the actual destination from which the ARP reply originated.
 
-New exceptions disallowing access to devices will be propagated down and the
-local group's exceptions will be revalidated for the new situation.
-Example:
-      A
-     / \
-        B
+Load balancing pass-through ARP requests causes an entry to be
+created for the peer in the rlb table, and bond_alb_monitor will
+occasionally issue ARP updates to all peers in the table instrucing them
+as to which MAC address they should communicate with; this occurs when
+some event sets rx_ntt.  In the bridged case, however, the MAC address
+used for the update would be the MAC of the slave, not the actual source
+MAC of the originating destination.  This would render peers unable to
+communicate with the destinations beyond the bridge.
 
-    group        behavior          exceptions
-    A            allow             "b 8:* rwm", "c 116:1 rw"
-    B            deny              "c 1:3 rwm", "c 116:2 rwm", "b 3:* rwm"
+Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: Andy Gospodarek <andy@greyhouse.net>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
-If a new exception is added to group A:
-	# echo "c 116:* r" > A/devices.deny
-it'll propagate down and after revalidating B's local exceptions, the exception
-"c 116:2 rwm" will be removed.
 
-In case parent behavior or exceptions change and local settings are not
-allowed anymore, they'll be deleted.
+Backports:
+Signed-off-by: Matthew O'Connor (liquidhorse@gmail.com)
 
-v5: fixed issues pointed by Serge Hallyn
-- updated documentation
-- not propagating when an exception is written to devices.allow
-- when propagating a new behavior, clean the local exceptions list if they're
-  for a different behavior
 
-v4:
-- separated function to walk the tree and collect valid propagation targets
+====== 3.0 Series ======
 
-v3:
-- update documentation
-- move css_online/css_offline changes to a new patch
-- use cgroup_for_each_descendant_pre() instead of own descendant walk
-- move exception_copy rework to a separared patch
-- move exception_clean rework to a separated patch
+diff -uNr linux-3.0.0-a/drivers/net/bonding/bond_alb.c
+linux-3.0.0-b/drivers/net/bonding/bond_alb.c
+--- linux-3.0.0-a/drivers/net/bonding/bond_alb.c    2013-01-10
+12:47:53.000000000 -0500
++++ linux-3.0.0-b/drivers/net/bonding/bond_alb.c    2013-01-10
+12:50:58.000000000 -0500
+@@ -666,6 +666,12 @@
+     struct arp_pkt *arp = arp_pkt(skb);
+     struct slave *tx_slave = NULL;
 
-v2:
-- instead of keeping the local settings that won't apply anymore, remove them
-
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
----
- Documentation/cgroups/devices.txt |   67 ++++++++++++
- security/device_cgroup.c          |  196 ++++++++++++++++++++++++++++++++++++--
- 2 files changed, 257 insertions(+), 6 deletions(-)
-
---- github.orig/security/device_cgroup.c	2013-01-31 10:15:22.458209721 -0500
-+++ github/security/device_cgroup.c	2013-02-01 14:09:04.067917557 -0500
-@@ -60,6 +60,9 @@ struct dev_cgroup {
- 		struct list_head exceptions;
- 		enum devcg_behavior behavior;
- 	} local;
++    /* Don't modify or load balance ARPs that do not originate locally
++     * (e.g.,arrive via a bridge).
++     */
++    if (!bond_slave_has_mac(bond, arp->mac_src))
++        return NULL;
 +
-+	/* temporary list for pending propagation operations */
-+	struct list_head propagate_pending;
- };
- 
- static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
-@@ -241,6 +244,11 @@ static void dev_exception_clean_all(stru
- 	__dev_exception_clean_all(dev_cgroup);
+     if (arp->op_code == htons(ARPOP_REPLY)) {
+         /* the arp must be sent on the selected
+         * rx channel
+diff -uNr linux-3.0.0-a/drivers/net/bonding/bonding.h
+linux-3.0.0-b/drivers/net/bonding/bonding.h
+--- linux-3.0.0-a/drivers/net/bonding/bonding.h    2011-07-21
+22:17:23.000000000 -0400
++++ linux-3.0.0-b/drivers/net/bonding/bonding.h    2013-01-10
+12:51:05.000000000 -0500
+@@ -18,6 +18,7 @@
+ #include <linux/timer.h>
+ #include <linux/proc_fs.h>
+ #include <linux/if_bonding.h>
++#include <linux/etherdevice.h>
+ #include <linux/cpumask.h>
+ #include <linux/in6.h>
+ #include <linux/netpoll.h>
+@@ -431,6 +432,18 @@
  }
- 
-+static inline bool is_devcg_online(const struct dev_cgroup *devcg)
+ #endif
+
++static inline struct slave *bond_slave_has_mac(struct bonding *bond,
++                           const u8 *mac)
 +{
-+	return (devcg->behavior != DEVCG_DEFAULT_NONE);
-+}
++    int i = 0;
++    struct slave *tmp;
 +
- /**
-  * devcgroup_online - initializes devcgroup's behavior and exceptions based on
-  * 		      parent's
-@@ -292,6 +300,7 @@ static struct cgroup_subsys_state *devcg
- 		return ERR_PTR(-ENOMEM);
- 	INIT_LIST_HEAD(&dev_cgroup->exceptions);
- 	INIT_LIST_HEAD(&dev_cgroup->local.exceptions);
-+	INIT_LIST_HEAD(&dev_cgroup->propagate_pending);
- 	dev_cgroup->local.behavior = DEVCG_DEFAULT_NONE;
- 	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
- 	parent_cgroup = cgroup->parent;
-@@ -471,6 +480,163 @@ static inline int may_allow_all(struct d
- 	return parent->behavior == DEVCG_DEFAULT_ALLOW;
++    bond_for_each_slave(bond, tmp, i)
++        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
++            return tmp;
++
++    return NULL;
++}
+
+ /* exported from bond_main.c */
+ extern int bond_net_id;
+diff -uNr linux-3.0.0-a/include/linux/etherdevice.h
+linux-3.0.0-b/include/linux/etherdevice.h
+--- linux-3.0.0-a/include/linux/etherdevice.h    2011-07-21
+22:17:23.000000000 -0400
++++ linux-3.0.0-b/include/linux/etherdevice.h    2013-01-10
+12:51:16.000000000 -0500
+@@ -275,4 +275,37 @@
+ #endif
  }
- 
+
 +/**
-+ * revalidate_exceptions - walks through the exception list and revalidates
-+ *			     the exceptions based on parents' behavior and
-+ *			     exceptions. Called with devcgroup_mutex held.
-+ * @devcg: cgroup which exceptions will be checked
++ * ether_addr_equal_64bits - Compare two Ethernet addresses
++ * @addr1: Pointer to an array of 8 bytes
++ * @addr2: Pointer to an other array of 8 bytes
 + *
-+ * returns: 0 in success, -ENOMEM in case of out of memory
++ * Compare two Ethernet addresses, returns true if equal, false otherwise.
 + *
-+ * This is one of the two key functions for hierarchy implementation.
-+ * This function is responsible for re-evaluating all the cgroup's locally
-+ * set exceptions due to a parent's behavior or exception change.
-+ * Refer to Documentation/cgroups/devices.txt for more details.
++ * The function doesn't need any conditional branches and possibly uses
++ * word memory accesses on CPU allowing cheap unaligned memory reads.
++ * arrays = { byte1, byte2, byte3, byte4, byte5, byte6, pad1, pad2 }
++ *
++ * Please note that alignment of addr1 & addr2 are only guaranteed to
+be 16 bits.
 + */
-+static int revalidate_exceptions(struct dev_cgroup *devcg)
++
++static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
++                                           const u8 addr2[6+2])
 +{
-+	struct dev_exception_item *ex;
-+	struct list_head *this, *tmp;
++#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
++        unsigned long fold = ((*(unsigned long *)addr1) ^
++                              (*(unsigned long *)addr2));
 +
-+	list_for_each_safe(this, tmp, &devcg->local.exceptions) {
-+		ex = container_of(this, struct dev_exception_item, list);
-+		if (parent_has_perm(devcg, ex)) {
-+			if (dev_exception_copy(&devcg->exceptions, ex))
-+				goto error;
-+		} else
-+			__dev_exception_rm(&devcg->local.exceptions, ex);
-+	}
-+	return 0;
++        if (sizeof(fold) == 8)
++                return zap_last_2bytes(fold) == 0;
 +
-+error:
-+	dev_exception_clean(&devcg->exceptions);
-+	return -ENOMEM;
++        fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
++                                (*(unsigned long *)(addr2 + 4)));
++        return fold == 0;
++#else
++        return ether_addr_equal(addr1, addr2);
++#endif
 +}
 +
-+/**
-+ * get_online_devcg - walks the cgroup tree and fills a list with the online
-+ * 		      groups
-+ * @root: cgroup used as starting point
-+ * @online: list that will be filled with online groups
-+ *
-+ * Must be called with devcgroup_mutex held. Grabs RCU lock.
-+ * Because devcgroup_mutex is held, no devcg will become online or offline
-+ * during the tree walk (see devcgroup_online, devcgroup_offline)
-+ * A separated list is needed because propagate_behavior() and
-+ * propagate_exception() need to allocate memory and can block.
-+ */
-+static void get_online_devcg(struct cgroup *root, struct list_head *online)
-+{
-+	struct cgroup *pos;
-+	struct dev_cgroup *devcg;
 +
-+	lockdep_assert_held(&devcgroup_mutex);
+ #endif    /* _LINUX_ETHERDEVICE_H */
+
+
+
+====== 3.2 Series ======
+
+diff -uprN linux-3.2.37/drivers/net/bonding/bond_alb.c
+linux-3.2.37-patched/drivers/net/bonding/bond_alb.c
+--- linux-3.2.37/drivers/net/bonding/bond_alb.c    2013-01-15
+20:13:30.000000000 -0500
++++ linux-3.2.37-patched/drivers/net/bonding/bond_alb.c    2013-01-30
+15:37:12.717485854 -0500
+@@ -666,6 +666,12 @@ static struct slave *rlb_arp_xmit(struct
+     struct arp_pkt *arp = arp_pkt(skb);
+     struct slave *tx_slave = NULL;
+
++    /* Don't modify or load balance ARPs that do not originate locally
++     * (e.g.,arrive via a bridge).
++     */
++    if (!bond_slave_has_mac(bond, arp->mac_src))
++        return NULL;
 +
-+	rcu_read_lock();
-+	cgroup_for_each_descendant_pre(pos, root) {
-+		devcg = cgroup_to_devcgroup(pos);
-+		if (is_devcg_online(devcg))
-+			list_add_tail(&devcg->propagate_pending, online);
-+	}
-+	rcu_read_unlock();
-+}
-+
-+/**
-+ * propagate_behavior - propagates a change in the behavior down in hierarchy
-+ * @devcg_root: device cgroup that changed behavior
-+ *
-+ * returns: 0 in case of success, != 0 in case of error
-+ *
-+ * This is one of the two key functions for hierarchy implementation.
-+ * All cgroup's children recursively will have the behavior changed and
-+ * exceptions copied from the parent then its local behavior and exceptions
-+ * re-evaluated and applied if they're still allowed.  Refer to
-+ * Documentation/cgroups/devices.txt for more details.
-+ */
-+static int propagate_behavior(struct dev_cgroup *devcg_root)
-+{
-+	struct cgroup *root = devcg_root->css.cgroup;
-+	struct dev_cgroup *parent, *devcg, *tmp;
-+	int rc = 0;
-+	LIST_HEAD(pending);
-+
-+	get_online_devcg(root, &pending);
-+
-+	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-+		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-+
-+		/* first copy parent's state */
-+		devcg->behavior = parent->behavior;
-+		dev_exception_clean(&devcg->exceptions);
-+		rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-+		if (rc) {
-+			devcg->behavior = DEVCG_DEFAULT_DENY;
-+			break;
-+		}
-+
-+		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
-+		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
-+			devcg->behavior = DEVCG_DEFAULT_DENY;
-+		}
-+		if (devcg->local.behavior == devcg->behavior) {
-+			rc = revalidate_exceptions(devcg);
-+		} else {
-+			dev_exception_clean(&devcg->local.exceptions);
-+			/*
-+			 * if the local behavior couldn't be applied,
-+			 * reset it
-+			 */
-+			devcg->local.behavior = DEVCG_DEFAULT_NONE;
-+		}
-+		if (rc)
-+			break;
-+		list_del_init(&devcg->propagate_pending);
-+	}
-+
-+	return rc;
-+}
-+
-+/**
-+ * propagate_exception - propagates a new exception to the children
-+ * @devcg_root: device cgroup that added a new exception
-+ *
-+ * returns: 0 in case of success, != 0 in case of error
-+ */
-+static int propagate_exception(struct dev_cgroup *devcg_root)
-+{
-+	struct cgroup *root = devcg_root->css.cgroup;
-+	struct dev_cgroup *devcg, *parent, *tmp;
-+	int rc = 0;
-+	LIST_HEAD(pending);
-+
-+	get_online_devcg(root, &pending);
-+
-+	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-+		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-+
-+		dev_exception_clean(&devcg->exceptions);
-+		if (devcg->behavior == parent->behavior) {
-+			rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-+			if (rc) {
-+				devcg->behavior = DEVCG_DEFAULT_DENY;
-+				break;
-+			}
-+			rc = revalidate_exceptions(devcg);
-+			if (rc)
-+				break;
-+		} else {
-+			/* we never give more permissions to the child */
-+			WARN_ONCE(devcg->behavior == DEVCG_DEFAULT_ALLOW,
-+				  "devcg: parent/child behavior is inconsistent");
-+			rc = revalidate_exceptions(devcg);
-+			if (rc)
-+				break;
-+		}
-+		list_del_init(&devcg->propagate_pending);
-+	}
-+	return rc;
-+}
-+
- /*
-  * Modify the exception list using allow/deny rules.
-  * CAP_SYS_ADMIN is needed for this.  It's at least separate from CAP_MKNOD
-@@ -510,16 +676,21 @@ 	memset(&ex, 0, sizeof(ex));
- 			if (!may_allow_all(parent))
- 				return -EPERM;
- 			dev_exception_clean_all(devcgroup);
--			if (parent)
-+			if (parent) {
- 				rc = dev_exceptions_copy(&devcgroup->exceptions,
- 							 &parent->exceptions);
-+				if (rc)
-+					break;
-+			}
- 			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
- 			devcgroup->local.behavior = DEVCG_DEFAULT_ALLOW;
-+			rc = propagate_behavior(devcgroup);
- 			break;
- 		case DEVCG_DENY:
- 			dev_exception_clean_all(devcgroup);
- 			devcgroup->behavior = DEVCG_DEFAULT_DENY;
- 			devcgroup->local.behavior = DEVCG_DEFAULT_DENY;
-+			rc = propagate_behavior(devcgroup);
- 			break;
- 		default:
- 			rc = -EINVAL;
-@@ -612,7 +783,11 @@ 		case '\0':
- 			dev_exception_rm(devcgroup, &ex);
- 			return 0;
- 		}
--		return dev_exception_add(devcgroup, &ex);
-+		rc = dev_exception_add(devcgroup, &ex);
-+		if (!rc)
-+			/* if a local behavior wasn't explicitely choosen, pick it */
-+			devcgroup->local.behavior = devcgroup->behavior;
-+		break;
- 	case DEVCG_DENY:
- 		/*
- 		 * If the default policy is to deny by default, try to remove
-@@ -621,13 +796,22 @@ 			return 0;
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
- 			dev_exception_rm(devcgroup, &ex);
--			return 0;
-+			rc = propagate_exception(devcgroup);
-+			break;
- 		}
--		return dev_exception_add(devcgroup, &ex);
-+		rc = dev_exception_add(devcgroup, &ex);
-+		if (rc)
-+			break;
-+		/* we only propagate new restrictions */
-+		rc = propagate_exception(devcgroup);
-+		if (!rc)
-+			/* if a local behavior wasn't explicitely choosen, pick it */
-+			devcgroup->local.behavior = devcgroup->behavior;
-+		break;
- 	default:
--		return -EINVAL;
-+		rc = -EINVAL;
- 	}
--	return 0;
-+	return rc;
+     if (arp->op_code == htons(ARPOP_REPLY)) {
+         /* the arp must be sent on the selected
+         * rx channel
+diff -uprN linux-3.2.37/drivers/net/bonding/bonding.h
+linux-3.2.37-patched/drivers/net/bonding/bonding.h
+--- linux-3.2.37/drivers/net/bonding/bonding.h    2013-01-15
+20:13:30.000000000 -0500
++++ linux-3.2.37-patched/drivers/net/bonding/bonding.h    2013-01-30
+15:37:12.729485790 -0500
+@@ -18,6 +18,7 @@
+ #include <linux/timer.h>
+ #include <linux/proc_fs.h>
+ #include <linux/if_bonding.h>
++#include <linux/etherdevice.h>
+ #include <linux/cpumask.h>
+ #include <linux/in6.h>
+ #include <linux/netpoll.h>
+@@ -436,6 +437,18 @@ static inline void bond_destroy_proc_dir
  }
- 
- static int devcgroup_access_write(struct cgroup *cgrp, struct cftype *cft,
---- github.orig/Documentation/cgroups/devices.txt	2013-01-30 13:46:53.906746370 -0500
-+++ github/Documentation/cgroups/devices.txt	2013-01-31 10:33:10.278177681 -0500
-@@ -50,3 +50,70 @@ task to a new cgroup.  (Again we'll prob
- 
- A cgroup may not be granted more permissions than the cgroup's
- parent has.
+ #endif
+
++static inline struct slave *bond_slave_has_mac(struct bonding *bond,
++                           const u8 *mac)
++{
++    int i = 0;
++    struct slave *tmp;
 +
-+4. Hierarchy
++    bond_for_each_slave(bond, tmp, i)
++        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
++            return tmp;
 +
-+device cgroups maintain hierarchy by making sure a cgroup never has more
-+access permissions than its parent.  Every time an entry is written to
-+a cgroup's devices.deny file, all its children will have that entry removed
-+from their whitelist and all the locally set whitelist entries will be
-+re-evaluated.  In case one of the locally set whitelist entries would provide
-+more access than the cgroup's parent, it'll be removed from the whitelist.
++    return NULL;
++}
+
+ /* exported from bond_main.c */
+ extern int bond_net_id;
+diff -uprN linux-3.2.37/include/linux/etherdevice.h
+linux-3.2.37-patched/include/linux/etherdevice.h
+--- linux-3.2.37/include/linux/etherdevice.h    2013-01-15
+20:13:30.000000000 -0500
++++ linux-3.2.37-patched/include/linux/etherdevice.h    2013-01-30
+15:37:12.729485790 -0500
+@@ -275,4 +275,37 @@ static inline unsigned long compare_ethe
+ #endif
+ }
+
++/**
++ * ether_addr_equal_64bits - Compare two Ethernet addresses
++ * @addr1: Pointer to an array of 8 bytes
++ * @addr2: Pointer to an other array of 8 bytes
++ *
++ * Compare two Ethernet addresses, returns true if equal, false otherwise.
++ *
++ * The function doesn't need any conditional branches and possibly uses
++ * word memory accesses on CPU allowing cheap unaligned memory reads.
++ * arrays = { byte1, byte2, byte3, byte4, byte5, byte6, pad1, pad2 }
++ *
++ * Please note that alignment of addr1 & addr2 are only guaranteed to
+be 16 bits.
++ */
 +
-+Example:
-+      A
-+     / \
-+        B
++static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
++                                           const u8 addr2[6+2])
++{
++#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
++        unsigned long fold = ((*(unsigned long *)addr1) ^
++                              (*(unsigned long *)addr2));
 +
-+    group        behavior	exceptions
-+    A            allow		"b 8:* rwm", "c 116:1 rw"
-+    B            deny		"c 1:3 rwm", "c 116:2 rwm", "b 3:* rwm"
++        if (sizeof(fold) == 8)
++                return zap_last_2bytes(fold) == 0;
 +
-+If a device is denied in group A:
-+	# echo "c 116:* r" > A/devices.deny
-+it'll propagate down and after revalidating B's entries, the whitelist entry
-+"c 116:2 rwm" will be removed:
++        fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
++                                (*(unsigned long *)(addr2 + 4)));
++        return fold == 0;
++#else
++        return ether_addr_equal(addr1, addr2);
++#endif
++}
 +
-+    group        whitelist entries                        denied devices
-+    A            all                                      "b 8:* rwm", "c 116:* rw"
-+    B            "c 1:3 rwm", "b 3:* rwm"                 all the rest
 +
-+In case parent behavior or exceptions change and local settings are not
-+allowed anymore, they'll be deleted.
+ #endif    /* _LINUX_ETHERDEVICE_H */
+
+
+
+====== 3.4 Series ======
+
+diff -uprN linux-3.4.28/drivers/net/bonding/bond_alb.c
+linux-3.4.28-patched/drivers/net/bonding/bond_alb.c
+--- linux-3.4.28/drivers/net/bonding/bond_alb.c    2013-01-27
+23:51:45.000000000 -0500
++++ linux-3.4.28-patched/drivers/net/bonding/bond_alb.c    2013-01-30
+15:37:25.121708311 -0500
+@@ -704,6 +704,12 @@ static struct slave *rlb_arp_xmit(struct
+     struct arp_pkt *arp = arp_pkt(skb);
+     struct slave *tx_slave = NULL;
+
++    /* Don't modify or load balance ARPs that do not originate locally
++     * (e.g.,arrive via a bridge).
++     */
++    if (!bond_slave_has_mac(bond, arp->mac_src))
++        return NULL;
 +
-+Notice that new whitelist entries will not be propagated:
-+      A
-+     / \
-+        B
+     if (arp->op_code == htons(ARPOP_REPLY)) {
+         /* the arp must be sent on the selected
+         * rx channel
+diff -uprN linux-3.4.28/drivers/net/bonding/bonding.h
+linux-3.4.28-patched/drivers/net/bonding/bonding.h
+--- linux-3.4.28/drivers/net/bonding/bonding.h    2013-01-27
+23:51:45.000000000 -0500
++++ linux-3.4.28-patched/drivers/net/bonding/bonding.h    2013-01-30
+15:37:25.121708311 -0500
+@@ -18,6 +18,7 @@
+ #include <linux/timer.h>
+ #include <linux/proc_fs.h>
+ #include <linux/if_bonding.h>
++#include <linux/etherdevice.h>
+ #include <linux/cpumask.h>
+ #include <linux/in6.h>
+ #include <linux/netpoll.h>
+@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir
+ }
+ #endif
+
++static inline struct slave *bond_slave_has_mac(struct bonding *bond,
++                           const u8 *mac)
++{
++    int i = 0;
++    struct slave *tmp;
 +
-+    group        whitelist entries                        denied devices
-+    A            "c 1:3 rwm", "c 1:5 r"                   all the rest
-+    B            "c 1:3 rwm", "c 1:5 r"                   all the rest
++    bond_for_each_slave(bond, tmp, i)
++        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
++            return tmp;
 +
-+when adding "c *:3 rwm":
-+	# echo "c *:3 rwm" >A/devices.allow
++    return NULL;
++}
+
+ /* exported from bond_main.c */
+ extern int bond_net_id;
+diff -uprN linux-3.4.28/include/linux/etherdevice.h
+linux-3.4.28-patched/include/linux/etherdevice.h
+--- linux-3.4.28/include/linux/etherdevice.h    2013-01-27
+23:51:45.000000000 -0500
++++ linux-3.4.28-patched/include/linux/etherdevice.h    2013-01-30
+15:37:25.121708311 -0500
+@@ -277,4 +277,37 @@ static inline unsigned long compare_ethe
+ #endif
+ }
+
++/**
++ * ether_addr_equal_64bits - Compare two Ethernet addresses
++ * @addr1: Pointer to an array of 8 bytes
++ * @addr2: Pointer to an other array of 8 bytes
++ *
++ * Compare two Ethernet addresses, returns true if equal, false otherwise.
++ *
++ * The function doesn't need any conditional branches and possibly uses
++ * word memory accesses on CPU allowing cheap unaligned memory reads.
++ * arrays = { byte1, byte2, byte3, byte4, byte5, byte6, pad1, pad2 }
++ *
++ * Please note that alignment of addr1 & addr2 are only guaranteed to
+be 16 bits.
++ */
 +
-+the result:
-+    group        whitelist entries                        denied devices
-+    A            "c *:3 rwm", "c 1:5 r"                   all the rest
-+    B            "c 1:3 rwm", "c 1:5 r"                   all the rest
++static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
++                                           const u8 addr2[6+2])
++{
++#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
++        unsigned long fold = ((*(unsigned long *)addr1) ^
++                              (*(unsigned long *)addr2));
 +
-+but now it'll be possible to add new entries to B:
-+	# echo "c 2:3 rwm" >B/devices.allow
-+	# echo "c 50:3 r" >B/devices.allow
-+or even
-+	# echo "c *:3 rwm" >B/devices.allow
++        if (sizeof(fold) == 8)
++                return zap_last_2bytes(fold) == 0;
 +
-+4.1 Hierarchy (internal implementation)
++        fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
++                                (*(unsigned long *)(addr2 + 4)));
++        return fold == 0;
++#else
++        return ether_addr_equal(addr1, addr2);
++#endif
++}
 +
-+device cgroups is implemented internally using a behavior (ALLOW, DENY) and a
-+list of exceptions.  The internal state is controlled using the same user
-+interface to preserve compatibility with the previous whitelist-only
-+implementation.  A change in behavior (writing "a" to devices.deny or
-+devices.allow) will be propagated down the hierarchy as well as new exceptions
-+that will reduce the access to devices (an exception when behavior is ALLOW).
-+Each cgroup will have its local behavior and exception list to keep track what
-+was set by the user for that cgroup in specific.  For every propagated change,
-+the effective rules will be built starting with parent's rules and the locally
-+set behavior and exceptions in case they still apply, otherwise those will be
-+lost.
++
+ #endif    /* _LINUX_ETHERDEVICE_H */
+
+
+
+====== 3.7 Series ======
+
+diff -uprN linux-3.7/drivers/net/bonding/bond_alb.c
+linux-3.7-patch2/drivers/net/bonding/bond_alb.c
+--- linux-3.7/drivers/net/bonding/bond_alb.c    2012-12-10
+22:30:57.000000000 -0500
++++ linux-3.7-patch2/drivers/net/bonding/bond_alb.c    2013-02-01
+13:55:20.062030691 -0500
+@@ -694,6 +694,12 @@ static struct slave *rlb_arp_xmit(struct
+     struct arp_pkt *arp = arp_pkt(skb);
+     struct slave *tx_slave = NULL;
+
++    /* Don't modify or load balance ARPs that do not originate locally
++     * (e.g.,arrive via a bridge).
++     */
++    if (!bond_slave_has_mac(bond, arp->mac_src))
++        return NULL;
++
+     if (arp->op_code == htons(ARPOP_REPLY)) {
+         /* the arp must be sent on the selected
+         * rx channel
+diff -uprN linux-3.7/drivers/net/bonding/bonding.h
+linux-3.7-patch2/drivers/net/bonding/bonding.h
+--- linux-3.7/drivers/net/bonding/bonding.h    2012-12-10
+22:30:57.000000000 -0500
++++ linux-3.7-patch2/drivers/net/bonding/bonding.h    2013-02-01
+13:55:20.062030691 -0500
+@@ -18,6 +18,7 @@
+ #include <linux/timer.h>
+ #include <linux/proc_fs.h>
+ #include <linux/if_bonding.h>
++#include <linux/etherdevice.h>
+ #include <linux/cpumask.h>
+ #include <linux/in6.h>
+ #include <linux/netpoll.h>
+@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir
+ }
+ #endif
+
++static inline struct slave *bond_slave_has_mac(struct bonding *bond,
++                           const u8 *mac)
++{
++    int i = 0;
++    struct slave *tmp;
++
++    bond_for_each_slave(bond, tmp, i)
++        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
++            return tmp;
++
++    return NULL;
++}
+
+ /* exported from bond_main.c */
+ extern int bond_net_id;
