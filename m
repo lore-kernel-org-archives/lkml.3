@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab3BAJGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:06:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37947 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab3BAJG1 (ORCPT
+	id S1756055Ab3BAJHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:07:10 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:34981 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583Ab3BAJHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:06:27 -0500
-Message-ID: <510B85D1.5070401@ti.com>
-Date: Fri, 1 Feb 2013 14:37:29 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 1 Feb 2013 04:07:06 -0500
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <linaro-dev@lists.linaro.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <rjw@sisk.pl>, <Steve.Bannister@arm.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 3/3] cpufreq: Remove unnecessary use of policy->shared_type
-References: <1bf82454ab1f16b13212548d7c9605067c8b7a0d.1359700705.git.viresh.kumar@linaro.org> <902bed453159832925df76e24806f3b919fdfc74.1359700706.git.viresh.kumar@linaro.org> <510B6510.6060608@ti.com> <CAKohponEsSrwLWbi4WJ19i8XkzEiL0De2ShLePBdygunmGEo5g@mail.gmail.com> <510B6FC5.8030309@ti.com> <CAKohpomxi91kXR+th2BbruKigmLPmrDQf1s_Mf11C3Bs53aB3A@mail.gmail.com> <510B8237.7030605@ti.com>
-In-Reply-To: <510B8237.7030605@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130129160342.28754.96853.stgit@localhost.localdomain>
+References: <20130129160342.28754.96853.stgit@localhost.localdomain>
+Date: Fri, 1 Feb 2013 10:07:06 +0100
+X-Google-Sender-Auth: JYJF4BN_iv0zP8Dx1_xwqyGIq0g
+Message-ID: <CAAxaTiOGUo092Fgigs2U0R7Ry0HPvLTFqvvANp8TMFJbY+KgLw@mail.gmail.com>
+Subject: Re: [PATCH 2 2/2] coccicheck: Allow to show the executed command line
+From: Nicolas Palix <nicolas.palix@imag.fr>
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, cocci@systeme.lip6.fr
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh,
-
-On Friday 01 February 2013 02:22 PM, Santosh Shilimkar wrote:
-> On Friday 01 February 2013 01:32 PM, Viresh Kumar wrote:
->> On 1 February 2013 13:03, Santosh Shilimkar <santosh.shilimkar@ti.com>
->> wrote:
->>> I am not talking about just notifiers. This is for external users who
->>> has subscribed for notifiers. The point is whether the core CPUFReq
->>> gets updated without that flag for all affected CPU.
->>
->> Yes, its safe. Follow this thread, yesterday i explained this to
->> Tomasz Figa:
->>
->> http://www.spinics.net/lists/arm-kernel/msg221629.html
->>
-> That part was very clear to me Viresh. Anyway thanks for the link.
->  From what I read so far, it might just work but I would want to
-> try it out before acking the approach.
+On Tue, Jan 29, 2013 at 5:03 PM, Bernd Schubert
+<bernd.schubert@itwm.fraunhofer.de> wrote:
+> On my system one of the tests failed with
+> "Fatal error: exception Failure("No OCaml compiler found! Install either ocamlopt or ocamlopt.opt")".
 >
-You are correct. Sorry for oversight on your initial point about the
-usage of the flag. When I added that flag, I just went by the
-description thinking the cpufreq core booking and stat updates
-use the flag. Its not the case.
+> Investigating such issues is easier if the executed command line is being shown.
+>
+> Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+> CC: Julia Lawall <Julia.Lawall@lip6.fr>
+> CC: Nicolas Palix <nicolas.palix@imag.fr>
 
-Thanks for the fix. For the patch,
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Nicolas Palix <nicolas.palix@imag.fr>
+
+> CC: cocci@systeme.lip6.fr
+> CC: Michal Marek <mmarek@suse.cz>
+> ---
+>  scripts/coccicheck |   28 +++++++++++++++++++++-------
+>  1 file changed, 21 insertions(+), 7 deletions(-)
+>
+> diff --git a/scripts/coccicheck b/scripts/coccicheck
+> index f8f15a2..85d3189 100755
+> --- a/scripts/coccicheck
+> +++ b/scripts/coccicheck
+> @@ -55,6 +55,14 @@ if [ "$ONLINE" = "0" ] ; then
+>      echo ''
+>  fi
+>
+> +run_cmd() {
+> +       if [ $VERBOSE -ne 0 ] ; then
+> +               echo "Running: $@"
+> +       fi
+> +       eval $@
+> +}
+> +
+> +
+>  coccinelle () {
+>      COCCI="$1"
+>
+> @@ -100,15 +108,21 @@ coccinelle () {
+>      fi
+>
+>      if [ "$MODE" = "chain" ] ; then
+> -       $SPATCH -D patch   $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
+> -       $SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
+> -       $SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
+> -       $SPATCH -D org     $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || exit 1
+> +       run_cmd $SPATCH -D patch   \
+> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
+> +       run_cmd $SPATCH -D report  \
+> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
+> +       run_cmd $SPATCH -D context \
+> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
+> +       run_cmd $SPATCH -D org     \
+> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || exit 1
+>      elif [ "$MODE" = "rep+ctxt" ] ; then
+> -       $SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff && \
+> -       $SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
+> +       run_cmd $SPATCH -D report  \
+> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff && \
+> +       run_cmd $SPATCH -D context \
+> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
+>      else
+> -       $SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
+> +       run_cmd $SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
+>      fi
+>
+>  }
+>
+
+
+
+-- 
+Nicolas Palix
