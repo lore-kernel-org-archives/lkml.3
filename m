@@ -1,98 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab3BAJHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:07:10 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:34981 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583Ab3BAJHG (ORCPT
+	id S1756084Ab3BAJHt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:07:49 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:43279 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755626Ab3BAJHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:07:06 -0500
+	Fri, 1 Feb 2013 04:07:39 -0500
+Message-ID: <510B85C7.8030105@tao.ma>
+Date: Fri, 01 Feb 2013 17:07:19 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130129160342.28754.96853.stgit@localhost.localdomain>
-References: <20130129160342.28754.96853.stgit@localhost.localdomain>
-Date: Fri, 1 Feb 2013 10:07:06 +0100
-X-Google-Sender-Auth: JYJF4BN_iv0zP8Dx1_xwqyGIq0g
-Message-ID: <CAAxaTiOGUo092Fgigs2U0R7Ry0HPvLTFqvvANp8TMFJbY+KgLw@mail.gmail.com>
-Subject: Re: [PATCH 2 2/2] coccicheck: Allow to show the executed command line
-From: Nicolas Palix <nicolas.palix@imag.fr>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, cocci@systeme.lip6.fr
-Content-Type: text/plain; charset=UTF-8
+To: Bart Van Assche <bvanassche@acm.org>
+CC: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: How to online remove an error scsi disk from the system?
+References: <510B5CFC.2040801@tao.ma> <510B749E.8020501@acm.org>
+In-Reply-To: <510B749E.8020501@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 5:03 PM, Bernd Schubert
-<bernd.schubert@itwm.fraunhofer.de> wrote:
-> On my system one of the tests failed with
-> "Fatal error: exception Failure("No OCaml compiler found! Install either ocamlopt or ocamlopt.opt")".
->
-> Investigating such issues is easier if the executed command line is being shown.
->
-> Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-> CC: Julia Lawall <Julia.Lawall@lip6.fr>
-> CC: Nicolas Palix <nicolas.palix@imag.fr>
+On 02/01/2013 03:54 PM, Bart Van Assche wrote:
+> On 02/01/13 07:13, Tao Ma wrote:
+>>     In our product system, we have several sata disks attached to one
+>> machine. So when one of the disk fails, the jbd2(yes, we use ext4) will
+>> hang forever and we will get something in /var/log/messages like below.
+>> It seems to me that the io sent to the scsi layer is never returned back
+>> with -EIO which is a little bit surprised for me(It should be a timeout
+>> somewhere, right?). We have tried echo "offline" >
+>> /sys/block/sdl/device/state, but it doesn't work. So is there any way
+>> for us to let the scsi device returns all the io requests back with EIO
+>> so that all the end_io can be called accordingly? Am I missing something
+>> here?
+> 
+> Please note that I'm not familiar with SAS. But I found this in
+> drivers/scsi/scsi_proc.c:
+> 
+>  * proc_scsi_write - handle writes to /proc/scsi/scsi
+>  * @file: not used
+>  * @buf: buffer to write
+>  * @length: length of buf, at most PAGE_SIZE
+>  * @ppos: not used
+>  *
+>  * Description: this provides a legacy mechanism to add or remove
+>  * devices by Host, Channel, ID, and Lun.  To use,
+>  * "echo 'scsi add-single-device 0 1 2 3' > /proc/scsi/scsi" or
+>  * "echo 'scsi remove-single-device 0 1 2 3' > /proc/scsi/scsi" with
+>  * "0 1 2 3" replaced by the Host, Channel, Id, and Lun.
+Sorry, it doesn't work since it will also send some IOs to the scsi. And
+it hangs...
 
-Acked-by: Nicolas Palix <nicolas.palix@imag.fr>
-
-> CC: cocci@systeme.lip6.fr
-> CC: Michal Marek <mmarek@suse.cz>
-> ---
->  scripts/coccicheck |   28 +++++++++++++++++++++-------
->  1 file changed, 21 insertions(+), 7 deletions(-)
->
-> diff --git a/scripts/coccicheck b/scripts/coccicheck
-> index f8f15a2..85d3189 100755
-> --- a/scripts/coccicheck
-> +++ b/scripts/coccicheck
-> @@ -55,6 +55,14 @@ if [ "$ONLINE" = "0" ] ; then
->      echo ''
->  fi
->
-> +run_cmd() {
-> +       if [ $VERBOSE -ne 0 ] ; then
-> +               echo "Running: $@"
-> +       fi
-> +       eval $@
-> +}
-> +
-> +
->  coccinelle () {
->      COCCI="$1"
->
-> @@ -100,15 +108,21 @@ coccinelle () {
->      fi
->
->      if [ "$MODE" = "chain" ] ; then
-> -       $SPATCH -D patch   $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
-> -       $SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
-> -       $SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
-> -       $SPATCH -D org     $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || exit 1
-> +       run_cmd $SPATCH -D patch   \
-> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
-> +       run_cmd $SPATCH -D report  \
-> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
-> +       run_cmd $SPATCH -D context \
-> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
-> +       run_cmd $SPATCH -D org     \
-> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || exit 1
->      elif [ "$MODE" = "rep+ctxt" ] ; then
-> -       $SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff && \
-> -       $SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
-> +       run_cmd $SPATCH -D report  \
-> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff && \
-> +       run_cmd $SPATCH -D context \
-> +               $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
->      else
-> -       $SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
-> +       run_cmd $SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
->      fi
->
->  }
->
+bash          D 0000000000000000     0 57479  57477 0x00000000
+ ffff8817fee2dba0 0000000000000086 0000000000000000 0000000000000002
+ ffffffff817c4ed5 0000000000015f40 ffff88180c7e45f8 ffff88180c7e4040
+ ffffffff81a2d020 ffff88180c7e45f8 000000010fa4af09 0000000000000004
+Call Trace:
+ [<ffffffff8123eecf>] ? string+0x3f/0xd0
+ [<ffffffff8123fdc2>] ? vsnprintf+0x242/0x580
+ [<ffffffff811a0b14>] ? fsnotify_clear_marks_by_inode+0x34/0xf0
+ [<ffffffff811d33c0>] ? sysfs_delete_inode+0x0/0x60
+ [<ffffffff814aa5c5>] rwsem_down_failed_common+0x95/0x1c0
+ [<ffffffff814aa746>] rwsem_down_read_failed+0x26/0x30
+ [<ffffffff81241814>] call_rwsem_down_read_failed+0x14/0x30
+ [<ffffffff812385a0>] ? kobject_release+0x0/0x1f0
+ [<ffffffff814a9cd4>] ? down_read+0x24/0x30
+ [<ffffffff81167794>] get_super+0x74/0xc0
+ [<ffffffff8119aa9e>] fsync_bdev+0x1e/0x60
+ [<ffffffff812253ce>] invalidate_partition+0x2e/0x60
+ [<ffffffff811d0bfe>] del_gendisk+0x3e/0x130
+ [<ffffffff813070da>] ? device_del+0x16a/0x1a0
+ [<ffffffff8132f437>] sd_remove+0x67/0xb0
+ [<ffffffff8130adcf>] __device_release_driver+0x6f/0xe0
+ [<ffffffff8130ae6d>] device_release_driver+0x2d/0x40
+ [<ffffffff8130a723>] bus_remove_device+0x83/0xe0
+ [<ffffffff8130709f>] device_del+0x12f/0x1a0
+ [<ffffffff8132a7f5>] __scsi_remove_device+0xa5/0xb0
+ [<ffffffff8132a830>] scsi_remove_device+0x30/0x50
+ [<ffffffff8132cc3f>] proc_scsi_write+0x23f/0x280
+ [<ffffffff81182869>] ? mntput_no_expire+0x39/0xd0
+ [<ffffffff811c482f>] proc_reg_write+0x7f/0xc0
+ [<ffffffff81165c6c>] vfs_write+0xcc/0x1a0
+ [<ffffffff81165e25>] sys_write+0x55/0x90
+ [<ffffffff8100b032>] system_call_fastpath+0x16/0x1b
 
 
+Thanks,
+Tao
+> 
+> Bart.
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-Nicolas Palix
