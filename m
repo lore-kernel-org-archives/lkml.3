@@ -1,123 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab3BAH2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 02:28:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:33266 "EHLO mail.kernel.org"
+	id S1755382Ab3BAHca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 02:32:30 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50107 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab3BAH2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 02:28:11 -0500
-Date: Fri, 1 Feb 2013 08:30:10 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
-        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug
- framework
-Message-ID: <20130201073010.GC1180@kroah.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
- <20130130045830.GH30002@kroah.com>
- <1359601065.15120.156.camel@misato.fc.hp.com>
- <9860755.q4y3PrCFZx@vostro.rjw.lan>
- <1359682338.15120.209.camel@misato.fc.hp.com>
+	id S1752518Ab3BAHc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 02:32:26 -0500
+Message-ID: <510B6FC5.8030309@ti.com>
+Date: Fri, 1 Feb 2013 13:03:25 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359682338.15120.209.camel@misato.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <rjw@sisk.pl>, <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-dev@lists.linaro.org>,
+        <robin.randhawa@arm.com>, <Steve.Bannister@arm.com>,
+        <Liviu.Dudau@arm.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 3/3] cpufreq: Remove unnecessary use of policy->shared_type
+References: <1bf82454ab1f16b13212548d7c9605067c8b7a0d.1359700705.git.viresh.kumar@linaro.org> <902bed453159832925df76e24806f3b919fdfc74.1359700706.git.viresh.kumar@linaro.org> <510B6510.6060608@ti.com> <CAKohponEsSrwLWbi4WJ19i8XkzEiL0De2ShLePBdygunmGEo5g@mail.gmail.com>
+In-Reply-To: <CAKohponEsSrwLWbi4WJ19i8XkzEiL0De2ShLePBdygunmGEo5g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 06:32:18PM -0700, Toshi Kani wrote:
- > This is already done for PCI host bridges and platform devices and I don't
-> > see why we can't do that for the other types of devices too.
-> > 
-> > The only missing piece I see is a way to handle the "eject" problem, i.e.
-> > when we try do eject a device at the top of a subtree and need to tear down
-> > the entire subtree below it, but if that's going to lead to a system crash,
-> > for example, we want to cancel the eject.  It seems to me that we'll need some
-> > help from the driver core here.
-> 
-> There are three different approaches suggested for system device
-> hot-plug:
->  A. Proceed within system device bus scan.
->  B. Proceed within ACPI bus scan.
->  C. Proceed with a sequence (as a mini-boot).
-> 
-> Option A uses system devices as tokens, option B uses acpi devices as
-> tokens, and option C uses resource tables as tokens, for their handlers.
-> 
-> Here is summary of key questions & answers so far.  I hope this
-> clarifies why I am suggesting option 3.
-> 
-> 1. What are the system devices?
-> System devices provide system-wide core computing resources, which are
-> essential to compose a computer system.  System devices are not
-> connected to any particular standard buses.
+On Friday 01 February 2013 12:43 PM, Viresh Kumar wrote:
+> On 1 February 2013 12:17, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+>> I haven't looked at the cpufreq code recently but remember
+>> that it was needed to ensure that all the CPU which
+>> share clock/voltage gets updated (affected cpus) on
+>> freq change. The CPUs which needs SW co-ordination, should
+>> have this flag enabled and OMAP was falling in that category.
+>
+> Freq change are done by the target routines of platform cpufreq drivers
+> and they do something like:
+>
+> 	for_each_cpu(freqs.cpu, policy->cpus)
+> 		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+>
+> The only requirement from cpufreq core is to keep cpus sharing clock
+> in policy->cpus.
+>
+I am not talking about just notifiers. This is for external users who
+has subscribed for notifiers. The point is whether the core CPUFReq
+gets updated without that flag for all affected CPU.
 
-Not a problem, lots of devices are not connected to any "particular
-standard busses".  All this means is that system devices are connected
-to the "system" bus, nothing more.
+>> May be I miss-understood its use, but can you confirm that
+>> SW co-ordination logic continues to work without this flag ?
+>
+> I believe it should work. It works for the systems i worked on:
+>
+> SPEAr13xx: Dual Cortex A9
+> ARM TC2: two clusters of A15s and A7s.
+>
+I will give a try some time next week on OMAP.
 
-> 2. Why are the system devices special?
-> The system devices are initialized during early boot-time, by multiple
-> subsystems, from the boot-up sequence, in pre-defined order.  They
-> provide low-level services to enable other subsystems to come up.
-
-Sorry, no, that doesn't mean they are special, nothing here is unique
-for the point of view of the driver model from any other device or bus.
-
-> 3. Why can't initialize the system devices from the driver structure at
-> boot?
-> The driver structure is initialized at the end of the boot sequence and
-> requires the low-level services from the system devices initialized
-> beforehand.
-
-Wait, what "driver structure"?  If you need to initialize the driver
-core earlier, then do so.  Or, even better, just wait until enough of
-the system has come up and then go initialize all of the devices you
-have found so far as part of your boot process.
-
-None of the above things you have stated seem to have anything to do
-with your proposed patch, so I don't understand why you have mentioned
-them...
-
-> 4. Why do we need a new common framework?
-> Sysfs CPU and memory on-lining/off-lining are performed within the CPU
-> and memory modules.  They are common code and do not depend on ACPI.
-> Therefore, a new common framework is necessary to integrate both
-> on-lining/off-lining operation and hot-plugging operation of system
-> devices into a single framework.
-
-{sigh}
-
-Removing and adding devices and handling hotplug operations is what the
-driver core was written for, almost 10 years ago.  To somehow think that
-your devices are "special" just because they don't use ACPI is odd,
-because the driver core itself has nothing to do with ACPI.  Don't get
-the current mix of x86 system code tied into ACPI confused with an
-driver core issues here please.
-
-> 5. Why can't do everything with ACPI bus scan?
-> Software dependency among system devices may not be dictated by the ACPI
-> hierarchy.  For instance, memory should be initialized before CPUs (i.e.
-> a new cpu may need its local memory), but such ordering cannot be
-> guaranteed by the ACPI hierarchy.  Also, as described in 4,
-> online/offline operations are independent from ACPI.  
-
-That's fine, the driver core is independant from ACPI.  I don't care how
-you do the scaning of your devices, but I do care about you creating new
-driver core pieces that duplicate the existing functionality of what we
-have today.
-
-In short, I like Rafael's proposal better, and I fail to see how
-anything you have stated here would matter in how this is implemented. :)
-
-thanks,
-
-greg k-h
+Regards
+Santosh
