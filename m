@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab3BAUX3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:23:29 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:39095 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab3BAUXY (ORCPT
+	id S1757509Ab3BAUYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:24:08 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:45628 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757457Ab3BAUX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:23:24 -0500
+	Fri, 1 Feb 2013 15:23:29 -0500
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com,
         sjenning@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org, ngupta@vflare.org, rcj@linux.vnet.ibm.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org
-Cc: Stefan Hengelein <ilendir@googlemail.com>,
-        Florian Schmaus <fschmaus@gmail.com>,
-        Andor Daam <andor.daam@googlemail.com>
-Subject: [PATCH 02/15] mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
-Date: Fri,  1 Feb 2013 15:22:51 -0500
-Message-Id: <1359750184-23408-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 07/15] xen: tmem: enable Xen tmem shim to be built/loaded as a module
+Date: Fri,  1 Feb 2013 15:22:56 -0500
+Message-Id: <1359750184-23408-8-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
 References: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
@@ -28,184 +25,229 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-built/loaded as modules rather than built-in and enabled by a boot parameter,
-this patch provides "lazy initialization", allowing backends to register to
-frontswap even after swapon was run. Before a backend registers all calls
-to init are recorded and the creation of tmem_pools delayed until a backend
-registers or until a frontswap put is attempted.
+Allow Xen tmem shim to be built/loaded as a module.  Xen self-ballooning
+and frontswap-selfshrinking are now also "lazily" initialized when the
+Xen tmem shim is loaded as a module, unless explicitly disabled
+by module parameters.
 
-Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
-Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
-Signed-off-by: Andor Daam <andor.daam@googlemail.com>
+Note runtime dependency disallows loading if cleancache/frontswap lazy
+initialization patches are not present.
+
+If built-in (not built as a module), the original mechanism of enabling via
+a kernel boot parameter is retained, but this should be considered deprecated.
+
+Note that module unload is explicitly not yet supported.
+
 Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-[v1: Fixes per Seth Jennings suggestions]
-[v2: Removed FRONTSWAP_HAS_.. ]
-[v3: Fix up per Bob Liu <lliubbo@gmail.com> recommendations]
-[v4: Fix up per Andrew's comments]
+[v1: Removed the [CLEANCACHE|FRONTSWAP]_HAS_LAZY_INIT ifdef]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- mm/frontswap.c | 95 +++++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 85 insertions(+), 10 deletions(-)
+ drivers/xen/Kconfig           |  4 ++--
+ drivers/xen/tmem.c            | 38 +++++++++++++++++++++++++++++---------
+ drivers/xen/xen-selfballoon.c | 13 +++++++------
+ include/xen/tmem.h            |  8 ++++++++
+ 4 files changed, 46 insertions(+), 17 deletions(-)
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 2890e67..c05a9db 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -80,6 +80,46 @@ static inline void inc_frontswap_succ_stores(void) { }
- static inline void inc_frontswap_failed_stores(void) { }
- static inline void inc_frontswap_invalidates(void) { }
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index cabfa97..981646e 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -145,9 +145,9 @@ config SWIOTLB_XEN
+ 	select SWIOTLB
+ 
+ config XEN_TMEM
+-	bool
++	tristate
+ 	depends on !ARM
+-	default y if (CLEANCACHE || FRONTSWAP)
++	default m if (CLEANCACHE || FRONTSWAP)
+ 	help
+ 	  Shim to interface in-kernel Transcendent Memory hooks
+ 	  (e.g. cleancache and frontswap) to Xen tmem hypercalls.
+diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
+index 15e776c..9a4a9ec 100644
+--- a/drivers/xen/tmem.c
++++ b/drivers/xen/tmem.c
+@@ -5,6 +5,7 @@
+  * Author: Dan Magenheimer
+  */
+ 
++#include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+ #include <linux/init.h>
+@@ -128,6 +129,7 @@ static int xen_tmem_flush_object(u32 pool_id, struct tmem_oid oid)
+ 	return xen_tmem_op(TMEM_FLUSH_OBJECT, pool_id, oid, 0, 0, 0, 0, 0);
+ }
+ 
++#ifndef CONFIG_XEN_TMEM_MODULE
+ bool __read_mostly tmem_enabled = false;
+ 
+ static int __init enable_tmem(char *s)
+@@ -136,6 +138,7 @@ static int __init enable_tmem(char *s)
+ 	return 1;
+ }
+ __setup("tmem", enable_tmem);
++#endif
+ 
+ #ifdef CONFIG_CLEANCACHE
+ static int xen_tmem_destroy_pool(u32 pool_id)
+@@ -227,14 +230,19 @@ static int tmem_cleancache_init_shared_fs(char *uuid, size_t pagesize)
+ 	return xen_tmem_new_pool(shared_uuid, TMEM_POOL_SHARED, pagesize);
+ }
+ 
+-static bool __initdata use_cleancache = true;
+-
++static bool disable_cleancache __read_mostly;
++static bool disable_selfballooning __read_mostly;
++#ifdef CONFIG_XEN_TMEM_MODULE
++module_param(disable_cleancache, bool, S_IRUGO);
++module_param(disable_selfballooning, bool, S_IRUGO);
++#else
+ static int __init no_cleancache(char *s)
+ {
+-	use_cleancache = false;
++	disable_cleancache = true;
+ 	return 1;
+ }
+ __setup("nocleancache", no_cleancache);
++#endif
+ 
+ static struct cleancache_ops tmem_cleancache_ops = {
+ 	.put_page = tmem_cleancache_put_page,
+@@ -353,14 +361,19 @@ static void tmem_frontswap_init(unsigned ignored)
+ 		    xen_tmem_new_pool(private, TMEM_POOL_PERSIST, PAGE_SIZE);
+ }
+ 
+-static bool __initdata use_frontswap = true;
+-
++static bool disable_frontswap __read_mostly;
++static bool disable_frontswap_selfshrinking __read_mostly;
++#ifdef CONFIG_XEN_TMEM_MODULE
++module_param(disable_frontswap, bool, S_IRUGO);
++module_param(disable_frontswap_selfshrinking, bool, S_IRUGO);
++#else
+ static int __init no_frontswap(char *s)
+ {
+-	use_frontswap = false;
++	disable_frontswap = true;
+ 	return 1;
+ }
+ __setup("nofrontswap", no_frontswap);
++#endif
+ 
+ static struct frontswap_ops tmem_frontswap_ops = {
+ 	.store = tmem_frontswap_store,
+@@ -371,12 +384,12 @@ static struct frontswap_ops tmem_frontswap_ops = {
+ };
  #endif
-+
-+/*
-+ * Due to the asynchronous nature of the backends loading potentially
-+ * _after_ the swap system has been activated, we have chokepoints
-+ * on all frontswap functions to not call the backend until the backend
-+ * has registered.
-+ *
-+ * Specifically when no backend is registered (nobody called
-+ * frontswap_register_ops) all calls to frontswap_init (which is done via
-+ * swapon -> enable_swap_info -> frontswap_init) are registered and remembered
-+ * (via the setting of need_init bitmap) but fail to create tmem_pools. When a
-+ * backend registers with frontswap at some later point the previous
-+ * calls to frontswap_init are executed (by iterating over the need_init
-+ * bitmap) to create tmem_pools and set the respective poolids. All of that is
-+ * guarded by us using atomic bit operations on the 'need_init' bitmap.
-+ *
-+ * This would not guards us against the user deciding to call swapoff right as
-+ * we are calling the backend to initialize (so swapon is in action).
-+ * Fortunatly for us, the swapon_mutex has been taked by the callee so we are
-+ * OK. The other scenario where calls to frontswap_store (called via
-+ * swap_writepage) is racing with frontswap_invalidate_area (called via
-+ * swapoff) is again guarded by the swap subsystem.
-+ *
-+ * While no backend is registered all calls to frontswap_[store|load|
-+ * invalidate_area|invalidate_page] are ignored or fail.
-+ *
-+ * The time between the backend being registered and the swap file system
-+ * calling the backend (via the frontswap_* functions) is indeterminate as
-+ * backend_registered is not atomic_t (or a value guarded by a spinlock).
-+ * That is OK as we are comfortable missing some of these calls to the newly
-+ * registered backend.
-+ *
-+ * Obviously the opposite (unloading the backend) must be done after all
-+ * the frontswap_[store|load|invalidate_area|invalidate_page] start
-+ * ignorning or failing the requests - at which point backend_registered
-+ * would have to be made in some fashion atomic.
-+ */
-+static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
-+static bool backend_registered __read_mostly;
-+
- /*
-  * Register operations for frontswap, returning previous thus allowing
-  * detection of multiple backends and possible nesting.
-@@ -87,9 +127,22 @@ static inline void inc_frontswap_invalidates(void) { }
- struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
+ 
+-static int __init xen_tmem_init(void)
++static int xen_tmem_init(void)
  {
- 	struct frontswap_ops old = frontswap_ops;
-+	int i;
- 
- 	frontswap_ops = *ops;
- 	frontswap_enabled = true;
-+
-+	for (i = 0; i < MAX_SWAPFILES; i++) {
-+		if (test_and_clear_bit(i, need_init))
-+			(*frontswap_ops.init)(i);
-+	}
-+	/*
-+	 * We MUST have backend_registered set _after_ the frontswap_init's
-+	 * have been called. Otherwise __frontswap_store might fail. Hence
-+	 * the barrier to make sure compiler does not re-order us.
-+	 */
-+	barrier();
-+	backend_registered = true;
- 	return old;
- }
- EXPORT_SYMBOL(frontswap_register_ops);
-@@ -119,10 +172,17 @@ void __frontswap_init(unsigned type)
- {
- 	struct swap_info_struct *sis = swap_info[type];
- 
--	BUG_ON(sis == NULL);
--	if (sis->frontswap_map == NULL)
--		return;
--	frontswap_ops.init(type);
-+	if (backend_registered) {
-+		BUG_ON(sis == NULL);
-+		if (sis->frontswap_map == NULL)
-+			return;
-+		(*frontswap_ops.init)(type);
-+	}
-+	else {
-+		BUG_ON(type > MAX_SWAPFILES);
-+		set_bit(type, need_init);
-+	}
-+
- }
- EXPORT_SYMBOL(__frontswap_init);
- 
-@@ -147,6 +207,11 @@ int __frontswap_store(struct page *page)
- 	struct swap_info_struct *sis = swap_info[type];
- 	pgoff_t offset = swp_offset(entry);
- 
-+	if (!backend_registered) {
-+		inc_frontswap_failed_stores();
-+		return ret;
-+	}
-+
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
-@@ -186,6 +251,9 @@ int __frontswap_load(struct page *page)
- 	struct swap_info_struct *sis = swap_info[type];
- 	pgoff_t offset = swp_offset(entry);
- 
-+	if (!backend_registered)
-+		return ret;
-+
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
-@@ -209,6 +277,9 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
- {
- 	struct swap_info_struct *sis = swap_info[type];
- 
-+	if (!backend_registered)
-+		return;
-+
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset)) {
- 		frontswap_ops.invalidate_page(type, offset);
-@@ -226,12 +297,15 @@ void __frontswap_invalidate_area(unsigned type)
- {
- 	struct swap_info_struct *sis = swap_info[type];
- 
--	BUG_ON(sis == NULL);
--	if (sis->frontswap_map == NULL)
--		return;
--	frontswap_ops.invalidate_area(type);
--	atomic_set(&sis->frontswap_pages, 0);
--	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+	if (backend_registered) {
-+		BUG_ON(sis == NULL);
-+		if (sis->frontswap_map == NULL)
-+			return;
-+		(*frontswap_ops.invalidate_area)(type);
-+		atomic_set(&sis->frontswap_pages, 0);
-+		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+	}
-+	clear_bit(type, need_init);
- }
- EXPORT_SYMBOL(__frontswap_invalidate_area);
- 
-@@ -364,6 +438,7 @@ static int __init init_frontswap(void)
- 	debugfs_create_u64("invalidates", S_IRUGO,
- 				root, &frontswap_invalidates);
+ 	if (!xen_domain())
+ 		return 0;
+ #ifdef CONFIG_FRONTSWAP
+-	if (tmem_enabled && use_frontswap) {
++	if (tmem_enabled && !disable_frontswap) {
+ 		char *s = "";
+ 		struct frontswap_ops *old_ops =
+ 			frontswap_register_ops(&tmem_frontswap_ops);
+@@ -390,7 +403,7 @@ static int __init xen_tmem_init(void)
  #endif
-+	frontswap_enabled = 1;
+ #ifdef CONFIG_CLEANCACHE
+ 	BUG_ON(sizeof(struct cleancache_filekey) != sizeof(struct tmem_oid));
+-	if (tmem_enabled && use_cleancache) {
++	if (tmem_enabled && !disable_cleancache) {
+ 		char *s = "";
+ 		struct cleancache_ops *old_ops =
+ 			cleancache_register_ops(&tmem_cleancache_ops);
+@@ -400,7 +413,14 @@ static int __init xen_tmem_init(void)
+ 				 "Xen Transcendent Memory%s\n", s);
+ 	}
+ #endif
++#ifdef CONFIG_XEN_SELFBALLOONING
++	xen_selfballoon_init(!disable_selfballooning,
++				!disable_frontswap_selfshrinking);
++#endif
  	return 0;
  }
  
+ module_init(xen_tmem_init)
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Dan Magenheimer <dan.magenheimer@oracle.com>");
++MODULE_DESCRIPTION("Shim to Xen transcendent memory");
+diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
+index 2552d3e..6965e9b 100644
+--- a/drivers/xen/xen-selfballoon.c
++++ b/drivers/xen/xen-selfballoon.c
+@@ -121,7 +121,7 @@ static DECLARE_DELAYED_WORK(selfballoon_worker, selfballoon_process);
+ static bool frontswap_selfshrinking __read_mostly;
+ 
+ /* Enable/disable with kernel boot option. */
+-static bool use_frontswap_selfshrink __initdata = true;
++static bool use_frontswap_selfshrink = true;
+ 
+ /*
+  * The default values for the following parameters were deemed reasonable
+@@ -185,7 +185,7 @@ static int __init xen_nofrontswap_selfshrink_setup(char *s)
+ __setup("noselfshrink", xen_nofrontswap_selfshrink_setup);
+ 
+ /* Disable with kernel boot option. */
+-static bool use_selfballooning __initdata = true;
++static bool use_selfballooning = true;
+ 
+ static int __init xen_noselfballooning_setup(char *s)
+ {
+@@ -196,7 +196,7 @@ static int __init xen_noselfballooning_setup(char *s)
+ __setup("noselfballooning", xen_noselfballooning_setup);
+ #else /* !CONFIG_FRONTSWAP */
+ /* Enable with kernel boot option. */
+-static bool use_selfballooning __initdata = false;
++static bool use_selfballooning;
+ 
+ static int __init xen_selfballooning_setup(char *s)
+ {
+@@ -537,7 +537,7 @@ int register_xen_selfballooning(struct device *dev)
+ }
+ EXPORT_SYMBOL(register_xen_selfballooning);
+ 
+-static int __init xen_selfballoon_init(void)
++int xen_selfballoon_init(bool use_selfballooning, bool use_frontswap_selfshrink)
+ {
+ 	bool enable = false;
+ 
+@@ -571,7 +571,8 @@ static int __init xen_selfballoon_init(void)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(xen_selfballoon_init);
+ 
++#ifndef CONFIG_XEN_TMEM_MODULE
+ subsys_initcall(xen_selfballoon_init);
+-
+-MODULE_LICENSE("GPL");
++#endif
+diff --git a/include/xen/tmem.h b/include/xen/tmem.h
+index 591550a..3930a90 100644
+--- a/include/xen/tmem.h
++++ b/include/xen/tmem.h
+@@ -3,7 +3,15 @@
+ 
+ #include <linux/types.h>
+ 
++#ifdef CONFIG_XEN_TMEM_MODULE
++#define tmem_enabled true
++#else
+ /* defined in drivers/xen/tmem.c */
+ extern bool tmem_enabled;
++#endif
++
++#ifdef CONFIG_XEN_SELFBALLOONING
++extern int xen_selfballoon_init(bool, bool);
++#endif
+ 
+ #endif /* _XEN_TMEM_H */
 -- 
 1.7.11.7
 
