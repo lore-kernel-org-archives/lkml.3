@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161384Ab3BAKuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:50:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39165 "EHLO mail.kernel.org"
+	id S1422719Ab3BAKuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:50:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39186 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161354Ab3BAKuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:50:32 -0500
+	id S1422685Ab3BAKum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:50:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 17/33] ath9k_htc: Fix memory leak
-Date: Fri,  1 Feb 2013 11:49:22 +0100
-Message-Id: <20130201104725.891250071@linuxfoundation.org>
+Subject: [ 19/33] ath9k: fix double-free bug on beacon generate failure
+Date: Fri,  1 Feb 2013 11:49:24 +0100
+Message-Id: <20130201104726.030160300@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
@@ -27,34 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 0981c3b24ef664f5611008a6e6d0622fac6d892b upstream.
+commit 1adb2e2b5f85023d17eb4f95386a57029df27c88 upstream.
 
-SKBs that are allocated in the HTC layer do not have callbacks
-registered and hence ended up not being freed, Fix this by freeing
-them properly in the TX completion routine.
+When the next beacon is sent, the ath_buf from the previous run is reused.
+If getting a new beacon from mac80211 fails, bf->bf_mpdu is not reset, yet
+the skb is freed, leading to a double-free on the next beacon tx attempt,
+resulting in a system crash.
 
-Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_hst.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/ath/ath9k/beacon.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/ath/ath9k/htc_hst.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_hst.c
-@@ -342,6 +342,8 @@ void ath9k_htc_txcompletion_cb(struct ht
- 			endpoint->ep_callbacks.tx(endpoint->ep_callbacks.priv,
- 						  skb, htc_hdr->endpoint_id,
- 						  txok);
-+		} else {
-+			kfree_skb(skb);
- 		}
+--- a/drivers/net/wireless/ath/ath9k/beacon.c
++++ b/drivers/net/wireless/ath/ath9k/beacon.c
+@@ -154,6 +154,7 @@ static struct ath_buf *ath_beacon_genera
+ 				 skb->len, DMA_TO_DEVICE);
+ 		dev_kfree_skb_any(skb);
+ 		bf->bf_buf_addr = 0;
++		bf->bf_mpdu = NULL;
  	}
  
+ 	/* Get a new beacon from mac80211 */
 
 
