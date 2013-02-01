@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab3BAPDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 10:03:06 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:59431 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab3BAPDE (ORCPT
+	id S1755328Ab3BAPGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 10:06:07 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:33559 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344Ab3BAPGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 10:03:04 -0500
-Date: Fri, 1 Feb 2013 16:03:02 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, akpm@linux-foundation.org, acme@redhat.com,
-        eranian@google.com, jolsa@redhat.com, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 04/12] perf, x86: Support the TSX intx/intx_cp qualifiers v3
-Message-ID: <20130201150302.GN30577@one.firstfloor.org>
-References: <1359672710-19528-1-git-send-email-andi@firstfloor.org> <1359672710-19528-5-git-send-email-andi@firstfloor.org> <20130201101628.GB23061@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130201101628.GB23061@gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 1 Feb 2013 10:06:05 -0500
+Message-ID: <510BD9E9.9000400@suse.cz>
+Date: Fri, 01 Feb 2013 16:06:17 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+MIME-Version: 1.0
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/10] TTY: switch tty_schedule_flip
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>  <1357224789-2853-8-git-send-email-jslaby@suse.cz> <1359722247.3381.16.camel@thor.lan>
+In-Reply-To: <1359722247.3381.16.camel@thor.lan>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/01/2013 01:37 PM, Peter Hurley wrote:
+> On Thu, 2013-01-03 at 15:53 +0100, Jiri Slaby wrote:
+>> Now, we start converting tty buffer functions to actually use
+>> tty_port. This will allow us to get rid of the need of tty in many
+>> call sites. Only tty_port will needed and hence no more
+>> tty_port_tty_get in those paths.
+>>
+>> This is the last one: tty_schedule_flip
 > 
-> As requested before, please keep those in a completely separate 
-> series so that minimal support can be merged upstream. This is 
+> [snip]
+> 
+>> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+>> index 5aace4d..a9af1b9a 100644
+>> --- a/drivers/tty/vt/keyboard.c
+>> +++ b/drivers/tty/vt/keyboard.c
+>> @@ -307,26 +307,17 @@ int kbd_rate(struct kbd_repeat *rep)
+>>   */
+>>  static void put_queue(struct vc_data *vc, int ch)
+>>  {
+>> -	struct tty_struct *tty = vc->port.tty;
+>> -
+>>  	tty_insert_flip_char(&vc->port, ch, 0);
+>> -	if (tty) {
+>> -		tty_schedule_flip(tty);
+>> -	}
+>> +	tty_schedule_flip(&vc->port);
+>>  }
+>>  
+>>  static void puts_queue(struct vc_data *vc, char *cp)
+>>  {
+>> -	struct tty_struct *tty = vc->port.tty;
+>> -
+>> -	if (!tty)
+>> -		return;
+>> -
+>>  	while (*cp) {
+>>  		tty_insert_flip_char(&vc->port, *cp, 0);
+>>  		cp++;
+>>  	}
+>> -	tty_schedule_flip(tty);
+>> +	tty_schedule_flip(&vc->port);
+>>  }
+> 
+> Umm. So even though the vt driver knows the tty has been shutdown,
+> keystrokes will still be buffered? And then fed to whichever tty happens
+> to next get installed on the same port?
 
-Hi Ingo, The goal is not to merge "minimal support" but full support.
-All of these features have users.  But I subsetted it to make reviewing easier.
+Unless I completely missed something, they should be flushed. If that's
+not the case, that's a bug. I will check next week.
 
-I think the initial 10 patch series is reasonable as a first step,
-quickly followed by the others. Can you handle it or not? Please be clear on that.
-
-If you can't handle it I'll consider alternatives.
-
-To be honest I find it hard to believe you really have trouble reviewing
-those 10 straight forward patches (which have already reviewed by 
-others anyways).  There's nothing particularly complicated or risky in
-any of them, and you're a experienced kernel code reviewer.
-
--Andi
+thanks,
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+js
+suse labs
