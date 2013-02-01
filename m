@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab3BAMIX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 07:08:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20142 "EHLO mx1.redhat.com"
+	id S932069Ab3BAMIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:08:48 -0500
+Received: from nbd.name ([46.4.11.11]:41413 "EHLO nbd.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753471Ab3BAMIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 07:08:19 -0500
-Message-ID: <510BA4E5.3030605@redhat.com>
-Date: Fri, 01 Feb 2013 11:20:05 +0000
-From: "Bryn M. Reeves" <bmr@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Tao Ma <tm@tao.ma>
-CC: Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: How to online remove an error scsi disk from the system?
-References: <510B5CFC.2040801@tao.ma> <510B749E.8020501@acm.org> <510B904B.4050508@redhat.com> <510B9213.1040508@tao.ma> <510B93EE.8000304@redhat.com> <510BA370.1040309@tao.ma>
-In-Reply-To: <510BA370.1040309@tao.ma>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756502Ab3BAMIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 07:08:02 -0500
+From: John Crispin <blogic@openwrt.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, John Crispin <blogic@openwrt.org>,
+        Thomas Langer <thomas.langer@lantiq.com>
+Subject: [PATCH 10/11] PINCTRL: lantiq: fix pin availability check
+Date: Fri,  1 Feb 2013 13:05:04 +0100
+Message-Id: <1359720305-31933-10-git-send-email-blogic@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359720305-31933-1-git-send-email-blogic@openwrt.org>
+References: <1359720305-31933-1-git-send-email-blogic@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 11:13 AM, Tao Ma wrote:
->> You don't mention the versions of the kernel and driver you're using -
->> if the system is in production I would suggest contacting who ever
->> normally provides support for the kernel and distribution that you are
->> running.
-> We use CentOS6.2 and the kernel version is 2.6.32-220.23.1.
+The clock needs to be activated for the check to work. In order to be compatible
+with future silicon make sure that at least 1 pin is available before probing
+the pad controller.
 
-This is ancient, even by CentOS or RHEL standards. There are thousands 
-of patches in more recent kernels (either at kernel.org or in the 
-updates in CentOS repositories).
+Signed-off-by: Thomas Langer <thomas.langer@lantiq.com>
+Signed-off-by: John Crispin <blogic@openwrt.org>
+---
+ drivers/pinctrl/pinctrl-falcon.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-Nobody on linux-kernel or the other lists you copied is going to want to 
-investigate problems on such an old kernel - you'll need to either 
-reproduce with something current or seek assistance from the CentOS 
-community (who will probably tell you to update your kernel first anyway).
-
-Regards,
-Bryn.
-
+diff --git a/drivers/pinctrl/pinctrl-falcon.c b/drivers/pinctrl/pinctrl-falcon.c
+index 4a0d54a..de9d1db 100644
+--- a/drivers/pinctrl/pinctrl-falcon.c
++++ b/drivers/pinctrl/pinctrl-falcon.c
+@@ -455,12 +455,17 @@ static int pinctrl_falcon_probe(struct platform_device *pdev)
+ 				*bank);
+ 			return -ENOMEM;
+ 		}
++		clk_activate(falcon_info.clk[*bank]);
+ 		avail = pad_r32(falcon_info.membase[*bank],
+ 					LTQ_PADC_AVAIL);
+ 		pins = fls(avail);
+-		lantiq_load_pin_desc(&falcon_pads[pad_count], *bank, pins);
+-		pad_count += pins;
+-		clk_enable(falcon_info.clk[*bank]);
++		if (pins) {
++			lantiq_load_pin_desc(&falcon_pads[pad_count],
++								*bank, pins);
++			pad_count += pins;
++		} else {
++			clk_deactivate(falcon_info.clk[*bank]);
++		}
+ 		dev_dbg(&pdev->dev, "found %s with %d pads\n",
+ 				res.name, pins);
+ 	}
+-- 
+1.7.10.4
 
