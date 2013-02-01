@@ -1,46 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab3BAWFX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 17:05:23 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47472 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757791Ab3BAWFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 17:05:18 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/vkDcglPAQeAT4/4F3wtwL
-Date: Fri, 1 Feb 2013 14:05:10 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: khilman@ti.com, linux@arm.linux.org.uk, dwmw2@infradead.org, afzal@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        nsekhar@ti.com, gururaja.hebbar@ti.com
-Subject: Re: [PATCH 1/4] arch: arm: gpmc: gpmc migration support
-Message-ID: <20130201220510.GY22517@atomide.com>
-References: <1358933176-12409-1-git-send-email-avinashphilip@ti.com>
- <1358933176-12409-2-git-send-email-avinashphilip@ti.com>
+	id S1757871Ab3BAWGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 17:06:49 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40991 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757791Ab3BAWGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 17:06:48 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org, akpm@linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug framework
+Date: Fri, 01 Feb 2013 23:12:59 +0100
+Message-ID: <1987042.JQv02Zsfg5@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130201072312.GB1180@kroah.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <9860755.q4y3PrCFZx@vostro.rjw.lan> <20130201072312.GB1180@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1358933176-12409-2-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Philip Avinash <avinashphilip@ti.com> [130123 01:28]:
-> With recent GPMC driver conversion, usage of gpmc_save/restore_context
-> can done from gpmc driver itself. Hence removes the usage from pm34xx.c.
-> Also removes the conditional compilation primitives ARCH_OMAP3 for
-> gpmc_save/restore_context.
+On Friday, February 01, 2013 08:23:12 AM Greg KH wrote:
+> On Thu, Jan 31, 2013 at 09:54:51PM +0100, Rafael J. Wysocki wrote:
+> > > > But, again, I'm going to ask why you aren't using the existing cpu /
+> > > > memory / bridge / node devices that we have in the kernel.  Please use
+> > > > them, or give me a _really_ good reason why they will not work.
+> > > 
+> > > We cannot use the existing system devices or ACPI devices here.  During
+> > > hot-plug, ACPI handler sets this shp_device info, so that cpu and memory
+> > > handlers (drivers/cpu.c and mm/memory_hotplug.c) can obtain their target
+> > > device information in a platform-neutral way.  During hot-add, we first
+> > > creates an ACPI device node (i.e. device under /sys/bus/acpi/devices),
+> > > but platform-neutral modules cannot use them as they are ACPI-specific.
+> > 
+> > But suppose we're smart and have ACPI scan handlers that will create
+> > "physical" device nodes for those devices during the ACPI namespace scan.
+> > Then, the platform-neutral nodes will be able to bind to those "physical"
+> > nodes.  Moreover, it should be possible to get a hierarchy of device objects
+> > this way that will reflect all of the dependencies we need to take into
+> > account during hot-add and hot-remove operations.  That may not be what we
+> > have today, but I don't see any *fundamental* obstacles preventing us from
+> > using this approach.
+> 
+> I would _much_ rather see that be the solution here as I think it is the
+> proper one.
+> 
+> > This is already done for PCI host bridges and platform devices and I don't
+> > see why we can't do that for the other types of devices too.
+> 
+> I agree.
+> 
+> > The only missing piece I see is a way to handle the "eject" problem, i.e.
+> > when we try do eject a device at the top of a subtree and need to tear down
+> > the entire subtree below it, but if that's going to lead to a system crash,
+> > for example, we want to cancel the eject.  It seems to me that we'll need some
+> > help from the driver core here.
+> 
+> I say do what we always have done here, if the user asked us to tear
+> something down, let it happen as they are the ones that know best :)
+> 
+> Seriously, I guess this gets back to the "fail disconnect" idea that the
+> ACPI developers keep harping on.  I thought we already resolved this
+> properly by having them implement it in their bus code, no reason the
+> same thing couldn't happen here, right?
 
-Hmm I think this will break GPMC for deeper idle modes. Note that we
-need to save and restore the context every time hitting off-idle, not
-just for suspend and resume. Or am I missing something here?
+Not really. :-)  We haven't ever resolved that particular issue I'm afraid.
 
-Regards,
+> I don't think the core needs to do anything special, but if so, I'll be glad
+> to review it.
 
-Tony
+OK, so this is the use case.  We have "eject" defined for something like
+a container with a number of CPU cores, PCI host bridge, and a memory
+controller under it.  And a few pretty much arbitrary I/O devices as a bonus.
+
+Now, there's a button on the system case labeled as "Eject" and if that button
+is pressed, we're supposed to _try_ to eject all of those things at once.  We
+are allowed to fail that request, though, if that's problematic for some
+reason, but we're supposed to let the BIOS know about that.
+
+Do you seriously think that if that button is pressed, we should just proceed
+with removing all that stuff no matter what?  That'd be kind of like Russian
+roulette for whoever pressed that button, because s/he could only press it and
+wait for the system to either crash or not.  Or maybe to crash a bit later
+because of some delayed stuff that would hit one of those devices that had just
+gone.  Surely not a situation any admin of a high-availability system would
+like to be in. :-)
+
+Quite frankly, I have no idea how that can be addressed in a single bus type,
+let alone ACPI (which is not even a proper bus type, just something pretending
+to be one).
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
