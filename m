@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030211Ab3BANHy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:07:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44323 "EHLO mail.kernel.org"
+	id S1030231Ab3BANIB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:08:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44333 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030197Ab3BANHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:07:49 -0500
+	id S1030200Ab3BANHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:07:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Pitre <nico@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 12/89] ARM: 7628/1: head.S: map one extra section for the ATAG/DTB area
-Date: Fri,  1 Feb 2013 14:07:27 +0100
-Message-Id: <20130201130208.341617559@linuxfoundation.org>
+        Dave Martin <dave.martin@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [ 13/89] ARM: virt: Avoid bx instruction for compatibility with <=ARMv4
+Date: Fri,  1 Feb 2013 14:07:28 +0100
+Message-Id: <20130201130208.410154578@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,47 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
+From: Dave Martin <dave.martin@linaro.org>
 
-commit 6f16f4998f98e42e3f2dedf663cfb691ff0324af upstream.
+commit a4a12e008e292a81d312659529b71be2026ab355 upstream.
 
-We currently use a temporary 1MB section aligned to a 1MB boundary for
-mapping the provided device tree until the final page table is created.
-However, if the device tree happens to cross that 1MB boundary, the end
-of it remains unmapped and the kernel crashes when it attempts to access
-it.  Given no restriction on the location of that DTB, it could end up
-with only a few bytes mapped at the end of a section.
+Non-T variants of ARMv4 do not support the bx instruction.
 
-Solve this issue by mapping two consecutive sections.
+However, __hyp_stub_install is always called from the same
+instruction set used to build the bulk of the kernel, so bx should
+not be necessary.
 
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
-Tested-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This patch uses the traditional "mov pc" instead of bx.
+
+Signed-off-by: Dave Martin <dave.martin@linaro.org>
+[will: fixed up remaining bx instruction]
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/head.S |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/kernel/hyp-stub.S |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -246,6 +246,7 @@ __create_page_tables:
+--- a/arch/arm/kernel/hyp-stub.S
++++ b/arch/arm/kernel/hyp-stub.S
+@@ -99,7 +99,7 @@ ENTRY(__hyp_stub_install_secondary)
+ 	 * immediately.
+ 	 */
+ 	compare_cpu_mode_with_primary	r4, r5, r6, r7
+-	bxne	lr
++	movne	pc, lr
  
  	/*
- 	 * Then map boot params address in r2 if specified.
-+	 * We map 2 sections in case the ATAGs/DTB crosses a section boundary.
+ 	 * Once we have given up on one CPU, we do not try to install the
+@@ -111,7 +111,7 @@ ENTRY(__hyp_stub_install_secondary)
  	 */
- 	mov	r0, r2, lsr #SECTION_SHIFT
- 	movs	r0, r0, lsl #SECTION_SHIFT
-@@ -253,6 +254,8 @@ __create_page_tables:
- 	addne	r3, r3, #PAGE_OFFSET
- 	addne	r3, r4, r3, lsr #(SECTION_SHIFT - PMD_ORDER)
- 	orrne	r6, r7, r0
-+	strne	r6, [r3], #1 << PMD_ORDER
-+	addne	r6, r6, #1 << SECTION_SHIFT
- 	strne	r6, [r3]
  
- #ifdef CONFIG_DEBUG_LL
+ 	cmp	r4, #HYP_MODE
+-	bxne	lr			@ give up if the CPU is not in HYP mode
++	movne	pc, lr			@ give up if the CPU is not in HYP mode
+ 
+ /*
+  * Configure HSCTLR to set correct exception endianness/instruction set
+@@ -200,7 +200,7 @@ ENDPROC(__hyp_get_vectors)
+ 	@ fall through
+ ENTRY(__hyp_set_vectors)
+ 	__HVC(0)
+-	bx	lr
++	mov	pc, lr
+ ENDPROC(__hyp_set_vectors)
+ 
+ #ifndef ZIMAGE
 
 
