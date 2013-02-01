@@ -1,122 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab3BAUXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:23:22 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37485 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab3BAUXU (ORCPT
+	id S1757475Ab3BAUXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:23:30 -0500
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:47272 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757241Ab3BAUX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:23:20 -0500
+	Fri, 1 Feb 2013 15:23:26 -0500
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com,
         sjenning@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org, ngupta@vflare.org, rcj@linux.vnet.ibm.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org
-Subject: [PATCH v2] Make frontswap+cleancache and its friend be modularized.
-Date: Fri,  1 Feb 2013 15:22:49 -0500
-Message-Id: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 04/15] cleancache: Make cleancache_init use a pointer for the ops
+Date: Fri,  1 Feb 2013 15:22:53 -0500
+Message-Id: <1359750184-23408-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
+References: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parts of this patch have been posted in the post (way back in November), but
-this patchset expanded it a bit. The goal of the patches is to make the
-different frontswap/cleancache API backends be modules - and load way way after
-the swap system (or filesystem) has been initialized. Naturally one can still
-build the frontswap+cleancache backend devices in the kernel. The next goal
-(after these patches) is to also be able to unload the backend drivers - but
-that places some interesting requirements to "reload" the swap device with
-swap pages (don't need to worry that much about cleancache as it is a "secondary"
-cache and can be dumped). Seth had posted some patches for that in the zswap
-backend - and they could be more generally repurporsed.
+Instead of using a backend_registered to determine whether
+a backend is enabled. This allows us to remove the
+backend_register check and just do 'if (cleancache_ops)'
 
-Anyhow, I did not want to lose the authorship of some of the patches so I
-didn't squash the ones that were made by Dan and mine. I can do it for review
-if it would make it easier, but from my recollection on how Linus likes things
-run he would prefer to keep the history (even the kludge parts).
+[v1: Rebase on top of b97c4b430b0a405a57c78607b520d8000329e259
+(ramster->zcache move]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/staging/zcache/zcache-main.c |  8 ++---
+ drivers/xen/tmem.c                   |  6 ++--
+ include/linux/cleancache.h           |  2 +-
+ mm/cleancache.c                      | 62 +++++++++++++++++++-----------------
+ 4 files changed, 40 insertions(+), 38 deletions(-)
 
-The general flow prior to these patches was [I am concentrating on the
-frontswap here, but the cleancache is similar, just s/swapon/mount/]:
-
- 1) kernel inits frontswap_init
- 2) kernel inits zcache (or some other backend)
- 3) user does swapon /dev/XX and the writes to the swap disk end up in
-    frontswap and then in the backend.
-
-With the module loading, the 1) is still part of the bootup, but the
-2) or 3) can be run at anytime. This means one could load the backend
-_after_ the swap disk has been initialized and running along. Or
-_before_ the swap disk has been setup - but that is similar to the
-existing case so not that exciting.
-
-To deal with that scenario the frontswap keeps an queue (actually an atomic
-bitmap of the swap disks that have been init) and when the backend registers -
-frontswap runs the backend init on the queued up swap disks.
-
-The interesting thing is that we can be to certain degree racy when the
-swap system starts steering pages to frontswap. Meaning after the backend
-has registered it is OK if the pages are still hitting the disk instead of
-the backend. Naturally this is unacceptable if one were to unload the
-backend (not yet supported) - as we need to be quite atomic at that stage
-and need to stop processing the pages the moment the backend is being
-unloaded. To support this, the frontswap is using the struct static_key
-which are incredibly light when they are in usage. They are incredibly heavy
-when the value switches (on/off), but that is OK. The next part of unloading is
-also taking the pages that are in the backend and feed them in the swap
-storage (and Seth's patches do some of this).
-
-Also attached is one patch from Minchan that fixes the condition where the
-backend was constricted in allocating memory at init - b/c we were holding
-a spin-lock. His patch fixes that and we are just holding the swapon_mutex
-instead. It has been rebased on top of my patches.
-
-This patchset is based on Greg KH's staging tree (since the zcache2 has
-now been renamed to zcache). To be exact, it is based on
-085494ac2039433a5df9fdd6fb653579e18b8c71
-
-Dan Magenheimer (4):
-      mm: cleancache: lazy initialization to allow tmem backends to build/run as modules
-      mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
-      staging: zcache: enable ramster to be built/loaded as a module
-      xen: tmem: enable Xen tmem shim to be built/loaded as a module
-
-Konrad Rzeszutek Wilk (10):
-      frontswap: Make frontswap_init use a pointer for the ops.
-      cleancache: Make cleancache_init use a pointer for the ops
-      staging: zcache: enable zcache to be built/loaded as a module
-      xen/tmem: Remove the subsys call.
-      frontswap: Remove the check for frontswap_enabled.
-      frontswap: Use static_key instead of frontswap_enabled and frontswap_ops
-      cleancache: Remove the check for cleancache_enabled.
-      cleancache: Use static_key instead of cleancache_ops and cleancache_enabled.
-      zcache/tmem: Better error checking on frontswap_register_ops return     value.
-      xen/tmem: Add missing %s in the printk statement.
-
-Minchan Kim (1):
-      frontswap: Get rid of swap_lock dependency
-
-
- drivers/staging/zcache/Kconfig                     |   6 +-
- drivers/staging/zcache/Makefile                    |  11 +-
- drivers/staging/zcache/ramster.h                   |   6 +-
- drivers/staging/zcache/ramster/nodemanager.c       |   9 +-
- drivers/staging/zcache/ramster/ramster.c           |  29 ++-
- drivers/staging/zcache/ramster/ramster.h           |   2 +-
- .../staging/zcache/ramster/ramster_nodemanager.h   |   2 +
- drivers/staging/zcache/tmem.c                      |   6 +-
- drivers/staging/zcache/tmem.h                      |   8 +-
- drivers/staging/zcache/zcache-main.c               |  64 +++++-
- drivers/staging/zcache/zcache.h                    |   2 +-
- drivers/xen/Kconfig                                |   4 +-
- drivers/xen/tmem.c                                 |  55 +++--
- drivers/xen/xen-selfballoon.c                      |  13 +-
- include/linux/cleancache.h                         |  27 ++-
- include/linux/frontswap.h                          |  31 +--
- include/xen/tmem.h                                 |   8 +
- mm/cleancache.c                                    | 241 ++++++++++++++++++---
- mm/frontswap.c                                     | 121 ++++++++---
- mm/swapfile.c                                      |   7 +-
- 20 files changed, 505 insertions(+), 147 deletions(-)
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 05bfa41..b5a9dd0 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1494,9 +1494,9 @@ static struct cleancache_ops zcache_cleancache_ops = {
+ 	.init_fs = zcache_cleancache_init_fs
+ };
+ 
+-struct cleancache_ops zcache_cleancache_register_ops(void)
++struct cleancache_ops *zcache_cleancache_register_ops(void)
+ {
+-	struct cleancache_ops old_ops =
++	struct cleancache_ops *old_ops =
+ 		cleancache_register_ops(&zcache_cleancache_ops);
+ 
+ 	return old_ops;
+@@ -1780,7 +1780,7 @@ static int __init zcache_init(void)
+ 	}
+ 	zbud_init();
+ 	if (zcache_enabled && !disable_cleancache) {
+-		struct cleancache_ops old_ops;
++		struct cleancache_ops *old_ops;
+ 
+ 		register_shrinker(&zcache_shrinker);
+ 		old_ops = zcache_cleancache_register_ops();
+@@ -1790,7 +1790,7 @@ static int __init zcache_init(void)
+ 		pr_info("%s: cleancache: ignorenonactive = %d\n",
+ 			namestr, !disable_cleancache_ignore_nonactive);
+ #endif
+-		if (old_ops.init_fs != NULL)
++		if (old_ops != NULL)
+ 			pr_warn("%s: cleancache_ops overridden\n", namestr);
+ 	}
+ 	if (zcache_enabled && !disable_frontswap) {
+diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
+index 4b02c07..15e776c 100644
+--- a/drivers/xen/tmem.c
++++ b/drivers/xen/tmem.c
+@@ -236,7 +236,7 @@ static int __init no_cleancache(char *s)
+ }
+ __setup("nocleancache", no_cleancache);
+ 
+-static struct cleancache_ops __initdata tmem_cleancache_ops = {
++static struct cleancache_ops tmem_cleancache_ops = {
+ 	.put_page = tmem_cleancache_put_page,
+ 	.get_page = tmem_cleancache_get_page,
+ 	.invalidate_page = tmem_cleancache_flush_page,
+@@ -392,9 +392,9 @@ static int __init xen_tmem_init(void)
+ 	BUG_ON(sizeof(struct cleancache_filekey) != sizeof(struct tmem_oid));
+ 	if (tmem_enabled && use_cleancache) {
+ 		char *s = "";
+-		struct cleancache_ops old_ops =
++		struct cleancache_ops *old_ops =
+ 			cleancache_register_ops(&tmem_cleancache_ops);
+-		if (old_ops.init_fs != NULL)
++		if (old_ops)
+ 			s = " (WARNING: cleancache_ops overridden)";
+ 		printk(KERN_INFO "cleancache enabled, RAM provided by "
+ 				 "Xen Transcendent Memory%s\n", s);
+diff --git a/include/linux/cleancache.h b/include/linux/cleancache.h
+index 42e55de..3af5ea8 100644
+--- a/include/linux/cleancache.h
++++ b/include/linux/cleancache.h
+@@ -33,7 +33,7 @@ struct cleancache_ops {
+ 	void (*invalidate_fs)(int);
+ };
+ 
+-extern struct cleancache_ops
++extern struct cleancache_ops *
+ 	cleancache_register_ops(struct cleancache_ops *ops);
+ extern void __cleancache_init_fs(struct super_block *);
+ extern void __cleancache_init_shared_fs(char *, struct super_block *);
+diff --git a/mm/cleancache.c b/mm/cleancache.c
+index e4dc314..5d8dbb9 100644
+--- a/mm/cleancache.c
++++ b/mm/cleancache.c
+@@ -32,7 +32,7 @@ EXPORT_SYMBOL(cleancache_enabled);
+  * cleancache_ops is set by cleancache_ops_register to contain the pointers
+  * to the cleancache "backend" implementation functions.
+  */
+-static struct cleancache_ops cleancache_ops __read_mostly;
++static struct cleancache_ops *cleancache_ops __read_mostly;
+ 
+ /*
+  * Counters available via /sys/kernel/debug/frontswap (if debugfs is
+@@ -72,15 +72,14 @@ static DEFINE_MUTEX(poolid_mutex);
+ /*
+  * When set to false (default) all calls to the cleancache functions, except
+  * the __cleancache_invalidate_fs and __cleancache_init_[shared|]fs are guarded
+- * by the if (!backend_registered) return. This means multiple threads (from
+- * different filesystems) will be checking backend_registered. The usage of a
++ * by the if (!cleancache_ops) return. This means multiple threads (from
++ * different filesystems) will be checking cleancache_ops. The usage of a
+  * bool instead of a atomic_t or a bool guarded by a spinlock is OK - we are
+  * OK if the time between the backend's have been initialized (and
+- * backend_registered has been set to true) and when the filesystems start
++ * cleancache_ops has been set to not NULL) and when the filesystems start
+  * actually calling the backends. The inverse (when unloading) is obviously
+  * not good - but this shim does not do that (yet).
+  */
+-static bool backend_registered __read_mostly;
+ 
+ /*
+  * The backends and filesystems work all asynchronously. This is b/c the
+@@ -90,13 +89,13 @@ static bool backend_registered __read_mostly;
+  * 		[shared_|]fs_poolid_map and uuids for.
+  *
+  * 	b). user does I/Os -> we call the rest of __cleancache_* functions
+- * 		which return immediately as backend_registered is false.
++ * 		which return immediately as cleancache_ops is NULL.
+  *
+  * 	c). modprobe zcache -> cleancache_register_ops. We init the backend
+- * 		and set backend_registered to true, and for any fs_poolid_map
++ * 		and set cleancache_ops to the backend, and for any fs_poolid_map
+  * 		(which is set by __cleancache_init_fs) we initialize the poolid.
+  *
+- * 	d). user does I/Os -> now that backend_registered is true all the
++ * 	d). user does I/Os -> now that clean_ops is not NULL all the
+  * 		__cleancache_* functions can call the backend. They all check
+  * 		that fs_poolid_map is valid and if so invoke the backend.
+  *
+@@ -120,23 +119,26 @@ static bool backend_registered __read_mostly;
+  * Register operations for cleancache, returning previous thus allowing
+  * detection of multiple backends and possible nesting.
+  */
+-struct cleancache_ops cleancache_register_ops(struct cleancache_ops *ops)
++struct cleancache_ops *cleancache_register_ops(struct cleancache_ops *ops)
+ {
+-	struct cleancache_ops old = cleancache_ops;
++	struct cleancache_ops *old = cleancache_ops;
+ 	int i;
+ 
+ 	mutex_lock(&poolid_mutex);
+-	cleancache_ops = *ops;
+-
+-	backend_registered = true;
+ 	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
+ 		if (fs_poolid_map[i] == FS_NO_BACKEND)
+-			fs_poolid_map[i] = (*cleancache_ops.init_fs)(PAGE_SIZE);
++			fs_poolid_map[i] = ops->init_fs(PAGE_SIZE);
+ 		if (shared_fs_poolid_map[i] == FS_NO_BACKEND)
+-			shared_fs_poolid_map[i] = (*cleancache_ops.init_shared_fs)
++			shared_fs_poolid_map[i] = ops->init_shared_fs
+ 					(uuids[i], PAGE_SIZE);
+ 	}
+-out:
++	/*
++	 * We MUST set cleancache_ops _after_ we have called the backends
++	 * init_fs or init_shared_fs functions. Otherwise the compiler might
++	 * re-order where cleancache_ops is set in this function.
++	 */
++	barrier();
++	cleancache_ops = ops;
+ 	mutex_unlock(&poolid_mutex);
+ 	return old;
+ }
+@@ -151,8 +153,8 @@ void __cleancache_init_fs(struct super_block *sb)
+ 	for (i = 0; i < MAX_INITIALIZABLE_FS; i++) {
+ 		if (fs_poolid_map[i] == FS_UNKNOWN) {
+ 			sb->cleancache_poolid = i + FAKE_FS_POOLID_OFFSET;
+-			if (backend_registered)
+-				fs_poolid_map[i] = (*cleancache_ops.init_fs)(PAGE_SIZE);
++			if (cleancache_ops)
++				fs_poolid_map[i] = cleancache_ops->init_fs(PAGE_SIZE);
+ 			else
+ 				fs_poolid_map[i] = FS_NO_BACKEND;
+ 			break;
+@@ -172,8 +174,8 @@ void __cleancache_init_shared_fs(char *uuid, struct super_block *sb)
+ 		if (shared_fs_poolid_map[i] == FS_UNKNOWN) {
+ 			sb->cleancache_poolid = i + FAKE_SHARED_FS_POOLID_OFFSET;
+ 			uuids[i] = uuid;
+-			if (backend_registered)
+-				shared_fs_poolid_map[i] = (*cleancache_ops.init_shared_fs)
++			if (cleancache_ops)
++				shared_fs_poolid_map[i] = cleancache_ops->init_shared_fs
+ 						(uuid, PAGE_SIZE);
+ 			else
+ 				shared_fs_poolid_map[i] = FS_NO_BACKEND;
+@@ -240,7 +242,7 @@ int __cleancache_get_page(struct page *page)
+ 	int fake_pool_id;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!backend_registered) {
++	if (!cleancache_ops) {
+ 		cleancache_failed_gets++;
+ 		goto out;
+ 	}
+@@ -255,7 +257,7 @@ int __cleancache_get_page(struct page *page)
+ 		goto out;
+ 
+ 	if (pool_id >= 0)
+-		ret = (*cleancache_ops.get_page)(pool_id,
++		ret = cleancache_ops->get_page(pool_id,
+ 				key, page->index, page);
+ 	if (ret == 0)
+ 		cleancache_succ_gets++;
+@@ -282,7 +284,7 @@ void __cleancache_put_page(struct page *page)
+ 	int fake_pool_id;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!backend_registered) {
++	if (!cleancache_ops) {
+ 		cleancache_puts++;
+ 		return;
+ 	}
+@@ -296,7 +298,7 @@ void __cleancache_put_page(struct page *page)
+ 
+ 	if (pool_id >= 0 &&
+ 		cleancache_get_key(page->mapping->host, &key) >= 0) {
+-		(*cleancache_ops.put_page)(pool_id, key, page->index, page);
++		cleancache_ops->put_page(pool_id, key, page->index, page);
+ 		cleancache_puts++;
+ 	}
+ }
+@@ -318,7 +320,7 @@ void __cleancache_invalidate_page(struct address_space *mapping,
+ 	int fake_pool_id = mapping->host->i_sb->cleancache_poolid;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!backend_registered)
++	if (!cleancache_ops)
+ 		return;
+ 
+ 	if (fake_pool_id >= 0) {
+@@ -328,7 +330,7 @@ void __cleancache_invalidate_page(struct address_space *mapping,
+ 
+ 		VM_BUG_ON(!PageLocked(page));
+ 		if (cleancache_get_key(mapping->host, &key) >= 0) {
+-			(*cleancache_ops.invalidate_page)(pool_id,
++			cleancache_ops->invalidate_page(pool_id,
+ 					key, page->index);
+ 			cleancache_invalidates++;
+ 		}
+@@ -351,7 +353,7 @@ void __cleancache_invalidate_inode(struct address_space *mapping)
+ 	int fake_pool_id = mapping->host->i_sb->cleancache_poolid;
+ 	struct cleancache_filekey key = { .u.key = { 0 } };
+ 
+-	if (!backend_registered)
++	if (!cleancache_ops)
+ 		return;
+ 
+ 	if (fake_pool_id < 0)
+@@ -360,7 +362,7 @@ void __cleancache_invalidate_inode(struct address_space *mapping)
+ 	pool_id = get_poolid_from_fake(fake_pool_id);
+ 
+ 	if (pool_id >= 0 && cleancache_get_key(mapping->host, &key) >= 0)
+-		(*cleancache_ops.invalidate_inode)(pool_id, key);
++		cleancache_ops->invalidate_inode(pool_id, key);
+ }
+ EXPORT_SYMBOL(__cleancache_invalidate_inode);
+ 
+@@ -387,8 +389,8 @@ void __cleancache_invalidate_fs(struct super_block *sb)
+ 		fs_poolid_map[index] = FS_UNKNOWN;
+ 	}
+ 	sb->cleancache_poolid = -1;
+-	if (backend_registered)
+-		(*cleancache_ops.invalidate_fs)(old_poolid);
++	if (cleancache_ops)
++		cleancache_ops->invalidate_fs(old_poolid);
+ 	mutex_unlock(&poolid_mutex);
+ }
+ EXPORT_SYMBOL(__cleancache_invalidate_fs);
+-- 
+1.7.11.7
 
