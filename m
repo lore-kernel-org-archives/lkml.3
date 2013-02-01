@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab3BAOk2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 09:40:28 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:26423 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756059Ab3BAOk0 (ORCPT
+	id S1757130Ab3BAOlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 09:41:10 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:50296 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756059Ab3BAOlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 09:40:26 -0500
-X-AuditID: cbfec7f4-b7f6d6d000001620-ca-510bd3d83a85
-Message-id: <510BD3D7.1090302@samsung.com>
-Date: Fri, 01 Feb 2013 15:40:23 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        Kevin Liu <keyuan.liu@gmail.com>
-Subject: Re: [PATCH 3/3] mmc: sdhci: check voltage range only on regulators
- aware of voltage value
-References: <1354629663-29091-1-git-send-email-m.szyprowski@samsung.com>
- <1354629663-29091-4-git-send-email-m.szyprowski@samsung.com>
-In-reply-to: <1354629663-29091-4-git-send-email-m.szyprowski@samsung.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xa7o3LnMHGqw6Ym1xedccNosj//sZ
-	HZg8Pm+SC2CM4rJJSc3JLEst0rdL4MrY27mDveAlV8WxBe9YGhjvcHQxcnJICJhInO2dwQRh
-	i0lcuLeerYuRi0NIYCmjxP6lX9hBEkICzUwSqw6wgti8AloSs25OZAaxWQRUJZY+PwxWwyZg
-	KNH1tosNxBYVCJVYu28NM0S9oMSPyfdYQGwRAX2J7rYrjCALmAV+MkpMnPQYrEhYIEVixsKt
-	jBCb2xklPmy5A5bgFPCUaHtyEqybWcBM4lHLOmYIW15i85q3zBMYBWYhWTILSdksJGULGJlX
-	MYqmliYXFCel5xrqFSfmFpfmpesl5+duYoSE45cdjIuPWR1iFOBgVOLhPfmTK1CINbGsuDL3
-	EKMEB7OSCK9tLXegEG9KYmVValF+fFFpTmrxIUYmDk6pBsYywwrr9/Fhx1OTD319x7Wec67q
-	7pk/5yw/tjRc9ZqXyK2Tf5TZxWIF5kyasYTdpXBmpchUB8tK1Q/Xl97T3N2T4ew+9Y5WuO2s
-	WXttZ13dx7nrwvfngrWXNNdofn4ieJopcSsXK/OH0M2XQm28QoRux31j/vu8L3lnv+vMu3nB
-	U6aIzjRI2PBFiaU4I9FQi7moOBEAH4mvliUCAAA=
+	Fri, 1 Feb 2013 09:41:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <510B5CFC.2040801@tao.ma>
+References: <510B5CFC.2040801@tao.ma>
+Date: Fri, 1 Feb 2013 22:41:06 +0800
+Message-ID: <CAJd=RBDdM9PxiiwqzumK_1cPsabZ__+hf5A-j7v9X7N_WM8zQA@mail.gmail.com>
+Subject: Re: How to online remove an error scsi disk from the system?
+From: Hillf Danton <dhillf@gmail.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 12/4/2012 3:01 PM, Marek Szyprowski wrote:
-> Some regulators don't report any voltage values, so checking supported
-> voltage range results in disabling all SDHCI_CAN_VDD_* flags and
-> registration failure. This patch finally provides a correct fix for the
-> registration of SDHCI driver with all possible voltage regulators:
-> dummy, fixed and regulated without using regulator_count_voltages()
-> hacks.
+On Fri, Feb 1, 2013 at 2:13 PM, Tao Ma <tm@tao.ma> wrote:
+> Hi All,
+>         In our product system, we have several sata disks attached to one
+> machine. So when one of the disk fails, the jbd2(yes, we use ext4) will
+> hang forever and we will get something in /var/log/messages like below.
+> It seems to me that the io sent to the scsi layer is never returned back
+> with -EIO which is a little bit surprised for me(It should be a timeout
+> somewhere, right?). We have tried echo "offline" >
+> /sys/block/sdl/device/state, but it doesn't work. So is there any way
+> for us to let the scsi device returns all the io requests back with EIO
+> so that all the end_io can be called accordingly? Am I missing something
+> here?
 >
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-
-Any chance to get this patch scheduled for v3.9?
-
-> ---
->   drivers/mmc/host/sdhci.c |    6 +++++-
->   1 file changed, 5 insertions(+), 1 deletion(-)
+> Thanks,
+> Tao
 >
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index a9ad2cd..d244dc0 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -2930,7 +2930,11 @@ int sdhci_add_host(struct sdhci_host *host)
->   	}
->   
->   #ifdef CONFIG_REGULATOR
-> -	if (host->vmmc && regulator_count_voltages(host->vmmc) > 1) {
-> +	/*
-> +	 * Voltage range check makes sense only if regulator reports
-> +	 * any voltage value.
-> +	 */
-> +	if (host->vmmc && regulator_get_voltage(host->vmmc) > 0) {
->   		ret = regulator_is_supported_voltage(host->vmmc, 2700000,
->   			3600000);
->   		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+>
+> sd 0:0:11:0: attempting task abort! scmd(ffff88180e900580)
+> sd 0:0:11:0: [sdl] CDB: Write(10): 2a 00 0d ca e0 3f 00 04 00 00
+> target0:0:11: handle(0x0015), sas_address(0x500e004aaaaaaa0b), phy(11)
+> target0:0:11: enclosure_logical_id(0x500e004aaaaaaa00), slot(11)
+> INFO: task jbd2/sdl1-8:4629 blocked for more than 120 seconds.
+> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> jbd2/sdl1-8   D 0000000000000000     0  4629      2 0x00000000
+>  ffff88180aa79ae0 0000000000000046 ffff88180aa79aa8 0000000000000000
+>  ffff88007ce0fe40 0000000000015f40 ffff8818102c0638 ffff8818102c0080
+>  ffff880a9184a100 ffff8818102c0638 0000000105006028 0000000100000000
+> Call Trace:
+>  [<ffffffff81236a15>] ? cpumask_next_and+0x25/0x40
+>  [<ffffffff810122b6>] ? read_tsc+0x16/0x40
+>  [<ffffffff81093cd9>] ? ktime_get_ts+0xa9/0xe0
+>  [<ffffffff810122b6>] ? read_tsc+0x16/0x40
+>  [<ffffffff81093cd9>] ? ktime_get_ts+0xa9/0xe0
+>  [<ffffffff814a8a53>] io_schedule+0x73/0xc0
+>  [<ffffffff811036a8>] sync_page+0x38/0x50
+>  [<ffffffff814a927e>] __wait_on_bit+0x5e/0x90
+>  [<ffffffff81103670>] ? sync_page+0x0/0x50
+>  [<ffffffff81103845>] wait_on_page_bit+0x75/0x80
+>  [<ffffffff81089320>] ? wake_bit_function+0x0/0x40
+>  [<ffffffff811197c7>] ? pagevec_lookup_tag+0x27/0x40
+>  [<ffffffff81118b55>] write_cache_pages+0x1d5/0x440
+>  [<ffffffff811172f0>] ? __writepage+0x0/0x40
+>  [<ffffffff81118de4>] generic_writepages+0x24/0x30
+>  [<ffffffffa02dc719>] jbd2_journal_commit_transaction+0x3e9/0x1490 [jbd2]
+>  [<ffffffff81074299>] ? try_to_del_timer_sync+0x49/0xe0
+>  [<ffffffffa02e2734>] kjournald2+0xb4/0x220 [jbd2]
+>  [<ffffffff810892e0>] ? autoremove_wake_function+0x0/0x40
+>  [<ffffffffa02e2680>] ? kjournald2+0x0/0x220 [jbd2]
+>  [<ffffffff81089166>] kthread+0x96/0xa0
+>  [<ffffffff8100c08a>] child_rip+0xa/0x20
+>  [<ffffffff810890d0>] ? kthread+0x0/0xa0
+>  [<ffffffff8100c080>] ? child_rip+0x0/0x20
+>
+Can you try upstream?
