@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab3BAPOF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 10:14:05 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38289 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3BAPOC (ORCPT
+	id S1756330Ab3BAPO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 10:14:27 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33068 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756128Ab3BAPOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 10:14:02 -0500
-Message-ID: <510BDB8F.5000104@linux.vnet.ibm.com>
-Date: Fri, 01 Feb 2013 09:13:19 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 10:14:24 -0500
+Date: Fri, 1 Feb 2013 15:14:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sboyd@codeaurora.org, Will Deacon <will.deacon@arm.com>,
+        paulmck@linux.vnet.ibm.com, Catalin Marinas <catalin.marinas@arm.com>,
+        marc.zyngier@arm.com, linus.walleij@linaro.org
+Subject: Re: [PATCH v4 00/13] ARM LPAE Fixes - Part 1
+Message-ID: <20130201151410.GR23505@n2100.arm.linux.org.uk>
+References: <1359669512-31276-1-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1301312252230.6300@xanadu.home> <510BDAED.8060805@ti.com>
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv4 0/7] zswap: compressed swap caching
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359682784.3574.2.camel@kernel>
-In-Reply-To: <1359682784.3574.2.camel@kernel>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020115-3620-0000-0000-0000010D308F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510BDAED.8060805@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 07:39 PM, Simon Jeons wrote:
-> Hi Seth,
-> On Tue, 2013-01-29 at 15:40 -0600, Seth Jennings wrote:
-<snip>
->> Performance, Kernel Building:
->>
->> Setup
->> ========
->> Gentoo w/ kernel v3.7-rc7
->> Quad-core i5-2500 @ 3.3GHz
->> 512MB DDR3 1600MHz (limited with mem=512m on boot)
->> Filesystem and swap on 80GB HDD (about 58MB/s with hdparm -t)
->> majflt are major page faults reported by the time command
->> pswpin/out is the delta of pswpin/out from /proc/vmstat before and after
->> then make -jN
->>
->> Summary
->> ========
->> * Zswap reduces I/O and improves performance at all swap pressure levels.
->>
->> * Under heavy swaping at 24 threads, zswap reduced I/O by 76%, saving
->>   over 1.5GB of I/O, and cut runtime in half.
-> 
-> How to get your benchmark?
+On Fri, Feb 01, 2013 at 10:10:37AM -0500, Cyril Chemparathy wrote:
+> With this, I ran simple network and filesystem performance tests to  
+> compare the code-patching vs. non-code-patching variants.  These tests  
+> didn't yield any significant performance difference between the two on  
+> an ARMv7 (Cortex-A8) platform.
 
-It's just kernel building.  So "make" :)
+It's not network and fs activity that this kind of stuff is likely to
+show up in, but more to do with walking pages tables and the like -
+remember that page tables are stored using physical addresses, and any
+walks of them have to convert those physical addresses to virtual
+addresses and back again.
 
-I intentionally choose this workload so people wouldn't have to jump
-through hoops to replicate the results.
-
-Seth
-
+So, things like page scanning for eviction (eg, page aging, page
+faults even those which just re-use a page from the page cache) have
+to use the v:p / p:v translation macros.
