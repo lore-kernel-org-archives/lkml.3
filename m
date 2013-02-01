@@ -1,142 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab3BADER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 22:04:17 -0500
-Received: from mail.windriver.com ([147.11.1.11]:45488 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3BADEP (ORCPT
+	id S1753837Ab3BADFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 22:05:51 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:56819 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab3BADFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 22:04:15 -0500
-Message-ID: <510B22C2.90606@windriver.com>
-Date: Thu, 31 Jan 2013 20:04:50 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 31 Jan 2013 22:05:48 -0500
+Date: Thu, 31 Jan 2013 22:05:45 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v4 2/3] ARM: ioremap: introduce an infrastructure for
+ static mapped area
+In-Reply-To: <1359594008-14688-3-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.LFD.2.02.1301311722540.6300@xanadu.home>
+References: <1359594008-14688-1-git-send-email-iamjoonsoo.kim@lge.com> <1359594008-14688-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Cong Ding <dinggnu@gmail.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Tiejun Chen <tiejun.chen@windriver.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] powerpc: kernel/kgdb.c: fix memory leakage
-References: <1358184395-31418-1-git-send-email-dinggnu@gmail.com>
-In-Reply-To: <1358184395-31418-1-git-send-email-dinggnu@gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2013 11:26 AM, Cong Ding wrote:
-> the variable backup_current_thread_info isn't freed before existing the
-> function.
+On Thu, 31 Jan 2013, Joonsoo Kim wrote:
+
+> In current implementation, we used ARM-specific flag, that is,
+> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+> The purpose of static mapped area is to re-use static mapped area when
+> entire physical address range of the ioremap request can be covered
+> by this area.
 > 
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> ---
->  arch/powerpc/kernel/kgdb.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+> This implementation causes needless overhead for some cases.
+> For example, assume that there is only one static mapped area and
+> vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+> deciding whether it is matched or not. Moreover, even if there is
+> no static mapped area and vmlist has 300 areas, every time we call
+> ioremap, we check 300 areas in now.
 > 
-> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-> index 8747447..5ca82cd 100644
-> --- a/arch/powerpc/kernel/kgdb.c
-> +++ b/arch/powerpc/kernel/kgdb.c
-> @@ -154,12 +154,12 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
->  static int kgdb_singlestep(struct pt_regs *regs)
+> If we construct a extra list for static mapped area, we can eliminate
+> above mentioned overhead.
+> With a extra list, if there is one static mapped area,
+> we just check only one area and proceed next operation quickly.
+> 
+> In fact, it is not a critical problem, because ioremap is not frequently
+> used. But reducing overhead is better idea.
+> 
+> Another reason for doing this work is for removing architecture dependency
+> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
+> structure for vmalloc layer. Some codes for debugging and stat inevitably
+> use vmlist and vmlist_lock. But it is preferable that they are used
+> as least as possible in outside of vmalloc.c
+> 
+> Now, I introduce an ARM-specific infrastructure for static mapped area. In
+> the following patch, we will use this and resolve above mentioned problem.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+Much better.  Comments below.
+
+> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+> index 88fd86c..ceb34ae 100644
+> --- a/arch/arm/mm/ioremap.c
+> +++ b/arch/arm/mm/ioremap.c
+> @@ -39,6 +39,78 @@
+>  #include <asm/mach/pci.h>
+>  #include "mm.h"
+>  
+> +
+> +LIST_HEAD(static_vmlist);
+> +static DEFINE_RWLOCK(static_vmlist_lock);
+
+In fact you don't need a lock at all.  The only writer is 
+add_static_vm_early() and we know it is only used during boot when the 
+kernel is still single-threaded.
+
+> +
+> +static struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
+> +			size_t size, unsigned long flags)
+> +{
+> +	struct static_vm *svm;
+> +	struct vm_struct *vm;
+> +
+> +	read_lock(&static_vmlist_lock);
+> +	list_for_each_entry(svm, &static_vmlist, list) {
+> +		if (svm->flags != flags)
+> +			continue;
+> +
+> +		vm = &svm->vm;
+> +		if (vm->phys_addr > paddr ||
+> +			paddr + size - 1 > vm->phys_addr + vm->size - 1)
+> +			continue;
+> +
+> +		read_unlock(&static_vmlist_lock);
+> +		return svm;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +struct static_vm *find_static_vm_vaddr(void *vaddr)
+> +{
+> +	struct static_vm *svm;
+> +	struct vm_struct *vm;
+> +
+> +	read_lock(&static_vmlist_lock);
+> +	list_for_each_entry(svm, &static_vmlist, list) {
+> +		vm = &svm->vm;
+> +
+> +		/* static_vmlist is ascending order */
+> +		if (vm->addr > vaddr)
+> +			break;
+> +
+> +		if (vm->addr <= vaddr && vm->addr + vm->size > vaddr) {
+> +			read_unlock(&static_vmlist_lock);
+> +			return svm;
+> +		}
+> +	}
+> +	read_unlock(&static_vmlist_lock);
+> +
+> +	return NULL;
+> +}
+> +
+> +void add_static_vm_early(struct static_vm *svm, unsigned long flags)
+
+This should be marked with __init.  This way, it is less likely to be 
+used after boot, especially with no locking.  And vm_area_add_early() is 
+valid only if !vmap_initialized anyway, and also __init.
+
+> +{
+> +	struct static_vm *curr_svm;
+> +	struct vm_struct *vm;
+> +	void *vaddr;
+> +
+> +	vm_area_add_early(&svm->vm);
+> +
+> +	vaddr = svm->vm.addr;
+> +	svm->flags = flags;
+> +
+> +	write_lock(&static_vmlist_lock);
+> +	list_for_each_entry(curr_svm, &static_vmlist, list) {
+> +		vm = &curr_svm->vm;
+> +
+> +		if (vm->addr > vaddr)
+> +			break;
+> +	}
+> +	list_add_tail(&svm->list, &curr_svm->list);
+> +	write_unlock(&static_vmlist_lock);
+> +}
+> +
+>  int ioremap_page(unsigned long virt, unsigned long phys,
+>  		 const struct mem_type *mtype)
 >  {
->  	struct thread_info *thread_info, *exception_thread_info;
-> -	struct thread_info *backup_current_thread_info = \
-> -		(struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
-> +	struct thread_info *backup_current_thread_info;
-
-
-
-Woh...  This is definitely wrong.  You have found a problem for sure,
-but this is not the right way to fix it.
-
-It is not a good idea to kmalloc while single stepping because you can
-hang the kernel if you single step any operation in kmalloc().
-
-I am in the process of going through all the kgdb mails from the last
-few months while I had been away from the project, so I didn't catch
-this one and I see it has upstream commit (fefd9e6f8).  I'll submit
-another patch to fix this the right way and use a static variable.
-This is ok to use a static variable here because this is not something
-we can recursively call at a single CPU level.
-
-If Ben prefers we not burn the memory unless kgdb is active we can
-kmalloc / kfree the space we need at the time that kgdb is
-initialized.  Else we can go with this patch you see below.  We'll see
-what Ben desires.
-
------
-diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-index a7bc752..bb12c8b 100644
---- a/arch/powerpc/kernel/kgdb.c
-+++ b/arch/powerpc/kernel/kgdb.c
-@@ -151,15 +151,16 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
- 	return 1;
- }
- 
-+static struct thread_info kgdb_backup_thread_info[NR_CPUS];
-+
- static int kgdb_singlestep(struct pt_regs *regs)
- {
- 	struct thread_info *thread_info, *exception_thread_info;
--	struct thread_info *backup_current_thread_info;
-+	int cpu = raw_smp_processor_id();
- 
- 	if (user_mode(regs))
- 		return 0;
- 
--	backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
- 	/*
- 	 * On Book E and perhaps other processors, singlestep is handled on
- 	 * the critical exception stack.  This causes current_thread_info()
-@@ -175,7 +176,7 @@ static int kgdb_singlestep(struct pt_regs *regs)
- 
- 	if (thread_info != exception_thread_info) {
- 		/* Save the original current_thread_info. */
--		memcpy(backup_current_thread_info, exception_thread_info, sizeof *thread_info);
-+		memcpy(&kgdb_backup_thread_info[cpu], exception_thread_info, sizeof *thread_info);
- 		memcpy(exception_thread_info, thread_info, sizeof *thread_info);
- 	}
- 
-@@ -183,9 +184,8 @@ static int kgdb_singlestep(struct pt_regs *regs)
- 
- 	if (thread_info != exception_thread_info)
- 		/* Restore current_thread_info lastly. */
--		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
-+		memcpy(exception_thread_info, &kgdb_backup_thread_info[cpu], sizeof *thread_info);
- 
--	kfree(backup_current_thread_info);
- 	return 1;
- }
- 
-
------
-
-
-Thanks,
-Jason.
-
-
+> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+> index a8ee92d..fb45c79 100644
+> --- a/arch/arm/mm/mm.h
+> +++ b/arch/arm/mm/mm.h
+> @@ -1,4 +1,6 @@
+>  #ifdef CONFIG_MMU
+> +#include <linux/list.h>
+> +#include <linux/vmalloc.h>
 >  
->  	if (user_mode(regs))
->  		return 0;
+>  /* the upper-most page table pointer */
+>  extern pmd_t *top_pmd;
+> @@ -65,6 +67,24 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
+>  /* consistent regions used by dma_alloc_attrs() */
+>  #define VM_ARM_DMA_CONSISTENT	0x20000000
 >  
-> +	backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
->  	/*
->  	 * On Book E and perhaps other processors, singlestep is handled on
->  	 * the critical exception stack.  This causes current_thread_info()
-> @@ -185,6 +185,7 @@ static int kgdb_singlestep(struct pt_regs *regs)
->  		/* Restore current_thread_info lastly. */
->  		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
->  
-> +	kfree(backup_current_thread_info);
->  	return 1;
->  }
->  
-> 
+> +
+> +/* ARM specific static_vm->flags bits */
+> +#define STATIC_VM_MEM		0x00000001
+> +#define STATIC_VM_EMPTY		0x00000002
+> +#define STATIC_VM_MTYPE(mtype)	((mtype) << 20)
+> +
+> +#define STATIC_VM_TYPE(type, mtype) (type | STATIC_VM_MTYPE(mtype))
+> +
+> +struct static_vm {
+> +	struct vm_struct vm;
+> +	struct list_head list;
+> +	unsigned long flags;
+> +};
 
+What is your motivation for having separate flags instead of simply 
+keeping the current vm->flags usage?
+
+
+Nicolas
