@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab3BASYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 13:24:17 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:43432 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757046Ab3BASYL (ORCPT
+	id S1757212Ab3BASYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 13:24:47 -0500
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:47761 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754891Ab3BASWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 13:24:11 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [Resend][PATCH] ACPI / PM: Do not power manage devices in unknown initial states
-Date: Fri, 01 Feb 2013 19:23:52 +0100
-Message-ID: <2135454.ENo8eA9AXp@al>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5-git-162-g34213ff+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3676077.i6vcpp7Nrn@vostro.rjw.lan>
-References: <3676077.i6vcpp7Nrn@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 1 Feb 2013 13:22:33 -0500
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v7 06/10] ARM: dts: add AM33XX EDMA support
+Date: Fri,  1 Feb 2013 13:22:51 -0500
+Message-Id: <1359742975-10421-7-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359742975-10421-1-git-send-email-mporter@ti.com>
+References: <1359742975-10421-1-git-send-email-mporter@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 31 January 2013 23:32:40 Rafael J. Wysocki wrote:
-> In general, for ACPI device power management to work, the initial
-> power states of devices must be known (otherwise, we wouldn't be able
-> to keep track of power resources, for example).  Hence, if it is
-> impossible to determine the initial ACPI power states of some
-> devices, they can't be regarded as power-manageable using ACPI.
-> 
-> For this reason, modify acpi_bus_get_power_flags() to clear the
-> power_manageable flag if acpi_bus_init_power() fails and add some
-> extra fallback code to acpi_bus_init_power() to cover broken
-> BIOSes that provide _PS0/_PS3 without _PSC for some devices.
-> 
-> Verified to work on my HP nx6325 that has this problem.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Adds AM33XX EDMA support to the am33xx.dtsi as documented in
+Documentation/devicetree/bindings/dma/ti-edma.txt
 
-Tested-by: Peter Wu <lekensteyn@gmail.com>
+Signed-off-by: Matt Porter <mporter@ti.com>
+---
+ arch/arm/boot/dts/am33xx.dtsi |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-I applied it on top of branch linux-next of repo linux-pm.
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index c2f14e8..e711ffb 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -87,6 +87,26 @@
+ 			reg = <0x48200000 0x1000>;
+ 		};
+ 
++		edma: edma@49000000 {
++			compatible = "ti,edma3";
++			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++			reg =	<0x49000000 0x10000>,
++				<0x44e10f90 0x10>;
++			interrupt-parent = <&intc>;
++			interrupts = <12 13 14>;
++			#dma-cells = <1>;
++			dma-channels = <64>;
++			ti,edma-regions = <4>;
++			ti,edma-slots = <256>;
++			ti,edma-queue-tc-map = <0 0
++						1 1
++						2 2>;
++			ti,edma-queue-priority-map = <0 0
++						      1 1
++						      2 2>;
++			ti,edma-default-queue = <0>;
++		};
++
+ 		gpio1: gpio@44e07000 {
+ 			compatible = "ti,omap4-gpio";
+ 			ti,hwmods = "gpio1";
+-- 
+1.7.9.5
 
-Fixes the issue I had with bbswitch in Linux 3.8. Can a backport patch be made 
-available for 3.8?
-
-Regards,
-Peter
