@@ -1,153 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757948Ab3BAW5w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 17:57:52 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46615 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755035Ab3BAW5u (ORCPT
+	id S1757989Ab3BAW6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 17:58:03 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:36475 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755035Ab3BAW5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 17:57:50 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: Gleb Natapov <gleb@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Prarit Bhargava <prarit@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] intel_irq_remapping: Clean up x2apic optout security warning mess
-Date: Fri,  1 Feb 2013 14:57:43 -0800
-Message-Id: <2011b943a886fd7c46079eb10bc24fc130587503.1359759303.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <510C3AF0.6050109@amacapital.net>
-References: <510C3AF0.6050109@amacapital.net>
+	Fri, 1 Feb 2013 17:57:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <1359657310.6022.4.camel@x61.thuisdomein>
+References: <1359367251.883.13.camel@x61.thuisdomein> <CAErSpo7grYijCUZGWGM4jao+MUqXYQ66q1az6bbKPMX4_Jwcyg@mail.gmail.com>
+ <1450113.teKM2dvJbO@vostro.rjw.lan> <1359657310.6022.4.camel@x61.thuisdomein>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 1 Feb 2013 15:57:34 -0700
+Message-ID: <CAErSpo7TD8Vw-6V_-pZzarRd=APzEV-xfXQBYTNPceyxyojfsQ@mail.gmail.com>
+Subject: Re: [PATCH v2] PCI: pciehp: drop ENTRY messages
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current kernels print this on my Dell server:
+On Thu, Jan 31, 2013 at 11:35 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> In each suspend and resume cycle my laptop prints these messages at
+> KERN_INFO level:
+>     pciehp 0000:00:1c.1:pcie04: pciehp_suspend ENTRY
+>     pciehp 0000:00:1c.0:pcie04: pciehp_suspend ENTRY
+>
+> and
+>     pciehp 0000:00:1c.0:pcie04: pciehp_resume ENTRY
+>     pciehp 0000:00:1c.1:pcie04: pciehp_resume ENTRY
+>
+> Drop these messages, that were probably used to debug the suspend and
+> resume code, but now serve no purpose.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-   ------------[ cut here ]------------
-   WARNING: at drivers/iommu/intel_irq_remapping.c:542
-   intel_enable_irq_remapping+0x7b/0x27e()
-   Hardware name: PowerEdge R620
-   Your BIOS is broken and requested that x2apic be disabled
-   This will leave your machine vulnerable to irq-injection attacks
-   Use 'intremap=no_x2apic_optout' to override BIOS request
-   [...]
-   Enabled IRQ remapping in xapic mode
-   x2apic not enabled, IRQ remapping is in xapic mode
+I applied this to pci/misc for v3.9.  Thanks!
 
-This is inconsistent with itself -- interrupt remapping is *on*.
+Bjorn
 
-Fix the mess by making the warnings say what they mean and my making
-sure that compatibility format interrupts (the dangerous ones) are
-disabled if x2apic is present regardless of BIOS settings.
-
-With this patch applied, the output is:
-
-  Your BIOS is broken and requested that x2apic be disabled.
-  This will slightly decrease performance.
-  Use 'intremap=no_x2apic_optout' to override BIOS request.
-  Enabled IRQ remapping in xapic mode
-  x2apic not enabled, IRQ remapping is in xapic mode
-
-This should make us as or more secure than we are now and replace
-a rather scary warning with a much less scary warning on silly
-but functional systems.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- drivers/iommu/intel_irq_remapping.c | 36 ++++++++++++++++++++++++++++--------
- 1 file changed, 28 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index af8904d..eca8832 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -425,11 +425,22 @@ static void iommu_set_irq_remapping(struct intel_iommu *iommu, int mode)
- 
- 	/* Enable interrupt-remapping */
- 	iommu->gcmd |= DMA_GCMD_IRE;
-+	iommu->gcmd &= ~DMA_GCMD_CFI;  /* Block compatibility-format MSIs */
- 	writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
- 
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
- 		      readl, (sts & DMA_GSTS_IRES), sts);
- 
-+	/*
-+	 * With CFI clear in the Global Command register, we should be
-+	 * protected from dangerous (i.e. compatibility) interrupts
-+	 * regardless of x2apic status.  Check just to be sure.
-+	 */
-+	if (sts & DMA_GSTS_CFIS)
-+		WARN(1, KERN_WARNING
-+			"Compatibility-format IRQs enabled despite intr remapping;\n"
-+			"you are vulnerable to IRQ injection.\n");
-+
- 	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
- }
- 
-@@ -526,20 +537,24 @@ static int __init intel_irq_remapping_supported(void)
- static int __init intel_enable_irq_remapping(void)
- {
- 	struct dmar_drhd_unit *drhd;
-+	bool x2apic_present;
- 	int setup = 0;
- 	int eim = 0;
- 
-+	x2apic_present = x2apic_supported();
-+
- 	if (parse_ioapics_under_ir() != 1) {
- 		printk(KERN_INFO "Not enable interrupt remapping\n");
--		return -1;
-+		goto error;
- 	}
- 
--	if (x2apic_supported()) {
-+	if (x2apic_present) {
- 		eim = !dmar_x2apic_optout();
--		WARN(!eim, KERN_WARNING
--			   "Your BIOS is broken and requested that x2apic be disabled\n"
--			   "This will leave your machine vulnerable to irq-injection attacks\n"
--			   "Use 'intremap=no_x2apic_optout' to override BIOS request\n");
-+		if (!eim)
-+			printk(KERN_WARNING
-+				"Your BIOS is broken and requested that x2apic be disabled.\n"
-+				"This will slightly decrease performance.\n"
-+				"Use 'intremap=no_x2apic_optout' to override BIOS request.\n");
- 	}
- 
- 	for_each_drhd_unit(drhd) {
-@@ -578,7 +593,7 @@ static int __init intel_enable_irq_remapping(void)
- 		if (eim && !ecap_eim_support(iommu->ecap)) {
- 			printk(KERN_INFO "DRHD %Lx: EIM not supported by DRHD, "
- 			       " ecap %Lx\n", drhd->reg_base_addr, iommu->ecap);
--			return -1;
-+			goto error;
- 		}
- 	}
- 
-@@ -594,7 +609,7 @@ static int __init intel_enable_irq_remapping(void)
- 			printk(KERN_ERR "DRHD %Lx: failed to enable queued, "
- 			       " invalidation, ecap %Lx, ret %d\n",
- 			       drhd->reg_base_addr, iommu->ecap, ret);
--			return -1;
-+			goto error;
- 		}
- 	}
- 
-@@ -625,6 +640,11 @@ error:
- 	/*
- 	 * handle error condition gracefully here!
- 	 */
-+
-+	if (x2apic_present)
-+		WARN(1, KERN_WARNING
-+			"Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
-+
- 	return -1;
- }
- 
--- 
-1.8.1
-
+> ---
+> 0) v1 was called "PCI: pciehp: hide ENTRY messages behind ctrl_dbg()".
+> But Bjorn and Rafael prefer to drop these messages completely.
+>
+> 1) Not even compile tested!
+>
+>  drivers/pci/hotplug/pciehp_core.c | 2 --
+>  1 file changed, 2 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+> index 939bd1d..7d72c5e 100644
+> --- a/drivers/pci/hotplug/pciehp_core.c
+> +++ b/drivers/pci/hotplug/pciehp_core.c
+> @@ -293,7 +293,6 @@ static void pciehp_remove(struct pcie_device *dev)
+>  #ifdef CONFIG_PM
+>  static int pciehp_suspend (struct pcie_device *dev)
+>  {
+> -       dev_info(&dev->device, "%s ENTRY\n", __func__);
+>         return 0;
+>  }
+>
+> @@ -303,7 +302,6 @@ static int pciehp_resume (struct pcie_device *dev)
+>         struct slot *slot;
+>         u8 status;
+>
+> -       dev_info(&dev->device, "%s ENTRY\n", __func__);
+>         ctrl = get_service_data(dev);
+>
+>         /* reinitialize the chipset's event detection logic */
+> --
+> 1.7.11.7
+>
