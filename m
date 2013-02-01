@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab3BAUev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:34:51 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:21385 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756548Ab3BAUes (ORCPT
+	id S1757440Ab3BAUlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:41:45 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:54626 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756548Ab3BAUlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:34:48 -0500
-Message-ID: <201302012034.r11KYlRq023389@farm-0021.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 1 Feb 2013 12:37:48 -0500
-Subject: [PATCH] tile: support atomic64_dec_if_positive()
-To: <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 1 Feb 2013 15:41:42 -0500
+Message-ID: <1359751171.22968.6.camel@thor.lan>
+Subject: Re: [PATCH 07/10] TTY: switch tty_schedule_flip
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org
+Date: Fri, 01 Feb 2013 15:39:31 -0500
+In-Reply-To: <510BD9E9.9000400@suse.cz>
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+	 <1357224789-2853-8-git-send-email-jslaby@suse.cz>
+	 <1359722247.3381.16.camel@thor.lan> <510BD9E9.9000400@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the normal cmpxchg() idiom to implement this functionality.
+On Fri, 2013-02-01 at 16:06 +0100, Jiri Slaby wrote:
+> On 02/01/2013 01:37 PM, Peter Hurley wrote:
+> > On Thu, 2013-01-03 at 15:53 +0100, Jiri Slaby wrote:
+> >> Now, we start converting tty buffer functions to actually use
+> >> tty_port. This will allow us to get rid of the need of tty in many
+> >> call sites. Only tty_port will needed and hence no more
+> >> tty_port_tty_get in those paths.
+> >>
+> >> This is the last one: tty_schedule_flip
+> > 
+> > [snip]
+> > 
+> >> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+> >> index 5aace4d..a9af1b9a 100644
+> >> --- a/drivers/tty/vt/keyboard.c
+> >> +++ b/drivers/tty/vt/keyboard.c
+> >> @@ -307,26 +307,17 @@ int kbd_rate(struct kbd_repeat *rep)
+> >>   */
+> >>  static void put_queue(struct vc_data *vc, int ch)
+> >>  {
+> >> -	struct tty_struct *tty = vc->port.tty;
+> >> -
+> >>  	tty_insert_flip_char(&vc->port, ch, 0);
+> >> -	if (tty) {
+> >> -		tty_schedule_flip(tty);
+> >> -	}
+> >> +	tty_schedule_flip(&vc->port);
+> >>  }
+> >>  
+> >>  static void puts_queue(struct vc_data *vc, char *cp)
+> >>  {
+> >> -	struct tty_struct *tty = vc->port.tty;
+> >> -
+> >> -	if (!tty)
+> >> -		return;
+> >> -
+> >>  	while (*cp) {
+> >>  		tty_insert_flip_char(&vc->port, *cp, 0);
+> >>  		cp++;
+> >>  	}
+> >> -	tty_schedule_flip(tty);
+> >> +	tty_schedule_flip(&vc->port);
+> >>  }
+> > 
+> > Umm. So even though the vt driver knows the tty has been shutdown,
+> > keystrokes will still be buffered? And then fed to whichever tty happens
+> > to next get installed on the same port?
+> 
+> Unless I completely missed something, they should be flushed. If that's
+> not the case, that's a bug. I will check next week.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/Kconfig              |    1 +
- arch/tile/include/asm/atomic.h |   21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+)
+Ok.
 
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index 1bb7ad4..0a7b7da 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -21,6 +21,7 @@ config TILE
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_CLOCKEVENTS
- 	select MODULES_USE_ELF_RELA
-+	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 
- # FIXME: investigate whether we need/want these options.
- #	select HAVE_IOREMAP_PROT
-diff --git a/arch/tile/include/asm/atomic.h b/arch/tile/include/asm/atomic.h
-index f246142..e71387a 100644
---- a/arch/tile/include/asm/atomic.h
-+++ b/arch/tile/include/asm/atomic.h
-@@ -131,4 +131,25 @@ static inline int atomic_read(const atomic_t *v)
- #include <asm/atomic_64.h>
- #endif
- 
-+#ifndef __ASSEMBLY__
-+
-+static inline long long atomic64_dec_if_positive(atomic64_t *v)
-+{
-+	long long c, old, dec;
-+
-+	c = atomic64_read(v);
-+	for (;;) {
-+		dec = c - 1;
-+		if (unlikely(dec < 0))
-+			break;
-+		old = atomic64_cmpxchg((v), c, dec);
-+		if (likely(old == c))
-+			break;
-+		c = old;
-+	}
-+	return dec;
-+}
-+
-+#endif /* __ASSEMBLY__ */
-+
- #endif /* _ASM_TILE_ATOMIC_H */
--- 
-1.7.10.3
+I'm fairly sure this is happening. Try repeatedly tapping arrow-down
+while booting (I suggest a VM) and you won't be able to login at tty1
+(ie, text mode). Repeatable 1 time in 5 or so.
+
+FWIW, I don't agree that the best way is to flush the flip buffers. Why
+buffer and then schedule the cpu to do work which we already know it
+can't do and which we're going to discard anyway?
+
+In any event, since -next is already carrying these patches, and
+by-design, these patches _expect_ the tty to be NULL, are you going to
+remove the warning in flush_to_ldisc() or shall I?
+
+Regards,
+Peter Hurley
+
+
 
