@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab3BAOlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 09:41:10 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:50296 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756059Ab3BAOlH (ORCPT
+	id S1756946Ab3BAOvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 09:51:55 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:65278 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409Ab3BAOvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 09:41:07 -0500
+	Fri, 1 Feb 2013 09:51:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <510B5CFC.2040801@tao.ma>
-References: <510B5CFC.2040801@tao.ma>
-Date: Fri, 1 Feb 2013 22:41:06 +0800
-Message-ID: <CAJd=RBDdM9PxiiwqzumK_1cPsabZ__+hf5A-j7v9X7N_WM8zQA@mail.gmail.com>
-Subject: Re: How to online remove an error scsi disk from the system?
-From: Hillf Danton <dhillf@gmail.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1470501.uiZyX6kBKo@donald.sf-tec.de>
+References: <20130131200110.GA6032@p100.box> <1359668524.2468.12.camel@dabdike>
+ <510AE623.7000609@zytor.com> <1470501.uiZyX6kBKo@donald.sf-tec.de>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Fri, 1 Feb 2013 14:51:30 +0000
+X-Google-Sender-Auth: cK_U80AAFUcuzFUoY_iU3rPLJZg
+Message-ID: <CAHkRjk5TC+iqdJxJu1N5D-nMkb=UTff7dBVzSpdxoLMF0uN29Q@mail.gmail.com>
+Subject: Re: [PATCH] parisc: unbreak automounter support on 64-bit kernel with
+ 32-bit userspace
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>,
+        autofs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 2:13 PM, Tao Ma <tm@tao.ma> wrote:
-> Hi All,
->         In our product system, we have several sata disks attached to one
-> machine. So when one of the disk fails, the jbd2(yes, we use ext4) will
-> hang forever and we will get something in /var/log/messages like below.
-> It seems to me that the io sent to the scsi layer is never returned back
-> with -EIO which is a little bit surprised for me(It should be a timeout
-> somewhere, right?). We have tried echo "offline" >
-> /sys/block/sdl/device/state, but it doesn't work. So is there any way
-> for us to let the scsi device returns all the io requests back with EIO
-> so that all the end_io can be called accordingly? Am I missing something
-> here?
+On 31 January 2013 22:10, Rolf Eike Beer <eike-kernel@sf-tec.de> wrote:
+> H. Peter Anvin wrote:
+>> On 01/31/2013 01:42 PM, James Bottomley wrote:
+>> > On Thu, 2013-01-31 at 13:29 -0800, H. Peter Anvin wrote:
+>> >> On 01/31/2013 12:26 PM, James Bottomley wrote:
+>> >>> [adding autofs list and maintainer for their perusal and ack, although
+>> >>> this is an obvious fix to me
+>> >>>
+>> >>> James]
+>> >>
+>> >> The #if list probably should be inverted, and only specific platforms
+>> >> should have unsigned long...
+>> >
+>> > The whitelist is 64 bit only platforms, like ia64, isn't it?  So yes,
+>> > they're far less numerous.
+>>
+>> Correct.  It is basically the 64-bit platforms without any 32-bit
+>> userspace, like Alpha and IA64.
 >
-> Thanks,
-> Tao
->
->
-> sd 0:0:11:0: attempting task abort! scmd(ffff88180e900580)
-> sd 0:0:11:0: [sdl] CDB: Write(10): 2a 00 0d ca e0 3f 00 04 00 00
-> target0:0:11: handle(0x0015), sas_address(0x500e004aaaaaaa0b), phy(11)
-> target0:0:11: enclosure_logical_id(0x500e004aaaaaaa00), slot(11)
-> INFO: task jbd2/sdl1-8:4629 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> jbd2/sdl1-8   D 0000000000000000     0  4629      2 0x00000000
->  ffff88180aa79ae0 0000000000000046 ffff88180aa79aa8 0000000000000000
->  ffff88007ce0fe40 0000000000015f40 ffff8818102c0638 ffff8818102c0080
->  ffff880a9184a100 ffff8818102c0638 0000000105006028 0000000100000000
-> Call Trace:
->  [<ffffffff81236a15>] ? cpumask_next_and+0x25/0x40
->  [<ffffffff810122b6>] ? read_tsc+0x16/0x40
->  [<ffffffff81093cd9>] ? ktime_get_ts+0xa9/0xe0
->  [<ffffffff810122b6>] ? read_tsc+0x16/0x40
->  [<ffffffff81093cd9>] ? ktime_get_ts+0xa9/0xe0
->  [<ffffffff814a8a53>] io_schedule+0x73/0xc0
->  [<ffffffff811036a8>] sync_page+0x38/0x50
->  [<ffffffff814a927e>] __wait_on_bit+0x5e/0x90
->  [<ffffffff81103670>] ? sync_page+0x0/0x50
->  [<ffffffff81103845>] wait_on_page_bit+0x75/0x80
->  [<ffffffff81089320>] ? wake_bit_function+0x0/0x40
->  [<ffffffff811197c7>] ? pagevec_lookup_tag+0x27/0x40
->  [<ffffffff81118b55>] write_cache_pages+0x1d5/0x440
->  [<ffffffff811172f0>] ? __writepage+0x0/0x40
->  [<ffffffff81118de4>] generic_writepages+0x24/0x30
->  [<ffffffffa02dc719>] jbd2_journal_commit_transaction+0x3e9/0x1490 [jbd2]
->  [<ffffffff81074299>] ? try_to_del_timer_sync+0x49/0xe0
->  [<ffffffffa02e2734>] kjournald2+0xb4/0x220 [jbd2]
->  [<ffffffff810892e0>] ? autoremove_wake_function+0x0/0x40
->  [<ffffffffa02e2680>] ? kjournald2+0x0/0x220 [jbd2]
->  [<ffffffff81089166>] kthread+0x96/0xa0
->  [<ffffffff8100c08a>] child_rip+0xa/0x20
->  [<ffffffff810890d0>] ? kthread+0x0/0xa0
->  [<ffffffff8100c080>] ? child_rip+0x0/0x20
->
-Can you try upstream?
+> Arm64?
+
+It supports 32-bit user-space (CONFIG_COMPAT). But we missed this
+#ifdef for arm64. I'm not familiar with the autofs subsystem but at a
+first look it seems that autofs_wqt_t types are not shared with user
+space as part of a structure. It can come as an argument for an ioctl
+command but as long as we don't expect this type to hold data larger
+than 32-bit it should be ok.
+
+-- 
+Catalin
