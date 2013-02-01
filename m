@@ -1,160 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab3BANLI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:11:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44924 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757168Ab3BANLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:11:02 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 39/89] ath9k: fix rx flush handling
-Date: Fri,  1 Feb 2013 14:07:54 +0100
-Message-Id: <20130201130210.330784948@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
-In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
-References: <20130201130207.444989281@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1757535Ab3BANLP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:11:15 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9854 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757506Ab3BANLL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:11:11 -0500
+From: =?utf-8?B?Ik3DpW5zc29uLCBCasO2cm4i?= <Bjorn.Mansson@sonymobile.com>
+To: "'Chris Ball'" <cjb@laptop.org>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Qelthin, Stefan" <Stefan.Qelthin@sonymobile.com>,
+        "Pettersson, Roger" <Roger.Pettersson@sonymobile.com>
+Date: Fri, 1 Feb 2013 14:01:06 +0100
+Subject: [PATCH] mmc: Adding ftrace event logging to the mmc layer
+Thread-Topic: [PATCH] mmc: Adding ftrace event logging to the mmc layer
+Thread-Index: Ac3/xXtZRKZhZWF1T1WOJA2aUcACowAtTNBw
+Message-ID: <9A742367D258D34A9753780E2AE6B8BD75DB1FCFE9@SELDMBX04.corpusers.net>
+References: <9A742367D258D34A9753780E2AE6B8BD75DB1FCFDC@SELDMBX04.corpusers.net>
+ <87lib9qtby.fsf@octavius.laptop.org>
+In-Reply-To: <87lib9qtby.fsf@octavius.laptop.org>
+Accept-Language: en-US, sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, sv-SE
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r11DBOor027024
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+From: Bjorn Mansson <bjorn.mansson@sonymobile.com>
 
-------------------
+Adding ftrace to the mmc layer facilitates debugging,
+making it easier to debug commend sequences without
+rebuilding the kernel.
+It is also possible to parse the ftrace output into
+VCD format and visualize it in GTKWave.
 
-From: Felix Fietkau <nbd@openwrt.org>
+Patch is for the 3.7.5 Kernel.
 
-commit 4b883f021b9ccf2df3d14425e6e610281fb6a35e upstream.
 
-Right now the rx flush is not doing anything useful on AR9003+, as it only
-works if the buffers in the rx FIFO have not been purged yet, as is done
-by ath_stoprecv.
+Signed-off-by: Bjorn Mansson <bjorn.mansson@sonymobile.com>
+Acked-by: Chris Ball <cjb@laptop.org>
+"---"
 
-To fix this, always call ath_flushrecv from within ath_stoprecv before
-the FIFO is emptied, but still after the hw receive path has been stopped.
-
-This ensures that frames received (and ACKed by the hardware) shortly before
-a reset will be seen by the software, which should improve A-MPDU session
-stability.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/ath/ath9k/ath9k.h |    1 -
- drivers/net/wireless/ath/ath9k/main.c  |   16 +++-------------
- drivers/net/wireless/ath/ath9k/recv.c  |   16 +++++++++-------
- 3 files changed, 12 insertions(+), 21 deletions(-)
-
---- a/drivers/net/wireless/ath/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-@@ -326,7 +326,6 @@ struct ath_rx {
+diff -uprN -X linux-3.7.5-vanilla/Documentation/dontdiff linux-3.7.5-vanilla/drivers/mmc/core/core.c linux-3.7.5-patched/drivers/mmc/core/core.c
+--- linux-3.7.5-vanilla/drivers/mmc/core/core.c	2013-01-28 05:50:55.000000000 +0100
++++ linux-3.7.5-patched/drivers/mmc/core/core.c	2013-02-01 12:03:26.691987495 +0100
+@@ -42,6 +42,9 @@
+ #include "sd_ops.h"
+ #include "sdio_ops.h"
  
- int ath_startrecv(struct ath_softc *sc);
- bool ath_stoprecv(struct ath_softc *sc);
--void ath_flushrecv(struct ath_softc *sc);
- u32 ath_calcrxfilter(struct ath_softc *sc);
- int ath_rx_init(struct ath_softc *sc, int nbufs);
- void ath_rx_cleanup(struct ath_softc *sc);
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -181,7 +181,7 @@ static void ath_restart_work(struct ath_
- 	ath_start_ani(sc);
- }
++#define CREATE_TRACE_POINTS
++#include <trace/events/mmc.h>
++
+ /*
+  * Background operations can take a long time, depending on the housekeeping
+  * operations the card has to perform.
+@@ -165,6 +168,10 @@ void mmc_request_done(struct mmc_host *h
+ 			cmd->resp[0], cmd->resp[1],
+ 			cmd->resp[2], cmd->resp[3]);
  
--static bool ath_prepare_reset(struct ath_softc *sc, bool retry_tx, bool flush)
-+static bool ath_prepare_reset(struct ath_softc *sc, bool retry_tx)
- {
- 	struct ath_hw *ah = sc->sc_ah;
- 	bool ret = true;
-@@ -203,14 +203,6 @@ static bool ath_prepare_reset(struct ath
- 	if (!ath_drain_all_txq(sc, retry_tx))
- 		ret = false;
- 
--	if (!flush) {
--		if (ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
--			ath_rx_tasklet(sc, 1, true);
--		ath_rx_tasklet(sc, 1, false);
--	} else {
--		ath_flushrecv(sc);
--	}
--
- 	tasklet_enable(&sc->intr_tq);
- 
- 	return ret;
-@@ -265,7 +257,6 @@ static int ath_reset_internal(struct ath
- 	struct ath_common *common = ath9k_hw_common(ah);
- 	struct ath9k_hw_cal_data *caldata = NULL;
- 	bool fastcc = true;
--	bool flush = false;
- 	int r;
- 
- 	__ath_cancel_work(sc);
-@@ -279,11 +270,10 @@ static int ath_reset_internal(struct ath
- 
- 	if (!hchan) {
- 		fastcc = false;
--		flush = true;
- 		hchan = ah->curchan;
++		trace_mmc_req_done( mmc_hostname(host), cmd->opcode, err,
++			cmd->resp[0], cmd->resp[1],
++			cmd->resp[2], cmd->resp[3]);
++
+ 		if (mrq->data) {
+ 			pr_debug("%s:     %d bytes transferred: %d\n",
+ 				mmc_hostname(host),
+@@ -202,6 +209,9 @@ mmc_start_request(struct mmc_host *host,
+ 			 mrq->sbc->arg, mrq->sbc->flags);
  	}
  
--	if (!ath_prepare_reset(sc, retry_tx, flush))
-+	if (!ath_prepare_reset(sc, retry_tx))
- 		fastcc = false;
- 
- 	ath_dbg(common, CONFIG, "Reset to %u MHz, HT40: %d fastcc: %d\n",
-@@ -820,7 +810,7 @@ static void ath9k_stop(struct ieee80211_
- 		ath9k_hw_cfg_gpio_input(ah, ah->led_pin);
- 	}
- 
--	ath_prepare_reset(sc, false, true);
-+	ath_prepare_reset(sc, false);
- 
- 	if (sc->rx.frag) {
- 		dev_kfree_skb_any(sc->rx.frag);
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -472,6 +472,13 @@ start_recv:
- 	return 0;
- }
- 
-+static void ath_flushrecv(struct ath_softc *sc)
-+{
-+	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
-+		ath_rx_tasklet(sc, 1, true);
-+	ath_rx_tasklet(sc, 1, false);
-+}
++	trace_mmc_start_req( mmc_hostname(host), mrq->cmd->opcode,
++				mrq->cmd->arg, mrq->cmd->flags);
 +
- bool ath_stoprecv(struct ath_softc *sc)
- {
- 	struct ath_hw *ah = sc->sc_ah;
-@@ -482,6 +489,8 @@ bool ath_stoprecv(struct ath_softc *sc)
- 	ath9k_hw_setrxfilter(ah, 0);
- 	stopped = ath9k_hw_stopdmarecv(ah, &reset);
- 
-+	ath_flushrecv(sc);
+ 	pr_debug("%s: starting CMD%u arg %08x flags %08x\n",
+ 		 mmc_hostname(host), mrq->cmd->opcode,
+ 		 mrq->cmd->arg, mrq->cmd->flags);
+diff -uprN -X linux-3.7.5-vanilla/Documentation/dontdiff linux-3.7.5-vanilla/include/trace/events/mmc.h linux-3.7.5-patched/include/trace/events/mmc.h
+--- linux-3.7.5-vanilla/include/trace/events/mmc.h	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.7.5-patched/include/trace/events/mmc.h	2013-01-31 09:38:32.002851000 +0100
+@@ -0,0 +1,86 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM mmc
 +
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
- 		ath_edma_stop_recv(sc);
- 	else
-@@ -498,13 +507,6 @@ bool ath_stoprecv(struct ath_softc *sc)
- 	return stopped && !reset;
- }
- 
--void ath_flushrecv(struct ath_softc *sc)
--{
--	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
--		ath_rx_tasklet(sc, 1, true);
--	ath_rx_tasklet(sc, 1, false);
--}
--
- static bool ath_beacon_dtim_pending_cab(struct sk_buff *skb)
- {
- 	/* Check whether the Beacon frame has DTIM indicating buffered bc/mc */
++#if !defined(_TRACE_MMC_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_MMC_H
++
++#include <linux/tracepoint.h>
++
++DECLARE_EVENT_CLASS(start_req,
++	TP_PROTO(const char * host, unsigned int cmd,
++	         unsigned int arg, unsigned int flags),
++	TP_ARGS(host, cmd, arg, flags),
++
++	TP_STRUCT__entry(
++	    __string(host, host)
++	    __field(unsigned int, cmd   )
++	    __field(unsigned int, arg )
++	    __field(unsigned int, flags )
++	   ),
++
++	TP_fast_assign(
++	    __assign_str(host, host);
++	    __entry->cmd = cmd;
++	    __entry->arg = arg;
++	    __entry->flags = flags;
++	),
++
++	TP_printk("host=%s CMD%u arg=%08x flags=%08x",
++	       __get_str(host), __entry->cmd,
++	      __entry->arg, __entry->flags )
++);
++
++DEFINE_EVENT(start_req, mmc_start_req,
++	TP_PROTO(const char *host, unsigned int cmd,
++	     unsigned int arg, unsigned int flags),
++	TP_ARGS(host, cmd, arg, flags)
++);
++
++
++DECLARE_EVENT_CLASS(req_done,
++	TP_PROTO(const char *host, unsigned int cmd,
++		int err, unsigned int resp1, 
++		unsigned int resp2, unsigned int resp3,
++		unsigned int resp4),
++	TP_ARGS(host, cmd, err, resp1, resp2, resp3, resp4),
++
++	TP_STRUCT__entry(
++	    __string(host, host)
++	    __field(unsigned int, cmd   )
++	    __field(         int, err )
++	    __field(unsigned int, resp1 )
++	    __field(unsigned int, resp2 )
++	    __field(unsigned int, resp3 )
++	    __field(unsigned int, resp4 )
++	   ),
++
++	TP_fast_assign(
++	    __assign_str(host, host);
++	    __entry->cmd = cmd;
++	    __entry->err = err;
++	    __entry->resp1 = resp1;
++	    __entry->resp2 = resp2;
++	    __entry->resp3 = resp3;
++	    __entry->resp4 = resp4;
++	),
++
++	TP_printk("host=%s CMD%u err=%08x resp1=%08x resp2=%08x resp3=%08x resp4=%08x",
++		__get_str(host), __entry->cmd,
++		__entry->err, __entry->resp1, 
++		__entry->resp2, __entry->resp3,
++		__entry->resp4 )
++);
++
++DEFINE_EVENT(req_done, mmc_req_done,
++	TP_PROTO(const char *host, unsigned int cmd,
++		int err, unsigned int resp1, 
++		unsigned int resp2, unsigned int resp3,
++		unsigned int resp4),
++	TP_ARGS(host, cmd, err, resp1, resp2, resp3, resp4)
++);
++
++
++#endif /* _TRACE_MMC_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
