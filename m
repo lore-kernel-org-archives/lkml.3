@@ -1,231 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964787Ab3BAK61 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:58:27 -0500
-Received: from mga14.intel.com ([143.182.124.37]:56541 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161013Ab3BAK6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:58:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="251349742"
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        David Howells <dhowells@redhat.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: [PATCH v2] rwsem-spinlock: let rwsem write lock stealable
-Date: Fri,  1 Feb 2013 18:59:16 +0800
-Message-Id: <1359716356-23865-1-git-send-email-yuanhan.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1756667Ab3BAK6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:58:35 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52176 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964778Ab3BAK60 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:58:26 -0500
+Date: Fri, 1 Feb 2013 02:58:05 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-e6ab07d027d47e55d8a5c0f33b16dfdd3e18c96f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org, jolsa@redhat.com
+In-Reply-To: <1358845787-1350-20-git-send-email-namhyung@kernel.org>
+References: <1358845787-1350-20-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf evlist: Add --group option
+Git-Commit-ID: e6ab07d027d47e55d8a5c0f33b16dfdd3e18c96f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:58:11 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We(Linux Kernel Performance project) found a regression introduced by
-commit 5a50508, which just convert all mutex lock to rwsem write lock.
-The semantics is same, but the results is quite huge in some cases.
-After investigation, we found the root cause: mutex support lock
-stealing. Here is the link for the detailed regression report:
-    https://lkml.org/lkml/2013/1/29/84
+Commit-ID:  e6ab07d027d47e55d8a5c0f33b16dfdd3e18c96f
+Gitweb:     http://git.kernel.org/tip/e6ab07d027d47e55d8a5c0f33b16dfdd3e18c96f
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 22 Jan 2013 18:09:47 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 31 Jan 2013 13:07:49 -0300
 
-Ingo suggests to add write lock stealing to rwsem as well:
-    "I think we should allow lock-steal between rwsem writers - that
-     will not hurt fairness as most rwsem fairness concerns relate to
-     reader vs. writer fairness"
+perf evlist: Add --group option
 
-And here is the rwsem-spinlock version.
+Add '-g/--group' option for showing event groups.  For simplicity it is
+currently not compatible with other options.
 
-With this patch, we got a double performance increase in one test box
-with following aim7 workfile:
-    FILESIZE: 1M
-    POOLSIZE: 10M
-    10 fork_test
+  $ perf evlist --group
+  {ref-cycles,cycles}
 
-some /usr/bin/time output w/o patch      some /usr/bin/time_output with patch
-----------------------------------------------------------------------------
-Percent of CPU this job got: 369%        Percent of CPU this job got: 537%
-Voluntary context switches: 640595016    Voluntary context switches: 157915561
-----------------------------------------------------------------------------
-You will see we got a 45% increase of CPU usage and saves about 3/4
-voluntary context switches.
+  $ perf evlist
+  ref-cycles
+  cycles
 
-Here is the .nr_running filed for all CPUs from /proc/sched_debug.
-
-output w/o this patch:
-----------------------
-cpu 00:   0   0   ...   0   0   0   0   0   0   0   1   0   1 .... 0   0
-cpu 01:   0   0   ...   1   0   0   0   0   0   1   1   0   1 .... 0   0
-cpu 02:   0   0   ...   1   1   0   0   0   1   0   0   1   0 .... 1   1
-cpu 03:   0   0   ...   0   1   0   0   0   1   1   0   1   1 .... 0   0
-cpu 04:   0   1   ...   0   0   2   1   1   2   1   0   1   0 .... 1   0
-cpu 05:   0   1   ...   0   0   2   1   1   2   1   1   1   1 .... 0   0
-cpu 06:   0   0   ...   2   0   0   1   0   0   1   0   0   0 .... 0   0
-cpu 07:   0   0   ...   2   0   0   0   1   0   1   1   0   0 .... 1   0
-cpu 08:   0   0   ...   1   0   0   0   1   0   0   1   0   0 .... 0   1
-cpu 09:   0   0   ...   1   0   0   0   1   0   0   1   0   0 .... 0   1
-cpu 10:   0   0   ...   0   0   0   2   0   0   1   0   1   1 .... 1   2
-cpu 11:   0   0   ...   0   0   0   2   2   0   1   0   1   0 .... 1   2
-cpu 12:   0   0   ...   2   0   0   0   1   1   3   1   1   1 .... 1   0
-cpu 13:   0   0   ...   2   0   0   0   1   1   3   1   1   0 .... 1   1
-cpu 14:   0   0   ...   0   0   0   2   0   0   1   1   0   0 .... 1   0
-cpu 15:   0   0   ...   1   0   0   2   0   0   1   1   0   0 .... 0   0
-
-output with this patch:
------------------------
-cpu 00:   0   0   ...   1   1   2   1   1   1   2   1   1   1 .... 1   3
-cpu 01:   0   0   ...   1   1   1   1   1   1   2   1   1   1 .... 1   3
-cpu 02:   0   0   ...   2   2   3   2   0   2   1   2   1   1 .... 1   1
-cpu 03:   0   0   ...   2   2   3   2   1   2   1   2   1   1 .... 1   1
-cpu 04:   0   1   ...   2   0   0   1   0   1   3   1   1   1 .... 1   1
-cpu 05:   0   1   ...   2   0   1   1   0   1   2   1   1   1 .... 1   1
-cpu 06:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
-cpu 07:   0   0   ...   2   1   1   2   0   1   2   1   1   1 .... 2   1
-cpu 08:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
-cpu 09:   0   0   ...   1   1   1   1   1   1   1   1   1   1 .... 0   0
-cpu 10:   0   0   ...   1   1   1   0   0   1   1   1   1   1 .... 0   0
-cpu 11:   0   0   ...   1   1   1   0   0   1   1   1   1   2 .... 1   0
-cpu 12:   0   0   ...   1   1   1   0   1   1   0   0   0   1 .... 2   1
-cpu 13:   0   0   ...   1   1   1   0   1   1   1   0   1   2 .... 2   0
-cpu 14:   0   0   ...   2   0   0   0   0   1   1   1   1   1 .... 2   2
-cpu 15:   0   0   ...   2   0   0   1   0   1   1   1   1   1 .... 2   2
-------------------------------------------------------------------------
-Where you can see that CPU is much busier with this patch.
-
-v2: make it stealable at __down_write_trylock as well, pointed by Michel
-
-Reported-by: LKP project <lkp@linux.intel.com>
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Michel Lespinasse <walken@google.com>
-Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Suggested-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1358845787-1350-20-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- lib/rwsem-spinlock.c |   69 +++++++++++++++++--------------------------------
- 1 files changed, 24 insertions(+), 45 deletions(-)
+ tools/perf/Documentation/perf-evlist.txt |  4 ++++
+ tools/perf/builtin-evlist.c              |  7 +++++++
+ tools/perf/util/evsel.c                  | 24 ++++++++++++++++++++++--
+ 3 files changed, 33 insertions(+), 2 deletions(-)
 
-diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
-index 7e0d6a5..7542afb 100644
---- a/lib/rwsem-spinlock.c
-+++ b/lib/rwsem-spinlock.c
-@@ -73,20 +73,13 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
- 		goto dont_wake_writers;
- 	}
+diff --git a/tools/perf/Documentation/perf-evlist.txt b/tools/perf/Documentation/perf-evlist.txt
+index 1521734..1ceb370 100644
+--- a/tools/perf/Documentation/perf-evlist.txt
++++ b/tools/perf/Documentation/perf-evlist.txt
+@@ -28,6 +28,10 @@ OPTIONS
+ --verbose=::
+ 	Show all fields.
  
--	/* if we are allowed to wake writers try to grant a single write lock
--	 * if there's a writer at the front of the queue
--	 * - we leave the 'waiting count' incremented to signify potential
--	 *   contention
-+	/*
-+	 * as we support write lock stealing, we can't set sem->activity
-+	 * to -1 here to indicate we get the lock. Instead, we wake it up
-+	 * to let it go get it again.
- 	 */
- 	if (waiter->flags & RWSEM_WAITING_FOR_WRITE) {
--		sem->activity = -1;
--		list_del(&waiter->list);
--		tsk = waiter->task;
--		/* Don't touch waiter after ->task has been NULLed */
--		smp_mb();
--		waiter->task = NULL;
--		wake_up_process(tsk);
--		put_task_struct(tsk);
-+		wake_up_process(waiter->task);
- 		goto out;
- 	}
++-g::
++--group::
++	Show event group information.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-list[1],
+diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
+index 1312a5e..85a5e35 100644
+--- a/tools/perf/builtin-evlist.c
++++ b/tools/perf/builtin-evlist.c
+@@ -39,6 +39,8 @@ int cmd_evlist(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN('F', "freq", &details.freq, "Show the sample frequency"),
+ 	OPT_BOOLEAN('v', "verbose", &details.verbose,
+ 		    "Show all event attr details"),
++	OPT_BOOLEAN('g', "group", &symbol_conf.event_group,
++		    "Show event group information"),
+ 	OPT_END()
+ 	};
+ 	const char * const evlist_usage[] = {
+@@ -50,5 +52,10 @@ int cmd_evlist(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (argc)
+ 		usage_with_options(evlist_usage, options);
  
-@@ -121,18 +114,10 @@ static inline struct rw_semaphore *
- __rwsem_wake_one_writer(struct rw_semaphore *sem)
- {
- 	struct rwsem_waiter *waiter;
--	struct task_struct *tsk;
--
--	sem->activity = -1;
- 
- 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
--	list_del(&waiter->list);
-+	wake_up_process(waiter->task);
- 
--	tsk = waiter->task;
--	smp_mb();
--	waiter->task = NULL;
--	wake_up_process(tsk);
--	put_task_struct(tsk);
- 	return sem;
++	if (symbol_conf.event_group && (details.verbose || details.freq)) {
++		pr_err("--group option is not compatible with other options\n");
++		usage_with_options(evlist_usage, options);
++	}
++
+ 	return __cmd_evlist(input_name, &details);
  }
- 
-@@ -204,7 +189,6 @@ int __down_read_trylock(struct rw_semaphore *sem)
- 
- /*
-  * get a write lock on the semaphore
-- * - we increment the waiting count anyway to indicate an exclusive lock
-  */
- void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 94e7404..a547015 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1389,7 +1389,27 @@ int perf_evsel__fprintf(struct perf_evsel *evsel,
+ 			struct perf_attr_details *details, FILE *fp)
  {
-@@ -214,37 +198,32 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	bool first = true;
+-	int printed = fprintf(fp, "%s", perf_evsel__name(evsel));
++	int printed = 0;
++
++	if (symbol_conf.event_group) {
++		struct perf_evsel *pos;
++
++		if (!perf_evsel__is_group_leader(evsel))
++			return 0;
++
++		if (evsel->nr_members > 1)
++			printed += fprintf(fp, "%s{", evsel->group_name ?: "");
++
++		printed += fprintf(fp, "%s", perf_evsel__name(evsel));
++		for_each_group_member(pos, evsel)
++			printed += fprintf(fp, ",%s", perf_evsel__name(pos));
++
++		if (evsel->nr_members > 1)
++			printed += fprintf(fp, "}");
++		goto out;
++	}
++
++	printed += fprintf(fp, "%s", perf_evsel__name(evsel));
  
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
--		/* granted */
--		sem->activity = -1;
--		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
--		goto out;
--	}
--
--	tsk = current;
--	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
--
- 	/* set up my own style of waitqueue */
-+	tsk = current;
- 	waiter.task = tsk;
- 	waiter.flags = RWSEM_WAITING_FOR_WRITE;
--	get_task_struct(tsk);
--
- 	list_add_tail(&waiter.list, &sem->wait_list);
- 
--	/* we don't need to touch the semaphore struct anymore */
--	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
--
--	/* wait to be given the lock */
-+	/* wait for someone to release the lock */
- 	for (;;) {
--		if (!waiter.task)
-+		/*
-+		 * That is the key to support write lock stealing: allows the
-+		 * task already on CPU to get the lock soon rather than put
-+		 * itself into sleep and waiting for system woke it or someone
-+		 * else in the head of the wait list up.
-+		 */
-+		if (sem->activity == 0)
- 			break;
--		schedule();
- 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-+		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
-+		schedule();
-+		raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 	if (details->verbose || details->freq) {
+ 		printed += comma_fprintf(fp, &first, " sample_freq=%" PRIu64,
+@@ -1430,7 +1450,7 @@ int perf_evsel__fprintf(struct perf_evsel *evsel,
+ 		if_print(bp_type);
+ 		if_print(branch_sample_type);
  	}
-+	/* got the lock */
-+	sem->activity = -1;
-+	list_del(&waiter.list);
- 
--	tsk->state = TASK_RUNNING;
-- out:
--	;
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+-
++out:
+ 	fputc('\n', fp);
+ 	return ++printed;
  }
- 
- void __sched __down_write(struct rw_semaphore *sem)
-@@ -262,8 +241,8 @@ int __down_write_trylock(struct rw_semaphore *sem)
- 
- 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
--		/* granted */
-+	if (sem->activity == 0) {
-+		/* got the lock */
- 		sem->activity = -1;
- 		ret = 1;
- 	}
--- 
-1.7.7.6
-
