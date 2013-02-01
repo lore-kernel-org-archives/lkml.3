@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab3BAJYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:24:41 -0500
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:45936 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211Ab3BAJYj (ORCPT
+	id S1756273Ab3BAJZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:25:58 -0500
+Received: from sr-smtp.usish.com ([210.5.144.203]:53583 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755721Ab3BAJZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:24:39 -0500
+	Fri, 1 Feb 2013 04:25:56 -0500
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Tao Ma'" <tm@tao.ma>
+Cc: <linux-scsi@vger.kernel.org>, "'LKML'" <linux-kernel@vger.kernel.org>
+References: <510B5CFC.2040801@tao.ma> <008101ce0059$2a4976b0$7edc6410$@com> <510B8836.6090801@tao.ma>
+In-Reply-To: <510B8836.6090801@tao.ma>
+Subject: RE: How to online remove an error scsi disk from the system?
+Date: Fri, 1 Feb 2013 17:24:51 +0800
+Message-ID: <008b01ce005d$ff8c8200$fea58600$@com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 1 Feb 2013 10:24:38 +0100
-Message-ID: <CA+icZUVR1MYTBfrLy2-WiXPjn6f7FYdkyDPrjPbEXo1SDjH8Yg@mail.gmail.com>
-Subject: [3.8-rcX] <file:Documentation/lockdep-design.txt> up2date?
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Ingo Molnar <mingo@redhat.com>, Arjan van de Ven <arjan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac4AXP/dtQXeOwGUQPW6w7lDDs3+YwAAFStw
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-is lockdep-design.txt up2date with Linux v3.8-rcX?
+On 02/01/2013 04:50 PM, Jack Wang wrote:
+> Hi All,
+> 	In our product system, we have several sata disks attached to one 
+> machine. So when one of the disk fails, the jbd2(yes, we use ext4) 
+> will hang forever and we will get something in /var/log/messages like
+below.
+> It seems to me that the io sent to the scsi layer is never returned 
+> back with -EIO which is a little bit surprised for me(It should be a 
+> timeout somewhere, right?). We have tried echo "offline" > 
+> /sys/block/sdl/device/state, but it doesn't work. So is there any way 
+> for us to let the scsi device returns all the io requests back with 
+> EIO so that all the end_io can be called accordingly? Am I missing
+something here?
+> 
+> Thanks,
+> Tao
+> [Jack Wang]
+> Hi Tao,
+> 
+> Have you tried:
+>  echo 1 > /sys/block/sdv/device/delete
+It will do some IO first so it will hang doing IO.
+>  echo "- - -" > /sys/class/scsi_host/host
+What do you mean for this line?
 
-I have here in my kernel-config:
+[Jack Wang] Sorry I mean to let the driver rescan to get the disk back.
+The line should be :
+ echo "- - -" > /sys/class/scsi_host/hostx/scan.
 
-$ grep \_LOCK /boot/config-$(uname -r)
-CONFIG_LOCKDEP_SUPPORT=y
-CONFIG_I8253_LOCK=y
-CONFIG_FILE_LOCKING=y
-CONFIG_LOCKUP_DETECTOR=y
-# CONFIG_DEBUG_LOCK_ALLOC is not set
-# CONFIG_PROVE_LOCKING is not set
-# CONFIG_LOCK_STAT is not set
-# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+Per above delete does not work , so no need to run this.
+> 
+> another way is :
+> find out which phy the disk attached to and:
+> echo 1 > /sys/class/sas_phy/phy-x:x:x/link_reset
+sorry, I have done it, but there is no response.
 
-Do I need to enable more config-options (one or more of the above) to see...
+[Jack Wang] 
+What about
+echo 1 > /sys/class/sas_phy/phy-x:x:x/hard_reset
 
- 271         grep "lock-classes" /proc/lockdep_stats
+?
+Thanks,
+Tao
+> 
+> Jack
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in the body of a message to majordomo@vger.kernel.org 
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
- 281         grep "BD" /proc/lockdep
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the
+body of a message to majordomo@vger.kernel.org More majordomo info at
+http://vger.kernel.org/majordomo-info.html
 
-I have none of these files, but...
-
-$ cat /proc/locks
-1: POSIX  ADVISORY  READ  8139 07:00:395776 128 128
-2: POSIX  ADVISORY  READ  8139 07:00:396862 1073741826 1073742335
-3: POSIX  ADVISORY  READ  8139 07:00:393673 128 128
-4: POSIX  ADVISORY  READ  8139 07:00:409154 1073741826 1073742335
-5: POSIX  ADVISORY  WRITE 8139 07:00:409114 0 EOF
-6: POSIX  ADVISORY  WRITE 6757 07:00:409055 0 0
-7: POSIX  ADVISORY  READ  6755 07:00:409053 128 128
-8: POSIX  ADVISORY  READ  6755 07:00:409051 1073741826 1073742335
-9: POSIX  ADVISORY  READ  6749 07:00:409053 128 128
-10: POSIX  ADVISORY  READ  6749 07:00:409051 1073741826 1073742335
-11: POSIX  ADVISORY  WRITE 1163 00:0f:8077 0 EOF
-12: FLOCK  ADVISORY  WRITE 1137 00:0f:8060 0 EOF
-
-BTW, "config LOCKDEP" has no help-text and no pointer to
-Documentation/lockdep-design.txt (assuming this is the correct
-reference to LOCKDEP stuff).
-See also my posting in [2].
-Furthermore, lockdep-design.txt says no word to kernel-config options
-(which one to enable - in case of debug/verbosity++?)!
-
-If this is all correct, can you update the docs, please!?
-
-Regards,
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=Documentation/lockdep-design.txt
-[2] http://marc.info/?l=linux-kernel&m=135970976716034&w=2
