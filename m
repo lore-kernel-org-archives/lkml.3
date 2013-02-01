@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab3BAMzb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 07:55:31 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:19696 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753885Ab3BAMzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 07:55:25 -0500
-Subject: [PATCH 2/4] nfsd: use proper net while reading "exports" file
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 01 Feb 2013 15:56:17 +0300
-Message-ID: <20130201125617.3257.30957.stgit@localhost.localdomain>
-In-Reply-To: <20130201125210.3257.46454.stgit@localhost.localdomain>
-References: <20130201125210.3257.46454.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755958Ab3BAM7Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:59:24 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36602 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab3BAM7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 07:59:21 -0500
+Date: Fri, 1 Feb 2013 23:59:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
+        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: linux-net for ARC port
+Message-Id: <20130201235912.2d3cf2dfdbbfc1cb8e3e2717@canb.auug.org.au>
+In-Reply-To: <CAMuHMdVLZ5u-q2+U_bQjOvAxNkAoqCZdQRRUKBFnreiu8Kd4hQ@mail.gmail.com>
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
+	<5102BB38.3050207@imgtec.com>
+	<201301260025.10020.arnd@arndb.de>
+	<51062460.9060902@synopsys.com>
+	<20130130074452.f67abeeaae3a00d046f5699f@canb.auug.org.au>
+	<510B7A3C.2070301@synopsys.com>
+	<20130201230542.f59aba41c018bd378775544f@canb.auug.org.au>
+	<CAMuHMdVLZ5u-q2+U_bQjOvAxNkAoqCZdQRRUKBFnreiu8Kd4hQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__1_Feb_2013_23_59_12_+1100_h9w_DbgvsXcJBGN4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Functuon "exports_open" is used for both "/proc/fs/nfs/exports" and
-"/proc/fs/nfsd/exports" files.
-Now NFSd filesystem is containerised, so proper net can be taken from
-superblock for "/proc/fs/nfsd/exports" reader.
-But for "/proc/fs/nfsd/exports" only current->nsproxy->net_ns can be used.
+--Signature=_Fri__1_Feb_2013_23_59_12_+1100_h9w_DbgvsXcJBGN4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/nfsctl.c |   31 +++++++++++++++++++++++++------
- 1 files changed, 25 insertions(+), 6 deletions(-)
+Hi Geert,
 
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index 2eb03c1..1825f72 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -125,11 +125,11 @@ static const struct file_operations transaction_ops = {
- 	.llseek		= default_llseek,
- };
- 
--static int exports_open(struct inode *inode, struct file *file)
-+static int exports_net_open(struct net *net, struct file *file)
- {
- 	int err;
- 	struct seq_file *seq;
--	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
-+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
- 
- 	err = seq_open(file, &nfs_exports_op);
- 	if (err)
-@@ -140,8 +140,26 @@ static int exports_open(struct inode *inode, struct file *file)
- 	return 0;
- }
- 
--static const struct file_operations exports_operations = {
--	.open		= exports_open,
-+static int exports_proc_open(struct inode *inode, struct file *file)
-+{
-+	return exports_net_open(current->nsproxy->net_ns, file);
-+}
-+
-+static const struct file_operations exports_proc_operations = {
-+	.open		= exports_proc_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int exports_nfsd_open(struct inode *inode, struct file *file)
-+{
-+	return exports_net_open(inode->i_sb->s_fs_info, file);
-+}
-+
-+static const struct file_operations exports_nfsd_operations = {
-+	.open		= exports_nfsd_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
- 	.release	= seq_release,
-@@ -1018,7 +1036,7 @@ static ssize_t write_recoverydir(struct file *file, char *buf, size_t size)
- static int nfsd_fill_super(struct super_block * sb, void * data, int silent)
- {
- 	static struct tree_descr nfsd_files[] = {
--		[NFSD_List] = {"exports", &exports_operations, S_IRUGO},
-+		[NFSD_List] = {"exports", &exports_nfsd_operations, S_IRUGO},
- 		[NFSD_Export_features] = {"export_features",
- 					&export_features_operations, S_IRUGO},
- 		[NFSD_FO_UnlockIP] = {"unlock_ip",
-@@ -1081,7 +1099,8 @@ static int create_proc_exports_entry(void)
- 	entry = proc_mkdir("fs/nfs", NULL);
- 	if (!entry)
- 		return -ENOMEM;
--	entry = proc_create("exports", 0, entry, &exports_operations);
-+	entry = proc_create("exports", 0, entry,
-+				 &exports_proc_operations);
- 	if (!entry)
- 		return -ENOMEM;
- 	return 0;
+On Fri, 1 Feb 2013 13:33:13 +0100 Geert Uytterhoeven <geert@linux-m68k.org>=
+ wrote:
+>
+> You're not flying into FOSDEM, tomorrow?
 
+Not unless you are paying :-)
+
+/me starts packing in anticipation ;-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__1_Feb_2013_23_59_12_+1100_h9w_DbgvsXcJBGN4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRC7wgAAoJEECxmPOUX5FE/ucP/judTk9mBSPcQLu4VEYk8aaU
+W6NzMusKYHGkKuL2uls0/4IiTLAbd9/1hbo30dWwb4S6KVMde0bFI7JP/XYGT1FD
+bcvSf4hre/A4LbCULFfv2el88SsqWZYvSdIMq752JvoiMS86UCHplC5bwUEPnLet
+DvJsjxSWPFCntD11VnEArsFtShakOM+aoTe9X07+A7m5pP8+nCCQB6V8iZNb7Xke
+UxBjRNKUdgLtKqyKwRxH98tVv+BBWeMXwHiPCbWi8wZBQ5cDeNwrwhyGwukKlahc
+QziP4GdOF+XjeSRenCVqFt82hham8wR/M1ALhdEOFYBIQcmTkmaOFYmXw6UBqRVd
+pCjnfM2yg8DyHvs2919rXPeUzegGOPymvIEeDV6Qa/ygqNL10d8uTGt8mqHEdb0U
+TMfDXM6NbkGcj1myNolNnz/MSUcerPWoyGq89KucFUT5phWMZN4aAFm6NXevJq4e
+IvR+u0WiqynKOyIHD9zqa56kS0JjoHjrzXxZTsLEOBHKGoHuWIHDnUt+XhPxh//m
+V82uJbhPxDK/ho/xvFMMhLnA1s4vNmuYZTyOTtH8LQsUyop821iKJ6QpWWw0hMLJ
+iKrD8YTuv2fPq5fbs1U8zhXMZfSyA/RCJDTOMY/EiA28sAtGyV32fsZY4jcUSI4W
+R1++KiJOlWuvhZzz1n+B
+=9q6L
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__1_Feb_2013_23_59_12_+1100_h9w_DbgvsXcJBGN4--
