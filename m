@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422666Ab3BANMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:12:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45185 "EHLO mail.kernel.org"
+	id S1422719Ab3BANMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:12:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45277 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422631Ab3BANMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:12:18 -0500
+	id S1422670Ab3BANMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:12:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Jackson <ajax@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        stathis <stathis@npcglib.org>, Mihai Moldovan <ionic@ionic.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 52/89] iommu/intel: disable DMAR for g4x integrated gfx
-Date: Fri,  1 Feb 2013 14:08:07 +0100
-Message-Id: <20130201130211.240353984@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Ben Greear <greearb@candelatech.com>
+Subject: [ 55/89] NFSv4: Fix NFSv4 reference counting for trunked sessions
+Date: Fri,  1 Feb 2013 14:08:10 +0100
+Message-Id: <20130201130211.460279617@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -28,74 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 9452618e7462181ed9755236803b6719298a13ce upstream.
+commit 4ae19c2dd713edb7b8ad3d4ab9d234ed5dcb6b98 upstream.
 
-DMAR support on g4x/gm45 integrated gpus seems to be totally busted.
-So don't bother, but instead disable it by default to allow distros to
-unconditionally enable DMAR support.
+The reference counting in nfs4_init_client assumes wongly that it
+is safe for nfs4_discover_server_trunking() to return a pointer to a
+nfs_client prior to bumping the reference count.
 
-v2: Actually wire up the right quirk entry, spotted by Adam Jackson.
-
-Note that according to intel marketing materials only g45 and gm45
-support DMAR/VT-d. So we have reports for all relevant gen4 pci ids by
-now. Still, keep all the other gen4 ids in the quirk table in case the
-marketing stuff confused me again, which would not be the first time.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51921
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=538163
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=538163
-Cc: Adam Jackson <ajax@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: stable@vger.kernel.org
-Acked-By: David Woodhouse <David.Woodhouse@intel.com>
-Tested-by: stathis <stathis@npcglib.org>
-Tested-by: Mihai Moldovan <ionic@ionic.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Mihai Moldovan <ionic@ionic.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Cc: Ben Greear <greearb@candelatech.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |   21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ fs/nfs/nfs4client.c |   31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -4234,6 +4234,21 @@ static struct iommu_ops intel_iommu_ops
- 	.pgsize_bitmap	= INTEL_IOMMU_PGSIZES,
- };
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -235,11 +235,10 @@ struct nfs_client *nfs4_init_client(stru
+ 	error = nfs4_discover_server_trunking(clp, &old);
+ 	if (error < 0)
+ 		goto error;
++	nfs_put_client(clp);
+ 	if (clp != old) {
+ 		clp->cl_preserve_clid = true;
+-		nfs_put_client(clp);
+ 		clp = old;
+-		atomic_inc(&clp->cl_count);
+ 	}
  
-+static void __devinit quirk_iommu_g4x_gfx(struct pci_dev *dev)
-+{
-+	/* G4x/GM45 integrated gfx dmar support is totally busted. */
-+	printk(KERN_INFO "DMAR: Disabling IOMMU for graphics on this chipset\n");
-+	dmar_map_gfx = 0;
-+}
-+
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e00, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e10, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e20, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e30, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e40, quirk_iommu_g4x_gfx);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e90, quirk_iommu_g4x_gfx);
-+
- static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
- {
+ 	return clp;
+@@ -305,7 +304,7 @@ int nfs40_walk_client_list(struct nfs_cl
+ 		.clientid	= new->cl_clientid,
+ 		.confirm	= new->cl_confirm,
+ 	};
+-	int status;
++	int status = -NFS4ERR_STALE_CLIENTID;
+ 
+ 	spin_lock(&nn->nfs_client_lock);
+ 	list_for_each_entry_safe(pos, n, &nn->nfs_client_list, cl_share_link) {
+@@ -331,28 +330,28 @@ int nfs40_walk_client_list(struct nfs_cl
+ 
+ 		if (prev)
+ 			nfs_put_client(prev);
++		prev = pos;
+ 
+ 		status = nfs4_proc_setclientid_confirm(pos, &clid, cred);
+-		if (status == 0) {
++		switch (status) {
++		case -NFS4ERR_STALE_CLIENTID:
++			break;
++		case 0:
+ 			nfs4_swap_callback_idents(pos, new);
+ 
+-			nfs_put_client(pos);
++			prev = NULL;
+ 			*result = pos;
+ 			dprintk("NFS: <-- %s using nfs_client = %p ({%d})\n",
+ 				__func__, pos, atomic_read(&pos->cl_count));
+-			return 0;
+-		}
+-		if (status != -NFS4ERR_STALE_CLIENTID) {
+-			nfs_put_client(pos);
+-			dprintk("NFS: <-- %s status = %d, no result\n",
+-				__func__, status);
+-			return status;
++		default:
++			goto out;
+ 		}
+ 
+ 		spin_lock(&nn->nfs_client_lock);
+-		prev = pos;
+ 	}
++	spin_unlock(&nn->nfs_client_lock);
+ 
++out:
  	/*
-@@ -4242,12 +4257,6 @@ static void __devinit quirk_iommu_rwbf(s
+ 	 * No matching nfs_client found.  This should be impossible,
+ 	 * because the new nfs_client has already been added to
+@@ -362,9 +361,8 @@ int nfs40_walk_client_list(struct nfs_cl
  	 */
- 	printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
- 	rwbf_quirk = 1;
--
--	/* https://bugzilla.redhat.com/show_bug.cgi?id=538163 */
--	if (dev->revision == 0x07) {
--		printk(KERN_INFO "DMAR: Disabling IOMMU for graphics on this chipset\n");
--		dmar_map_gfx = 0;
--	}
+ 	if (prev)
+ 		nfs_put_client(prev);
+-	spin_unlock(&nn->nfs_client_lock);
+-	pr_err("NFS: %s Error: no matching nfs_client found\n", __func__);
+-	return -NFS4ERR_STALE_CLIENTID;
++	dprintk("NFS: <-- %s status = %d\n", __func__, status);
++	return status;
  }
  
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_rwbf);
+ #ifdef CONFIG_NFS_V4_1
+@@ -472,6 +470,7 @@ int nfs41_walk_client_list(struct nfs_cl
+ 		if (!nfs4_match_serverowners(pos, new))
+ 			continue;
+ 
++		atomic_inc(&pos->cl_count);
+ 		spin_unlock(&nn->nfs_client_lock);
+ 		dprintk("NFS: <-- %s using nfs_client = %p ({%d})\n",
+ 			__func__, pos, atomic_read(&pos->cl_count));
 
 
