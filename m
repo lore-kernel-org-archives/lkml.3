@@ -1,124 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab3BAKYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:24:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044Ab3BAKYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:24:05 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
-        Andreas Hollmann <hollmann@in.tum.de>
-Subject: [PATCH] perf: Fix event group context move
-Date: Fri,  1 Feb 2013 11:23:45 +0100
-Message-Id: <1359714225-4231-1-git-send-email-jolsa@redhat.com>
+	id S1756526Ab3BAKYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:24:19 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17643 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755700Ab3BAKYP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:24:15 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 01 Feb 2013 02:21:38 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <pdeschrijver@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v5 06/10] clk: tegra: Workaround for Tegra114 MSENC problem
+Date: Fri, 1 Feb 2013 12:18:35 +0200
+Message-ID: <1359713962-16822-7-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-this fix is related to following discussion:
-http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
+Workaround a hardware bug in MSENC during clock enable.
 
-The fix is straightforward, but I think we could have
-same issue in perf_pmu_migrate_context function as well,
-which is used so far only by uncore bits.
-
-I think the perf_pmu_migrate_context function could be used
-for the group move in syscall as well (after some tuning)
-to have the group move on single place only.
-
-I'm not sure if I get to this soon, so I'm sending
-the fix for the original issue first.
-
-thanks,
-jirka
-
-
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
-When we have group with mixed events (hw/sw) we want to endup
-with group leader being in hw context. So if group leader is
-initialy sw event, we move all the events under hw context.
+ drivers/clk/tegra/clk-periph-gate.c |    9 +++++++++
+ drivers/clk/tegra/clk.h             |    1 +
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-The move is done for each event by removing it from its context
-and adding it back into proper one. As a part of the removal the
-event is automatically disabled, which is not what we want at
-this stage of creating groups.
-
-The fix is to initialize event state after removal from sw context.
-
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>
-Cc: Andreas Hollmann <hollmann@in.tum.de>
----
- kernel/events/core.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dd1c130..1e295bb 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -908,6 +908,15 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- }
+diff --git a/drivers/clk/tegra/clk-periph-gate.c b/drivers/clk/tegra/clk-periph-gate.c
+index 6dd5332..c9083fb 100644
+--- a/drivers/clk/tegra/clk-periph-gate.c
++++ b/drivers/clk/tegra/clk-periph-gate.c
+@@ -43,6 +43,8 @@ static DEFINE_SPINLOCK(periph_ref_lock);
  
- /*
-+ * Initialize event state based on the perf_event_attr::disabled.
-+ */
-+static inline void perf_event__state_init(struct perf_event *event)
-+{
-+	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
-+					      PERF_EVENT_STATE_INACTIVE;
-+}
+ #define periph_clk_to_bit(periph) (1 << (gate->clk_num % 32))
+ 
++#define LVL2_CLK_GATE_OVRE 0x554
 +
-+/*
-  * Called at perf_event creation and when events are attached/detached from a
-  * group.
-  */
-@@ -6194,8 +6203,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	event->overflow_handler	= overflow_handler;
- 	event->overflow_handler_context = context;
- 
--	if (attr->disabled)
--		event->state = PERF_EVENT_STATE_OFF;
-+	perf_event__state_init(event);
- 
- 	pmu = NULL;
- 
-@@ -6624,9 +6632,17 @@ SYSCALL_DEFINE5(perf_event_open,
- 
- 		mutex_lock(&gctx->mutex);
- 		perf_remove_from_context(group_leader);
-+
-+		/*
-+		 * Removing from the context ends up with disabled
-+		 * event. What we want here is event in the initial
-+		 * startup state, ready to be add into new context.
-+		 */
-+		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
- 			perf_remove_from_context(sibling);
-+			perf_event__state_init(sibling);
- 			put_ctx(gctx);
+ /* Peripheral gate clock ops */
+ static int clk_periph_is_enabled(struct clk_hw *hw)
+ {
+@@ -83,6 +85,13 @@ static int clk_periph_enable(struct clk_hw *hw)
  		}
- 		mutex_unlock(&gctx->mutex);
--- 
-1.7.11.7
+ 	}
+ 
++	if (gate->flags & TEGRA_PERIPH_WAR_1005168) {
++		writel_relaxed(0, gate->clk_base + LVL2_CLK_GATE_OVRE);
++		writel_relaxed(BIT(22), gate->clk_base + LVL2_CLK_GATE_OVRE);
++		udelay(1);
++		writel_relaxed(0, gate->clk_base + LVL2_CLK_GATE_OVRE);
++	}
++
+ 	spin_unlock_irqrestore(&periph_ref_lock, flags);
+ 
+ 	return 0;
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index 79f5e2a..8756d9f 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -371,6 +371,7 @@ struct tegra_clk_periph_gate {
+ #define TEGRA_PERIPH_NO_RESET BIT(0)
+ #define TEGRA_PERIPH_MANUAL_RESET BIT(1)
+ #define TEGRA_PERIPH_ON_APB BIT(2)
++#define TEGRA_PERIPH_WAR_1005168 BIT(3)
+ 
+ void tegra_periph_reset(struct tegra_clk_periph_gate *gate, bool assert);
+ extern const struct clk_ops tegra_clk_periph_gate_ops;
 
