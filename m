@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161101Ab3BAKse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:48:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38729 "EHLO mail.kernel.org"
+	id S1161143Ab3BAKsv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:48:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38776 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161086Ab3BAKs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:48:29 -0500
+	id S1161098Ab3BAKss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:48:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 03/15] can: pch_can: fix invalid error codes
-Date: Fri,  1 Feb 2013 11:48:36 +0100
-Message-Id: <20130201104756.710286011@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Abdallah Chatila <abdallah.chatila@ericsson.com>
+Subject: [ 15/15] x86/Sandy Bridge: Sandy Bridge workaround depends on CONFIG_PCI
+Date: Fri,  1 Feb 2013 11:48:48 +0100
+Message-Id: <20130201104757.599002119@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104756.470588207@linuxfoundation.org>
 References: <20130201104756.470588207@linuxfoundation.org>
@@ -26,31 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Sobrie <olivier@sobrie.be>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit ee50e135aeb048b90fab662e661c58b67341830b upstream.
+commit e43b3cec711a61edf047adf6204d542f3a659ef8 upstream.
 
-Errors in CAN protocol (location) are reported in data[3] of the can
-frame instead of data[2].
+early_pci_allowed() and read_pci_config_16() are only available if
+CONFIG_PCI is defined.
 
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
 
 ---
- drivers/net/can/pch_can.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/setup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -559,7 +559,7 @@ static void pch_can_error(struct net_dev
- 		stats->rx_errors++;
- 		break;
- 	case PCH_CRC_ERR:
--		cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
-+		cf->data[3] |= CAN_ERR_PROT_LOC_CRC_SEQ |
- 			       CAN_ERR_PROT_LOC_CRC_DEL;
- 		priv->can.can_stats.bus_error++;
- 		stats->rx_errors++;
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -633,6 +633,7 @@ static unsigned reserve_low = CONFIG_X86
+ 
+ static bool __init snb_gfx_workaround_needed(void)
+ {
++#ifdef CONFIG_PCI
+ 	int i;
+ 	u16 vendor, devid;
+ 	static const u16 snb_ids[] = {
+@@ -657,6 +658,7 @@ static bool __init snb_gfx_workaround_ne
+ 	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
+ 		if (devid == snb_ids[i])
+ 			return true;
++#endif
+ 
+ 	return false;
+ }
 
 
