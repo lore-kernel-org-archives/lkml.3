@@ -1,102 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422668Ab3BAKrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:47:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38613 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755828Ab3BAKrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:47:46 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Bottomley <JBottomley@Parallels.com>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 05/15] ARM: DMA: Fix struct page iterator in dma_cache_maint() to work with sparsemem
-Date: Fri,  1 Feb 2013 11:48:38 +0100
-Message-Id: <20130201104756.848500935@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
-In-Reply-To: <20130201104756.470588207@linuxfoundation.org>
-References: <20130201104756.470588207@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1756957Ab3BALDS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 06:03:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52275 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626Ab3BALDN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 06:03:13 -0500
+Date: Fri, 1 Feb 2013 03:02:46 -0800
+From: tip-bot for Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Message-ID: <tip-886c3b2d677fe248cce8101fa66a1b3e05c3ba16@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, robert.richter@amd.com,
+        anton@au1.ibm.com, ak@linux.intel.com, tglx@linutronix.de,
+        sukadev@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, robert.richter@amd.com,
+        anton@au1.ibm.com, ak@linux.intel.com, sukadev@linux.vnet.ibm.com,
+        tglx@linutronix.de
+In-Reply-To: <20130123062528.GE13720@us.ibm.com>
+References: <20130123062528.GE13720@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/POWER7:
+  Make some POWER7 events available in sysfs
+Git-Commit-ID: 886c3b2d677fe248cce8101fa66a1b3e05c3ba16
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 03:02:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Commit-ID:  886c3b2d677fe248cce8101fa66a1b3e05c3ba16
+Gitweb:     http://git.kernel.org/tip/886c3b2d677fe248cce8101fa66a1b3e05c3ba16
+Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+AuthorDate: Tue, 22 Jan 2013 22:25:29 -0800
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 31 Jan 2013 13:07:51 -0300
 
-------------------
+perf/POWER7: Make some POWER7 events available in sysfs
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+Make some POWER7-specific perf events available in sysfs.
 
-commit 15653371c67c3fbe359ae37b720639dd4c7b42c5 upstream.
+	$ /bin/ls -1 /sys/bus/event_source/devices/cpu/events/
+	branch-instructions
+	branch-misses
+	cache-misses
+	cache-references
+	cpu-cycles
+	instructions
+	PM_BRU_FIN
+	PM_BRU_MPRED
+	PM_CMPLU_STALL
+	PM_CYC
+	PM_GCT_NOSLOT_CYC
+	PM_INST_CMPL
+	PM_LD_MISS_L1
+	PM_LD_REF_L1
+	stalled-cycles-backend
+	stalled-cycles-frontend
 
-Subhash Jadavani reported this partial backtrace:
-  Now consider this call stack from MMC block driver (this is on the ARMv7
-  based board):
+where the 'PM_*' events are POWER specific and the others are the
+generic events.
 
-  [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
-  [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
-  [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from [<c0017ff8>] (dma_map_sg+0x3c/0x114)
+This will enable users to specify these events with their symbolic
+names rather than with their raw code.
 
-This is caused by incrementing the struct page pointer, and running off
-the end of the sparsemem page array.  Fix this by incrementing by pfn
-instead, and convert the pfn to a struct page.
+	perf stat -e 'cpu/PM_CYC' ...
 
-Suggested-by: James Bottomley <JBottomley@Parallels.com>
-Tested-by: Subhash Jadavani <subhashj@codeaurora.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: linuxppc-dev@ozlabs.org
+Link: http://lkml.kernel.org/r/20130123062528.GE13720@us.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/mm/dma-mapping.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ arch/powerpc/include/asm/perf_event_server.h |  3 +++
+ arch/powerpc/perf/power7-pmu.c               | 18 ++++++++++++++++++
+ 2 files changed, 21 insertions(+)
 
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -467,25 +467,27 @@ static void dma_cache_maint_page(struct
- 	size_t size, enum dma_data_direction dir,
- 	void (*op)(const void *, size_t, int))
- {
-+	unsigned long pfn;
-+	size_t left = size;
-+
-+	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
-+	offset %= PAGE_SIZE;
-+
- 	/*
- 	 * A single sg entry may refer to multiple physically contiguous
- 	 * pages.  But we still need to process highmem pages individually.
- 	 * If highmem is not configured then the bulk of this loop gets
- 	 * optimized out.
- 	 */
--	size_t left = size;
- 	do {
- 		size_t len = left;
- 		void *vaddr;
+diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
+index b9b6c55..b29fcc6 100644
+--- a/arch/powerpc/include/asm/perf_event_server.h
++++ b/arch/powerpc/include/asm/perf_event_server.h
+@@ -132,3 +132,6 @@ extern ssize_t power_events_sysfs_show(struct device *dev,
  
-+		page = pfn_to_page(pfn);
+ #define	GENERIC_EVENT_ATTR(_name, _id)	EVENT_ATTR(_name, _id, _g)
+ #define	GENERIC_EVENT_PTR(_id)		EVENT_PTR(_id, _g)
 +
- 		if (PageHighMem(page)) {
--			if (len + offset > PAGE_SIZE) {
--				if (offset >= PAGE_SIZE) {
--					page += offset / PAGE_SIZE;
--					offset %= PAGE_SIZE;
--				}
-+			if (len + offset > PAGE_SIZE)
- 				len = PAGE_SIZE - offset;
--			}
- 			vaddr = kmap_high_get(page);
- 			if (vaddr) {
- 				vaddr += offset;
-@@ -502,7 +504,7 @@ static void dma_cache_maint_page(struct
- 			op(vaddr, len, dir);
- 		}
- 		offset = 0;
--		page++;
-+		pfn++;
- 		left -= len;
- 	} while (left);
- }
-
-
++#define	POWER_EVENT_ATTR(_name, _id)	EVENT_ATTR(PM_##_name, _id, _p)
++#define	POWER_EVENT_PTR(_id)		EVENT_PTR(_id, _p)
+diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
+index 269bf24..b554879 100644
+--- a/arch/powerpc/perf/power7-pmu.c
++++ b/arch/powerpc/perf/power7-pmu.c
+@@ -384,6 +384,15 @@ GENERIC_EVENT_ATTR(cache-misses,		LD_MISS_L1);
+ GENERIC_EVENT_ATTR(branch-instructions,		BRU_FIN);
+ GENERIC_EVENT_ATTR(branch-misses,		BRU_MPRED);
+ 
++POWER_EVENT_ATTR(CYC,				CYC);
++POWER_EVENT_ATTR(GCT_NOSLOT_CYC,		GCT_NOSLOT_CYC);
++POWER_EVENT_ATTR(CMPLU_STALL,			CMPLU_STALL);
++POWER_EVENT_ATTR(INST_CMPL,			INST_CMPL);
++POWER_EVENT_ATTR(LD_REF_L1,			LD_REF_L1);
++POWER_EVENT_ATTR(LD_MISS_L1,			LD_MISS_L1);
++POWER_EVENT_ATTR(BRU_FIN,			BRU_FIN)
++POWER_EVENT_ATTR(BRU_MPRED,			BRU_MPRED);
++
+ static struct attribute *power7_events_attr[] = {
+ 	GENERIC_EVENT_PTR(CYC),
+ 	GENERIC_EVENT_PTR(GCT_NOSLOT_CYC),
+@@ -393,6 +402,15 @@ static struct attribute *power7_events_attr[] = {
+ 	GENERIC_EVENT_PTR(LD_MISS_L1),
+ 	GENERIC_EVENT_PTR(BRU_FIN),
+ 	GENERIC_EVENT_PTR(BRU_MPRED),
++
++	POWER_EVENT_PTR(CYC),
++	POWER_EVENT_PTR(GCT_NOSLOT_CYC),
++	POWER_EVENT_PTR(CMPLU_STALL),
++	POWER_EVENT_PTR(INST_CMPL),
++	POWER_EVENT_PTR(LD_REF_L1),
++	POWER_EVENT_PTR(LD_MISS_L1),
++	POWER_EVENT_PTR(BRU_FIN),
++	POWER_EVENT_PTR(BRU_MPRED),
+ 	NULL
+ };
+ 
