@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab3BARJW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 12:09:22 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:38205 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755758Ab3BARJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 12:09:19 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18VYb7Dp4YP7eKfPqWftwsp
-Date: Fri, 1 Feb 2013 09:09:06 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com, anilkumar@ti.com,
-        hs@denx.de, broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
-        khilman@deeprootsystems.com, nsekhar@ti.com, linux@arm.linux.org.uk,
-        rob@landley.net, rob.herring@calxeda.com, grant.likely@secretlab.ca
-Subject: Re: [PATCH V2 1/6] pinctrl: pinctrl-single: use arch_initcall and
- module_exit
-Message-ID: <20130201170906.GE22517@atomide.com>
-References: <1359445134-13323-1-git-send-email-manishv.b@ti.com>
- <1359445134-13323-2-git-send-email-manishv.b@ti.com>
- <CACRpkdbf7TwrjfT2rhqQFGc3yh_Nt117RtzQO2y6g5Ddx5Ay_w@mail.gmail.com>
+	id S1757227Ab3BARLD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 12:11:03 -0500
+Received: from mail.prodrive.nl ([212.61.153.67]:17015 "EHLO mail.prodrive.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756373Ab3BARLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 12:11:00 -0500
+Message-ID: <510BF720.5020708@prodrive.nl>
+Date: Fri, 1 Feb 2013 18:10:56 +0100
+From: Stef van Os <stef.van.os@prodrive.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111120 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbf7TwrjfT2rhqQFGc3yh_Nt117RtzQO2y6g5Ddx5Ay_w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: <artem.bityutskiy@linux.intel.com>
+CC: <dwmw2@infradead.org>, <wfp5p@virginia.edu>, <gregkh@linuxfoundation.org>,
+        <sr@denx.de>, <plagnioj@jcrosoft.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] mtd: physmap_of: fix illegal dereference
+References: <1358446932-7238-1-git-send-email-stef.van.os@prodrive.nl> <1359737697.2942.16.camel@sauron.fi.intel.com>
+In-Reply-To: <1359737697.2942.16.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.14.0.6]
+X-TM-AS-MML: No
+X-TM-AS-Product-Ver: IMSVA-8.2.0.1520-7.0.0.1014-19606.000
+X-TM-AS-Result: No--15.961-5.0-31-10
+X-imss-scan-details: No--15.961-5.0-31-10
+X-TM-AS-User-Approved-Sender: No
+X-TMASE-Version: IMSVA-8.2.0.1520-7.0.1014-19606.000
+X-TMASE-Result: 10--15.960900-5.000000
+X-TMASE-MatchedRID: +c13yJDs900OwH4pD14DsPHkpkyUphL9wx0jRRxcQfOvVXRGKcI39g4W
+	I34Fe9tzzIy4Q+OIZUdYcfwTkTa8k2GBe5Zc3tN271Wx2uUbPLfZph2fCfuod+2bjZi+EXNnKa4
+	7QIW7gxx5xrAG0Ow0sLnE2ijtyO+/71zr0FZRMbA7qnMAZEGUXNmzcdRxL+xwKrauXd3MZDUD/d
+	HyT/Xh7Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [130129 03:03]:
-> On Tue, Jan 29, 2013 at 8:38 AM, Vishwanathrao Badarkhe, Manish
-> <manishv.b@ti.com> wrote:
-> 
-> > Currently, I2C driver gets probed before pinctrl driver.
-> > To achieve I2C pin muxing via pinctrl driver before I2C
-> > probe get called, register pinctrl driver in arch_initcall.
-> > Also, add module_exit to unregister pinctrl driver.
-> >
-> > Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
-> 
-> So your I2C driver is not returning -EPROBE_DEFER
-> if it cannot find its pins?
-> 
-> Hm, well I can live with this, if Tony ACKs it.
-
-Hmm pinctrl is before i2c in drivers/Makefile.
-Making initcalls happen earlier and earlier is usually the
-wrong way to go. Sounds like there's some other issue here
-that needs to be fixed instead.
-
-Regards,
-
-Tony
+On 02/01/2013 05:54 PM, Artem Bityutskiy wrote:
+> On Thu, 2013-01-17 at 19:22 +0100, Stef van Os wrote:
+>> d68cbdd introduced a new way of getting the name of an mtd
+>> partion. The character pointer is not initialized, and only
+>> checked against NULL, not at other random garbage.
+>> This patch fixes the resulting panic.
+>>
+>> Signed-off-by: Stef van Os<stef.van.os@prodrive.nl>
+> A similar fix already sits in the mtd tree:
+>
+> http://git.infradead.org/mtd-2.6.git/commit/7dfe4be351e81656ca1068e5d4ead235c7ba94b1
+>
+Ah, sorry, I wasn't aware of this. But, as long as some fix for this 
+issue makes it into mainline, I'm happy :)
