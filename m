@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab3BACeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:34:05 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15995 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3BACeE (ORCPT
+	id S1754156Ab3BACi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 21:38:26 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60164 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886Ab3BACiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:34:04 -0500
-X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_-1zCJSF_OMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=vw99MyFtH44A:10 a=uOn9NBOg4aT8VhwKWLMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359686040.5642.9.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH v8 2/3] trace,x86: add x86 irq vector tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Date: Thu, 31 Jan 2013 21:34:00 -0500
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A508CE@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A508CE@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jan 2013 21:38:23 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-e9-510b2a9d45a7
+Date: Fri, 1 Feb 2013 11:38:21 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv4 3/7] zswap: add to mm/
+Message-ID: <20130201023821.GB6262@blaptop>
+References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1359495627-30285-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130131070716.GF23548@blaptop>
+ <510AC0C6.4020705@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510AC0C6.4020705@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-21 at 22:14 +0000, Seiji Aguchi wrote:
+On Thu, Jan 31, 2013 at 01:06:46PM -0600, Seth Jennings wrote:
+> On 01/31/2013 01:07 AM, Minchan Kim wrote:
+> > On Tue, Jan 29, 2013 at 03:40:23PM -0600, Seth Jennings wrote:
+> >> zswap is a thin compression backend for frontswap. It receives
+> >> pages from frontswap and attempts to store them in a compressed
+> >> memory pool, resulting in an effective partial memory reclaim and
+> >> dramatically reduced swap device I/O.
+> >>
+> >> Additionally, in most cases, pages can be retrieved from this
+> >> compressed store much more quickly than reading from tradition
+> >> swap devices resulting in faster performance for many workloads.
+> >>
+> >> This patch adds the zswap driver to mm/
+> >>
+> >> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> >> ---
+> >>  mm/Kconfig  |  15 ++
+> >>  mm/Makefile |   1 +
+> >>  mm/zswap.c  | 656 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >>  3 files changed, 672 insertions(+)
+> >>  create mode 100644 mm/zswap.c
+> >>
+> >> diff --git a/mm/Kconfig b/mm/Kconfig
+> >> index 278e3ab..14b9acb 100644
+> >> --- a/mm/Kconfig
+> >> +++ b/mm/Kconfig
+> >> @@ -446,3 +446,18 @@ config FRONTSWAP
+> >>  	  and swap data is stored as normal on the matching swap device.
+> >>  
+> >>  	  If unsure, say Y to enable frontswap.
+> >> +
+> >> +config ZSWAP
+> >> +	bool "In-kernel swap page compression"
+> >> +	depends on FRONTSWAP && CRYPTO
+> >> +	select CRYPTO_LZO
+> >> +	select ZSMALLOC
+> > 
+> > Again, I'm asking why zswap should have a dependent on CRPYTO?
+> > Couldn't we support it as a option? I'd like to use zswap without CRYPTO
+> > like zram.
+> 
+> The reason we need CRYPTO is that zswap uses it to support a pluggable
+> compression model.  zswap can use any compressor that has a crypto API
+> driver.  zswap has _symbol dependencies_ on CRYPTO.  If it isn't
+> selected, the build breaks.
 
-> +void trace_irq_vector_regfunc(void)
-> +{
-> +	if (!trace_irq_vector_refcount) {
-> +		smp_call_function(switch_to_trace_idt, NULL, 0);
-> +		local_irq_disable();
-> +		switch_to_trace_idt(NULL);
-> +		local_irq_enable();
-> +	}
-> +	trace_irq_vector_refcount++;
-> +}
-> +
-> +void trace_irq_vector_unregfunc(void)
-> +{
-> +	trace_irq_vector_refcount--;
-> +	if (!trace_irq_vector_refcount) {
-> +		smp_call_function(restore_original_idt, NULL, 0);
-> +		local_irq_disable();
-> +		restore_original_idt(NULL);
-> +		local_irq_enable();
-> +	}
-> +}
-> +
+I think we can factor out compressoin part and remove dependency
+at compile time by Kconfig. No? Of course, if we disable CRYPTO in Kconfig,
+we lost pluggable model but not a problem for embedded system.
+Anyway, If it's a burden for you at a moment, I'm not going to insist on it.
+Will do it for myself.
 
-What protection do these functions have? I mean, the reg functions of a
-TRACE_EVENT() can be initiated by perf and ftrace at he same time, as
-well as LTTng (if someone adds it). The tracepoint itself may have
-protection, but all the tracepoints you created use the same reg
-functions, and they are not protected from each other.
-
-You need to add a mutex around these, like:
-
-static DEFINE_MUTEX(irq_reg_mutex);
-
-void trace_irq_vector_regfunc(void)
-{
-	mutex_lock(&irq_reg_mutex);
-	if (!trace_irq_vector_refcount) {
-		smp_call_function(switch_to_trace_idt, NULL, 0);
-		local_irq_disable();
-		switch_to_trace_idt(NULL);
-		local_irq_enable();
-	}
-	trace_irq_vector_refcount++;
-	mutex_unlock(&irq_reg_mutex);
-}
-
-and the same for the trace_irq_vector_unregfunc().
-
--- Steve
-
-
+-- 
+Kind regards,
+Minchan Kim
