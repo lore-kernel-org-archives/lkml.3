@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab3BAASz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 19:18:55 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:54796 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3BAASw (ORCPT
+	id S1754612Ab3BAAdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 19:33:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54744 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab3BAAdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 19:18:52 -0500
-Date: Thu, 31 Jan 2013 16:18:41 -0800
-From: Tejun Heo <tj@kernel.org>
-To: David Teigland <teigland@redhat.com>
-Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        Christine Caulfield <ccaulfie@redhat.com>, cluster-devel@redhat.com
-Subject: Re: [PATCH 10/14] dlm: don't use idr_remove_all()
-Message-ID: <20130201001841.GP6824@mtj.dyndns.org>
-References: <1359163872-1949-1-git-send-email-tj@kernel.org>
- <1359163872-1949-11-git-send-email-tj@kernel.org>
- <20130128155723.GC16789@redhat.com>
- <20130129151317.GA11609@redhat.com>
- <20130130212417.GJ24014@redhat.com>
- <20130131235320.GN6824@mtj.dyndns.org>
+	Thu, 31 Jan 2013 19:33:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130131235320.GN6824@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130131154331.09d157a3.akpm@linux-foundation.org>
+References: <20130128091039.GG6871@arwen.pp.htv.fi>
+	<CACVXFVOATzTJq+-5M9j3G3y_WUrWKJt=naPkjkLwGDmT0H8gog@mail.gmail.com>
+	<20130131154331.09d157a3.akpm@linux-foundation.org>
+Date: Fri, 1 Feb 2013 08:33:12 +0800
+Message-ID: <CACVXFVO415U1amgUUOoy_1CLjfUqw98QqD8mCVixAzNQ2_Nzqw@mail.gmail.com>
+Subject: Re: Page allocation failure on v3.8-rc5
+From: Ming Lei <ming.lei@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: balbi@ti.com, Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, David.
+On Fri, Feb 1, 2013 at 7:43 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed, 30 Jan 2013 19:53:22 +0800
+> Ming Lei <ming.lei@canonical.com> wrote:
+>
+>> The allocation failure is caused by the big sizeof(struct parsed_partitions),
+>> which is 64K in my 32bit box,
+>
+> Geeze.
+>
+> We could fix that nicely by making parsed_partitions.parts an array of
+> pointers to a single `struct parsed_partition' and allocating those
+> on-demand.
+>
+> But given the short-lived nature of this storage and the infrequency of
+> check_partition(), that isn't necessary.
+>
+>> could you test the blow patch to see
+>> if it can fix the allocation failure?
+>
+> (The patch is wordwrapped)
 
-On Thu, Jan 31, 2013 at 03:53:20PM -0800, Tejun Heo wrote:
-> The function description is misleading.  The function does search
-> inclusive range and needs explicit cursor increment to make progress.
-> Weird that it doesn't work.  Looking into it.  I'll write when I know
-> more.
+Sorry for that, I send out it for test.
 
-It looks a bit weird to me that ls->ls_recover_list_count is also
-incremented by recover_list_add().  The two code paths don't seem to
-be interlocke at least upon my very shallow glance.  Is it that only
-either the list or idr is in use?
+>
+>> ...
+>>
+>> @@ -106,18 +107,43 @@ static int (*check_part[])(struct parsed_partitions *) = {
+>>       NULL
+>>  };
+>>
+>> +struct parsed_partitions *allocate_partitions(int nr)
+>> +{
+>> +     struct parsed_partitions *state;
+>> +
+>> +     state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
+>
+> I personally prefer sizefo(*state) here.  It means the reader doesn't
+> have to scroll back to check things.
 
-Anyways, can you please apply the following patch and see which IDs
-are leaking from the iteration?  The patch too is only compile tested
-so I might have done something stupid but it hopefully shouldn't be
-too difficult to make it work.
+OK, will use sizeof(*state).
 
-Thanks!
----
- fs/dlm/recover.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+>> +     if (!state)
+>> +             return NULL;
+>> +
+>> +     state->parts = vzalloc(nr * sizeof(state->parts[0]));
+>> +     if (!state->parts) {
+>> +             kfree(state);
+>> +             return NULL;
+>> +     }
+>
+> It doesn't really need to be this complex - we could just vmalloc the
+> entire `struct parsed_partitions'.  But I see that your change will
 
---- a/fs/dlm/recover.c
-+++ b/fs/dlm/recover.c
-@@ -351,6 +351,12 @@ static struct dlm_rsb *recover_idr_find(
- 	return r;
- }
- 
-+static int dlm_dump_idr(int id, void *p, void *data)
-+{
-+	pr_cont(" %d", id);
-+	return 0;
-+}
-+
- static void recover_idr_clear(struct dlm_ls *ls)
- {
- 	struct dlm_rsb *r;
-@@ -358,7 +364,9 @@ static void recover_idr_clear(struct dlm
- 
- 	spin_lock(&ls->ls_recover_idr_lock);
- 
-+	pr_info("XXX clearing:");
- 	idr_for_each_entry(&ls->ls_recover_idr, r, id) {
-+		pr_cont(" %d", id);
- 		idr_remove(&ls->ls_recover_idr, id);
- 		r->res_id = 0;
- 		r->res_recover_locks_count = 0;
-@@ -366,10 +374,14 @@ static void recover_idr_clear(struct dlm
- 
- 		dlm_put_rsb(r);
- 	}
-+	pr_cont("\n");
- 
- 	if (ls->ls_recover_list_count != 0) {
- 		log_error(ls, "warning: recover_list_count %d",
- 			  ls->ls_recover_list_count);
-+		pr_info("XXX leftovers: ");
-+		idr_for_each(&ls->ls_recover_idr, dlm_dump_idr, NULL);
-+		pr_cont("\n");
- 		ls->ls_recover_list_count = 0;
- 	}
- 	spin_unlock(&ls->ls_recover_idr_lock);
+The above approach can save one 32K allocation approximately.
+
+> cause us to allcoate much less memory in many situations, which is
+> good.  It should be mentioned in the changelog!
+
+OK, I will add the changelog later.
+
+
+Thanks,
+--
+Ming Lei
