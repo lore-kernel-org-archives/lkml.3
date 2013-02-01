@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3BAAqQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 19:46:16 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:12003 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab3BAAqO (ORCPT
+	id S1754942Ab3BAAvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 19:51:20 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52676 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab3BAAvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 19:46:14 -0500
-Message-ID: <510B1051.5010200@tilera.com>
-Date: Thu, 31 Jan 2013 19:46:09 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 31 Jan 2013 19:51:17 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <510B1168.2080401@jp.fujitsu.com>
+Date: Fri, 1 Feb 2013 09:50:48 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
+To: <daniel@ffwll.ch>
 CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kbuild test robot <fengguang.wu@intel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: kernel/cgroup_freezer.c:151:3: error: 'system_freezing_cnt' undeclared
-References: <510aa746.fVU8ZdQ2hys/RwjS%fengguang.wu@intel.com> <20130131231433.GM6824@mtj.dyndns.org>
-In-Reply-To: <20130131231433.GM6824@mtj.dyndns.org>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset="ISO-8859-1"
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        <dri-devel@lists.freedesktop.org>
+Subject: [UPDATE][PATCH 4/4] GPU/i915: Fix acpi_bus_get_device() check in
+ drivers/gpu/drm/i915/intel_opregion.c
+References: <1451967.YMyGeCCNtu@vostro.rjw.lan> <6099377.PFvsxPeyib@vostro.rjw.lan> <5109E11A.5030400@jp.fujitsu.com> <5109E2AF.2000107@jp.fujitsu.com> <5109E49E.1070005@jp.fujitsu.com> <20130131100330.GE5885@phenom.ffwll.local>
+In-Reply-To: <20130131100330.GE5885@phenom.ffwll.local>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/31/2013 6:14 PM, Tejun Heo wrote:
-> Hello, guys.
->
-> On Fri, Feb 01, 2013 at 01:17:58AM +0800, kbuild test robot wrote:
->> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux master
->> head:   04c2eee5b9dfcb13f3cd07a5537fb8c785f2751a
->> commit: a3201227f803ad7fd43180c5195dbe5a2bf998aa freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE
->> date:   1 year, 2 months ago
-> Heh, this gone goes way back.
->
->> config: make ARCH=tile allyesconfig
+2013/01/31 19:03, Daniel Vetter wrote:
+> On Thu, Jan 31, 2013 at 12:27:26PM +0900, Yasuaki Ishimatsu wrote:
+>> I forgot to change subject. So I resend a patch.
 >>
->> All error/warnings:
+>> ---
+>> acpi_bus_get_device() returns int not acpi_status.
 >>
->>    kernel/cgroup_freezer.c: In function 'freezer_destroy':
->>>> kernel/cgroup_freezer.c:151:3: error: 'system_freezing_cnt' undeclared (first use in this function)
->>    kernel/cgroup_freezer.c:151:3: note: each undeclared identifier is reported only once for each function it appears in
->>    kernel/cgroup_freezer.c: In function 'freezer_fork':
->>    kernel/cgroup_freezer.c:209:3: error: implicit declaration of function 'freeze_task'
->>    kernel/cgroup_freezer.c: In function 'unfreeze_cgroup':
->>    kernel/cgroup_freezer.c:296:3: error: implicit declaration of function '__thaw_task'
->>    kernel/cgroup_freezer.c: In function 'freezer_change_state':
->>>> kernel/cgroup_freezer.c:315:4: error: 'system_freezing_cnt' undeclared (first use in this function)
-> So, CONFIG_FREEZER is defbool which is turned on automatically if
-> CONFIG_CGROUP_FREEZER; however, CONFIG_FREEZER is defined in
-> Kconfig.freezer which should be included by arch Kconfig file.  tile
-> doesn't include it (maybe it doesn't want freezer for some reason?).
-
-We have never had a customer ask for suspend-to-RAM or other similar modes.  As far as I know no one has looked into FREEZER or SUSPEND.  That said, there's no particular reason not to just try it and see if it works.
-
-> CONFIG_COGRUP_FREEZER is in init/Kconfig, so allyesconfig enables it
-> but as CONFIG_FREEZER definition isn't visible, we end up with broken
-> config CONFIG_CGROUP_FREEZER && !CONFIG_FREEZER.
+>> The patch change not to apply ACPI_FAILURE() to the return value of
+>> acpi_bus_get_device().
+>>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 >
-> Maybe we need to move CONFIG_CGROUP_FREEZER to Kconfig.freezer if tile
-> actually doesn't want freezer?
+> I've tried to apply this to drm-intel-next-queued, but git am didn't
+> really like your patch - it failed to apply. Can you please rebase to the
+> drm-intel-next-queued branch from
+>
+> git://people.freedesktop.org/~danvet/drm-intel
+>
+> and please resubmit the patch, preferrably formatted with git
+> format-patch?
 
-That seems reasonable to me, but I'm happy to experiment with including Kconfig.freezer from the arch/tile/Kconfig if that feels like a better solution.
+My mailer added a space in the patch. I updated the patch.
+How abot it?
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+---
+acpi_bus_get_device() returns int not acpi_status.
+
+The patch change not to apply ACPI_FAILURE() to the return value of
+acpi_bus_get_device().
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+  drivers/gpu/drm/i915/intel_opregion.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+index 7741c22..4d33874 100644
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -347,7 +347,7 @@ static void intel_didl_outputs(struct drm_device *dev)
+  	int i = 0;
+  
+  	handle = DEVICE_ACPI_HANDLE(&dev->pdev->dev);
+-	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev)))
++	if (!handle || acpi_bus_get_device(handle, &acpi_dev))
+  		return;
+  
+  	if (acpi_is_video_device(acpi_dev))
 
