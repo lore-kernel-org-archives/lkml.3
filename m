@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422735Ab3BANMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:12:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45296 "EHLO mail.kernel.org"
+	id S1422756Ab3BANNA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:13:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45315 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422670Ab3BANMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:12:45 -0500
+	id S1422659Ab3BANMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:12:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Ben Greear <greearb@candelatech.com>
-Subject: [ 57/89] NFSv4.1: Ensure that nfs41_walk_client_list() does start lease recovery
-Date: Fri,  1 Feb 2013 14:08:12 +0100
-Message-Id: <20130201130211.599535721@linuxfoundation.org>
+        Nicholas Santos <nicholas.santos@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 59/89] HID: usbhid: quirk for Formosa IR receiver
+Date: Fri,  1 Feb 2013 14:08:14 +0100
+Message-Id: <20130201130211.739004292@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,42 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Nicholas Santos <nicholas.santos@gmail.com>
 
-commit 65436ec0c8e344d9b23302b686e418f2a7b7cf7b upstream.
+commit 320cde19a4e8f122b19d2df7a5c00636e11ca3fb upstream.
 
-We do need to start the lease recovery thread prior to waiting for the
-client initialisation to complete in NFSv4.1.
+Patch to add the Formosa Industrial Computing, Inc. Infrared Receiver
+[IR605A/Q] to hid-ids.h and hid-quirks.c.  This IR receiver causes about a 10
+second timeout when the usbhid driver attempts to initialze the device.  Adding
+this device to the quirks list with HID_QUIRK_NO_INIT_REPORTS removes the
+delay.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Cc: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Nicholas Santos <nicholas.santos@gmail.com>
+[jkosina@suse.cz: fix ordering]
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/hid/hid-ids.h           |    3 +++
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ 2 files changed, 4 insertions(+)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -439,14 +439,17 @@ int nfs41_walk_client_list(struct nfs_cl
- 				nfs_put_client(prev);
- 			prev = pos;
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -305,6 +305,9 @@
+ #define USB_VENDOR_ID_EZKEY		0x0518
+ #define USB_DEVICE_ID_BTC_8193		0x0002
  
-+			nfs4_schedule_lease_recovery(pos);
- 			status = nfs_wait_client_init_complete(pos);
- 			if (status < 0) {
- 				nfs_put_client(pos);
- 				spin_lock(&nn->nfs_client_lock);
- 				continue;
- 			}
--
-+			status = pos->cl_cons_state;
- 			spin_lock(&nn->nfs_client_lock);
-+			if (status < 0)
-+				continue;
- 		}
++#define USB_VENDOR_ID_FORMOSA          0x147a
++#define USB_DEVICE_ID_FORMOSA_IR_RECEIVER      0xe03e
++
+ #define USB_VENDOR_ID_FREESCALE		0x15A2
+ #define USB_DEVICE_ID_FREESCALE_MX28	0x004F
  
- 		if (pos->rpc_ops != new->rpc_ops)
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -70,6 +70,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
 
 
