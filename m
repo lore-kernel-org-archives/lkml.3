@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab3BAQyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 11:54:06 -0500
-Received: from mga03.intel.com ([143.182.124.21]:15659 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756871Ab3BAQyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 11:54:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="asc'?scan'208";a="251524928"
-Message-ID: <1359737697.2942.16.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/1] mtd: physmap_of: fix illegal dereference
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Stef van Os <stef.van.os@prodrive.nl>
-Cc: dwmw2@infradead.org, wfp5p@virginia.edu, gregkh@linuxfoundation.org,
-        sr@denx.de, plagnioj@jcrosoft.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 01 Feb 2013 18:54:57 +0200
-In-Reply-To: <1358446932-7238-1-git-send-email-stef.van.os@prodrive.nl>
-References: <1358446932-7238-1-git-send-email-stef.van.os@prodrive.nl>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-ebqknbQGuq9xXAtlwDkw"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1757203Ab3BAQzK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 11:55:10 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:50071 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757104Ab3BAQzH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 11:55:07 -0500
+Message-ID: <510BF365.2010609@arm.com>
+Date: Fri, 01 Feb 2013 16:55:01 +0000
+From: Serban Constantinescu <Serban.Constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-team@android.com" <kernel-team@android.com>,
+        "arve@android.com" <arve@android.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH 1/2] staging: android: ashmem: fix ashmem pin/unpin interface
+References: <1359734881-15093-1-git-send-email-serban.constantinescu@arm.com> <1359734881-15093-2-git-send-email-serban.constantinescu@arm.com> <20130201161836.GA29021@kroah.com>
+In-Reply-To: <20130201161836.GA29021@kroah.com>
+X-OriginalArrivalTime: 01 Feb 2013 16:55:01.0834 (UTC) FILETIME=[E04CA2A0:01CE009C]
+X-MC-Unique: 113020116550416301
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg,
 
---=-ebqknbQGuq9xXAtlwDkw
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 01/02/13 16:18, Greg KH wrote:
+> On Fri, Feb 01, 2013 at 04:08:00PM +0000, Serban Constantinescu wrote:
+>> The values exchanged between kernel and userspace through struct
+>> ashmem_pin should be of type size_t. This change won't affect the
+>> existing interface but will stand as the basis of 64bit compat layer.
+>
+> How do you define size_t with a 64bit kernel and a 32bit userspace
+> properly?  Doesn't this change open up a bunch of problems?
 
-On Thu, 2013-01-17 at 19:22 +0100, Stef van Os wrote:
-> d68cbdd introduced a new way of getting the name of an mtd
-> partion. The character pointer is not initialized, and only
-> checked against NULL, not at other random garbage.
-> This patch fixes the resulting panic.
->=20
-> Signed-off-by: Stef van Os <stef.van.os@prodrive.nl>
+The current ashmem pin/unpin kernel interface uses __u32 to specify the 
+memory region and length in bytes. However these values  should be of 
+type size_t so that they are able to represent the whole range of 
+possible values when compiled for a 64bit platform.
 
-A similar fix already sits in the mtd tree:
+Android API uses ashmem driver through libcutils, from where I attach 
+the following snippet:
 
-http://git.infradead.org/mtd-2.6.git/commit/7dfe4be351e81656ca1068e5d4ead23=
-5c7ba94b1
+<aosp>/system/core/libcutils/ashmem-dev.c
 
---=20
-Best Regards,
-Artem Bityutskiy
+   75 int ashmem_pin_region(int fd, size_t offset, size_t len)
+   76 {
+   77         struct ashmem_pin pin = { offset, len };
+   78         return ioctl(fd, ASHMEM_PIN, &pin);
+   79 }
 
---=-ebqknbQGuq9xXAtlwDkw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+The kernel changes inline with the userspace usage and do not affect 
+existing 32bit Android (we have exported the new kernel header, rebuilt 
+and tested the interface with success).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+However this change will affect any 64bit userspace using the current 
+faulty interface, but there is none that we know of.
 
-iQIcBAABAgAGBQJRC/NhAAoJECmIfjd9wqK0JKEP/0SDnKu9lwYhKKbREIxhh4Mw
-KHqHQFzio2R5KCEJ0ZV8hgtCg8irKze9Rd07edJqZvtL7icNPcyX0lIGAgK9plUq
-wwFw7o8L33IsLHl57D3BnnBRZaNhX5P5cWW/w3jz1/xvdvcluhbLW8o8EnGuHDrg
-EsTehuTYU0iYfA+UTJCtOFFLxKz0CYsO7MNfQMDvqTzW8PrxHdLx/0hPu7AzKE10
-e7pBaqtNnom5m1mJf0eycqtQxJE2yg1tjVFFRJx4PaQ78mti3aYGw4JUk9zYq97N
-5Tcku34BghBXidpqPgREemciEDWo19q71TpMtgJ2u7wnD5P7up3+EN/N1TAPL9El
-bTk2kMwWijsBw+9yXF3NIHEFId8FEQvCYMuLgsZ4Q3Im8W5PUT1zuAr6vYddLqwI
-ghT9Ip29wpBhf8Za7xMX56C3XcOLc5oREwlxh7X4X6/PqLv/e6WXt/W0s9eXoiw6
-Ek2tEqObzf0wlNl/EEoe65yOJcCGU8Wcv+oxshDXw1v4d57LvQnKs6IBZXKDObdJ
-Iyt1qgf1g1VNrgZ/I3LqKt+U2zmfyoRXqnGy3lgESYe5mizLN3Ts59m9G1VHKQJH
-Wi4XVcTjOEQTMhiR0/rfzswZGP+zTqFLa7Ty3MSzPvsQZIh3akhoVT783RTwlF1Q
-p+wcCRdFhYsgMnFV5yuY
-=LJTR
------END PGP SIGNATURE-----
+Thanks,
+Serban Constantinescu
+`
 
---=-ebqknbQGuq9xXAtlwDkw--
+
 
