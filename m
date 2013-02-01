@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3BAC4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:56:09 -0500
-Received: from mga11.intel.com ([192.55.52.93]:25639 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab3BAC4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:56:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="285092148"
-Subject: [PATCH] x86/io_apic: Do not unmask the masked-irq when migrating
- irq in ack_apic_level()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: agordeev@redhat.com, yinghai@kernel.org, joerg.roedel@amd.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Feb 2013 20:05:14 +0800
-Message-ID: <1359720314.1223.32.camel@cliu38-desktop-build>
+	id S1753583Ab3BAC5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 21:57:30 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39012 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752131Ab3BAC52 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 21:57:28 -0500
+Message-ID: <1359687434.31386.53.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Bug#695182: [RFC] Reproducible OOM with just a few sleeps
+From: Ben Hutchings <ben@decadent.org.uk>
+To: paul.szabo@sydney.edu.au
+Cc: 695182@bugs.debian.org, dave@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, pavel@ucw.cz
+Date: Fri, 01 Feb 2013 02:57:14 +0000
+In-Reply-To: <201302010212.r112C6UQ005134@como.maths.usyd.edu.au>
+References: <201302010212.r112C6UQ005134@como.maths.usyd.edu.au>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ZEwXyXCb20IX49watm2+"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-In ack_apic_level(), when there is pending affinity setting for current irq,
-ioapic_irqd_mask()/ioapic_irqd_unmask() will try to mask the irq and do the
-irq affinity setting.
+--=-ZEwXyXCb20IX49watm2+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-But at this time, it is possibility that the irq has been masked, in this case,
-we should not unmask it directly in ioapic_irqd_unmask().
+On Fri, 2013-02-01 at 13:12 +1100, paul.szabo@sydney.edu.au wrote:
+> Dear Ben,
+>=20
+> >> PAE is broken for any amount of RAM.
+> >
+> > No it isn't.
+>=20
+> Could I please ask you to expand on that?
 
-One real case is one threaded interrupt with ONE_SHOT, the irq has been masked in
-handle_fasteoi_irq().
+I already did, a few messages back.
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- arch/x86/kernel/apic/io_apic.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+Ben.
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index b739d39..5c0fe25 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2429,7 +2429,8 @@ static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
- {
- 	/* If we are moving the irq we need to mask it */
- 	if (unlikely(irqd_is_setaffinity_pending(data))) {
--		mask_ioapic(cfg);
-+		if (!irqd_irq_masked(data))
-+			mask_ioapic(cfg);
- 		return true;
- 	}
- 	return false;
-@@ -2467,7 +2468,13 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
- 		 */
- 		if (!io_apic_level_ack_pending(cfg))
- 			irq_move_masked_irq(data);
--		unmask_ioapic(cfg);
-+		/*
-+		 * For the threaded interrupt with ONE_SHOT flag,
-+		 * the irq has been masked in handle_fasteoi_irq().
-+		 * We should be careful not to unmask it here.
-+		 */
-+		if (!irqd_irq_masked(data))
-+			unmask_ioapic(cfg);
- 	}
- }
- #else
--- 
-1.7.0.4
+--=20
+Ben Hutchings
+Everything should be made as simple as possible, but not simpler.
+                                                           - Albert Einstei=
+n
 
+--=-ZEwXyXCb20IX49watm2+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIVAwUAUQsvCue/yOyVhhEJAQpY9xAA08DsjOdfHz1Ho5Ym3ZlqZWBQmBficolW
+h0Z4XDj5YN8tQ4DPdgAGzjXwi3mVzl2GC3GcyVirYpBxbrOVx1u0dX787e25jLyq
+tjZe7iGlds8/Klqmg3iqK2M0TJbm/3oH3C5gBsY9mBI+lwYdi7Fuh+rQivHNfy6N
+M1tniykaFL2UiiccRBop2HKJg67SEXe38fxtLe9ZYNljGsY83tOugipALVW56ane
+HQjNjRjv62iZMAatEppLa9gc719dUAE2CivrCPOILx91C+ToraOLVWREB9zwwTpY
+7K0Nor73Q8ITbgwX0fdPE5Cm5zFeJEfgokn5vB8PTYvlI3/E6BX8erkS0whAxSo6
+h/7hG6PrzJ6XcGTxCtjbn5qWHeUXwjDU6v28ipRDBlifMkJJ2HVXncoBKBJr4dHR
+uHmppAWMZIAkTOum0XJx5LfAGwkHzZX0BnTNfh8ygop17ffybnelC64JqCBgabU/
+29lbndNR9Pp4g/Mmr6jxGrsHgyZg1ADJbrudq/M7cWd7abihx/Gy46CO5CpowwF9
+R0KG3bX0AMRc2sfZDdTg0UOLiE8ZMV2prm/EpuaLyyNiJTW5/vpodbVuN55Soy2d
+O46r1fsHHdNMT2VDYS0Z+kmY2BWMRgsCDkhj1HBby330XGym3TGgcU1dsxmsIm6Z
+C84O7PiEOyM=
+=yNYO
+-----END PGP SIGNATURE-----
+
+--=-ZEwXyXCb20IX49watm2+--
