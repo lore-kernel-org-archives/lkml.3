@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422822Ab3BAKvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:51:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39369 "EHLO mail.kernel.org"
+	id S1422854Ab3BAKvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:51:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39456 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422775Ab3BAKve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:51:34 -0500
+	id S1422840Ab3BAKvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:51:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 27/33] NFS: Dont silently fail setattr() requests on mountpoints
-Date: Fri,  1 Feb 2013 11:49:32 +0100
-Message-Id: <20130201104726.581911153@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 29/33] x86/msr: Add capabilities check
+Date: Fri,  1 Feb 2013 11:49:34 +0100
+Message-Id: <20130201104726.718617540@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
@@ -25,61 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit ab225417825963b6dc66be7ea80f94ac1378dfdf upstream.
+commit c903f0456bc69176912dee6dd25c6a66ee1aed00 upstream.
 
-Ensure that any setattr and getattr requests for junctions and/or
-mountpoints are sent to the server. Ever since commit
-0ec26fd0698 (vfs: automount should ignore LOOKUP_FOLLOW), we have
-silently dropped any setattr requests to a server-side mountpoint.
-For referrals, we have silently dropped both getattr and setattr
-requests.
+At the moment the MSR driver only relies upon file system
+checks. This means that anything as root with any capability set
+can write to MSRs. Historically that wasn't very interesting but
+on modern processors the MSRs are such that writing to them
+provides several ways to execute arbitary code in kernel space.
+Sample code and documentation on doing this is circulating and
+MSR attacks are used on Windows 64bit rootkits already.
 
-This patch restores the original behaviour for setattr on mountpoints,
-and tries to do the same for referrals, provided that we have a
-filehandle...
+In the Linux case you still need to be able to open the device
+file so the impact is fairly limited and reduces the security of
+some capability and security model based systems down towards
+that of a generic "root owns the box" setup.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Therefore they should require CAP_SYS_RAWIO to prevent an
+elevation of capabilities. The impact of this is fairly minimal
+on most setups because they don't have heavy use of
+capabilities. Those using SELinux, SMACK or AppArmor rules might
+want to consider if their rulesets on the MSR driver could be
+tighter.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/namespace.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/x86/kernel/msr.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/nfs/namespace.c
-+++ b/fs/nfs/namespace.c
-@@ -253,11 +253,31 @@ out_nofree:
- 	return mnt;
- }
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -174,6 +174,9 @@ static int msr_open(struct inode *inode,
+ 	unsigned int cpu;
+ 	struct cpuinfo_x86 *c;
  
-+static int
-+nfs_namespace_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
-+{
-+	if (NFS_FH(dentry->d_inode)->size != 0)
-+		return nfs_getattr(mnt, dentry, stat);
-+	generic_fillattr(dentry->d_inode, stat);
-+	return 0;
-+}
++	if (!capable(CAP_SYS_RAWIO))
++		return -EPERM;
 +
-+static int
-+nfs_namespace_setattr(struct dentry *dentry, struct iattr *attr)
-+{
-+	if (NFS_FH(dentry->d_inode)->size != 0)
-+		return nfs_setattr(dentry, attr);
-+	return -EACCES;
-+}
-+
- const struct inode_operations nfs_mountpoint_inode_operations = {
- 	.getattr	= nfs_getattr,
-+	.setattr	= nfs_setattr,
- };
- 
- const struct inode_operations nfs_referral_inode_operations = {
-+	.getattr	= nfs_namespace_getattr,
-+	.setattr	= nfs_namespace_setattr,
- };
- 
- static void nfs_expire_automounts(struct work_struct *work)
+ 	cpu = iminor(file->f_path.dentry->d_inode);
+ 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
+ 		return -ENXIO;	/* No such CPU */
 
 
