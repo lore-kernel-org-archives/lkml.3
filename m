@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab3BAKhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:37:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51727 "EHLO
+	id S1756387Ab3BAKid (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:38:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51746 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755961Ab3BAKhQ (ORCPT
+	with ESMTP id S1755402Ab3BAKia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:37:16 -0500
-Date: Fri, 1 Feb 2013 02:36:55 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-gnb1gms0k8wictmtm2umpr8u@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+	Fri, 1 Feb 2013 05:38:30 -0500
+Date: Fri, 1 Feb 2013 02:38:05 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-97f63e4a2cf88e9d7bc086a1c3f10fa41c9174df@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org, jolsa@redhat.com
+In-Reply-To: <1358845787-1350-2-git-send-email-namhyung@kernel.org>
+References: <1358845787-1350-2-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top: Delete maps on exit
-Git-Commit-ID: 0de233b9c4f8c83b2cb655bfdbec306c8da81199
+Subject: [tip:perf/core] perf tools: Keep group information
+Git-Commit-ID: 97f63e4a2cf88e9d7bc086a1c3f10fa41c9174df
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,64 +31,159 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:37:00 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:38:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0de233b9c4f8c83b2cb655bfdbec306c8da81199
-Gitweb:     http://git.kernel.org/tip/0de233b9c4f8c83b2cb655bfdbec306c8da81199
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 30 Jan 2013 14:01:20 -0300
+Commit-ID:  97f63e4a2cf88e9d7bc086a1c3f10fa41c9174df
+Gitweb:     http://git.kernel.org/tip/97f63e4a2cf88e9d7bc086a1c3f10fa41c9174df
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 22 Jan 2013 18:09:29 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Thu, 31 Jan 2013 13:07:43 -0300
 
-perf top: Delete maps on exit
+perf tools: Keep group information
 
-Removing one more memory leak found with valgrind.
+Add a few of group-related field in struct perf_{evlist,evsel} so that
+the group information in a evlist can be known easily.  It only counts
+groups which have more than 1 members since leader-only groups are
+treated as non-group events.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-gnb1gms0k8wictmtm2umpr8u@git.kernel.org
+Link: http://lkml.kernel.org/r/1358845787-1350-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/util/evlist.c       |  7 ++++++-
+ tools/perf/util/evlist.h       |  1 +
+ tools/perf/util/evsel.h        |  6 ++++++
+ tools/perf/util/parse-events.c |  1 +
+ tools/perf/util/parse-events.h |  1 +
+ tools/perf/util/parse-events.y | 10 ++++++++++
+ 6 files changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 903e4f4..f561757 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1164,7 +1164,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!top.evlist->nr_entries &&
- 	    perf_evlist__add_default(top.evlist) < 0) {
- 		ui__error("Not enough memory for event selector list\n");
--		return -ENOMEM;
-+		goto out_delete_maps;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index dc8aee9..eddd5eb 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -117,6 +117,9 @@ void __perf_evlist__set_leader(struct list_head *list)
+ 	struct perf_evsel *evsel, *leader;
+ 
+ 	leader = list_entry(list->next, struct perf_evsel, node);
++	evsel = list_entry(list->prev, struct perf_evsel, node);
++
++	leader->nr_members = evsel->idx - leader->idx + 1;
+ 
+ 	list_for_each_entry(evsel, list, node) {
+ 		if (evsel != leader)
+@@ -126,8 +129,10 @@ void __perf_evlist__set_leader(struct list_head *list)
+ 
+ void perf_evlist__set_leader(struct perf_evlist *evlist)
+ {
+-	if (evlist->nr_entries)
++	if (evlist->nr_entries) {
++		evlist->nr_groups = evlist->nr_entries > 1 ? 1 : 0;
+ 		__perf_evlist__set_leader(&evlist->entries);
++	}
+ }
+ 
+ int perf_evlist__add_default(struct perf_evlist *evlist)
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 457e235..73579a2 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -21,6 +21,7 @@ struct perf_evlist {
+ 	struct list_head entries;
+ 	struct hlist_head heads[PERF_EVLIST__HLIST_SIZE];
+ 	int		 nr_entries;
++	int		 nr_groups;
+ 	int		 nr_fds;
+ 	int		 nr_mmaps;
+ 	int		 mmap_len;
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index cbf4232..c9031eb 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -74,6 +74,7 @@ struct perf_evsel {
+ 	bool 			needs_swap;
+ 	/* parse modifier helper */
+ 	int			exclude_GH;
++	int			nr_members;
+ 	struct perf_evsel	*leader;
+ 	char			*group_name;
+ };
+@@ -259,4 +260,9 @@ bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
+ int perf_evsel__open_strerror(struct perf_evsel *evsel,
+ 			      struct perf_target *target,
+ 			      int err, char *msg, size_t size);
++
++static inline int perf_evsel__group_idx(struct perf_evsel *evsel)
++{
++	return evsel->idx - evsel->leader->idx;
++}
+ #endif /* __PERF_EVSEL_H */
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 02f6421..4e0f5c2 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -884,6 +884,7 @@ int parse_events(struct perf_evlist *evlist, const char *str)
+ 	if (!ret) {
+ 		int entries = data.idx - evlist->nr_entries;
+ 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
++		evlist->nr_groups += data.nr_groups;
+ 		return 0;
  	}
  
- 	symbol_conf.nr_events = top.evlist->nr_entries;
-@@ -1187,7 +1187,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	} else {
- 		ui__error("frequency and count are zero, aborting\n");
- 		status = -EINVAL;
--		goto out_delete_evlist;
-+		goto out_delete_maps;
- 	}
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 2cd2c42..8a48593 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -64,6 +64,7 @@ struct parse_events_term {
+ struct parse_events_evlist {
+ 	struct list_head list;
+ 	int idx;
++	int nr_groups;
+ };
  
- 	top.sym_evsel = perf_evlist__first(top.evlist);
-@@ -1220,6 +1220,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ struct parse_events_terms {
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 9d43c86..4de2fdc 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -23,6 +23,14 @@ do { \
+ 		YYABORT; \
+ } while (0)
  
- 	status = __cmd_top(&top);
++static inc_group_count(struct list_head *list,
++		       struct parse_events_evlist *data)
++{
++	/* Count groups only have more than 1 members */
++	if (!list_is_last(list->next, list))
++		data->nr_groups++;
++}
++
+ %}
  
-+out_delete_maps:
-+	perf_evlist__delete_maps(top.evlist);
- out_delete_evlist:
- 	perf_evlist__delete(top.evlist);
+ %token PE_START_EVENTS PE_START_TERMS
+@@ -123,6 +131,7 @@ PE_NAME '{' events '}'
+ {
+ 	struct list_head *list = $3;
  
++	inc_group_count(list, _data);
+ 	parse_events__set_leader($1, list);
+ 	$$ = list;
+ }
+@@ -131,6 +140,7 @@ PE_NAME '{' events '}'
+ {
+ 	struct list_head *list = $2;
+ 
++	inc_group_count(list, _data);
+ 	parse_events__set_leader(NULL, list);
+ 	$$ = list;
+ }
