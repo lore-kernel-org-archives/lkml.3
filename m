@@ -1,103 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab3BAEL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 23:11:56 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:35136 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab3BAELv (ORCPT
+	id S1753872Ab3BAESk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 23:18:40 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:60949 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3BAESj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 23:11:51 -0500
-From: Len Brown <lenb@kernel.org>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 4/4] intel_idle: initial HSW support
-Date: Thu, 31 Jan 2013 23:11:36 -0500
-Message-Id: <ea7c468dd73f98795811d3d038ccc2ca3e04a5ca.1359691799.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.8.1.2.422.g08c0e7f
-In-Reply-To: <1359691896-23567-1-git-send-email-lenb@kernel.org>
-References: <1359691896-23567-1-git-send-email-lenb@kernel.org>
-In-Reply-To: <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com>
-References: <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com>
-Reply-To: Len Brown <lenb@kernel.org>
-Organization: Intel Open Source Technology Center
+	Thu, 31 Jan 2013 23:18:39 -0500
+Date: Thu, 31 Jan 2013 23:18:36 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v4 3/3] ARM: mm: use static_vm for managing static mapped
+ areas
+In-Reply-To: <1359594008-14688-4-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.LFD.2.02.1301312306080.6300@xanadu.home>
+References: <1359594008-14688-1-git-send-email-iamjoonsoo.kim@lge.com> <1359594008-14688-4-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+On Thu, 31 Jan 2013, Joonsoo Kim wrote:
 
-This patch enables intel_idle to run on the
-next-generation Intel(R) Microarchitecture code named Haswell.
+> A static mapped area is ARM-specific, so it is better not to use
+> generic vmalloc data structure, that is, vmlist and vmlist_lock
+> for managing static mapped area. And it causes some needless overhead and
+> reducing this overhead is better idea.
+> 
+> Now, we have newly introduced static_vm infrastructure.
+> With it, we don't need to iterate all mapped areas. Instead, we just
+> iterate static mapped areas. It helps to reduce an overhead of finding
+> matched area. And architecture dependency on vmalloc layer is removed,
+> so it will help to maintainability for vmalloc layer.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/idle/intel_idle.c | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+Comments below.
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 8331753..85d50a1 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -212,6 +212,38 @@ static struct cpuidle_state ivb_cstates[MWAIT_MAX_NUM_CSTATES] = {
- 		.enter = &intel_idle },
- };
- 
-+static struct cpuidle_state hsw_cstates[MWAIT_MAX_NUM_CSTATES] = {
-+	{ /* MWAIT C0 */ },
-+	{ /* MWAIT C1 */
-+		.name = "C1-HSW",
-+		.desc = "MWAIT 0x00",
-+		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 2,
-+		.target_residency = 2,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C2 */
-+		.name = "C3-HSW",
-+		.desc = "MWAIT 0x10",
-+		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 39,
-+		.target_residency = 117,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C3 */
-+		.name = "C6-HSW",
-+		.desc = "MWAIT 0x20",
-+		.flags = MWAIT_EAX_2_flags(0x20) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 55,
-+		.target_residency = 165,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C4 */
-+		.name = "C7-HSW",
-+		.desc = "MWAIT 0x30",
-+		.flags = MWAIT_EAX_2_flags(0x32) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 79,
-+		.target_residency = 237,
-+		.enter = &intel_idle },
-+};
-+
- static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
- 	{ /* MWAIT C0 */ },
- 	{ /* MWAIT C1 */
-@@ -365,6 +397,10 @@ static const struct idle_cpu idle_cpu_ivb = {
- 	.state_table = ivb_cstates,
- };
- 
-+static const struct idle_cpu idle_cpu_hsw = {
-+	.state_table = hsw_cstates,
-+};
-+
- #define ICPU(model, cpu) \
- 	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
- 
-@@ -382,6 +418,9 @@ static const struct x86_cpu_id intel_idle_ids[] = {
- 	ICPU(0x2d, idle_cpu_snb),
- 	ICPU(0x3a, idle_cpu_ivb),
- 	ICPU(0x3e, idle_cpu_ivb),
-+	ICPU(0x3c, idle_cpu_hsw),
-+	ICPU(0x3f, idle_cpu_hsw),
-+	ICPU(0x45, idle_cpu_hsw),
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
--- 
-1.8.1.2.422.g08c0e7f
+> 
+> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+> index ceb34ae..7fe5b48 100644
+> --- a/arch/arm/mm/ioremap.c
+> +++ b/arch/arm/mm/ioremap.c
+> @@ -269,13 +269,14 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+>  	const struct mem_type *type;
+>  	int err;
+>  	unsigned long addr;
+> - 	struct vm_struct * area;
+> +	struct vm_struct *area;
+> +	phys_addr_t paddr = __pfn_to_phys(pfn);
+>  
+>  #ifndef CONFIG_ARM_LPAE
+>  	/*
+>  	 * High mappings must be supersection aligned
+>  	 */
+> -	if (pfn >= 0x100000 && (__pfn_to_phys(pfn) & ~SUPERSECTION_MASK))
+> +	if (pfn >= 0x100000 && (paddr & ~SUPERSECTION_MASK))
+>  		return NULL;
+>  #endif
+>  
+> @@ -291,24 +292,17 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+>  	/*
+>  	 * Try to reuse one of the static mapping whenever possible.
+>  	 */
+> -	read_lock(&vmlist_lock);
+> -	for (area = vmlist; area; area = area->next) {
+> -		if (!size || (sizeof(phys_addr_t) == 4 && pfn >= 0x100000))
+> -			break;
+> -		if (!(area->flags & VM_ARM_STATIC_MAPPING))
+> -			continue;
+> -		if ((area->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
+> -			continue;
+> -		if (__phys_to_pfn(area->phys_addr) > pfn ||
+> -		    __pfn_to_phys(pfn) + size-1 > area->phys_addr + area->size-1)
+> -			continue;
+> -		/* we can drop the lock here as we know *area is static */
+> -		read_unlock(&vmlist_lock);
+> -		addr = (unsigned long)area->addr;
+> -		addr += __pfn_to_phys(pfn) - area->phys_addr;
+> -		return (void __iomem *) (offset + addr);
+> +	if (size && !((sizeof(phys_addr_t) == 4 && pfn >= 0x100000))) {
+> +		struct static_vm *svm;
+> +
+> +		svm = find_static_vm_paddr(paddr, size,
+> +				STATIC_VM_TYPE(STATIC_VM_MEM, mtype));
+> +		if (svm) {
+> +			addr = (unsigned long)svm->vm.addr;
+> +			addr += paddr - svm->vm.phys_addr;
+> +			return (void __iomem *) (offset + addr);
+> +		}
+>  	}
+> -	read_unlock(&vmlist_lock);
+>  
+>  	/*
+>  	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
+> @@ -320,21 +314,21 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+>   	if (!area)
+>   		return NULL;
+>   	addr = (unsigned long)area->addr;
+> -	area->phys_addr = __pfn_to_phys(pfn);
+> +	area->phys_addr = paddr;
+>  
+>  #if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
+>  	if (DOMAIN_IO == 0 &&
+>  	    (((cpu_architecture() >= CPU_ARCH_ARMv6) && (get_cr() & CR_XP)) ||
+>  	       cpu_is_xsc3()) && pfn >= 0x100000 &&
+> -	       !((__pfn_to_phys(pfn) | size | addr) & ~SUPERSECTION_MASK)) {
+> +	       !((paddr | size | addr) & ~SUPERSECTION_MASK)) {
+>  		area->flags |= VM_ARM_SECTION_MAPPING;
+>  		err = remap_area_supersections(addr, pfn, size, type);
+> -	} else if (!((__pfn_to_phys(pfn) | size | addr) & ~PMD_MASK)) {
+> +	} else if (!((paddr | size | addr) & ~PMD_MASK)) {
+>  		area->flags |= VM_ARM_SECTION_MAPPING;
+>  		err = remap_area_sections(addr, pfn, size, type);
+>  	} else
+>  #endif
+> -		err = ioremap_page_range(addr, addr + size, __pfn_to_phys(pfn),
+> +		err = ioremap_page_range(addr, addr + size, paddr,
+>  					 __pgprot(type->prot_pte));
+>  
+>  	if (err) {
+> @@ -418,34 +412,21 @@ __arm_ioremap_exec(unsigned long phys_addr, size_t size, bool cached)
+>  void __iounmap(volatile void __iomem *io_addr)
+>  {
+>  	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
+> -	struct vm_struct *vm;
+> +	struct static_vm *svm;
+> +
 
+You could salvage the "/* If this is a static mapping we must leave it 
+alone */" comment here.
+
+> +	svm = find_static_vm_vaddr(addr);
+> +	if (svm)
+> +		return;
+>  
+> -	read_lock(&vmlist_lock);
+> -	for (vm = vmlist; vm; vm = vm->next) {
+> -		if (vm->addr > addr)
+> -			break;
+> -		if (!(vm->flags & VM_IOREMAP))
+> -			continue;
+> -		/* If this is a static mapping we must leave it alone */
+> -		if ((vm->flags & VM_ARM_STATIC_MAPPING) &&
+> -		    (vm->addr <= addr) && (vm->addr + vm->size > addr)) {
+> -			read_unlock(&vmlist_lock);
+> -			return;
+> -		}
+>  #if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
+> -		/*
+> -		 * If this is a section based mapping we need to handle it
+> -		 * specially as the VM subsystem does not know how to handle
+> -		 * such a beast.
+> -		 */
+
+Please don't remove the above comment.  It is still relevant.
+
+> -		if ((vm->addr == addr) &&
+> -		    (vm->flags & VM_ARM_SECTION_MAPPING)) {
+> +	{
+> +		struct vm_struct *vm;
+> +
+> +		vm = find_vm_area(addr);
+> +		if (vm && (vm->flags & VM_ARM_SECTION_MAPPING))
+>  			unmap_area_sections((unsigned long)vm->addr, vm->size);
+> -			break;
+> -		}
+> -#endif
+>  	}
+> -	read_unlock(&vmlist_lock);
+> +#endif
+>  
+>  	vunmap(addr);
+>  }
+> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+> index fb45c79..24c1df4 100644
+> --- a/arch/arm/mm/mm.h
+> +++ b/arch/arm/mm/mm.h
+> @@ -54,16 +54,6 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
+>  /* (super)section-mapped I/O regions used by ioremap()/iounmap() */
+>  #define VM_ARM_SECTION_MAPPING	0x80000000
+>  
+> -/* permanent static mappings from iotable_init() */
+> -#define VM_ARM_STATIC_MAPPING	0x40000000
+> -
+> -/* empty mapping */
+> -#define VM_ARM_EMPTY_MAPPING	0x20000000
+> -
+> -/* mapping type (attributes) for permanent static mappings */
+> -#define VM_ARM_MTYPE(mt)		((mt) << 20)
+> -#define VM_ARM_MTYPE_MASK	(0x1f << 20)
+> -
+
+This goes with a related question in my previous email: why didn't you 
+keep those flags as they were?
+
+
+Nicolas
