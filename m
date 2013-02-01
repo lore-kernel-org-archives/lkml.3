@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422756Ab3BANNA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:13:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45315 "EHLO mail.kernel.org"
+	id S1422767Ab3BANNI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:13:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45325 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422659Ab3BANMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:12:55 -0500
+	id S1422754Ab3BANNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:13:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Santos <nicholas.santos@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 59/89] HID: usbhid: quirk for Formosa IR receiver
-Date: Fri,  1 Feb 2013 14:08:14 +0100
-Message-Id: <20130201130211.739004292@linuxfoundation.org>
+        Wang YanQing <udknight@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Beulich <jbeulich@suse.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
+        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com
+Subject: [ 60/89] smp: Fix SMP function call empty cpu mask race
+Date: Fri,  1 Feb 2013 14:08:15 +0100
+Message-Id: <20130201130211.811016508@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,47 +31,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Santos <nicholas.santos@gmail.com>
+From: Wang YanQing <udknight@gmail.com>
 
-commit 320cde19a4e8f122b19d2df7a5c00636e11ca3fb upstream.
+commit f44310b98ddb7f0d06550d73ed67df5865e3eda5 upstream.
 
-Patch to add the Formosa Industrial Computing, Inc. Infrared Receiver
-[IR605A/Q] to hid-ids.h and hid-quirks.c.  This IR receiver causes about a 10
-second timeout when the usbhid driver attempts to initialze the device.  Adding
-this device to the quirks list with HID_QUIRK_NO_INIT_REPORTS removes the
-delay.
+I get the following warning every day with v3.7, once or
+twice a day:
 
-Signed-off-by: Nicholas Santos <nicholas.santos@gmail.com>
-[jkosina@suse.cz: fix ordering]
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+  [ 2235.186027] WARNING: at /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x2f/0xb8()
+
+As explained by Linus as well:
+
+ |
+ | Once we've done the "list_add_rcu()" to add it to the
+ | queue, we can have (another) IPI to the target CPU that can
+ | now see it and clear the mask.
+ |
+ | So by the time we get to actually send the IPI, the mask might
+ | have been cleared by another IPI.
+ |
+
+This patch also fixes a system hang problem, if the data->cpumask
+gets cleared after passing this point:
+
+        if (WARN_ONCE(!mask, "empty IPI mask"))
+                return;
+
+then the problem in commit 83d349f35e1a ("x86: don't send an IPI to
+the empty set of CPU's") will happen again.
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: peterz@infradead.org
+Cc: mina86@mina86.org
+Cc: srivatsa.bhat@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/20130126075357.GA3205@udknight
+[ Tidied up the changelog and the comment in the code. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ kernel/smp.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -305,6 +305,9 @@
- #define USB_VENDOR_ID_EZKEY		0x0518
- #define USB_DEVICE_ID_BTC_8193		0x0002
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -33,6 +33,7 @@ struct call_function_data {
+ 	struct call_single_data	csd;
+ 	atomic_t		refs;
+ 	cpumask_var_t		cpumask;
++	cpumask_var_t		cpumask_ipi;
+ };
  
-+#define USB_VENDOR_ID_FORMOSA          0x147a
-+#define USB_DEVICE_ID_FORMOSA_IR_RECEIVER      0xe03e
-+
- #define USB_VENDOR_ID_FREESCALE		0x15A2
- #define USB_DEVICE_ID_FREESCALE_MX28	0x004F
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
+@@ -56,6 +57,9 @@ hotplug_cfd(struct notifier_block *nfb,
+ 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
+ 				cpu_to_node(cpu)))
+ 			return notifier_from_errno(-ENOMEM);
++		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
++				cpu_to_node(cpu)))
++			return notifier_from_errno(-ENOMEM);
+ 		break;
  
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -70,6 +70,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -65,6 +69,7 @@ hotplug_cfd(struct notifier_block *nfb,
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+ 		free_cpumask_var(cfd->cpumask);
++		free_cpumask_var(cfd->cpumask_ipi);
+ 		break;
+ #endif
+ 	};
+@@ -526,6 +531,12 @@ void smp_call_function_many(const struct
+ 		return;
+ 	}
+ 
++	/*
++	 * After we put an entry into the list, data->cpumask
++	 * may be cleared again when another CPU sends another IPI for
++	 * a SMP function call, so data->cpumask will be zero.
++	 */
++	cpumask_copy(data->cpumask_ipi, data->cpumask);
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+ 	 * Place entry at the _HEAD_ of the list, so that any cpu still
+@@ -549,7 +560,7 @@ void smp_call_function_many(const struct
+ 	smp_mb();
+ 
+ 	/* Send a message to all CPUs in the map */
+-	arch_send_call_function_ipi_mask(data->cpumask);
++	arch_send_call_function_ipi_mask(data->cpumask_ipi);
+ 
+ 	/* Optionally wait for the CPUs to complete */
+ 	if (wait)
 
 
