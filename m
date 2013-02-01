@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030238Ab3BALCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 06:02:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38634 "EHLO mail.kernel.org"
+	id S1422668Ab3BAKrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:47:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38613 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030200Ab3BAKr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:47:59 -0500
+	id S1755828Ab3BAKrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:47:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 07/15] ath9k_htc: Fix memory leak
-Date: Fri,  1 Feb 2013 11:48:40 +0100
-Message-Id: <20130201104757.001847279@linuxfoundation.org>
+        James Bottomley <JBottomley@Parallels.com>,
+        Subhash Jadavani <subhashj@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 05/15] ARM: DMA: Fix struct page iterator in dma_cache_maint() to work with sparsemem
+Date: Fri,  1 Feb 2013 11:48:38 +0100
+Message-Id: <20130201104756.848500935@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104756.470588207@linuxfoundation.org>
 References: <20130201104756.470588207@linuxfoundation.org>
@@ -27,34 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 0981c3b24ef664f5611008a6e6d0622fac6d892b upstream.
+commit 15653371c67c3fbe359ae37b720639dd4c7b42c5 upstream.
 
-SKBs that are allocated in the HTC layer do not have callbacks
-registered and hence ended up not being freed, Fix this by freeing
-them properly in the TX completion routine.
+Subhash Jadavani reported this partial backtrace:
+  Now consider this call stack from MMC block driver (this is on the ARMv7
+  based board):
 
-Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
+  [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
+  [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from [<c0017ff8>] (dma_map_sg+0x3c/0x114)
+
+This is caused by incrementing the struct page pointer, and running off
+the end of the sparsemem page array.  Fix this by incrementing by pfn
+instead, and convert the pfn to a struct page.
+
+Suggested-by: James Bottomley <JBottomley@Parallels.com>
+Tested-by: Subhash Jadavani <subhashj@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_hst.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/mm/dma-mapping.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_hst.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_hst.c
-@@ -342,6 +342,8 @@ void ath9k_htc_txcompletion_cb(struct ht
- 			endpoint->ep_callbacks.tx(endpoint->ep_callbacks.priv,
- 						  skb, htc_hdr->endpoint_id,
- 						  txok);
-+		} else {
-+			kfree_skb(skb);
- 		}
- 	}
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -467,25 +467,27 @@ static void dma_cache_maint_page(struct
+ 	size_t size, enum dma_data_direction dir,
+ 	void (*op)(const void *, size_t, int))
+ {
++	unsigned long pfn;
++	size_t left = size;
++
++	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
++	offset %= PAGE_SIZE;
++
+ 	/*
+ 	 * A single sg entry may refer to multiple physically contiguous
+ 	 * pages.  But we still need to process highmem pages individually.
+ 	 * If highmem is not configured then the bulk of this loop gets
+ 	 * optimized out.
+ 	 */
+-	size_t left = size;
+ 	do {
+ 		size_t len = left;
+ 		void *vaddr;
  
++		page = pfn_to_page(pfn);
++
+ 		if (PageHighMem(page)) {
+-			if (len + offset > PAGE_SIZE) {
+-				if (offset >= PAGE_SIZE) {
+-					page += offset / PAGE_SIZE;
+-					offset %= PAGE_SIZE;
+-				}
++			if (len + offset > PAGE_SIZE)
+ 				len = PAGE_SIZE - offset;
+-			}
+ 			vaddr = kmap_high_get(page);
+ 			if (vaddr) {
+ 				vaddr += offset;
+@@ -502,7 +504,7 @@ static void dma_cache_maint_page(struct
+ 			op(vaddr, len, dir);
+ 		}
+ 		offset = 0;
+-		page++;
++		pfn++;
+ 		left -= len;
+ 	} while (left);
+ }
 
 
