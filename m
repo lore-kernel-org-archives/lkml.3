@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab3BAKVN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:21:13 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17451 "EHLO
+	id S1756165Ab3BAKV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:21:58 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17561 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab3BAKVK (ORCPT
+	with ESMTP id S1753583Ab3BAKV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:21:10 -0500
+	Fri, 1 Feb 2013 05:21:56 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 01 Feb 2013 02:18:33 -0800
+	by hqnvupgp07.nvidia.com on Fri, 01 Feb 2013 02:21:27 -0800
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: <pdeschrijver@nvidia.com>
 CC: Grant Likely <grant.likely@secretlab.ca>,
@@ -20,9 +20,9 @@ CC: Grant Likely <grant.likely@secretlab.ca>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v5 02/10] clk: tegra: Add TEGRA_PLL_BYPASS flag
-Date: Fri, 1 Feb 2013 12:18:31 +0200
-Message-ID: <1359713962-16822-3-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v5 03/10] clk: tegra: Add PLL post divider table
+Date: Fri, 1 Feb 2013 12:18:32 +0200
+Message-ID: <1359713962-16822-4-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
@@ -33,112 +33,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all PLLs in Tegra114 have a bypass bit. Adapt the common code to only use
-this bit when available.
+Some PLLs in Tegra114 don't use a power of 2 mapping for the post divider.
+Introduce a table based approach and switch PLLU to it.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/clk/tegra/clk-pll.c |   15 ++++++++++-----
- drivers/clk/tegra/clk.h     |    8 +++++---
- 2 files changed, 15 insertions(+), 8 deletions(-)
+ drivers/clk/tegra/clk-pll.c     |   38 ++++++++++++++++++++++++++++++++------
+ drivers/clk/tegra/clk-tegra20.c |    7 +++++++
+ drivers/clk/tegra/clk-tegra30.c |    7 +++++++
+ drivers/clk/tegra/clk.h         |   13 +++++++++++++
+ 4 files changed, 59 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-index 912c977..3c3a25e 100644
+index 3c3a25e..87d2f34 100644
 --- a/drivers/clk/tegra/clk-pll.c
 +++ b/drivers/clk/tegra/clk-pll.c
-@@ -166,7 +166,8 @@ static void _clk_pll_enable(struct clk_hw *hw)
- 	clk_pll_enable_lock(pll);
+@@ -258,6 +258,7 @@ static int _calc_rate(struct clk_hw *hw, struct tegra_clk_pll_freq_table *cfg,
+ 		      unsigned long rate, unsigned long parent_rate)
+ {
+ 	struct tegra_clk_pll *pll = to_clk_pll(hw);
++	struct pdiv_map *p_tohw = pll->params->pdiv_tohw;
+ 	unsigned long cfreq;
+ 	u32 p_div = 0;
  
- 	val = pll_readl_base(pll);
--	val &= ~PLL_BASE_BYPASS;
-+	if (pll->flags & TEGRA_PLL_BYPASS)
-+		val &= ~PLL_BASE_BYPASS;
- 	val |= PLL_BASE_ENABLE;
- 	pll_writel_base(val, pll);
+@@ -291,7 +292,6 @@ static int _calc_rate(struct clk_hw *hw, struct tegra_clk_pll_freq_table *cfg,
+ 	     cfg->output_rate <<= 1)
+ 		p_div++;
  
-@@ -183,7 +184,9 @@ static void _clk_pll_disable(struct clk_hw *hw)
+-	cfg->p = p_div;
+ 	cfg->m = parent_rate / cfreq;
+ 	cfg->n = cfg->output_rate / cfreq;
+ 	cfg->cpcon = OUT_OF_TABLE_CPCON;
+@@ -304,8 +304,19 @@ static int _calc_rate(struct clk_hw *hw, struct tegra_clk_pll_freq_table *cfg,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (pll->flags & TEGRA_PLLU)
+-		cfg->p ^= 1;
++	if (p_tohw) {
++		p_div = 1 << p_div;
++		while (p_tohw->pdiv) {
++			if (p_div <= p_tohw->pdiv) {
++				cfg->p = p_tohw->hw_val;
++				break;
++			}
++			p_tohw++;
++		}
++		if (!p_tohw->pdiv)
++			return -EINVAL;
++	} else
++		cfg->p = p_div;
+ 
+ 	return 0;
+ }
+@@ -452,8 +463,10 @@ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
+ {
+ 	struct tegra_clk_pll *pll = to_clk_pll(hw);
+ 	struct tegra_clk_pll_freq_table cfg;
++	struct pdiv_map *p_tohw = pll->params->pdiv_tohw;
  	u32 val;
- 
- 	val = pll_readl_base(pll);
--	val &= ~(PLL_BASE_BYPASS | PLL_BASE_ENABLE);
-+	if (pll->flags & TEGRA_PLL_BYPASS)
-+		val &= ~PLL_BASE_BYPASS;
-+	val &= ~PLL_BASE_ENABLE;
- 	pll_writel_base(val, pll);
- 
- 	if (pll->flags & TEGRA_PLLM) {
-@@ -454,7 +457,7 @@ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
+ 	u64 rate = parent_rate;
++	int pdiv;
  
  	val = pll_readl_base(pll);
  
--	if (val & PLL_BASE_BYPASS)
-+	if ((pll->flags & TEGRA_PLL_BYPASS) && (val & PLL_BASE_BYPASS))
- 		return parent_rate;
+@@ -472,10 +485,23 @@ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
  
- 	if ((pll->flags & TEGRA_PLL_FIXED) && !(val & PLL_BASE_OVERRIDE)) {
-@@ -660,9 +663,10 @@ static struct clk *_tegra_clk_register_pll(const char *name,
- struct clk *tegra_clk_register_pll(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
- 		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock)
- {
-+	pll_flags |= TEGRA_PLL_BYPASS;
- 	return _tegra_clk_register_pll(name, parent_name, clk_base, pmc,
- 			flags, fixed_rate, pll_params, pll_flags, freq_table,
- 			lock, &tegra_clk_pll_ops);
-@@ -671,9 +675,10 @@ struct clk *tegra_clk_register_pll(const char *name, const char *parent_name,
- struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
- 		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock)
- {
-+	pll_flags |= TEGRA_PLL_BYPASS;
- 	return _tegra_clk_register_pll(name, parent_name, clk_base, pmc,
- 			flags, fixed_rate, pll_params, pll_flags, freq_table,
- 			lock, &tegra_clk_plle_ops);
+ 	_get_pll_mnp(pll, &cfg);
+ 
+-	if (pll->flags & TEGRA_PLLU)
+-		cfg.p ^= 1;
++	if (p_tohw) {
++		while (p_tohw->pdiv) {
++			if (cfg.p == p_tohw->hw_val) {
++				pdiv = p_tohw->pdiv;
++				break;
++			}
++			p_tohw++;
++		}
++
++		if (!p_tohw->pdiv) {
++			WARN_ON(1);
++			pdiv = 1;
++		}
++	} else
++		pdiv = 1 << cfg.p;
+ 
+-	cfg.m *= 1 << cfg.p;
++	cfg.m *= pdiv;
+ 
+ 	rate *= cfg.n;
+ 	do_div(rate, cfg.m);
+diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
+index 30bd3fd..54c6777 100644
+--- a/drivers/clk/tegra/clk-tegra20.c
++++ b/drivers/clk/tegra/clk-tegra20.c
+@@ -440,6 +440,12 @@ static struct tegra_clk_pll_params pll_d_params = {
+ 	.lock_delay = 1000,
+ };
+ 
++static struct pdiv_map pllu_p[] = {
++	{ .pdiv = 1, .hw_val = 1 },
++	{ .pdiv = 2, .hw_val = 0 },
++	{ .pdiv = 0, .hw_val = 0 },
++};
++
+ static struct tegra_clk_pll_params pll_u_params = {
+ 	.input_min = 2000000,
+ 	.input_max = 40000000,
+@@ -452,6 +458,7 @@ static struct tegra_clk_pll_params pll_u_params = {
+ 	.lock_bit_idx = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLLDU_MISC_LOCK_ENABLE,
+ 	.lock_delay = 1000,
++	.pdiv_tohw = pllu_p,
+ };
+ 
+ static struct tegra_clk_pll_params pll_x_params = {
+diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+index 28a2997..078f9b8 100644
+--- a/drivers/clk/tegra/clk-tegra30.c
++++ b/drivers/clk/tegra/clk-tegra30.c
+@@ -466,6 +466,12 @@ static struct tegra_clk_pll_freq_table pll_d_freq_table[] = {
+ 	{ 0, 0, 0, 0, 0, 0 },
+ };
+ 
++static struct pdiv_map pllu_p[] = {
++	{ .pdiv = 1, .hw_val = 1 },
++	{ .pdiv = 2, .hw_val = 0 },
++	{ .pdiv = 0, .hw_val = 0 },
++};
++
+ static struct tegra_clk_pll_freq_table pll_u_freq_table[] = {
+ 	{ 12000000, 480000000, 960, 12, 0, 12},
+ 	{ 13000000, 480000000, 960, 13, 0, 12},
+@@ -639,6 +645,7 @@ static struct tegra_clk_pll_params pll_u_params = {
+ 	.lock_bit_idx = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLLDU_MISC_LOCK_ENABLE,
+ 	.lock_delay = 1000,
++	.pdiv_tohw = pllu_p,
+ };
+ 
+ static struct tegra_clk_pll_params pll_x_params = {
 diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index a09d7dc..3cff1df 100644
+index 3cff1df..1b9cbcd 100644
 --- a/drivers/clk/tegra/clk.h
 +++ b/drivers/clk/tegra/clk.h
-@@ -182,12 +182,13 @@ struct tegra_clk_pll_params {
-  * TEGRA_PLL_FIXED - We are not supposed to change output frequency
-  *     of some plls.
-  * TEGRA_PLLE_CONFIGURE - Configure PLLE when enabling.
-+ * TEGRA_PLL_BYPASS - PLL has bypass bit
-  */
- struct tegra_clk_pll {
- 	struct clk_hw	hw;
- 	void __iomem	*clk_base;
- 	void __iomem	*pmc;
--	u8		flags;
-+	u32		flags;
- 	unsigned long	fixed_rate;
- 	spinlock_t	*lock;
- 	u8		divn_shift;
-@@ -210,18 +211,19 @@ struct tegra_clk_pll {
- #define TEGRA_PLLM BIT(5)
- #define TEGRA_PLL_FIXED BIT(6)
- #define TEGRA_PLLE_CONFIGURE BIT(7)
-+#define TEGRA_PLL_BYPASS BIT(8)
+@@ -117,6 +117,17 @@ struct tegra_clk_pll_freq_table {
+ };
  
- extern const struct clk_ops tegra_clk_pll_ops;
- extern const struct clk_ops tegra_clk_plle_ops;
- struct clk *tegra_clk_register_pll(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
- 		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock);
- struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
- 		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock);
+ /**
++ * struct pdiv_map - map post divider to hw value
++ *
++ * @pdiv:		post divider
++ * @hw_val:		value to be written to the PLL hw
++ */
++struct pdiv_map {
++	u8 pdiv;
++	u8 hw_val;
++};
++
++/**
+  * struct clk_pll_params - PLL parameters
+  *
+  * @input_min:			Minimum input frequency
+@@ -146,6 +157,8 @@ struct tegra_clk_pll_params {
+ 	u32		lock_bit_idx;
+ 	u32		lock_enable_bit_idx;
+ 	int		lock_delay;
++	int		max_p;
++	struct pdiv_map *pdiv_tohw;
+ };
  
  /**
 
