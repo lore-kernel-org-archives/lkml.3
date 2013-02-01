@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab3BANHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:07:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44289 "EHLO mail.kernel.org"
+	id S1030192Ab3BANHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:07:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44312 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757005Ab3BANHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:07:36 -0500
+	id S1757115Ab3BANHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:07:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 01/89] can: c_can: fix invalid error codes
-Date: Fri,  1 Feb 2013 14:07:16 +0100
-Message-Id: <20130201130207.558432671@linuxfoundation.org>
+        Stephen Boyd <sboyd@codeaurora.org>, Patrik Kluba <pkluba@dension.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 11/89] ARM: 7627/1: Predicate preempt logic on PREEMP_COUNT not PREEMPT alone
+Date: Fri,  1 Feb 2013 14:07:26 +0100
+Message-Id: <20130201130208.269808012@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,41 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Sobrie <olivier@sobrie.be>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 6ea45886865c1abb01bb861f7f6bdd5d0f398cb3 upstream.
+commit 568dca15aa2a0f4ddee255894ec393a159f13147 upstream.
 
-Errors in CAN protocol (location) are reported in data[3] of the can
-frame instead of data[2].
+Patrik Kluba reports that the preempt count becomes invalid due
+to the preempt_enable() call being unbalanced with a
+preempt_disable() call in the vfp assembly routines. This happens
+because preempt_enable() and preempt_disable() update preempt
+counts under PREEMPT_COUNT=y but the vfp assembly routines do so
+under PREEMPT=y. In a configuration where PREEMPT=n and
+DEBUG_ATOMIC_SLEEP=y, PREEMPT_COUNT=y and so the preempt_enable()
+call in VFP_bounce() keeps subtracting from the preempt count
+until it goes negative.
 
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Fix this by always using PREEMPT_COUNT to decided when to update
+preempt counts in the ARM assembly code.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Reported-by: Patrik Kluba <pkluba@dension.com>
+Tested-by: Patrik Kluba <pkluba@dension.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/vfp/entry.S |    6 +++---
+ arch/arm/vfp/vfphw.S |    4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -954,7 +954,7 @@ static int c_can_handle_bus_err(struct n
- 		break;
- 	case LEC_ACK_ERROR:
- 		netdev_dbg(dev, "ack error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_ACK |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_ACK |
- 				CAN_ERR_PROT_LOC_ACK_DEL);
- 		break;
- 	case LEC_BIT1_ERROR:
-@@ -967,7 +967,7 @@ static int c_can_handle_bus_err(struct n
- 		break;
- 	case LEC_CRC_ERROR:
- 		netdev_dbg(dev, "CRC error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
- 				CAN_ERR_PROT_LOC_CRC_DEL);
- 		break;
- 	default:
+--- a/arch/arm/vfp/entry.S
++++ b/arch/arm/vfp/entry.S
+@@ -22,7 +22,7 @@
+ @  IRQs disabled.
+ @
+ ENTRY(do_vfp)
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	add	r11, r4, #1		@ increment it
+ 	str	r11, [r10, #TI_PREEMPT]
+@@ -35,7 +35,7 @@ ENTRY(do_vfp)
+ ENDPROC(do_vfp)
+ 
+ ENTRY(vfp_null_entry)
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	get_thread_info	r10
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	sub	r11, r4, #1		@ decrement it
+@@ -53,7 +53,7 @@ ENDPROC(vfp_null_entry)
+ 
+ 	__INIT
+ ENTRY(vfp_testing_entry)
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	get_thread_info	r10
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	sub	r11, r4, #1		@ decrement it
+--- a/arch/arm/vfp/vfphw.S
++++ b/arch/arm/vfp/vfphw.S
+@@ -168,7 +168,7 @@ vfp_hw_state_valid:
+ 					@ else it's one 32-bit instruction, so
+ 					@ always subtract 4 from the following
+ 					@ instruction address.
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	get_thread_info	r10
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	sub	r11, r4, #1		@ decrement it
+@@ -192,7 +192,7 @@ look_for_VFP_exceptions:
+ 	@ not recognised by VFP
+ 
+ 	DBGSTR	"not VFP"
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	get_thread_info	r10
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	sub	r11, r4, #1		@ decrement it
 
 
