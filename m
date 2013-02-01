@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019Ab3BANIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:08:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44355 "EHLO mail.kernel.org"
+	id S1757156Ab3BANIQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:08:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44365 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044Ab3BANIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:08:05 -0500
+	id S1757127Ab3BANIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:08:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Martin <dave.martin@linaro.org>,
-        Harry Liebel <harry.liebel@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>
-Subject: [ 15/89] ARM: virt: simplify __hyp_stub_install epilog
-Date: Fri,  1 Feb 2013 14:07:30 +0100
-Message-Id: <20130201130208.552428547@linuxfoundation.org>
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 16/89] mfd: tc3589x: Use simple irqdomain
+Date: Fri,  1 Feb 2013 14:07:31 +0100
+Message-Id: <20130201130208.620954318@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,57 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Zyngier <marc.zyngier@arm.com>
+From: Linus Walleij <linus.walleij@stericsson.com>
 
-commit d01723479e6a6c70c83295f7847477a016d5e14a upstream.
+commit 1f0529b4d80ad02df637be67ed4f82e93b8db32f upstream.
 
-__hyp_stub_install duplicates quite a bit of safe_svcmode_maskall
-by forcing the CPU back to SVC. This is unnecessary, as
-safe_svcmode_maskall is called just after.
+This fixes a regression in the TC3589x driver introduced in
+commit 15e27b1088245a2de3b7d09d39cd209212eb16af
+"mfd: Provide the tc3589x with its own IRQ domain"
 
-Furthermore, the way we build SPSR_hyp is buggy as we fail to mask
-the interrupts, leading to interesting behaviours on TC2 + UEFI.
+If a system with a TC3589x expander is booted and a base
+IRQ is passed from platform data, a legacy domain will
+be used. However, since the Ux500 is now switched to use
+SPARSE_IRQ, no descriptors get allocated on-the-fly,
+and we get a crash.
 
-The fix is to simply remove this code and rely on safe_svcmode_maskall
-to do the right thing.
+Fix this by switching to using the simple irqdomain that
+will handle this uniformly and also allocates descriptors
+explicitly.
 
-Reviewed-by: Dave Martin <dave.martin@linaro.org>
-Reported-by: Harry Liebel <harry.liebel@arm.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Also fix two small whitespace errors in the vicinity while
+we're at it.
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/hyp-stub.S |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/mfd/tc3589x.c |   17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
 
---- a/arch/arm/kernel/hyp-stub.S
-+++ b/arch/arm/kernel/hyp-stub.S
-@@ -120,7 +120,8 @@ ENTRY(__hyp_stub_install_secondary)
-  * Eventually, CPU-specific code might be needed -- assume not for now
-  *
-  * This code relies on the "eret" instruction to synchronize the
-- * various coprocessor accesses.
-+ * various coprocessor accesses. This is done when we switch to SVC
-+ * (see safe_svcmode_maskall).
-  */
- 	@ Now install the hypervisor stub:
- 	adr	r7, __hyp_stub_vectors
-@@ -155,14 +156,7 @@ THUMB(	orr	r7, #(1 << 30)	)	@ HSCTLR.TE
- 1:
- #endif
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -219,25 +219,18 @@ static void tc3589x_irq_unmap(struct irq
+ }
  
--	bic	r7, r4, #MODE_MASK
--	orr	r7, r7, #SVC_MODE
--THUMB(	orr	r7, r7, #PSR_T_BIT	)
--	msr	spsr_cxsf, r7		@ This is SPSR_hyp.
--
--	__MSR_ELR_HYP(14)		@ msr elr_hyp, lr
--	__ERET				@ return, switching to SVC mode
--					@ The boot CPU mode is left in r4.
-+	bx	lr			@ The boot CPU mode is left in r4.
- ENDPROC(__hyp_stub_install_secondary)
+ static struct irq_domain_ops tc3589x_irq_ops = {
+-        .map    = tc3589x_irq_map,
++	.map    = tc3589x_irq_map,
+ 	.unmap  = tc3589x_irq_unmap,
+-        .xlate  = irq_domain_xlate_twocell,
++	.xlate  = irq_domain_xlate_twocell,
+ };
  
- __hyp_stub_do_trap:
+ static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
+ {
+ 	int base = tc3589x->irq_base;
+ 
+-	if (base) {
+-		tc3589x->domain = irq_domain_add_legacy(
+-			NULL, TC3589x_NR_INTERNAL_IRQS, base,
+-			0, &tc3589x_irq_ops, tc3589x);
+-	}
+-	else {
+-		tc3589x->domain = irq_domain_add_linear(
+-			np, TC3589x_NR_INTERNAL_IRQS,
+-			&tc3589x_irq_ops, tc3589x);
+-	}
++	tc3589x->domain = irq_domain_add_simple(
++		np, TC3589x_NR_INTERNAL_IRQS, base,
++		&tc3589x_irq_ops, tc3589x);
+ 
+ 	if (!tc3589x->domain) {
+ 		dev_err(tc3589x->dev, "Failed to create irqdomain\n");
 
 
