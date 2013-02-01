@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab3BAKZt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:25:49 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59359 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755626Ab3BAKZr (ORCPT
+	id S1756613Ab3BAKZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:25:51 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17876 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab3BAKZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Feb 2013 05:25:47 -0500
-Date: Fri, 1 Feb 2013 11:25:46 +0100
-From: Pavel Machek <pavel@denx.de>
-To: Phil Turmel <philip@turmel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: paul.szabo@sydney.edu.au, ben@decadent.org.uk, dave@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: PAE problems was [RFC] Reproducible OOM with just a few sleeps
-Message-ID: <20130201102545.GA3053@amd.pavel.ucw.cz>
-References: <201302010313.r113DTj3027195@como.maths.usyd.edu.au>
- <510B46C3.5040505@turmel.org>
- <20130201102044.GA2801@amd.pavel.ucw.cz>
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 01 Feb 2013 02:23:11 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <pdeschrijver@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v5 08/10] ARM: dt: Add references to tegra_car clocks
+Date: Fri, 1 Feb 2013 12:18:37 +0200
+Message-ID: <1359713962-16822-9-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130201102044.GA2801@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add references to tegra_car clocks for the basic device nodes.
 
-On Fri 2013-02-01 11:20:44, Pavel Machek wrote:
-> On Thu 2013-01-31 23:38:27, Phil Turmel wrote:
-> > On 01/31/2013 10:13 PM, paul.szabo@sydney.edu.au wrote:
-> > > [trim /] Does not that prove that PAE is broken?
-> > 
-> > Please, Paul, take *yes* for an answer.  It is broken.  You've received
-> > multiple dissertations on why it is going to stay that way.  Unless you
-> > fix it yourself, and everyone seems to be politely wishing you the best
-> > of luck with that.
-> 
-> It is not Paul's job to fix PAE. It is job of whoever broke it to do
-> so.
-> 
-> If it is broken with 2GB of RAM, it is clearly not the known "lowmem
-> starvation" issue, it is something else... and probably worth
-> debugging.
-> 
-> So, Paul, if you have time and interest... Try to find some old kernel
-> version where sleep test works with PAE. Hopefully there is one. Then
-> do bisection... author of the patch should then fix it. (And if not,
-> at least you have patch you can revert.)
-> 
-> rjw is worth cc-ing at that point.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/boot/dts/tegra114.dtsi |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-Ouch, and... IIRC (hpa should know for sure), PAE is neccessary for
-R^X support on x86, thus getting more common, not less. If it does not
-work, that's bad news.
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+index 96a8235..1dec620 100644
+--- a/arch/arm/boot/dts/tegra114.dtsi
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -27,7 +27,7 @@
+ 	};
+ 
+ 	tegra_car: clock {
+-		compatible = "nvidia,tegra114-car, nvidia,tegra30-car";
++		compatible = "nvidia,tegra114-car";
+ 		reg = <0x60006000 0x1000>;
+ 		#clock-cells = <1>;
+ 	};
+@@ -43,6 +43,7 @@
+ 		reg-shift = <2>;
+ 		interrupts = <0 36 0x04>;
+ 		status = "disabled";
++		clocks = <&tegra_car 6>;
+ 	};
+ 
+ 	serial@70006040 {
+@@ -51,6 +52,7 @@
+ 		reg-shift = <2>;
+ 		interrupts = <0 37 0x04>;
+ 		status = "disabled";
++		clocks = <&tegra_car 192>;
+ 	};
+ 
+ 	serial@70006200 {
+@@ -59,6 +61,7 @@
+ 		reg-shift = <2>;
+ 		interrupts = <0 46 0x04>;
+ 		status = "disabled";
++		clocks = <&tegra_car 55>;
+ 	};
+ 
+ 	serial@70006300 {
+@@ -67,12 +70,14 @@
+ 		reg-shift = <2>;
+ 		interrupts = <0 90 0x04>;
+ 		status = "disabled";
++		clocks = <&tegra_car 65>;
+ 	};
+ 
+ 	rtc {
+ 		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
+ 		reg = <0x7000e000 0x100>;
+ 		interrupts = <0 2 0x04>;
++		clocks = <&tegra_car 4>;
+ 	};
+ 
+ 	pmc {
 
-Actually, if PAE is known broken, it should probably get marked as
-such in Kconfig. That's sure to get some discussion started...
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
