@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3BAQtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 11:49:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47387 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757140Ab3BAQsL (ORCPT
+	id S1757167Ab3BAQvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 11:51:18 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:62446 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756871Ab3BAQvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 11:48:11 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: paulus@samba.org, acme@ghostprotocols.net, penberg@kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v2 6/7] liblockdep: add a MAINTAINERS entry
-Date: Fri,  1 Feb 2013 11:47:10 -0500
-Message-Id: <1359737231-26127-6-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1359737231-26127-1-git-send-email-sasha.levin@oracle.com>
-References: <1359737231-26127-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 1 Feb 2013 11:51:15 -0500
+Message-ID: <510BF281.1080309@gmail.com>
+Date: Fri, 01 Feb 2013 10:51:13 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: srinivas.kandagatla@st.com
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <glikely@secretlab.ca>, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Scott Wood <scottwood@freescale.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH V7] kbuild: create a rule to run the pre-processor on
+ *.dts files
+References: <1357152215-5845-1-git-send-email-swarren@wwwdotorg.org> <510B8480.7000507@st.com>
+In-Reply-To: <510B8480.7000507@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- MAINTAINERS | 5 +++++
- 1 file changed, 5 insertions(+)
+On 02/01/2013 03:01 AM, Srinivas KANDAGATLA wrote:
+> Hi Stephen,
+> Not sure if you have already noticed this but,
+> I did try this patch on my 3.8, and it looks like the intermediate dts
+> file replaces all instances of linux with 1 because of predefined macros
+> in gcc.
+> As a result
+>     linux,stdout-path = "/soc/stm-asc2";
+> is changed to.
+>     1,stdout-path = "/soc/stm-asc2";
+> 
+> On my version of compiler(gcc version 4.6.3) I have
+> 
+> armv7-linux-gcc -E -dM - < /dev/null | grep -v _
+> #define unix 1
+> #define linux 1
+> 
+> Which might be true with most compiler versions aswell.
+> As we are using linux as prefix for some device tree properties it makes
+> sense to undef the linux gcc define.
+> Adding -Ulinux to cmd_dtc_cpp should fix it.
+>
+> -cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__ -x assembler-with-cpp -o
+> $(dtc-tmp) $< ; \
+> +cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__  -Ulinux -x
+> assembler-with-cpp -o $(dtc-tmp) $< ; \
+>     $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 212c255..a64abfb 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4637,6 +4637,11 @@ F:	drivers/lguest/
- F:	include/linux/lguest*.h
- F:	tools/lguest/
- 
-+LIBLOCK
-+M:	Sasha Levin <sasha.levin@oracle.com>
-+S:	Maintained
-+F:	tools/lib/lockdep/
-+
- LINUX FOR IBM pSERIES (RS/6000)
- M:	Paul Mackerras <paulus@au.ibm.com>
- W:	http://www.ibm.com/linux/ltc/projects/ppc
--- 
-1.8.1.2
+That's a hackish solution that seems fragile as well. Is there no way to
+turn off all built-in defines?
 
+Rob
