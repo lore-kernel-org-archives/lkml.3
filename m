@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3BADsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 22:48:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19536 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab3BADso (ORCPT
+	id S1754136Ab3BADv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 22:51:27 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:55037 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877Ab3BADv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 22:48:44 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zzhEZVgmVRcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=QEcsOeN0EBIA:10 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=P1msPjNgVdi2DOwNq3AA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359690521.5642.10.camel@gandalf.local.home>
-Subject: Re: [PATCH 3/4] Export blk_fill_rwbs()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Kent Overstreet <koverstreet@google.com>, Li Zefan <lizefan@huawei.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Thu, 31 Jan 2013 22:48:41 -0500
-In-Reply-To: <1358285142-10576-3-git-send-email-koverstreet@google.com>
-References: <1358285142-10576-1-git-send-email-koverstreet@google.com>
-	 <1358285142-10576-3-git-send-email-koverstreet@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jan 2013 22:51:26 -0500
+Date: Thu, 31 Jan 2013 22:51:21 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, sboyd@codeaurora.org,
+        will.deacon@arm.com, paulmck@linux.vnet.ibm.com,
+        catalin.marinas@arm.com, marc.zyngier@arm.com,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH v4 13/13] ARM: fix type of PHYS_PFN_OFFSET to unsigned
+ long
+In-Reply-To: <1359669512-31276-14-git-send-email-cyril@ti.com>
+Message-ID: <alpine.LFD.2.02.1301312250580.6300@xanadu.home>
+References: <1359669512-31276-1-git-send-email-cyril@ti.com> <1359669512-31276-14-git-send-email-cyril@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li,
+On Thu, 31 Jan 2013, Cyril Chemparathy wrote:
 
-Can you give an Ack or Nack for this.
-
-Thanks,
-
--- Steve
-
-
-On Tue, 2013-01-15 at 13:25 -0800, Kent Overstreet wrote:
-> Exported so it can be used by bcache's tracepoints
+> On LPAE machines, PHYS_OFFSET evaluates to a phys_addr_t and this type is
+> inherited by the PHYS_PFN_OFFSET definition as well.  Consequently, the kernel
+> build emits warnings of the form:
 > 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Ingo Molnar <mingo@redhat.com>
+> init/main.c: In function 'start_kernel':
+> init/main.c:588:7: warning: format '%lx' expects argument of type 'long unsigned int', but argument 2 has type 'phys_addr_t' [-Wformat]
+> 
+> This patch fixes this warning by pinning down the PFN type to unsigned long.
+> 
+> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
 > ---
->  kernel/trace/blktrace.c | 1 +
->  1 file changed, 1 insertion(+)
+>  arch/arm/include/asm/memory.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-> index c0bd030..dbe1667 100644
-> --- a/kernel/trace/blktrace.c
-> +++ b/kernel/trace/blktrace.c
-> @@ -1806,6 +1806,7 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
+> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> index f3a7f76..32e9e5a 100644
+> --- a/arch/arm/include/asm/memory.h
+> +++ b/arch/arm/include/asm/memory.h
+> @@ -223,7 +223,7 @@ static inline unsigned long __phys_to_virt(unsigned long x)
+>   * direct-mapped view.  We assume this is the first page
+>   * of RAM in the mem_map as well.
+>   */
+> -#define PHYS_PFN_OFFSET	(PHYS_OFFSET >> PAGE_SHIFT)
+> +#define PHYS_PFN_OFFSET	((unsigned long)(PHYS_OFFSET >> PAGE_SHIFT))
 >  
->  	rwbs[i] = '\0';
->  }
-> +EXPORT_SYMBOL_GPL(blk_fill_rwbs);
->  
->  #endif /* CONFIG_EVENT_TRACING */
->  
-
-
+>  /*
+>   * These are *only* valid on the kernel direct mapped RAM memory.
+> -- 
+> 1.7.9.5
+> 
