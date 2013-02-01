@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab3BANxD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:53:03 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34165 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab3BANxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:53:00 -0500
-Date: Fri, 1 Feb 2013 14:52:54 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Hillf Danton <dhillf@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Arjan van de Veen <arjan@infradead.org>, Paul@jasper.es
-Subject: Re: [patch 09/40] cpu: hotplug: Implement setup/removal interface
-In-Reply-To: <CAJd=RBCn0bM2rkXD3C6+7UZxFGO=fT7JNAcG-3SjR_zuGOZiCw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1302011452340.11905@ionos>
-References: <20130131120348.372374706@linutronix.de> <20130131120742.098044736@linutronix.de> <CAJd=RBCn0bM2rkXD3C6+7UZxFGO=fT7JNAcG-3SjR_zuGOZiCw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756827Ab3BANzC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:55:02 -0500
+Received: from 8bytes.org ([85.214.48.195]:59408 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756358Ab3BANzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:55:00 -0500
+Date: Fri, 1 Feb 2013 14:54:57 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Hideki EIRAKU <hdk@igel.co.jp>
+Cc: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 1/4] iommu/shmobile: Add iommu driver for Renesas
+ IPMMU modules
+Message-ID: <20130201135456.GG25591@8bytes.org>
+References: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
+ <1358765669-14567-2-git-send-email-hdk@igel.co.jp>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358765669-14567-2-git-send-email-hdk@igel.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Feb  1 14:54:59 2013
+X-DSPAM-Confidence: 0.9995
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 510bc93322971702590454
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Feb 2013, Hillf Danton wrote:
-> On Thu, Jan 31, 2013 at 8:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > +/**
-> > +       for_each_present_cpu(cpu) {
-> > +               int ret, cpustate = per_cpu(cpuhp_state, cpu);
+On Mon, Jan 21, 2013 at 07:54:26PM +0900, Hideki EIRAKU wrote:
+> This is the Renesas IPMMU driver and IOMMU API implementation.
 > 
-> s/ret,//
+> The IPMMU module supports the MMU function and the PMB function.  The
+> MMU function provides address translation by pagetable compatible with
+> ARMv6.  The PMB function provides address translation including
+> tile-linear translation.  This patch implements the MMU function.
+> 
+> The iommu driver does not register a platform driver directly because:
+> - the register space of the MMU function and the PMB function
+>   have a common register (used for settings flush), so they should ideally
+>   have a way to appropriately share this register.
+> - the MMU function uses the IOMMU API while the PMB function does not.
+> - the two functions may be used independently.
+> 
+> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
 
-Duh, yes.
+The patch looks good in general. Just one question inline.
+
+> +static int pgtable_alloc(struct shmobile_iommu_domain_pgtable *pgtable,
+> +			 struct kmem_cache *cache, size_t size)
+> +{
+> +	pgtable->pgtable = kmem_cache_zalloc(cache, GFP_ATOMIC);
+> +	if (!pgtable->pgtable)
+> +		return -ENOMEM;
+> +	pgtable->handle = dma_map_single(NULL, pgtable->pgtable, size,
+> +					 DMA_TO_DEVICE);
+> +	return 0;
+> +}
+
+Why is it necessary to call dma_map_single() for IOMMU page-tables?
+usually the dma_* functions call into IOMMU drivers, so why are they
+used inside an IOMMU driver?
+
+Regards,
+
+	Joerg
+
+
