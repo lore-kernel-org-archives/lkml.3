@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161229Ab3BAKtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:49:23 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60980 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161201Ab3BAKtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:49:16 -0500
-Date: Fri, 1 Feb 2013 10:46:26 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH v4] arm: use built-in byte swap function
-Message-ID: <20130201104626.GH23505@n2100.arm.linux.org.uk>
-References: <1359478014.3529.157.camel@shinybook.infradead.org> <20130129174249.GB25415@pd.tnic> <1359482147.3529.161.camel@shinybook.infradead.org> <20130129181046.GC25415@pd.tnic> <1359541333.3529.186.camel@shinybook.infradead.org> <20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com> <20130131092801.GV23505@n2100.arm.linux.org.uk> <20130131145947.f62474a0600848df86548b96@freescale.com> <1359670248.27468.13.camel@shinybook.infradead.org> <20130131183747.d56289dbd89b165cf12a9d28@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130131183747.d56289dbd89b165cf12a9d28@freescale.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1161305Ab3BAKt4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:49:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39060 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161062Ab3BAKtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:49:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        xueminsu <xuemin.su@intel.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 10/33] radeon_display: Use pointer return error codes
+Date: Fri,  1 Feb 2013 11:49:15 +0100
+Message-Id: <20130201104725.390267351@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
+References: <20130201104724.605715763@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 06:37:47PM -0600, Kim Phillips wrote:
-> +#if GCC_VERSION >= 40600
-> +#define __HAVE_BUILTIN_BSWAP32__
-> +#define __HAVE_BUILTIN_BSWAP64__
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-You really aren't listening to anything that's been said to you.
+------------------
+
+From: xueminsu <xuemin.su@intel.com>
+
+commit b2f4b03f8a378cd626d2ea67d19e7470c050a098 upstream.
+
+drm_mode_addfb() expects fb_create return error code
+instead of NULL.
+
+Signed-off-by: xueminsu <xuemin.su@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/radeon/radeon_display.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -1136,7 +1136,7 @@ radeon_user_framebuffer_create(struct dr
+ 	if (ret) {
+ 		kfree(radeon_fb);
+ 		drm_gem_object_unreference_unlocked(obj);
+-		return NULL;
++		return ERR_PTR(ret);
+ 	}
+ 
+ 	return &radeon_fb->base;
+
+
