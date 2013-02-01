@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422637Ab3BANX5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:23:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44912 "EHLO mail.kernel.org"
+	id S1757371Ab3BANKR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:10:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44760 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757459Ab3BANK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:10:57 -0500
+	id S1757293Ab3BANKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:10:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Piotr Haber <phaber@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 29/89] brcmsmac: increase timer reference count for new timers only
-Date: Fri,  1 Feb 2013 14:07:44 +0100
-Message-Id: <20130201130209.600957370@linuxfoundation.org>
+        =?ISO-8859-15?q?C=C3=A9dric=20Debarge?= <cedric.debarge@acksys.fr>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 33/89] mac80211: fix FT roaming
+Date: Fri,  1 Feb 2013 14:07:48 +0100
+Message-Id: <20130201130209.891025375@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,41 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Piotr Haber <phaber@broadcom.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit a1fe52801a992e590cdaee2fb47a94bac9b5da90 upstream.
+commit 1626e0fa740dec8665a973cf2349405cdfeb46dc upstream.
 
-On hardware reintialization reference count of
-already existing timers would be increased again.
-This leads to problems on module unloading.
+During FT roaming, wpa_supplicant attempts to set the
+key before association. This used to be rejected, but
+as a side effect of my commit 66e67e418908442389d3a9e
+("mac80211: redesign auth/assoc") the key was accepted
+causing hardware crypto to not be used for it as the
+station isn't added to the driver yet.
 
-Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
-Reviewed-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: Piotr Haber <phaber@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+It would be possible to accept the key and then add it
+to the driver when the station has been added. However,
+this may run into issues with drivers using the state-
+based station adding if they accept the key only after
+association like it used to be.
+
+For now, revert to the behaviour from before the auth
+and assoc change.
+
+Reported-by: Cédric Debarge <cedric.debarge@acksys.fr>
+Tested-by: Cédric Debarge <cedric.debarge@acksys.fr>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ net/mac80211/cfg.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-@@ -1401,9 +1401,10 @@ void brcms_add_timer(struct brcms_timer
- #endif
- 	t->ms = ms;
- 	t->periodic = (bool) periodic;
--	t->set = true;
--
--	atomic_inc(&t->wl->callbacks);
-+	if (!t->set) {
-+		t->set = true;
-+		atomic_inc(&t->wl->callbacks);
-+	}
- 
- 	ieee80211_queue_delayed_work(hw, &t->dly_wrk, msecs_to_jiffies(ms));
- }
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -164,7 +164,17 @@ static int ieee80211_add_key(struct wiph
+ 			sta = sta_info_get(sdata, mac_addr);
+ 		else
+ 			sta = sta_info_get_bss(sdata, mac_addr);
+-		if (!sta) {
++		/*
++		 * The ASSOC test makes sure the driver is ready to
++		 * receive the key. When wpa_supplicant has roamed
++		 * using FT, it attempts to set the key before
++		 * association has completed, this rejects that attempt
++		 * so it will set the key again after assocation.
++		 *
++		 * TODO: accept the key if we have a station entry and
++		 *       add it to the device after the station.
++		 */
++		if (!sta || !test_sta_flag(sta, WLAN_STA_ASSOC)) {
+ 			ieee80211_key_free(sdata->local, key);
+ 			err = -ENOENT;
+ 			goto out_unlock;
 
 
