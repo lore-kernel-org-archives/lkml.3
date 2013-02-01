@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab3BANKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:10:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44893 "EHLO mail.kernel.org"
+	id S1757495Ab3BANK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:10:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44902 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757168Ab3BANKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:10:48 -0500
+	id S1757168Ab3BANKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:10:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 36/89] ath9k: fix double-free bug on beacon generate failure
-Date: Fri,  1 Feb 2013 14:07:51 +0100
-Message-Id: <20130201130210.115598750@linuxfoundation.org>
+Subject: [ 37/89] ath9k: remove the WARN_ON that triggers if generating a beacon fails
+Date: Fri,  1 Feb 2013 14:07:52 +0100
+Message-Id: <20130201130210.190538413@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -28,30 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felix Fietkau <nbd@openwrt.org>
 
-commit 1adb2e2b5f85023d17eb4f95386a57029df27c88 upstream.
+commit 3adcf20afb585993ffee24de36d1975f6b26b120 upstream.
 
-When the next beacon is sent, the ath_buf from the previous run is reused.
-If getting a new beacon from mac80211 fails, bf->bf_mpdu is not reset, yet
-the skb is freed, leading to a double-free on the next beacon tx attempt,
-resulting in a system crash.
+During teardown, mac80211 will not return a new beacon. This is normal and
+handled properly in the driver, so there's no need to spam the user with a kernel
+warning here.
 
 Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/beacon.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath9k/beacon.c |    1 -
+ 1 file changed, 1 deletion(-)
 
 --- a/drivers/net/wireless/ath/ath9k/beacon.c
 +++ b/drivers/net/wireless/ath/ath9k/beacon.c
-@@ -147,6 +147,7 @@ static struct ath_buf *ath9k_beacon_gene
- 				 skb->len, DMA_TO_DEVICE);
- 		dev_kfree_skb_any(skb);
- 		bf->bf_buf_addr = 0;
-+		bf->bf_mpdu = NULL;
- 	}
+@@ -360,7 +360,6 @@ void ath9k_beacon_tasklet(unsigned long
+ 		return;
  
- 	skb = ieee80211_beacon_get(hw, vif);
+ 	bf = ath9k_beacon_generate(sc->hw, vif);
+-	WARN_ON(!bf);
+ 
+ 	if (sc->beacon.bmisscnt != 0) {
+ 		ath_dbg(common, BSTUCK, "resume beacon xmit after %u misses\n",
 
 
