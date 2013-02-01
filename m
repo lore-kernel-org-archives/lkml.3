@@ -1,137 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab3BAKny (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:43:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41049 "EHLO mx1.redhat.com"
+	id S932069Ab3BAKoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:44:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54878 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755530Ab3BAKnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:43:51 -0500
+	id S1756165Ab3BAKn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:43:58 -0500
 From: Lukas Czerner <lczerner@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com
-Subject: [RFC] mm: change invalidatepage prototype to accept length
-Date: Fri,  1 Feb 2013 11:43:26 +0100
-Message-Id: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH 03/18] ext4: use ->invalidatepage() length argument
+Date: Fri,  1 Feb 2013 11:43:29 +0100
+Message-Id: <1359715424-32318-4-git-send-email-lczerner@redhat.com>
+In-Reply-To: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
+References: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+->invalidatepage() aop now accepts range to invalidate so we can make
+use of it in all ext4 invalidatepage routines.
 
-This set of patches are aimed to allow truncate_inode_pages_range() handle
-ranges which are not aligned at the end of the page. Currently it will
-hit BUG_ON() when the end of the range is not aligned. Punch hole feature
-however can benefit from this ability saving file systems some work not
-forcing them to implement their own invalidate code to handle unaligned
-ranges.
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+---
+ fs/ext4/inode.c             |   47 ++++++++++++++++++++++++++++++------------
+ include/trace/events/ext4.h |   22 +++++++++++---------
+ 2 files changed, 45 insertions(+), 24 deletions(-)
 
-In order for this to woke we need change ->invalidatepage() address space
-operation to to accept range to invalidate by adding 'length' argument in
-addition to 'offset'. This is different from my previous attempt to create
-new aop ->invalidatepage_range (http://lwn.net/Articles/514828/) which I
-reconsidered to ne unnecessary.
-
-For description purposes this patch set can be divided into following
-groups:
-
-
-patch 0001:	Change ->invalidatepage() prototype adding 'length' argument
-		and changing all the instances. In very simple cases file
-		system methods are completely adapted, otherwise only
-		prototype is changed and the rest will follow. This patch
-		also implement the 'range' invalidation in
-		block_invalidatepage().
-
-patch 0002 - 0009:
-		Make the use of new 'length' argument in the file system
-		itself. Some file systems can take advantage of it trying
-		to invalidate only portion of the page if possible, some
-		can't, however none of the file systems currently attempt
-		to truncate non page aligned ranges.
-
-
-patch 0010:	Teach truncate_inode_pages_range() to handle non page aligned
-		ranges.
-
-patch 0012 - 0018:
-		Ext4 changes build on top of previous changes, simplifying
-		punch hole code. Not all changes are realated specifically
-		to invalidatepage() change, but all are related to the punch
-		hole feature.
-
-Even though this patch set would mainly affect functionality of the file
-file systems implementing punch hole I've tested all the following file
-system using xfstests without noticing any bugs related to this change.
-
-ext3, ext4, xfs, btrfs, gfs2 and reiserfs
-
-the much smaller changes in other file systems has not been directly tested,
-so please review.
-
-Thanks!
--Lukas
-
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index a3be92c..eb61fb7 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1289,21 +1289,28 @@ static void ext4_da_release_space(struct inode *inode, int to_free)
+ }
+ 
+ static void ext4_da_page_release_reservation(struct page *page,
+-					     unsigned long offset)
++					     unsigned int offset,
++					     unsigned int length)
+ {
+ 	int to_release = 0;
+ 	struct buffer_head *head, *bh;
+ 	unsigned int curr_off = 0;
+ 	struct inode *inode = page->mapping->host;
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++	unsigned int stop = offset + length;
+ 	int num_clusters;
+ 	ext4_fsblk_t lblk;
+ 
++	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
++
+ 	head = page_buffers(page);
+ 	bh = head;
+ 	do {
+ 		unsigned int next_off = curr_off + bh->b_size;
+ 
++		if (next_off > stop)
++			break;
++
+ 		if ((offset <= curr_off) && (buffer_delay(bh))) {
+ 			to_release++;
+ 			clear_buffer_delay(bh);
+@@ -2709,7 +2716,7 @@ static void ext4_da_invalidatepage(struct page *page, unsigned int offset,
+ 	if (!page_has_buffers(page))
+ 		goto out;
+ 
+-	ext4_da_page_release_reservation(page, offset);
++	ext4_da_page_release_reservation(page, offset, length);
+ 
+ out:
+ 	ext4_invalidatepage(page, offset, length);
+@@ -2860,22 +2867,33 @@ ext4_readpages(struct file *file, struct address_space *mapping,
+ 	return mpage_readpages(mapping, pages, nr_pages, ext4_get_block);
+ }
+ 
+-static void ext4_invalidatepage_free_endio(struct page *page, unsigned long offset)
++static void ext4_invalidatepage_free_endio(struct page *page,
++					   unsigned int offset,
++					   unsigned int length)
+ {
+ 	struct buffer_head *head, *bh;
+ 	unsigned int curr_off = 0;
++	unsigned int stop = offset + length;
+ 
+ 	if (!page_has_buffers(page))
+ 		return;
++
++	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
++
+ 	head = bh = page_buffers(page);
+ 	do {
++		unsigned int next_off = curr_off + bh->b_size;
++
++		if (next_off > stop)
++			return;
++
+ 		if (offset <= curr_off && test_clear_buffer_uninit(bh)
+ 					&& bh->b_private) {
+ 			ext4_free_io_end(bh->b_private);
+ 			bh->b_private = NULL;
+ 			bh->b_end_io = NULL;
+ 		}
+-		curr_off = curr_off + bh->b_size;
++		curr_off = next_off;
+ 		bh = bh->b_this_page;
+ 	} while (bh != head);
+ }
+@@ -2883,35 +2901,35 @@ static void ext4_invalidatepage_free_endio(struct page *page, unsigned long offs
+ static void ext4_invalidatepage(struct page *page, unsigned int offset,
+ 				unsigned int length)
+ {
+-	trace_ext4_invalidatepage(page, offset);
++	trace_ext4_invalidatepage(page, offset, length);
+ 
+ 	/*
+ 	 * free any io_end structure allocated for buffers to be discarded
+ 	 */
+ 	if (ext4_should_dioread_nolock(page->mapping->host))
+-		ext4_invalidatepage_free_endio(page, offset);
++		ext4_invalidatepage_free_endio(page, offset, length);
+ 
+ 	/* No journalling happens on data buffers when this function is used */
+ 	WARN_ON(page_has_buffers(page) && buffer_jbd(page_buffers(page)));
+ 
+-	block_invalidatepage(page, offset, PAGE_CACHE_SIZE - offset);
++	block_invalidatepage(page, offset, length);
+ }
+ 
+ static int __ext4_journalled_invalidatepage(struct page *page,
+-					    unsigned long offset)
++					    unsigned int offset,
++					    unsigned int length)
+ {
+ 	journal_t *journal = EXT4_JOURNAL(page->mapping->host);
+ 
+-	trace_ext4_journalled_invalidatepage(page, offset);
++	trace_ext4_journalled_invalidatepage(page, offset, length);
+ 
+ 	/*
+ 	 * If it's a full truncate we just forget about the pending dirtying
+ 	 */
+-	if (offset == 0)
++	if (offset == 0 && length == PAGE_CACHE_SIZE)
+ 		ClearPageChecked(page);
+ 
+-	return jbd2_journal_invalidatepage(journal, page, offset,
+-					   PAGE_CACHE_SIZE - offset);
++	return jbd2_journal_invalidatepage(journal, page, offset, length);
+ }
+ 
+ /* Wrapper for aops... */
+@@ -2919,7 +2937,7 @@ static void ext4_journalled_invalidatepage(struct page *page,
+ 					   unsigned int offset,
+ 					   unsigned int length)
+ {
+-	WARN_ON(__ext4_journalled_invalidatepage(page, offset) < 0);
++	WARN_ON(__ext4_journalled_invalidatepage(page, offset, length) < 0);
+ }
+ 
+ static int ext4_releasepage(struct page *page, gfp_t wait)
+@@ -4351,7 +4369,8 @@ static void ext4_wait_for_tail_page_commit(struct inode *inode)
+ 				      inode->i_size >> PAGE_CACHE_SHIFT);
+ 		if (!page)
+ 			return;
+-		ret = __ext4_journalled_invalidatepage(page, offset);
++		ret = __ext4_journalled_invalidatepage(page, offset,
++						PAGE_CACHE_SIZE - offset);
+ 		unlock_page(page);
+ 		page_cache_release(page);
+ 		if (ret != -EBUSY)
+diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
+index 7e8c36b..6ab6f8a 100644
+--- a/include/trace/events/ext4.h
++++ b/include/trace/events/ext4.h
+@@ -452,16 +452,16 @@ DEFINE_EVENT(ext4__page_op, ext4_releasepage,
+ );
+ 
+ DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
+-	TP_PROTO(struct page *page, unsigned long offset),
++	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
+ 
+-	TP_ARGS(page, offset),
++	TP_ARGS(page, offset, length),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(	dev_t,	dev			)
+ 		__field(	ino_t,	ino			)
+ 		__field(	pgoff_t, index			)
+-		__field(	unsigned long, offset		)
+-
++		__field(	unsigned int, offset		)
++		__field(	unsigned int, length		)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -469,24 +469,26 @@ DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
+ 		__entry->ino	= page->mapping->host->i_ino;
+ 		__entry->index	= page->index;
+ 		__entry->offset	= offset;
++		__entry->length	= length;
+ 	),
+ 
+-	TP_printk("dev %d,%d ino %lu page_index %lu offset %lu",
++	TP_printk("dev %d,%d ino %lu page_index %lu offset %u length %u",
+ 		  MAJOR(__entry->dev), MINOR(__entry->dev),
+ 		  (unsigned long) __entry->ino,
+-		  (unsigned long) __entry->index, __entry->offset)
++		  (unsigned long) __entry->index,
++		  __entry->offset, __entry->length)
+ );
+ 
+ DEFINE_EVENT(ext4_invalidatepage_op, ext4_invalidatepage,
+-	TP_PROTO(struct page *page, unsigned long offset),
++	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
+ 
+-	TP_ARGS(page, offset)
++	TP_ARGS(page, offset, length)
+ );
+ 
+ DEFINE_EVENT(ext4_invalidatepage_op, ext4_journalled_invalidatepage,
+-	TP_PROTO(struct page *page, unsigned long offset),
++	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
+ 
+-	TP_ARGS(page, offset)
++	TP_ARGS(page, offset, length)
+ );
+ 
+ TRACE_EVENT(ext4_discard_blocks,
 -- 
+1.7.7.6
 
- Documentation/filesystems/Locking |    6 +-
- Documentation/filesystems/vfs.txt |   20 ++--
- fs/9p/vfs_addr.c                  |    5 +-
- fs/afs/file.c                     |   10 +-
- fs/btrfs/disk-io.c                |    3 +-
- fs/btrfs/extent_io.c              |    2 +-
- fs/btrfs/inode.c                  |    3 +-
- fs/buffer.c                       |   21 ++-
- fs/ceph/addr.c                    |   15 +-
- fs/cifs/file.c                    |    5 +-
- fs/exofs/inode.c                  |    6 +-
- fs/ext3/inode.c                   |    9 +-
- fs/ext4/ext4.h                    |   14 +-
- fs/ext4/extents.c                 |  188 ++++++++--------------
- fs/ext4/indirect.c                |   13 +--
- fs/ext4/inode.c                   |  320 ++++++++++++++++--------------------
- fs/f2fs/data.c                    |    3 +-
- fs/f2fs/node.c                    |    3 +-
- fs/gfs2/aops.c                    |   17 ++-
- fs/jbd/transaction.c              |   19 ++-
- fs/jbd2/transaction.c             |   24 ++-
- fs/jfs/jfs_metapage.c             |    5 +-
- fs/logfs/file.c                   |    3 +-
- fs/logfs/segment.c                |    3 +-
- fs/nfs/file.c                     |    8 +-
- fs/ntfs/aops.c                    |    2 +-
- fs/ocfs2/aops.c                   |    5 +-
- fs/reiserfs/inode.c               |   12 +-
- fs/ubifs/file.c                   |    5 +-
- fs/xfs/xfs_aops.c                 |   10 +-
- fs/xfs/xfs_trace.h                |   41 +++++-
- include/linux/buffer_head.h       |    3 +-
- include/linux/fs.h                |    2 +-
- include/linux/jbd.h               |    2 +-
- include/linux/jbd2.h              |    2 +-
- include/linux/mm.h                |    3 +-
- include/trace/events/ext3.h       |   12 +-
- include/trace/events/ext4.h       |   64 +++++---
- mm/readahead.c                    |    2 +-
- mm/truncate.c                     |   86 ++++++----
- 40 files changed, 511 insertions(+), 465 deletions(-)
-
-
-[PATCH 01/18] mm: change invalidatepage prototype to accept length
-[PATCH 02/18] jbd2: change jbd2_journal_invalidatepage to accept
-[PATCH 03/18] ext4: use ->invalidatepage() length argument
-[PATCH 04/18] jbd: change journal_invalidatepage() to accept length
-[PATCH 05/18] xfs: use ->invalidatepage() length argument
-[PATCH 06/18] ocfs2: use ->invalidatepage() length argument
-[PATCH 07/18] ceph: use ->invalidatepage() length argument
-[PATCH 08/18] gfs2: use ->invalidatepage() length argument
-[PATCH 09/18] reiserfs: use ->invalidatepage() length argument
-[PATCH 10/18] mm: teach truncate_inode_pages_range() to handle non
-[PATCH 11/18] Revert "ext4: remove no longer used functions in
-[PATCH 12/18] Revert "ext4: fix fsx truncate failure"
-[PATCH 13/18] ext4: use ext4_zero_partial_blocks in punch_hole
-[PATCH 14/18] ext4: remove unused discard_partial_page_buffers
-[PATCH 15/18] ext4: remove unused code from ext4_remove_blocks()
-[PATCH 16/18] ext4: update ext4_ext_remove_space trace point
-[PATCH 17/18] ext4: make punch hole code path work with bigalloc
-[PATCH 18/18] ext4: Allow punch hole with bigalloc enabled
