@@ -1,109 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab3BAPO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 10:14:57 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:50418 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab3BAPOz convert rfc822-to-8bit (ORCPT
+	id S1755975Ab3BAPUu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 10:20:50 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:55042 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968Ab3BAPUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 10:14:55 -0500
+	Fri, 1 Feb 2013 10:20:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <7AFBFD79B857054D97821A9BD3FBFA9744D05BD2@ATFKEX06.bachmann.at>
-References: <1358928657-15781-1-git-send-email-christian.gmeiner@gmail.com> <7AFBFD79B857054D97821A9BD3FBFA9744D05BD2@ATFKEX06.bachmann.at>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Fri, 1 Feb 2013 16:08:15 +0100
-Message-ID: <CAH9NwWdciqHSkkMSk4CW4XX+d6JSZBnvw52Svu8M4o-PGMQsDA@mail.gmail.com>
-Subject: Re: [PATCH] leds-ot200: Fix error caused by shifted mask
-To: "GMEINER.Christian" <C.GMEINER@bachmann.info>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.LFD.2.02.1301311722540.6300@xanadu.home>
+References: <1359594008-14688-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1359594008-14688-3-git-send-email-iamjoonsoo.kim@lge.com>
+	<alpine.LFD.2.02.1301311722540.6300@xanadu.home>
+Date: Fri, 1 Feb 2013 23:54:02 +0900
+Message-ID: <CAAmzW4PjNr-Jh+DhoMGYWazJWFDhXc=A7zMTQ3GehM=pvi0r=A@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] ARM: ioremap: introduce an infrastructure for
+ static mapped area
+From: JoonSoo Kim <js1304@gmail.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
---
-Christian Gmeiner, MSc
+Hello, Nicolas.
 
+2013/2/1 Nicolas Pitre <nicolas.pitre@linaro.org>:
+> On Thu, 31 Jan 2013, Joonsoo Kim wrote:
+>
+>> In current implementation, we used ARM-specific flag, that is,
+>> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+>> The purpose of static mapped area is to re-use static mapped area when
+>> entire physical address range of the ioremap request can be covered
+>> by this area.
+>>
+>> This implementation causes needless overhead for some cases.
+>> For example, assume that there is only one static mapped area and
+>> vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+>> deciding whether it is matched or not. Moreover, even if there is
+>> no static mapped area and vmlist has 300 areas, every time we call
+>> ioremap, we check 300 areas in now.
+>>
+>> If we construct a extra list for static mapped area, we can eliminate
+>> above mentioned overhead.
+>> With a extra list, if there is one static mapped area,
+>> we just check only one area and proceed next operation quickly.
+>>
+>> In fact, it is not a critical problem, because ioremap is not frequently
+>> used. But reducing overhead is better idea.
+>>
+>> Another reason for doing this work is for removing architecture dependency
+>> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
+>> structure for vmalloc layer. Some codes for debugging and stat inevitably
+>> use vmlist and vmlist_lock. But it is preferable that they are used
+>> as least as possible in outside of vmalloc.c
+>>
+>> Now, I introduce an ARM-specific infrastructure for static mapped area. In
+>> the following patch, we will use this and resolve above mentioned problem.
+>>
+>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> Much better.  Comments below.
 
-2013/1/23 GMEINER.Christian <C.GMEINER@bachmann.info>:
->> -----Ursprüngliche Nachricht-----
->> Von: Christian Gmeiner [mailto:christian.gmeiner@gmail.com]
->> Gesendet: Mittwoch, 23. Januar 2013 09:11
->> An: linux-next@vger.kernel.org; akpm@linux-foundation.org;
->> rpurdie@rpsys.net; linux-kernel@vger.kernel.org; GMEINER.Christian
->> Cc: Christian Gmeiner
->> Betreff: [PATCH] leds-ot200: Fix error caused by shifted mask
+Thanks.
+
+>> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+>> index 88fd86c..ceb34ae 100644
+>> --- a/arch/arm/mm/ioremap.c
+>> +++ b/arch/arm/mm/ioremap.c
+>> @@ -39,6 +39,78 @@
+>>  #include <asm/mach/pci.h>
+>>  #include "mm.h"
 >>
->> During the development of this driver an in-house register documentation
->> was used. The last weeks some integration tests were done and this problem
->> was found. It turned out that the released register documentation is wrong.
->>
->> The fix is very simple: shift all masks by one.
->>
->> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+>> +
+>> +LIST_HEAD(static_vmlist);
+>> +static DEFINE_RWLOCK(static_vmlist_lock);
 >
+> In fact you don't need a lock at all.  The only writer is
+> add_static_vm_early() and we know it is only used during boot when the
+> kernel is still single-threaded.
+
+Yes!
+
+>> +
+>> +static struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
+>> +                     size_t size, unsigned long flags)
+>> +{
+>> +     struct static_vm *svm;
+>> +     struct vm_struct *vm;
+>> +
+>> +     read_lock(&static_vmlist_lock);
+>> +     list_for_each_entry(svm, &static_vmlist, list) {
+>> +             if (svm->flags != flags)
+>> +                     continue;
+>> +
+>> +             vm = &svm->vm;
+>> +             if (vm->phys_addr > paddr ||
+>> +                     paddr + size - 1 > vm->phys_addr + vm->size - 1)
+>> +                     continue;
+>> +
+>> +             read_unlock(&static_vmlist_lock);
+>> +             return svm;
+>> +     }
+>> +
+>> +     return NULL;
+>> +}
+>> +
+>> +struct static_vm *find_static_vm_vaddr(void *vaddr)
+>> +{
+>> +     struct static_vm *svm;
+>> +     struct vm_struct *vm;
+>> +
+>> +     read_lock(&static_vmlist_lock);
+>> +     list_for_each_entry(svm, &static_vmlist, list) {
+>> +             vm = &svm->vm;
+>> +
+>> +             /* static_vmlist is ascending order */
+>> +             if (vm->addr > vaddr)
+>> +                     break;
+>> +
+>> +             if (vm->addr <= vaddr && vm->addr + vm->size > vaddr) {
+>> +                     read_unlock(&static_vmlist_lock);
+>> +                     return svm;
+>> +             }
+>> +     }
+>> +     read_unlock(&static_vmlist_lock);
+>> +
+>> +     return NULL;
+>> +}
+>> +
+>> +void add_static_vm_early(struct static_vm *svm, unsigned long flags)
 >
-> Acked-by: Christian Gmeiner <c.gmeiner@bachmann.info>
-> Tested-by: Christian Gmeiner <c.gmeiner@bachmann.info>
->
->> ---
->>  drivers/leds/leds-ot200.c | 14 +++++++-------
->>  1 file changed, 7 insertions(+), 7 deletions(-)
+> This should be marked with __init.  This way, it is less likely to be
+> used after boot, especially with no locking.  And vm_area_add_early() is
+> valid only if !vmap_initialized anyway, and also __init.
+
+Okay.
+
+>> +{
+>> +     struct static_vm *curr_svm;
+>> +     struct vm_struct *vm;
+>> +     void *vaddr;
+>> +
+>> +     vm_area_add_early(&svm->vm);
+>> +
+>> +     vaddr = svm->vm.addr;
+>> +     svm->flags = flags;
+>> +
+>> +     write_lock(&static_vmlist_lock);
+>> +     list_for_each_entry(curr_svm, &static_vmlist, list) {
+>> +             vm = &curr_svm->vm;
+>> +
+>> +             if (vm->addr > vaddr)
+>> +                     break;
+>> +     }
+>> +     list_add_tail(&svm->list, &curr_svm->list);
+>> +     write_unlock(&static_vmlist_lock);
+>> +}
+>> +
+>>  int ioremap_page(unsigned long virt, unsigned long phys,
+>>                const struct mem_type *mtype)
+>>  {
+>> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+>> index a8ee92d..fb45c79 100644
+>> --- a/arch/arm/mm/mm.h
+>> +++ b/arch/arm/mm/mm.h
+>> @@ -1,4 +1,6 @@
+>>  #ifdef CONFIG_MMU
+>> +#include <linux/list.h>
+>> +#include <linux/vmalloc.h>
 >>
->> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c index
->> ee14662..98cae52 100644
->> --- a/drivers/leds/leds-ot200.c
->> +++ b/drivers/leds/leds-ot200.c
->> @@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
->>       {
->>               .name = "led_1",
->>               .port = 0x49,
->> -             .mask = BIT(7),
->> +             .mask = BIT(6),
->>       },
->>       {
->>               .name = "led_2",
->>               .port = 0x49,
->> -             .mask = BIT(6),
->> +             .mask = BIT(5),
->>       },
->>       {
->>               .name = "led_3",
->>               .port = 0x49,
->> -             .mask = BIT(5),
->> +             .mask = BIT(4),
->>       },
->>       {
->>               .name = "led_4",
->>               .port = 0x49,
->> -             .mask = BIT(4),
->> +             .mask = BIT(3),
->>       },
->>       {
->>               .name = "led_5",
->>               .port = 0x49,
->> -             .mask = BIT(3),
->> +             .mask = BIT(2),
->>       },
->>       {
->>               .name = "led_6",
->>               .port = 0x49,
->> -             .mask = BIT(2),
->> +             .mask = BIT(1),
->>       },
->>       {
->>               .name = "led_7",
->>               .port = 0x49,
->> -             .mask = BIT(1),
->> +             .mask = BIT(0),
->>       }
->>  };
+>>  /* the upper-most page table pointer */
+>>  extern pmd_t *top_pmd;
+>> @@ -65,6 +67,24 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
+>>  /* consistent regions used by dma_alloc_attrs() */
+>>  #define VM_ARM_DMA_CONSISTENT        0x20000000
 >>
->> --
->> 1.7.12.2.421.g261b511
+>> +
+>> +/* ARM specific static_vm->flags bits */
+>> +#define STATIC_VM_MEM                0x00000001
+>> +#define STATIC_VM_EMPTY              0x00000002
+>> +#define STATIC_VM_MTYPE(mtype)       ((mtype) << 20)
+>> +
+>> +#define STATIC_VM_TYPE(type, mtype) (type | STATIC_VM_MTYPE(mtype))
+>> +
+>> +struct static_vm {
+>> +     struct vm_struct vm;
+>> +     struct list_head list;
+>> +     unsigned long flags;
+>> +};
 >
+> What is your motivation for having separate flags instead of simply
+> keeping the current vm->flags usage?
+>
+
+Keeping the current vm->flags is better idea.
+I will re-work about all your comments.
+
+Thanks.
