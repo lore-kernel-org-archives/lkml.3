@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab3BAWKB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 17:10:01 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39006 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877Ab3BAWJw (ORCPT
+	id S1757862Ab3BAWMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 17:12:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53116 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757380Ab3BAWMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 17:09:52 -0500
-Message-ID: <510C3D65.6010200@infradead.org>
-Date: Fri, 01 Feb 2013 14:10:45 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Anca Emanuel <anca.emanuel@gmail.com>
-CC: Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] SubmittingPatches: add penalty for forcing a maintainer
- to edit a patch
-References: <20130201154306.GA28473@kroah.com> <1359733687.17807.7.camel@joe-AO722> <CAJL_dMuMnq0=4vv0GriQqUhwnR=gwcnok3rXTsanVYZ5cdLfkQ@mail.gmail.com>
-In-Reply-To: <CAJL_dMuMnq0=4vv0GriQqUhwnR=gwcnok3rXTsanVYZ5cdLfkQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Feb 2013 17:12:13 -0500
+Date: Fri, 1 Feb 2013 14:12:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: "GMEINER.Christian" <C.GMEINER@bachmann.info>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bryan Wu <cooloney@gmail.com>
+Subject: Re: [PATCH] leds-ot200: Fix error caused by shifted mask
+Message-Id: <20130201141211.1adadfe5.akpm@linux-foundation.org>
+In-Reply-To: <CAH9NwWdciqHSkkMSk4CW4XX+d6JSZBnvw52Svu8M4o-PGMQsDA@mail.gmail.com>
+References: <1358928657-15781-1-git-send-email-christian.gmeiner@gmail.com>
+	<7AFBFD79B857054D97821A9BD3FBFA9744D05BD2@ATFKEX06.bachmann.at>
+	<CAH9NwWdciqHSkkMSk4CW4XX+d6JSZBnvw52Svu8M4o-PGMQsDA@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/13 13:07, Anca Emanuel wrote:
-> Joe, read lkml and decide after that.
-> I fully apove the pathch.
-> 
-> Reviewed-by: Anca Emanuel <anca.emanuel@gmail.com>
-> 
-> Review-requested-by: Joe Perches <joe@perches.com>
-> 
-> 
-> Comments:
-> You have 3 kernels to maintain as stable, plus drivers, plus etc.
-> If somebody post something without reading the docs, and you have to
-> repeat to them the same, again and more, then you MUST give an beer.
+On Fri, 1 Feb 2013 16:08:15 +0100
+Christian Gmeiner <christian.gmeiner@gmail.com> wrote:
 
-If someone is a repeat-repeat offender, they should just learn
-how to submit patches correctly.  I.e., the maintainer should just
-keep saying to them, Sorry, please submit your patch correctly
-so that I can apply it.
+> ping
 
+Bryan is handling LEDs patches (see ./MAINTAINERS).  Without a cc he
+presumably missed this in the lkml flood.
 
-> On Fri, Feb 1, 2013 at 5:48 PM, Joe Perches <joe@perches.com> wrote:
->> On Fri, 2013-02-01 at 16:43 +0100, Greg Kroah-Hartman wrote:
->>> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>
->>> Maintainers have to hand-edit patches (body of patches and changelog
->>> entries) all the time.  There needs to be some kind of penalty put into
->>> place to keep developers from abusing maintainers.
->>
->> No, there doesn't.
->>
->> It's funny as a joke, it's not as an actual patch.
+> 2013/1/23 GMEINER.Christian <C.GMEINER@bachmann.info>:
+> >> -----Urspr__ngliche Nachricht-----
+> >> Von: Christian Gmeiner [mailto:christian.gmeiner@gmail.com]
+> >> Gesendet: Mittwoch, 23. Januar 2013 09:11
+> >> An: linux-next@vger.kernel.org; akpm@linux-foundation.org;
+> >> rpurdie@rpsys.net; linux-kernel@vger.kernel.org; GMEINER.Christian
+> >> Cc: Christian Gmeiner
+> >> Betreff: [PATCH] leds-ot200: Fix error caused by shifted mask
+> >>
+> >> During the development of this driver an in-house register documentation
+> >> was used. The last weeks some integration tests were done and this problem
+> >> was found. It turned out that the released register documentation is wrong.
+> >>
+> >> The fix is very simple: shift all masks by one.
+> >>
 
+The changelog failed to describe the effects of the bug it fixes.  This
+is a grave (and all too common) omission; it makes it difficult for
+others to determine whether the patch should be backported into earlier
+kernels.
 
--- 
-~Randy
+So, please tell us.  And feel free to explain whether you believe the
+fix should be backported.
+
