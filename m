@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab3BAMIF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 07:08:05 -0500
-Received: from nbd.name ([46.4.11.11]:41380 "EHLO nbd.name"
+	id S1756750Ab3BAMID (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:08:03 -0500
+Received: from nbd.name ([46.4.11.11]:41384 "EHLO nbd.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756276Ab3BAMHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 07:07:55 -0500
+	id S1753585Ab3BAMH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 07:07:56 -0500
 From: John Crispin <blogic@openwrt.org>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: linux-kernel@vger.kernel.org, John Crispin <blogic@openwrt.org>
-Subject: [PATCH 03/11] PINCTRL: lantiq: add pin_config_group_set support
-Date: Fri,  1 Feb 2013 13:04:57 +0100
-Message-Id: <1359720305-31933-3-git-send-email-blogic@openwrt.org>
+Subject: [PATCH 04/11] PINCTRL: lantiq: add output pinconf parameter
+Date: Fri,  1 Feb 2013 13:04:58 +0100
+Message-Id: <1359720305-31933-4-git-send-email-blogic@openwrt.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359720305-31933-1-git-send-email-blogic@openwrt.org>
 References: <1359720305-31933-1-git-send-email-blogic@openwrt.org>
@@ -19,155 +19,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While converting all the boards supported by OpenWrt to OF I noticed that this
-feature is missing. Adding it makes the devicetrees more readable.
+While converting the boards inside OpenWrt to OF I noticed that the we are
+missing a pinconf parameter to set a pin to output.
 
 Signed-off-by: John Crispin <blogic@openwrt.org>
 ---
- drivers/pinctrl/pinctrl-lantiq.c |   54 ++++++++++++++++++++++++--------------
- drivers/pinctrl/pinctrl-xway.c   |   15 +++++++++++
- 2 files changed, 49 insertions(+), 20 deletions(-)
+ drivers/pinctrl/pinctrl-lantiq.h |    1 +
+ drivers/pinctrl/pinctrl-xway.c   |   14 ++++++++++++++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/drivers/pinctrl/pinctrl-lantiq.c b/drivers/pinctrl/pinctrl-lantiq.c
-index 15f501d..7d11072 100644
---- a/drivers/pinctrl/pinctrl-lantiq.c
-+++ b/drivers/pinctrl/pinctrl-lantiq.c
-@@ -64,11 +64,13 @@ static void ltq_pinctrl_pin_dbg_show(struct pinctrl_dev *pctldev,
- 	seq_printf(s, " %s", dev_name(pctldev->dev));
- }
- 
--static int ltq_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
-+static void ltq_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 				struct device_node *np,
- 				struct pinctrl_map **map)
- {
- 	struct ltq_pinmux_info *info = pinctrl_dev_get_drvdata(pctldev);
-+	struct property *pins = of_find_property(np, "lantiq,pins", NULL);
-+	struct property *groups = of_find_property(np, "lantiq,groups", NULL);
- 	unsigned long configs[3];
- 	unsigned num_configs = 0;
- 	struct property *prop;
-@@ -76,8 +78,20 @@ static int ltq_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 	const char *function;
- 	int ret, i;
- 
-+	if (!pins && !groups) {
-+		dev_err(pctldev->dev, "%s defines neither pins nor groups\n",
-+			np->name);
-+		return;
-+	}
-+
-+	if (pins && groups) {
-+		dev_err(pctldev->dev, "%s defines both pins and groups\n",
-+			np->name);
-+		return;
-+	}
-+
- 	ret = of_property_read_string(np, "lantiq,function", &function);
--	if (!ret) {
-+	if (groups && !ret) {
- 		of_property_for_each_string(np, "lantiq,groups", prop, group) {
- 			(*map)->type = PIN_MAP_TYPE_MUX_GROUP;
- 			(*map)->name = function;
-@@ -85,11 +99,6 @@ static int ltq_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 			(*map)->data.mux.function = function;
- 			(*map)++;
- 		}
--		if (of_find_property(np, "lantiq,pins", NULL))
--			dev_err(pctldev->dev,
--				"%s mixes pins and groups settings\n",
--				np->name);
--		return 0;
- 	}
- 
- 	for (i = 0; i < info->num_params; i++) {
-@@ -103,7 +112,7 @@ static int ltq_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 	}
- 
- 	if (!num_configs)
--		return -EINVAL;
-+		return;
- 
- 	of_property_for_each_string(np, "lantiq,pins", prop, pin) {
- 		(*map)->data.configs.configs = kmemdup(configs,
-@@ -115,7 +124,16 @@ static int ltq_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 		(*map)->data.configs.num_configs = num_configs;
- 		(*map)++;
- 	}
--	return 0;
-+	of_property_for_each_string(np, "lantiq,groups", prop, group) {
-+		(*map)->data.configs.configs = kmemdup(configs,
-+					num_configs * sizeof(unsigned long),
-+					GFP_KERNEL);
-+		(*map)->type = PIN_MAP_TYPE_CONFIGS_GROUP;
-+		(*map)->name = group;
-+		(*map)->data.configs.group_or_pin = group;
-+		(*map)->data.configs.num_configs = num_configs;
-+		(*map)++;
-+	}
- }
- 
- static int ltq_pinctrl_dt_subnode_size(struct device_node *np)
-@@ -135,23 +153,19 @@ static int ltq_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
- {
- 	struct pinctrl_map *tmp;
- 	struct device_node *np;
--	int ret;
-+	int max_maps = 0;
- 
--	*num_maps = 0;
- 	for_each_child_of_node(np_config, np)
--		*num_maps += ltq_pinctrl_dt_subnode_size(np);
--	*map = kzalloc(*num_maps * sizeof(struct pinctrl_map), GFP_KERNEL);
-+		max_maps += ltq_pinctrl_dt_subnode_size(np);
-+	*map = kzalloc(max_maps * sizeof(struct pinctrl_map) * 2, GFP_KERNEL);
- 	if (!*map)
- 		return -ENOMEM;
- 	tmp = *map;
- 
--	for_each_child_of_node(np_config, np) {
--		ret = ltq_pinctrl_dt_subnode_to_map(pctldev, np, &tmp);
--		if (ret < 0) {
--			ltq_pinctrl_dt_free_map(pctldev, *map, *num_maps);
--			return ret;
--		}
--	}
-+	for_each_child_of_node(np_config, np)
-+		ltq_pinctrl_dt_subnode_to_map(pctldev, np, &tmp);
-+	*num_maps = ((int)(tmp - *map));
-+
- 	return 0;
- }
- 
-diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
-index c49c9db..aa4c8b8 100644
---- a/drivers/pinctrl/pinctrl-xway.c
-+++ b/drivers/pinctrl/pinctrl-xway.c
-@@ -522,9 +522,24 @@ static int xway_pinconf_set(struct pinctrl_dev *pctldev,
- 	return 0;
- }
- 
-+int xway_pinconf_group_set(struct pinctrl_dev *pctldev,
-+			unsigned selector,
-+			unsigned long config)
-+{
-+	struct ltq_pinmux_info *info = pinctrl_dev_get_drvdata(pctldev);
-+	int i, ret = 0;
-+
-+	for (i = 0; i < info->grps[selector].npins && !ret; i++)
-+		ret = xway_pinconf_set(pctldev,
-+				info->grps[selector].pins[i], config);
-+
-+	return ret;
-+}
-+
- static struct pinconf_ops xway_pinconf_ops = {
- 	.pin_config_get	= xway_pinconf_get,
- 	.pin_config_set	= xway_pinconf_set,
-+	.pin_config_group_set = xway_pinconf_group_set,
+diff --git a/drivers/pinctrl/pinctrl-lantiq.h b/drivers/pinctrl/pinctrl-lantiq.h
+index 4419d32..6d07f02 100644
+--- a/drivers/pinctrl/pinctrl-lantiq.h
++++ b/drivers/pinctrl/pinctrl-lantiq.h
+@@ -34,6 +34,7 @@ enum ltq_pinconf_param {
+ 	LTQ_PINCONF_PARAM_OPEN_DRAIN,
+ 	LTQ_PINCONF_PARAM_DRIVE_CURRENT,
+ 	LTQ_PINCONF_PARAM_SLEW_RATE,
++	LTQ_PINCONF_PARAM_OUTPUT,
  };
  
- static struct pinctrl_desc xway_pctrl_desc = {
+ struct ltq_cfg_param {
+diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
+index aa4c8b8..b23b895 100644
+--- a/drivers/pinctrl/pinctrl-xway.c
++++ b/drivers/pinctrl/pinctrl-xway.c
+@@ -466,6 +466,11 @@ static int xway_pinconf_get(struct pinctrl_dev *pctldev,
+ 			*config = LTQ_PINCONF_PACK(param, 1);
+ 		break;
+ 
++	case LTQ_PINCONF_PARAM_OUTPUT:
++		reg = GPIO_DIR(pin);
++		*config = LTQ_PINCONF_PACK(param,
++			gpio_getbit(info->membase[0], reg, PORT_PIN(pin)));
++		break;
+ 	default:
+ 		dev_err(pctldev->dev, "Invalid config param %04x\n", param);
+ 		return -ENOTSUPP;
+@@ -515,6 +520,14 @@ static int xway_pinconf_set(struct pinctrl_dev *pctldev,
+ 			dev_err(pctldev->dev, "Invalid pull value %d\n", arg);
+ 		break;
+ 
++	case LTQ_PINCONF_PARAM_OUTPUT:
++		reg = GPIO_DIR(pin);
++		if (arg == 0)
++			gpio_clearbit(info->membase[0], reg, PORT_PIN(pin));
++		else
++			gpio_setbit(info->membase[0], reg, PORT_PIN(pin));
++		break;
++
+ 	default:
+ 		dev_err(pctldev->dev, "Invalid config param %04x\n", param);
+ 		return -ENOTSUPP;
+@@ -573,6 +586,7 @@ static inline int xway_mux_apply(struct pinctrl_dev *pctrldev,
+ static const struct ltq_cfg_param xway_cfg_params[] = {
+ 	{"lantiq,pull",		LTQ_PINCONF_PARAM_PULL},
+ 	{"lantiq,open-drain",	LTQ_PINCONF_PARAM_OPEN_DRAIN},
++	{"lantiq,output",	LTQ_PINCONF_PARAM_OUTPUT},
+ };
+ 
+ static struct ltq_pinmux_info xway_info = {
 -- 
 1.7.10.4
 
