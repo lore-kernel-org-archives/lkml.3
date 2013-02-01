@@ -1,227 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab3BAU4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:56:09 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:39658 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757532Ab3BAUwb (ORCPT
+	id S1757568Ab3BAU5F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:57:05 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:58980 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756673Ab3BAU5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:52:31 -0500
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com,
-        sjenning@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
-        rcj@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 03/16]  zcache: Provide accessory functions for counter decrease.
-Date: Fri,  1 Feb 2013 15:52:06 -0500
-Message-Id: <1359751939-23584-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1359751939-23584-1-git-send-email-konrad.wilk@oracle.com>
-References: <1359751939-23584-1-git-send-email-konrad.wilk@oracle.com>
+	Fri, 1 Feb 2013 15:57:01 -0500
+Date: Fri, 1 Feb 2013 22:56:00 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: <balbi@ti.com>, Matt Porter <mporter@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Chris Ball <cjb@laptop.org>, Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
+ arm/common
+Message-ID: <20130201205600.GA31762@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1359742975-10421-1-git-send-email-mporter@ti.com>
+ <1359742975-10421-2-git-send-email-mporter@ti.com>
+ <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com>
+ <20130201184915.GP2244@beef>
+ <510C1D0E.6030401@mvista.com>
+ <20130201185820.GE29898@arwen.pp.htv.fi>
+ <510C2A47.1090607@mvista.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+In-Reply-To: <510C2A47.1090607@mvista.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way we can have all wrapped with these functions and
-can disable/enable this with CONFIG_DEBUG_FS.
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/staging/zcache/zcache-main.c | 88 +++++++++++++++++++++---------------
- 1 file changed, 51 insertions(+), 37 deletions(-)
+hi,
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index abc9722..a55a95b 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -143,8 +143,12 @@ static inline void inc_zcache_obj_count(void)
- 	if (zcache_obj_count > zcache_obj_count_max)
- 		zcache_obj_count_max = zcache_obj_count;
- }
--
- static long zcache_objnode_count;
-+static inline void dec_zcache_obj_count(void)
-+{
-+	zcache_obj_count = atomic_dec_return(&zcache_obj_atomic);
-+	BUG_ON(zcache_obj_count < 0);
-+};
- static atomic_t zcache_objnode_atomic = ATOMIC_INIT(0);
- static long zcache_objnode_count_max;
- static inline void inc_zcache_objnode_count(void)
-@@ -153,6 +157,11 @@ static inline void inc_zcache_objnode_count(void)
- 	if (zcache_objnode_count > zcache_objnode_count_max)
- 		zcache_objnode_count_max = zcache_objnode_count;
- };
-+static inline void dec_zcache_objnode_count(void)
-+{
-+	zcache_objnode_count = atomic_dec_return(&zcache_objnode_atomic);
-+	BUG_ON(zcache_objnode_count < 0);
-+};
- static u64 zcache_eph_zbytes;
- static atomic_long_t zcache_eph_zbytes_atomic = ATOMIC_INIT(0);
- static u64 zcache_eph_zbytes_max;
-@@ -162,6 +171,10 @@ static inline void inc_zcache_eph_zbytes(unsigned clen)
- 	if (zcache_eph_zbytes > zcache_eph_zbytes_max)
- 		zcache_eph_zbytes_max = zcache_eph_zbytes;
- };
-+static inline void dec_zcache_eph_zbytes(unsigned zsize)
-+{
-+	zcache_eph_zbytes = atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
-+};
- static u64 zcache_pers_zbytes;
- static atomic_long_t zcache_pers_zbytes_atomic = ATOMIC_INIT(0);
- static u64 zcache_pers_zbytes_max;
-@@ -172,6 +185,10 @@ static inline void inc_zcache_pers_zbytes(unsigned clen)
- 		zcache_pers_zbytes_max = zcache_pers_zbytes;
- }
- static long zcache_eph_pageframes;
-+static inline void dec_zcache_pers_zbytes(unsigned zsize)
-+{
-+	zcache_pers_zbytes = atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
-+}
- static atomic_t zcache_eph_pageframes_atomic = ATOMIC_INIT(0);
- static long zcache_eph_pageframes_max;
- static inline void inc_zcache_eph_pageframes(void)
-@@ -181,6 +198,10 @@ static inline void inc_zcache_eph_pageframes(void)
- 		zcache_eph_pageframes_max = zcache_eph_pageframes;
- };
- static long zcache_pers_pageframes;
-+static inline void dec_zcache_eph_pageframes(void)
-+{
-+	zcache_eph_pageframes = atomic_dec_return(&zcache_eph_pageframes_atomic);
-+};
- static atomic_t zcache_pers_pageframes_atomic = ATOMIC_INIT(0);
- static long zcache_pers_pageframes_max;
- static inline void inc_zcache_pers_pageframes(void)
-@@ -190,6 +211,10 @@ static inline void inc_zcache_pers_pageframes(void)
- 		zcache_pers_pageframes_max = zcache_pers_pageframes;
- }
- static long zcache_pageframes_alloced;
-+static inline void dec_zcache_pers_pageframes(void)
-+{
-+	zcache_pers_pageframes = atomic_dec_return(&zcache_pers_pageframes_atomic);
-+}
- static atomic_t zcache_pageframes_alloced_atomic = ATOMIC_INIT(0);
- static inline void inc_zcache_pageframes_alloced(void)
- {
-@@ -211,6 +236,10 @@ static inline void inc_zcache_eph_zpages(void)
- 		zcache_eph_zpages_max = zcache_eph_zpages;
- }
- static long zcache_pers_zpages;
-+static inline void dec_zcache_eph_zpages(unsigned zpages)
-+{
-+	zcache_eph_zpages = atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
-+}
- static atomic_t zcache_pers_zpages_atomic = ATOMIC_INIT(0);
- static long zcache_pers_zpages_max;
- static inline void inc_zcache_pers_zpages(void)
-@@ -219,6 +248,10 @@ static inline void inc_zcache_pers_zpages(void)
- 	if (zcache_pers_zpages > zcache_pers_zpages_max)
- 		zcache_pers_zpages_max = zcache_pers_zpages;
- }
-+static inline void dec_zcache_pers_zpages(unsigned zpages)
-+{
-+	zcache_pers_zpages = atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
-+}
- /* but for the rest of these, counting races are ok */
- static unsigned long zcache_flush_total;
- static unsigned long zcache_flush_found;
-@@ -463,9 +496,7 @@ static struct tmem_objnode *zcache_objnode_alloc(struct tmem_pool *pool)
- static void zcache_objnode_free(struct tmem_objnode *objnode,
- 					struct tmem_pool *pool)
- {
--	zcache_objnode_count =
--		atomic_dec_return(&zcache_objnode_atomic);
--	BUG_ON(zcache_objnode_count < 0);
-+	dec_zcache_objnode_count();
- 	kmem_cache_free(zcache_objnode_cache, objnode);
- }
- 
-@@ -484,9 +515,7 @@ static struct tmem_obj *zcache_obj_alloc(struct tmem_pool *pool)
- 
- static void zcache_obj_free(struct tmem_obj *obj, struct tmem_pool *pool)
- {
--	zcache_obj_count =
--		atomic_dec_return(&zcache_obj_atomic);
--	BUG_ON(zcache_obj_count < 0);
-+	dec_zcache_obj_count();
- 	kmem_cache_free(zcache_obj_cache, obj);
- }
- 
-@@ -813,20 +842,14 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
- 					&zsize, &zpages);
- 	if (eph) {
- 		if (page)
--			zcache_eph_pageframes =
--			    atomic_dec_return(&zcache_eph_pageframes_atomic);
--		zcache_eph_zpages =
--		    atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
--		zcache_eph_zbytes =
--		    atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
-+			dec_zcache_eph_pageframes();
-+		dec_zcache_eph_zpages(zpages);
-+		dec_zcache_eph_zbytes(zsize);
- 	} else {
- 		if (page)
--			zcache_pers_pageframes =
--			    atomic_dec_return(&zcache_pers_pageframes_atomic);
--		zcache_pers_zpages =
--		    atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
--		zcache_pers_zbytes =
--		    atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
-+			dec_zcache_pers_pageframes();
-+		dec_zcache_pers_zpages(zpages);
-+		dec_zcache_pers_zbytes(zsize);
- 	}
- 	if (!is_local_client(pool->client))
- 		ramster_count_foreign_pages(eph, -1);
-@@ -856,23 +879,17 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
- 		page = zbud_free_and_delist((struct zbudref *)pampd,
- 						true, &zsize, &zpages);
- 		if (page)
--			zcache_eph_pageframes =
--			    atomic_dec_return(&zcache_eph_pageframes_atomic);
--		zcache_eph_zpages =
--		    atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
--		zcache_eph_zbytes =
--		    atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
-+			dec_zcache_eph_pageframes();
-+		dec_zcache_eph_zpages(zpages);
-+		dec_zcache_eph_zbytes(zsize);
- 		/* FIXME CONFIG_RAMSTER... check acct parameter? */
- 	} else {
- 		page = zbud_free_and_delist((struct zbudref *)pampd,
- 						false, &zsize, &zpages);
- 		if (page)
--			zcache_pers_pageframes =
--			    atomic_dec_return(&zcache_pers_pageframes_atomic);
--		zcache_pers_zpages =
--		     atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
--		zcache_pers_zbytes =
--		    atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
-+			dec_zcache_pers_pageframes();
-+		dec_zcache_pers_zpages(zpages);
-+		dec_zcache_pers_zbytes(zsize);
- 	}
- 	if (!is_local_client(pool->client))
- 		ramster_count_foreign_pages(is_ephemeral(pool), -1);
-@@ -994,13 +1011,10 @@ static struct page *zcache_evict_eph_pageframe(void)
- 	page = zbud_evict_pageframe_lru(&zsize, &zpages);
- 	if (page == NULL)
- 		goto out;
--	zcache_eph_zbytes = atomic_long_sub_return(zsize,
--					&zcache_eph_zbytes_atomic);
--	zcache_eph_zpages = atomic_sub_return(zpages,
--					&zcache_eph_zpages_atomic);
-+	dec_zcache_eph_zbytes(zsize);
-+	dec_zcache_eph_zpages(zpages);
- 	zcache_evicted_eph_zpages++;
--	zcache_eph_pageframes =
--		atomic_dec_return(&zcache_eph_pageframes_atomic);
-+	dec_zcache_eph_pageframes();
- 	zcache_evicted_eph_pageframes++;
- out:
- 	return page;
--- 
-1.7.11.7
+On Fri, Feb 01, 2013 at 11:49:11PM +0300, Sergei Shtylyov wrote:
+> > good point, do you wanna send some patches ?
+>=20
+>    I have already sent them countless times and even stuck CPPI 4.1 suppo=
+rt (in
+> arch/arm/common/cppi41.c) in Russell's patch system. TI requested to remo=
+ve the
+> patch. :-(
 
+sticking into arch/arm/common/ wasn't a nice move. But then again, so
+wasn't asking for the patch to be removed :-s
+
+> > I guess to make the MUSB side simpler we would need musb-dma-engine glue
+> > to map dmaengine to the private MUSB API. Then we would have some
+> > starting point to also move inventra (and anybody else) to dmaengine
+> > API.
+>=20
+>    Why? Inventra is a dedicated device's private DMA controller, why make
+> universal DMA driver for it?
+
+because it doesn't make sense to support multiple DMA APIs. We can check
+=66rom MUSB's registers if it was configured with Inventra DMA support and
+based on that we can register MUSB's own DMA Engine to dmaengine API.
+
+> > Once that's done, we drop MUSB's private API.
+>=20
+>    Don't think it's a good idea.
+
+see above.
+
+--=20
+balbi
+
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRDCvfAAoJEIaOsuA1yqREUjQP/RqhK6sXFPDiZQokepbVHvh1
+/QY/xwmvqJ5sC+OJn99FrQ0Lp+4awceYRrx3d/aLbZ2ato58jLpdXNMOSyYiJR5R
+gE4nNYafHmv070vFnkt87M9VsEZY7hERUh0UjNoqcREKYLSJ5Te0CkN2Dfewx4Ub
+dX3UQKVxjjCsxcNEg2+Ssyw1+oMTbjkSjkAwQbet8ZFsZSqXXoJ5xuRh1Ik2VD0M
+Xuc+MAAWbzilgcyM7C9Yxw5cvlan7ei6hsPgAq2kNai7WK2lm47h+enwW41q/nbs
+iXIhXM7qFHpwsByG3K3Rpkmtsg75SM8ymyNohdxb5odwh4Evzw2Z/ed6Vu+t0JK6
+vK1/mSOP7QtQCNFcO0gOvLT3NCavEf372bTLiKNWvSb1KecC4BB84tJ+oGrGxCKS
+BnhVKCKtq5PqGBoBxv29JVaTgNh0djr804bLYssB9RNvnigYh8ZD6CCLr8aDT8P5
+fyZWjXY74K8N8sfTHBYASUIhC7IVeDDFApt/0UKt8+OLPwJ9aLxXHhx+xBG96Im9
+d0Jx31hInwZ+2l7ZZr8CE/1Oy79qtAX2ANJOjSSuR8SGah+ipW40Er2nYbN0+0hx
+QiDPcezowX/2yVF7HNQjiYfAoq3pwiESXlPfN3/BnAwIsP5p/HGT9nRun2yiQJL1
+U0qONWBg4L7gNQUFhURD
+=dgm9
+-----END PGP SIGNATURE-----
+
+--2oS5YaxWCcQjTEyO--
