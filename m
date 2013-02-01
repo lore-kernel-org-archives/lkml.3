@@ -1,191 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab3BADFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 22:05:51 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:56819 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab3BADFs (ORCPT
+	id S1754821Ab3BADGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 22:06:38 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:48874 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877Ab3BADGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 22:05:48 -0500
-Date: Thu, 31 Jan 2013 22:05:45 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v4 2/3] ARM: ioremap: introduce an infrastructure for
- static mapped area
-In-Reply-To: <1359594008-14688-3-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.LFD.2.02.1301311722540.6300@xanadu.home>
-References: <1359594008-14688-1-git-send-email-iamjoonsoo.kim@lge.com> <1359594008-14688-3-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 31 Jan 2013 22:06:32 -0500
+Message-ID: <1359687985.1303.15.camel@kernel>
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>, akpm@linux-foundation.org,
+        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Date: Thu, 31 Jan 2013 21:06:25 -0600
+In-Reply-To: <510B2B8A.7040407@cn.fujitsu.com>
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+	       <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>
+	      <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>
+	     <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>
+	    <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com>
+	   <1359628705.2048.5.camel@kernel> <510B1B4B.5080207@huawei.com>
+	  <1359682576.3574.1.camel@kernel> <510B20F9.10408@cn.fujitsu.com>
+	 <1359685040.1303.6.camel@kernel> <510B2B8A.7040407@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jan 2013, Joonsoo Kim wrote:
+Hi Tang,
+On Fri, 2013-02-01 at 10:42 +0800, Tang Chen wrote:
 
-> In current implementation, we used ARM-specific flag, that is,
-> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
-> The purpose of static mapped area is to re-use static mapped area when
-> entire physical address range of the ioremap request can be covered
-> by this area.
+I confuse!
+
+> Hi Simon,
 > 
-> This implementation causes needless overhead for some cases.
-> For example, assume that there is only one static mapped area and
-> vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
-> deciding whether it is matched or not. Moreover, even if there is
-> no static mapped area and vmlist has 300 areas, every time we call
-> ioremap, we check 300 areas in now.
+> On 02/01/2013 10:17 AM, Simon Jeons wrote:
+> >> For example:
+> >>
+> >>                                          64TB, what ever
+> >>      xxxTB, what ever
+> >> logic address space:     |_____kernel_______|_________user_________________|
+> >>                                          \  \  /  /
+> >>                                           \  /\  /
+> >> physical address space:              |___\/__\/_____________|  4GB or
+> >> 8GB, what ever
+> >>                                             *****
+> >
+> > How much address space user process can have on x86_64? Also 8GB?
 > 
-> If we construct a extra list for static mapped area, we can eliminate
-> above mentioned overhead.
-> With a extra list, if there is one static mapped area,
-> we just check only one area and proceed next operation quickly.
+> Usually, we don't say that.
 > 
-> In fact, it is not a critical problem, because ioremap is not frequently
-> used. But reducing overhead is better idea.
+> 8GB is your physical memory, right ?
+> But kernel space and user space is the logic conception in OS. They are 
+> in logic
+> address space.
 > 
-> Another reason for doing this work is for removing architecture dependency
-> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
-> structure for vmalloc layer. Some codes for debugging and stat inevitably
-> use vmlist and vmlist_lock. But it is preferable that they are used
-> as least as possible in outside of vmalloc.c
+> So both the kernel space and the user space can use all the physical memory.
+> But if the page is already in use by either of them, the other one 
+> cannot use it.
+> For example, some pages are direct mapped to kernel, and is in use by 
+> kernel, the
+> user space cannot map it.
+
+How can distinguish map and use? I mean how can confirm memory is used
+by kernel instead of map? 
+
 > 
-> Now, I introduce an ARM-specific infrastructure for static mapped area. In
-> the following patch, we will use this and resolve above mentioned problem.
+> >
+> >>
+> >> The ***** part physical is mapped to user space in the process' own
+> >> pagetable.
+> >> It is also direct mapped in kernel's pagetable. So the kernel can also
+> >> access it. :)
+> >
+> > But how to protect user process not modify kernel memory?
 > 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> This is the job of CPU. On intel cpus, user space code is running in 
+> level 3, and
+> kernel space code is running in level 0. So the code in level 3 cannot 
+> access the data
+> segment in level 0.
 
-Much better.  Comments below.
+1) If user process and kenel map to same physical memory, user process
+will get SIGSEGV during #PF if access to this memory, but If user proces
+s will map to the same memory which kernel map? Why? It can't access it.
+2) If two user processes map to same physical memory, what will happen
+if one process access the memory?
 
-> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-> index 88fd86c..ceb34ae 100644
-> --- a/arch/arm/mm/ioremap.c
-> +++ b/arch/arm/mm/ioremap.c
-> @@ -39,6 +39,78 @@
->  #include <asm/mach/pci.h>
->  #include "mm.h"
->  
-> +
-> +LIST_HEAD(static_vmlist);
-> +static DEFINE_RWLOCK(static_vmlist_lock);
-
-In fact you don't need a lock at all.  The only writer is 
-add_static_vm_early() and we know it is only used during boot when the 
-kernel is still single-threaded.
-
-> +
-> +static struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
-> +			size_t size, unsigned long flags)
-> +{
-> +	struct static_vm *svm;
-> +	struct vm_struct *vm;
-> +
-> +	read_lock(&static_vmlist_lock);
-> +	list_for_each_entry(svm, &static_vmlist, list) {
-> +		if (svm->flags != flags)
-> +			continue;
-> +
-> +		vm = &svm->vm;
-> +		if (vm->phys_addr > paddr ||
-> +			paddr + size - 1 > vm->phys_addr + vm->size - 1)
-> +			continue;
-> +
-> +		read_unlock(&static_vmlist_lock);
-> +		return svm;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +struct static_vm *find_static_vm_vaddr(void *vaddr)
-> +{
-> +	struct static_vm *svm;
-> +	struct vm_struct *vm;
-> +
-> +	read_lock(&static_vmlist_lock);
-> +	list_for_each_entry(svm, &static_vmlist, list) {
-> +		vm = &svm->vm;
-> +
-> +		/* static_vmlist is ascending order */
-> +		if (vm->addr > vaddr)
-> +			break;
-> +
-> +		if (vm->addr <= vaddr && vm->addr + vm->size > vaddr) {
-> +			read_unlock(&static_vmlist_lock);
-> +			return svm;
-> +		}
-> +	}
-> +	read_unlock(&static_vmlist_lock);
-> +
-> +	return NULL;
-> +}
-> +
-> +void add_static_vm_early(struct static_vm *svm, unsigned long flags)
-
-This should be marked with __init.  This way, it is less likely to be 
-used after boot, especially with no locking.  And vm_area_add_early() is 
-valid only if !vmap_initialized anyway, and also __init.
-
-> +{
-> +	struct static_vm *curr_svm;
-> +	struct vm_struct *vm;
-> +	void *vaddr;
-> +
-> +	vm_area_add_early(&svm->vm);
-> +
-> +	vaddr = svm->vm.addr;
-> +	svm->flags = flags;
-> +
-> +	write_lock(&static_vmlist_lock);
-> +	list_for_each_entry(curr_svm, &static_vmlist, list) {
-> +		vm = &curr_svm->vm;
-> +
-> +		if (vm->addr > vaddr)
-> +			break;
-> +	}
-> +	list_add_tail(&svm->list, &curr_svm->list);
-> +	write_unlock(&static_vmlist_lock);
-> +}
-> +
->  int ioremap_page(unsigned long virt, unsigned long phys,
->  		 const struct mem_type *mtype)
->  {
-> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
-> index a8ee92d..fb45c79 100644
-> --- a/arch/arm/mm/mm.h
-> +++ b/arch/arm/mm/mm.h
-> @@ -1,4 +1,6 @@
->  #ifdef CONFIG_MMU
-> +#include <linux/list.h>
-> +#include <linux/vmalloc.h>
->  
->  /* the upper-most page table pointer */
->  extern pmd_t *top_pmd;
-> @@ -65,6 +67,24 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
->  /* consistent regions used by dma_alloc_attrs() */
->  #define VM_ARM_DMA_CONSISTENT	0x20000000
->  
-> +
-> +/* ARM specific static_vm->flags bits */
-> +#define STATIC_VM_MEM		0x00000001
-> +#define STATIC_VM_EMPTY		0x00000002
-> +#define STATIC_VM_MTYPE(mtype)	((mtype) << 20)
-> +
-> +#define STATIC_VM_TYPE(type, mtype) (type | STATIC_VM_MTYPE(mtype))
-> +
-> +struct static_vm {
-> +	struct vm_struct vm;
-> +	struct list_head list;
-> +	unsigned long flags;
-> +};
-
-What is your motivation for having separate flags instead of simply 
-keeping the current vm->flags usage?
+> 
+> Thanks. :)
 
 
-Nicolas
