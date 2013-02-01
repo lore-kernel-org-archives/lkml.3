@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422735Ab3BAKvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:51:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39208 "EHLO mail.kernel.org"
+	id S1422751Ab3BAKvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:51:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39219 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422685Ab3BAKu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:50:58 -0500
+	id S1422738Ab3BAKvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:51:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Ben Myers <bpm@sgi.com>, xfs@oss.sgi.com
-Subject: [ 12/33] xfs: Fix possible use-after-free with AIO
-Date: Fri,  1 Feb 2013 11:49:17 +0100
-Message-Id: <20130201104725.531364005@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Borislav Petkov <bp@suse.de>
+Subject: [ 22/33] EDAC: Test correct variable in ->store function
+Date: Fri,  1 Feb 2013 11:49:27 +0100
+Message-Id: <20130201104726.235135333@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
@@ -25,40 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 4b05d09c18d9aa62d2e7fb4b057f54e5a38963f5 upstream.
+commit 8024c4c0b1057d1cd811fc9c3f88f81de9729fcd upstream.
 
-Running AIO is pinning inode in memory using file reference. Once AIO
-is completed using aio_complete(), file reference is put and inode can
-be freed from memory. So we have to be sure that calling aio_complete()
-is the last thing we do with the inode.
+We're testing for ->show but calling ->store().
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-CC: xfs@oss.sgi.com
-CC: Ben Myers <bpm@sgi.com>
-Reviewed-by: Ben Myers <bpm@sgi.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_aops.c |    2 +-
+ drivers/edac/edac_pci_sysfs.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/xfs/xfs_aops.c
-+++ b/fs/xfs/xfs_aops.c
-@@ -89,11 +89,11 @@ xfs_destroy_ioend(
- 	}
+--- a/drivers/edac/edac_pci_sysfs.c
++++ b/drivers/edac/edac_pci_sysfs.c
+@@ -257,7 +257,7 @@ static ssize_t edac_pci_dev_store(struct
+ 	struct edac_pci_dev_attribute *edac_pci_dev;
+ 	edac_pci_dev = (struct edac_pci_dev_attribute *)attr;
  
- 	if (ioend->io_iocb) {
-+		inode_dio_done(ioend->io_inode);
- 		if (ioend->io_isasync) {
- 			aio_complete(ioend->io_iocb, ioend->io_error ?
- 					ioend->io_error : ioend->io_result, 0);
- 		}
--		inode_dio_done(ioend->io_inode);
- 	}
- 
- 	mempool_free(ioend, xfs_ioend_pool);
+-	if (edac_pci_dev->show)
++	if (edac_pci_dev->store)
+ 		return edac_pci_dev->store(edac_pci_dev->value, buffer, count);
+ 	return -EIO;
+ }
 
 
