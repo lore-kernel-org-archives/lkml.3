@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422863Ab3BANOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:14:07 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45471 "EHLO mail.kernel.org"
+	id S1030252Ab3BANSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:18:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45463 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422847Ab3BANOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:14:01 -0500
+	id S1422729Ab3BANNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:13:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mukund Jampala <jbmukund@gmail.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 72/89] netfilter: ip[6]t_REJECT: fix wrong transport header pointer in TCP reset
-Date: Fri,  1 Feb 2013 14:08:27 +0100
-Message-Id: <20130201130212.670323187@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [ 71/89] kvm: Fix irqfd resampler list walk
+Date: Fri,  1 Feb 2013 14:08:26 +0100
+Message-Id: <20130201130212.600228500@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,95 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mukund Jampala <jbmukund@gmail.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit c6f408996c625cb950cad024f90e50519f94713c upstream.
+commit 49f8a1a5394d8baee5e56fb71e5cf993c228689a upstream.
 
-The problem occurs when iptables constructs the tcp reset packet.
-It doesn't initialize the pointer to the tcp header within the skb.
-When the skb is passed to the ixgbe driver for transmit, the ixgbe
-driver attempts to access the tcp header and crashes.
-Currently, other drivers (such as our 1G e1000e or igb drivers) don't
-access the tcp header on transmit unless the TSO option is turned on.
+Typo for the next pointer means we're walking random data here.
 
-<1>BUG: unable to handle kernel NULL pointer dereference at 0000000d
-<1>IP: [<d081621c>] ixgbe_xmit_frame_ring+0x8cc/0x2260 [ixgbe]
-<4>*pdpt = 0000000085e5d001 *pde = 0000000000000000
-<0>Oops: 0000 [#1] SMP
-[...]
-<4>Pid: 0, comm: swapper Tainted: P            2.6.35.12 #1 Greencity/Thurley
-<4>EIP: 0060:[<d081621c>] EFLAGS: 00010246 CPU: 16
-<4>EIP is at ixgbe_xmit_frame_ring+0x8cc/0x2260 [ixgbe]
-<4>EAX: c7628820 EBX: 00000007 ECX: 00000000 EDX: 00000000
-<4>ESI: 00000008 EDI: c6882180 EBP: dfc6b000 ESP: ced95c48
-<4> DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-<0>Process swapper (pid: 0, ti=ced94000 task=ced73bd0 task.ti=ced94000)
-<0>Stack:
-<4> cbec7418 c779e0d8 c77cc888 c77cc8a8 0903010a 00000000 c77c0008 00000002
-<4><0> cd4997c0 00000010 dfc6b000 00000000 d0d176c9 c77cc8d8 c6882180 cbec7318
-<4><0> 00000004 00000004 cbec7230 cbec7110 00000000 cbec70c0 c779e000 00000002
-<0>Call Trace:
-<4> [<d0d176c9>] ? 0xd0d176c9
-<4> [<d0d18a4d>] ? 0xd0d18a4d
-<4> [<411e243e>] ? dev_hard_start_xmit+0x218/0x2d7
-<4> [<411f03d7>] ? sch_direct_xmit+0x4b/0x114
-<4> [<411f056a>] ? __qdisc_run+0xca/0xe0
-<4> [<411e28b0>] ? dev_queue_xmit+0x2d1/0x3d0
-<4> [<411e8120>] ? neigh_resolve_output+0x1c5/0x20f
-<4> [<411e94a1>] ? neigh_update+0x29c/0x330
-<4> [<4121cf29>] ? arp_process+0x49c/0x4cd
-<4> [<411f80c9>] ? nf_hook_slow+0x3f/0xac
-<4> [<4121ca8d>] ? arp_process+0x0/0x4cd
-<4> [<4121ca8d>] ? arp_process+0x0/0x4cd
-<4> [<4121c6d5>] ? T.901+0x38/0x3b
-<4> [<4121c918>] ? arp_rcv+0xa3/0xb4
-<4> [<4121ca8d>] ? arp_process+0x0/0x4cd
-<4> [<411e1173>] ? __netif_receive_skb+0x32b/0x346
-<4> [<411e19e1>] ? netif_receive_skb+0x5a/0x5f
-<4> [<411e1ea9>] ? napi_skb_finish+0x1b/0x30
-<4> [<d0816eb4>] ? ixgbe_xmit_frame_ring+0x1564/0x2260 [ixgbe]
-<4> [<41013468>] ? lapic_next_event+0x13/0x16
-<4> [<410429b2>] ? clockevents_program_event+0xd2/0xe4
-<4> [<411e1b03>] ? net_rx_action+0x55/0x127
-<4> [<4102da1a>] ? __do_softirq+0x77/0xeb
-<4> [<4102dab1>] ? do_softirq+0x23/0x27
-<4> [<41003a67>] ? do_IRQ+0x7d/0x8e
-<4> [<41002a69>] ? common_interrupt+0x29/0x30
-<4> [<41007bcf>] ? mwait_idle+0x48/0x4d
-<4> [<4100193b>] ? cpu_idle+0x37/0x4c
-<0>Code: df 09 d7 0f 94 c2 0f b6 d2 e9 e7 fb ff ff 31 db 31 c0 e9 38
-ff ff ff 80 78 06 06 0f 85 3e fb ff ff 8b 7c 24 38 8b 8f b8 00 00 00
-<0f> b6 51 0d f6 c2 01 0f 85 27 fb ff ff 80 e2 02 75 0d 8b 6c 24
-<0>EIP: [<d081621c>] ixgbe_xmit_frame_ring+0x8cc/0x2260 [ixgbe] SS:ESP
-
-Signed-off-by: Mukund Jampala <jbmukund@gmail.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv4/netfilter/ipt_REJECT.c  |    1 +
- net/ipv6/netfilter/ip6t_REJECT.c |    1 +
- 2 files changed, 2 insertions(+)
+ virt/kvm/eventfd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/netfilter/ipt_REJECT.c
-+++ b/net/ipv4/netfilter/ipt_REJECT.c
-@@ -81,6 +81,7 @@ static void send_reset(struct sk_buff *o
- 	niph->saddr	= oiph->daddr;
- 	niph->daddr	= oiph->saddr;
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -332,7 +332,7 @@ kvm_irqfd_assign(struct kvm *kvm, struct
+ 		mutex_lock(&kvm->irqfds.resampler_lock);
  
-+	skb_reset_transport_header(nskb);
- 	tcph = (struct tcphdr *)skb_put(nskb, sizeof(struct tcphdr));
- 	memset(tcph, 0, sizeof(*tcph));
- 	tcph->source	= oth->dest;
---- a/net/ipv6/netfilter/ip6t_REJECT.c
-+++ b/net/ipv6/netfilter/ip6t_REJECT.c
-@@ -132,6 +132,7 @@ static void send_reset(struct net *net,
- 	ip6h->saddr = oip6h->daddr;
- 	ip6h->daddr = oip6h->saddr;
- 
-+	skb_reset_transport_header(nskb);
- 	tcph = (struct tcphdr *)skb_put(nskb, sizeof(struct tcphdr));
- 	/* Truncate to length (no data) */
- 	tcph->doff = sizeof(struct tcphdr)/4;
+ 		list_for_each_entry(resampler,
+-				    &kvm->irqfds.resampler_list, list) {
++				    &kvm->irqfds.resampler_list, link) {
+ 			if (resampler->notifier.gsi == irqfd->gsi) {
+ 				irqfd->resampler = resampler;
+ 				break;
 
 
