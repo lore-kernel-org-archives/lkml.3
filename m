@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab3BASYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 13:24:10 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:55066 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757046Ab3BASWf (ORCPT
+	id S1757371Ab3BASYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 13:24:17 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:43432 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757046Ab3BASYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 13:22:35 -0500
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>
-Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v7 07/10] dmaengine: add dma_request_slave_channel_compat()
-Date: Fri,  1 Feb 2013 13:22:52 -0500
-Message-Id: <1359742975-10421-8-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359742975-10421-1-git-send-email-mporter@ti.com>
-References: <1359742975-10421-1-git-send-email-mporter@ti.com>
+	Fri, 1 Feb 2013 13:24:11 -0500
+From: Peter Wu <lekensteyn@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [Resend][PATCH] ACPI / PM: Do not power manage devices in unknown initial states
+Date: Fri, 01 Feb 2013 19:23:52 +0100
+Message-ID: <2135454.ENo8eA9AXp@al>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc5-git-162-g34213ff+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <3676077.i6vcpp7Nrn@vostro.rjw.lan>
+References: <3676077.i6vcpp7Nrn@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a dma_request_slave_channel_compat() wrapper which accepts
-both the arguments from dma_request_channel() and
-dma_request_slave_channel(). Based on whether the driver is
-instantiated via DT, the appropriate channel request call will be
-made.
+On Thursday 31 January 2013 23:32:40 Rafael J. Wysocki wrote:
+> In general, for ACPI device power management to work, the initial
+> power states of devices must be known (otherwise, we wouldn't be able
+> to keep track of power resources, for example).  Hence, if it is
+> impossible to determine the initial ACPI power states of some
+> devices, they can't be regarded as power-manageable using ACPI.
+> 
+> For this reason, modify acpi_bus_get_power_flags() to clear the
+> power_manageable flag if acpi_bus_init_power() fails and add some
+> extra fallback code to acpi_bus_init_power() to cover broken
+> BIOSes that provide _PS0/_PS3 without _PSC for some devices.
+> 
+> Verified to work on my HP nx6325 that has this problem.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-This allows for a much cleaner migration of drivers to the
-dmaengine DT API as platforms continue to be mixed between those
-that boot using DT and those that do not.
+Tested-by: Peter Wu <lekensteyn@gmail.com>
 
-Suggested-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Matt Porter <mporter@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- include/linux/dmaengine.h |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+I applied it on top of branch linux-next of repo linux-pm.
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index bfcdecb..17d8ffd 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -1001,6 +1001,22 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
- struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
- struct dma_chan *net_dma_find_channel(void);
- #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
-+#define dma_request_slave_channel_compat(mask, x, y, dev, name) \
-+	__dma_request_slave_channel_compat(&(mask), x, y, dev, name)
-+
-+static inline struct dma_chan
-+*__dma_request_slave_channel_compat(dma_cap_mask_t *mask, dma_filter_fn fn,
-+				  void *fn_param, struct device *dev,
-+				  char *name)
-+{
-+	struct dma_chan *chan;
-+
-+	chan = dma_request_slave_channel(dev, name);
-+	if (chan)
-+		return chan;
-+
-+	return __dma_request_channel(mask, fn, fn_param);
-+}
- 
- /* --- Helper iov-locking functions --- */
- 
--- 
-1.7.9.5
+Fixes the issue I had with bbswitch in Linux 3.8. Can a backport patch be made 
+available for 3.8?
 
+Regards,
+Peter
