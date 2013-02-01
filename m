@@ -1,419 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab3BAUAL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:00:11 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:55749 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab3BAUAI (ORCPT
+	id S1757212Ab3BAUFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:05:55 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32990 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab3BAUFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:00:08 -0500
-MIME-Version: 1.0
-Date: Fri, 1 Feb 2013 15:00:06 -0500
-Message-ID: <CAK8PzVk8g1-jDhVmZ+jLCcw23DmDANYdxVrzuDBNPqhTVq8zqw@mail.gmail.com>
-Subject: Backport of Balance-ALB patch from 3.8-rc2 (567b871e503316b0927e54a3d7c86d50b722d955)
- to kernels 3.0, 3.2, 3.4, 3.7.
-From: "Matthew O'Connor" <liquidhorse@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Feb 2013 15:05:52 -0500
+X-Authority-Analysis: v=2.0 cv=bJmU0YCZ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XsXuaHjf3P4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=W2twR_cybfAA:10 a=D19gQVrFAAAA:8 a=fXzfXKPrCMM4wxKvINUA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=mEwF0tv550EkQFvF:21 a=BO0LfNybCoTbHYDU:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1359749149.5642.47.camel@gandalf.local.home>
+Subject: [RFC][PATCH] x86: Have debug/nmi restore the IDT it replaced
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>
+Date: Fri, 01 Feb 2013 15:05:49 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Original patch by Zheng Li.  Backported to kernel series 3.0, 3.2,
-3.4, and 3.7.  Original patch details:
+I've been playing with Seiji's patches:
 
->From 567b871e503316b0927e54a3d7c86d50b722d955 Mon Sep 17 00:00:00 2001
-From: "zheng.li" <zheng.x.li@oracle.com>
-Date: Tue, 27 Nov 2012 23:57:04 +0000
-Subject: [PATCH] bonding: rlb mode of bond should not alter ARP originating
- via bridge
+https://lkml.org/lkml/2013/1/21/573
 
-Do not modify or load balance ARP packets passing through balance-alb
-mode (wherein the ARP did not originate locally, and arrived via a bridge).
+Which add tracing to the x86 interrupt vectors. But to keep tracing
+overhead down to zero when tracing is inactive, it uses a swap of the
+IDT to replace the irq vectors with versions that have tracepoints in
+them, when tracing is enabled. Even though tracepoints have "nops", we
+do this to keep even that overhead eliminated.
 
-Modifying pass-through ARP replies causes an incorrect MAC address
-to be placed into the ARP packet, rendering peers unable to communicate
-with the actual destination from which the ARP reply originated.
-
-Load balancing pass-through ARP requests causes an entry to be
-created for the peer in the rlb table, and bond_alb_monitor will
-occasionally issue ARP updates to all peers in the table instrucing them
-as to which MAC address they should communicate with; this occurs when
-some event sets rx_ntt.  In the bridged case, however, the MAC address
-used for the update would be the MAC of the slave, not the actual source
-MAC of the originating destination.  This would render peers unable to
-communicate with the destinations beyond the bridge.
-
-Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: Andy Gospodarek <andy@greyhouse.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+These seemed to work, until I ran the following command with trace-cmd:
 
 
-Backports:
-Signed-off-by: Matthew O'Connor (liquidhorse@gmail.com)
+ trace-cmd start -p function_graph -g "smp_trace_apic_timer_interrupt" \
+   -g "smp_apic_timer_interrupt" -e irq_vectors
 
 
-====== 3.0 Series ======
+What trace-cmd does above, is not only enables the irq_vectors, but also
+produces the call graphs of the two interrupt vector functions:
+smp_trace_apic_timer_interrupt and smp_apic_timer_interrupt
 
-diff -uNr linux-3.0.0-a/drivers/net/bonding/bond_alb.c
-linux-3.0.0-b/drivers/net/bonding/bond_alb.c
---- linux-3.0.0-a/drivers/net/bonding/bond_alb.c    2013-01-10
-12:47:53.000000000 -0500
-+++ linux-3.0.0-b/drivers/net/bonding/bond_alb.c    2013-01-10
-12:50:58.000000000 -0500
-@@ -666,6 +666,12 @@
-     struct arp_pkt *arp = arp_pkt(skb);
-     struct slave *tx_slave = NULL;
+The result was rather surprising. It showed only
+smp_apic_timer_interrupt being called, and not the trace version.
+Obviously, the tracepoints for the vectors were also not there.
 
-+    /* Don't modify or load balance ARPs that do not originate locally
-+     * (e.g.,arrive via a bridge).
-+     */
-+    if (!bond_slave_has_mac(bond, arp->mac_src))
-+        return NULL;
-+
-     if (arp->op_code == htons(ARPOP_REPLY)) {
-         /* the arp must be sent on the selected
-         * rx channel
-diff -uNr linux-3.0.0-a/drivers/net/bonding/bonding.h
-linux-3.0.0-b/drivers/net/bonding/bonding.h
---- linux-3.0.0-a/drivers/net/bonding/bonding.h    2011-07-21
-22:17:23.000000000 -0400
-+++ linux-3.0.0-b/drivers/net/bonding/bonding.h    2013-01-10
-12:51:05.000000000 -0500
-@@ -18,6 +18,7 @@
- #include <linux/timer.h>
- #include <linux/proc_fs.h>
- #include <linux/if_bonding.h>
-+#include <linux/etherdevice.h>
- #include <linux/cpumask.h>
- #include <linux/in6.h>
- #include <linux/netpoll.h>
-@@ -431,6 +432,18 @@
+When starting without the function graph tracer, it worked fine, but I
+wanted to see the trace versions being called to be sure, which required
+one of the function tracers.
+
+Investigating, I found the problem. It's with the NMI and breakpoint IDT
+handling. I wont explain it too much here, but see:
+
+commit f8988175f "x86: Allow nesting of the debug stack IDT setting"
+commit 42181186a "x86: Add counter when debug stack is used with
+interrupts enabled"
+commit 228bdaa95 "x86: Keep current stack in NMI breakpoints"
+
+The basic gist of the above commits is that on NMI or DEBUG trap
+entering, it needs to modify the IDT so that the stack pointer doesn't
+get reset to the top of the stack again. On boot up, two IDT tables are
+created. One for normal operations and one for this NMI/DEBUG case.
+
+The issue is that it just toggles between the two IDT tables. But if
+this happens when Seiji's swap had already happened, it replaces the
+trace IDT table back to the normal table, and tracing stops, which sorta
+defeats the purpose.
+
+
+To solve this, I've added a 'hold_idt_descr' per cpu variable that
+stores the IDT that was loaded and will use that to replace it. If the
+DEBUG/NMI came in when the IDT was normal, it would replace it back with
+the normal IDT, and if it came in when it was the trace IDT, it would
+put back the trace IDT.
+
+I've run a few tests so far on this code, but I need to run more
+stressful ones. Meanwhile, until I find any bugs, I'm posting this patch
+for your enjoyment. I think I got all the cases, as NMIs causes the
+store/restore functions to be re-entrent without any locks.
+
+Not-yet-signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Index: linux-trace.git/arch/x86/kernel/cpu/common.c
+===================================================================
+--- linux-trace.git.orig/arch/x86/kernel/cpu/common.c
++++ linux-trace.git/arch/x86/kernel/cpu/common.c
+@@ -1148,10 +1148,54 @@ int is_debug_stack(unsigned long addr)
  }
- #endif
-
-+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
-+                           const u8 *mac)
-+{
-+    int i = 0;
-+    struct slave *tmp;
-+
-+    bond_for_each_slave(bond, tmp, i)
-+        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
-+            return tmp;
-+
-+    return NULL;
-+}
-
- /* exported from bond_main.c */
- extern int bond_net_id;
-diff -uNr linux-3.0.0-a/include/linux/etherdevice.h
-linux-3.0.0-b/include/linux/etherdevice.h
---- linux-3.0.0-a/include/linux/etherdevice.h    2011-07-21
-22:17:23.000000000 -0400
-+++ linux-3.0.0-b/include/linux/etherdevice.h    2013-01-10
-12:51:16.000000000 -0500
-@@ -275,4 +275,37 @@
- #endif
- }
-
-+/**
-+ * ether_addr_equal_64bits - Compare two Ethernet addresses
-+ * @addr1: Pointer to an array of 8 bytes
-+ * @addr2: Pointer to an other array of 8 bytes
+ 
+ static DEFINE_PER_CPU(u32, debug_stack_use_ctr);
++static DEFINE_PER_CPU(struct desc_ptr, hold_idt_descr);
++static DEFINE_PER_CPU(struct desc_ptr, copy_idt_descr);
+ 
++/*
++ * Debug traps and NMIs will swap the IDT to have the debug
++ * trap not modify the stack (nmi_idt_descr). But as both the
++ * debug and NMIs share this, they need to be re-entrant. A debug
++ * trap could be doing the swap and after it incs the debug_stack_use_ctr,
++ * an NMI could come in. It too would need to do the swap, and it would
++ * need to swap every time.
 + *
-+ * Compare two Ethernet addresses, returns true if equal, false otherwise.
++ * But, the IDT can be changed by other users, and this must restore
++ * that as well.
 + *
-+ * The function doesn't need any conditional branches and possibly uses
-+ * word memory accesses on CPU allowing cheap unaligned memory reads.
-+ * arrays = { byte1, byte2, byte3, byte4, byte5, byte6, pad1, pad2 }
-+ *
-+ * Please note that alignment of addr1 & addr2 are only guaranteed to
-be 16 bits.
++ * Luckily, as interrupts are disabled from the set_zero to reset,
++ * we do not need to worry about the IDT changing underneath us
++ * from other users.
 + */
+ void debug_stack_set_zero(void)
+ {
++	/*
++	 * Writing to the IDT is atomic. If an NMI were to come
++	 * in after we did the compare but before the store_idt(),
++	 * it too would see the address == 0 and do the store itself.
++	 */
++	if (this_cpu_read(hold_idt_descr.address) == 0)
++		store_idt(this_cpu_ptr(&hold_idt_descr));
 +
-+static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
-+                                           const u8 addr2[6+2])
-+{
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-+        unsigned long fold = ((*(unsigned long *)addr1) ^
-+                              (*(unsigned long *)addr2));
++	/*
++	 * If an NMI were to come in now, it would not set hold_idt_descr,
++	 * but on exit, it would restore the IDT because the counter is
++	 * still zero here. Then it would set the .address back to zero too.
++	 */
 +
-+        if (sizeof(fold) == 8)
-+                return zap_last_2bytes(fold) == 0;
+ 	this_cpu_inc(debug_stack_use_ctr);
 +
-+        fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
-+                                (*(unsigned long *)(addr2 + 4)));
-+        return fold == 0;
-+#else
-+        return ether_addr_equal(addr1, addr2);
-+#endif
-+}
++	/*
++	 * NMI's coming in now are not an issue as we set the .address
++	 * and also incremented the ctr. But, if an NMI came in before
++	 * the counter was incremented, and after the .address was set,
++	 * the NMI would set the .address back to zero, and would have
++	 * restored the IDT. We need to check if that happened.
++	 * If it did, then the .address would be zero here again.
++	 */
++	if (unlikely(this_cpu_read(hold_idt_descr.address) == 0))
++		store_idt(this_cpu_ptr(&hold_idt_descr));
 +
-+
- #endif    /* _LINUX_ETHERDEVICE_H */
-
-
-
-====== 3.2 Series ======
-
-diff -uprN linux-3.2.37/drivers/net/bonding/bond_alb.c
-linux-3.2.37-patched/drivers/net/bonding/bond_alb.c
---- linux-3.2.37/drivers/net/bonding/bond_alb.c    2013-01-15
-20:13:30.000000000 -0500
-+++ linux-3.2.37-patched/drivers/net/bonding/bond_alb.c    2013-01-30
-15:37:12.717485854 -0500
-@@ -666,6 +666,12 @@ static struct slave *rlb_arp_xmit(struct
-     struct arp_pkt *arp = arp_pkt(skb);
-     struct slave *tx_slave = NULL;
-
-+    /* Don't modify or load balance ARPs that do not originate locally
-+     * (e.g.,arrive via a bridge).
-+     */
-+    if (!bond_slave_has_mac(bond, arp->mac_src))
-+        return NULL;
-+
-     if (arp->op_code == htons(ARPOP_REPLY)) {
-         /* the arp must be sent on the selected
-         * rx channel
-diff -uprN linux-3.2.37/drivers/net/bonding/bonding.h
-linux-3.2.37-patched/drivers/net/bonding/bonding.h
---- linux-3.2.37/drivers/net/bonding/bonding.h    2013-01-15
-20:13:30.000000000 -0500
-+++ linux-3.2.37-patched/drivers/net/bonding/bonding.h    2013-01-30
-15:37:12.729485790 -0500
-@@ -18,6 +18,7 @@
- #include <linux/timer.h>
- #include <linux/proc_fs.h>
- #include <linux/if_bonding.h>
-+#include <linux/etherdevice.h>
- #include <linux/cpumask.h>
- #include <linux/in6.h>
- #include <linux/netpoll.h>
-@@ -436,6 +437,18 @@ static inline void bond_destroy_proc_dir
++	/* On enter, we always want to use the nmi_idt_descr */
+ 	load_idt((const struct desc_ptr *)&nmi_idt_descr);
  }
- #endif
-
-+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
-+                           const u8 *mac)
-+{
-+    int i = 0;
-+    struct slave *tmp;
+ 
+@@ -1159,8 +1203,39 @@ void debug_stack_reset(void)
+ {
+ 	if (WARN_ON(!this_cpu_read(debug_stack_use_ctr)))
+ 		return;
+-	if (this_cpu_dec_return(debug_stack_use_ctr) == 0)
+-		load_idt((const struct desc_ptr *)&idt_descr);
 +
-+    bond_for_each_slave(bond, tmp, i)
-+        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
-+            return tmp;
++	if (WARN_ON(!this_cpu_read(hold_idt_descr.address)))
++		return;
 +
-+    return NULL;
-+}
-
- /* exported from bond_main.c */
- extern int bond_net_id;
-diff -uprN linux-3.2.37/include/linux/etherdevice.h
-linux-3.2.37-patched/include/linux/etherdevice.h
---- linux-3.2.37/include/linux/etherdevice.h    2013-01-15
-20:13:30.000000000 -0500
-+++ linux-3.2.37-patched/include/linux/etherdevice.h    2013-01-30
-15:37:12.729485790 -0500
-@@ -275,4 +275,37 @@ static inline unsigned long compare_ethe
- #endif
++	/*
++	 * This is the tricky part. We need to restore the old
++	 * IDT to what it was before we entered, but an NMI could
++	 * come in at any point, and do the same.
++	 *
++	 * If the count is 1, then we are the first to enter and
++	 * we need to update the IDT. But, we must do that after
++	 * we decrement the counter, in which case, if an NMI
++	 * comes in, it too will see the 1. To get around this,
++	 * we update a copy first.
++	 *
++	 * The copy will always contain what we want to load the
++	 * IDT with.
++	 */
++	if (this_cpu_read(debug_stack_use_ctr) == 1)
++		*this_cpu_ptr(&copy_idt_descr) = *this_cpu_ptr(&hold_idt_descr);
++
++	if (this_cpu_dec_return(debug_stack_use_ctr) == 0) {
++		/*
++		 * We use the copy to save to the IDT, as it will always contain
++		 * what we want to restore the IDT to.
++		 */
++		load_idt(this_cpu_ptr(&copy_idt_descr));
++		/*
++		 * Now clear out the hold_idt_descr.address, to let all new
++		 * users restore it from the IDT.
++		 */
++		this_cpu_write(hold_idt_descr.address, 0);
++	}
  }
-
-+/**
-+ * ether_addr_equal_64bits - Compare two Ethernet addresses
-+ * @addr1: Pointer to an array of 8 bytes
-+ * @addr2: Pointer to an other array of 8 bytes
-+ *
-+ * Compare two Ethernet addresses, returns true if equal, false otherwise.
-+ *
-+ * The function doesn't need any conditional branches and possibly uses
-+ * word memory accesses on CPU allowing cheap unaligned memory reads.
-+ * arrays = { byte1, byte2, byte3, byte4, byte5, byte6, pad1, pad2 }
-+ *
-+ * Please note that alignment of addr1 & addr2 are only guaranteed to
-be 16 bits.
-+ */
-+
-+static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
-+                                           const u8 addr2[6+2])
-+{
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-+        unsigned long fold = ((*(unsigned long *)addr1) ^
-+                              (*(unsigned long *)addr2));
-+
-+        if (sizeof(fold) == 8)
-+                return zap_last_2bytes(fold) == 0;
-+
-+        fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
-+                                (*(unsigned long *)(addr2 + 4)));
-+        return fold == 0;
-+#else
-+        return ether_addr_equal(addr1, addr2);
-+#endif
-+}
-+
-+
- #endif    /* _LINUX_ETHERDEVICE_H */
+ 
+ #else	/* CONFIG_X86_64 */
 
 
-
-====== 3.4 Series ======
-
-diff -uprN linux-3.4.28/drivers/net/bonding/bond_alb.c
-linux-3.4.28-patched/drivers/net/bonding/bond_alb.c
---- linux-3.4.28/drivers/net/bonding/bond_alb.c    2013-01-27
-23:51:45.000000000 -0500
-+++ linux-3.4.28-patched/drivers/net/bonding/bond_alb.c    2013-01-30
-15:37:25.121708311 -0500
-@@ -704,6 +704,12 @@ static struct slave *rlb_arp_xmit(struct
-     struct arp_pkt *arp = arp_pkt(skb);
-     struct slave *tx_slave = NULL;
-
-+    /* Don't modify or load balance ARPs that do not originate locally
-+     * (e.g.,arrive via a bridge).
-+     */
-+    if (!bond_slave_has_mac(bond, arp->mac_src))
-+        return NULL;
-+
-     if (arp->op_code == htons(ARPOP_REPLY)) {
-         /* the arp must be sent on the selected
-         * rx channel
-diff -uprN linux-3.4.28/drivers/net/bonding/bonding.h
-linux-3.4.28-patched/drivers/net/bonding/bonding.h
---- linux-3.4.28/drivers/net/bonding/bonding.h    2013-01-27
-23:51:45.000000000 -0500
-+++ linux-3.4.28-patched/drivers/net/bonding/bonding.h    2013-01-30
-15:37:25.121708311 -0500
-@@ -18,6 +18,7 @@
- #include <linux/timer.h>
- #include <linux/proc_fs.h>
- #include <linux/if_bonding.h>
-+#include <linux/etherdevice.h>
- #include <linux/cpumask.h>
- #include <linux/in6.h>
- #include <linux/netpoll.h>
-@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir
- }
- #endif
-
-+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
-+                           const u8 *mac)
-+{
-+    int i = 0;
-+    struct slave *tmp;
-+
-+    bond_for_each_slave(bond, tmp, i)
-+        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
-+            return tmp;
-+
-+    return NULL;
-+}
-
- /* exported from bond_main.c */
- extern int bond_net_id;
-diff -uprN linux-3.4.28/include/linux/etherdevice.h
-linux-3.4.28-patched/include/linux/etherdevice.h
---- linux-3.4.28/include/linux/etherdevice.h    2013-01-27
-23:51:45.000000000 -0500
-+++ linux-3.4.28-patched/include/linux/etherdevice.h    2013-01-30
-15:37:25.121708311 -0500
-@@ -277,4 +277,37 @@ static inline unsigned long compare_ethe
- #endif
- }
-
-+/**
-+ * ether_addr_equal_64bits - Compare two Ethernet addresses
-+ * @addr1: Pointer to an array of 8 bytes
-+ * @addr2: Pointer to an other array of 8 bytes
-+ *
-+ * Compare two Ethernet addresses, returns true if equal, false otherwise.
-+ *
-+ * The function doesn't need any conditional branches and possibly uses
-+ * word memory accesses on CPU allowing cheap unaligned memory reads.
-+ * arrays = { byte1, byte2, byte3, byte4, byte5, byte6, pad1, pad2 }
-+ *
-+ * Please note that alignment of addr1 & addr2 are only guaranteed to
-be 16 bits.
-+ */
-+
-+static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
-+                                           const u8 addr2[6+2])
-+{
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-+        unsigned long fold = ((*(unsigned long *)addr1) ^
-+                              (*(unsigned long *)addr2));
-+
-+        if (sizeof(fold) == 8)
-+                return zap_last_2bytes(fold) == 0;
-+
-+        fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
-+                                (*(unsigned long *)(addr2 + 4)));
-+        return fold == 0;
-+#else
-+        return ether_addr_equal(addr1, addr2);
-+#endif
-+}
-+
-+
- #endif    /* _LINUX_ETHERDEVICE_H */
-
-
-
-====== 3.7 Series ======
-
-diff -uprN linux-3.7/drivers/net/bonding/bond_alb.c
-linux-3.7-patch2/drivers/net/bonding/bond_alb.c
---- linux-3.7/drivers/net/bonding/bond_alb.c    2012-12-10
-22:30:57.000000000 -0500
-+++ linux-3.7-patch2/drivers/net/bonding/bond_alb.c    2013-02-01
-13:55:20.062030691 -0500
-@@ -694,6 +694,12 @@ static struct slave *rlb_arp_xmit(struct
-     struct arp_pkt *arp = arp_pkt(skb);
-     struct slave *tx_slave = NULL;
-
-+    /* Don't modify or load balance ARPs that do not originate locally
-+     * (e.g.,arrive via a bridge).
-+     */
-+    if (!bond_slave_has_mac(bond, arp->mac_src))
-+        return NULL;
-+
-     if (arp->op_code == htons(ARPOP_REPLY)) {
-         /* the arp must be sent on the selected
-         * rx channel
-diff -uprN linux-3.7/drivers/net/bonding/bonding.h
-linux-3.7-patch2/drivers/net/bonding/bonding.h
---- linux-3.7/drivers/net/bonding/bonding.h    2012-12-10
-22:30:57.000000000 -0500
-+++ linux-3.7-patch2/drivers/net/bonding/bonding.h    2013-02-01
-13:55:20.062030691 -0500
-@@ -18,6 +18,7 @@
- #include <linux/timer.h>
- #include <linux/proc_fs.h>
- #include <linux/if_bonding.h>
-+#include <linux/etherdevice.h>
- #include <linux/cpumask.h>
- #include <linux/in6.h>
- #include <linux/netpoll.h>
-@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir
- }
- #endif
-
-+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
-+                           const u8 *mac)
-+{
-+    int i = 0;
-+    struct slave *tmp;
-+
-+    bond_for_each_slave(bond, tmp, i)
-+        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
-+            return tmp;
-+
-+    return NULL;
-+}
-
- /* exported from bond_main.c */
- extern int bond_net_id;
