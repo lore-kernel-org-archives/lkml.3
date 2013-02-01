@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab3BANHc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:07:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44261 "EHLO mail.kernel.org"
+	id S1756750Ab3BANHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:07:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44187 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755768Ab3BANH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:07:28 -0500
+	id S1751761Ab3BANHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:07:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Bottomley <JBottomley@Parallels.com>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 07/89] ARM: DMA: Fix struct page iterator in dma_cache_maint() to work with sparsemem
-Date: Fri,  1 Feb 2013 14:07:22 +0100
-Message-Id: <20130201130208.001009182@linuxfoundation.org>
+        Cong Ding <dinggnu@gmail.com>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <smfrench@gmail.com>
+Subject: [ 04/89] fs/cifs/cifs_dfs_ref.c: fix potential memory leakage
+Date: Fri,  1 Feb 2013 14:07:19 +0100
+Message-Id: <20130201130207.769561264@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,76 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Cong Ding <dinggnu@gmail.com>
 
-commit 15653371c67c3fbe359ae37b720639dd4c7b42c5 upstream.
+commit 10b8c7dff5d3633b69e77f57d404dab54ead3787 upstream.
 
-Subhash Jadavani reported this partial backtrace:
-  Now consider this call stack from MMC block driver (this is on the ARMv7
-  based board):
+When it goes to error through line 144, the memory allocated to *devname is
+not freed, and the caller doesn't free it either in line 250. So we free the
+memroy of *devname in function cifs_compose_mount_options() when it goes to
+error.
 
-  [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
-  [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
-  [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from [<c0017ff8>] (dma_map_sg+0x3c/0x114)
-
-This is caused by incrementing the struct page pointer, and running off
-the end of the sparsemem page array.  Fix this by incrementing by pfn
-instead, and convert the pfn to a struct page.
-
-Suggested-by: James Bottomley <JBottomley@Parallels.com>
-Tested-by: Subhash Jadavani <subhashj@codeaurora.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/dma-mapping.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ fs/cifs/cifs_dfs_ref.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -776,25 +776,27 @@ static void dma_cache_maint_page(struct
- 	size_t size, enum dma_data_direction dir,
- 	void (*op)(const void *, size_t, int))
- {
-+	unsigned long pfn;
-+	size_t left = size;
-+
-+	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
-+	offset %= PAGE_SIZE;
-+
- 	/*
- 	 * A single sg entry may refer to multiple physically contiguous
- 	 * pages.  But we still need to process highmem pages individually.
- 	 * If highmem is not configured then the bulk of this loop gets
- 	 * optimized out.
- 	 */
--	size_t left = size;
- 	do {
- 		size_t len = left;
- 		void *vaddr;
- 
-+		page = pfn_to_page(pfn);
-+
- 		if (PageHighMem(page)) {
--			if (len + offset > PAGE_SIZE) {
--				if (offset >= PAGE_SIZE) {
--					page += offset / PAGE_SIZE;
--					offset %= PAGE_SIZE;
--				}
-+			if (len + offset > PAGE_SIZE)
- 				len = PAGE_SIZE - offset;
--			}
- 			vaddr = kmap_high_get(page);
- 			if (vaddr) {
- 				vaddr += offset;
-@@ -811,7 +813,7 @@ static void dma_cache_maint_page(struct
- 			op(vaddr, len, dir);
- 		}
- 		offset = 0;
--		page++;
-+		pfn++;
- 		left -= len;
- 	} while (left);
+--- a/fs/cifs/cifs_dfs_ref.c
++++ b/fs/cifs/cifs_dfs_ref.c
+@@ -226,6 +226,8 @@ compose_mount_options_out:
+ compose_mount_options_err:
+ 	kfree(mountdata);
+ 	mountdata = ERR_PTR(rc);
++	kfree(*devname);
++	*devname = NULL;
+ 	goto compose_mount_options_out;
  }
+ 
 
 
