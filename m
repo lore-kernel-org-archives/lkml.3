@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab3BANMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:12:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45051 "EHLO mail.kernel.org"
+	id S1757601Ab3BANL7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:11:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45059 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757434Ab3BANLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:11:55 -0500
+	id S1757458Ab3BANL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:11:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Borislav Petkov <bp@suse.de>
-Subject: [ 48/89] EDAC: Test correct variable in ->store function
-Date: Fri,  1 Feb 2013 14:08:03 +0100
-Message-Id: <20130201130210.950857560@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 49/89] ASoC: arizona: Use actual rather than desired BCLK when calculating LRCLK
+Date: Fri,  1 Feb 2013 14:08:04 +0100
+Message-Id: <20130201130211.030785295@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -25,30 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 8024c4c0b1057d1cd811fc9c3f88f81de9729fcd upstream.
+commit b59e0f82aa350e380142353fbd30706092ba6312 upstream.
 
-We're testing for ->show but calling ->store().
+Otherwise we'll get the wrong LRCLK if we need to pick a higher BCLK than
+is required.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_pci_sysfs.c |    2 +-
+ sound/soc/codecs/arizona.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/edac/edac_pci_sysfs.c
-+++ b/drivers/edac/edac_pci_sysfs.c
-@@ -256,7 +256,7 @@ static ssize_t edac_pci_dev_store(struct
- 	struct edac_pci_dev_attribute *edac_pci_dev;
- 	edac_pci_dev = (struct edac_pci_dev_attribute *)attr;
+--- a/sound/soc/codecs/arizona.c
++++ b/sound/soc/codecs/arizona.c
+@@ -648,7 +648,7 @@ static int arizona_hw_params(struct snd_
+ 	}
+ 	sr_val = i;
  
--	if (edac_pci_dev->show)
-+	if (edac_pci_dev->store)
- 		return edac_pci_dev->store(edac_pci_dev->value, buffer, count);
- 	return -EIO;
- }
+-	lrclk = snd_soc_params_to_bclk(params) / params_rate(params);
++	lrclk = rates[bclk] / params_rate(params);
+ 
+ 	arizona_aif_dbg(dai, "BCLK %dHz LRCLK %dHz\n",
+ 			rates[bclk], rates[bclk] / lrclk);
 
 
