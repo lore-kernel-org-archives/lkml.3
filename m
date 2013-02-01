@@ -1,103 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab3BALGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 06:06:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10000 "EHLO mx1.redhat.com"
+	id S1757047Ab3BALGj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 06:06:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49868 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756729Ab3BAKoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:44:02 -0500
+	id S1756602Ab3BAKn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:43:56 -0500
 From: Lukas Czerner <lczerner@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
         Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH 05/18] xfs: use ->invalidatepage() length argument
-Date: Fri,  1 Feb 2013 11:43:31 +0100
-Message-Id: <1359715424-32318-6-git-send-email-lczerner@redhat.com>
+Subject: [PATCH 02/18] jbd2: change jbd2_journal_invalidatepage to accept length
+Date: Fri,  1 Feb 2013 11:43:28 +0100
+Message-Id: <1359715424-32318-3-git-send-email-lczerner@redhat.com>
 In-Reply-To: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
 References: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-->invalidatepage() aop now accepts range to invalidate so we can make
-use of it in xfs_vm_invalidatepage()
+invalidatepage now accepts range to invalidate and there are two file
+system using jbd2 also implementing punch hole feature which can benefit
+from this. We need to implement the same thing for jbd2 layer in order to
+allow those file system take benefit of this functionality.
+
+This commit adds length argument to the jbd2_journal_invalidatepage()
+and updates all instances in ext4 and ocfs2.
 
 Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Cc: xfs@oss.sgi.com
 ---
- fs/xfs/xfs_aops.c  |    5 +++--
- fs/xfs/xfs_trace.h |   41 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 43 insertions(+), 3 deletions(-)
+ fs/ext4/inode.c       |    3 ++-
+ fs/jbd2/transaction.c |   24 +++++++++++++++++-------
+ fs/ocfs2/aops.c       |    3 ++-
+ include/linux/jbd2.h  |    2 +-
+ 4 files changed, 22 insertions(+), 10 deletions(-)
 
-diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
-index e426796..e8018d3 100644
---- a/fs/xfs/xfs_aops.c
-+++ b/fs/xfs/xfs_aops.c
-@@ -826,8 +826,9 @@ xfs_vm_invalidatepage(
- 	unsigned int		offset,
- 	unsigned int		length)
- {
--	trace_xfs_invalidatepage(page->mapping->host, page, offset);
--	block_invalidatepage(page, offset, PAGE_CACHE_SIZE - offset);
-+	trace_xfs_invalidatepage(page->mapping->host, page, offset,
-+				 length);
-+	block_invalidatepage(page, offset, length);
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index cbf6574..a3be92c 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2910,7 +2910,8 @@ static int __ext4_journalled_invalidatepage(struct page *page,
+ 	if (offset == 0)
+ 		ClearPageChecked(page);
+ 
+-	return jbd2_journal_invalidatepage(journal, page, offset);
++	return jbd2_journal_invalidatepage(journal, page, offset,
++					   PAGE_CACHE_SIZE - offset);
  }
  
- /*
-diff --git a/fs/xfs/xfs_trace.h b/fs/xfs/xfs_trace.h
-index 16a8129..91d6434 100644
---- a/fs/xfs/xfs_trace.h
-+++ b/fs/xfs/xfs_trace.h
-@@ -991,7 +991,46 @@ DEFINE_EVENT(xfs_page_class, name,	\
- 	TP_ARGS(inode, page, off))
- DEFINE_PAGE_EVENT(xfs_writepage);
- DEFINE_PAGE_EVENT(xfs_releasepage);
--DEFINE_PAGE_EVENT(xfs_invalidatepage);
-+
-+TRACE_EVENT(xfs_invalidatepage,
-+	TP_PROTO(struct inode *inode, struct page *page, unsigned int off,
-+		 unsigned int len),
-+	TP_ARGS(inode, page, off, len),
-+	TP_STRUCT__entry(
-+		__field(dev_t, dev)
-+		__field(xfs_ino_t, ino)
-+		__field(pgoff_t, pgoff)
-+		__field(loff_t, size)
-+		__field(unsigned int, offset)
-+		__field(unsigned int, length)
-+		__field(int, delalloc)
-+		__field(int, unwritten)
-+	),
-+	TP_fast_assign(
-+		int delalloc = -1, unwritten = -1;
-+
-+		if (page_has_buffers(page))
-+			xfs_count_page_state(page, &delalloc, &unwritten);
-+		__entry->dev = inode->i_sb->s_dev;
-+		__entry->ino = XFS_I(inode)->i_ino;
-+		__entry->pgoff = page_offset(page);
-+		__entry->size = i_size_read(inode);
-+		__entry->offset = off;
-+		__entry->length = len;
-+		__entry->delalloc = delalloc;
-+		__entry->unwritten = unwritten;
-+	),
-+	TP_printk("dev %d:%d ino 0x%llx pgoff 0x%lx size 0x%llx offset %x "
-+		  "length %x delalloc %d unwritten %d",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->ino,
-+		  __entry->pgoff,
-+		  __entry->size,
-+		  __entry->offset,
-+		  __entry->length,
-+		  __entry->delalloc,
-+		  __entry->unwritten)
-+)
+ /* Wrapper for aops... */
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index df9f297..05b6d59 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1997,18 +1997,23 @@ zap_buffer_unlocked:
+  * void jbd2_journal_invalidatepage()
+  * @journal: journal to use for flush...
+  * @page:    page to flush
+- * @offset:  length of page to invalidate.
++ * @offset:  start of the range to invalidate
++ * @length:  length of the range to invalidate
+  *
+- * Reap page buffers containing data after offset in page. Can return -EBUSY
+- * if buffers are part of the committing transaction and the page is straddling
+- * i_size. Caller then has to wait for current commit and try again.
++ * Reap page buffers containing data after in the specified range in page.
++ * Can return -EBUSY if buffers are part of the committing transaction and
++ * the page is straddling i_size. Caller then has to wait for current commit
++ * and try again.
+  */
+ int jbd2_journal_invalidatepage(journal_t *journal,
+ 				struct page *page,
+-				unsigned long offset)
++				unsigned int offset,
++				unsigned int length)
+ {
+ 	struct buffer_head *head, *bh, *next;
++	unsigned int stop = offset + length;
+ 	unsigned int curr_off = 0;
++	int partial_page = (offset || length < PAGE_CACHE_SIZE);
+ 	int may_free = 1;
+ 	int ret = 0;
  
- DECLARE_EVENT_CLASS(xfs_imap_class,
- 	TP_PROTO(struct xfs_inode *ip, xfs_off_t offset, ssize_t count,
+@@ -2017,6 +2022,8 @@ int jbd2_journal_invalidatepage(journal_t *journal,
+ 	if (!page_has_buffers(page))
+ 		return 0;
+ 
++	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
++
+ 	/* We will potentially be playing with lists other than just the
+ 	 * data lists (especially for journaled data mode), so be
+ 	 * cautious in our locking. */
+@@ -2026,10 +2033,13 @@ int jbd2_journal_invalidatepage(journal_t *journal,
+ 		unsigned int next_off = curr_off + bh->b_size;
+ 		next = bh->b_this_page;
+ 
++		if (next_off > stop)
++			return 0;
++
+ 		if (offset <= curr_off) {
+ 			/* This block is wholly outside the truncation point */
+ 			lock_buffer(bh);
+-			ret = journal_unmap_buffer(journal, bh, offset > 0);
++			ret = journal_unmap_buffer(journal, bh, partial_page);
+ 			unlock_buffer(bh);
+ 			if (ret < 0)
+ 				return ret;
+@@ -2040,7 +2050,7 @@ int jbd2_journal_invalidatepage(journal_t *journal,
+ 
+ 	} while (bh != head);
+ 
+-	if (!offset) {
++	if (!partial_page) {
+ 		if (may_free && try_to_free_buffers(page))
+ 			J_ASSERT(!page_has_buffers(page));
+ 	}
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 5d77cf2..1393114 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -608,7 +608,8 @@ static void ocfs2_invalidatepage(struct page *page, unsigned int offset,
+ {
+ 	journal_t *journal = OCFS2_SB(page->mapping->host->i_sb)->journal->j_journal;
+ 
+-	jbd2_journal_invalidatepage(journal, page, offset);
++	jbd2_journal_invalidatepage(journal, page, offset,
++				    PAGE_CACHE_SIZE - offset);
+ }
+ 
+ static int ocfs2_releasepage(struct page *page, gfp_t wait)
+diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+index e30b663..a501f33 100644
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -1099,7 +1099,7 @@ extern int	 jbd2_journal_dirty_metadata (handle_t *, struct buffer_head *);
+ extern int	 jbd2_journal_forget (handle_t *, struct buffer_head *);
+ extern void	 journal_sync_buffer (struct buffer_head *);
+ extern int	 jbd2_journal_invalidatepage(journal_t *,
+-				struct page *, unsigned long);
++				struct page *, unsigned int, unsigned int);
+ extern int	 jbd2_journal_try_to_free_buffers(journal_t *, struct page *, gfp_t);
+ extern int	 jbd2_journal_stop(handle_t *);
+ extern int	 jbd2_journal_flush (journal_t *);
 -- 
 1.7.7.6
 
