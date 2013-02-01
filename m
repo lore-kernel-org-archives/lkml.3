@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab3BAGNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 01:13:37 -0500
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:59814 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751532Ab3BAGNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 01:13:34 -0500
-Message-ID: <510B5CFC.2040801@tao.ma>
-Date: Fri, 01 Feb 2013 14:13:16 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: How to online remove an error scsi disk from the system?
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	id S1755331Ab3BAGOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 01:14:05 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38970 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751956Ab3BAGOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 01:14:02 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] mm: shmem: use new radix tree iterator
+Date: Fri,  1 Feb 2013 01:13:58 -0500
+Message-Id: <1359699238-7327-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-	In our product system, we have several sata disks attached to one
-machine. So when one of the disk fails, the jbd2(yes, we use ext4) will
-hang forever and we will get something in /var/log/messages like below.
-It seems to me that the io sent to the scsi layer is never returned back
-with -EIO which is a little bit surprised for me(It should be a timeout
-somewhere, right?). We have tried echo "offline" >
-/sys/block/sdl/device/state, but it doesn't work. So is there any way
-for us to let the scsi device returns all the io requests back with EIO
-so that all the end_io can be called accordingly? Am I missing something
-here?
+In shmem_find_get_pages_and_swap, use the faster radix tree iterator
+construct from 78c1d78 "radix-tree: introduce bit-optimized iterator".
 
-Thanks,
-Tao
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/shmem.c | 25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-
-sd 0:0:11:0: attempting task abort! scmd(ffff88180e900580)
-sd 0:0:11:0: [sdl] CDB: Write(10): 2a 00 0d ca e0 3f 00 04 00 00
-target0:0:11: handle(0x0015), sas_address(0x500e004aaaaaaa0b), phy(11)
-target0:0:11: enclosure_logical_id(0x500e004aaaaaaa00), slot(11)
-INFO: task jbd2/sdl1-8:4629 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-jbd2/sdl1-8   D 0000000000000000     0  4629      2 0x00000000
- ffff88180aa79ae0 0000000000000046 ffff88180aa79aa8 0000000000000000
- ffff88007ce0fe40 0000000000015f40 ffff8818102c0638 ffff8818102c0080
- ffff880a9184a100 ffff8818102c0638 0000000105006028 0000000100000000
-Call Trace:
- [<ffffffff81236a15>] ? cpumask_next_and+0x25/0x40
- [<ffffffff810122b6>] ? read_tsc+0x16/0x40
- [<ffffffff81093cd9>] ? ktime_get_ts+0xa9/0xe0
- [<ffffffff810122b6>] ? read_tsc+0x16/0x40
- [<ffffffff81093cd9>] ? ktime_get_ts+0xa9/0xe0
- [<ffffffff814a8a53>] io_schedule+0x73/0xc0
- [<ffffffff811036a8>] sync_page+0x38/0x50
- [<ffffffff814a927e>] __wait_on_bit+0x5e/0x90
- [<ffffffff81103670>] ? sync_page+0x0/0x50
- [<ffffffff81103845>] wait_on_page_bit+0x75/0x80
- [<ffffffff81089320>] ? wake_bit_function+0x0/0x40
- [<ffffffff811197c7>] ? pagevec_lookup_tag+0x27/0x40
- [<ffffffff81118b55>] write_cache_pages+0x1d5/0x440
- [<ffffffff811172f0>] ? __writepage+0x0/0x40
- [<ffffffff81118de4>] generic_writepages+0x24/0x30
- [<ffffffffa02dc719>] jbd2_journal_commit_transaction+0x3e9/0x1490 [jbd2]
- [<ffffffff81074299>] ? try_to_del_timer_sync+0x49/0xe0
- [<ffffffffa02e2734>] kjournald2+0xb4/0x220 [jbd2]
- [<ffffffff810892e0>] ? autoremove_wake_function+0x0/0x40
- [<ffffffffa02e2680>] ? kjournald2+0x0/0x220 [jbd2]
- [<ffffffff81089166>] kthread+0x96/0xa0
- [<ffffffff8100c08a>] child_rip+0xa/0x20
- [<ffffffff810890d0>] ? kthread+0x0/0xa0
- [<ffffffff8100c080>] ? child_rip+0x0/0x20
+diff --git a/mm/shmem.c b/mm/shmem.c
+index a368a1c..c5dc8ae 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -336,19 +336,19 @@ static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+ 					pgoff_t start, unsigned int nr_pages,
+ 					struct page **pages, pgoff_t *indices)
+ {
+-	unsigned int i;
+-	unsigned int ret;
+-	unsigned int nr_found;
++	void **slot;
++	unsigned int ret = 0;
++	struct radix_tree_iter iter;
++
++	if (!nr_pages)
++		return 0;
+ 
+ 	rcu_read_lock();
+ restart:
+-	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
+-				(void ***)pages, indices, start, nr_pages);
+-	ret = 0;
+-	for (i = 0; i < nr_found; i++) {
++	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
+ 		struct page *page;
+ repeat:
+-		page = radix_tree_deref_slot((void **)pages[i]);
++		page = radix_tree_deref_slot(slot);
+ 		if (unlikely(!page))
+ 			continue;
+ 		if (radix_tree_exception(page)) {
+@@ -365,17 +365,16 @@ static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+ 			goto repeat;
+ 
+ 		/* Has the page moved? */
+-		if (unlikely(page != *((void **)pages[i]))) {
++		if (unlikely(page != *slot)) {
+ 			page_cache_release(page);
+ 			goto repeat;
+ 		}
+ export:
+-		indices[ret] = indices[i];
++		indices[ret] = iter.index;
+ 		pages[ret] = page;
+-		ret++;
++		if (++ret == nr_pages)
++			break;
+ 	}
+-	if (unlikely(!ret && nr_found))
+-		goto restart;
+ 	rcu_read_unlock();
+ 	return ret;
+ }
+-- 
+1.7.11.7
 
