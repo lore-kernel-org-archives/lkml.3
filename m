@@ -1,147 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab3BASb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 13:31:58 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:34960 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab3BASb4 (ORCPT
+	id S1756243Ab3BAScH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 13:32:07 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:15261 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757090Ab3BAScD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 13:31:56 -0500
-Date: Fri, 1 Feb 2013 13:32:31 -0500
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>
-Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v7 00/10] DMA Engine support for AM33XX
-Message-ID: <20130201183231.GO2244@beef>
-References: <1359742975-10421-1-git-send-email-mporter@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359742975-10421-1-git-send-email-mporter@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 1 Feb 2013 13:32:03 -0500
+Message-ID: <1359743519.2759.38.camel@lorien2>
+Subject: Re: IO_PAGE_FAULTs on unity mapped regions during amd_iommu_init()
+ in Linux 3.4
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Joerg Roedel <joro@8bytes.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        iommu@lists.linux-foundation.org, shuahkhan@gmail.com
+Date: Fri, 01 Feb 2013 11:31:59 -0700
+In-Reply-To: <20130201130035.GE25591@8bytes.org>
+References: <1359657210.6061.3.camel@lorien2>
+	 <20130201130035.GE25591@8bytes.org>
+Organization: ISS-Linux
+Content-Type: multipart/mixed; boundary="=-9Y90mSEDPkKGf20NaSCm"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 01:22:45PM -0500, Matt Porter wrote:
 
-<snip>
+--=-9Y90mSEDPkKGf20NaSCm
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-> This series adds DMA Engine support for AM33xx, which uses
-> an EDMA DMAC. The EDMA DMAC has been previously supported by only
-> a private API implementation (much like the situation with OMAP
-> DMA) found on the DaVinci family of SoCs.
+On Fri, 2013-02-01 at 14:00 +0100, Joerg Roedel wrote:
+> Hi Shuah,
+> 
+> On Thu, Jan 31, 2013 at 11:33:30AM -0700, Shuah Khan wrote:
+> > Access to these ranges continues to work with no errors until AMD IOMMU
+> > driver disables and re-enables IOMMU in enable_iommus(). These faults
+> > don't persist and appear between the enable_iommus() call and before
+> > amd_iommu_init() gets done printing "AMD-Vi: Lazy IO/TLB flushing
+> > enabled" message.
+> 
+> Hmm, okay. I had a look into the v3.4 sources. This looks like a race
+> condition. The IOMMUs are enabled in amd_iommu_init_hardware() but the
+> unity-mapped regions are created later in amd_iommu_init_dma_ops(). This
+> leaves a small window where the page-faults happen that you see.
+> 
+> But I am not sure why this doesn't hit on 3.7 and above. The race is
+> still there. Anyway, definitly something that needs to be fixed.
+> 
 
-Tony,
+Hi Joerg,
 
-Will you be able to take this series in through your tree? It appears we
-just need acks on the new bindings and the compat api change. I haven't
-heard from you or Benoit on the dts patches so it seems those are ready
-as well.
+Yes, 3.7 has the same window of opportunity for this race condition,
+however I couldn't figure out why it doesn't happen on 3.7. On 3.7 the
+window between amd_iommu_init_hardware() and amd_iommu_init_dma_ops()
+might actually be wider than the window in 3.4.
+
+I think understanding why it doesn't happen on 3.7 is probably key. On
+3.6, I experimented with back-porting your Split device table
+initialization patch (33f28c59e18d83fd2aeef258d211be66b9b80eb3) from 3.7
+and the patch that moved iommu_init from subsys_initcall() to
+arch_initcall() and that solved the problem on 3.6. I am attaching those
+patches. I can't easily back-port either one of those to 3.4 though.
+
+That experiment made me think that this problem has something to do with
+when device_table gets initialized vs. dma_ops are initialized. However,
+there is no change to when unity mapped regions are created in 3.4 and
+3.7.
+
+If you look at 3.4 initialization sequence closely, you will notice that
+init_device_table() gets called before init_iommu_all() and
+init_memory_definitions() get done.
+
+Another big difference is 3.4 init_device_table() sets DEV_ENTRY_VALID,
+and DEV_ENTRY_TRANSLATION bits way earlier than 3.7 and these bits get
+set in init_device_table_dma() which is called much later in 3.7.
+
+init_unity_mappings_for_device() has a strong dependency on pci
+sub-system having been initialized. Is it possible to move it up closer
+to amd_iommu_init_hardware()?
+
+I have a system I can reproduce the problem easily and I have a tried
+making a few changes to the initialization sequence, with no results.
+Any thoughts what other changes should I be looking at to solve the
+problem besides the ones I already tried.
 
 Thanks,
-Matt
+-- Shuah
 
-> 
-> The series applies on top of 3.8-rc5 and the following patches:
-> 
-> 	- dmaengine DT support and edma dmaengine driver fix from 
-> 	  the git://git.infradead.org/users/vkoul/slave-dma.git next
-> 	  branch
-> 
-> The approach taken is similar to how OMAP DMA is being converted to
-> DMA Engine support. With the functional EDMA private API already
-> existing in mach-davinci/dma.c, we first move that to an ARM common
-> area so it can be shared. Adding DT and runtime PM support to the
-> private EDMA API implementation allows it to run on AM33xx. AM33xx
-> *only* boots using DT so we leverage Jon's generic DT DMA helpers to
-> register EDMA DMAC with the of_dma framework and then add support
-> for calling the dma_request_slave_channel() API to both the mmc
-> and spi drivers.
-> 
-> With this series both BeagleBone and the AM335x EVM have working
-> SPI DMA support (and MMC support with the separate MMC series).
-> 
-> This is tested on BeagleBone with a SPI framebuffer driver and MMC
-> rootfs. A trivial gpio DMA event misc driver was used to test the
-> crossbar DMA event support. It is also tested on the AM335x EVM
-> with the onboard SPI flash and MMC rootfs. The branch at
-> https://github.com/ohporter/linux/tree/edma-dmaengine-am33xx-v7
-> has the complete series, dependencies, and some test
-> drivers/defconfigs. Note that MMC can only be tested with a
-> separate MMC dmaengine/DT series applied.
-> 
-> Regression testing was done on AM180x-EVM (which also makes use
-> of the EDMA dmaengine driver and the EDMA private API) using SD,
-> SPI flash, and the onboard audio supported by the ASoC Davinci
-> driver. Regression testing was also done on a BeagleBoard xM
-> booting from the legacy board file using MMC rootfs.
-> 
-> 
-> Matt Porter (10):
->   ARM: davinci: move private EDMA API to arm/common
->   ARM: edma: remove unused transfer controller handlers
->   ARM: edma: add AM33XX support to the private EDMA API
->   dmaengine: edma: enable build for AM33XX
->   dmaengine: edma: Add TI EDMA device tree binding
->   ARM: dts: add AM33XX EDMA support
->   dmaengine: add dma_request_slave_channel_compat()
->   spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
->   spi: omap2-mcspi: add generic DMA request support to the DT binding
->   ARM: dts: add AM33XX SPI DMA support
-> 
->  Documentation/devicetree/bindings/dma/ti-edma.txt  |   49 +++
->  Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +-
->  arch/arm/Kconfig                                   |    1 +
->  arch/arm/boot/dts/am33xx.dtsi                      |   30 ++
->  arch/arm/common/Kconfig                            |    3 +
->  arch/arm/common/Makefile                           |    1 +
->  arch/arm/{mach-davinci/dma.c => common/edma.c}     |  342 +++++++++++++++++---
->  arch/arm/mach-davinci/Makefile                     |    2 +-
->  arch/arm/mach-davinci/board-tnetv107x-evm.c        |    2 +-
->  arch/arm/mach-davinci/davinci.h                    |    2 +-
->  arch/arm/mach-davinci/devices-tnetv107x.c          |    2 +-
->  arch/arm/mach-davinci/devices.c                    |    6 +-
->  arch/arm/mach-davinci/dm355.c                      |    2 +-
->  arch/arm/mach-davinci/dm365.c                      |    2 +-
->  arch/arm/mach-davinci/dm644x.c                     |    2 +-
->  arch/arm/mach-davinci/dm646x.c                     |    2 +-
->  arch/arm/mach-davinci/include/mach/da8xx.h         |    2 +-
->  arch/arm/plat-omap/Kconfig                         |    1 +
->  drivers/dma/Kconfig                                |    2 +-
->  drivers/dma/edma.c                                 |    2 +-
->  drivers/mmc/host/davinci_mmc.c                     |    1 +
->  drivers/spi/spi-omap2-mcspi.c                      |   65 ++--
->  include/linux/dmaengine.h                          |   16 +
->  include/linux/mfd/davinci_voicecodec.h             |    3 +-
->  .../mach => include/linux/platform_data}/edma.h    |   90 +-----
->  include/linux/platform_data/spi-davinci.h          |    2 +-
->  sound/soc/davinci/davinci-evm.c                    |    1 +
->  sound/soc/davinci/davinci-pcm.c                    |    1 +
->  sound/soc/davinci/davinci-pcm.h                    |    2 +-
->  sound/soc/davinci/davinci-sffsdr.c                 |    7 +-
->  30 files changed, 496 insertions(+), 174 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
->  rename arch/arm/{mach-davinci/dma.c => common/edma.c} (86%)
->  rename {arch/arm/mach-davinci/include/mach => include/linux/platform_data}/edma.h (59%)
-> 
-> -- 
-> 1.7.9.5
-> 
+
+
+
+
+
+--=-9Y90mSEDPkKGf20NaSCm
+Content-Disposition: attachment;
+	filename*0=0001-iommu-amd-delay-dma-init-right-before-dma_ops-are-in.pat;
+	filename*1=ch
+Content-Type: text/x-patch;
+	name="0001-iommu-amd-delay-dma-init-right-before-dma_ops-are-in.patch";
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+>From a91c02486e5ecb332c4e63d2ec35262c573c6631 Mon Sep 17 00:00:00 2001
+From: Shuah Khan <shuahkhan@gmail.com>
+Date: Fri, 21 Dec 2012 16:28:03 -0700
+Subject: [PATCH] iommu/amd: delay dma init right before dma_ops are
+ initialized - backport
+
+
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+---
+ drivers/iommu/amd_iommu_init.c |   45 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 44 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 18a89b7..33a9a6e 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1308,7 +1308,7 @@ static int __init init_memory_definitions(struct acpi_table_header *table)
+  * Init the device table to not allow DMA access for devices and
+  * suppress all page faults
+  */
+-static void init_device_table(void)
++static void init_device_table_dma(void)
+ {
+ 	u32 devid;
+ 
+@@ -1318,6 +1318,32 @@ static void init_device_table(void)
+ 	}
+ }
+ 
++/*
++Dont' need - probably
++static void __init uninit_device_table_dma(void)
++{
++	u32 devid;
++
++	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
++		amd_iommu_dev_table[devid].data[0] = 0ULL;
++		amd_iommu_dev_table[devid].data[1] = 0ULL;
++	}
++}
++*/
++
++static void init_device_table(void)
++{
++/*
++Dont' need - probably
++
++	u32 devid;
++
++	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid)
++		set_dev_entry_bit(devid, DEV_ENTRY_IRQ_TBL_EN);
++*/
++	return;
++}
++
+ static void iommu_init_flags(struct amd_iommu *iommu)
+ {
+ 	iommu->acpi_flags & IVHD_FLAG_HT_TUN_EN_MASK ?
+@@ -1494,6 +1520,16 @@ static void __init free_on_init_error(void)
+ #endif
+ }
+ 
++static void __init free_dma_resources(void)
++{
++	amd_iommu_uninit_devices();
++
++	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
++		   get_order(MAX_DOMAIN_ID/8));
++
++	free_unity_maps();
++}
++
+ /*
+  * This is the hardware init function for AMD IOMMU in the system.
+  * This function is called either from amd_iommu_init or from the interrupt
+@@ -1657,8 +1693,14 @@ static bool detect_ivrs(void)
+ 
+ static int amd_iommu_init_dma(void)
+ {
++	struct amd_iommu *iommu;
+ 	int ret;
+ 
++	init_device_table_dma();
++
++	for_each_iommu(iommu)
++		iommu_flush_all_caches(iommu);
++
+ 	if (iommu_pass_through)
+ 		ret = amd_iommu_init_passthrough();
+ 	else
+@@ -1762,6 +1804,7 @@ static int __init amd_iommu_init(void)
+ 
+ 	ret = iommu_go_to_state(IOMMU_INITIALIZED);
+ 	if (ret) {
++		free_dma_resources();
+ 		disable_iommus();
+ 		free_on_init_error();
+ 	}
+-- 
+1.7.9.5
+
+
+--=-9Y90mSEDPkKGf20NaSCm
+Content-Disposition: attachment; filename="iommu-moving-initialization-earlier.patch"
+Content-Type: text/x-patch; name="iommu-moving-initialization-earlier.patch";
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index ddbdaca..1065a1a 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -861,7 +861,7 @@ static int __init iommu_init(void)
+ 
+ 	return 0;
+ }
+-subsys_initcall(iommu_init);
++arch_initcall(iommu_init);
+ 
+ int iommu_domain_get_attr(struct iommu_domain *domain,
+ 			  enum iommu_attr attr, void *data)
+
+--=-9Y90mSEDPkKGf20NaSCm--
+
