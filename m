@@ -1,37 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab3BANjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:39:21 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:59239 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755900Ab3BANjS (ORCPT
+	id S1756526Ab3BANoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:44:44 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:48829 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755099Ab3BANom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:39:18 -0500
+	Fri, 1 Feb 2013 08:44:42 -0500
 MIME-Version: 1.0
-Date: Fri, 1 Feb 2013 15:39:16 +0200
-Message-ID: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com>
-Subject: clock_nanosleep() task_struct leak
-From: Tommi Rantala <tt.rantala@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-Cc: Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130131120742.098044736@linutronix.de>
+References: <20130131120348.372374706@linutronix.de>
+	<20130131120742.098044736@linutronix.de>
+Date: Fri, 1 Feb 2013 21:44:41 +0800
+Message-ID: <CAJd=RBCn0bM2rkXD3C6+7UZxFGO=fT7JNAcG-3SjR_zuGOZiCw@mail.gmail.com>
+Subject: Re: [patch 09/40] cpu: hotplug: Implement setup/removal interface
+From: Hillf Danton <dhillf@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Veen <arjan@infradead.org>, Paul@jasper.es
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jan 31, 2013 at 8:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> +/**
+> + * __cpuhp_setup_state - Setup the callbacks for an hotplug machine state
+> + * @state:     The state to setup
+> + * @invoke:    If true, the startup function is invoked for cpus where
+> + *             cpu state >= @state
+> + * @startup:   startup callback function
+> + * @teardown:  teardown callback function
+> + *
+> + * Returns 0 if successful, otherwise a proper error code
+> + */
+> +int __cpuhp_setup_state(enum cpuhp_states state, bool invoke,
+> +                       int (*startup)(unsigned int cpu),
+> +                       int (*teardown)(unsigned int cpu))
+> +{
+> +       int cpu, ret = 0;
+> +
+> +       if (cpuhp_cb_check(state))
+> +               return -EINVAL;
+> +
+> +       get_online_cpus();
+> +
+> +       if (!invoke || !startup)
+> +               goto install;
+> +
+> +       /*
+> +        * Try to call the startup callback for each present cpu
+> +        * depending on the hotplug state of the cpu.
+> +        */
+> +       for_each_present_cpu(cpu) {
+> +               int ret, cpustate = per_cpu(cpuhp_state, cpu);
 
-Trinity discovered a task_struct leak with clock_nanosleep(), reproducible with:
+s/ret,//
 
------8<-----8<-----8<-----
-#include <time.h>
-
-static const struct timespec req;
-
-int main(void) {
-        return clock_nanosleep(CLOCK_PROCESS_CPUTIME_ID,
-                        TIMER_ABSTIME, &req, NULL);
-}
------8<-----8<-----8<-----
-
-Tommi
+> +
+> +               if (cpustate < state)
+> +                       continue;
+> +
+> +               ret = cpuhp_issue_call(cpu, state, startup, true);
+> +               if (ret) {
+> +                       cpuhp_rollback_install(cpu, state, teardown);
+> +                       goto out;
+> +               }
+> +       }
+> +install:
+> +       cpuhp_store_callbacks(state, startup, teardown);
+> +out:
+> +       put_online_cpus();
+> +       return ret;
+> +}
+> +EXPORT_SYMBOL(__cpuhp_setup_state);
