@@ -1,130 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab3BAR0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 12:26:14 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:41120 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756890Ab3BAR0K (ORCPT
+	id S1757219Ab3BAR1n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 12:27:43 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54407 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab3BAR1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 12:26:10 -0500
+	Fri, 1 Feb 2013 12:27:42 -0500
+Message-ID: <510BFB02.6000002@wwwdotorg.org>
+Date: Fri, 01 Feb 2013 10:27:30 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1359672710-19528-4-git-send-email-andi@firstfloor.org>
-References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
-	<1359672710-19528-4-git-send-email-andi@firstfloor.org>
-Date: Fri, 1 Feb 2013 18:26:09 +0100
-Message-ID: <CABPqkBQ_=BwGhgB3UQZ=4k2uYiATaTCNwybQpa9uKTNUJ3kvEg@mail.gmail.com>
-Subject: Re: [PATCH 03/12] perf, x86: Basic Haswell PEBS support v4
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Rob Herring <robherring2@gmail.com>
+CC: srinivas.kandagatla@st.com, Grant Likely <glikely@secretlab.ca>,
+        Michal Marek <mmarek@suse.cz>, Stephen Warren <swarren@nvidia.com>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Scott Wood <scottwood@freescale.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH V7] kbuild: create a rule to run the pre-processor on
+ *.dts files
+References: <1357152215-5845-1-git-send-email-swarren@wwwdotorg.org> <510B8480.7000507@st.com> <510BF281.1080309@gmail.com>
+In-Reply-To: <510BF281.1080309@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 11:51 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Add basic PEBS support for Haswell.
-> The constraints are similar to SandyBridge with a few new events.
->
-> v2: Readd missing pebs_aliases
-> v3: Readd missing hunk. Fix some constraints.
-> v4: Fix typo in PEBS event table (Stephane Eranian)
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On 02/01/2013 09:51 AM, Rob Herring wrote:
+> On 02/01/2013 03:01 AM, Srinivas KANDAGATLA wrote:
+>> Hi Stephen,
+>> Not sure if you have already noticed this but,
+>> I did try this patch on my 3.8, and it looks like the intermediate dts
+>> file replaces all instances of linux with 1 because of predefined macros
+>> in gcc.
+>> As a result
+>>     linux,stdout-path = "/soc/stm-asc2";
+>> is changed to.
+>>     1,stdout-path = "/soc/stm-asc2";
+>>
+>> On my version of compiler(gcc version 4.6.3) I have
+>>
+>> armv7-linux-gcc -E -dM - < /dev/null | grep -v _
+>> #define unix 1
+>> #define linux 1
+>>
+>> Which might be true with most compiler versions aswell.
+>> As we are using linux as prefix for some device tree properties it makes
+>> sense to undef the linux gcc define.
+>> Adding -Ulinux to cmd_dtc_cpp should fix it.
+>>
+>> -cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__ -x assembler-with-cpp -o
+>> $(dtc-tmp) $< ; \
+>> +cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__  -Ulinux -x
+>> assembler-with-cpp -o $(dtc-tmp) $< ; \
+>>     $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
+> 
+> That's a hackish solution that seems fragile as well. Is there no way to
+> turn off all built-in defines?
 
-Looks ok to me.
-Reviewed-by: Stephane Eranian <eranian@google.com>
+I'm pretty sure there is; I'll go find it.
 
-> ---
->  arch/x86/kernel/cpu/perf_event.h          |    2 ++
->  arch/x86/kernel/cpu/perf_event_intel.c    |    6 ++++--
->  arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
->  3 files changed, 35 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index 8941899..1567b0d 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -596,6 +596,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
->
->  extern struct event_constraint intel_ivb_pebs_event_constraints[];
->
-> +extern struct event_constraint intel_hsw_pebs_event_constraints[];
-> +
->  struct event_constraint *intel_pebs_constraints(struct perf_event *event);
->
->  void intel_pmu_pebs_enable(struct perf_event *event);
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 78045e5..8163ebf 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -826,7 +826,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
->                 return true;
->
->         /* implicit branch sampling to correct PEBS skid */
-> -       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
-> +       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
-> +           x86_pmu.intel_cap.pebs_format < 2)
->                 return true;
->
->         return false;
-> @@ -2127,8 +2128,9 @@ __init int intel_pmu_init(void)
->                 intel_pmu_lbr_init_snb();
->
->                 x86_pmu.event_constraints = intel_hsw_event_constraints;
-> -
-> +               x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
->                 x86_pmu.extra_regs = intel_snb_extra_regs;
-> +               x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
->                 /* all extra regs are per-cpu when HT is on */
->                 x86_pmu.er_flags |= ERF_HAS_RSP_1;
->                 x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index 9d0dae0..0252930 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -427,6 +427,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
->          EVENT_CONSTRAINT_END
->  };
->
-> +struct event_constraint intel_hsw_pebs_event_constraints[] = {
-> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> +       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> +       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> +       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> +       INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-> +       INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-> +       INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
-> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
-> +       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-> +       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-> +       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
-> +       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-> +       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
-> +
-> +       EVENT_CONSTRAINT_END
-> +};
-> +
->  struct event_constraint *intel_pebs_constraints(struct perf_event *event)
->  {
->         struct event_constraint *c;
-> --
-> 1.7.7.6
->
+But we do want to keep some of the built-in defines. for example, -x
+assembler-with-cpp turns on __ASSEMBLY__ or similar, which headers can
+use to determine whether to only set up #defines, or also C-oriented
+stuff like types/prototypes. So, at least that one would need to be
+explicitly re-defined.
+
