@@ -1,134 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab3BAKpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:45:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161008Ab3BAKo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:44:28 -0500
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH 16/18] ext4: update ext4_ext_remove_space trace point
-Date: Fri,  1 Feb 2013 11:43:42 +0100
-Message-Id: <1359715424-32318-17-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
-References: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
+	id S1030216Ab3BAKpe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:45:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51918 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756894Ab3BAKp3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:45:29 -0500
+Date: Fri, 1 Feb 2013 02:45:10 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-5aed9d24934be5b7fec1b66cc2a5f29fab4ec11e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org, jolsa@redhat.com
+In-Reply-To: <1358845787-1350-8-git-send-email-namhyung@kernel.org>
+References: <1358845787-1350-8-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf hists browser:
+  Convert hpp helpers to a function
+Git-Commit-ID: 5aed9d24934be5b7fec1b66cc2a5f29fab4ec11e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:45:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add "end" variable.
+Commit-ID:  5aed9d24934be5b7fec1b66cc2a5f29fab4ec11e
+Gitweb:     http://git.kernel.org/tip/5aed9d24934be5b7fec1b66cc2a5f29fab4ec11e
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 22 Jan 2013 18:09:35 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 31 Jan 2013 13:07:46 -0300
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+perf hists browser: Convert hpp helpers to a function
+
+The hpp helpers do same job for each field so it was implemented as
+macro in order to access those fields easily.  But it gets cumbersome
+to maintain a large function in a macro as the function grows. Factor
+it out to a function with a little helper macro to access field.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1358845787-1350-8-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- fs/ext4/extents.c           |    6 +++---
- include/trace/events/ext4.h |   21 ++++++++++++++-------
- 2 files changed, 17 insertions(+), 10 deletions(-)
+ tools/perf/ui/browsers/hists.c | 46 +++++++++++++++++++++++++++++-------------
+ 1 file changed, 32 insertions(+), 14 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 966a09e..2b7e521 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2647,7 +2647,7 @@ static int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
- again:
- 	ext4_ext_invalidate_cache(inode);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 57b82c2..46242de 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -567,23 +567,41 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 	return row - first_row;
+ }
  
--	trace_ext4_ext_remove_space(inode, start, depth);
-+	trace_ext4_ext_remove_space(inode, start, end, depth);
+-#define HPP__COLOR_FN(_name, _field)					\
+-static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
+-					     struct hist_entry *he)	\
++static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
++			    u64 (*get_field)(struct hist_entry *))
++{
++	int ret;
++	double percent = 0.0;
++	struct hists *hists = he->hists;
++
++	if (hists->stats.total_period)
++		percent = 100.0 * get_field(he) / hists->stats.total_period;
++
++	*(double *)hpp->ptr = percent;
++
++	ret = scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
++	return ret;
++}
++
++#define __HPP_COLOR_PERCENT_FN(_type, _field)				\
++static u64 __hpp_get_##_field(struct hist_entry *he)			\
++{									\
++	return he->stat._field;						\
++}									\
++									\
++static int hist_browser__hpp_color_##_type(struct perf_hpp *hpp,	\
++					   struct hist_entry *he)	\
+ {									\
+-	struct hists *hists = he->hists;				\
+-	double percent = 100.0 * he->stat._field / hists->stats.total_period; \
+-	*(double *)hpp->ptr = percent;					\
+-	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
++	return __hpp__color_fmt(hpp, he, __hpp_get_##_field);		\
+ }
  
- 	/*
- 	 * Check if we are removing extents inside the extent tree. If that
-@@ -2813,8 +2813,8 @@ again:
- 		}
- 	}
+-HPP__COLOR_FN(overhead, period)
+-HPP__COLOR_FN(overhead_sys, period_sys)
+-HPP__COLOR_FN(overhead_us, period_us)
+-HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
+-HPP__COLOR_FN(overhead_guest_us, period_guest_us)
++__HPP_COLOR_PERCENT_FN(overhead, period)
++__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
++__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
++__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
++__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
  
--	trace_ext4_ext_remove_space_done(inode, start, depth, partial_cluster,
--			path->p_hdr->eh_entries);
-+	trace_ext4_ext_remove_space_done(inode, start, end, depth,
-+			partial_cluster, path->p_hdr->eh_entries);
+-#undef HPP__COLOR_FN
++#undef __HPP_COLOR_PERCENT_FN
  
- 	/* If we still have something in the partial cluster and we have removed
- 	 * even the first extent, then we should free the blocks in the partial
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index 6ab6f8a..5fd98f9 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -2010,14 +2010,16 @@ TRACE_EVENT(ext4_ext_rm_idx,
- );
+ void hist_browser__init_hpp(void)
+ {
+@@ -646,7 +664,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
  
- TRACE_EVENT(ext4_ext_remove_space,
--	TP_PROTO(struct inode *inode, ext4_lblk_t start, int depth),
-+	TP_PROTO(struct inode *inode, ext4_lblk_t start,
-+		 ext4_lblk_t end, int depth),
+ 			if (fmt->color) {
+ 				hpp.ptr = &percent;
+-				/* It will set percent for us. See HPP__COLOR_FN above. */
++				/* It will set percent for us. See __hpp__color_fmt above. */
+ 				width -= fmt->color(&hpp, entry);
  
--	TP_ARGS(inode, start, depth),
-+	TP_ARGS(inode, start, end, depth),
- 
- 	TP_STRUCT__entry(
- 		__field(	dev_t,		dev	)
- 		__field(	ino_t,		ino	)
- 		__field(	ext4_lblk_t,	start	)
-+		__field(	ext4_lblk_t,	end	)
- 		__field(	int,		depth	)
- 	),
- 
-@@ -2025,26 +2027,29 @@ TRACE_EVENT(ext4_ext_remove_space,
- 		__entry->dev	= inode->i_sb->s_dev;
- 		__entry->ino	= inode->i_ino;
- 		__entry->start	= start;
-+		__entry->end	= end;
- 		__entry->depth	= depth;
- 	),
- 
--	TP_printk("dev %d,%d ino %lu since %u depth %d",
-+	TP_printk("dev %d,%d ino %lu start %u end %u depth %d",
- 		  MAJOR(__entry->dev), MINOR(__entry->dev),
- 		  (unsigned long) __entry->ino,
- 		  (unsigned) __entry->start,
-+		  (unsigned) __entry->end,
- 		  __entry->depth)
- );
- 
- TRACE_EVENT(ext4_ext_remove_space_done,
--	TP_PROTO(struct inode *inode, ext4_lblk_t start, int depth,
--		ext4_lblk_t partial, unsigned short eh_entries),
-+	TP_PROTO(struct inode *inode, ext4_lblk_t start, ext4_lblk_t end,
-+		 int depth, ext4_lblk_t partial, unsigned short eh_entries),
- 
--	TP_ARGS(inode, start, depth, partial, eh_entries),
-+	TP_ARGS(inode, start, end, depth, partial, eh_entries),
- 
- 	TP_STRUCT__entry(
- 		__field(	dev_t,		dev		)
- 		__field(	ino_t,		ino		)
- 		__field(	ext4_lblk_t,	start		)
-+		__field(	ext4_lblk_t,	end		)
- 		__field(	int,		depth		)
- 		__field(	ext4_lblk_t,	partial		)
- 		__field(	unsigned short,	eh_entries	)
-@@ -2054,16 +2059,18 @@ TRACE_EVENT(ext4_ext_remove_space_done,
- 		__entry->dev		= inode->i_sb->s_dev;
- 		__entry->ino		= inode->i_ino;
- 		__entry->start		= start;
-+		__entry->end		= end;
- 		__entry->depth		= depth;
- 		__entry->partial	= partial;
- 		__entry->eh_entries	= eh_entries;
- 	),
- 
--	TP_printk("dev %d,%d ino %lu since %u depth %d partial %u "
-+	TP_printk("dev %d,%d ino %lu start %u end %u depth %d partial %u "
- 		  "remaining_entries %u",
- 		  MAJOR(__entry->dev), MINOR(__entry->dev),
- 		  (unsigned long) __entry->ino,
- 		  (unsigned) __entry->start,
-+		  (unsigned) __entry->end,
- 		  __entry->depth,
- 		  (unsigned) __entry->partial,
- 		  (unsigned short) __entry->eh_entries)
--- 
-1.7.7.6
-
+ 				ui_browser__set_percent_color(&browser->b, percent, current_entry);
