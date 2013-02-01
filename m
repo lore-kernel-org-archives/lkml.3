@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab3BAJrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:47:43 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:54111 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756162Ab3BAJrl (ORCPT
+	id S1756378Ab3BAJsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:48:32 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:35258 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab3BAJsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:47:41 -0500
+	Fri, 1 Feb 2013 04:48:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359211016-24097-5-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1359211016-24097-6-git-send-email-maxime.ripard@free-electrons.com>
 References: <1359211016-24097-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1359211016-24097-5-git-send-email-maxime.ripard@free-electrons.com>
-Date: Fri, 1 Feb 2013 10:47:40 +0100
-Message-ID: <CACRpkdYWu_bV9va-KKJhJxknimFHqi=AofHVi5wTaPMqmzUnPQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] ARM: sunxi: Add the sun4i pinctrl and gpio nodes
+	<1359211016-24097-6-git-send-email-maxime.ripard@free-electrons.com>
+Date: Fri, 1 Feb 2013 10:48:30 +0100
+Message-ID: <CACRpkdYApDeJox9reczr5iNUstu=XY2FGo-iFDHbqPE0Gw8J0g@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ARM: sunxi: Add the pin groups for UART0 and UART1 on sun4i
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>
 Cc: linux-arm-kernel@lists.infradead.org, Alejandro Mery <amery@geeks.cl>,
@@ -31,5 +31,5 @@ On Sat, Jan 26, 2013 at 3:36 PM, Maxime Ripard
 
 Applied to my allwinner branch.
 
-Thanks,
+Yours,
 Linus Walleij
