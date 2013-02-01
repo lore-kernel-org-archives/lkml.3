@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3BAC2e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:28:34 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:11550 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab3BAC2c (ORCPT
+	id S1754598Ab3BAC2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 21:28:40 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:43657 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226Ab3BAC2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:28:32 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Thu, 31 Jan 2013 21:28:30 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Michal Marek <mmarek@suse.cz>, hyojun.im@lge.com,
-        raphael.andy.lee@gmail.com, linux-kbuild@vger.kernel.org,
-        gunho.lee@lge.com, namhyung.kim@lge.com, x86@kernel.org,
-        minchan.kim@lge.com, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Ingo Molnar <mingo@redhat.com>, Joe Millenbach <jmillenbach@gmail.com>,
-        chan.jeong@lge.com, Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-In-reply-to: <510AEDC2.80107@zytor.com>
-Message-id: <alpine.LFD.2.02.1301312117240.6300@xanadu.home>
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>
- <20130128142510.68092e10.akpm@linux-foundation.org>
- <20130129101549.GP23505@n2100.arm.linux.org.uk> <51089523.3080804@zytor.com>
- <alpine.LFD.2.02.1301301326530.6300@xanadu.home> <510AE6BF.4080303@zytor.com>
- <alpine.LFD.2.02.1301311700470.6300@xanadu.home> <510AEDC2.80107@zytor.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 31 Jan 2013 21:28:36 -0500
+Date: Thu, 31 Jan 2013 18:28:25 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel/cgroup_freezer.c:151:3: error: 'system_freezing_cnt'
+ undeclared
+Message-ID: <20130201022816.GR6824@mtj.dyndns.org>
+References: <510aa746.fVU8ZdQ2hys/RwjS%fengguang.wu@intel.com>
+ <20130131231433.GM6824@mtj.dyndns.org>
+ <510B1051.5010200@tilera.com>
+ <20130201005225.GQ6824@mtj.dyndns.org>
+ <510B270C.5000603@tilera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510B270C.5000603@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jan 2013, H. Peter Anvin wrote:
-
-> On 01/31/2013 02:16 PM, Nicolas Pitre wrote:
-> >>
-> >> Some utterly weird things like the Xen domain builder do that, because
-> >> they have to.  That is why we explicitly document that the payload is
-> >> ELF and how to access it in the bzImage spec.
-> > 
-> > Are you kidding?
-> > 
-> > And what format do they expect?
-> > 
+On Thu, Jan 31, 2013 at 09:23:08PM -0500, Chris Metcalf wrote:
+> On 1/31/2013 7:52 PM, Tejun Heo wrote:
+> > Hello, Chris.
+> >
+> > On Thu, Jan 31, 2013 at 07:46:09PM -0500, Chris Metcalf wrote:
+> >> That seems reasonable to me, but I'm happy to experiment with
+> >> including Kconfig.freezer from the arch/tile/Kconfig if that feels
+> >> like a better solution.
+> > AFAICS, there's nothing arch specific about freezer and cgroup_freezer
+> > could be useful even without powersaving, so maybe give it a shot?
 > 
-> I think they can be fairly flexible.  Obviously gzip is always
-> supported.  I don't know the details.
-> 
-> > If people are doing weird things with formats we're about to remove then 
-> > it's their fault if they didn't make upstream developers aware of it.  
-> > And if the reason they didn't tell anyone is because it is too nasty for 
-> > public confession then they simply deserve to be broken and come up with 
-> > a more sustainable solution.
-> 
-> Well, it is too nasty for public confession, but it's called
-> "paravirtualization".
+> It builds with the following change.  Look good to you?
 
-The fact that you are aware of it means we're not going to break them.  
+Yeap, thanks!
 
-But my point is that we must not be held back just in case someone out 
-there might have painted himself in a corner without telling anyone.
-
-
-Nicolas
+-- 
+tejun
