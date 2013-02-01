@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab3BAMdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 07:33:18 -0500
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:53882 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab3BAMdP (ORCPT
+	id S1756603Ab3BAMjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:39:40 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:47463 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753471Ab3BAMji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 07:33:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130201230542.f59aba41c018bd378775544f@canb.auug.org.au>
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
-	<5102BB38.3050207@imgtec.com>
-	<201301260025.10020.arnd@arndb.de>
-	<51062460.9060902@synopsys.com>
-	<20130130074452.f67abeeaae3a00d046f5699f@canb.auug.org.au>
-	<510B7A3C.2070301@synopsys.com>
-	<20130201230542.f59aba41c018bd378775544f@canb.auug.org.au>
-Date: Fri, 1 Feb 2013 13:33:13 +0100
-X-Google-Sender-Auth: tqgv6rRVYBZKnRrowQYGzGzrKlI
-Message-ID: <CAMuHMdVLZ5u-q2+U_bQjOvAxNkAoqCZdQRRUKBFnreiu8Kd4hQ@mail.gmail.com>
-Subject: Re: linux-net for ARC port
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
-        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 1 Feb 2013 07:39:38 -0500
+Message-ID: <1359722247.3381.16.camel@thor.lan>
+Subject: Re: [PATCH 07/10] TTY: switch tty_schedule_flip
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 01 Feb 2013 07:37:27 -0500
+In-Reply-To: <1357224789-2853-8-git-send-email-jslaby@suse.cz>
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+	 <1357224789-2853-8-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Thu, 2013-01-03 at 15:53 +0100, Jiri Slaby wrote:
+> Now, we start converting tty buffer functions to actually use
+> tty_port. This will allow us to get rid of the need of tty in many
+> call sites. Only tty_port will needed and hence no more
+> tty_port_tty_get in those paths.
+> 
+> This is the last one: tty_schedule_flip
 
-On Fri, Feb 1, 2013 at 1:05 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Fri, 1 Feb 2013 13:48:04 +0530 Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->> When is the next linux-next release going to happen - I can't see the arc port in
->> there yet !
->
-> In the release note for next-20130128, I said:
->
-> "The linux-next release may be a bit sporadic over the next few days as I
-> attend linux.conf.au."
->
-> Turns out that the conference was a bit more tiring than I thought even
-> though it was in my home town :-)
->
-> So now it will probably not be until Monday my time, sorry.
+[snip]
 
-You're not flying into FOSDEM, tomorrow?
+> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+> index 5aace4d..a9af1b9a 100644
+> --- a/drivers/tty/vt/keyboard.c
+> +++ b/drivers/tty/vt/keyboard.c
+> @@ -307,26 +307,17 @@ int kbd_rate(struct kbd_repeat *rep)
+>   */
+>  static void put_queue(struct vc_data *vc, int ch)
+>  {
+> -	struct tty_struct *tty = vc->port.tty;
+> -
+>  	tty_insert_flip_char(&vc->port, ch, 0);
+> -	if (tty) {
+> -		tty_schedule_flip(tty);
+> -	}
+> +	tty_schedule_flip(&vc->port);
+>  }
+>  
+>  static void puts_queue(struct vc_data *vc, char *cp)
+>  {
+> -	struct tty_struct *tty = vc->port.tty;
+> -
+> -	if (!tty)
+> -		return;
+> -
+>  	while (*cp) {
+>  		tty_insert_flip_char(&vc->port, *cp, 0);
+>  		cp++;
+>  	}
+> -	tty_schedule_flip(tty);
+> +	tty_schedule_flip(&vc->port);
+>  }
 
-Gr{oetje,eeting}s,
+Umm. So even though the vt driver knows the tty has been shutdown,
+keystrokes will still be buffered? And then fed to whichever tty happens
+to next get installed on the same port?
 
-                        Geert
+Pretty much renders this meaningless:
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+static void flush_to_ldisc(struct work_struct *work)
+{
+....
++	if (WARN_RATELIMIT(tty == NULL, "tty is NULL"))
++		return;
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Regards,
+Peter Hurley
+
