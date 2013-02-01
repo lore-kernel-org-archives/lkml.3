@@ -1,323 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab3BAXSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 18:18:38 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:62552 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757969Ab3BAXSg (ORCPT
+	id S1758036Ab3BAXXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 18:23:00 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:44448 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758010Ab3BAXW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 18:18:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359562210-26536-2-git-send-email-jiang.liu@huawei.com>
-References: <1359562210-26536-1-git-send-email-jiang.liu@huawei.com> <1359562210-26536-2-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 1 Feb 2013 16:18:15 -0700
-Message-ID: <CAErSpo5Uhz=w+WmvW60FixdLMaJK2-ebY2hTzQT+8O3GGgvS5w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] acpiphp: remove dead code for PCI host bridge hotplug
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Feb 2013 18:22:59 -0500
+Message-ID: <1359760370.23410.4.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device
+ hotplug framework
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg KH <gregkh@linuxfoundation.org>, "lenb@kernel.org" <lenb@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "guohanjun@huawei.com" <guohanjun@huawei.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Fri, 01 Feb 2013 16:12:50 -0700
+In-Reply-To: <2370118.yuaZBuKn6n@vostro.rjw.lan>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+	 <20130201073010.GC1180@kroah.com>
+	 <1359751210.15120.278.camel@misato.fc.hp.com>
+	 <2370118.yuaZBuKn6n@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 9:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
->
-> Commit 668192b678201d2fff27c "PCI: acpiphp: Move host bridge hotplug
-> to pci_root.c" has moved PCI host bridge hotplug logic from acpiphp
-> to pci_root, but there is still PCI host bridge hotplug related
-> dead code left in acpiphp. So remove those dead code.
->
-> Now companion ACPI devices are always created before corresponding
-> PCI devices. And the ACPI event handle_hotplug_event_bridge() will be
-> installed only if it has associated PCI device. So remove dead code to
-> handle bridge hot-adding in function handle_hotplug_event_bridge().
->
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+On Fri, 2013-02-01 at 23:21 +0100, Rafael J. Wysocki wrote:
+> On Friday, February 01, 2013 01:40:10 PM Toshi Kani wrote:
+> > On Fri, 2013-02-01 at 07:30 +0000, Greg KH wrote:
+> > > On Thu, Jan 31, 2013 at 06:32:18PM -0700, Toshi Kani wrote:
+> > >  > This is already done for PCI host bridges and platform devices and I don't
+> > > > > see why we can't do that for the other types of devices too.
+> > > > > 
+> > > > > The only missing piece I see is a way to handle the "eject" problem, i.e.
+> > > > > when we try do eject a device at the top of a subtree and need to tear down
+> > > > > the entire subtree below it, but if that's going to lead to a system crash,
+> > > > > for example, we want to cancel the eject.  It seems to me that we'll need some
+> > > > > help from the driver core here.
+> > > > 
+> > > > There are three different approaches suggested for system device
+> > > > hot-plug:
+> > > >  A. Proceed within system device bus scan.
+> > > >  B. Proceed within ACPI bus scan.
+> > > >  C. Proceed with a sequence (as a mini-boot).
+> > > > 
+> > > > Option A uses system devices as tokens, option B uses acpi devices as
+> > > > tokens, and option C uses resource tables as tokens, for their handlers.
+> > > > 
+> > > > Here is summary of key questions & answers so far.  I hope this
+> > > > clarifies why I am suggesting option 3.
+> > > > 
+> > > > 1. What are the system devices?
+> > > > System devices provide system-wide core computing resources, which are
+> > > > essential to compose a computer system.  System devices are not
+> > > > connected to any particular standard buses.
+> > > 
+> > > Not a problem, lots of devices are not connected to any "particular
+> > > standard busses".  All this means is that system devices are connected
+> > > to the "system" bus, nothing more.
+> > 
+> > Can you give me a few examples of other devices that support hotplug and
+> > are not connected to any particular buses?  I will investigate them to
+> > see how they are managed to support hotplug.
+> > 
+> > > > 2. Why are the system devices special?
+> > > > The system devices are initialized during early boot-time, by multiple
+> > > > subsystems, from the boot-up sequence, in pre-defined order.  They
+> > > > provide low-level services to enable other subsystems to come up.
+> > > 
+> > > Sorry, no, that doesn't mean they are special, nothing here is unique
+> > > for the point of view of the driver model from any other device or bus.
+> > 
+> > I think system devices are unique in a sense that they are initialized
+> > before drivers run.
+> > 
+> > > > 3. Why can't initialize the system devices from the driver structure at
+> > > > boot?
+> > > > The driver structure is initialized at the end of the boot sequence and
+> > > > requires the low-level services from the system devices initialized
+> > > > beforehand.
+> > > 
+> > > Wait, what "driver structure"?  
+> > 
+> > Sorry it was not clear.  cpu_dev_init() and memory_dev_init() are called
+> > from driver_init() at the end of the boot sequence, and initialize
+> > system/cpu and system/memory devices.  I assume they are the system bus
+> > you are referring with option A.
+> > 
+> > > If you need to initialize the driver
+> > > core earlier, then do so.  Or, even better, just wait until enough of
+> > > the system has come up and then go initialize all of the devices you
+> > > have found so far as part of your boot process.
+> > 
+> > They are pseudo drivers that provide sysfs entry points of cpu and
+> > memory.  They do not actually initialize cpu and memory.  I do not think
+> > initializing cpu and memory fits into the driver model either, since
+> > drivers should run after cpu and memory are initialized.
+> > 
+> > > None of the above things you have stated seem to have anything to do
+> > > with your proposed patch, so I don't understand why you have mentioned
+> > > them...
+> > 
+> > You suggested option A before, which uses system bus scan to initialize
+> > all system devices at boot time as well as hot-plug.  I tried to say
+> > that this option would not be doable.
+> > 
+> > > > 4. Why do we need a new common framework?
+> > > > Sysfs CPU and memory on-lining/off-lining are performed within the CPU
+> > > > and memory modules.  They are common code and do not depend on ACPI.
+> > > > Therefore, a new common framework is necessary to integrate both
+> > > > on-lining/off-lining operation and hot-plugging operation of system
+> > > > devices into a single framework.
+> > > 
+> > > {sigh}
+> > > 
+> > > Removing and adding devices and handling hotplug operations is what the
+> > > driver core was written for, almost 10 years ago.  To somehow think that
+> > > your devices are "special" just because they don't use ACPI is odd,
+> > > because the driver core itself has nothing to do with ACPI.  Don't get
+> > > the current mix of x86 system code tied into ACPI confused with an
+> > > driver core issues here please.
+> > 
+> > CPU online/offline operation is performed within the CPU module.  Memory
+> > online/offline operation is performed within the memory module.  CPU and
+> > memory hotplug operations are performed within ACPI.  While they deal
+> > with the same set of devices, they operate independently and are not
+> > managed under a same framework.
+> > 
+> > I agree with you that not using ACPI is perfectly fine.  My point is
+> > that ACPI framework won't be able to manage operations that do not use
+> > ACPI.
+> > 
+> > > > 5. Why can't do everything with ACPI bus scan?
+> > > > Software dependency among system devices may not be dictated by the ACPI
+> > > > hierarchy.  For instance, memory should be initialized before CPUs (i.e.
+> > > > a new cpu may need its local memory), but such ordering cannot be
+> > > > guaranteed by the ACPI hierarchy.  Also, as described in 4,
+> > > > online/offline operations are independent from ACPI.  
+> > > 
+> > > That's fine, the driver core is independant from ACPI.  I don't care how
+> > > you do the scaning of your devices, but I do care about you creating new
+> > > driver core pieces that duplicate the existing functionality of what we
+> > > have today.
+> > >
+> > > In short, I like Rafael's proposal better, and I fail to see how
+> > > anything you have stated here would matter in how this is implemented. :)
+> > 
+> > Doing everything within ACPI means we can only manage ACPI hotplug
+> > operations, not online/offline operations.  But I understand that you
+> > concern about adding a new framework with option C.  It is good to know
+> > that you are fine with option B. :)  So, I will step back, and think
+> > about what we can do within ACPI.
+> 
+> Not much, because ACPI only knows about a subset of devices that may be
+> involved in that, and a limited one for that matter.  For one example,
+> anything connected through PCI and not having a corresponding ACPI object (i.e.
+> pretty much every add-in card in existence) will be unknown to ACPI.  And
+> say one of these things is a SATA controller with a number of disks under it
+> and so on.  ACPI won't even know that it exists.  Moreover, PCI won't know
+> that those disks exist.  Etc.
 
-Applied to pci/yinghai-root-bus-hotplug for v3.9.  Thanks!
+Agreed.  Thanks for bringing I/Os into the picture.  I did not mention
+them since they have not supported in this patchset, but we certainly
+need to consider them into the design.
 
-> ---
->  drivers/pci/hotplug/acpiphp.h      |   13 +---
->  drivers/pci/hotplug/acpiphp_glue.c |  124 ++++--------------------------------
->  2 files changed, 14 insertions(+), 123 deletions(-)
->
-> diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
-> index b3ead7a..b70ac00 100644
-> --- a/drivers/pci/hotplug/acpiphp.h
-> +++ b/drivers/pci/hotplug/acpiphp.h
-> @@ -79,7 +79,6 @@ struct acpiphp_bridge {
->         /* Ejectable PCI-to-PCI bridge (PCI bridge and PCI function) */
->         struct acpiphp_func *func;
->
-> -       int type;
->         int nr_slots;
->
->         u32 flags;
-> @@ -146,10 +145,6 @@ struct acpiphp_attention_info
->  /* PCI bus bridge HID */
->  #define ACPI_PCI_HOST_HID              "PNP0A03"
->
-> -/* PCI BRIDGE type */
-> -#define BRIDGE_TYPE_HOST               0
-> -#define BRIDGE_TYPE_P2P                        1
-> -
->  /* ACPI _STA method value (ignore bit 4; battery present) */
->  #define ACPI_STA_PRESENT               (0x00000001)
->  #define ACPI_STA_ENABLED               (0x00000002)
-> @@ -158,13 +153,7 @@ struct acpiphp_attention_info
->  #define ACPI_STA_ALL                   (0x0000000f)
->
->  /* bridge flags */
-> -#define BRIDGE_HAS_STA         (0x00000001)
-> -#define BRIDGE_HAS_EJ0         (0x00000002)
-> -#define BRIDGE_HAS_HPP         (0x00000004)
-> -#define BRIDGE_HAS_PS0         (0x00000010)
-> -#define BRIDGE_HAS_PS1         (0x00000020)
-> -#define BRIDGE_HAS_PS2         (0x00000040)
-> -#define BRIDGE_HAS_PS3         (0x00000080)
-> +#define BRIDGE_HAS_EJ0         (0x00000001)
->
->  /* slot flags */
->
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index acb7af2..4681d2c 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -325,8 +325,8 @@ static void init_bridge_misc(struct acpiphp_bridge *bridge)
->                 return;
->         }
->
-> -       /* install notify handler */
-> -       if (bridge->type != BRIDGE_TYPE_HOST) {
-> +       /* install notify handler for P2P bridges */
-> +       if (!pci_is_root_bus(bridge->pci_bus)) {
->                 if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
->                         status = acpi_remove_notify_handler(bridge->func->handle,
->                                                 ACPI_SYSTEM_NOTIFY,
-> @@ -369,27 +369,12 @@ static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle
->  static inline void config_p2p_bridge_flags(struct acpiphp_bridge *bridge)
->  {
->         acpi_handle dummy_handle;
-> +       struct acpiphp_func *func;
->
->         if (ACPI_SUCCESS(acpi_get_handle(bridge->handle,
-> -                                       "_STA", &dummy_handle)))
-> -               bridge->flags |= BRIDGE_HAS_STA;
-> -
-> -       if (ACPI_SUCCESS(acpi_get_handle(bridge->handle,
-> -                                       "_EJ0", &dummy_handle)))
-> +                                       "_EJ0", &dummy_handle))) {
->                 bridge->flags |= BRIDGE_HAS_EJ0;
->
-> -       if (ACPI_SUCCESS(acpi_get_handle(bridge->handle,
-> -                                       "_PS0", &dummy_handle)))
-> -               bridge->flags |= BRIDGE_HAS_PS0;
-> -
-> -       if (ACPI_SUCCESS(acpi_get_handle(bridge->handle,
-> -                                       "_PS3", &dummy_handle)))
-> -               bridge->flags |= BRIDGE_HAS_PS3;
-> -
-> -       /* is this ejectable p2p bridge? */
-> -       if (bridge->flags & BRIDGE_HAS_EJ0) {
-> -               struct acpiphp_func *func;
-> -
->                 dbg("found ejectable p2p bridge\n");
->
->                 /* make link between PCI bridge and PCI function */
-> @@ -412,7 +397,6 @@ static void add_host_bridge(struct acpi_pci_root *root)
->         if (bridge == NULL)
->                 return;
->
-> -       bridge->type = BRIDGE_TYPE_HOST;
->         bridge->handle = handle;
->
->         bridge->pci_bus = root->bus;
-> @@ -432,7 +416,6 @@ static void add_p2p_bridge(acpi_handle *handle)
->                 return;
->         }
->
-> -       bridge->type = BRIDGE_TYPE_P2P;
->         bridge->handle = handle;
->         config_p2p_bridge_flags(bridge);
->
-> @@ -543,7 +526,7 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
->         acpi_status status;
->         acpi_handle handle = bridge->handle;
->
-> -       if (bridge->type != BRIDGE_TYPE_HOST) {
-> +       if (!pci_is_root_bus(bridge->pci_bus)) {
->                 status = acpi_remove_notify_handler(handle,
->                                             ACPI_SYSTEM_NOTIFY,
->                                             handle_hotplug_event_bridge);
-> @@ -551,8 +534,7 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
->                         err("failed to remove notify handler\n");
->         }
->
-> -       if ((bridge->type != BRIDGE_TYPE_HOST) &&
-> -           ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func)) {
-> +       if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
->                 status = acpi_install_notify_handler(bridge->func->handle,
->                                                 ACPI_SYSTEM_NOTIFY,
->                                                 handle_hotplug_event_func,
-> @@ -1122,64 +1104,11 @@ static void acpiphp_sanitize_bus(struct pci_bus *bus)
->         }
->  }
->
-> -/* Program resources in newly inserted bridge */
-> -static int acpiphp_configure_p2p_bridge(acpi_handle handle)
-> -{
-> -       struct pci_dev *pdev = acpi_get_pci_dev(handle);
-> -       struct pci_bus *bus = pdev->subordinate;
-> -
-> -       pci_dev_put(pdev);
-> -
-> -       pci_bus_size_bridges(bus);
-> -       pci_bus_assign_resources(bus);
-> -       acpiphp_sanitize_bus(bus);
-> -       acpiphp_set_hpp_values(bus);
-> -       pci_enable_bridges(bus);
-> -       return 0;
-> -}
-> -
-> -static void handle_p2p_bridge_insertion(acpi_handle handle, u32 type)
-> -{
-> -       struct acpi_device *device;
-> -
-> -       if ((type != ACPI_NOTIFY_BUS_CHECK) &&
-> -                       (type != ACPI_NOTIFY_DEVICE_CHECK)) {
-> -               err("unexpected notification type %d\n", type);
-> -               return;
-> -       }
-> -
-> -       if (acpi_bus_scan(handle)) {
-> -               err("cannot add bridge to acpi list\n");
-> -               return;
-> -       }
-> -       if (acpi_bus_get_device(handle, &device)) {
-> -               err("ACPI device object missing\n");
-> -               return;
-> -       }
-> -       if (!acpiphp_configure_p2p_bridge(handle))
-> -               add_p2p_bridge(handle);
-> -       else
-> -               err("cannot configure and start bridge\n");
-> -
-> -}
-> -
->  /*
->   * ACPI event handlers
->   */
->
->  static acpi_status
-> -count_sub_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
-> -{
-> -       int *count = (int *)context;
-> -       struct acpiphp_bridge *bridge;
-> -
-> -       bridge = acpiphp_handle_to_bridge(handle);
-> -       if (bridge)
-> -               (*count)++;
-> -       return AE_OK ;
-> -}
-> -
-> -static acpi_status
->  check_sub_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
->  {
->         struct acpiphp_bridge *bridge;
-> @@ -1203,8 +1132,6 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
->         char objname[64];
->         struct acpi_buffer buffer = { .length = sizeof(objname),
->                                       .pointer = objname };
-> -       struct acpi_device *device;
-> -       int num_sub_bridges = 0;
->         struct acpi_hp_work *hp_work;
->         acpi_handle handle;
->         u32 type;
-> @@ -1212,23 +1139,7 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
->         hp_work = container_of(work, struct acpi_hp_work, work);
->         handle = hp_work->handle;
->         type = hp_work->type;
-> -
-> -       if (acpi_bus_get_device(handle, &device)) {
-> -               /* This bridge must have just been physically inserted */
-> -               handle_p2p_bridge_insertion(handle, type);
-> -               goto out;
-> -       }
-> -
-> -       bridge = acpiphp_handle_to_bridge(handle);
-> -       if (type == ACPI_NOTIFY_BUS_CHECK) {
-> -               acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, ACPI_UINT32_MAX,
-> -                       count_sub_bridges, NULL, &num_sub_bridges, NULL);
-> -       }
-> -
-> -       if (!bridge && !num_sub_bridges) {
-> -               err("cannot get bridge info\n");
-> -               goto out;
-> -       }
-> +       bridge = (struct acpiphp_bridge *)hp_work->context;
->
->         acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
->
-> @@ -1236,14 +1147,10 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
->         case ACPI_NOTIFY_BUS_CHECK:
->                 /* bus re-enumerate */
->                 dbg("%s: Bus check notify on %s\n", __func__, objname);
-> -               if (bridge) {
-> -                       dbg("%s: re-enumerating slots under %s\n",
-> -                               __func__, objname);
-> -                       acpiphp_check_bridge(bridge);
-> -               }
-> -               if (num_sub_bridges)
-> -                       acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-> -                               ACPI_UINT32_MAX, check_sub_bridges, NULL, NULL, NULL);
-> +               dbg("%s: re-enumerating slots under %s\n", __func__, objname);
-> +               acpiphp_check_bridge(bridge);
-> +               acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-> +                       ACPI_UINT32_MAX, check_sub_bridges, NULL, NULL, NULL);
->                 break;
->
->         case ACPI_NOTIFY_DEVICE_CHECK:
-> @@ -1260,8 +1167,7 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
->         case ACPI_NOTIFY_EJECT_REQUEST:
->                 /* request device eject */
->                 dbg("%s: Device eject notify on %s\n", __func__, objname);
-> -               if ((bridge->type != BRIDGE_TYPE_HOST) &&
-> -                   (bridge->flags & BRIDGE_HAS_EJ0)) {
-> +               if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
->                         struct acpiphp_slot *slot;
->                         slot = bridge->func->slot;
->                         if (!acpiphp_disable_slot(slot))
-> @@ -1289,7 +1195,6 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
->                 break;
->         }
->
-> -out:
->         kfree(hp_work); /* allocated in handle_hotplug_event_bridge */
->  }
->
-> @@ -1324,17 +1229,14 @@ static void _handle_hotplug_event_func(struct work_struct *work)
->         struct acpi_hp_work *hp_work;
->         acpi_handle handle;
->         u32 type;
-> -       void *context;
->
->         hp_work = container_of(work, struct acpi_hp_work, work);
->         handle = hp_work->handle;
->         type = hp_work->type;
-> -       context = hp_work->context;
-> +       func = (struct acpiphp_func *)hp_work->context;
->
->         acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
->
-> -       func = (struct acpiphp_func *)context;
-> -
->         switch (type) {
->         case ACPI_NOTIFY_BUS_CHECK:
->                 /* bus re-enumerate */
-> --
-> 1.7.9.5
->
+Thanks,
+-Toshi
+
