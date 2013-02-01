@@ -1,81 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3BADfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 22:35:54 -0500
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:47709 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab3BADfv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 22:35:51 -0500
-Date: Thu, 31 Jan 2013 22:35:47 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Hui Wang <jason77.wang@gmail.com>
-cc: Cyril Chemparathy <cyril@ti.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        marc.zyngier@arm.com, sboyd@codeaurora.org, linus.walleij@linaro.org,
-        Will Deacon <will.deacon@arm.com>, Vitaly Andrianov <vitalya@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH v4 02/13] ARM: LPAE: use phys_addr_t in
- alloc_init_pud()
-In-Reply-To: <510B327E.3050502@gmail.com>
-Message-ID: <alpine.LFD.2.02.1301312218270.6300@xanadu.home>
-References: <1359669512-31276-1-git-send-email-cyril@ti.com> <1359669512-31276-3-git-send-email-cyril@ti.com> <510B327E.3050502@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753980Ab3BADkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 22:40:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64046 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab3BADkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 22:40:36 -0500
+X-IronPort-AV: E=Sophos;i="4.84,579,1355068800"; 
+   d="scan'208";a="6674490"
+Message-ID: <510B3902.6040804@cn.fujitsu.com>
+Date: Fri, 01 Feb 2013 11:39:46 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: Jianguo Wu <wujianguo@huawei.com>, akpm@linux-foundation.org,
+        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>        <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>       <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>      <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>     <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com>    <1359628705.2048.5.camel@kernel> <510B1B4B.5080207@huawei.com>   <1359682576.3574.1.camel@kernel> <510B20F9.10408@cn.fujitsu.com>  <1359685040.1303.6.camel@kernel> <510B2B8A.7040407@cn.fujitsu.com> <1359687985.1303.15.camel@kernel>
+In-Reply-To: <1359687985.1303.15.camel@kernel>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/01 11:39:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/01 11:39:23,
+	Serialize complete at 2013/02/01 11:39:23
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Feb 2013, Hui Wang wrote:
+Hi Simon,
 
-> Cyril Chemparathy wrote:
-> > From: Vitaly Andrianov <vitalya@ti.com>
-> > 
-> > This patch fixes the alloc_init_pud() function to use phys_addr_t instead of
-> > unsigned long when passing in the phys argument.
-> > 
-> > This is an extension to commit 97092e0c56830457af0639f6bd904537a150ea4a
-> > (ARM:
-> > pgtable: use phys_addr_t for physical addresses), which applied similar
-> > changes
-> > elsewhere in the ARM memory management code.
-> > 
-> > Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-> > Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-> > Acked-by: Nicolas Pitre <nico@linaro.org>
-> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> > ---
-> >  arch/arm/mm/mmu.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> > index 9f06102..ef43689 100644
-> > --- a/arch/arm/mm/mmu.c
-> > +++ b/arch/arm/mm/mmu.c
-> > @@ -612,7 +612,8 @@ static void __init alloc_init_section(pud_t *pud,
-> > unsigned long addr,
-> >  }
-> >   static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
-> > -	unsigned long end, unsigned long phys, const struct mem_type *type)
-> > +				  unsigned long end, phys_addr_t phys,
-> > +				  const struct mem_type *type)
-> >   
-> The change is correct but seems useless so far. This function only be called
-> from map_lowmem and devicemaps_init, from i know neither lowmem nor device io
-> registers of existing platforms exceed 32bit address.
+On 02/01/2013 11:06 AM, Simon Jeons wrote:
+>
+> How can distinguish map and use? I mean how can confirm memory is used
+> by kernel instead of map?
 
-It is not because you are not aware of any existing platforms with RAM 
-or device IO above the 4GB mark that they don't exist.
+If the page is free, for example, it is in the buddy system, it is not 
+in use.
+Even if it is direct mapped by kernel, the kernel logic should not to 
+access it
+because you didn't allocate it. This is the kernel's logic. Of course 
+the hardware
+and the user will not know this.
 
-For example, some LPAE systems have all their RAM located above the 4G 
-physical address mark. A simple (potentially non DMA capable) alias 
-exists in the low 32-bit address space to allow the system to boot and 
-switch to the real physical RAM addresses once the MMU is turned on.  
-Some of that RAM is still qualified as "low mem" i.e. the portion of RAM 
-that the kernel keeps permanently mapped in the 32-bit virtual space 
-even if all of it is above the 4G mark in physical space.
+You want to access some memory, you should first have a logic address, 
+right?
+So how can you get a logic address ?  You call alloc api.
 
+For example, when you are coding, of course you write:
 
-Nicolas
+p = alloc_xxx(); ---- allocate memory, now, it is in use, alloc_xxx() 
+makes kernel know it.
+*p = ......      ---- use the memory
+
+You won't write:
+p = 0xFFFF8745;  ---- if so, kernel doesn't know it is in use
+*p = ......      ---- wrong...
+
+right ?
+
+The kernel mapped a page, it doesn't mean it is using the page. You 
+should allocate it.
+That is just the kernel's allocating logic.
+
+Well, I think I can only give you this answer now. If you want something 
+deeper, I think
+you need to read how the kernel manage the physical pages. :)
+
+>
+> 1) If user process and kenel map to same physical memory, user process
+> will get SIGSEGV during #PF if access to this memory, but If user proces
+> s will map to the same memory which kernel map? Why? It can't access it.
+
+When you call malloc() to allocate memory in user space, the OS logic will
+assure that you won't map a page that has already been used by kernel.
+
+A page is mapped by kernel, but not used by kernel (not allocated, like 
+above),
+malloc() could allocate it, and map it to user space. This is the situation
+you are talking about, right ?
+
+Now it is mapped by kernel and user, but it is only allocated by user. 
+So the kernel
+will not use it. When the kernel wants some memory, it will allocate 
+some other memory.
+This is just the kernel logic. This is what memory management subsystem 
+does.
+
+I think I cannot answer more because I'm also a student in memory 
+management.
+This is just my understanding. And I hope it is helpful. :)
+
+> 2) If two user processes map to same physical memory, what will happen
+> if one process access the memory?
+
+Obviously you don't need to worry about this situation. We can swap the page
+used by process 1 out, and process 2 can use the same page. When process 
+1 wants
+to access it again, we swap it in. This only happens when the physical 
+memory
+is not enough to use. :)
+
+And also, if you are using shared memory in user space, like
+
+shmget(), shmat()......
+
+it is the shared memory, both processes can use it at the same time.
+
+Thanks. :)
