@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161015Ab3BANNQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:13:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45341 "EHLO mail.kernel.org"
+	id S1422781Ab3BANNd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:13:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45383 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1160996Ab3BANNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:13:11 -0500
+	id S1422772Ab3BANNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:13:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 61/89] x86/msr: Add capabilities check
-Date: Fri,  1 Feb 2013 14:08:16 +0100
-Message-Id: <20130201130211.878618007@linuxfoundation.org>
+        Ben Greear <greearb@candelatech.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Chuck Lever <chuck.lever@oracle.com>
+Subject: [ 56/89] NFSv4: Fix NFSv4 trunking discovery
+Date: Fri,  1 Feb 2013 14:08:11 +0100
+Message-Id: <20130201130211.532198444@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -29,52 +27,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit c903f0456bc69176912dee6dd25c6a66ee1aed00 upstream.
+commit 202c312dba7d95b96493b412c606163a0cd83984 upstream.
 
-At the moment the MSR driver only relies upon file system
-checks. This means that anything as root with any capability set
-can write to MSRs. Historically that wasn't very interesting but
-on modern processors the MSRs are such that writing to them
-provides several ways to execute arbitary code in kernel space.
-Sample code and documentation on doing this is circulating and
-MSR attacks are used on Windows 64bit rootkits already.
+If walking the list in nfs4[01]_walk_client_list fails, then the most
+likely explanation is that the server dropped the clientid before we
+actually managed to confirm it. As long as our nfs_client is the very
+last one in the list to be tested, the caller can be assured that this
+is the case when the final return value is NFS4ERR_STALE_CLIENTID.
 
-In the Linux case you still need to be able to open the device
-file so the impact is fairly limited and reduces the security of
-some capability and security model based systems down towards
-that of a generic "root owns the box" setup.
-
-Therefore they should require CAP_SYS_RAWIO to prevent an
-elevation of capabilities. The impact of this is fairly minimal
-on most setups because they don't have heavy use of
-capabilities. Those using SELinux, SMACK or AppArmor rules might
-want to consider if their rulesets on the MSR driver could be
-tighter.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/msr.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/nfs4client.c |   26 +++++++-------------------
+ fs/nfs/nfs4state.c  |    8 ++------
+ 2 files changed, 9 insertions(+), 25 deletions(-)
 
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -174,6 +174,9 @@ static int msr_open(struct inode *inode,
- 	unsigned int cpu;
- 	struct cpuinfo_x86 *c;
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -351,14 +351,8 @@ int nfs40_walk_client_list(struct nfs_cl
+ 	}
+ 	spin_unlock(&nn->nfs_client_lock);
  
-+	if (!capable(CAP_SYS_RAWIO))
-+		return -EPERM;
-+
- 	cpu = iminor(file->f_path.dentry->d_inode);
- 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
- 		return -ENXIO;	/* No such CPU */
++	/* No match found. The server lost our clientid */
+ out:
+-	/*
+-	 * No matching nfs_client found.  This should be impossible,
+-	 * because the new nfs_client has already been added to
+-	 * nfs_client_list by nfs_get_client().
+-	 *
+-	 * Don't BUG(), since the caller is holding a mutex.
+-	 */
+ 	if (prev)
+ 		nfs_put_client(prev);
+ 	dprintk("NFS: <-- %s status = %d\n", __func__, status);
+@@ -429,7 +423,7 @@ int nfs41_walk_client_list(struct nfs_cl
+ {
+ 	struct nfs_net *nn = net_generic(new->cl_net, nfs_net_id);
+ 	struct nfs_client *pos, *n, *prev = NULL;
+-	int error;
++	int status = -NFS4ERR_STALE_CLIENTID;
+ 
+ 	spin_lock(&nn->nfs_client_lock);
+ 	list_for_each_entry_safe(pos, n, &nn->nfs_client_list, cl_share_link) {
+@@ -445,8 +439,8 @@ int nfs41_walk_client_list(struct nfs_cl
+ 				nfs_put_client(prev);
+ 			prev = pos;
+ 
+-			error = nfs_wait_client_init_complete(pos);
+-			if (error < 0) {
++			status = nfs_wait_client_init_complete(pos);
++			if (status < 0) {
+ 				nfs_put_client(pos);
+ 				spin_lock(&nn->nfs_client_lock);
+ 				continue;
+@@ -479,16 +473,10 @@ int nfs41_walk_client_list(struct nfs_cl
+ 		return 0;
+ 	}
+ 
+-	/*
+-	 * No matching nfs_client found.  This should be impossible,
+-	 * because the new nfs_client has already been added to
+-	 * nfs_client_list by nfs_get_client().
+-	 *
+-	 * Don't BUG(), since the caller is holding a mutex.
+-	 */
++	/* No matching nfs_client found. */
+ 	spin_unlock(&nn->nfs_client_lock);
+-	pr_err("NFS: %s Error: no matching nfs_client found\n", __func__);
+-	return -NFS4ERR_STALE_CLIENTID;
++	dprintk("NFS: <-- %s status = %d\n", __func__, status);
++	return status;
+ }
+ #endif	/* CONFIG_NFS_V4_1 */
+ 
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -136,16 +136,11 @@ int nfs40_discover_server_trunking(struc
+ 	clp->cl_confirm = clid.confirm;
+ 
+ 	status = nfs40_walk_client_list(clp, result, cred);
+-	switch (status) {
+-	case -NFS4ERR_STALE_CLIENTID:
+-		set_bit(NFS4CLNT_LEASE_CONFIRM, &clp->cl_state);
+-	case 0:
++	if (status == 0) {
+ 		/* Sustain the lease, even if it's empty.  If the clientid4
+ 		 * goes stale it's of no use for trunking discovery. */
+ 		nfs4_schedule_state_renewal(*result);
+-		break;
+ 	}
+-
+ out:
+ 	return status;
+ }
+@@ -1850,6 +1845,7 @@ again:
+ 	case -ETIMEDOUT:
+ 	case -EAGAIN:
+ 		ssleep(1);
++	case -NFS4ERR_STALE_CLIENTID:
+ 		dprintk("NFS: %s after status %d, retrying\n",
+ 			__func__, status);
+ 		goto again;
 
 
