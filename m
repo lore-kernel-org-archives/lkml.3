@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422687Ab3BANMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:12:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45268 "EHLO mail.kernel.org"
+	id S1757619Ab3BANMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:12:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45051 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422670Ab3BANMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:12:33 -0500
+	id S1757434Ab3BANLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:11:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 54/89] NFS: Dont silently fail setattr() requests on mountpoints
-Date: Fri,  1 Feb 2013 14:08:09 +0100
-Message-Id: <20130201130211.390239838@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Borislav Petkov <bp@suse.de>
+Subject: [ 48/89] EDAC: Test correct variable in ->store function
+Date: Fri,  1 Feb 2013 14:08:03 +0100
+Message-Id: <20130201130210.950857560@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -25,61 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit ab225417825963b6dc66be7ea80f94ac1378dfdf upstream.
+commit 8024c4c0b1057d1cd811fc9c3f88f81de9729fcd upstream.
 
-Ensure that any setattr and getattr requests for junctions and/or
-mountpoints are sent to the server. Ever since commit
-0ec26fd0698 (vfs: automount should ignore LOOKUP_FOLLOW), we have
-silently dropped any setattr requests to a server-side mountpoint.
-For referrals, we have silently dropped both getattr and setattr
-requests.
+We're testing for ->show but calling ->store().
 
-This patch restores the original behaviour for setattr on mountpoints,
-and tries to do the same for referrals, provided that we have a
-filehandle...
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/namespace.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/edac/edac_pci_sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/namespace.c
-+++ b/fs/nfs/namespace.c
-@@ -177,11 +177,31 @@ out_nofree:
- 	return mnt;
+--- a/drivers/edac/edac_pci_sysfs.c
++++ b/drivers/edac/edac_pci_sysfs.c
+@@ -256,7 +256,7 @@ static ssize_t edac_pci_dev_store(struct
+ 	struct edac_pci_dev_attribute *edac_pci_dev;
+ 	edac_pci_dev = (struct edac_pci_dev_attribute *)attr;
+ 
+-	if (edac_pci_dev->show)
++	if (edac_pci_dev->store)
+ 		return edac_pci_dev->store(edac_pci_dev->value, buffer, count);
+ 	return -EIO;
  }
- 
-+static int
-+nfs_namespace_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
-+{
-+	if (NFS_FH(dentry->d_inode)->size != 0)
-+		return nfs_getattr(mnt, dentry, stat);
-+	generic_fillattr(dentry->d_inode, stat);
-+	return 0;
-+}
-+
-+static int
-+nfs_namespace_setattr(struct dentry *dentry, struct iattr *attr)
-+{
-+	if (NFS_FH(dentry->d_inode)->size != 0)
-+		return nfs_setattr(dentry, attr);
-+	return -EACCES;
-+}
-+
- const struct inode_operations nfs_mountpoint_inode_operations = {
- 	.getattr	= nfs_getattr,
-+	.setattr	= nfs_setattr,
- };
- 
- const struct inode_operations nfs_referral_inode_operations = {
-+	.getattr	= nfs_namespace_getattr,
-+	.setattr	= nfs_namespace_setattr,
- };
- 
- static void nfs_expire_automounts(struct work_struct *work)
 
 
