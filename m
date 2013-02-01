@@ -1,82 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab3BAMF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 07:05:57 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:43959 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3BAMFz (ORCPT
+	id S1756330Ab3BAMH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:07:56 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57022 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751688Ab3BAMHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 07:05:55 -0500
-Date: Fri, 1 Feb 2013 23:05:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: Re: linux-net for ARC port
-Message-Id: <20130201230542.f59aba41c018bd378775544f@canb.auug.org.au>
-In-Reply-To: <510B7A3C.2070301@synopsys.com>
-References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
-	<5102BB38.3050207@imgtec.com>
-	<201301260025.10020.arnd@arndb.de>
-	<51062460.9060902@synopsys.com>
-	<20130130074452.f67abeeaae3a00d046f5699f@canb.auug.org.au>
-	<510B7A3C.2070301@synopsys.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__1_Feb_2013_23_05_42_+1100_WrGn+rJ/8so8Yw4i"
+	Fri, 1 Feb 2013 07:07:51 -0500
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH v3] regmap: debugfs: Add a registers `range' file
+Date: Fri,  1 Feb 2013 12:05:39 +0000
+Message-Id: <1359720339-14862-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__1_Feb_2013_23_05_42_+1100_WrGn+rJ/8so8Yw4i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This file lists the register ranges in the register map.  The condition
+to split the range is based on the actual register attributes.  A range
+is a contiguous block of registers with the same register attributes.
 
-Hi Vineet,
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ Simplified the code a bit, removed the `scanning' flag which was
+ indeed unnecessary.
 
-On Fri, 1 Feb 2013 13:48:04 +0530 Vineet Gupta <Vineet.Gupta1@synopsys.com>=
- wrote:
->
-> When is the next linux-next release going to happen - I can't see the arc=
- port in
-> there yet !
+ This should be the final version of the patch.
 
-In the release note for next-20130128, I said:
+ drivers/base/regmap/regmap-debugfs.c | 175 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 175 insertions(+)
 
-"The linux-next release may be a bit sporadic over the next few days as I
-attend linux.conf.au."
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 0866c42..2c8fd4e 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -240,6 +240,178 @@ static const struct file_operations regmap_map_fops = {
+ 	.llseek = default_llseek,
+ };
+ 
++enum reg_attributes {
++	READABLE = 0x1,
++	WRITEABLE = 0x2,
++	VOLATILE = 0x4,
++};
++
++static inline unsigned int regmap_attr_bitmap(struct regmap *map,
++					      unsigned int reg)
++{
++	unsigned int reg_attr = 0;
++
++	if (regmap_readable(map, reg))
++		reg_attr |= READABLE;
++	if (regmap_writeable(map, reg))
++		reg_attr |= WRITEABLE;
++	if (regmap_volatile(map, reg))
++		reg_attr |= VOLATILE;
++	return reg_attr;
++}
++
++enum range_state {
++	RANGE_START,
++	RANGE_END,
++	RANGE_WITHIN,
++	RANGE_DONE,
++};
++
++struct regmap_reg_range  {
++	unsigned int start;
++	unsigned int end;
++	unsigned int attr;
++};
++
++static void regmap_range_format_line(struct regmap *map,
++				     struct regmap_reg_range *r,
++				     char *buf, size_t len)
++{
++	ssize_t buf_offset;
++
++	buf_offset = snprintf(buf, PAGE_SIZE, "%x-%x ",
++			      r->start, r->end);
++	buf_offset += snprintf(buf + buf_offset,
++			       PAGE_SIZE - buf_offset, "(");
++	if (r->attr & READABLE)
++		buf_offset += snprintf(buf + buf_offset,
++				       PAGE_SIZE - buf_offset,
++				       "read, ");
++	if (r->attr & WRITEABLE)
++		buf_offset += snprintf(buf + buf_offset,
++				       PAGE_SIZE - buf_offset,
++				       "write, ");
++	if (r->attr & VOLATILE)
++		buf_offset += snprintf(buf + buf_offset,
++				       PAGE_SIZE - buf_offset,
++				       "volatile, ");
++	/* Rewind the last ", " as well */
++	buf_offset += snprintf(buf + buf_offset - 2,
++			       PAGE_SIZE - buf_offset, ")");
++}
++
++static ssize_t regmap_range_read_file(struct file *file,
++				      char __user *user_buf, size_t count,
++				      loff_t *ppos)
++{
++	struct regmap *map = file->private_data;
++	int ret;
++	char *buf;
++	size_t buf_pos = 0;
++	loff_t p = 0;
++	unsigned int start_reg;
++	int i;
++	unsigned int reg_attr;
++	unsigned int block_start, block_end, block_attr;
++	enum range_state state;
++	struct regmap_reg_range r;
++	char *entry;
++
++	if (*ppos < 0 || !count)
++		return -EINVAL;
++
++	buf = kmalloc(count, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	entry = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	if (!entry) {
++		kfree(buf);
++		return -ENOMEM;
++	}
++
++	start_reg = 0;
++	block_attr = regmap_attr_bitmap(map, start_reg);
++	block_start = block_end = start_reg;
++	state = RANGE_START;
++
++	i = start_reg;
++	while (i <= map->max_register) {
++		reg_attr = regmap_attr_bitmap(map, i);
++		switch (state) {
++		case RANGE_START:
++			block_start = i;
++			block_attr = reg_attr;
++			state = RANGE_WITHIN;
++			break;
++		case RANGE_END:
++			r.start = block_start;
++			r.end = block_end;
++			r.attr = block_attr;
++			/* Only care about regions where any of the 3 register
++			   attributes are set */
++			if (r.attr) {
++				regmap_range_format_line(map, &r, entry, PAGE_SIZE);
++				if (p >= *ppos) {
++					/* We can't fit any more data into this buf
++					 * so no use to loop around anymore, just
++					 * give the data back to user */
++					if (buf_pos + 1 + strlen(entry) >= count)
++						goto out_entry;
++					snprintf(buf + buf_pos, count - buf_pos,
++						 "%s", entry);
++					buf_pos += strlen(entry);
++					buf[buf_pos] = '\n';
++					buf_pos++;
++				}
++				p += strlen(entry) + 1;
++			}
++			if (i + 1 > map->max_register)
++				state = RANGE_DONE;
++			else
++				state = RANGE_START;
++			break;
++		case RANGE_WITHIN:
++			if (reg_attr != block_attr) {
++				block_end = i - 1;
++				state = RANGE_END;
++			} else {
++				if (i + 1 > map->max_register) {
++					state = RANGE_END;
++					block_end = map->max_register;
++				}
++				else {
++					i++;
++				}
++			}
++			break;
++		case RANGE_DONE:
++			i++;
++			break;
++		}
++	}
++
++out_entry:
++	kfree(entry);
++	ret = buf_pos;
++
++	if (copy_to_user(user_buf, buf, buf_pos)) {
++		ret = -EFAULT;
++		goto out_buf;
++	}
++
++	*ppos += buf_pos;
++out_buf:
++	kfree(buf);
++	return ret;
++}
++
++static const struct file_operations regmap_range_fops = {
++	.open = simple_open,
++	.read = regmap_range_read_file,
++	.llseek = default_llseek,
++};
++
+ static ssize_t regmap_access_read_file(struct file *file,
+ 				       char __user *user_buf, size_t count,
+ 				       loff_t *ppos)
+@@ -322,6 +494,9 @@ void regmap_debugfs_init(struct regmap *map)
+ 	debugfs_create_file("name", 0400, map->debugfs,
+ 			    map, &regmap_name_fops);
+ 
++	debugfs_create_file("range", 0400, map->debugfs,
++			    map, &regmap_range_fops);
++
+ 	if (map->max_register) {
+ 		debugfs_create_file("registers", 0400, map->debugfs,
+ 				    map, &regmap_map_fops);
+-- 
+1.8.1.2
 
-Turns out that the conference was a bit more tiring than I thought even
-though it was in my home town :-)
-
-So now it will probably not be until Monday my time, sorry.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__1_Feb_2013_23_05_42_+1100_WrGn+rJ/8so8Yw4i
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRC6+WAAoJEECxmPOUX5FEOyUP/iZwu7bahJ5BBs6FiCTiKop5
-i1s3rrbNbwwMvUgaQkZPYP2IwfxOKvghUXH4kswDkMdL0nt311FamOWQpHczcRJn
-xkXxDLf51dAIKgLsHTDPvTDsSAGHTKalBUIP5UNLj0OrJ/LhKX/Ue5u7CnuoO1TK
-S6FuVsuV4utNjnrHLrmuiCR/0P1ttqDdbNFC+o+Cmic8WTvrIpNv3QcqpHAPIvns
-jX6/FgGX/q0/CscfuokeoCQtepy+W5WRDVgb+Fayu7fZ7K/irtdkv3kCAik6SMco
-+iOn0DHn/kanCq3MSzd0UunZlVgAUGRB3dReTC7vzS/WvEovtDNvuOmJaXJHUH06
-uxac6EmvRBRL7+FjOBFLsSvWS3lP0inuzAczzptn/MZBDsSounR8jT876uCNHyPf
-Mbe2Jbua42lNsyUYW2L3rJIwIkarAJnyCOz2Xjk6NvWiF8hWoDaQK68uMqwtSg8M
-9iNfvpl3QLnLseyq66Eqqy9FZk57MNMZ1iUfP0Ve5U6/twzSl8JLyC949rA8SHR3
-dKXbI8SrIJXRoUdTRLfgS50CZW5l14X3Pz+w1c1J/uvSlCA4h0W+eQ5ibWLyjpKP
-mNp2aKoZsfcZZbrVkOPceipvzpkq6//3U6goPzbD6f18G96P7DSy56UPI/VTZfkE
-T7WBIwQZp8+xzNLpo2wC
-=7kEe
------END PGP SIGNATURE-----
-
---Signature=_Fri__1_Feb_2013_23_05_42_+1100_WrGn+rJ/8so8Yw4i--
