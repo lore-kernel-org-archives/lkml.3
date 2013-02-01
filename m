@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757956Ab3BAWxe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 17:53:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59699 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755035Ab3BAWxa (ORCPT
+	id S1757977Ab3BAWyG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 17:54:06 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:36730 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755035Ab3BAWyE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 17:53:30 -0500
-Message-ID: <510C4700.5030304@canonical.com>
-Date: Fri, 01 Feb 2013 17:51:44 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 1 Feb 2013 17:54:04 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Ben Hutchings <ben@decadent.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        pkondeti@codeaurora.org, Greg KH <gregkh@linuxfoundation.org>,
-        Herton Krzesinski <herton.krzesinski@canonical.com>,
-        stable@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [REVERT][v3.x.y] EHCI: Update qTD next pointer in QH overlay
- region during unlink
-References: <Pine.LNX.4.44L0.1301171353330.1339-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1301171353330.1339-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <510B496B.2030303@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "linux@prisktech.co.nz" <linux@prisktech.co.nz>,
+        "josh.cartwright@ni.com" <josh.cartwright@ni.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arnd@linaro.org" <arnd@linaro.org>
+References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
+ <1357282858-2112-2-git-send-email-pgaikwad@nvidia.com>
+ <50E703A8.1080808@wwwdotorg.org> <50E793A0.4020702@nvidia.com>
+ <20130124192043.10623.60751@quantum> <51018C55.6000709@wwwdotorg.org>
+ <20130125005729.10623.61165@quantum> <51020D94.4010509@wwwdotorg.org>
+ <510B496B.2030303@nvidia.com>
+Message-ID: <20130201225359.16898.41318@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH 2/7] clk: tegra: Use common of_clk_init() function
+Date: Fri, 01 Feb 2013 14:53:59 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2013 01:56 PM, Alan Stern wrote:
-> On Thu, 17 Jan 2013, Joseph Salisbury wrote:
->
->> Hello,
->>
->> Please consider reverting commit
->> 3d037774b42ed677f699b1dce7d548d55f4e4c2b in mainline as well as in the
->> current stable releases.  It was included upstream as of v3.6-rc6.  This
->> commit introduced a regression, described in the following bug report:
->>
->> http://bugs.launchpad.net/bugs/1088733
->>
->> Reverting commit 3d037774b42ed677f699b1dce7d548d55f4e4c2b in the v3.2
->> kernel has been confirmed to resolve the aforementioned bug.
-> I do not want to revert this commit without first understanding what is
-> going wrong.  Please ask the reporter to post usbmon traces showing
-> what happens in both a failed and a successful recording attempt.
->
-> Alan Stern
->
-Hi Alan,
+Quoting Prashant Gaikwad (2013-01-31 20:49:47)
+> On Friday 25 January 2013 10:14 AM, Stephen Warren wrote:
+> > On 01/24/2013 04:57 PM, Mike Turquette wrote:
+> >> Quoting Stephen Warren (2013-01-24 11:32:37)
+> >>> On 01/24/2013 11:20 AM, Mike Turquette wrote:
+> >>>> Quoting Prashant Gaikwad (2013-01-04 18:44:48)
+> >>>>> On Friday 04 January 2013 10:00 PM, Stephen Warren wrote:
+> >>>>>> On 01/04/2013 12:00 AM, Prashant Gaikwad wrote:
+> >>>>>>> Use common of_clk_init() function for clocks initialization.
+> >>>>>>>    drivers/clk/tegra/clk-tegra20.c |    3 ++-
+> >>>>>>>    drivers/clk/tegra/clk-tegra30.c |    3 ++-
+> >>>>>> Oh, so this series is written assuming that the Tegra CCF rework is
+> >>>>>> already applied then? That makes the dependencies quite painful, since I
+> >>>>>> think we'll end up with the following order being needed:
+> >>>>>>
+> >>>>>> 1) clk: Add composite clock type
+> >>>>>>      -> This would usually go through the clk tree.
+> >>>>>> 2) The Tegra CCF rework series
+> >>>>>>      -> This must go through the Tegra tree due to lots of dependencies
+> >>>>>>      and merge conflicts with other Tegra patches.
+> >>>>>> 3) This series
+> >>>>>>      -> This would usually go through the clk tree.
+> >>>>>>
+> >>>>>> Is it possible to re-order the dependencies as (1) (3) (2), so that Mike
+> >>>>>> can apply (1) and (3) to the clock tree, then I can use the clk tree as
+> >>>>>> the basis for a branch in the Tegra tree to apply (2) and all the other
+> >>>>>> Tegra patches that will conflict with (2)?
+> >>>>> If Mike approves the concept and implementation in (1) and (3) then I
+> >>>>> will repost (2) and (3) with dependencies re-ordered.
+> >>>> Patch (1) still has some unaddressed comments, and is not a real
+> >>>> dependency for this series.
+> >>> I assume "Patch (1)" refers to the list of series a couple emails above,
+> >>> not the first patch in the series you're replying to; that threw me for
+> >>> a moment.
+> >>>
+> >>>> Since all of the patches have received their
+> >>>> Tested-by's then I propose to merge all patches from this series into
+> >>>> clk-next, which exception of patch 2/7 (the Tegra patch).
+> >>>>
+> >>>> This reduces your Tegra CCF conversion dependencies and you can role the
+> >>>> necessary of_clk_init change into your Tegra CCF conversion branch (it
+> >>>> has my implicit Ack and can be taken through your tree).
+> >>>>
+> >>>> Let me know if this is OK for you.
+> >>> OK, I'm happy to merge your clock tree into the Tegra tree and then
+> >>> apply 2/7 on top of the Tegra CCF work.
+> >> Hmm, maybe the clk tree needs to be a dependency branch of arm-soc
+> >> again, as it has in the past.  Would that help with any Tegra merge
+> >> pain?
+> > Yes, I think that's what would end up happening if I merge the clk tree
+> > into the Tegra tree anyway.
+> 
+> Hi Mike,
+> 
+> Have you merged these patches for 3.9?
 
-There is a tar file[0] attached to the bug report[1].  The tar file 
-contains a few examples of failed and successful recording attempts 
-while collecting usbmon traces.  There is a readme.txt file available 
-after extracting the files.
+Yes, these have been sitting in clk-next for a few days now.
 
-The bug reporter states that only the first recording after boot fails. 
-Subsequent recordings succeed will succeed.
-
-Thanks again for reviewing this, Alan.  Just let me know if you would 
-like any additional data or testing.
-
-Thanks,
-
-Joe
-
-[0] 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1088733/+attachment/3510887/+files/usbmon-1088733.tar.gz
-[1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1088733
+Regards,
+Mike
