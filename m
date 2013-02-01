@@ -1,159 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab3BAKBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:01:12 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33836 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab3BAKBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:01:08 -0500
-Date: Fri, 1 Feb 2013 11:03:17 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: daniel@ffwll.ch, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [UPDATE][PATCH 4/4] GPU/i915: Fix acpi_bus_get_device() check in
- drivers/gpu/drm/i915/intel_opregion.c
-Message-ID: <20130201100317.GG5885@phenom.ffwll.local>
-Mail-Followup-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Mika Westerberg <mika.westerberg@linux.intel.com>,
-	Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-	dri-devel@lists.freedesktop.org
-References: <1451967.YMyGeCCNtu@vostro.rjw.lan>
- <6099377.PFvsxPeyib@vostro.rjw.lan>
- <5109E11A.5030400@jp.fujitsu.com>
- <5109E2AF.2000107@jp.fujitsu.com>
- <5109E49E.1070005@jp.fujitsu.com>
- <20130131100330.GE5885@phenom.ffwll.local>
- <510B1168.2080401@jp.fujitsu.com>
- <510B1200.3000509@jp.fujitsu.com>
- <510B16EC.7030903@jp.fujitsu.com>
+	id S1756667Ab3BAKHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:07:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7224 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754980Ab3BAKHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:07:48 -0500
+Message-ID: <510B93EE.8000304@redhat.com>
+Date: Fri, 01 Feb 2013 10:07:42 +0000
+From: "Bryn M. Reeves" <bmr@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <510B16EC.7030903@jp.fujitsu.com>
-X-Operating-System: Linux phenom 3.8.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tao Ma <tm@tao.ma>
+CC: Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: How to online remove an error scsi disk from the system?
+References: <510B5CFC.2040801@tao.ma> <510B749E.8020501@acm.org> <510B904B.4050508@redhat.com> <510B9213.1040508@tao.ma>
+In-Reply-To: <510B9213.1040508@tao.ma>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 10:14:20AM +0900, Yasuaki Ishimatsu wrote:
-> 2013/02/01 9:53, Yasuaki Ishimatsu wrote:
-> >2013/02/01 9:50, Yasuaki Ishimatsu wrote:
-> >>2013/01/31 19:03, Daniel Vetter wrote:
-> >>>On Thu, Jan 31, 2013 at 12:27:26PM +0900, Yasuaki Ishimatsu wrote:
-> >>>>I forgot to change subject. So I resend a patch.
-> >>>>
-> >>>>---
-> >>>>acpi_bus_get_device() returns int not acpi_status.
-> >>>>
-> >>>>The patch change not to apply ACPI_FAILURE() to the return value of
-> >>>>acpi_bus_get_device().
-> >>>>
-> >>>>Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> >>>
-> >>>I've tried to apply this to drm-intel-next-queued, but git am didn't
-> >>>really like your patch - it failed to apply. Can you please rebase to the
-> >>>drm-intel-next-queued branch from
-> >>>
-> >>>git://people.freedesktop.org/~danvet/drm-intel
-> >>>
-> >>>and please resubmit the patch, preferrably formatted with git
-> >>>format-patch?
-> >>
-> >>My mailer added a space in the patch. I updated the patch.
-> >>How abot it?
-> >>
-> >>---
-> >>acpi_bus_get_device() returns int not acpi_status.
-> >>
-> >>The patch change not to apply ACPI_FAILURE() to the return value of
-> >>acpi_bus_get_device().
-> >>
-> >>Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> >>---
-> >>  drivers/gpu/drm/i915/intel_opregion.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >>diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-> >>index 7741c22..4d33874 100644
-> >>--- a/drivers/gpu/drm/i915/intel_opregion.c
-> >>+++ b/drivers/gpu/drm/i915/intel_opregion.c
-> >>@@ -347,7 +347,7 @@ static void intel_didl_outputs(struct drm_device *dev)
-> >>      int i = 0;
-> >>
-> >>      handle = DEVICE_ACPI_HANDLE(&dev->pdev->dev);
-> >>-    if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev)))
-> >>+    if (!handle || acpi_bus_get_device(handle, &acpi_dev))
-> >>          return;
-> >>
-> >>      if (acpi_is_video_device(acpi_dev))
-> >>
-> >
-> >Oops. My mailer added a space again...
-> >I'll check my mailer again.
-> 
-> I do not understand why space was added to the patch.
-> So I attached the patch. Please check it.
+On 02/01/2013 09:59 AM, Tao Ma wrote:
+> yes, but the result is the same. It will do some IO first which will
+> cause this command hang.
 
-Yeah, worked this time. Queued for -next, thanks for the patch.
--Daniel
+You seem to have a problem with either the device/adapter or in the 
+driver. The backtrace you posted shows that jbd2 (ext4) is still waiting 
+on IO that's been submitted to an mpt2sas or mpt3sas adapter (I only 
+know that because I recognise their log messages - you should try to 
+include relevant details like this when seeking assistance).
 
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
-> >
-> >Thanks,
-> >Yasuaki Ishimatsu
-> >
-> >>--
-> >>To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> >>the body of a message to majordomo@vger.kernel.org
-> >>More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> >
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+The adapter/driver hasn't completed the IO and it looks like the SCSI 
+layer is trying to abort it. Depending on the state of the driver and 
+hardware your only option might be to reboot (or physically hot remove 
+the device if your hardware allows it).
 
-> acpi_bus_get_device() returns int not acpi_status.
-> 
-> The patch change not to apply ACPI_FAILURE() to the return value of
-> acpi_bus_get_device().
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
->  drivers/gpu/drm/i915/intel_opregion.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-> index 7741c22..4d33874 100644
-> --- a/drivers/gpu/drm/i915/intel_opregion.c
-> +++ b/drivers/gpu/drm/i915/intel_opregion.c
-> @@ -347,7 +347,7 @@ static void intel_didl_outputs(struct drm_device *dev)
->  	int i = 0;
->  
->  	handle = DEVICE_ACPI_HANDLE(&dev->pdev->dev);
-> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev)))
-> +	if (!handle || acpi_bus_get_device(handle, &acpi_dev))
->  		return;
->  
->  	if (acpi_is_video_device(acpi_dev))
-> 
+You don't mention the versions of the kernel and driver you're using - 
+if the system is in production I would suggest contacting who ever 
+normally provides support for the kernel and distribution that you are 
+running.
 
+Regards,
+Bryn.
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
