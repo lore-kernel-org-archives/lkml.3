@@ -1,171 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3BAIOy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:14:54 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:41944 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab3BAIMQ (ORCPT
+	id S1756165Ab3BAIPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:15:11 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49965 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755703Ab3BAIPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:12:16 -0500
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olofj@chromium.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 04/10] Input: atmel_mxt_ts - handle bootloader mode at probe
-Date: Fri,  1 Feb 2013 16:11:46 +0800
-Message-Id: <1359706312-24642-5-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359706312-24642-1-git-send-email-djkurtz@chromium.org>
-References: <1359706312-24642-1-git-send-email-djkurtz@chromium.org>
+	Fri, 1 Feb 2013 03:15:07 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-d4-510b7984fb98
+Message-ID: <510B7984.3060509@lge.com>
+Date: Fri, 01 Feb 2013 17:15:00 +0900
+From: "kyungsik.lee" <kyungsik.lee@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Egon Alter <egon.alter@gmx.net>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, hyojun.im@lge.com,
+        raphael.andy.lee@gmail.com, linux-kbuild@vger.kernel.org,
+        gunho.lee@lge.com, namhyung.kim@lge.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Ingo Molnar <mingo@redhat.com>, Joe Millenbach <jmillenbach@gmail.com>,
+        chan.jeong@lge.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
+        minchan.kim@lge.com
+Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
+References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com> <20130128142510.68092e10.akpm@linux-foundation.org> <20130129101549.GP23505@n2100.arm.linux.org.uk> <34874167.ghObrToI03@fb07-iapwap2>
+In-Reply-To: <34874167.ghObrToI03@fb07-iapwap2>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases it is possible for a device to be in its bootloader at
-driver probe time.  This is detected by the driver when probe() is called
-with an i2c_client which has one of the Atmel Bootloader i2c addresses.
+On 2013-01-29 오후 8:43, Egon Alter wrote:
+> Am Dienstag, 29. Januar 2013, 10:15:49 schrieb Russell King - ARM Linux:
+>> On Mon, Jan 28, 2013 at 02:25:10PM -0800, Andrew Morton wrote:
+>>> What's this "with enabled unaligned memory access" thing?  You mean "if
+>>> the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"?  If so,
+>>> that's only x86, which isn't really in the target market for this
+>>> patch, yes?
+>>>
+>>> It's a lot of code for a 50ms boot-time improvement.  Does anyone have
+>>> any opinions on whether or not the benefits are worth the cost?
+>> Well... when I saw this my immediate reaction was "oh no, yet another
+>> decompressor for the kernel".  We have five of these things already.
+>> Do we really need a sixth?
+>>
+>> My feeling is that we should have:
+>> - one decompressor which is the fastest
+>> - one decompressor for the highest compression ratio
+>> - one popular decompressor (eg conventional gzip)
+> the problem gets more complicated as the "fastest" decompressor usually
+> creates larger images which need more time to load from the storage, e.g. a
+> one MB larger image on a 10 MB/s storage (note: bootloaders often configure
+> the  storage controllers in slow modes) gives 100 ms more boot time, thus
+> eating the gain of a "fast decompressor".
+Yes, the larger image could matter. Definitely it takes longer.
 
-In this case, we should load enough driver functionality to still loading
-new firmware using:
-  echo 1 > update_fw
+Here are some updated test cases: Including "loading time"
 
-However, we must be very careful not to follow any code paths that would try
-to access the as-yet uninitialized object table or input device.
-In particular:
- 1) mxt_remove calls input_unregister_device on input_dev.
- 2) mxt_suspend/resume reads and writes from the object table.
- 3) Spurious or bootloader induced interrupts
+                                 lzo           lz4
+loading time:             480ms       510ms
+decompression time: 336ms       180ms(with efficient unaligned memory 
+access enabled and ARM optimization)
+total time:                 816ms        690ms
 
-Signed-off-by: Benson Leung <bleung@chromium.org>
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c | 51 +++++++++++++++++++++++++-------
- 1 file changed, 40 insertions(+), 11 deletions(-)
+lz4 is still 15% faster in total time. This one is similar to the 
+simulated result by Russell King.
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 9afc26e..6c2c712 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -324,6 +324,12 @@ static void mxt_dump_message(struct device *dev,
- 		message->reportid, 7, message->message);
- }
- 
-+static bool mxt_in_bootloader(struct mxt_data *data)
-+{
-+	struct i2c_client *client = data->client;
-+	return (client->addr == MXT_BOOT_LOW || client->addr == MXT_BOOT_HIGH);
-+}
-+
- static int mxt_i2c_recv(struct i2c_client *client, u8 *buf, size_t count)
- {
- 	int ret;
-@@ -584,6 +590,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 	u8 reportid;
- 	bool update_input = false;
- 
-+	if (mxt_in_bootloader(data))
-+		goto end;
-+
- 	do {
- 		if (mxt_read_message(data, &message)) {
- 			dev_err(dev, "Failed to read message\n");
-@@ -975,6 +984,9 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 		return ret;
- 	}
- 
-+	if (mxt_in_bootloader(data))
-+		goto bootloader_ready;
-+
- 	/* Change to the bootloader mode */
- 	mxt_write_object(data, MXT_GEN_COMMAND_T6,
- 			MXT_COMMAND_RESET, MXT_BOOT_VALUE);
-@@ -986,6 +998,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 	else
- 		client->addr = MXT_BOOT_HIGH;
- 
-+bootloader_ready:
- 	ret = mxt_check_bootloader(client, MXT_WAITING_BOOTLOAD_CMD);
- 	if (ret)
- 		goto out;
-@@ -1196,25 +1209,34 @@ static int __devinit mxt_probe(struct i2c_client *client,
- 
- 	mxt_calc_resolution(data);
- 
--	error = mxt_initialize(data);
--	if (error)
--		goto err_free_mem;
-+	if (mxt_in_bootloader(data)) {
-+		dev_info(&client->dev, "Device in bootloader at probe\n");
-+	} else {
-+		error = mxt_initialize(data);
-+		if (error)
-+			goto err_free_mem;
- 
--	error = mxt_input_dev_create(data);
--	if (error)
--		goto err_free_object;
-+		error = mxt_input_dev_create(data);
-+		if (error)
-+			goto err_free_object;
-+	}
- 
- 	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
- 				     pdata->irqflags | IRQF_ONESHOT,
- 				     client->name, data);
- 	if (error) {
- 		dev_err(&client->dev, "Failed to register interrupt\n");
--		goto err_unregister_device;
-+		if (mxt_in_bootloader(data))
-+			goto err_free_mem;
-+		else
-+			goto err_unregister_device;
- 	}
- 
--	error = mxt_make_highchg(data);
--	if (error)
--		goto err_free_irq;
-+	if (!mxt_in_bootloader(data)) {
-+		error = mxt_make_highchg(data);
-+		if (error)
-+			goto err_free_irq;
-+	}
- 
- 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
- 	if (error)
-@@ -1239,7 +1261,8 @@ static int mxt_remove(struct i2c_client *client)
- 
- 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
- 	free_irq(data->irq, data);
--	input_unregister_device(data->input_dev);
-+	if (data->input_dev)
-+		input_unregister_device(data->input_dev);
- 	kfree(data->object_table);
- 	kfree(data);
- 
-@@ -1253,6 +1276,9 @@ static int mxt_suspend(struct device *dev)
- 	struct mxt_data *data = i2c_get_clientdata(client);
- 	struct input_dev *input_dev = data->input_dev;
- 
-+	if (mxt_in_bootloader(data))
-+		return 0;
-+
- 	mutex_lock(&input_dev->mutex);
- 
- 	if (input_dev->users)
-@@ -1269,6 +1295,9 @@ static int mxt_resume(struct device *dev)
- 	struct mxt_data *data = i2c_get_clientdata(client);
- 	struct input_dev *input_dev = data->input_dev;
- 
-+	if (mxt_in_bootloader(data))
-+		return 0;
-+
- 	/* Soft reset */
- 	mxt_write_object(data, MXT_GEN_COMMAND_T6,
- 			MXT_COMMAND_RESET, 1);
--- 
-1.8.1
-
+Thanks,
+Kyungsik
