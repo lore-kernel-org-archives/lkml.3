@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423060Ab3BANPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:15:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45835 "EHLO mail.kernel.org"
+	id S1423081Ab3BANQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:16:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45854 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423032Ab3BANPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:15:39 -0500
+	id S1422651Ab3BANQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:16:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Engelhardt <jengelh@inai.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 86/89] netfilter: x_tables: print correct hook names for ARP
-Date: Fri,  1 Feb 2013 14:08:41 +0100
-Message-Id: <20130201130213.680059524@linuxfoundation.org>
+        Ben Widawsky <ben@bwidawsk.net>, Jani Nikula <jani.nikula@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, CAI Qian <caiqian@redhat.com>
+Subject: [ 88/89] drm/i915: fix FORCEWAKE posting reads
+Date: Fri,  1 Feb 2013 14:08:43 +0100
+Message-Id: <20130201130213.821261272@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,95 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Engelhardt <jengelh@inai.de>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 5b76c4948fe6977bead2359c2054f3e6a2dcf3d0 upstream.
+commit b514407547890686572606c9dfa4b7f832db9958 upstream.
 
-arptables 0.0.4 (released on 10th Jan 2013) supports calling the
-CLASSIFY target, but on adding a rule to the wrong chain, the
-diagnostic is as follows:
+We stopped reading FORCEWAKE for posting reads in
 
-	# arptables -A INPUT -j CLASSIFY --set-class 0:0
-	arptables: Invalid argument
-	# dmesg | tail -n1
-	x_tables: arp_tables: CLASSIFY target: used from hooks
-	PREROUTING, but only usable from INPUT/FORWARD
+commit 8dee3eea3ccd3b6c00a8d3a08dd715d6adf737dd
+Author: Ben Widawsky <ben@bwidawsk.net>
+Date:   Sat Sep 1 22:59:50 2012 -0700
 
-This is incorrect, since xt_CLASSIFY.c does specify
-(1 << NF_ARP_OUT) | (1 << NF_ARP_FORWARD).
+    drm/i915: Never read FORCEWAKE
 
-This patch corrects the x_tables diagnostic message to print the
-proper hook names for the NFPROTO_ARP case.
+and started using something from the same cacheline instead. On the
+bug reporter's machine this broke entering rc6 states after a
+suspend/resume cycle. It turns out reading ECOBUS as posting read
+worked fine, while GTFIFODBG did not, preventing RC6 states after
+suspend/resume per the bug report referenced below. It's not entirely
+clear why, but clearly GTFIFODBG was nowhere near the same cacheline
+or address range as FORCEWAKE.
 
-Affects all kernels down to and including v2.6.31.
+Trying out various registers for posting reads showed that all tested
+registers for which NEEDS_FORCE_WAKE() (in i915_drv.c) returns true
+work. Conversely, most (but not quite all) registers for which
+NEEDS_FORCE_WAKE() returns false do not work. Details in the referenced
+bug.
 
-Signed-off-by: Jan Engelhardt <jengelh@inai.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Based on the above, add posting reads on ECOBUS where GTFIFODBG was
+previously relied on.
+
+In true cargo cult spirit, add posting reads for FORCEWAKE_VLV writes as
+well, but instead of ECOBUS, use FORCEWAKE_ACK_VLV which is in the same
+address range as FORCEWAKE_VLV.
+
+v2: Add more details to the commit message. No functional changes.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52411
+Reported-and-tested-by: Alexander Bersenev <bay@hackerdom.ru>
+CC: Ben Widawsky <ben@bwidawsk.net>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: stable@vger.kernel.org
+[danvet: add cc: stable and make the commit message a bit clearer that
+this is a regression fix and what exactly broke.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/x_tables.c |   28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/i915/intel_pm.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/net/netfilter/x_tables.c
-+++ b/net/netfilter/x_tables.c
-@@ -345,19 +345,27 @@ int xt_find_revision(u8 af, const char *
- }
- EXPORT_SYMBOL_GPL(xt_find_revision);
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -4018,7 +4018,8 @@ static void __gen6_gt_force_wake_get(str
+ 		DRM_ERROR("Timed out waiting for forcewake old ack to clear.\n");
  
--static char *textify_hooks(char *buf, size_t size, unsigned int mask)
-+static char *
-+textify_hooks(char *buf, size_t size, unsigned int mask, uint8_t nfproto)
+ 	I915_WRITE_NOTRACE(FORCEWAKE, 1);
+-	POSTING_READ(ECOBUS); /* something from same cacheline, but !FORCEWAKE */
++	/* something from same cacheline, but !FORCEWAKE */
++	POSTING_READ(ECOBUS);
+ 
+ 	if (wait_for_atomic((I915_READ_NOTRACE(forcewake_ack) & 1),
+ 			    FORCEWAKE_ACK_TIMEOUT_MS))
+@@ -4041,7 +4042,8 @@ static void __gen6_gt_force_wake_mt_get(
+ 		DRM_ERROR("Timed out waiting for forcewake old ack to clear.\n");
+ 
+ 	I915_WRITE_NOTRACE(FORCEWAKE_MT, _MASKED_BIT_ENABLE(1));
+-	POSTING_READ(ECOBUS); /* something from same cacheline, but !FORCEWAKE */
++	/* something from same cacheline, but !FORCEWAKE */
++	POSTING_READ(ECOBUS);
+ 
+ 	if (wait_for_atomic((I915_READ_NOTRACE(forcewake_ack) & 1),
+ 			    FORCEWAKE_ACK_TIMEOUT_MS))
+@@ -4078,14 +4080,16 @@ void gen6_gt_check_fifodbg(struct drm_i9
+ static void __gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
  {
--	static const char *const names[] = {
-+	static const char *const inetbr_names[] = {
- 		"PREROUTING", "INPUT", "FORWARD",
- 		"OUTPUT", "POSTROUTING", "BROUTING",
- 	};
--	unsigned int i;
-+	static const char *const arp_names[] = {
-+		"INPUT", "FORWARD", "OUTPUT",
-+	};
-+	const char *const *names;
-+	unsigned int i, max;
- 	char *p = buf;
- 	bool np = false;
- 	int res;
+ 	I915_WRITE_NOTRACE(FORCEWAKE, 0);
+-	/* gen6_gt_check_fifodbg doubles as the POSTING_READ */
++	/* something from same cacheline, but !FORCEWAKE */
++	POSTING_READ(ECOBUS);
+ 	gen6_gt_check_fifodbg(dev_priv);
+ }
  
-+	names = (nfproto == NFPROTO_ARP) ? arp_names : inetbr_names;
-+	max   = (nfproto == NFPROTO_ARP) ? ARRAY_SIZE(arp_names) :
-+	                                   ARRAY_SIZE(inetbr_names);
- 	*p = '\0';
--	for (i = 0; i < ARRAY_SIZE(names); ++i) {
-+	for (i = 0; i < max; ++i) {
- 		if (!(mask & (1 << i)))
- 			continue;
- 		res = snprintf(p, size, "%s%s", np ? "/" : "", names[i]);
-@@ -402,8 +410,10 @@ int xt_check_match(struct xt_mtchk_param
- 		pr_err("%s_tables: %s match: used from hooks %s, but only "
- 		       "valid from %s\n",
- 		       xt_prefix[par->family], par->match->name,
--		       textify_hooks(used, sizeof(used), par->hook_mask),
--		       textify_hooks(allow, sizeof(allow), par->match->hooks));
-+		       textify_hooks(used, sizeof(used), par->hook_mask,
-+		                     par->family),
-+		       textify_hooks(allow, sizeof(allow), par->match->hooks,
-+		                     par->family));
- 		return -EINVAL;
- 	}
- 	if (par->match->proto && (par->match->proto != proto || inv_proto)) {
-@@ -575,8 +585,10 @@ int xt_check_target(struct xt_tgchk_para
- 		pr_err("%s_tables: %s target: used from hooks %s, but only "
- 		       "usable from %s\n",
- 		       xt_prefix[par->family], par->target->name,
--		       textify_hooks(used, sizeof(used), par->hook_mask),
--		       textify_hooks(allow, sizeof(allow), par->target->hooks));
-+		       textify_hooks(used, sizeof(used), par->hook_mask,
-+		                     par->family),
-+		       textify_hooks(allow, sizeof(allow), par->target->hooks,
-+		                     par->family));
- 		return -EINVAL;
- 	}
- 	if (par->target->proto && (par->target->proto != proto || inv_proto)) {
+ static void __gen6_gt_force_wake_mt_put(struct drm_i915_private *dev_priv)
+ {
+ 	I915_WRITE_NOTRACE(FORCEWAKE_MT, _MASKED_BIT_DISABLE(1));
+-	/* gen6_gt_check_fifodbg doubles as the POSTING_READ */
++	/* something from same cacheline, but !FORCEWAKE_MT */
++	POSTING_READ(ECOBUS);
+ 	gen6_gt_check_fifodbg(dev_priv);
+ }
+ 
+@@ -4140,7 +4144,8 @@ static void vlv_force_wake_get(struct dr
+ static void vlv_force_wake_put(struct drm_i915_private *dev_priv)
+ {
+ 	I915_WRITE_NOTRACE(FORCEWAKE_VLV, _MASKED_BIT_DISABLE(1));
+-	/* The below doubles as a POSTING_READ */
++	/* something from same cacheline, but !FORCEWAKE_VLV */
++	POSTING_READ(FORCEWAKE_ACK_VLV);
+ 	gen6_gt_check_fifodbg(dev_priv);
+ }
+ 
 
 
