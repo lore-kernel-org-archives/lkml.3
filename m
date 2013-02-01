@@ -1,163 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3BAKnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:43:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51826 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530Ab3BAKnM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:43:12 -0500
-Date: Fri, 1 Feb 2013 02:42:48 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-29d720ed5f897d7e26f6b36c12c7704dc200d107@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
-        namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1358845787-1350-6-git-send-email-namhyung@kernel.org>
-References: <1358845787-1350-6-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf hists:
-  Resort hist entries using group members for output
-Git-Commit-ID: 29d720ed5f897d7e26f6b36c12c7704dc200d107
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:42:55 -0800 (PST)
+	id S1756590Ab3BAKny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:43:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41049 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755530Ab3BAKnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:43:51 -0500
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com
+Subject: [RFC] mm: change invalidatepage prototype to accept length
+Date: Fri,  1 Feb 2013 11:43:26 +0100
+Message-Id: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  29d720ed5f897d7e26f6b36c12c7704dc200d107
-Gitweb:     http://git.kernel.org/tip/29d720ed5f897d7e26f6b36c12c7704dc200d107
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 22 Jan 2013 18:09:33 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 Jan 2013 13:07:45 -0300
+Hi,
 
-perf hists: Resort hist entries using group members for output
+This set of patches are aimed to allow truncate_inode_pages_range() handle
+ranges which are not aligned at the end of the page. Currently it will
+hit BUG_ON() when the end of the range is not aligned. Punch hole feature
+however can benefit from this ability saving file systems some work not
+forcing them to implement their own invalidate code to handle unaligned
+ranges.
 
-When event group is enabled, sorting hist entries on periods for output
-should consider groups members' period also.  To do that, build period
-table using link/pair information and compare the table.
+In order for this to woke we need change ->invalidatepage() address space
+operation to to accept range to invalidate by adding 'length' argument in
+addition to 'offset'. This is different from my previous attempt to create
+new aop ->invalidatepage_range (http://lwn.net/Articles/514828/) which I
+reconsidered to ne unnecessary.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-6-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.h |  2 ++
- tools/perf/util/hist.c  | 59 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 60 insertions(+), 1 deletion(-)
+For description purposes this patch set can be divided into following
+groups:
 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index c9031eb..3717139 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -79,6 +79,8 @@ struct perf_evsel {
- 	char			*group_name;
- };
- 
-+#define hists_to_evsel(h) container_of(h, struct perf_evsel, hists)
-+
- struct cpu_map;
- struct thread_map;
- struct perf_evlist;
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 8170a3d..f855941 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -4,6 +4,7 @@
- #include "hist.h"
- #include "session.h"
- #include "sort.h"
-+#include "evsel.h"
- #include <math.h>
- 
- static bool hists__filter_entry_by_dso(struct hists *hists,
-@@ -540,6 +541,62 @@ void hists__collapse_resort_threaded(struct hists *hists)
-  * reverse the map, sort on period.
-  */
- 
-+static int period_cmp(u64 period_a, u64 period_b)
-+{
-+	if (period_a > period_b)
-+		return 1;
-+	if (period_a < period_b)
-+		return -1;
-+	return 0;
-+}
-+
-+static int hist_entry__sort_on_period(struct hist_entry *a,
-+				      struct hist_entry *b)
-+{
-+	int ret;
-+	int i, nr_members;
-+	struct perf_evsel *evsel;
-+	struct hist_entry *pair;
-+	u64 *periods_a, *periods_b;
-+
-+	ret = period_cmp(a->stat.period, b->stat.period);
-+	if (ret || !symbol_conf.event_group)
-+		return ret;
-+
-+	evsel = hists_to_evsel(a->hists);
-+	nr_members = evsel->nr_members;
-+	if (nr_members <= 1)
-+		return ret;
-+
-+	periods_a = zalloc(sizeof(periods_a) * nr_members);
-+	periods_b = zalloc(sizeof(periods_b) * nr_members);
-+
-+	if (!periods_a || !periods_b)
-+		goto out;
-+
-+	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
-+		evsel = hists_to_evsel(pair->hists);
-+		periods_a[perf_evsel__group_idx(evsel)] = pair->stat.period;
-+	}
-+
-+	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
-+		evsel = hists_to_evsel(pair->hists);
-+		periods_b[perf_evsel__group_idx(evsel)] = pair->stat.period;
-+	}
-+
-+	for (i = 1; i < nr_members; i++) {
-+		ret = period_cmp(periods_a[i], periods_b[i]);
-+		if (ret)
-+			break;
-+	}
-+
-+out:
-+	free(periods_a);
-+	free(periods_b);
-+
-+	return ret;
-+}
-+
- static void __hists__insert_output_entry(struct rb_root *entries,
- 					 struct hist_entry *he,
- 					 u64 min_callchain_hits)
-@@ -556,7 +613,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
- 		parent = *p;
- 		iter = rb_entry(parent, struct hist_entry, rb_node);
- 
--		if (he->stat.period > iter->stat.period)
-+		if (hist_entry__sort_on_period(he, iter) > 0)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
+
+patch 0001:	Change ->invalidatepage() prototype adding 'length' argument
+		and changing all the instances. In very simple cases file
+		system methods are completely adapted, otherwise only
+		prototype is changed and the rest will follow. This patch
+		also implement the 'range' invalidation in
+		block_invalidatepage().
+
+patch 0002 - 0009:
+		Make the use of new 'length' argument in the file system
+		itself. Some file systems can take advantage of it trying
+		to invalidate only portion of the page if possible, some
+		can't, however none of the file systems currently attempt
+		to truncate non page aligned ranges.
+
+
+patch 0010:	Teach truncate_inode_pages_range() to handle non page aligned
+		ranges.
+
+patch 0012 - 0018:
+		Ext4 changes build on top of previous changes, simplifying
+		punch hole code. Not all changes are realated specifically
+		to invalidatepage() change, but all are related to the punch
+		hole feature.
+
+Even though this patch set would mainly affect functionality of the file
+file systems implementing punch hole I've tested all the following file
+system using xfstests without noticing any bugs related to this change.
+
+ext3, ext4, xfs, btrfs, gfs2 and reiserfs
+
+the much smaller changes in other file systems has not been directly tested,
+so please review.
+
+Thanks!
+-Lukas
+
+-- 
+
+ Documentation/filesystems/Locking |    6 +-
+ Documentation/filesystems/vfs.txt |   20 ++--
+ fs/9p/vfs_addr.c                  |    5 +-
+ fs/afs/file.c                     |   10 +-
+ fs/btrfs/disk-io.c                |    3 +-
+ fs/btrfs/extent_io.c              |    2 +-
+ fs/btrfs/inode.c                  |    3 +-
+ fs/buffer.c                       |   21 ++-
+ fs/ceph/addr.c                    |   15 +-
+ fs/cifs/file.c                    |    5 +-
+ fs/exofs/inode.c                  |    6 +-
+ fs/ext3/inode.c                   |    9 +-
+ fs/ext4/ext4.h                    |   14 +-
+ fs/ext4/extents.c                 |  188 ++++++++--------------
+ fs/ext4/indirect.c                |   13 +--
+ fs/ext4/inode.c                   |  320 ++++++++++++++++--------------------
+ fs/f2fs/data.c                    |    3 +-
+ fs/f2fs/node.c                    |    3 +-
+ fs/gfs2/aops.c                    |   17 ++-
+ fs/jbd/transaction.c              |   19 ++-
+ fs/jbd2/transaction.c             |   24 ++-
+ fs/jfs/jfs_metapage.c             |    5 +-
+ fs/logfs/file.c                   |    3 +-
+ fs/logfs/segment.c                |    3 +-
+ fs/nfs/file.c                     |    8 +-
+ fs/ntfs/aops.c                    |    2 +-
+ fs/ocfs2/aops.c                   |    5 +-
+ fs/reiserfs/inode.c               |   12 +-
+ fs/ubifs/file.c                   |    5 +-
+ fs/xfs/xfs_aops.c                 |   10 +-
+ fs/xfs/xfs_trace.h                |   41 +++++-
+ include/linux/buffer_head.h       |    3 +-
+ include/linux/fs.h                |    2 +-
+ include/linux/jbd.h               |    2 +-
+ include/linux/jbd2.h              |    2 +-
+ include/linux/mm.h                |    3 +-
+ include/trace/events/ext3.h       |   12 +-
+ include/trace/events/ext4.h       |   64 +++++---
+ mm/readahead.c                    |    2 +-
+ mm/truncate.c                     |   86 ++++++----
+ 40 files changed, 511 insertions(+), 465 deletions(-)
+
+
+[PATCH 01/18] mm: change invalidatepage prototype to accept length
+[PATCH 02/18] jbd2: change jbd2_journal_invalidatepage to accept
+[PATCH 03/18] ext4: use ->invalidatepage() length argument
+[PATCH 04/18] jbd: change journal_invalidatepage() to accept length
+[PATCH 05/18] xfs: use ->invalidatepage() length argument
+[PATCH 06/18] ocfs2: use ->invalidatepage() length argument
+[PATCH 07/18] ceph: use ->invalidatepage() length argument
+[PATCH 08/18] gfs2: use ->invalidatepage() length argument
+[PATCH 09/18] reiserfs: use ->invalidatepage() length argument
+[PATCH 10/18] mm: teach truncate_inode_pages_range() to handle non
+[PATCH 11/18] Revert "ext4: remove no longer used functions in
+[PATCH 12/18] Revert "ext4: fix fsx truncate failure"
+[PATCH 13/18] ext4: use ext4_zero_partial_blocks in punch_hole
+[PATCH 14/18] ext4: remove unused discard_partial_page_buffers
+[PATCH 15/18] ext4: remove unused code from ext4_remove_blocks()
+[PATCH 16/18] ext4: update ext4_ext_remove_space trace point
+[PATCH 17/18] ext4: make punch hole code path work with bigalloc
+[PATCH 18/18] ext4: Allow punch hole with bigalloc enabled
