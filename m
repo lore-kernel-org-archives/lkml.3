@@ -1,147 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab3BAUV5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:21:57 -0500
-Received: from mail-gh0-f169.google.com ([209.85.160.169]:43592 "EHLO
-	mail-gh0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab3BAUVz (ORCPT
+	id S1757425Ab3BAUXW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:23:22 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:37485 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757125Ab3BAUXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:21:55 -0500
-X-Greylist: delayed 9652 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Feb 2013 15:21:55 EST
-Message-ID: <510C23DD.9050601@gmail.com>
-Date: Fri, 01 Feb 2013 12:21:49 -0800
-From: Subash Patel <subashrp@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Cyril Chemparathy <cyril@ti.com>
-CC: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, sboyd@codeaurora.org,
-        will.deacon@arm.com, paulmck@linux.vnet.ibm.com, nico@linaro.org,
-        catalin.marinas@arm.com, marc.zyngier@arm.com,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH v4 00/13] ARM LPAE Fixes - Part 1
-References: <1359669512-31276-1-git-send-email-cyril@ti.com>
-In-Reply-To: <1359669512-31276-1-git-send-email-cyril@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Feb 2013 15:23:20 -0500
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com,
+        sjenning@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
+        akpm@linux-foundation.org, ngupta@vflare.org, rcj@linux.vnet.ibm.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: [PATCH v2] Make frontswap+cleancache and its friend be modularized.
+Date: Fri,  1 Feb 2013 15:22:49 -0500
+Message-Id: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyril,
+Parts of this patch have been posted in the post (way back in November), but
+this patchset expanded it a bit. The goal of the patches is to make the
+different frontswap/cleancache API backends be modules - and load way way after
+the swap system (or filesystem) has been initialized. Naturally one can still
+build the frontswap+cleancache backend devices in the kernel. The next goal
+(after these patches) is to also be able to unload the backend drivers - but
+that places some interesting requirements to "reload" the swap device with
+swap pages (don't need to worry that much about cleancache as it is a "secondary"
+cache and can be dumped). Seth had posted some patches for that in the zswap
+backend - and they could be more generally repurporsed.
 
-Thanks for posting fixes patch set again. I have in fact used your 
-previous patch series on a real LPAE system with split memory banks in 
-both 32-bit and 36-bit physical addresses. I compared your below patches 
-with previous version, and don't see significant changes. Hence you can use
+Anyhow, I did not want to lose the authorship of some of the patches so I
+didn't squash the ones that were made by Dan and mine. I can do it for review
+if it would make it easier, but from my recollection on how Linus likes things
+run he would prefer to keep the history (even the kludge parts).
 
-Tested By: Subash Patel <subash.rp@samsung.com>
+The general flow prior to these patches was [I am concentrating on the
+frontswap here, but the cleancache is similar, just s/swapon/mount/]:
 
-for this series as well. In the meantime, I have used the pa/va patching 
-from v3, but haven't tested any performance numbers on it. But I will 
-wait for your next reworked version.
+ 1) kernel inits frontswap_init
+ 2) kernel inits zcache (or some other backend)
+ 3) user does swapon /dev/XX and the writes to the swap disk end up in
+    frontswap and then in the backend.
 
-Regards,
-Subash
+With the module loading, the 1) is still part of the bootup, but the
+2) or 3) can be run at anytime. This means one could load the backend
+_after_ the swap disk has been initialized and running along. Or
+_before_ the swap disk has been setup - but that is similar to the
+existing case so not that exciting.
 
-On Thursday 31 January 2013 01:58 PM, Cyril Chemparathy wrote:
-> This series is a repost of the LPAE related changes in preparation for the
-> introduction of the Keystone sub-architecture.  The original series has now
-> been split, and this particular series excludes the earlier changes to the
-> runtime code patching implementation.  Earlier versions of this series can be
-> found at [1], [2], [3] and [4].
->
-> These patches are also available in git:
-> git://git.kernel.org/pub/scm/linux/kernel/git/cchemparathy/linux-keystone.git upstream/keystone-lpae-v4
->
-> [1] http://comments.gmane.org/gmane.linux.kernel/1341497
-> [2] http://comments.gmane.org/gmane.linux.kernel/1332069
-> [3] http://comments.gmane.org/gmane.linux.kernel/1356716
-> [4] http://comments.gmane.org/gmane.linux.kernel/1362529
->
-> Series changelog:
->
-> [01/13] ARM: LPAE: use signed arithmetic for mask
-> [02/13] ARM: LPAE: use phys_addr_t in alloc_init_pud()
-> [03/13] ARM: LPAE: use phys_addr_t in free_memmap()
->    (v4)	unchanged from v3
->    (v3)	unchanged from v2
->    (v2)	unchanged from v1
->
-> [04/13] ARM: LPAE: use phys_addr_t for initrd location
->    (v4)	unchanged from v3
->    (v3)	unchanged from v2
->    (v2)	revert to unsigned long for initrd size
->
-> [05/13] ARM: LPAE: use phys_addr_t in switch_mm()
->    (v4)  collapse shift and or into a single instruction
->    (v3)	remove unnecessary handling for !LPAE in proc-v7-3level
->    (v2)	use phys_addr_t instead of u64 in switch_mm()
->    (v2)	revert on changes to v6 and v7-2level
->    (v2)	fix register mapping for big-endian in v7-3level
->
-> [06/13] ARM: LPAE: use 64-bit accessors for TTBR registers
->    (v4)  remove unnecessary condition code clobber
->    (v3)	remove unnecessary condition code clobber
->    (v2)	restore comment in cpu_set_reserved_ttbr0()
->
-> [07/13] ARM: LPAE: define ARCH_LOW_ADDRESS_LIMIT for
->    (v4)	unchanged from v3
->    (v3)	unchanged from v2
->    (v2)	unchanged from v1
->
-> [08/13] ARM: LPAE: factor out T1SZ and TTBR1 computations
->    (v4)  cleanup and move code comments
->    (v3)	unchanged from v2
->    (v2)	unchanged from v1
->
-> [09/13] ARM: LPAE: accomodate >32-bit addresses for page
->    (v4)	unchanged from v3
->    (v3)	unchanged from v2
->    (v2)	apply arch_pgd_shift only on lpae
->    (v2)	move arch_pgd_shift definition to asm/memory.h
->    (v2)	revert on changes to non-lpae procs
->    (v2)	add check to ensure that the pgd physical address is aligned at an
-> 	ARCH_PGD_SHIFT boundary
->
-> [10/13] ARM: mm: use physical addresses in highmem sanity
-> [11/13] ARM: mm: cleanup checks for membank overlap with
-> [12/13] ARM: mm: clean up membank size limit checks
->    (v4)	unchanged from v3
->    (v3)	unchanged from v2
->    (v2)	unchanged from v1
->
-> [13/13] ARM: fix type of PHYS_PFN_OFFSET to unsigned long
->    (v4)	introduced here
->
->
-> Cyril Chemparathy (10):
->    ARM: LPAE: use signed arithmetic for mask definitions
->    ARM: LPAE: use phys_addr_t in switch_mm()
->    ARM: LPAE: use 64-bit accessors for TTBR registers
->    ARM: LPAE: define ARCH_LOW_ADDRESS_LIMIT for bootmem
->    ARM: LPAE: factor out T1SZ and TTBR1 computations
->    ARM: LPAE: accomodate >32-bit addresses for page table base
->    ARM: mm: use physical addresses in highmem sanity checks
->    ARM: mm: cleanup checks for membank overlap with vmalloc area
->    ARM: mm: clean up membank size limit checks
->    ARM: fix type of PHYS_PFN_OFFSET to unsigned long
->
-> Vitaly Andrianov (3):
->    ARM: LPAE: use phys_addr_t in alloc_init_pud()
->    ARM: LPAE: use phys_addr_t in free_memmap()
->    ARM: LPAE: use phys_addr_t for initrd location
->
->   arch/arm/include/asm/memory.h               |   20 +++++++++-
->   arch/arm/include/asm/page.h                 |    2 +-
->   arch/arm/include/asm/pgtable-3level-hwdef.h |   20 ++++++++++
->   arch/arm/include/asm/pgtable-3level.h       |    6 +--
->   arch/arm/include/asm/proc-fns.h             |   26 +++++++++----
->   arch/arm/kernel/head.S                      |   10 ++---
->   arch/arm/kernel/smp.c                       |   11 +++++-
->   arch/arm/mm/context.c                       |    9 +----
->   arch/arm/mm/init.c                          |   19 +++++-----
->   arch/arm/mm/mmu.c                           |   49 +++++++++----------------
->   arch/arm/mm/proc-v7-3level.S                |   53 ++++++++++++++-------------
->   11 files changed, 132 insertions(+), 93 deletions(-)
->
+To deal with that scenario the frontswap keeps an queue (actually an atomic
+bitmap of the swap disks that have been init) and when the backend registers -
+frontswap runs the backend init on the queued up swap disks.
+
+The interesting thing is that we can be to certain degree racy when the
+swap system starts steering pages to frontswap. Meaning after the backend
+has registered it is OK if the pages are still hitting the disk instead of
+the backend. Naturally this is unacceptable if one were to unload the
+backend (not yet supported) - as we need to be quite atomic at that stage
+and need to stop processing the pages the moment the backend is being
+unloaded. To support this, the frontswap is using the struct static_key
+which are incredibly light when they are in usage. They are incredibly heavy
+when the value switches (on/off), but that is OK. The next part of unloading is
+also taking the pages that are in the backend and feed them in the swap
+storage (and Seth's patches do some of this).
+
+Also attached is one patch from Minchan that fixes the condition where the
+backend was constricted in allocating memory at init - b/c we were holding
+a spin-lock. His patch fixes that and we are just holding the swapon_mutex
+instead. It has been rebased on top of my patches.
+
+This patchset is based on Greg KH's staging tree (since the zcache2 has
+now been renamed to zcache). To be exact, it is based on
+085494ac2039433a5df9fdd6fb653579e18b8c71
+
+Dan Magenheimer (4):
+      mm: cleancache: lazy initialization to allow tmem backends to build/run as modules
+      mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
+      staging: zcache: enable ramster to be built/loaded as a module
+      xen: tmem: enable Xen tmem shim to be built/loaded as a module
+
+Konrad Rzeszutek Wilk (10):
+      frontswap: Make frontswap_init use a pointer for the ops.
+      cleancache: Make cleancache_init use a pointer for the ops
+      staging: zcache: enable zcache to be built/loaded as a module
+      xen/tmem: Remove the subsys call.
+      frontswap: Remove the check for frontswap_enabled.
+      frontswap: Use static_key instead of frontswap_enabled and frontswap_ops
+      cleancache: Remove the check for cleancache_enabled.
+      cleancache: Use static_key instead of cleancache_ops and cleancache_enabled.
+      zcache/tmem: Better error checking on frontswap_register_ops return     value.
+      xen/tmem: Add missing %s in the printk statement.
+
+Minchan Kim (1):
+      frontswap: Get rid of swap_lock dependency
+
+
+ drivers/staging/zcache/Kconfig                     |   6 +-
+ drivers/staging/zcache/Makefile                    |  11 +-
+ drivers/staging/zcache/ramster.h                   |   6 +-
+ drivers/staging/zcache/ramster/nodemanager.c       |   9 +-
+ drivers/staging/zcache/ramster/ramster.c           |  29 ++-
+ drivers/staging/zcache/ramster/ramster.h           |   2 +-
+ .../staging/zcache/ramster/ramster_nodemanager.h   |   2 +
+ drivers/staging/zcache/tmem.c                      |   6 +-
+ drivers/staging/zcache/tmem.h                      |   8 +-
+ drivers/staging/zcache/zcache-main.c               |  64 +++++-
+ drivers/staging/zcache/zcache.h                    |   2 +-
+ drivers/xen/Kconfig                                |   4 +-
+ drivers/xen/tmem.c                                 |  55 +++--
+ drivers/xen/xen-selfballoon.c                      |  13 +-
+ include/linux/cleancache.h                         |  27 ++-
+ include/linux/frontswap.h                          |  31 +--
+ include/xen/tmem.h                                 |   8 +
+ mm/cleancache.c                                    | 241 ++++++++++++++++++---
+ mm/frontswap.c                                     | 121 ++++++++---
+ mm/swapfile.c                                      |   7 +-
+ 20 files changed, 505 insertions(+), 147 deletions(-)
+
