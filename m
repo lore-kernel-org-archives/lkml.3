@@ -1,111 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab3BAL7g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 06:59:36 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:31909 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140Ab3BAL6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 06:58:20 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 5/6] metag: make TXPRIVEXT bits explicit
-Date: Fri, 1 Feb 2013 11:49:09 +0000
-Message-ID: <1359719350-24560-6-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1359719350-24560-1-git-send-email-james.hogan@imgtec.com>
-References: <1359719350-24560-1-git-send-email-james.hogan@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_02_01_11_58_17
+	id S1756295Ab3BAMF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:05:57 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43959 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753885Ab3BAMFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 07:05:55 -0500
+Date: Fri, 1 Feb 2013 23:05:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+Subject: Re: linux-net for ARC port
+Message-Id: <20130201230542.f59aba41c018bd378775544f@canb.auug.org.au>
+In-Reply-To: <510B7A3C.2070301@synopsys.com>
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
+	<5102BB38.3050207@imgtec.com>
+	<201301260025.10020.arnd@arndb.de>
+	<51062460.9060902@synopsys.com>
+	<20130130074452.f67abeeaae3a00d046f5699f@canb.auug.org.au>
+	<510B7A3C.2070301@synopsys.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__1_Feb_2013_23_05_42_+1100_WrGn+rJ/8so8Yw4i"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define PRIV_BITS using explicit constants from <asm/metag_regs.h> rather
-than with a hard coded value. This also adds a couple of missing
-definitions for the TXPRIVEXT priv bits for protecting writes to TXTIMER
-and the trace registers.
+--Signature=_Fri__1_Feb_2013_23_05_42_+1100_WrGn+rJ/8so8Yw4i
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
----
- arch/metag/include/asm/metag_regs.h |    4 ++++
- arch/metag/kernel/setup.c           |   34 +++++++++++++++++++++++++++-------
- 2 files changed, 31 insertions(+), 7 deletions(-)
+Hi Vineet,
 
-diff --git a/arch/metag/include/asm/metag_regs.h b/arch/metag/include/asm/metag_regs.h
-index 022fcad..acf4b8e 100644
---- a/arch/metag/include/asm/metag_regs.h
-+++ b/arch/metag/include/asm/metag_regs.h
-@@ -414,6 +414,10 @@
- #define TXPRIVEXT_REGNUM 29
- #define     TXPRIVEXT_COPRO_BITS    0xFF000000 /* Co-processor 0-7 */
- #define     TXPRIVEXT_COPRO_S       24
-+#ifndef METAC_1_2
-+#define     TXPRIVEXT_TXTIMER_BIT   0x00080000 /* TXTIMER   priv */
-+#define     TXPRIVEXT_TRACE_BIT     0x00040000 /* TTEXEC|TTCTRL|GTEXEC */
-+#endif
- #define     TXPRIVEXT_TXTRIGGER_BIT 0x00020000 /* TXSTAT|TXMASK|TXPOLL */
- #define     TXPRIVEXT_TXGBLCREG_BIT 0x00010000 /* Global common regs */
- #define     TXPRIVEXT_CBPRIV_BIT    0x00008000 /* Mem i/f dump priv */
-diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
-index aaebc56..dcb1d6d 100644
---- a/arch/metag/kernel/setup.c
-+++ b/arch/metag/kernel/setup.c
-@@ -35,6 +35,7 @@
- #include <asm/hwthread.h>
- #include <asm/l2cache.h>
- #include <asm/mach/arch.h>
-+#include <asm/metag_regs.h>
- #include <asm/mmu.h>
- #include <asm/mmzone.h>
- #include <asm/processor.h>
-@@ -43,18 +44,37 @@
- #include <asm/setup.h>
- #include <asm/traps.h>
- 
--/* PRIV protect as many registers as possible. */
--#define DEFAULT_PRIV	0xff0f7f00
--
--/* Enable unaligned access checking. */
--#define UNALIGNED_PRIV	0x00000010
-+/* Priv protect as many registers as possible. */
-+#define DEFAULT_PRIV	(TXPRIVEXT_COPRO_BITS		| \
-+			 TXPRIVEXT_TXTRIGGER_BIT	| \
-+			 TXPRIVEXT_TXGBLCREG_BIT	| \
-+			 TXPRIVEXT_ILOCK_BIT		| \
-+			 TXPRIVEXT_TXITACCYC_BIT	| \
-+			 TXPRIVEXT_TXDIVTIME_BIT	| \
-+			 TXPRIVEXT_TXAMAREGX_BIT	| \
-+			 TXPRIVEXT_TXTIMERI_BIT		| \
-+			 TXPRIVEXT_TXSTATUS_BIT		| \
-+			 TXPRIVEXT_TXDISABLE_BIT)
-+
-+/* Meta2 specific bits. */
-+#ifdef CONFIG_METAG_META12
-+#define META2_PRIV	0
-+#else
-+#define META2_PRIV	(TXPRIVEXT_TXTIMER_BIT		| \
-+			 TXPRIVEXT_TRACE_BIT)
-+#endif
- 
-+/* Unaligned access checking bits. */
- #ifdef CONFIG_METAG_UNALIGNED
--#define PRIV_BITS (DEFAULT_PRIV | UNALIGNED_PRIV)
-+#define UNALIGNED_PRIV	TXPRIVEXT_ALIGNREW_BIT
- #else
--#define PRIV_BITS DEFAULT_PRIV
-+#define UNALIGNED_PRIV	0
- #endif
- 
-+#define PRIV_BITS 	(DEFAULT_PRIV			| \
-+			 META2_PRIV			| \
-+			 UNALIGNED_PRIV)
-+
- extern char _heap_start[];
- 
- #ifdef CONFIG_METAG_BUILTIN_DTB
--- 
-1.7.7.6
+On Fri, 1 Feb 2013 13:48:04 +0530 Vineet Gupta <Vineet.Gupta1@synopsys.com>=
+ wrote:
+>
+> When is the next linux-next release going to happen - I can't see the arc=
+ port in
+> there yet !
 
+In the release note for next-20130128, I said:
 
+"The linux-next release may be a bit sporadic over the next few days as I
+attend linux.conf.au."
+
+Turns out that the conference was a bit more tiring than I thought even
+though it was in my home town :-)
+
+So now it will probably not be until Monday my time, sorry.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__1_Feb_2013_23_05_42_+1100_WrGn+rJ/8so8Yw4i
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRC6+WAAoJEECxmPOUX5FEOyUP/iZwu7bahJ5BBs6FiCTiKop5
+i1s3rrbNbwwMvUgaQkZPYP2IwfxOKvghUXH4kswDkMdL0nt311FamOWQpHczcRJn
+xkXxDLf51dAIKgLsHTDPvTDsSAGHTKalBUIP5UNLj0OrJ/LhKX/Ue5u7CnuoO1TK
+S6FuVsuV4utNjnrHLrmuiCR/0P1ttqDdbNFC+o+Cmic8WTvrIpNv3QcqpHAPIvns
+jX6/FgGX/q0/CscfuokeoCQtepy+W5WRDVgb+Fayu7fZ7K/irtdkv3kCAik6SMco
++iOn0DHn/kanCq3MSzd0UunZlVgAUGRB3dReTC7vzS/WvEovtDNvuOmJaXJHUH06
+uxac6EmvRBRL7+FjOBFLsSvWS3lP0inuzAczzptn/MZBDsSounR8jT876uCNHyPf
+Mbe2Jbua42lNsyUYW2L3rJIwIkarAJnyCOz2Xjk6NvWiF8hWoDaQK68uMqwtSg8M
+9iNfvpl3QLnLseyq66Eqqy9FZk57MNMZ1iUfP0Ve5U6/twzSl8JLyC949rA8SHR3
+dKXbI8SrIJXRoUdTRLfgS50CZW5l14X3Pz+w1c1J/uvSlCA4h0W+eQ5ibWLyjpKP
+mNp2aKoZsfcZZbrVkOPceipvzpkq6//3U6goPzbD6f18G96P7DSy56UPI/VTZfkE
+T7WBIwQZp8+xzNLpo2wC
+=7kEe
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__1_Feb_2013_23_05_42_+1100_WrGn+rJ/8so8Yw4i--
