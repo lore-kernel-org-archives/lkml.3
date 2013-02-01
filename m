@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030192Ab3BAMIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 07:08:50 -0500
-Received: from nbd.name ([46.4.11.11]:41404 "EHLO nbd.name"
+	id S1756709Ab3BAMH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 07:07:59 -0500
+Received: from nbd.name ([46.4.11.11]:41387 "EHLO nbd.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754766Ab3BAMIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 07:08:01 -0500
+	id S1756471Ab3BAMH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 07:07:57 -0500
 From: John Crispin <blogic@openwrt.org>
 To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, John Crispin <blogic@openwrt.org>,
-        Thomas Langer <thomas.langer@lantiq.com>
-Subject: [PATCH 09/11] PINCTRL: lantiq: add functionality to falcon_pinconf_dbg_show
-Date: Fri,  1 Feb 2013 13:05:03 +0100
-Message-Id: <1359720305-31933-9-git-send-email-blogic@openwrt.org>
+Cc: linux-kernel@vger.kernel.org, John Crispin <blogic@openwrt.org>
+Subject: [PATCH 05/11] PINCTRL: lantiq: the pinconf OD parameter argument was ignored
+Date: Fri,  1 Feb 2013 13:04:59 +0100
+Message-Id: <1359720305-31933-5-git-send-email-blogic@openwrt.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1359720305-31933-1-git-send-email-blogic@openwrt.org>
 References: <1359720305-31933-1-git-send-email-blogic@openwrt.org>
@@ -20,57 +19,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code only has a stub for falcon_pinconf_dbg_show. This patch adds
-proper functionality.
+When setting the OpenDrain bit we should really honour the argument passed
+inside the devicetree.
 
-Signed-off-by: Thomas Langer <thomas.langer@lantiq.com>
 Signed-off-by: John Crispin <blogic@openwrt.org>
 ---
- drivers/pinctrl/pinctrl-falcon.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ drivers/pinctrl/pinctrl-xway.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-falcon.c b/drivers/pinctrl/pinctrl-falcon.c
-index c5a9868..4a0d54a 100644
---- a/drivers/pinctrl/pinctrl-falcon.c
-+++ b/drivers/pinctrl/pinctrl-falcon.c
-@@ -315,6 +315,37 @@ static int falcon_pinconf_set(struct pinctrl_dev *pctrldev,
- static void falcon_pinconf_dbg_show(struct pinctrl_dev *pctrldev,
- 			struct seq_file *s, unsigned offset)
- {
-+	unsigned long config;
-+	struct pin_desc *desc;
-+
-+	struct ltq_pinmux_info *info = pinctrl_dev_get_drvdata(pctrldev);
-+	int port = PORT(offset);
-+
-+	seq_printf(s, " (port %d) mux %d -- ", port,
-+		pad_r32(info->membase[port], LTQ_PADC_MUX(PORT_PIN(offset))));
-+
-+	config = LTQ_PINCONF_PACK(LTQ_PINCONF_PARAM_PULL, 0);
-+	if (!falcon_pinconf_get(pctrldev, offset, &config))
-+		seq_printf(s, "pull %d ",
-+			(int)LTQ_PINCONF_UNPACK_ARG(config));
-+
-+	config = LTQ_PINCONF_PACK(LTQ_PINCONF_PARAM_DRIVE_CURRENT, 0);
-+	if (!falcon_pinconf_get(pctrldev, offset, &config))
-+		seq_printf(s, "drive-current %d ",
-+			(int)LTQ_PINCONF_UNPACK_ARG(config));
-+
-+	config = LTQ_PINCONF_PACK(LTQ_PINCONF_PARAM_SLEW_RATE, 0);
-+	if (!falcon_pinconf_get(pctrldev, offset, &config))
-+		seq_printf(s, "slew-rate %d ",
-+			(int)LTQ_PINCONF_UNPACK_ARG(config));
-+
-+	desc = pin_desc_get(pctrldev, offset);
-+	if (desc) {
-+		if (desc->gpio_owner)
-+			seq_printf(s, " owner: %s", desc->gpio_owner);
-+	} else {
-+		seq_printf(s, " not registered");
-+	}
- }
+diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
+index b23b895..53cb6a3 100644
+--- a/drivers/pinctrl/pinctrl-xway.c
++++ b/drivers/pinctrl/pinctrl-xway.c
+@@ -494,7 +494,10 @@ static int xway_pinconf_set(struct pinctrl_dev *pctldev,
+ 			reg = GPIO3_OD;
+ 		else
+ 			reg = GPIO_OD(pin);
+-		gpio_setbit(info->membase[0], reg, PORT_PIN(pin));
++		if (arg == 0)
++			gpio_setbit(info->membase[0], reg, PORT_PIN(pin));
++		else
++			gpio_clearbit(info->membase[0], reg, PORT_PIN(pin));
+ 		break;
  
- static void falcon_pinconf_group_dbg_show(struct pinctrl_dev *pctrldev,
+ 	case LTQ_PINCONF_PARAM_PULL:
 -- 
 1.7.10.4
 
