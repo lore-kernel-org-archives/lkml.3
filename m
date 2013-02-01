@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab3BAPLB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 10:11:01 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51398 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab3BAPK6 (ORCPT
+	id S1755892Ab3BAPLr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 10:11:47 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:35221 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754053Ab3BAPLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 10:10:58 -0500
-Message-ID: <510BDAED.8060805@ti.com>
-Date: Fri, 1 Feb 2013 10:10:37 -0500
-From: Cyril Chemparathy <cyril@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 10:11:44 -0500
+Date: Fri, 1 Feb 2013 10:11:43 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v8 4/4] sd: change to auto suspend mode
+In-Reply-To: <20130201031944.GA6960@aaronlu.sh.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1302011011090.1752-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        <paulmck@linux.vnet.ibm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, <marc.zyngier@arm.com>,
-        <linus.walleij@linaro.org>
-Subject: Re: [PATCH v4 00/13] ARM LPAE Fixes - Part 1
-References: <1359669512-31276-1-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1301312252230.6300@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1301312252230.6300@xanadu.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nico,
+On Fri, 1 Feb 2013, Aaron Lu wrote:
 
-On 01/31/2013 11:00 PM, Nicolas Pitre wrote:
-> On Thu, 31 Jan 2013, Cyril Chemparathy wrote:
->
->> This series is a repost of the LPAE related changes in preparation for the
->> introduction of the Keystone sub-architecture.  The original series has now
->> been split, and this particular series excludes the earlier changes to the
->> runtime code patching implementation.  Earlier versions of this series can be
->> found at [1], [2], [3] and [4].
->>
->> These patches are also available in git:
->> git://git.kernel.org/pub/scm/linux/kernel/git/cchemparathy/linux-keystone.git upstream/keystone-lpae-v4
->
-> This part 1 looks very nice.  It received many review cycles already as
-> well.  It would be about time it goes upstream.
->
-> I think it is ready to be merged in Russell's tree.  Feel free to send
-> him a pull request whenever you're ready.
->
+> On Thu, Jan 31, 2013 at 10:13:05AM -0500, Alan Stern wrote:
+> > On Thu, 31 Jan 2013, Aaron Lu wrote:
+> > 
+> > > > > +static int scsi_blk_runtime_suspend(struct device *dev)
+> > > > > +{
+> > > > > +	struct scsi_device *sdev = to_scsi_device(dev);
+> > > > 
+> > > > For this routine and the other new ones, it may be slightly more
+> > > > efficient to pass both dev and sdev as arguments (this depends on how
+> > > > smart the compiler's optimizer is).  The caller already knows both of
+> > > > them, after all.
+> > > 
+> > > What about passing only scsi_device? When device is needed, I can use
+> > > &sdev->sdev_gendev. Is this equally efficient?
+> > 
+> > I don't know...  The difference is very small in any case.  The 
+> > routines will probably be inlined automatically.
+> 
+> Indeed, I just checked the .s output of the three cases, they are all
+> the same. So we just need to care about readability and less of code,
+> passing only scsi_device seems to be the simplest, are you OK with this?
 
-Great.  I'll apply your acks and post a pull request.
+Yes, that's fine.  Thanks for checking it out.
 
-> Then we'll be free to look at the more controvertial p2v patching stuff.
->
-
-On the P2V patching stuff, I've implemented an alternative approach to 
-get past this problem.  Essentially, the new implementation retains the 
-kernel location detection part, but avoids the code patching by using 
-simple inline P2V and V2P functions that use the offset detected early 
-on in boot.
-
-With this, I ran simple network and filesystem performance tests to 
-compare the code-patching vs. non-code-patching variants.  These tests 
-didn't yield any significant performance difference between the two on 
-an ARMv7 (Cortex-A8) platform.
-
-This series is basically operational at this point, but it needs a bit 
-more test coverage before I post it out.
-
-Thanks
--- Cyril.
+Alan Stern
 
