@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161084Ab3BAKs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:48:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38719 "EHLO mail.kernel.org"
+	id S1161116Ab3BAKsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:48:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38739 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161046Ab3BAKs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:48:26 -0500
+	id S1161098Ab3BAKse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:48:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anderson Lizardo <anderson.lizardo@openbossa.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 11/15] Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
-Date: Fri,  1 Feb 2013 11:48:44 +0100
-Message-Id: <20130201104757.282044951@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 13/15] x86/msr: Add capabilities check
+Date: Fri,  1 Feb 2013 11:48:46 +0100
+Message-Id: <20130201104757.456204793@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104756.470588207@linuxfoundation.org>
 References: <20130201104756.470588207@linuxfoundation.org>
@@ -27,43 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anderson Lizardo <anderson.lizardo@openbossa.org>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 0a9ab9bdb3e891762553f667066190c1d22ad62b upstream.
+commit c903f0456bc69176912dee6dd25c6a66ee1aed00 upstream.
 
-The length parameter should be sizeof(req->name) - 1 because there is no
-guarantee that string provided by userspace will contain the trailing
-'\0'.
+At the moment the MSR driver only relies upon file system
+checks. This means that anything as root with any capability set
+can write to MSRs. Historically that wasn't very interesting but
+on modern processors the MSRs are such that writing to them
+provides several ways to execute arbitary code in kernel space.
+Sample code and documentation on doing this is circulating and
+MSR attacks are used on Windows 64bit rootkits already.
 
-Can be easily reproduced by manually setting req->name to 128 non-zero
-bytes prior to ioctl(HIDPCONNADD) and checking the device name setup on
-input subsystem:
+In the Linux case you still need to be able to open the device
+file so the impact is fairly limited and reduces the security of
+some capability and security model based systems down towards
+that of a generic "root owns the box" setup.
 
-$ cat /sys/devices/pnp0/00\:04/tty/ttyS0/hci0/hci0\:1/input8/name
-AAAAAA[...]AAAAAAAAf0:af:f0:af:f0:af
+Therefore they should require CAP_SYS_RAWIO to prevent an
+elevation of capabilities. The impact of this is fairly minimal
+on most setups because they don't have heavy use of
+capabilities. Those using SELinux, SMACK or AppArmor rules might
+want to consider if their rulesets on the MSR driver could be
+tighter.
 
-("f0:af:f0:af:f0:af" is the device bluetooth address, taken from "phys"
-field in struct hid_device due to overflow.)
-
-Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hidp/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/msr.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/bluetooth/hidp/core.c
-+++ b/net/bluetooth/hidp/core.c
-@@ -934,7 +934,7 @@ static int hidp_setup_hid(struct hidp_se
- 	hid->version = req->version;
- 	hid->country = req->country;
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -175,6 +175,9 @@ static int msr_open(struct inode *inode,
+ 	unsigned int cpu;
+ 	struct cpuinfo_x86 *c;
  
--	strncpy(hid->name, req->name, 128);
-+	strncpy(hid->name, req->name, sizeof(req->name) - 1);
- 	strncpy(hid->phys, batostr(&bt_sk(session->ctrl_sock->sk)->src), 64);
- 	strncpy(hid->uniq, batostr(&bt_sk(session->ctrl_sock->sk)->dst), 64);
- 
++	if (!capable(CAP_SYS_RAWIO))
++		return -EPERM;
++
+ 	cpu = iminor(file->f_path.dentry->d_inode);
+ 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
+ 		return -ENXIO;	/* No such CPU */
 
 
