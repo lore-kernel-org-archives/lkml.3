@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab3BANW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:22:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45031 "EHLO mail.kernel.org"
+	id S1757542Ab3BANWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:22:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45006 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757311Ab3BANLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:11:46 -0500
+	id S1757416Ab3BANLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:11:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 38/89] ath9k: add a better fix for the rx tasklet vs rx flush race
-Date: Fri,  1 Feb 2013 14:07:53 +0100
-Message-Id: <20130201130210.260645970@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 45/89] ALSA: hda - Add a fixup for Packard-Bell desktop with ALC880
+Date: Fri,  1 Feb 2013 14:08:00 +0100
+Message-Id: <20130201130210.732640826@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,132 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7fc00a3054b70b1794c2d64db703eb467ad0365c upstream.
+commit 0712eea349d8e2b6d0e44b94a752d999319027fb upstream.
 
-Ensure that the rx tasklet is no longer running when entering the reset path.
-Also remove the distinction between flush and no-flush frame processing.
-If a frame has been received and ACKed by the hardware, the stack needs to see
-it, so that the BA receive window does not go out of sync.
+A Packard-Bell desktop machine gives no proper pin configuration from
+BIOS.  It's almost equivalent with the 6stack+fp standard config, just
+take the existing fixup.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=901846
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ath9k.h |    1 -
- drivers/net/wireless/ath/ath9k/debug.c |    1 -
- drivers/net/wireless/ath/ath9k/debug.h |    2 --
- drivers/net/wireless/ath/ath9k/main.c  |    4 ++++
- drivers/net/wireless/ath/ath9k/recv.c  |   15 ---------------
- 5 files changed, 4 insertions(+), 19 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/ath/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-@@ -630,7 +630,6 @@ void ath_ant_comb_update(struct ath_soft
- enum sc_op_flags {
- 	SC_OP_INVALID,
- 	SC_OP_BEACONS,
--	SC_OP_RXFLUSH,
- 	SC_OP_ANI_RUN,
- 	SC_OP_PRIM_STA_VIF,
- 	SC_OP_HW_RESET,
---- a/drivers/net/wireless/ath/ath9k/debug.c
-+++ b/drivers/net/wireless/ath/ath9k/debug.c
-@@ -973,7 +973,6 @@ static ssize_t read_file_recv(struct fil
- 	RXS_ERR("RX-LENGTH-ERR", rx_len_err);
- 	RXS_ERR("RX-OOM-ERR", rx_oom_err);
- 	RXS_ERR("RX-RATE-ERR", rx_rate_err);
--	RXS_ERR("RX-DROP-RXFLUSH", rx_drop_rxflush);
- 	RXS_ERR("RX-TOO-MANY-FRAGS", rx_too_many_frags_err);
- 
- 	PHY_ERR("UNDERRUN ERR", ATH9K_PHYERR_UNDERRUN);
---- a/drivers/net/wireless/ath/ath9k/debug.h
-+++ b/drivers/net/wireless/ath/ath9k/debug.h
-@@ -200,7 +200,6 @@ struct ath_tx_stats {
-  * @rx_oom_err:  No. of frames dropped due to OOM issues.
-  * @rx_rate_err:  No. of frames dropped due to rate errors.
-  * @rx_too_many_frags_err:  Frames dropped due to too-many-frags received.
-- * @rx_drop_rxflush: No. of frames dropped due to RX-FLUSH.
-  * @rx_beacons:  No. of beacons received.
-  * @rx_frags:  No. of rx-fragements received.
-  */
-@@ -219,7 +218,6 @@ struct ath_rx_stats {
- 	u32 rx_oom_err;
- 	u32 rx_rate_err;
- 	u32 rx_too_many_frags_err;
--	u32 rx_drop_rxflush;
- 	u32 rx_beacons;
- 	u32 rx_frags;
- };
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -195,6 +195,8 @@ static bool ath_prepare_reset(struct ath
- 	ath9k_debug_samp_bb_mac(sc);
- 	ath9k_hw_disable_interrupts(ah);
- 
-+	tasklet_disable(&sc->intr_tq);
-+
- 	if (!ath_stoprecv(sc))
- 		ret = false;
- 
-@@ -209,6 +211,8 @@ static bool ath_prepare_reset(struct ath
- 		ath_flushrecv(sc);
- 	}
- 
-+	tasklet_enable(&sc->intr_tq);
-+
- 	return ret;
- }
- 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -286,7 +286,6 @@ int ath_rx_init(struct ath_softc *sc, in
- 
- 	spin_lock_init(&sc->sc_pcu_lock);
- 	spin_lock_init(&sc->rx.rxbuflock);
--	clear_bit(SC_OP_RXFLUSH, &sc->sc_flags);
- 
- 	common->rx_bufsize = IEEE80211_MAX_MPDU_LEN / 2 +
- 			     sc->sc_ah->caps.rx_status_len;
-@@ -501,11 +500,9 @@ bool ath_stoprecv(struct ath_softc *sc)
- 
- void ath_flushrecv(struct ath_softc *sc)
- {
--	set_bit(SC_OP_RXFLUSH, &sc->sc_flags);
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
- 		ath_rx_tasklet(sc, 1, true);
- 	ath_rx_tasklet(sc, 1, false);
--	clear_bit(SC_OP_RXFLUSH, &sc->sc_flags);
- }
- 
- static bool ath_beacon_dtim_pending_cab(struct sk_buff *skb)
-@@ -1067,9 +1064,6 @@ int ath_rx_tasklet(struct ath_softc *sc,
- 
- 	do {
- 		bool decrypt_error = false;
--		/* If handling rx interrupt and flush is in progress => exit */
--		if (test_bit(SC_OP_RXFLUSH, &sc->sc_flags) && (flush == 0))
--			break;
- 
- 		memset(&rs, 0, sizeof(rs));
- 		if (edma)
-@@ -1109,15 +1103,6 @@ int ath_rx_tasklet(struct ath_softc *sc,
- 		sc->rx.num_pkts++;
- 		ath_debug_stat_rx(sc, &rs);
- 
--		/*
--		 * If we're asked to flush receive queue, directly
--		 * chain it back at the queue without processing it.
--		 */
--		if (test_bit(SC_OP_RXFLUSH, &sc->sc_flags)) {
--			RX_STAT_INC(rx_drop_rxflush);
--			goto requeue_drop_frag;
--		}
--
- 		memset(rxs, 0, sizeof(struct ieee80211_rx_status));
- 
- 		rxs->mactime = (tsf & ~0xffffffffULL) | rs.rs_tstamp;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4688,6 +4688,7 @@ static const struct snd_pci_quirk alc880
+ 	SND_PCI_QUIRK(0x1584, 0x9077, "Uniwill P53", ALC880_FIXUP_VOL_KNOB),
+ 	SND_PCI_QUIRK(0x161f, 0x203d, "W810", ALC880_FIXUP_W810),
+ 	SND_PCI_QUIRK(0x161f, 0x205d, "Medion Rim 2150", ALC880_FIXUP_MEDION_RIM),
++	SND_PCI_QUIRK(0x1631, 0xe011, "PB 13201056", ALC880_FIXUP_6ST),
+ 	SND_PCI_QUIRK(0x1734, 0x107c, "FSC F1734", ALC880_FIXUP_F1734),
+ 	SND_PCI_QUIRK(0x1734, 0x1094, "FSC Amilo M1451G", ALC880_FIXUP_FUJITSU),
+ 	SND_PCI_QUIRK(0x1734, 0x10ac, "FSC AMILO Xi 1526", ALC880_FIXUP_F1734),
 
 
