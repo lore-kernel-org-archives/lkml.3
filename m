@@ -1,152 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422795Ab3BAKv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:51:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52033 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422779Ab3BAKvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:51:20 -0500
-Date: Fri, 1 Feb 2013 02:51:03 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-cb16008bcc6ea53617ca06c9eb4ab0ecafe04585@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        penberg@kernel.org, eranina@google.com, namhyung.kim@lge.com,
-        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        penberg@kernel.org, namhyung.kim@lge.com, eranina@google.com,
-        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
-In-Reply-To: <1358845787-1350-13-git-send-email-namhyung@kernel.org>
-References: <1358845787-1350-13-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf gtk/browser:
-  Add support for event group view
-Git-Commit-ID: cb16008bcc6ea53617ca06c9eb4ab0ecafe04585
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:51:08 -0800 (PST)
+	id S932090Ab3BAKyj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:54:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39328 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422801Ab3BAKv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:51:29 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 26/33] mac80211: synchronize scan off/on-channel and PS states
+Date: Fri,  1 Feb 2013 11:49:31 +0100
+Message-Id: <20130201104726.505346361@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
+References: <20130201104724.605715763@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb16008bcc6ea53617ca06c9eb4ab0ecafe04585
-Gitweb:     http://git.kernel.org/tip/cb16008bcc6ea53617ca06c9eb4ab0ecafe04585
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 22 Jan 2013 18:09:40 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 Jan 2013 13:07:47 -0300
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-perf gtk/browser: Add support for event group view
+------------------
 
-Show group members's overhead also when showing leader's if event
-group is enabled.
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranina@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-13-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+commit aacde9ee45225f7e0b90960f479aef83c66bfdc0 upstream.
+
+Since:
+
+commit b23b025fe246f3acc2988eb6d400df34c27cb8ae
+Author: Ben Greear <greearb@candelatech.com>
+Date:   Fri Feb 4 11:54:17 2011 -0800
+
+    mac80211: Optimize scans on current operating channel.
+
+we do not disable PS while going back to operational channel (on
+ieee80211_scan_state_suspend) and deffer that until scan finish.
+But since we are allowed to send frames, we can send a frame to AP
+without PM bit set, so disable PS on AP side. Then when we switch
+to off-channel (in ieee80211_scan_state_resume) we do not enable PS.
+Hence we are off-channel with PS disabled, frames are not buffered
+by AP.
+
+To fix remove offchannel_ps_disable argument and always enable PS when
+going off-channel and disable it when going on-channel, like it was
+before.
+
+Cc: stable@vger.kernel.org # 2.6.39+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Tested-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- tools/perf/ui/gtk/hists.c | 56 +++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 52 insertions(+), 4 deletions(-)
+ net/mac80211/ieee80211_i.h |    6 ++----
+ net/mac80211/offchannel.c  |   17 ++++++-----------
+ net/mac80211/scan.c        |   15 +++++----------
+ net/mac80211/work.c        |    4 ++--
+ 4 files changed, 15 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 38be79d..c87a98c 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -8,8 +8,7 @@
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1264,10 +1264,8 @@ int ieee80211_request_sched_scan_stop(st
+ void ieee80211_sched_scan_stopped_work(struct work_struct *work);
  
- #define MAX_COLUMNS			32
+ /* off-channel helpers */
+-void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local,
+-				    bool offchannel_ps_enable);
+-void ieee80211_offchannel_return(struct ieee80211_local *local,
+-				 bool offchannel_ps_disable);
++void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local);
++void ieee80211_offchannel_return(struct ieee80211_local *local);
+ void ieee80211_hw_roc_setup(struct ieee80211_local *local);
  
--static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
--					    double percent)
-+static int __percent_color_snprintf(char *buf, size_t size, double percent)
- {
- 	int ret = 0;
- 	const char *markup;
-@@ -18,7 +17,7 @@ static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
- 	if (markup)
- 		ret += scnprintf(buf, size, markup);
- 
--	ret += scnprintf(buf + ret, size - ret, "%6.2f%%", percent);
-+	ret += scnprintf(buf + ret, size - ret, " %6.2f%%", percent);
- 
- 	if (markup)
- 		ret += scnprintf(buf + ret, size - ret, "</span>");
-@@ -37,7 +36,55 @@ static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	if (hists->stats.total_period)
- 		percent = 100.0 * get_field(he) / hists->stats.total_period;
- 
--	ret = perf_gtk__percent_color_snprintf(hpp->buf, hpp->size, percent);
-+	ret = __percent_color_snprintf(hpp->buf, hpp->size, percent);
-+
-+	if (symbol_conf.event_group) {
-+		int prev_idx, idx_delta;
-+		struct perf_evsel *evsel = hists_to_evsel(hists);
-+		struct hist_entry *pair;
-+		int nr_members = evsel->nr_members;
-+
-+		if (nr_members <= 1)
-+			return ret;
-+
-+		prev_idx = perf_evsel__group_idx(evsel);
-+
-+		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
-+			u64 period = get_field(pair);
-+			u64 total = pair->hists->stats.total_period;
-+
-+			evsel = hists_to_evsel(pair->hists);
-+			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
-+
-+			while (idx_delta--) {
-+				/*
-+				 * zero-fill group members in the middle which
-+				 * have no sample
-+				 */
-+				ret += __percent_color_snprintf(hpp->buf + ret,
-+								hpp->size - ret,
-+								0.0);
-+			}
-+
-+			percent = 100.0 * period / total;
-+			ret += __percent_color_snprintf(hpp->buf + ret,
-+							hpp->size - ret,
-+							percent);
-+
-+			prev_idx = perf_evsel__group_idx(evsel);
-+		}
-+
-+		idx_delta = nr_members - prev_idx - 1;
-+
-+		while (idx_delta--) {
-+			/*
-+			 * zero-fill group members at last which have no sample
-+			 */
-+			ret += __percent_color_snprintf(hpp->buf + ret,
-+							hpp->size - ret,
-+							0.0);
-+		}
-+	}
- 	return ret;
+ /* interface handling */
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -103,8 +103,7 @@ static void ieee80211_offchannel_ps_disa
+ 	ieee80211_sta_reset_conn_monitor(sdata);
  }
  
-@@ -96,6 +143,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 	struct perf_hpp hpp = {
- 		.buf		= s,
- 		.size		= sizeof(s),
-+		.ptr		= hists_to_evsel(hists),
- 	};
+-void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local,
+-				    bool offchannel_ps_enable)
++void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local)
+ {
+ 	struct ieee80211_sub_if_data *sdata;
  
- 	nr_cols = 0;
+@@ -129,8 +128,7 @@ void ieee80211_offchannel_stop_vifs(stru
+ 
+ 		if (sdata->vif.type != NL80211_IFTYPE_MONITOR) {
+ 			netif_tx_stop_all_queues(sdata->dev);
+-			if (offchannel_ps_enable &&
+-			    (sdata->vif.type == NL80211_IFTYPE_STATION) &&
++			if (sdata->vif.type == NL80211_IFTYPE_STATION &&
+ 			    sdata->u.mgd.associated)
+ 				ieee80211_offchannel_ps_enable(sdata, true);
+ 		}
+@@ -138,8 +136,7 @@ void ieee80211_offchannel_stop_vifs(stru
+ 	mutex_unlock(&local->iflist_mtx);
+ }
+ 
+-void ieee80211_offchannel_return(struct ieee80211_local *local,
+-				 bool offchannel_ps_disable)
++void ieee80211_offchannel_return(struct ieee80211_local *local)
+ {
+ 	struct ieee80211_sub_if_data *sdata;
+ 
+@@ -152,11 +149,9 @@ void ieee80211_offchannel_return(struct
+ 			continue;
+ 
+ 		/* Tell AP we're back */
+-		if (offchannel_ps_disable &&
+-		    sdata->vif.type == NL80211_IFTYPE_STATION) {
+-			if (sdata->u.mgd.associated)
+-				ieee80211_offchannel_ps_disable(sdata);
+-		}
++		if (sdata->vif.type == NL80211_IFTYPE_STATION &&
++		    sdata->u.mgd.associated)
++			ieee80211_offchannel_ps_disable(sdata);
+ 
+ 		if (sdata->vif.type != NL80211_IFTYPE_MONITOR) {
+ 			/*
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -329,7 +329,7 @@ static void __ieee80211_scan_completed(s
+ 	if (!was_hw_scan) {
+ 		ieee80211_configure_filter(local);
+ 		drv_sw_scan_complete(local);
+-		ieee80211_offchannel_return(local, true);
++		ieee80211_offchannel_return(local);
+ 	}
+ 
+ 	ieee80211_recalc_idle(local);
+@@ -374,7 +374,7 @@ static int ieee80211_start_sw_scan(struc
+ 	local->next_scan_state = SCAN_DECISION;
+ 	local->scan_channel_idx = 0;
+ 
+-	ieee80211_offchannel_stop_vifs(local, true);
++	ieee80211_offchannel_stop_vifs(local);
+ 
+ 	ieee80211_configure_filter(local);
+ 
+@@ -629,12 +629,8 @@ static void ieee80211_scan_state_suspend
+ 	local->scan_channel = NULL;
+ 	ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_CHANNEL);
+ 
+-	/*
+-	 * Re-enable vifs and beaconing.  Leave PS
+-	 * in off-channel state..will put that back
+-	 * on-channel at the end of scanning.
+-	 */
+-	ieee80211_offchannel_return(local, false);
++	/* disable PS */
++	ieee80211_offchannel_return(local);
+ 
+ 	*next_delay = HZ / 5;
+ 	/* afterwards, resume scan & go to next channel */
+@@ -644,8 +640,7 @@ static void ieee80211_scan_state_suspend
+ static void ieee80211_scan_state_resume(struct ieee80211_local *local,
+ 					unsigned long *next_delay)
+ {
+-	/* PS already is in off-channel mode */
+-	ieee80211_offchannel_stop_vifs(local, false);
++	ieee80211_offchannel_stop_vifs(local);
+ 
+ 	if (local->ops->flush) {
+ 		drv_flush(local, false);
+--- a/net/mac80211/work.c
++++ b/net/mac80211/work.c
+@@ -148,7 +148,7 @@ static void ieee80211_work_work(struct w
+ 		}
+ 
+ 		if (!started && !local->tmp_channel) {
+-			ieee80211_offchannel_stop_vifs(local, true);
++			ieee80211_offchannel_stop_vifs(local);
+ 
+ 			local->tmp_channel = wk->chan;
+ 			local->tmp_channel_type = wk->chan_type;
+@@ -220,7 +220,7 @@ static void ieee80211_work_work(struct w
+ 		local->tmp_channel = NULL;
+ 		ieee80211_hw_config(local, 0);
+ 
+-		ieee80211_offchannel_return(local, true);
++		ieee80211_offchannel_return(local);
+ 
+ 		/* give connection some time to breathe */
+ 		run_again(local, jiffies + HZ/2);
+
+
