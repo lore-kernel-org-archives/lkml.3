@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab3BANI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:08:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44421 "EHLO mail.kernel.org"
+	id S1757227Ab3BANIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:08:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44450 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757167Ab3BANIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:08:25 -0500
+	id S1757167Ab3BANI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:08:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Szymon Janc <szymon.janc@tieto.com>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 17/89] Bluetooth: Fix sending HCI commands after reset
-Date: Fri,  1 Feb 2013 14:07:32 +0100
-Message-Id: <20130201130208.685093999@linuxfoundation.org>
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [ 09/89] ARM: at91: rm9200: remake the BGA as default version
+Date: Fri,  1 Feb 2013 14:07:24 +0100
+Message-Id: <20130201130208.138243840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -27,47 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Szymon Janc <szymon.janc@tieto.com>
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-commit dbccd791a3fbbdac12c33834b73beff3984988e9 upstream.
+commit 36224d0fe0f34cdde66a381708853ebadeac799c upstream.
 
-After sending reset command wait for its command complete event before
-sending next command. Some chips sends CC event for command received
-before reset if reset was send before chip replied with CC.
+Make BGA as the default version as we are supposed to just have
+to specify when we use the PQFP version.
 
-This is also required by specification that host shall not send
-additional HCI commands before receiving CC for reset.
+Issue was existing since commit:
+3e90772 (ARM: at91: fix at91rm9200 soc subtype handling).
 
-< HCI Command: Reset (0x03|0x0003) plen 0                              [hci0] 18.404612
-> HCI Event: Command Complete (0x0e) plen 4                            [hci0] 18.405850
-      Write Extended Inquiry Response (0x03|0x0052) ncmd 1
-        Status: Success (0x00)
-< HCI Command: Read Local Supported Features (0x04|0x0003) plen 0      [hci0] 18.406079
-> HCI Event: Command Complete (0x0e) plen 4                            [hci0] 18.407864
-      Reset (0x03|0x0003) ncmd 1
-        Status: Success (0x00)
-< HCI Command: Read Local Supported Features (0x04|0x0003) plen 0      [hci0] 18.408062
-> HCI Event: Command Complete (0x0e) plen 12                           [hci0] 18.408835
-
-Signed-off-by: Szymon Janc <szymon.janc@tieto.com>
-Acked-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-at91/setup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -2394,7 +2394,7 @@ static void hci_cmd_complete_evt(struct
- 	if (ev->opcode != HCI_OP_NOP)
- 		del_timer(&hdev->cmd_timer);
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -104,6 +104,8 @@ static void __init soc_detect(u32 dbgu_b
+ 	switch (socid) {
+ 	case ARCH_ID_AT91RM9200:
+ 		at91_soc_initdata.type = AT91_SOC_RM9200;
++		if (at91_soc_initdata.subtype == AT91_SOC_SUBTYPE_NONE)
++			at91_soc_initdata.subtype = AT91_SOC_RM9200_BGA;
+ 		at91_boot_soc = at91rm9200_soc;
+ 		break;
  
--	if (ev->ncmd) {
-+	if (ev->ncmd && !test_bit(HCI_RESET, &hdev->flags)) {
- 		atomic_set(&hdev->cmd_cnt, 1);
- 		if (!skb_queue_empty(&hdev->cmd_q))
- 			queue_work(hdev->workqueue, &hdev->cmd_work);
 
 
