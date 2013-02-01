@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab3BANLb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:11:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44981 "EHLO mail.kernel.org"
+	id S1757571Ab3BANLf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:11:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44993 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757320Ab3BANLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:11:24 -0500
+	id S1757455Ab3BANL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:11:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 43/89] ath9k: allow setting arbitrary antenna masks on AR9003+
-Date: Fri,  1 Feb 2013 14:07:58 +0100
-Message-Id: <20130201130210.597332440@linuxfoundation.org>
+        Florian Hanisch <fhanisch@uni-potsdam.de>,
+        Matthew Robbetts <wingfeathera@gmail.com>,
+        Michael Beer <beerml@sigma6audio.de>, Daniel Mack <daniel@caiaq.de>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 44/89] ALSA: usb-audio: fix invalid length check for RME and other UAC 2 devices
+Date: Fri,  1 Feb 2013 14:07:59 +0100
+Message-Id: <20130201130210.670386948@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,29 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit fea92cbf0850d788683827990670d3968f893327 upstream.
+commit d56268fb108c7c21e19933588ca4d94652585183 upstream.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Commit 23caaf19b11e (ALSA: usb-mixer: Add support for Audio Class v2.0)
+forgot to adjust the length check for UAC 2.0 feature unit descriptors.
+This would make the code abort on encountering a feature unit without
+per-channel controls, and thus prevented the driver to work with any
+device having such a unit, such as the RME Babyface or Fireface UCX.
+
+Reported-by: Florian Hanisch <fhanisch@uni-potsdam.de>
+Tested-by: Matthew Robbetts <wingfeathera@gmail.com>
+Tested-by: Michael Beer <beerml@sigma6audio.de>
+Cc: Daniel Mack <daniel@caiaq.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/usb/mixer.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1830,6 +1830,9 @@ static u32 fill_chainmask(u32 cap, u32 n
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -1259,16 +1259,23 @@ static int parse_audio_feature_unit(stru
+ 		}
+ 		channels = (hdr->bLength - 7) / csize - 1;
+ 		bmaControls = hdr->bmaControls;
++		if (hdr->bLength < 7 + csize) {
++			snd_printk(KERN_ERR "usbaudio: unit %u: "
++				   "invalid UAC_FEATURE_UNIT descriptor\n",
++				   unitid);
++			return -EINVAL;
++		}
+ 	} else {
+ 		struct uac2_feature_unit_descriptor *ftr = _ftr;
+ 		csize = 4;
+ 		channels = (hdr->bLength - 6) / 4 - 1;
+ 		bmaControls = ftr->bmaControls;
+-	}
+-
+-	if (hdr->bLength < 7 || !csize || hdr->bLength < 7 + csize) {
+-		snd_printk(KERN_ERR "usbaudio: unit %u: invalid UAC_FEATURE_UNIT descriptor\n", unitid);
+-		return -EINVAL;
++		if (hdr->bLength < 6 + csize) {
++			snd_printk(KERN_ERR "usbaudio: unit %u: "
++				   "invalid UAC_FEATURE_UNIT descriptor\n",
++				   unitid);
++			return -EINVAL;
++		}
+ 	}
  
- static bool validate_antenna_mask(struct ath_hw *ah, u32 val)
- {
-+	if (AR_SREV_9300_20_OR_LATER(ah))
-+		return true;
-+
- 	switch (val & 0x7) {
- 	case 0x1:
- 	case 0x3:
+ 	/* parse the source unit */
 
 
