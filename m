@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422767Ab3BANNI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:13:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45325 "EHLO mail.kernel.org"
+	id S1161015Ab3BANNQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:13:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45341 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422754Ab3BANNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:13:00 -0500
+	id S1160996Ab3BANNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:13:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang YanQing <udknight@gmail.com>,
+        Alan Cox <alan@linux.intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Beulich <jbeulich@suse.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
-        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: [ 60/89] smp: Fix SMP function call empty cpu mask race
-Date: Fri,  1 Feb 2013 14:08:15 +0100
-Message-Id: <20130201130211.811016508@linuxfoundation.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 61/89] x86/msr: Add capabilities check
+Date: Fri,  1 Feb 2013 14:08:16 +0100
+Message-Id: <20130201130211.878618007@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -31,101 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang YanQing <udknight@gmail.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit f44310b98ddb7f0d06550d73ed67df5865e3eda5 upstream.
+commit c903f0456bc69176912dee6dd25c6a66ee1aed00 upstream.
 
-I get the following warning every day with v3.7, once or
-twice a day:
+At the moment the MSR driver only relies upon file system
+checks. This means that anything as root with any capability set
+can write to MSRs. Historically that wasn't very interesting but
+on modern processors the MSRs are such that writing to them
+provides several ways to execute arbitary code in kernel space.
+Sample code and documentation on doing this is circulating and
+MSR attacks are used on Windows 64bit rootkits already.
 
-  [ 2235.186027] WARNING: at /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x2f/0xb8()
+In the Linux case you still need to be able to open the device
+file so the impact is fairly limited and reduces the security of
+some capability and security model based systems down towards
+that of a generic "root owns the box" setup.
 
-As explained by Linus as well:
+Therefore they should require CAP_SYS_RAWIO to prevent an
+elevation of capabilities. The impact of this is fairly minimal
+on most setups because they don't have heavy use of
+capabilities. Those using SELinux, SMACK or AppArmor rules might
+want to consider if their rulesets on the MSR driver could be
+tighter.
 
- |
- | Once we've done the "list_add_rcu()" to add it to the
- | queue, we can have (another) IPI to the target CPU that can
- | now see it and clear the mask.
- |
- | So by the time we get to actually send the IPI, the mask might
- | have been cleared by another IPI.
- |
-
-This patch also fixes a system hang problem, if the data->cpumask
-gets cleared after passing this point:
-
-        if (WARN_ONCE(!mask, "empty IPI mask"))
-                return;
-
-then the problem in commit 83d349f35e1a ("x86: don't send an IPI to
-the empty set of CPU's") will happen again.
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Jan Beulich <jbeulich@suse.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: peterz@infradead.org
-Cc: mina86@mina86.org
-Cc: srivatsa.bhat@linux.vnet.ibm.com
-Link: http://lkml.kernel.org/r/20130126075357.GA3205@udknight
-[ Tidied up the changelog and the comment in the code. ]
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/smp.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ arch/x86/kernel/msr.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -33,6 +33,7 @@ struct call_function_data {
- 	struct call_single_data	csd;
- 	atomic_t		refs;
- 	cpumask_var_t		cpumask;
-+	cpumask_var_t		cpumask_ipi;
- };
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -174,6 +174,9 @@ static int msr_open(struct inode *inode,
+ 	unsigned int cpu;
+ 	struct cpuinfo_x86 *c;
  
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
-@@ -56,6 +57,9 @@ hotplug_cfd(struct notifier_block *nfb,
- 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
- 				cpu_to_node(cpu)))
- 			return notifier_from_errno(-ENOMEM);
-+		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
-+				cpu_to_node(cpu)))
-+			return notifier_from_errno(-ENOMEM);
- 		break;
- 
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -65,6 +69,7 @@ hotplug_cfd(struct notifier_block *nfb,
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		free_cpumask_var(cfd->cpumask);
-+		free_cpumask_var(cfd->cpumask_ipi);
- 		break;
- #endif
- 	};
-@@ -526,6 +531,12 @@ void smp_call_function_many(const struct
- 		return;
- 	}
- 
-+	/*
-+	 * After we put an entry into the list, data->cpumask
-+	 * may be cleared again when another CPU sends another IPI for
-+	 * a SMP function call, so data->cpumask will be zero.
-+	 */
-+	cpumask_copy(data->cpumask_ipi, data->cpumask);
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
- 	 * Place entry at the _HEAD_ of the list, so that any cpu still
-@@ -549,7 +560,7 @@ void smp_call_function_many(const struct
- 	smp_mb();
- 
- 	/* Send a message to all CPUs in the map */
--	arch_send_call_function_ipi_mask(data->cpumask);
-+	arch_send_call_function_ipi_mask(data->cpumask_ipi);
- 
- 	/* Optionally wait for the CPUs to complete */
- 	if (wait)
++	if (!capable(CAP_SYS_RAWIO))
++		return -EPERM;
++
+ 	cpu = iminor(file->f_path.dentry->d_inode);
+ 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
+ 		return -ENXIO;	/* No such CPU */
 
 
