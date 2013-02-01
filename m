@@ -1,223 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3BARSs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 12:18:48 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:33466 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757111Ab3BARSm (ORCPT
+	id S1757299Ab3BARSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 12:18:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44963 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757111Ab3BARSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 12:18:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359672710-19528-2-git-send-email-andi@firstfloor.org>
-References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
-	<1359672710-19528-2-git-send-email-andi@firstfloor.org>
-Date: Fri, 1 Feb 2013 18:18:41 +0100
-Message-ID: <CABPqkBT3A=LV53kZCnQZ=og9wCFQTL-9UZMnyJt1=GE6C2NoSw@mail.gmail.com>
-Subject: Re: [PATCH 01/12] perf, x86: Add PEBSv2 record support
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 1 Feb 2013 12:18:50 -0500
+Message-ID: <1359739116.31386.64.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] x86: Use enum instead of literals for trap values
+From: Ben Hutchings <ben@decadent.org.uk>
+To: John Kacur <jkacur@redhat.com>
+Cc: stable@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 01 Feb 2013 18:18:36 +0100
+In-Reply-To: <1358894672-10914-1-git-send-email-jkacur@redhat.com>
+References: <1358894672-10914-1-git-send-email-jkacur@redhat.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-nqCYNiv+MAaZYXjNYDk+"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 109.129.208.115
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 11:51 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Add support for the v2 PEBS format. It has a superset of the v1 PEBS
-> fields, but has a longer record so we need to adjust the code paths.
->
-> The main advantage is the new "EventingRip" support which directly
-> gives the instruction, not off-by-one instruction. So with precise == 2
-> we use that directly and don't try to use LBRs and walking basic blocks.
-> This lowers the overhead significantly.
->
-> Some other features are added in later patches.
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
+--=-nqCYNiv+MAaZYXjNYDk+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  arch/x86/kernel/cpu/perf_event.c          |    2 +-
->  arch/x86/kernel/cpu/perf_event_intel_ds.c |  101 ++++++++++++++++++++++-------
->  2 files changed, 79 insertions(+), 24 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 6774c17..c95290a 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -397,7 +397,7 @@ int x86_pmu_hw_config(struct perf_event *event)
->                  * check that PEBS LBR correction does not conflict with
->                  * whatever the user is asking with attr->branch_sample_type
->                  */
-> -               if (event->attr.precise_ip > 1) {
-> +               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
->                         u64 *br_type = &event->attr.branch_sample_type;
->
->                         if (has_branch_stack(event)) {
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index 826054a..9d0dae0 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -41,6 +41,12 @@ struct pebs_record_nhm {
->         u64 status, dla, dse, lat;
->  };
->
-> +struct pebs_record_v2 {
-> +       struct pebs_record_nhm nhm;
-> +       u64 eventingrip;
-> +       u64 tsx_tuning;
-> +};
-> +
->  void init_debug_store_on_cpu(int cpu)
->  {
->         struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-> @@ -559,8 +565,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->  {
->         /*
->          * We cast to pebs_record_core since that is a subset of
-> -        * both formats and we don't use the other fields in this
-> -        * routine.
-> +        * both formats.
->          */
->         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
->         struct pebs_record_core *pebs = __pebs;
-> @@ -588,7 +593,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->         regs.bp = pebs->bp;
->         regs.sp = pebs->sp;
->
-> -       if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
-> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
-> +               regs.ip = ((struct pebs_record_v2 *)pebs)->eventingrip;
-> +               regs.flags |= PERF_EFLAGS_EXACT;
-> +       } else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
->                 regs.flags |= PERF_EFLAGS_EXACT;
->         else
->                 regs.flags &= ~PERF_EFLAGS_EXACT;
-> @@ -641,35 +649,21 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
->         __intel_pmu_pebs_event(event, iregs, at);
->  }
->
-> -static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-> +static void intel_pmu_drain_pebs_common(struct pt_regs *iregs, void *at,
-> +                                       void *top)
->  {
->         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
->         struct debug_store *ds = cpuc->ds;
-> -       struct pebs_record_nhm *at, *top;
->         struct perf_event *event = NULL;
->         u64 status = 0;
-> -       int bit, n;
-> -
-> -       if (!x86_pmu.pebs_active)
-> -               return;
-> -
-> -       at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
-> -       top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-> +       int bit;
->
->         ds->pebs_index = ds->pebs_buffer_base;
->
-> -       n = top - at;
-> -       if (n <= 0)
-> -               return;
-> +       for ( ; at < top; at += x86_pmu.pebs_record_size) {
-> +               struct pebs_record_nhm *p = at;
->
-> -       /*
-> -        * Should not happen, we program the threshold at 1 and do not
-> -        * set a reset value.
-> -        */
-> -       WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
-> -
-> -       for ( ; at < top; at++) {
-> -               for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
-> +               for_each_set_bit(bit, (unsigned long *)&p->status, x86_pmu.max_pebs_events) {
->                         event = cpuc->events[bit];
->                         if (!test_bit(bit, cpuc->active_mask))
->                                 continue;
-> @@ -692,6 +686,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
->         }
->  }
->
-> +static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-> +{
-> +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> +       struct debug_store *ds = cpuc->ds;
-> +       struct pebs_record_nhm *at, *top;
-> +       int n;
-> +
-> +       if (!x86_pmu.pebs_active)
-> +               return;
-> +
-> +       at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
-> +       top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-> +
-> +       ds->pebs_index = ds->pebs_buffer_base;
-> +
-> +       n = top - at;
-> +       if (n <= 0)
-> +               return;
-> +
-> +       /*
-> +        * Should not happen, we program the threshold at 1 and do not
-> +        * set a reset value.
-> +        */
-> +       WARN_ONCE(n > x86_pmu.max_pebs_events,
-> +                 "Unexpected number of pebs records %d\n", n);
-> +
-> +       return intel_pmu_drain_pebs_common(iregs, at, top);
-> +}
-> +
-> +static void intel_pmu_drain_pebs_v2(struct pt_regs *iregs)
-> +{
-> +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> +       struct debug_store *ds = cpuc->ds;
-> +       struct pebs_record_v2 *at, *top;
-> +       int n;
-> +
-> +       if (!x86_pmu.pebs_active)
-> +               return;
-> +
-> +       at  = (struct pebs_record_v2 *)(unsigned long)ds->pebs_buffer_base;
-> +       top = (struct pebs_record_v2 *)(unsigned long)ds->pebs_index;
-> +
-> +       n = top - at;
-> +       if (n <= 0)
-> +               return;
-> +       /*
-> +        * Should not happen, we program the threshold at 1 and do not
-> +        * set a reset value.
-> +        */
-> +       WARN_ONCE(n > x86_pmu.max_pebs_events,
-> +                 "Unexpected number of pebs records %d\n", n);
-> +
-> +       return intel_pmu_drain_pebs_common(iregs, at, top);
-> +}
-> +
->  /*
->   * BTS, PEBS probe and setup
->   */
-> @@ -723,6 +772,12 @@ void intel_ds_init(void)
->                         x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
->                         break;
->
-> +               case 2:
-> +                       printk(KERN_CONT "PEBS fmt2%c, ", pebs_type);
-> +                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_v2);
-> +                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_v2;
-> +                       break;
-> +
->                 default:
->                         printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
->                         x86_pmu.pebs = 0;
-> --
-> 1.7.7.6
->
+On Tue, 2013-01-22 at 23:44 +0100, John Kacur wrote:
+> From: Kees Cook <keescook@chromium.org>
+>=20
+> commit c94082656dac74257f63e91f78d5d458ac781fa5 upstream
+>=20
+> The traps are referred to by their numbers and it can be difficult to
+> understand them while reading the code without context. This patch adds
+> enumeration of the trap numbers and replaces the numbers with the correct
+> enum for x86.
+>=20
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Link: http://lkml.kernel.org/r/20120310000710.GA32667@www.outflux.net
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> Cherry-picked-for: v2.3.37
+>=20
+> This fixes the following build error
+> make O=3D/bld/v3.2.37
+> make[2]: Nothing to be done for `relocs'.
+>   Using /home/jkacur/linux-rt as source for kernel
+>   GEN     /bld/v3.2.37/Makefile
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    /home/jkacur/linux-rt/scripts/checksyscalls.sh
+>   CHK     include/generated/compile.h
+>   CHK     kernel/config_data.h
+>   CC [M]  drivers/misc/sgi-xp/xpc_main.o
+> /home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c: In function =E2=80=
+=98xpc_system_die=E2=80=99:
+> /home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1208: error: =E2=80=
+=98X86_TRAP_DF=E2=80=99 undeclared (first use in this function)
+> /home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1208: error: (Each u=
+ndeclared identifier is reported only once
+> /home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1208: error: for eac=
+h function it appears in.)
+> /home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1211: error: =E2=80=
+=98X86_TRAP_MF=E2=80=99 undeclared (first use in this function)
+> /home/jkacur/linux-rt/drivers/misc/sgi-xp/xpc_main.c:1212: error: =E2=80=
+=98X86_TRAP_XF=E2=80=99 undeclared (first use in this function)
+> make[4]: *** [drivers/misc/sgi-xp/xpc_main.o] Error 1
+> make[3]: *** [drivers/misc/sgi-xp] Error 2
+> make[2]: *** [drivers/misc] Error 2
+> make[1]: *** [drivers] Error 2
+> make: *** [sub-make] Error 2
+[...]
+
+Queued up for 3.2, thanks.  I've also added X86_UV and SGI_XP to the
+x86 .config I build.
+
+Ben.
+
+--=20
+Ben Hutchings
+Everything should be made as simple as possible, but not simpler.
+                                                           - Albert Einstei=
+n
+
+--=-nqCYNiv+MAaZYXjNYDk+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUQv47Oe/yOyVhhEJAQrTyg//dI36HnJLhvOfh/171dMGqgFkJ1P91SYW
+vzkgpV1yIrObTw9rBi4Yvo9Rglz80G8C4Mi+4ZdI60aKWcsggmnW/5luZ7zIjhRE
+AXMLBRYNfXvR/MMosdefPVln4uUkZ3hxInfS2zOqbbwYj8PQIlreeaGfpIbx2trJ
+DJA7jhMWlhsE6sULlttObXlPiKaguH/AupP4rC+nBL0pkLRUXNapbL4oIrk9KydP
+hBkHXVSyxHS6X3cGabLhPSF0AUoQTFq1OAo+vCJg1vcHPgHLJJxUvYSq5HhTKfTu
+v+T92JABaDbEWo8z1XmNY0koAyJhRUr2rEnG0UYSP3oyWJUrw4w9mn3OAiK14bZA
+RKy/sxH/k9LsDsdeksqqv5ddre2T8mTCpPKUCbHxOPjIbeIWbVD4MS7gSrS9KN7h
+Y1EbyCfnbmvSC9JM/BzBzKWcx/upKtKgPUDSFXjGya7SKOGVXK3izB4ofuDQsreL
+ZOAkVj/ukqUM1j41p4rjEuVEuRpHoO97OB1SRud0W2RUieJVG6zVcamp+Cb17feV
+6IIo5lpOX68wP8VRVYLHrrZ8pIg9BC5lxDtw1Lj2jWradM1hj2aF+PrZTXHMq7l5
+tcfAmStkxLQ/xWNgoFNSTaTWtIPv21m772UzkxJSeN5Jh077VEG5PCDTKbXi0lH4
+Rsp8/oNlfvc=
+=NaqN
+-----END PGP SIGNATURE-----
+
+--=-nqCYNiv+MAaZYXjNYDk+--
