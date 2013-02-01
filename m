@@ -1,242 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab3BAKgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:36:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51711 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579Ab3BAKgU (ORCPT
+	id S1756613Ab3BAKg5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:36:57 -0500
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:35905 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598Ab3BAKg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:36:20 -0500
-Date: Fri, 1 Feb 2013 02:35:44 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-ro8oeodo96490nrhcph57atr@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top: Stop using exit()
-Git-Commit-ID: 11859e821761e9738c4d8a0e7d6ca1cc2e0d37e8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 1 Feb 2013 05:36:56 -0500
+Message-ID: <510B9AC2.2000109@itwm.fraunhofer.de>
+Date: Fri, 01 Feb 2013 11:36:50 +0100
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:35:50 -0800 (PST)
+To: Nicolas Palix <nicolas.palix@imag.fr>
+CC: linux-kernel@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>,
+        cocci@systeme.lip6.fr, Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH 1/2] coccicheck: Allow the user to give a VERBOSE= argument
+References: <20130122133434.2543274.86646.stgit@fsdevel3> <CAAxaTiOCLyNJt0Bmqg+7t1knByKfSUpiCDCGm85vtHveDJDzGw@mail.gmail.com> <50FEAAC6.3090409@itwm.fraunhofer.de> <CAAxaTiPYFccAfmXG6jvO5+aLreyiHDQqdTajgqtVJ1vCH0zoyw@mail.gmail.com>
+In-Reply-To: <CAAxaTiPYFccAfmXG6jvO5+aLreyiHDQqdTajgqtVJ1vCH0zoyw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  11859e821761e9738c4d8a0e7d6ca1cc2e0d37e8
-Gitweb:     http://git.kernel.org/tip/11859e821761e9738c4d8a0e7d6ca1cc2e0d37e8
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 30 Jan 2013 13:25:53 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 Jan 2013 13:07:42 -0300
+Hello Nicolas,
 
-perf top: Stop using exit()
+thanks for your review!
 
-Just return to the perf main() routine so that an unified exit path can
-be followed and resources released, helping in finding memory leaks.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ro8oeodo96490nrhcph57atr@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c | 56 ++++++++++++++++++++++++++++--------------------
- 1 file changed, 33 insertions(+), 23 deletions(-)
-
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 7978c81..903e4f4 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -68,6 +68,8 @@
- #include <linux/unistd.h>
- #include <linux/types.h>
- 
-+static volatile int done;
-+
- static void perf_top__update_print_entries(struct perf_top *top)
- {
- 	if (top->print_entries > 9)
-@@ -431,8 +433,10 @@ static int perf_top__key_mapped(struct perf_top *top, int c)
- 	return 0;
- }
- 
--static void perf_top__handle_keypress(struct perf_top *top, int c)
-+static bool perf_top__handle_keypress(struct perf_top *top, int c)
- {
-+	bool ret = true;
-+
- 	if (!perf_top__key_mapped(top, c)) {
- 		struct pollfd stdin_poll = { .fd = 0, .events = POLLIN };
- 		struct termios tc, save;
-@@ -453,7 +457,7 @@ static void perf_top__handle_keypress(struct perf_top *top, int c)
- 
- 		tcsetattr(0, TCSAFLUSH, &save);
- 		if (!perf_top__key_mapped(top, c))
--			return;
-+			return ret;
- 	}
- 
- 	switch (c) {
-@@ -515,7 +519,8 @@ static void perf_top__handle_keypress(struct perf_top *top, int c)
- 			printf("exiting.\n");
- 			if (top->dump_symtab)
- 				perf_session__fprintf_dsos(top->session, stderr);
--			exit(0);
-+			ret = false;
-+			break;
- 		case 's':
- 			perf_top__prompt_symbol(top, "Enter details symbol");
- 			break;
-@@ -538,6 +543,8 @@ static void perf_top__handle_keypress(struct perf_top *top, int c)
- 		default:
- 			break;
- 	}
-+
-+	return ret;
- }
- 
- static void perf_top__sort_new_samples(void *arg)
-@@ -579,8 +586,7 @@ static void *display_thread_tui(void *arg)
- 	perf_evlist__tui_browse_hists(top->evlist, help, &hbt,
- 				      &top->session->header.env);
- 
--	exit_browser(0);
--	exit(0);
-+	done = 1;
- 	return NULL;
- }
- 
-@@ -604,7 +610,7 @@ repeat:
- 	/* trash return*/
- 	getc(stdin);
- 
--	while (1) {
-+	while (!done) {
- 		perf_top__print_sym_table(top);
- 		/*
- 		 * Either timeout expired or we got an EINTR due to SIGWINCH,
-@@ -618,15 +624,14 @@ repeat:
- 				continue;
- 			/* Fall trhu */
- 		default:
--			goto process_hotkey;
-+			c = getc(stdin);
-+			tcsetattr(0, TCSAFLUSH, &save);
-+
-+			if (perf_top__handle_keypress(top, c))
-+				goto repeat;
-+			done = 1;
- 		}
- 	}
--process_hotkey:
--	c = getc(stdin);
--	tcsetattr(0, TCSAFLUSH, &save);
--
--	perf_top__handle_keypress(top, c);
--	goto repeat;
- 
- 	return NULL;
- }
-@@ -705,7 +710,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 	}
- 
- 	if (!machine) {
--		pr_err("%u unprocessable samples recorded.\n",
-+		pr_err("%u unprocessable samples recorded.\r",
- 		       top->session->stats.nr_unprocessable_samples++);
- 		return;
- 	}
-@@ -868,7 +873,7 @@ static void perf_top__mmap_read(struct perf_top *top)
- 		perf_top__mmap_read_idx(top, i);
- }
- 
--static void perf_top__start_counters(struct perf_top *top)
-+static int perf_top__start_counters(struct perf_top *top)
- {
- 	char msg[512];
- 	struct perf_evsel *counter;
-@@ -900,11 +905,10 @@ try_again:
- 		goto out_err;
- 	}
- 
--	return;
-+	return 0;
- 
- out_err:
--	exit_browser(0);
--	exit(0);
-+	return -1;
- }
- 
- static int perf_top__setup_sample_type(struct perf_top *top)
-@@ -948,7 +952,11 @@ static int __cmd_top(struct perf_top *top)
- 	else
- 		perf_event__synthesize_threads(&top->tool, perf_event__process,
- 					       &top->session->machines.host);
--	perf_top__start_counters(top);
-+
-+	ret = perf_top__start_counters(top);
-+	if (ret)
-+		goto out_delete;
-+
- 	top->session->evlist = top->evlist;
- 	perf_session__set_id_hdr_size(top->session);
- 
-@@ -968,10 +976,11 @@ static int __cmd_top(struct perf_top *top)
- 
- 	perf_top__mmap_read(top);
- 
-+	ret = -1;
- 	if (pthread_create(&thread, NULL, (use_browser > 0 ? display_thread_tui :
- 							    display_thread), top)) {
- 		ui__error("Could not create display thread.\n");
--		exit(-1);
-+		goto out_delete;
- 	}
- 
- 	if (top->realtime_prio) {
-@@ -980,11 +989,11 @@ static int __cmd_top(struct perf_top *top)
- 		param.sched_priority = top->realtime_prio;
- 		if (sched_setscheduler(0, SCHED_FIFO, &param)) {
- 			ui__error("Could not set realtime priority.\n");
--			exit(-1);
-+			goto out_delete;
- 		}
- 	}
- 
--	while (1) {
-+	while (!done) {
- 		u64 hits = top->samples;
- 
- 		perf_top__mmap_read(top);
-@@ -993,11 +1002,12 @@ static int __cmd_top(struct perf_top *top)
- 			ret = poll(top->evlist->pollfd, top->evlist->nr_fds, 100);
- 	}
- 
-+	ret = 0;
- out_delete:
- 	perf_session__delete(top->session);
- 	top->session = NULL;
- 
--	return 0;
-+	return ret;
- }
- 
- static int
+Cheers,
+Bernd
