@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030178Ab3BAOEx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 09:04:53 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32946 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755961Ab3BAOEv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 09:04:51 -0500
-Date: Fri, 1 Feb 2013 14:02:18 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Sealey <matt@genesi-usa.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: Re: [PATCH] zsmalloc: Fix TLB coherency and build problem
-Message-ID: <20130201140218.GN23505@n2100.arm.linux.org.uk>
-References: <1359334808-19794-1-git-send-email-minchan@kernel.org>
+	id S1756922Ab3BAOIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 09:08:43 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:46509 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756713Ab3BAOIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 09:08:41 -0500
+Date: Fri, 1 Feb 2013 09:08:37 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Eric Sandeen <sandeen@redhat.com>
+Subject: Re: ext4-next: Backport of jbd2 fixes?
+Message-ID: <20130201140837.GB1438@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Eric Sandeen <sandeen@redhat.com>
+References: <CA+icZUU=Ra4j6-dWbfP2fZDfRb+onQWo3HrejMsqTYO4v62o1A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1359334808-19794-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+icZUU=Ra4j6-dWbfP2fZDfRb+onQWo3HrejMsqTYO4v62o1A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 10:00:08AM +0900, Minchan Kim wrote:
-> @@ -663,7 +661,7 @@ static inline void __zs_unmap_object(struct mapping_area *area,
->  
->  	flush_cache_vunmap(addr, end);
->  	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
-> -	local_flush_tlb_kernel_range(addr, end);
-> +	flush_tlb_kernel_range(addr, end);
+On Fri, Feb 01, 2013 at 10:33:04AM +0100, Sedat Dilek wrote:
+> Hi Ted,
+> 
+> will those JBD2 fixes in ext4.git#dev [1] get also into mainline kernel(s)?
+> 
+> [ Cut-n-paste out of tig ]
+> 
+> 2013-01-31 13:00 Theodore Ts'o      │ o jbd2: track request delay statistics
+> 2013-01-30 00:41 Theodore Ts'o      │ o jbd2: commit as soon as
+> possible after log_start_commit <--- T-b-me (Linux-Next + 3.8-rc5+)
+> 2013-01-30 00:39 Eric Sandeen       │ o jbd2: don't wake kjournald
+> unnecessarily <--- T-b-me (Linux-Next + 3.8-rc5+)
+> 
+> I see no "CC: linux-stable"... and none of my Tested-by#s :-).
 
-void unmap_kernel_range_noflush(unsigned long addr, unsigned long size)
-{
-        vunmap_page_range(addr, addr + size);
-}
+I might be willing to add a cc linux-stable to Eric's commit, since
+it's pretty simple and it does fix a very long-standing performance
+regression.  But technically these commits are intended to be
+***performance*** improvements.  The fact that your inherently
+dangerous use of using loop devices over FUSE happens to not deadlock
+when doing a suspend/resume after applying this patch is nice, but it
+is absolutely an unintended side effect.
 
-void unmap_kernel_range(unsigned long addr, unsigned long size)
-{
-        unsigned long end = addr + size;
+It doesn't change the fact that it's inherently dangerous, and it may
+break at any one time, and I would be surprised if kernel developers
+would be willing to stand behind this as as a supported
+configurations.  If this is something Ubuntu is doing, and you have a
+support contract with Ubuntu, I suggest you ask them to look into
+this.
 
-        flush_cache_vunmap(addr, end);
-        vunmap_page_range(addr, end);
-        flush_tlb_kernel_range(addr, end);
-}
-
-So, given the above, what would be different between:
-
-	unsigned long end = addr + (PAGE_SIZE * 2);
-
-	flush_cache_vunmap(addr, end);
-	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
-	flush_tlb_kernel_range(addr, end);
-
-(which is what it becomes after your change) and
-
-	unmap_kernel_range(addr, PAGE_SIZE * 2);
-
-?
+						- Ted
