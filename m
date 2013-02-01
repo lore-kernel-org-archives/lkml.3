@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab3BAIMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:12:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756085Ab3BAIM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:12:29 -0500
-Message-ID: <510B78E6.3000602@redhat.com>
-Date: Fri, 01 Feb 2013 09:12:22 +0100
-From: Gerd Hoffmann <kraxel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Andy King <acking@vmware.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
-        gregkh@linuxfoundation.org, davem@davemloft.net
-Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
-References: <140410652.5634760.1359669990735.JavaMail.root@vmware.com>
-In-Reply-To: <140410652.5634760.1359669990735.JavaMail.root@vmware.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756227Ab3BAIMf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:12:35 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:35987 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755975Ab3BAIMX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 03:12:23 -0500
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olofj@chromium.org,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 06/10] Input: atmel_mxt_ts - destroy state before fw update and restore after
+Date: Fri,  1 Feb 2013 16:11:48 +0800
+Message-Id: <1359706312-24642-7-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1359706312-24642-1-git-send-email-djkurtz@chromium.org>
+References: <1359706312-24642-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+After firmware update, the device may have a completely different object
+table which corresponds to an input device with different properties.
+So, destroy the old state before firmware update, and completely
+reinitialize the driver afterward.
 
->> Likewise, I expect with the final version vmci_transport is a
->> separate module (or moves into the vmci driver), correct?
-> 
-> When you say final, do you mean something that we have to do before
-> acceptance into mainline or something we can refine over time?
+Two benefits of this:
+ 1) Since there is no input device during fw update, no need to worry
+about device open/close events.
+ 2) If firmware update fails, the device and driver will still be in
+bootloader mode and an improperly configured input device will not exist.
 
-IMHO refining in-tree is fine.
-This is the purpose of staging after all.
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
->From my side the minimum requirement is to have
-vsock_(un)register_transport calls available, so it is possible to write
-a virtio transport module without having to patch vsock code to hook it
-up.  Having the vsock bits in staging would actually make it a bit
-easier to add virtio.
-
-In the end it is Greg's / Dave's call though as those have to ack &
-merge the bits.
-
->>> +	case IOCTL_VMCI_SOCKETS_GET_LOCAL_CID:
->>> +		if (put_user(vmci_get_context_id(), p) != 0)
->>> +			retval = -EFAULT;
->>
->> What is this?
-> 
-> A CID, or "context ID" is how we identify a VM.  It's also in
-> the address structure (svm_cid).  If you look at vm_sockets.h,
-> you'll see that we have definitions for various endpoints (the
-> host, anonymous and so forth).  It's sometimes useful for VMs
-> to be able to query their own ID, for example, to be able to
-> pass it out-of-band via INET to a peer.  So we'd like to keep
-> this, although I guess it should be transport-defined, i.e.,
-> we should ask the transport for this value.
-
-Yes, should be transport specific (and optional).  virtio will (at least
-initially) support guest <=> host only, so we don't need a context id.
-
->>> +	struct {
->>> +		/* For DGRAMs. */
->>> +		struct vmci_handle dg_handle;
->>
->> Yep, should be a pointer where transports can hook in their private
->> data.
-> 
-> I'm fixing this.
-
-Yes, please, that is needed too to get started with virtio support.
-
->> Where is recv_dgram?
-> 
-> The transport just enqueues sk_buffs in the socket's buffer, so the
-> core socket code can just pull them off.  So there's no explicit
-> recv_dgram.
-
-Ok.
-
->> Also why bind_dgram?  I guess binding stream sockets doesn't make
->> sense for the vsock family?
-> 
-> Ah, for our transport, there's nothing special involved in binding a
-> STREAM, everything is handled by the core socket code.  So I didn't
-> add a transport callback.  This is something we can add when it
-> becomes necessary, if that's okay?
-
-Sure.  Was just wondering.  TCP can bind stream sockets to interfaces to
-listen -- for example -- on loopback only.  I can't see something
-simliar which makes sense for vsock.
-
-cheers,
-  Gerd
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 76a25d3..c74f5a5 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -1001,6 +1001,13 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 		client->addr = MXT_BOOT_HIGH;
+ 
+ bootloader_ready:
++	/* Free any driver state. It will get reinitialized after fw update. */
++	mxt_free_object_table(data);
++	if (data->input_dev) {
++		input_unregister_device(data->input_dev);
++		data->input_dev = NULL;
++	}
++
+ 	ret = mxt_check_bootloader(client, MXT_WAITING_BOOTLOAD_CMD);
+ 	if (ret)
+ 		goto out;
+@@ -1068,9 +1075,8 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 		/* Wait for reset */
+ 		msleep(MXT_FWRESET_TIME);
+ 
+-		mxt_free_object_table(data);
+-
+ 		mxt_initialize(data);
++		mxt_input_dev_create(data);
+ 	}
+ 
+ 	enable_irq(data->irq);
+-- 
+1.8.1
 
