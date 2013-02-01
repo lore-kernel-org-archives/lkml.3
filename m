@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab3BARWl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 12:22:41 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:37525 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab3BARWi (ORCPT
+	id S1757242Ab3BAR0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 12:26:14 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:41120 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756890Ab3BAR0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 12:22:38 -0500
+	Fri, 1 Feb 2013 12:26:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359672710-19528-3-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1359672710-19528-4-git-send-email-andi@firstfloor.org>
 References: <1359672710-19528-1-git-send-email-andi@firstfloor.org>
-	<1359672710-19528-3-git-send-email-andi@firstfloor.org>
-Date: Fri, 1 Feb 2013 18:22:37 +0100
-Message-ID: <CABPqkBRsgT0J45AGgerMReyitHx+UUSs3dT0AYzpiMm_Ncw8EQ@mail.gmail.com>
-Subject: Re: [PATCH 02/12] perf, x86: Basic Haswell PMU support v3
+	<1359672710-19528-4-git-send-email-andi@firstfloor.org>
+Date: Fri, 1 Feb 2013 18:26:09 +0100
+Message-ID: <CABPqkBQ_=BwGhgB3UQZ=4k2uYiATaTCNwybQpa9uKTNUJ3kvEg@mail.gmail.com>
+Subject: Re: [PATCH 03/12] perf, x86: Basic Haswell PEBS support v4
 From: Stephane Eranian <eranian@google.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
@@ -30,126 +30,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Thu, Jan 31, 2013 at 11:51 PM, Andi Kleen <andi@firstfloor.org> wrote:
 > From: Andi Kleen <ak@linux.intel.com>
 >
-> Add basic Haswell PMU support.
+> Add basic PEBS support for Haswell.
+> The constraints are similar to SandyBridge with a few new events.
 >
-> Similar to SandyBridge, but has a few new events. Further
-> differences are handled in followon patches.
->
-> There are some new counter flags that need to be prevented
-> from being set on fixed counters.
->
-> Contains fixes from Stephane Eranian
->
-> v2: Folded TSX bits into standard FIXED_EVENT_CONSTRAINTS
-> v3: Use SNB LBR init code. Comment fix (Stephane Eranian)
+> v2: Readd missing pebs_aliases
+> v3: Readd missing hunk. Fix some constraints.
+> v4: Fix typo in PEBS event table (Stephane Eranian)
 > Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Looks ok to me, just minor typo in comment, no big deal.
-
+Looks ok to me.
 Reviewed-by: Stephane Eranian <eranian@google.com>
 
 > ---
->  arch/x86/include/asm/perf_event.h      |    3 +++
->  arch/x86/kernel/cpu/perf_event.h       |    5 ++++-
->  arch/x86/kernel/cpu/perf_event_intel.c |   31 ++++++++++++++++++++++++++++++-
->  3 files changed, 37 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-> index 4fabcdf..4003bb6 100644
-> --- a/arch/x86/include/asm/perf_event.h
-> +++ b/arch/x86/include/asm/perf_event.h
-> @@ -29,6 +29,9 @@
->  #define ARCH_PERFMON_EVENTSEL_INV                      (1ULL << 23)
->  #define ARCH_PERFMON_EVENTSEL_CMASK                    0xFF000000ULL
->
-> +#define HSW_INTX                                       (1ULL << 32)
-> +#define HSW_INTX_CHECKPOINTED                          (1ULL << 33)
-> +
->  #define AMD_PERFMON_EVENTSEL_GUESTONLY                 (1ULL << 40)
->  #define AMD_PERFMON_EVENTSEL_HOSTONLY                  (1ULL << 41)
+>  arch/x86/kernel/cpu/perf_event.h          |    2 ++
+>  arch/x86/kernel/cpu/perf_event_intel.c    |    6 ++++--
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
+>  3 files changed, 35 insertions(+), 2 deletions(-)
 >
 > diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index 115c1ea..8941899 100644
+> index 8941899..1567b0d 100644
 > --- a/arch/x86/kernel/cpu/perf_event.h
 > +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -219,11 +219,14 @@ struct cpu_hw_events {
->   *  - inv
->   *  - edge
->   *  - cnt-mask
-> + *  - intx
-> + *  - intx_cp
->   *  The other filters are supported by fixed counters.
->   *  The any-thread option is supported starting with v3.
->   */
-> +#define FIXED_EVENT_FLAGS (X86_RAW_EVENT_MASK|HSW_INTX|HSW_INTX_CHECKPOINTED)
->  #define FIXED_EVENT_CONSTRAINT(c, n)   \
-> -       EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
-> +       EVENT_CONSTRAINT(c, (1ULL << (32+n)), FIXED_EVENT_FLAGS)
+> @@ -596,6 +596,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
 >
->  /*
->   * Constraint on the Event code + UMask
+>  extern struct event_constraint intel_ivb_pebs_event_constraints[];
+>
+> +extern struct event_constraint intel_hsw_pebs_event_constraints[];
+> +
+>  struct event_constraint *intel_pebs_constraints(struct perf_event *event);
+>
+>  void intel_pmu_pebs_enable(struct perf_event *event);
 > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 93b9e11..78045e5 100644
+> index 78045e5..8163ebf 100644
 > --- a/arch/x86/kernel/cpu/perf_event_intel.c
 > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -101,7 +101,7 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
->         FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
->         FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
->         FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
-> -       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
-> +       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.* */
-
-Minor tidbit: You fixed it for SNB but not HSW!
-
->         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
->         INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
->         EVENT_CONSTRAINT_END
-> @@ -133,6 +133,17 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
->         EVENT_EXTRA_END
+> @@ -826,7 +826,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+>                 return true;
+>
+>         /* implicit branch sampling to correct PEBS skid */
+> -       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
+> +       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
+> +           x86_pmu.intel_cap.pebs_format < 2)
+>                 return true;
+>
+>         return false;
+> @@ -2127,8 +2128,9 @@ __init int intel_pmu_init(void)
+>                 intel_pmu_lbr_init_snb();
+>
+>                 x86_pmu.event_constraints = intel_hsw_event_constraints;
+> -
+> +               x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+>                 x86_pmu.extra_regs = intel_snb_extra_regs;
+> +               x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+>                 /* all extra regs are per-cpu when HT is on */
+>                 x86_pmu.er_flags |= ERF_HAS_RSP_1;
+>                 x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index 9d0dae0..0252930 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -427,6 +427,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+>          EVENT_CONSTRAINT_END
 >  };
 >
-> +static struct event_constraint intel_hsw_event_constraints[] =
-> +{
-> +       FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-> +       FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-> +       FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
-> +       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
-
-That's where it needs to be fixed too.
-
-> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
-> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+> +struct event_constraint intel_hsw_pebs_event_constraints[] = {
+> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> +       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> +       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> +       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> +       INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
+> +       INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
+> +       INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
+> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
+> +       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
+> +       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
+> +       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
+> +       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
+> +       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
+> +       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
+> +       INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
+> +       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
+> +       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
+> +       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
+> +       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
+> +       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
+> +       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
+> +       INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
+> +       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
+> +       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+> +
 > +       EVENT_CONSTRAINT_END
 > +};
 > +
->  static u64 intel_pmu_event_map(int hw_event)
+>  struct event_constraint *intel_pebs_constraints(struct perf_event *event)
 >  {
->         return intel_perfmon_event_map[hw_event];
-> @@ -2107,6 +2118,24 @@ __init int intel_pmu_init(void)
->                 break;
->
->
-> +       case 60: /* Haswell Client */
-> +       case 70:
-> +       case 71:
-> +               memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
-> +                      sizeof(hw_cache_event_ids));
-> +
-> +               intel_pmu_lbr_init_snb();
-> +
-> +               x86_pmu.event_constraints = intel_hsw_event_constraints;
-> +
-> +               x86_pmu.extra_regs = intel_snb_extra_regs;
-> +               /* all extra regs are per-cpu when HT is on */
-> +               x86_pmu.er_flags |= ERF_HAS_RSP_1;
-> +               x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-> +
-> +               pr_cont("Haswell events, ");
-> +               break;
-> +
->         default:
->                 switch (x86_pmu.version) {
->                 case 1:
+>         struct event_constraint *c;
 > --
 > 1.7.7.6
 >
