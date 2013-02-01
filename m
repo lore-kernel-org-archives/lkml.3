@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030195Ab3BAK5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:57:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52165 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161242Ab3BAK5N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:57:13 -0500
-Date: Fri, 1 Feb 2013 02:56:55 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-00c7e1f10c6b8ae8a031f5c6a58ecd15d20c52cb@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
-        namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1358845787-1350-19-git-send-email-namhyung@kernel.org>
-References: <1358845787-1350-19-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report: Add report.group config option
-Git-Commit-ID: 00c7e1f10c6b8ae8a031f5c6a58ecd15d20c52cb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:57:01 -0800 (PST)
+	id S1161350Ab3BAK5x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:57:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39128 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161321Ab3BAKuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:50:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "Sergey V." <sftp.mtuci@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 13/33] mwifiex: fix typo in PCIe adapter NULL check
+Date: Fri,  1 Feb 2013 11:49:18 +0100
+Message-Id: <20130201104725.601471060@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
+References: <20130201104724.605715763@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  00c7e1f10c6b8ae8a031f5c6a58ecd15d20c52cb
-Gitweb:     http://git.kernel.org/tip/00c7e1f10c6b8ae8a031f5c6a58ecd15d20c52cb
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 22 Jan 2013 18:09:46 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 Jan 2013 13:07:49 -0300
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-perf report: Add report.group config option
+------------------
 
-Add report.group config option for setting default value of event
-group view.  It affects the report output only if perf.data contains
-event group info.
+From: Avinash Patil <patila@marvell.com>
 
-A user can write .perfconfig file like below to enable group view by
-default:
+commit 83f0c6d1f502bd75bb4a9e31e8d64e59c6894ad1 upstream.
 
-  $ cat ~/.perfconfig
-  [report]
-  group = true
+Add missing "!" as we are supposed to check "!card->adapter"
+in PCIe suspend handler.
 
-And it can be disabled through command line:
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Reviewed-by: Sergey V. <sftp.mtuci@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-  $ perf report --no-group
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1358845787-1350-19-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/net/wireless/mwifiex/pcie.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 9ef3842..0d22187 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -8,6 +8,7 @@
- #include "builtin.h"
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@ -158,7 +158,7 @@ static int mwifiex_pcie_suspend(struct p
  
- #include "util/util.h"
-+#include "util/cache.h"
- 
- #include "util/annotate.h"
- #include "util/color.h"
-@@ -54,6 +55,16 @@ struct perf_report {
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
- 
-+static int perf_report_config(const char *var, const char *value, void *cb)
-+{
-+	if (!strcmp(var, "report.group")) {
-+		symbol_conf.event_group = perf_config_bool(var, value);
-+		return 0;
-+	}
-+
-+	return perf_default_config(var, value, cb);
-+}
-+
- static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 					struct addr_location *al,
- 					struct perf_sample *sample,
-@@ -677,6 +688,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_END()
- 	};
- 
-+	perf_config(perf_report_config, NULL);
-+
- 	argc = parse_options(argc, argv, options, report_usage, 0);
- 
- 	if (report.use_stdio)
+ 	if (pdev) {
+ 		card = (struct pcie_service_card *) pci_get_drvdata(pdev);
+-		if (!card || card->adapter) {
++		if (!card || !card->adapter) {
+ 			pr_err("Card or adapter structure is not valid\n");
+ 			return 0;
+ 		}
+
+
