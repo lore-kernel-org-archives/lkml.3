@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab3BAN4j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:56:39 -0500
-Received: from 8bytes.org ([85.214.48.195]:59439 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754869Ab3BAN4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:56:37 -0500
-Date: Fri, 1 Feb 2013 14:56:33 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Hideki EIRAKU <hdk@igel.co.jp>
-Cc: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Katsuya MATSUBARA <matsu@igel.co.jp>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 0/4] Renesas IPMMU driver for sh7372, sh73a0 and
- r8a7740
-Message-ID: <20130201135633.GH25591@8bytes.org>
-References: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
+	id S1030178Ab3BAOEx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 09:04:53 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32946 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755961Ab3BAOEv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 09:04:51 -0500
+Date: Fri, 1 Feb 2013 14:02:18 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Sealey <matt@genesi-usa.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: [PATCH] zsmalloc: Fix TLB coherency and build problem
+Message-ID: <20130201140218.GN23505@n2100.arm.linux.org.uk>
+References: <1359334808-19794-1-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Feb  1 14:56:36 2013
-X-DSPAM-Confidence: 0.9993
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 510bc99422975734585213
+In-Reply-To: <1359334808-19794-1-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 21, 2013 at 07:54:25PM +0900, Hideki EIRAKU wrote:
-> Hideki EIRAKU (4):
->   iommu/shmobile: Add iommu driver for Renesas IPMMU modules
->   ARM: mach-shmobile: sh7372: Add IPMMU device
->   ARM: mach-shmobile: sh73a0: Add IPMMU device
->   ARM: mach-shmobile: r8a7740: Add IPMMU device
+On Mon, Jan 28, 2013 at 10:00:08AM +0900, Minchan Kim wrote:
+> @@ -663,7 +661,7 @@ static inline void __zs_unmap_object(struct mapping_area *area,
+>  
+>  	flush_cache_vunmap(addr, end);
+>  	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
+> -	local_flush_tlb_kernel_range(addr, end);
+> +	flush_tlb_kernel_range(addr, end);
 
-Paul, Magnus, any opinions on patches 2-4? Can you ACK them when they
-are ok for you?
+void unmap_kernel_range_noflush(unsigned long addr, unsigned long size)
+{
+        vunmap_page_range(addr, addr + size);
+}
 
+void unmap_kernel_range(unsigned long addr, unsigned long size)
+{
+        unsigned long end = addr + size;
 
-	Joerg
+        flush_cache_vunmap(addr, end);
+        vunmap_page_range(addr, end);
+        flush_tlb_kernel_range(addr, end);
+}
 
+So, given the above, what would be different between:
 
+	unsigned long end = addr + (PAGE_SIZE * 2);
+
+	flush_cache_vunmap(addr, end);
+	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
+	flush_tlb_kernel_range(addr, end);
+
+(which is what it becomes after your change) and
+
+	unmap_kernel_range(addr, PAGE_SIZE * 2);
+
+?
