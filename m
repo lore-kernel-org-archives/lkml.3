@@ -1,52 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab3BAIVs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:21:48 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:47642 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab3BAIVo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:21:44 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 1 Feb 2013 09:21:43 +0100
-Message-ID: <CA+icZUW5tBotrZT9QtNPao-3rEccohBW8a4diS2nJ+ONgTWLaQ@mail.gmail.com>
-Subject: Re: Revert "console: implement lockdep support for console_lock"
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755863Ab3BAI1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:27:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:61305 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752639Ab3BAI1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 03:27:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
+   d="scan'208";a="256031062"
+Message-ID: <1359707260.2241.117.camel@rzhang1-mobl4>
+Subject: Re: [PATCH V2 1/2] thermal: sysfs: Add a new sysfs node emul_temp
+ for thermal emulation
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-pm@vger.kernel.org, jonghwa3.lee@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        durgadoss.r@intel.com
+Date: Fri, 01 Feb 2013 16:27:40 +0800
+In-Reply-To: <1359343700-30190-1-git-send-email-amit.daniel@samsung.com>
+References: <1359343700-30190-1-git-send-email-amit.daniel@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Sun, 2013-01-27 at 19:28 -0800, Amit Daniel Kachhap wrote:
+> This patch adds support to set the emulated temperature method in
+> thermal zone (sensor). After setting this feature thermal zone may
+> report this temperature and not the actual temperature. The emulation
+> implementation may be based on sensor capability through platform
+> specific handler or pure software emulation if no platform handler defined.
+> 
+> This is useful in debugging different temperature threshold and its
+> associated cooling action. Critical threshold's cannot be emulated.
+> Writing 0 on this node should disable emulation.
+> 
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> ---
+> 
+> Changes in V2:
+> * Added config option for enabling emulation support.
+> * Added s/w emulation if no platform handler registered.
+> * skip the critical trip point emulation
+> 
+> This patchset is based on thermal maintainer next tree.
+> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next 
+> 
+>  Documentation/thermal/sysfs-api.txt |   13 ++++++
+>  drivers/thermal/Kconfig             |    8 +++
+>  drivers/thermal/thermal_sys.c       |   82 ++++++++++++++++++++++++++++++-----
+>  include/linux/thermal.h             |    2 +
+>  4 files changed, 94 insertions(+), 11 deletions(-)
+> 
+> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+> index 526d4b9..6859661 100644
+> --- a/Documentation/thermal/sysfs-api.txt
+> +++ b/Documentation/thermal/sysfs-api.txt
+> @@ -55,6 +55,8 @@ temperature) and throttle appropriate devices.
+>  	.get_trip_type: get the type of certain trip point.
+>  	.get_trip_temp: get the temperature above which the certain trip point
+>  			will be fired.
+> +	.set_emul_temp: set the emulation temperature which helps in debugging
+> +			different threshold temperature points.
+>  
+>  1.1.2 void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+>  
+> @@ -153,6 +155,7 @@ Thermal zone device sys I/F, created once it's registered:
+>      |---trip_point_[0-*]_temp:	Trip point temperature
+>      |---trip_point_[0-*]_type:	Trip point type
+>      |---trip_point_[0-*]_hyst:	Hysteresis value for this trip point
+> +    |---emul_temp:		Emulated temperature set node
+>  
+>  Thermal cooling device sys I/F, created once it's registered:
+>  /sys/class/thermal/cooling_device[0-*]:
+> @@ -252,6 +255,16 @@ passive
+>  	Valid values: 0 (disabled) or greater than 1000
+>  	RW, Optional
+>  
+> +emul_temp
+> +	Interface to set the emulated temperature method in thermal zone
+> +	(sensor). After setting this temperature, the thermal zone may pass
+> +	this temperature to platform emulation function if registered or
+> +	cache it locally. This is useful in debugging different temperature
+> +	threshold and its associated cooling action. This is write only node
+> +	and writing 0 on this node should disable emulation.
+> +	Unit: millidegree Celsius
+> +	WO, Optional
+> +
+>  *****************************
+>  * Cooling device attributes *
+>  *****************************
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index faf38c5..e4cf7fb 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -78,6 +78,14 @@ config CPU_THERMAL
+>  	  and not the ACPI interface.
+>  	  If you want this support, you should say Y here.
+>  
+> +config THERMAL_EMULATION
+> +	bool "Thermal emulation mode support"
+> +	help
+> +	  Enable this option to make a emul_temp sysfs node in thermal zone
+> +	  directory to support temperature emulation. With emulation sysfs node,
+> +	  user can manually input temperature and test the different trip
+> +	  threshold behaviour for simulation purpose.
+> +
+>  config SPEAR_THERMAL
+>  	bool "SPEAr thermal sensor driver"
+>  	depends on PLAT_SPEAR
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 0a1bf6b..59ba709 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -378,24 +378,57 @@ static void handle_thermal_trip(struct thermal_zone_device *tz, int trip)
+>  	monitor_thermal_zone(tz);
+>  }
+>  
+> +static int thermal_zone_get_temp(struct thermal_zone_device *tz,
+> +				unsigned long *temp)
+> +{
+> +	int ret = 0, count;
+> +	unsigned long crit_temp = -1UL;
+> +	enum thermal_trip_type type;
+> +
+> +	mutex_lock(&tz->lock);
+> +
+> +	if (tz->ops->get_temp)
+> +		ret = tz->ops->get_temp(tz, temp);
+we do not need to do this check, .get_temp() should always be available.
 
-people having the fbcon-locking-fixes [1] in their local GIT tree can
-revert this change?
+#ifdef CONFIG_THERMAL_EMUL
+> +	else
+> +		ret = -EPERM;
+> +
+> +	if (!tz->emul_temperature)
+> +		goto skip_emul;
+> +
 
-commit ff0d05bf73620eb7dc8aee7423e992ef87870bdf
-Refs: v3.8-rc5-194-gff0d05b
-Author:     Dave Airlie <airlied@gmail.com>
-AuthorDate: Thu Jan 31 14:27:03 2013 +1100
-Commit:     Dave Airlie <airlied@gmail.com>
-CommitDate: Thu Jan 31 15:46:56 2013 +1100
 
-    Revert "console: implement lockdep support for console_lock"
+> +	for (count = 0; count < tz->trips; count++) {
+> +		ret = tz->ops->get_trip_type(tz, count, &type);
+> +		if (!ret && type == THERMAL_TRIP_CRITICAL) {
+> +			ret = tz->ops->get_trip_temp(tz, count, &crit_temp);
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (ret)
+> +		goto skip_emul;
+> +
+> +	if (*temp < crit_temp)
+> +		*temp = tz->emul_temperature;
+> +
+> +skip_emul:
+#endif
 
-    This reverts commit daee779718a319ff9f83e1ba3339334ac650bb22.
+or you can introduce get_emul_temp() instead.
 
-    I'll requeue this after the console locking fixes, so lockdep
-    is useful again for people until fbcon is fixed.
+> +	mutex_unlock(&tz->lock);
+> +	return ret;
+> +}
+> +
+>  static void update_temperature(struct thermal_zone_device *tz)
+>  {
+>  	long temp;
+>  	int ret;
+>  
+> -	mutex_lock(&tz->lock);
+> -
+> -	ret = tz->ops->get_temp(tz, &temp);
+> +	ret = thermal_zone_get_temp(tz, &temp);
+>  	if (ret) {
+>  		dev_warn(&tz->device, "failed to read out thermal zone %d\n",
+>  			 tz->id);
+> -		goto exit;
+> +		return;
+>  	}
+>  
+> +	mutex_lock(&tz->lock);
+>  	tz->last_temperature = tz->temperature;
+>  	tz->temperature = temp;
+> -
+> -exit:
+>  	mutex_unlock(&tz->lock);
+>  }
+>  
+> @@ -438,10 +471,7 @@ temp_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  	long temperature;
+>  	int ret;
+>  
+> -	if (!tz->ops->get_temp)
+> -		return -EPERM;
+> -
+> -	ret = tz->ops->get_temp(tz, &temperature);
+> +	ret = thermal_zone_get_temp(tz, &temperature);
+>  
+>  	if (ret)
+>  		return ret;
+> @@ -701,6 +731,31 @@ policy_show(struct device *dev, struct device_attribute *devattr, char *buf)
+>  	return sprintf(buf, "%s\n", tz->governor->name);
+>  }
+>  
+> +#ifdef CONFIG_THERMAL_EMULATION
+> +static ssize_t
+> +emul_temp_store(struct device *dev, struct device_attribute *attr,
+> +		     const char *buf, size_t count)
+> +{
+> +	struct thermal_zone_device *tz = to_thermal_zone(dev);
+> +	int ret = 0;
+> +	unsigned long temperature;
+> +
+> +	if (kstrtoul(buf, 10, &temperature))
+> +		return -EINVAL;
+> +
+> +	if (!tz->ops->set_emul_temp) {
+> +		mutex_lock(&tz->lock);
+> +		tz->emul_temperature = temperature;
+> +		mutex_unlock(&tz->lock);
+> +	} else {
+> +		ret = tz->ops->set_emul_temp(tz, temperature);
+> +	}
+> +
+> +	return ret ? ret : count;
+> +}
+> +static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
+> +#endif/*CONFIG_THERMAL_EMULATION*/
+> +
+>  static DEVICE_ATTR(type, 0444, type_show, NULL);
+>  static DEVICE_ATTR(temp, 0444, temp_show, NULL);
+>  static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
+> @@ -843,7 +898,7 @@ temp_input_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  				       temp_input);
+>  	struct thermal_zone_device *tz = temp->tz;
+>  
+> -	ret = tz->ops->get_temp(tz, &temperature);
+> +	ret = thermal_zone_get_temp(tz, &temperature);
+>  
+>  	if (ret)
+>  		return ret;
+> @@ -1596,6 +1651,11 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+>  			goto unregister;
+>  	}
+>  
+> +#ifdef CONFIG_THERMAL_EMULATION
+> +	result = device_create_file(&tz->device, &dev_attr_emul_temp);
+> +	if (result)
+> +		goto unregister;
+> +#endif
+>  	/* Create policy attribute */
+>  	result = device_create_file(&tz->device, &dev_attr_policy);
+>  	if (result)
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 9b78f8c..f0bd7f9 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -123,6 +123,7 @@ struct thermal_zone_device_ops {
+>  	int (*set_trip_hyst) (struct thermal_zone_device *, int,
+>  			      unsigned long);
+>  	int (*get_crit_temp) (struct thermal_zone_device *, unsigned long *);
+> +	int (*set_emul_temp) (struct thermal_zone_device *, unsigned long);
+>  	int (*get_trend) (struct thermal_zone_device *, int,
+>  			  enum thermal_trend *);
+>  	int (*notify) (struct thermal_zone_device *, int,
+> @@ -165,6 +166,7 @@ struct thermal_zone_device {
+>  	int polling_delay;
+>  	int temperature;
+>  	int last_temperature;
+> +	int emul_temperature;
+>  	int passive;
+>  	unsigned int forced_passive;
+>  	const struct thermal_zone_device_ops *ops;
+others look okay to me.
 
-    Signed-off-by: Dave Airlie <airlied@redhat.com>
+thanks,
+rui
 
-Thanks!
 
-Regards,
-- Sedat
-
-[1] http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
