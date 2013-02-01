@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab3BAKRV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:17:21 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:33873 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755975Ab3BAKRQ (ORCPT
+	id S1756063Ab3BAKST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:18:19 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17172 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583Ab3BAKSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:17:16 -0500
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, thierry.reding@avionic-design.de,
-        sachin.kamat@linaro.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        linux-serial@vger.kernel.org
-Subject: [PATCH v2 2/2] serial: tegra: Convert to devm_ioremap_resource()
-Date: Fri,  1 Feb 2013 15:37:57 +0530
-Message-Id: <1359713277-14228-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1359713277-14228-1-git-send-email-sachin.kamat@linaro.org>
-References: <1359713277-14228-1-git-send-email-sachin.kamat@linaro.org>
+	Fri, 1 Feb 2013 05:18:17 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 01 Feb 2013 02:16:17 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <pdeschrijver@nvidia.com>
+CC: "moderated list:OPEN FIRMWARE AND..." 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:TEGRA SUPPORT" <linux-tegra@vger.kernel.org>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v5 00/10] Tegra114 clockframework
+Date: Fri, 1 Feb 2013 12:16:42 +0200
+Message-ID: <1359713860-16631-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the newly introduced devm_ioremap_resource() instead of
-devm_request_and_ioremap() which provides more consistent error handling.
+This is the fifth version of the Tegra114 clockframework. It is based on the
+for-next branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git and
+http://www.spinics.net/lists/arm-kernel/msg220452.html.
 
-devm_ioremap_resource() provides its own error messages; so all explicit
-error messages can be removed from the failure code paths.
+It has been boottested on Pluto.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: linux-serial@vger.kernel.org
----
-Patch based & compile tested on linux-next tree (20130128).
-Changes since v1:
-* Dropped the error message as it is now handled by devm_ioremap_resource()
-itself.
----
- drivers/tty/serial/serial-tegra.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+Changes from v4:
 
-diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
-index 4f5e629..24ced23 100644
---- a/drivers/tty/serial/serial-tegra.c
-+++ b/drivers/tty/serial/serial-tegra.c
-@@ -26,6 +26,7 @@
- #include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
- #include <linux/dmapool.h>
-+#include <linux/err.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-@@ -1302,11 +1303,9 @@ static int tegra_uart_probe(struct platform_device *pdev)
- 	}
- 
- 	u->mapbase = resource->start;
--	u->membase = devm_request_and_ioremap(&pdev->dev, resource);
--	if (!u->membase) {
--		dev_err(&pdev->dev, "memregion/iomap address req failed\n");
--		return -EADDRNOTAVAIL;
--	}
-+	u->membase = devm_ioremap_resource(&pdev->dev, resource);
-+	if (IS_ERR(u->membase))
-+		return PTR_ERR(u->membase);
- 
- 	tup->uart_clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(tup->uart_clk)) {
--- 
-1.7.4.1
+* Split the new PLL types patch into smaller patches
+* Fix some bugs in the PLL patches
+
+Changes from v3:
+
+* Merge with for-next branch
+* Provide empty tegra_cpu_car_ops to make SMP boot not crash
+
+Changes from v2:
+
+* Added missing PLLs
+* Added bindings to tegra114.dtsi
+* Moved the table patch for clk-mux.c to 'clk: add table lookup to mux'
+* Bugfixes
+
+Changes from v1:
+
+* Remove SATA and PCIe clocks. They don't appear in the internal TRM, so I
+  assume they don't exist.
+* Rebase on top of Hiroshi's latest Tegra114 patches
+* More generic mux code. This is necessary for the AHUB and DAM clocks.
+
+TODO:
+
+* Remove clk_register_clkdev() where possible
+* PLL clock init functions are incomplete and/or need refactoring
+* Superclocks are missing
+* The audio clocks are almost the same then Tegra30. Refactor the code to
+  avoid duplication.
+* Should blink and blink_override be clocks?
+
+Peter De Schrijver (10):
+  clk: tegra: Refactor PLL programming code
+  clk: tegra: Add TEGRA_PLL_BYPASS flag
+  clk: tegra: Add PLL post divider table
+  clk: tegra: Add new fields and PLL types for Tegra114
+  clk: tegra: Add flags to tegra_clk_periph()
+  clk: tegra: Workaround for Tegra114 MSENC problem
+  ARM: tegra: Define Tegra114 CAR binding
+  ARM: dt: Add references to tegra_car clocks
+  clk: tegra: Implement clocks for Tegra114
+  clk: tegra: devicetree match for nvidia,tegra114-car
+
+ .../bindings/clock/nvidia,tegra114-car.txt         |  311 +++
+ arch/arm/boot/dts/tegra114.dtsi                    |    7 +-
+ drivers/clk/tegra/Makefile                         |    1 +
+ drivers/clk/tegra/clk-periph-gate.c                |    9 +
+ drivers/clk/tegra/clk-periph.c                     |   11 +-
+ drivers/clk/tegra/clk-pll.c                        |  940 +++++++++-
+ drivers/clk/tegra/clk-tegra114.c                   | 2002 ++++++++++++++++++++
+ drivers/clk/tegra/clk-tegra20.c                    |  153 +-
+ drivers/clk/tegra/clk-tegra30.c                    |  243 ++--
+ drivers/clk/tegra/clk.c                            |    1 +
+ drivers/clk/tegra/clk.h                            |   85 +-
+ 11 files changed, 3481 insertions(+), 282 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt
+ create mode 100644 drivers/clk/tegra/clk-tegra114.c
 
