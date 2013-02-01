@@ -1,85 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030196Ab3BAXKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 18:10:48 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:35806 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757885Ab3BAXKq (ORCPT
+	id S1758023Ab3BAXPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 18:15:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53364 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757969Ab3BAXPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 18:10:46 -0500
-Message-ID: <510C4B60.20802@mvista.com>
-Date: Sat, 02 Feb 2013 03:10:24 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Matt Porter <mporter@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Chris Ball <cjb@laptop.org>, Russell King <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
-References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <510C1D0E.6030401@mvista.com> <20130201185820.GE29898@arwen.pp.htv.fi> <510C2A47.1090607@mvista.com> <20130201205600.GA31762@arwen.pp.htv.fi>
-In-Reply-To: <20130201205600.GA31762@arwen.pp.htv.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 1 Feb 2013 18:15:04 -0500
+Date: Fri, 1 Feb 2013 15:15:02 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 10/18] mm: teach truncate_inode_pages_range() to handle
+ non page aligned ranges
+Message-Id: <20130201151502.59398b29.akpm@linux-foundation.org>
+In-Reply-To: <1359715424-32318-11-git-send-email-lczerner@redhat.com>
+References: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
+	<1359715424-32318-11-git-send-email-lczerner@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri,  1 Feb 2013 11:43:36 +0100
+Lukas Czerner <lczerner@redhat.com> wrote:
 
-On 02-02-2013 0:56, Felipe Balbi wrote:
+> This commit changes truncate_inode_pages_range() so it can handle non
+> page aligned regions of the truncate. Currently we can hit BUG_ON when
+> the end of the range is not page aligned, but we can handle unaligned
+> start of the range.
+> 
+> Being able to handle non page aligned regions of the page can help file
+> system punch_hole implementations and save some work, because once we're
+> holding the page we might as well deal with it right away.
+> 
+> In previous commits we've changed ->invalidatepage() prototype to accept
+> 'length' argument to be able to specify range to invalidate. No we can
+> use that new ability in truncate_inode_pages_range().
 
->>> good point, do you wanna send some patches ?
+The change seems sensible.
 
->>     I have already sent them countless times and even stuck CPPI 4.1 support (in
->> arch/arm/common/cppi41.c) in Russell's patch system. TI requested to remove the
->> patch. :-(
+> This was based on the code provided by Hugh Dickins
 
-> sticking into arch/arm/common/ wasn't a nice move.
+Despite this ;)
 
-    Like with EDMA we have nothing else to do with CPPI 4.1 being shared by 
-DaVinci-like and OMAP-like SOCs. Thank TI for creatring this mess. And 
-actually even that is not a good place since I think I know of a MIPS SoC 
-having CPPI 4.1 as well, just out of tree.
+> changes to make use of do_invalidatepage_range().
+>
+> ...
+>
+>  void truncate_inode_pages_range(struct address_space *mapping,
+>  				loff_t lstart, loff_t lend)
+>  {
+> -	const pgoff_t start = (lstart + PAGE_CACHE_SIZE-1) >> PAGE_CACHE_SHIFT;
+> -	const unsigned partial = lstart & (PAGE_CACHE_SIZE - 1);
+> +	pgoff_t start = (lstart + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+> +	pgoff_t end = (lend + 1) >> PAGE_CACHE_SHIFT;
+> +	unsigned int partial_start = lstart & (PAGE_CACHE_SIZE - 1);
+> +	unsigned int partial_end = (lend + 1) & (PAGE_CACHE_SIZE - 1);
+>  	struct pagevec pvec;
+>  	pgoff_t index;
+> -	pgoff_t end;
+>  	int i;
 
- > But then again, so
- > wasn't asking for the patch to be removed :-s
+This is starting to get pretty hairy.  Some of these "end" variables
+are inclusive and some are exclusive.
 
-    Unfortunately, Russell has done it -- all that was discuseed without me in 
-the loop even. :-/
+Can we improve things?  We can drop all this tiresome
+intialisation-at-declaration-site stuff and do:
 
->>> I guess to make the MUSB side simpler we would need musb-dma-engine glue
->>> to map dmaengine to the private MUSB API. Then we would have some
->>> starting point to also move inventra (and anybody else) to dmaengine
->>> API.
+	pgoff_t start;			/* inclusive */
+	pgoff_t end;			/* exclusive */
+	unsigned int partial_start;	/* inclusive */
+	unsigned int partial_end;	/* exclusive */
+	struct pagevec pvec;
+	pgoff_t index;
+	int i;
 
->>     Why? Inventra is a dedicated device's private DMA controller, why make
->> universal DMA driver for it?
+	start = (lstart + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+	end = (lend + 1) >> PAGE_CACHE_SHIFT;
+	partial_start = lstart & (PAGE_CACHE_SIZE - 1);
+	partial_end = (lend + 1) & (PAGE_CACHE_SIZE - 1);
 
-> because it doesn't make sense to support multiple DMA APIs. We can check
-> from MUSB's registers if it was configured with Inventra DMA support and
-> based on that we can register MUSB's own DMA Engine to dmaengine API.
+And lo, I see that the "inclusive" thing only applies to incoming arg
+`lend'.  I seem to recall that being my handiwork and somehow I seem to
+not have documented the reason: it was so that we can pass
+lend=0xffffffff into truncate_inode_pages_range) to indicate "end of
+file".
 
-     I still disagree. IMO drivers/dma/ is for standalone DMA engines. Else we 
-could stick every bus mastering device's DMA engines there. CPPI 4.1 is in 
-design standlone DMA engine, despite all in-tree implementations having it as 
-subblock of MUSB and serving only MUSB.
+Your code handles this in a rather nasty fashion.  It permits the above
+overflow to occur then later fixes it up with an explicit test for -1. 
+And it then sets `end' (which is a pgoff_t!) to -1.
 
-WBR, Sergei
+I guess this works, but let's make it clearer, with something like:
+
+	if (lend == -1) {
+		/*
+		 * Nice explanation goes here
+		 */
+		end = -1;
+	} else {
+		end = (lend + 1) >> PAGE_CACHE_SHIFT;
+	}
+
+
+>  	cleancache_invalidate_inode(mapping);
+>  	if (mapping->nrpages == 0)
+>  		return;
+>  
+> -	BUG_ON((lend & (PAGE_CACHE_SIZE - 1)) != (PAGE_CACHE_SIZE - 1));
+> -	end = (lend >> PAGE_CACHE_SHIFT);
+> +	if (lend == -1)
+> +		end = -1;	/* unsigned, so actually very big */
+>  
+>  	pagevec_init(&pvec, 0);
+>  	index = start;
+> -	while (index <= end && pagevec_lookup(&pvec, mapping, index,
+> -			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1)) {
+> +	while (index < end && pagevec_lookup(&pvec, mapping, index,
+> +			min(end - index, (pgoff_t)PAGEVEC_SIZE))) {
+
+Here, my brain burst.  You've effectively added 1 to (end - index).  Is
+that correct?
+
+>  		mem_cgroup_uncharge_start();
+>  		for (i = 0; i < pagevec_count(&pvec); i++) {
+>  			struct page *page = pvec.pages[i];
+>  
+>  			/* We rely upon deletion not changing page->index */
+>  			index = page->index;
+> -			if (index > end)
+> +			if (index >= end)
+
+hm.  This change implies that the patch changed `end' from inclusive to
+exclusive.  But the patch didn't do that.
+
+>  				break;
+>  
+>  			if (!trylock_page(page))
+> @@ -250,27 +247,51 @@ void truncate_inode_pages_range(struct address_space *mapping,
+>  		index++;
+>  	}
+>  
+> -	if (partial) {
+> +	if (partial_start) {
+>  		struct page *page = find_lock_page(mapping, start - 1);
+>  		if (page) {
+> +			unsigned int top = PAGE_CACHE_SIZE;
+> +			if (start > end) {
+
+How can this be true?
+
+> +				top = partial_end;
+> +				partial_end = 0;
+> +			}
+> +			wait_on_page_writeback(page);
+> +			zero_user_segment(page, partial_start, top);
+> +			cleancache_invalidate_page(mapping, page);
+> +			if (page_has_private(page))
+> +				do_invalidatepage(page, partial_start,
+> +						  top - partial_start);
+> +			unlock_page(page);
+> +			page_cache_release(page);
+> +		}
+> +	}
+> +	if (partial_end) {
+> +		struct page *page = find_lock_page(mapping, end);
+> +		if (page) {
+>  			wait_on_page_writeback(page);
+> -			truncate_partial_page(page, partial);
+> +			zero_user_segment(page, 0, partial_end);
+> +			cleancache_invalidate_page(mapping, page);
+> +			if (page_has_private(page))
+> +				do_invalidatepage(page, 0,
+> +						  partial_end);
+>  			unlock_page(page);
+>  			page_cache_release(page);
+>  		}
+>  	}
+> +	if (start >= end)
+> +		return;
+
+Again, how can start be greater than end??
+
+I suspect a lot of the confustion and churn in here is due to `end'
+being kinda-exclusive.  If `lend' was 4094 then `end' is zero.  But if
+`lend' was 4095' then `end' is 1.  So even though `end' refers to the same
+page, it has a different value!
+
+Would the code be simpler and clearer if we were to make `end' "pgoff_t
+of the last-affected page", and document it as such?
+
 
