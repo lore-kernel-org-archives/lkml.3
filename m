@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab3BAGlt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 01:41:49 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:42242 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753226Ab3BAGlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 01:41:46 -0500
+	id S1755761Ab3BAGmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 01:42:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50029 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752222Ab3BAGmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 01:42:08 -0500
+Message-ID: <510B629C.1010605@zytor.com>
+Date: Thu, 31 Jan 2013 22:37:16 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <902bed453159832925df76e24806f3b919fdfc74.1359700706.git.viresh.kumar@linaro.org>
-References: <1bf82454ab1f16b13212548d7c9605067c8b7a0d.1359700705.git.viresh.kumar@linaro.org>
-	<902bed453159832925df76e24806f3b919fdfc74.1359700706.git.viresh.kumar@linaro.org>
-Date: Fri, 1 Feb 2013 12:11:46 +0530
-Message-ID: <CAKohponi342nGOq2nRYkzkoCcUT3MBdtugm1WifGcCFOBRkYSg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] cpufreq: Remove unnecessary use of policy->shared_type
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Michal Marek <mmarek@suse.cz>, hyojun.im@lge.com,
+        raphael.andy.lee@gmail.com, linux-kbuild@vger.kernel.org,
+        gunho.lee@lge.com, namhyung.kim@lge.com, x86@kernel.org,
+        minchan.kim@lge.com, linux-kernel@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Ingo Molnar <mingo@redhat.com>, Joe Millenbach <jmillenbach@gmail.com>,
+        chan.jeong@lge.com, Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
+References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com> <20130128142510.68092e10.akpm@linux-foundation.org> <20130129101549.GP23505@n2100.arm.linux.org.uk> <51089523.3080804@zytor.com> <alpine.LFD.2.02.1301301326530.6300@xanadu.home> <510AE6BF.4080303@zytor.com> <alpine.LFD.2.02.1301311700470.6300@xanadu.home> <510AEDC2.80107@zytor.com> <alpine.LFD.2.02.1301312117240.6300@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1301312117240.6300@xanadu.home>
+X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 February 2013 12:10, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> policy->shared_type field was added only for SoCs with ACPI support:
->
-> commit 3b2d99429e3386b6e2ac949fc72486509c8bbe36
-> Author: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-> Date:   Wed Dec 14 15:05:00 2005 -0500
->
->     P-state software coordination for ACPI core
->
->     http://bugzilla.kernel.org/show_bug.cgi?id=5737
->
-> Many non-ACPI systems are filling this field by mistake, which makes its usage
-> confusing. Lets clean it.
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Stephen Warren <swarren@nvidia.com>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  arch/arm/mach-tegra/cpu-tegra.c  | 1 -
->  drivers/cpufreq/cpufreq-cpu0.c   | 1 -
->  drivers/cpufreq/db8500-cpufreq.c | 2 --
->  drivers/cpufreq/omap-cpufreq.c   | 4 +---
->  include/linux/cpufreq.h          | 3 ++-
->  5 files changed, 3 insertions(+), 8 deletions(-)
+On 01/31/2013 06:28 PM, Nicolas Pitre wrote:
+>>
+>> Well, it is too nasty for public confession, but it's called
+>> "paravirtualization".
+> 
+> The fact that you are aware of it means we're not going to break them.  
+> 
+> But my point is that we must not be held back just in case someone out 
+> there might have painted himself in a corner without telling anyone.
+> 
 
-ARM mail servers are broken, please find patch attached.
+Yes.  However, it makes it more questionable to simply rip out
+compression methods without warning.  Not that warnings help, as we have
+learned.
+
+	-hpa
+
+
