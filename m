@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab3BAGL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 01:11:56 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37207 "EHLO arroyo.ext.ti.com"
+	id S1755341Ab3BAGMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 01:12:08 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38966 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918Ab3BAGLy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 01:11:54 -0500
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Subject: RE: [PATCH] ARM: dts: AM33XX: Corrects typo in interrupt field in
- SPI node
-Thread-Topic: [PATCH] ARM: dts: AM33XX: Corrects typo in interrupt field in
- SPI node
-Thread-Index: AQHOAD8knbrBxv0KA0WXQhruWf/YdphkgqzQ
-Date: Fri, 1 Feb 2013 06:10:25 +0000
-Deferred-Delivery: Fri, 1 Feb 2013 06:10:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3EA6977C@DBDE01.ent.ti.com>
-References: <1359697047-1816-1-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1359697047-1816-1-git-send-email-avinashphilip@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754821Ab3BAGME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 01:12:04 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] mm: refactor inactive_file_is_low() to use get_lru_size()
+Date: Fri,  1 Feb 2013 01:11:56 -0500
+Message-Id: <1359699116-7277-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 11:07:27, Philip, Avinash wrote:
-> DT field of "interrupts" was mentioned wrongly as "interrupt" in SPI
-> node. This went unnoticed as spi-omap2 driver not making use of
-> interrupt. Fixes the typo.
-> 
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+An inactive file list is considered low when the its active
+counter-part is bigger, regardless of whether it is a global zone LRU
+list or a memcg zone LRU list.  The only difference is in how the LRU
+size is assessed.
 
-Reported-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+get_lru_size() does the right thing for both global and memcg reclaim
+situations.
 
-Typo mistake was reported by Vaibhav. I forgot to mention "Reported-by"
-tag while posting. Add the same on his behalf.
+Get rid of inactive_file_is_low_global() and
+mem_cgroup_inactive_file_is_low() by using get_lru_size() and compare
+the numbers in common code.
 
-Thanks
-Avinash
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/memcontrol.h |  7 -------
+ mm/memcontrol.c            | 11 -----------
+ mm/vmscan.c                | 19 ++++++-------------
+ 3 files changed, 6 insertions(+), 31 deletions(-)
 
-> ---
->  arch/arm/boot/dts/am33xx.dtsi |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index fbcb90b..cece3ad 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -309,7 +309,7 @@
->  			#address-cells = <1>;
->  			#size-cells = <0>;
->  			reg = <0x48030000 0x400>;
-> -			interrupt = <65>;
-> +			interrupts = <65>;
->  			ti,spi-num-cs = <2>;
->  			ti,hwmods = "spi0";
->  			status = "disabled";
-> @@ -320,7 +320,7 @@
->  			#address-cells = <1>;
->  			#size-cells = <0>;
->  			reg = <0x481a0000 0x400>;
-> -			interrupt = <125>;
-> +			interrupts = <125>;
->  			ti,spi-num-cs = <2>;
->  			ti,hwmods = "spi1";
->  			status = "disabled";
-> -- 
-> 1.7.9.5
-> 
-> 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 0108a56..d21ddbf 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -116,7 +116,6 @@ void mem_cgroup_iter_break(struct mem_cgroup *, struct mem_cgroup *);
+  * For memory reclaim.
+  */
+ int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec);
+-int mem_cgroup_inactive_file_is_low(struct lruvec *lruvec);
+ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
+ unsigned long mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list);
+ void mem_cgroup_update_lru_size(struct lruvec *, enum lru_list, int);
+@@ -321,12 +320,6 @@ mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec)
+ 	return 1;
+ }
+ 
+-static inline int
+-mem_cgroup_inactive_file_is_low(struct lruvec *lruvec)
+-{
+-	return 1;
+-}
+-
+ static inline unsigned long
+ mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list lru)
+ {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7c8d449..6682553 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1445,17 +1445,6 @@ int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec)
+ 	return inactive * inactive_ratio < active;
+ }
+ 
+-int mem_cgroup_inactive_file_is_low(struct lruvec *lruvec)
+-{
+-	unsigned long active;
+-	unsigned long inactive;
+-
+-	inactive = mem_cgroup_get_lru_size(lruvec, LRU_INACTIVE_FILE);
+-	active = mem_cgroup_get_lru_size(lruvec, LRU_ACTIVE_FILE);
+-
+-	return (active > inactive);
+-}
+-
+ #define mem_cgroup_from_res_counter(counter, member)	\
+ 	container_of(counter, struct mem_cgroup, member)
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 1b4c9e6..506388b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1581,16 +1581,6 @@ static inline int inactive_anon_is_low(struct lruvec *lruvec)
+ }
+ #endif
+ 
+-static int inactive_file_is_low_global(struct zone *zone)
+-{
+-	unsigned long active, inactive;
+-
+-	active = zone_page_state(zone, NR_ACTIVE_FILE);
+-	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+-
+-	return (active > inactive);
+-}
+-
+ /**
+  * inactive_file_is_low - check if file pages need to be deactivated
+  * @lruvec: LRU vector to check
+@@ -1607,10 +1597,13 @@ static int inactive_file_is_low_global(struct zone *zone)
+  */
+ static int inactive_file_is_low(struct lruvec *lruvec)
+ {
+-	if (!mem_cgroup_disabled())
+-		return mem_cgroup_inactive_file_is_low(lruvec);
++	unsigned long inactive;
++	unsigned long active;
++
++	inactive = get_lru_size(lruvec, LRU_INACTIVE_FILE);
++	active = get_lru_size(lruvec, LRU_ACTIVE_FILE);
+ 
+-	return inactive_file_is_low_global(lruvec_zone(lruvec));
++	return active > inactive;
+ }
+ 
+ static int inactive_list_is_low(struct lruvec *lruvec, enum lru_list lru)
+-- 
+1.7.11.7
 
