@@ -1,116 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab3BAR5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 12:57:00 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:54097 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757098Ab3BAR45 (ORCPT
+	id S1756967Ab3BAR7l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 12:59:41 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:65121 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab3BAR7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 12:56:57 -0500
-Message-ID: <510C01E6.2040108@ti.com>
-Date: Fri, 1 Feb 2013 12:56:54 -0500
-From: Cyril Chemparathy <cyril@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 12:59:38 -0500
 MIME-Version: 1.0
-To: Subash Patel <subashrp@gmail.com>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Hui Wang <jason77.wang@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        <linus.walleij@linaro.org>, <sboyd@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>, Vitaly Andrianov <vitalya@ti.com>,
-        <paulmck@linux.vnet.ibm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 02/13] ARM: LPAE: use phys_addr_t in alloc_init_pud()
-References: <1359669512-31276-1-git-send-email-cyril@ti.com> <1359669512-31276-3-git-send-email-cyril@ti.com> <510B327E.3050502@gmail.com> <alpine.LFD.2.02.1301312218270.6300@xanadu.home> <510BFC84.2030902@gmail.com>
-In-Reply-To: <510BFC84.2030902@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1358288782-2946-1-git-send-email-jslaby@suse.cz>
+References: <1358288782-2946-1-git-send-email-jslaby@suse.cz>
+Date: Fri, 1 Feb 2013 12:59:37 -0500
+Message-ID: <CA+5PVA5K8Fuvu_5GmpCS_wmQ5OgaeC9mTwUQfrX22juA3nk6og@mail.gmail.com>
+Subject: Re: [PATCH] TTY: do not reset master's packet mode
+From: Josh Boyer <jwboyer@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Bryan Mason <bmason@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 12:33 PM, Subash Patel wrote:
-> Hi Nicolas,
+On Tue, Jan 15, 2013 at 5:26 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> Now that login from util-linux is forced to drop all references to a
+> TTY which it wants to hangup (to reach reference count 1) we are
+> seeing issues with telnet. When login closes its last reference to the
+> slave PTY, it also resets packet mode on the *master* side. And we
+> have a race here.
 >
-> On Thursday 31 January 2013 07:35 PM, Nicolas Pitre wrote:
->> On Fri, 1 Feb 2013, Hui Wang wrote:
->>
->>> Cyril Chemparathy wrote:
->>>> From: Vitaly Andrianov <vitalya@ti.com>
->>>>
->>>> This patch fixes the alloc_init_pud() function to use phys_addr_t
->>>> instead of
->>>> unsigned long when passing in the phys argument.
->>>>
->>>> This is an extension to commit 97092e0c56830457af0639f6bd904537a150ea4a
->>>> (ARM:
->>>> pgtable: use phys_addr_t for physical addresses), which applied similar
->>>> changes
->>>> elsewhere in the ARM memory management code.
->>>>
->>>> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
->>>> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
->>>> Acked-by: Nicolas Pitre <nico@linaro.org>
->>>> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
->>>> ---
->>>>   arch/arm/mm/mmu.c |    3 ++-
->>>>   1 file changed, 2 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
->>>> index 9f06102..ef43689 100644
->>>> --- a/arch/arm/mm/mmu.c
->>>> +++ b/arch/arm/mm/mmu.c
->>>> @@ -612,7 +612,8 @@ static void __init alloc_init_section(pud_t *pud,
->>>> unsigned long addr,
->>>>   }
->>>>    static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
->>>> -    unsigned long end, unsigned long phys, const struct mem_type
->>>> *type)
->>>> +                  unsigned long end, phys_addr_t phys,
->>>> +                  const struct mem_type *type)
->>>>
->>> The change is correct but seems useless so far. This function only be
->>> called
->>> from map_lowmem and devicemaps_init, from i know neither lowmem nor
->>> device io
->>> registers of existing platforms exceed 32bit address.
->>
->> It is not because you are not aware of any existing platforms with RAM
->> or device IO above the 4GB mark that they don't exist.
->>
->> For example, some LPAE systems have all their RAM located above the 4G
->> physical address mark. A simple (potentially non DMA capable) alias
->> exists in the low 32-bit address space to allow the system to boot and
->> switch to the real physical RAM addresses once the MMU is turned on.
->> Some of that RAM is still qualified as "low mem" i.e. the portion of RAM
->> that the kernel keeps permanently mapped in the 32-bit virtual space
->> even if all of it is above the 4G mark in physical space.
+> What telnet does is fork+exec of `login'. Then there are two
+> scenarios:
+> * `login' closes the slave TTY and resets thus master's packet mode,
+>   but even now telnet properly sets the mode, or
+> * `telnetd' sets packet mode on the master, `login' closes the slave
+>   TTY and resets master's packet mode.
 >
-> I think he is right. You cannot have low_mem and devices in 36-bit
-> areas. Atleast this is what I saw in one of the platforms on which I
-> tested these patches. I am not sure what you mean by hardware address
-> aliasing(as I have real RAM), but we need 32-bit areas to boot the CPU
-> and I have mapped them for the LOW_MEM. But, I have used 36-bit areas
-> for the HIGH_MEM. Since you said about aliasing DDR area in 32-bits, and
-> then switching to 36-bit RAM, does the dma of the devices still use
-> 32-bit aliased addresses?
+> The former case is OK. However the latter happens in much more cases,
+> by the order of magnitude to be precise. So when one tries to login to
+> such a messed telnet setup, they see the following:
+> inux login:
+>             ogin incorrect
 >
-> I haven't tested a configuration where LOW_MEM can have both 32-bit and
-> 36-bit DDR PA though. I think its not possible too.
+> Note the missing first letters -- telnet thinks it is still in the
+> packet mode, so when it receives "linux login" from `login', it
+> considers "l" as the type of the packet and strips it.
 >
+> SuS does not mention how the implementation should behave. Both BSDs I
+> checked (Free and Net) do not reset the flag upon the last close.
+>
+> By this I am resurrecting an old bug, see References. We are hitting
+> it regularly now, i.e. with updated util-linux, ergo login.
+>
+> Here, I am changing a behavior introduced back in 2.1 times. It would
+> better have a long time testing before goes upstream.
+>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Bryan Mason <bmason@redhat.com>
+> References: https://lkml.org/lkml/2009/11/11/223
+> References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
+> References: https://bugzilla.novell.com/show_bug.cgi?id=797042
 
-On the KeyStone platform, memory is located at 08:0000:0000, i.e., 
-outside the 32-bit addressable range.  The hardware provides a limited 
-aliased map of the very same memory at 8000:0000, but this alias is 
-limited and intended only for boot time usage.
+Shouldn't this be CC'd to stable?
 
-We boot the system while running out of this 32-bit physical address 
-range.  We then switch over to the high physical address range fairly 
-early in the kernel boot, by rewriting boot-time page tables and the 
-TTBRs.  Once this switch over has happened, lowmem is indeed outside the 
-32-bit physical address space.
-
-Thanks
--- Cyril.
+josh
