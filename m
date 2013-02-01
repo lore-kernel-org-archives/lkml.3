@@ -1,74 +1,498 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422787Ab3BANTu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:19:50 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:65152 "EHLO SMTP.CITRIX.COM"
+	id S1422789Ab3BANU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:20:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45353 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422729Ab3BANTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:19:47 -0500
-X-IronPort-AV: E=Sophos;i="4.84,579,1355097600"; 
-   d="scan'208";a="5948641"
-Date: Fri, 1 Feb 2013 13:19:37 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jan Beulich <JBeulich@suse.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
-In-Reply-To: <510AE4F6.1050407@zytor.com>
-Message-ID: <alpine.DEB.2.02.1302011307440.10432@kaball.uk.xensource.com>
-References: <1359507077-26050-1-git-send-email-kys@microsoft.com> <1359507108-26091-1-git-send-email-kys@microsoft.com> <1359507108-26091-2-git-send-email-kys@microsoft.com> <5108ED9702000078000BAA08@nat28.tlf.novell.com> <510AE4F6.1050407@zytor.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1160999Ab3BANNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:13:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>, David Airlie <airlied@linux.ie>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dave Jiang <dave.jiang@intel.com>, Olof Johansson <olof@lixom.net>,
+        Peter Jones <pjones@redhat.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Steve Langasek <steve.langasek@canonical.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 62/89] efi: Make efi_enabled a function to query EFI facilities
+Date: Fri,  1 Feb 2013 14:08:17 +0100
+Message-Id: <20130201130211.951291353@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
+In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
+References: <20130201130207.444989281@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jan 2013, H. Peter Anvin wrote:
-> On 01/30/2013 12:53 AM, Jan Beulich wrote:
-> > 
-> > I'm not convinced that's the right approach - any hypervisor
-> > could do similar emulation, and hence you either want to make
-> > sure you run on Hyper-V (by excluding all others), or you
-> > tolerate using the emulation (which may require syncing up with
-> > the other guest implementations so that shared resources don't
-> > get used by two parties).
-> > 
-> > I also wonder whether using the Hyper-V emulation (where
-> > useful, there might not be anything right now, but this may
-> > change going forward) when no Xen support is configured
-> > wouldn't be better than not using anything...
-> > 
-> 
-> I'm confused about "the right approach" here is.  As far as I
-> understand, this only can affect a Xen guest where HyperV guest support
-> is enabled but not Xen support, and only because Xen emulates HyperV but
-> does so incorrectly.
-> 
-> This is a Xen bug, and as such it makes sense to reject Xen
-> specifically.  If another hypervisor emulates HyperV and does so
-> correctly there seems to be no reason to reject it.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-I don't think so.
+------------------
 
-AFAIK originally there were features exported as flags and Xen doesn't
-turn on the flags that correspond to features that are not implemented.
-The problem here is that Hyper-V is about to introduce a feature without
-a flag that is not implemented by Xen (see "X86: Deliver Hyper-V
-interrupts on a separate IDT vector").
-K.Y. please confirm if I got this right.
+From: Matt Fleming <matt.fleming@intel.com>
 
-If I were the Microsoft engineer implementing this feature, no matter
-what Xen does or does not, I would also make sure that there is a
-corresponding flag for it, because in my experience they avoid future
-headaches.
-I wonder what happens if you run Linux with Hyper-V support on an old
-Hyper-V host that doesn't support vector injection.
+commit 83e68189745ad931c2afd45d8ee3303929233e7f upstream.
+
+Originally 'efi_enabled' indicated whether a kernel was booted from
+EFI firmware. Over time its semantics have changed, and it now
+indicates whether or not we are booted on an EFI machine with
+bit-native firmware, e.g. 64-bit kernel with 64-bit firmware.
+
+The immediate motivation for this patch is the bug report at,
+
+    https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
+
+which details how running a platform driver on an EFI machine that is
+designed to run under BIOS can cause the machine to become
+bricked. Also, the following report,
+
+    https://bugzilla.kernel.org/show_bug.cgi?id=47121
+
+details how running said driver can also cause Machine Check
+Exceptions. Drivers need a new means of detecting whether they're
+running on an EFI machine, as sadly the expression,
+
+    if (!efi_enabled)
+
+hasn't been a sufficient condition for quite some time.
+
+Users actually want to query 'efi_enabled' for different reasons -
+what they really want access to is the list of available EFI
+facilities.
+
+For instance, the x86 reboot code needs to know whether it can invoke
+the ResetSystem() function provided by the EFI runtime services, while
+the ACPI OSL code wants to know whether the EFI config tables were
+mapped successfully. There are also checks in some of the platform
+driver code to simply see if they're running on an EFI machine (which
+would make it a bad idea to do BIOS-y things).
+
+This patch is a prereq for the samsung-laptop fix patch.
+
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Cc: David Airlie <airlied@linux.ie>
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Peter Jones <pjones@redhat.com>
+Cc: Colin Ian King <colin.king@canonical.com>
+Cc: Steve Langasek <steve.langasek@canonical.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/include/asm/efi.h             |    1 
+ arch/x86/kernel/reboot.c               |    2 -
+ arch/x86/kernel/setup.c                |   28 ++++++++--------
+ arch/x86/platform/efi/efi.c            |   57 +++++++++++++++++++--------------
+ drivers/acpi/osl.c                     |    2 -
+ drivers/firmware/dmi_scan.c            |    2 -
+ drivers/firmware/efivars.c             |    4 +-
+ drivers/firmware/iscsi_ibft_find.c     |    2 -
+ drivers/gpu/drm/radeon/radeon_device.c |    3 +
+ drivers/platform/x86/ibm_rtl.c         |    2 -
+ drivers/scsi/isci/init.c               |    2 -
+ include/linux/efi.h                    |   24 ++++++++++---
+ init/main.c                            |    4 +-
+ 13 files changed, 79 insertions(+), 54 deletions(-)
+
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -94,6 +94,7 @@ extern void __iomem *efi_ioremap(unsigne
+ #endif /* CONFIG_X86_32 */
+ 
+ extern int add_efi_memmap;
++extern unsigned long x86_efi_facility;
+ extern void efi_set_executable(efi_memory_desc_t *md, bool executable);
+ extern int efi_memblock_x86_reserve_range(void);
+ extern void efi_call_phys_prelog(void);
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -584,7 +584,7 @@ static void native_machine_emergency_res
+ 			break;
+ 
+ 		case BOOT_EFI:
+-			if (efi_enabled)
++			if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 				efi.reset_system(reboot_mode ?
+ 						 EFI_RESET_WARM :
+ 						 EFI_RESET_COLD,
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -809,15 +809,15 @@ void __init setup_arch(char **cmdline_p)
+ #ifdef CONFIG_EFI
+ 	if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
+ 		     "EL32", 4)) {
+-		efi_enabled = 1;
+-		efi_64bit = false;
++		set_bit(EFI_BOOT, &x86_efi_facility);
+ 	} else if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
+ 		     "EL64", 4)) {
+-		efi_enabled = 1;
+-		efi_64bit = true;
++		set_bit(EFI_BOOT, &x86_efi_facility);
++		set_bit(EFI_64BIT, &x86_efi_facility);
+ 	}
+-	if (efi_enabled && efi_memblock_x86_reserve_range())
+-		efi_enabled = 0;
++
++	if (efi_enabled(EFI_BOOT))
++		efi_memblock_x86_reserve_range();
+ #endif
+ 
+ 	x86_init.oem.arch_setup();
+@@ -890,7 +890,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	finish_e820_parsing();
+ 
+-	if (efi_enabled)
++	if (efi_enabled(EFI_BOOT))
+ 		efi_init();
+ 
+ 	dmi_scan_machine();
+@@ -973,7 +973,7 @@ void __init setup_arch(char **cmdline_p)
+ 	 * The EFI specification says that boot service code won't be called
+ 	 * after ExitBootServices(). This is, in fact, a lie.
+ 	 */
+-	if (efi_enabled)
++	if (efi_enabled(EFI_MEMMAP))
+ 		efi_reserve_boot_services();
+ 
+ 	/* preallocate 4k for mptable mpc */
+@@ -1112,7 +1112,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ #ifdef CONFIG_VT
+ #if defined(CONFIG_VGA_CONSOLE)
+-	if (!efi_enabled || (efi_mem_type(0xa0000) != EFI_CONVENTIONAL_MEMORY))
++	if (!efi_enabled(EFI_BOOT) || (efi_mem_type(0xa0000) != EFI_CONVENTIONAL_MEMORY))
+ 		conswitchp = &vga_con;
+ #elif defined(CONFIG_DUMMY_CONSOLE)
+ 	conswitchp = &dummy_con;
+@@ -1129,14 +1129,14 @@ void __init setup_arch(char **cmdline_p)
+ 	register_refined_jiffies(CLOCK_TICK_RATE);
+ 
+ #ifdef CONFIG_EFI
+-	/* Once setup is done above, disable efi_enabled on mismatched
+-	 * firmware/kernel archtectures since there is no support for
+-	 * runtime services.
++	/* Once setup is done above, unmap the EFI memory map on
++	 * mismatched firmware/kernel archtectures since there is no
++	 * support for runtime services.
+ 	 */
+-	if (efi_enabled && IS_ENABLED(CONFIG_X86_64) != efi_64bit) {
++	if (efi_enabled(EFI_BOOT) &&
++	    IS_ENABLED(CONFIG_X86_64) != efi_enabled(EFI_64BIT)) {
+ 		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
+ 		efi_unmap_memmap();
+-		efi_enabled = 0;
+ 	}
+ #endif
+ }
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -51,9 +51,6 @@
+ 
+ #define EFI_DEBUG	1
+ 
+-int efi_enabled;
+-EXPORT_SYMBOL(efi_enabled);
+-
+ struct efi __read_mostly efi = {
+ 	.mps        = EFI_INVALID_TABLE_ADDR,
+ 	.acpi       = EFI_INVALID_TABLE_ADDR,
+@@ -69,19 +66,28 @@ EXPORT_SYMBOL(efi);
+ 
+ struct efi_memory_map memmap;
+ 
+-bool efi_64bit;
+-
+ static struct efi efi_phys __initdata;
+ static efi_system_table_t efi_systab __initdata;
+ 
+ static inline bool efi_is_native(void)
+ {
+-	return IS_ENABLED(CONFIG_X86_64) == efi_64bit;
++	return IS_ENABLED(CONFIG_X86_64) == efi_enabled(EFI_64BIT);
++}
++
++unsigned long x86_efi_facility;
++
++/*
++ * Returns 1 if 'facility' is enabled, 0 otherwise.
++ */
++int efi_enabled(int facility)
++{
++	return test_bit(facility, &x86_efi_facility) != 0;
+ }
++EXPORT_SYMBOL(efi_enabled);
+ 
+ static int __init setup_noefi(char *arg)
+ {
+-	efi_enabled = 0;
++	clear_bit(EFI_BOOT, &x86_efi_facility);
+ 	return 0;
+ }
+ early_param("noefi", setup_noefi);
+@@ -426,6 +432,7 @@ void __init efi_reserve_boot_services(vo
+ 
+ void __init efi_unmap_memmap(void)
+ {
++	clear_bit(EFI_MEMMAP, &x86_efi_facility);
+ 	if (memmap.map) {
+ 		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
+ 		memmap.map = NULL;
+@@ -460,7 +467,7 @@ void __init efi_free_boot_services(void)
+ 
+ static int __init efi_systab_init(void *phys)
+ {
+-	if (efi_64bit) {
++	if (efi_enabled(EFI_64BIT)) {
+ 		efi_system_table_64_t *systab64;
+ 		u64 tmp = 0;
+ 
+@@ -552,7 +559,7 @@ static int __init efi_config_init(u64 ta
+ 	void *config_tables, *tablep;
+ 	int i, sz;
+ 
+-	if (efi_64bit)
++	if (efi_enabled(EFI_64BIT))
+ 		sz = sizeof(efi_config_table_64_t);
+ 	else
+ 		sz = sizeof(efi_config_table_32_t);
+@@ -572,7 +579,7 @@ static int __init efi_config_init(u64 ta
+ 		efi_guid_t guid;
+ 		unsigned long table;
+ 
+-		if (efi_64bit) {
++		if (efi_enabled(EFI_64BIT)) {
+ 			u64 table64;
+ 			guid = ((efi_config_table_64_t *)tablep)->guid;
+ 			table64 = ((efi_config_table_64_t *)tablep)->table;
+@@ -684,7 +691,6 @@ void __init efi_init(void)
+ 	if (boot_params.efi_info.efi_systab_hi ||
+ 	    boot_params.efi_info.efi_memmap_hi) {
+ 		pr_info("Table located above 4GB, disabling EFI.\n");
+-		efi_enabled = 0;
+ 		return;
+ 	}
+ 	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
+@@ -694,10 +700,10 @@ void __init efi_init(void)
+ 			  ((__u64)boot_params.efi_info.efi_systab_hi<<32));
+ #endif
+ 
+-	if (efi_systab_init(efi_phys.systab)) {
+-		efi_enabled = 0;
++	if (efi_systab_init(efi_phys.systab))
+ 		return;
+-	}
++
++	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
+ 
+ 	/*
+ 	 * Show what we know for posterity
+@@ -715,10 +721,10 @@ void __init efi_init(void)
+ 		efi.systab->hdr.revision >> 16,
+ 		efi.systab->hdr.revision & 0xffff, vendor);
+ 
+-	if (efi_config_init(efi.systab->tables, efi.systab->nr_tables)) {
+-		efi_enabled = 0;
++	if (efi_config_init(efi.systab->tables, efi.systab->nr_tables))
+ 		return;
+-	}
++
++	set_bit(EFI_CONFIG_TABLES, &x86_efi_facility);
+ 
+ 	/*
+ 	 * Note: We currently don't support runtime services on an EFI
+@@ -727,15 +733,17 @@ void __init efi_init(void)
+ 
+ 	if (!efi_is_native())
+ 		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
+-	else if (efi_runtime_init()) {
+-		efi_enabled = 0;
+-		return;
++	else {
++		if (efi_runtime_init())
++			return;
++		set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+ 	}
+ 
+-	if (efi_memmap_init()) {
+-		efi_enabled = 0;
++	if (efi_memmap_init())
+ 		return;
+-	}
++
++	set_bit(EFI_MEMMAP, &x86_efi_facility);
++
+ #ifdef CONFIG_X86_32
+ 	if (efi_is_native()) {
+ 		x86_platform.get_wallclock = efi_get_time;
+@@ -969,6 +977,9 @@ u32 efi_mem_type(unsigned long phys_addr
+ 	efi_memory_desc_t *md;
+ 	void *p;
+ 
++	if (!efi_enabled(EFI_MEMMAP))
++		return 0;
++
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+ 		if ((md->phys_addr <= phys_addr) &&
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -250,7 +250,7 @@ acpi_physical_address __init acpi_os_get
+ 		return acpi_rsdp;
+ #endif
+ 
+-	if (efi_enabled) {
++	if (efi_enabled(EFI_CONFIG_TABLES)) {
+ 		if (efi.acpi20 != EFI_INVALID_TABLE_ADDR)
+ 			return efi.acpi20;
+ 		else if (efi.acpi != EFI_INVALID_TABLE_ADDR)
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -471,7 +471,7 @@ void __init dmi_scan_machine(void)
+ 	char __iomem *p, *q;
+ 	int rc;
+ 
+-	if (efi_enabled) {
++	if (efi_enabled(EFI_CONFIG_TABLES)) {
+ 		if (efi.smbios == EFI_INVALID_TABLE_ADDR)
+ 			goto error;
+ 
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -1224,7 +1224,7 @@ efivars_init(void)
+ 	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
+ 	       EFIVARS_DATE);
+ 
+-	if (!efi_enabled)
++	if (!efi_enabled(EFI_RUNTIME_SERVICES))
+ 		return 0;
+ 
+ 	/* For now we'll register the efi directory at /sys/firmware/efi */
+@@ -1262,7 +1262,7 @@ err_put:
+ static void __exit
+ efivars_exit(void)
+ {
+-	if (efi_enabled) {
++	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+ 		unregister_efivars(&__efivars);
+ 		kobject_put(efi_kobj);
+ 	}
+--- a/drivers/firmware/iscsi_ibft_find.c
++++ b/drivers/firmware/iscsi_ibft_find.c
+@@ -99,7 +99,7 @@ unsigned long __init find_ibft_region(un
+ 	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
+ 	 * only use ACPI for this */
+ 
+-	if (!efi_enabled)
++	if (!efi_enabled(EFI_BOOT))
+ 		find_ibft_in_mem();
+ 
+ 	if (ibft_addr) {
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -429,7 +429,8 @@ bool radeon_card_posted(struct radeon_de
+ {
+ 	uint32_t reg;
+ 
+-	if (efi_enabled && rdev->pdev->subsystem_vendor == PCI_VENDOR_ID_APPLE)
++	if (efi_enabled(EFI_BOOT) &&
++	    rdev->pdev->subsystem_vendor == PCI_VENDOR_ID_APPLE)
+ 		return false;
+ 
+ 	/* first check CRTCs */
+--- a/drivers/platform/x86/ibm_rtl.c
++++ b/drivers/platform/x86/ibm_rtl.c
+@@ -244,7 +244,7 @@ static int __init ibm_rtl_init(void) {
+ 	if (force)
+ 		pr_warn("module loaded by force\n");
+ 	/* first ensure that we are running on IBM HW */
+-	else if (efi_enabled || !dmi_check_system(ibm_rtl_dmi_table))
++	else if (efi_enabled(EFI_BOOT) || !dmi_check_system(ibm_rtl_dmi_table))
+ 		return -ENODEV;
+ 
+ 	/* Get the address for the Extended BIOS Data Area */
+--- a/drivers/scsi/isci/init.c
++++ b/drivers/scsi/isci/init.c
+@@ -633,7 +633,7 @@ static int __devinit isci_pci_probe(stru
+ 		return -ENOMEM;
+ 	pci_set_drvdata(pdev, pci_info);
+ 
+-	if (efi_enabled)
++	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		orom = isci_get_efi_var(pdev);
+ 
+ 	if (!orom)
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -542,18 +542,30 @@ extern int __init efi_setup_pcdp_console
+ #endif
+ 
+ /*
+- * We play games with efi_enabled so that the compiler will, if possible, remove
+- * EFI-related code altogether.
++ * We play games with efi_enabled so that the compiler will, if
++ * possible, remove EFI-related code altogether.
+  */
++#define EFI_BOOT		0	/* Were we booted from EFI? */
++#define EFI_SYSTEM_TABLES	1	/* Can we use EFI system tables? */
++#define EFI_CONFIG_TABLES	2	/* Can we use EFI config tables? */
++#define EFI_RUNTIME_SERVICES	3	/* Can we use runtime services? */
++#define EFI_MEMMAP		4	/* Can we use EFI memory map? */
++#define EFI_64BIT		5	/* Is the firmware 64-bit? */
++
+ #ifdef CONFIG_EFI
+ # ifdef CONFIG_X86
+-   extern int efi_enabled;
+-   extern bool efi_64bit;
++extern int efi_enabled(int facility);
+ # else
+-#  define efi_enabled 1
++static inline int efi_enabled(int facility)
++{
++	return 1;
++}
+ # endif
+ #else
+-# define efi_enabled 0
++static inline int efi_enabled(int facility)
++{
++	return 0;
++}
+ #endif
+ 
+ /*
+--- a/init/main.c
++++ b/init/main.c
+@@ -604,7 +604,7 @@ asmlinkage void __init start_kernel(void
+ 	pidmap_init();
+ 	anon_vma_init();
+ #ifdef CONFIG_X86
+-	if (efi_enabled)
++	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
+ 	thread_info_cache_init();
+@@ -632,7 +632,7 @@ asmlinkage void __init start_kernel(void
+ 	acpi_early_init(); /* before LAPIC and SMP init */
+ 	sfi_init_late();
+ 
+-	if (efi_enabled) {
++	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+ 		efi_late_init();
+ 		efi_free_boot_services();
+ 	}
+
+
