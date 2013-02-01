@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3BAET6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 23:19:58 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62379 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991Ab3BAETy (ORCPT
+	id S1755430Ab3BAEUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 23:20:09 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:43156 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755283Ab3BAET5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 23:19:54 -0500
+	Thu, 31 Jan 2013 23:19:57 -0500
+X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Jan 2013 23:19:57 EST
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 3/4] tools/power turbostat: decode MSR_IA32_POWER_CTL
-Date: Thu, 31 Jan 2013 23:11:35 -0500
-Message-Id: <158ba54b081af78a85e7ec1ffff185959368b886.1359691799.git.len.brown@intel.com>
+Subject: [PATCH 2/4] tools/power turbostat: support HSW
+Date: Thu, 31 Jan 2013 23:11:34 -0500
+Message-Id: <cdc0f0905ddbbfd269fc44fcfc4725eab9e09709.1359691799.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.1.2.422.g08c0e7f
 In-Reply-To: <1359691896-23567-1-git-send-email-lenb@kernel.org>
 References: <1359691896-23567-1-git-send-email-lenb@kernel.org>
@@ -26,73 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-When verbose is enabled, print the C1E-Enable
-bit in MSR_IA32_POWER_CTL.
+This patch enables turbostat to run properly on the
+next-generation Intel(R) Microarchitecture, code named Haswell (HSW).
 
-also delete some redundant tests on the verbose variable.
+HSW supports the BCLK and counters found in SNB.
 
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/include/uapi/asm/msr-index.h |  2 ++
- tools/power/x86/turbostat/turbostat.c | 13 +++++++------
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ tools/power/x86/turbostat/turbostat.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 433a59f..7bdaf7c 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -103,6 +103,8 @@
- #define DEBUGCTLMSR_BTS_OFF_USR		(1UL << 10)
- #define DEBUGCTLMSR_FREEZE_LBRS_ON_PMI	(1UL << 11)
- 
-+#define MSR_IA32_POWER_CTL		0x000001fc
-+
- #define MSR_IA32_MC0_CTL		0x00000400
- #define MSR_IA32_MC0_STATUS		0x00000401
- #define MSR_IA32_MC0_ADDR		0x00000402
 diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index b326878..75f64e0 100644
+index ce6d460..b326878 100644
 --- a/tools/power/x86/turbostat/turbostat.c
 +++ b/tools/power/x86/turbostat/turbostat.c
-@@ -908,8 +908,7 @@ void print_verbose_header(void)
+@@ -1397,6 +1397,9 @@ int has_nehalem_turbo_ratio_limit(unsigned int family, unsigned int model)
+ 	case 0x2D:	/* SNB Xeon */
+ 	case 0x3A:	/* IVB */
+ 	case 0x3E:	/* IVB Xeon */
++	case 0x3C:	/* HSW */
++	case 0x3F:	/* HSW */
++	case 0x45:	/* HSW */
+ 		return 1;
+ 	case 0x2E:	/* Nehalem-EX Xeon - Beckton */
+ 	case 0x2F:	/* Westmere-EX Xeon - Eagleton */
+@@ -1488,6 +1491,9 @@ void rapl_probe(unsigned int family, unsigned int model)
+ 	switch (model) {
+ 	case 0x2A:
+ 	case 0x3A:
++	case 0x3C:	/* HSW */
++	case 0x3F:	/* HSW */
++	case 0x45:	/* HSW */
+ 		do_rapl = RAPL_PKG | RAPL_CORES | RAPL_GFX;
+ 		break;
+ 	case 0x2D:
+@@ -1724,6 +1730,9 @@ int is_snb(unsigned int family, unsigned int model)
+ 	case 0x2D:
+ 	case 0x3A:	/* IVB */
+ 	case 0x3E:	/* IVB Xeon */
++	case 0x3C:	/* HSW */
++	case 0x3F:	/* HSW */
++	case 0x45:	/* HSW */
+ 		return 1;
+ 	}
+ 	return 0;
+@@ -2248,7 +2257,7 @@ int main(int argc, char **argv)
+ 	cmdline(argc, argv);
  
- 	get_msr(0, MSR_NHM_PLATFORM_INFO, &msr);
+ 	if (verbose)
+-		fprintf(stderr, "turbostat v3.0 November 23, 2012"
++		fprintf(stderr, "turbostat v3.1 January 8, 2013"
+ 			" - Len Brown <lenb@kernel.org>\n");
  
--	if (verbose)
--		fprintf(stderr, "cpu0: MSR_NHM_PLATFORM_INFO: 0x%08llx\n", msr);
-+	fprintf(stderr, "cpu0: MSR_NHM_PLATFORM_INFO: 0x%08llx\n", msr);
- 
- 	ratio = (msr >> 40) & 0xFF;
- 	fprintf(stderr, "%d * %.0f = %.0f MHz max efficiency\n",
-@@ -919,13 +918,16 @@ void print_verbose_header(void)
- 	fprintf(stderr, "%d * %.0f = %.0f MHz TSC frequency\n",
- 		ratio, bclk, ratio * bclk);
- 
-+	get_msr(0, MSR_IA32_POWER_CTL, &msr);
-+	fprintf(stderr, "cpu0: MSR_IA32_POWER_CTL: 0x%08llx (C1E: %sabled)\n",
-+		msr, msr & 0x2 ? "EN" : "DIS");
-+
- 	if (!do_ivt_turbo_ratio_limit)
- 		goto print_nhm_turbo_ratio_limits;
- 
- 	get_msr(0, MSR_IVT_TURBO_RATIO_LIMIT, &msr);
- 
--	if (verbose)
--		fprintf(stderr, "cpu0: MSR_IVT_TURBO_RATIO_LIMIT: 0x%08llx\n", msr);
-+	fprintf(stderr, "cpu0: MSR_IVT_TURBO_RATIO_LIMIT: 0x%08llx\n", msr);
- 
- 	ratio = (msr >> 56) & 0xFF;
- 	if (ratio)
-@@ -1016,8 +1018,7 @@ print_nhm_turbo_ratio_limits:
- 
- 	get_msr(0, MSR_NHM_TURBO_RATIO_LIMIT, &msr);
- 
--	if (verbose)
--		fprintf(stderr, "cpu0: MSR_NHM_TURBO_RATIO_LIMIT: 0x%08llx\n", msr);
-+	fprintf(stderr, "cpu0: MSR_NHM_TURBO_RATIO_LIMIT: 0x%08llx\n", msr);
- 
- 	ratio = (msr >> 56) & 0xFF;
- 	if (ratio)
+ 	turbostat_init();
 -- 
 1.8.1.2.422.g08c0e7f
 
