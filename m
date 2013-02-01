@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab3BAJGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:06:03 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:53004 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab3BAJFz (ORCPT
+	id S1756026Ab3BAJGh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:06:37 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37947 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab3BAJG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:05:55 -0500
+	Fri, 1 Feb 2013 04:06:27 -0500
+Message-ID: <510B85D1.5070401@ti.com>
+Date: Fri, 1 Feb 2013 14:37:29 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130129160337.28754.31558.stgit@localhost.localdomain>
-References: <20130129160337.28754.31558.stgit@localhost.localdomain>
-Date: Fri, 1 Feb 2013 10:05:54 +0100
-X-Google-Sender-Auth: fpI-tFaWB2FOt516UufXiWz1AHc
-Message-ID: <CAAxaTiMGRTDe1g1HScQf8gKL4ygwt2iQbbNsbAQKDwY5KOHTkw@mail.gmail.com>
-Subject: Re: [PATCH 2 1/2] coccicheck: Allow the user to give a V= (verbose) argument
-From: Nicolas Palix <nicolas.palix@imag.fr>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, cocci@systeme.lip6.fr
-Content-Type: text/plain; charset=UTF-8
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <linaro-dev@lists.linaro.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
+        <rjw@sisk.pl>, <Steve.Bannister@arm.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 3/3] cpufreq: Remove unnecessary use of policy->shared_type
+References: <1bf82454ab1f16b13212548d7c9605067c8b7a0d.1359700705.git.viresh.kumar@linaro.org> <902bed453159832925df76e24806f3b919fdfc74.1359700706.git.viresh.kumar@linaro.org> <510B6510.6060608@ti.com> <CAKohponEsSrwLWbi4WJ19i8XkzEiL0De2ShLePBdygunmGEo5g@mail.gmail.com> <510B6FC5.8030309@ti.com> <CAKohpomxi91kXR+th2BbruKigmLPmrDQf1s_Mf11C3Bs53aB3A@mail.gmail.com> <510B8237.7030605@ti.com>
+In-Reply-To: <510B8237.7030605@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 5:03 PM, Bernd Schubert
-<bernd.schubert@itwm.fraunhofer.de> wrote:
-> Do not run with verbosity on/off depending on the ONLINE variable,
-> which gets set with C=1 or C=2, but allow the user to set the
-> verbosity using kernel default make V= paramemter.
-> Verbosity is off by default now.
->
->
-> Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-> CC: Julia Lawall <Julia.Lawall@lip6.fr>
-> CC: Nicolas Palix <nicolas.palix@imag.fr>
-Acked-by: Nicolas Palix <nicolas.palix@imag.fr>
+Viresh,
 
-> CC: cocci@systeme.lip6.fr
-> CC: Michal Marek <mmarek@suse.cz>
-> ---
->  Documentation/coccinelle.txt |    4 ++++
->  scripts/coccicheck           |   11 ++++++++++-
->  2 files changed, 14 insertions(+), 1 deletion(-)
+On Friday 01 February 2013 02:22 PM, Santosh Shilimkar wrote:
+> On Friday 01 February 2013 01:32 PM, Viresh Kumar wrote:
+>> On 1 February 2013 13:03, Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> wrote:
+>>> I am not talking about just notifiers. This is for external users who
+>>> has subscribed for notifiers. The point is whether the core CPUFReq
+>>> gets updated without that flag for all affected CPU.
+>>
+>> Yes, its safe. Follow this thread, yesterday i explained this to
+>> Tomasz Figa:
+>>
+>> http://www.spinics.net/lists/arm-kernel/msg221629.html
+>>
+> That part was very clear to me Viresh. Anyway thanks for the link.
+>  From what I read so far, it might just work but I would want to
+> try it out before acking the approach.
 >
-> diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
-> index cf44eb6..dffa2d6 100644
-> --- a/Documentation/coccinelle.txt
-> +++ b/Documentation/coccinelle.txt
-> @@ -87,6 +87,10 @@ As any static code analyzer, Coccinelle produces false
->  positives. Thus, reports must be carefully checked, and patches
->  reviewed.
->
-> +To enable verbose messages set the V= variable, for example:
-> +
-> +   make coccicheck MODE=report V=1
-> +
->
->   Using Coccinelle with a single semantic patch
->  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> diff --git a/scripts/coccicheck b/scripts/coccicheck
-> index 1a49d1c..f8f15a2 100755
-> --- a/scripts/coccicheck
-> +++ b/scripts/coccicheck
-> @@ -2,6 +2,15 @@
->
->  SPATCH="`which ${SPATCH:=spatch}`"
->
-> +# The verbosity may be set by the environmental parameter V=
-> +# as for example with 'make V=1 coccicheck'
-> +
-> +if [ -n "$V" -a "$V" != "0" ]; then
-> +       VERBOSE=1
-> +else
-> +       VERBOSE=0
-> +fi
-> +
->  if [ "$C" = "1" -o "$C" = "2" ]; then
->      ONLINE=1
->
-> @@ -55,7 +64,7 @@ coccinelle () {
->  #
->  #    $SPATCH -D $MODE $FLAGS -parse_cocci $COCCI $OPT > /dev/null
->
-> -    if [ "$ONLINE" = "0" ] ; then
-> +    if [ $VERBOSE -ne 0 ] ; then
->
->         FILE=`echo $COCCI | sed "s|$srctree/||"`
->
->
+You are correct. Sorry for oversight on your initial point about the
+usage of the flag. When I added that flag, I just went by the
+description thinking the cpufreq core booking and stat updates
+use the flag. Its not the case.
 
-
-
--- 
-Nicolas Palix
+Thanks for the fix. For the patch,
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
