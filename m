@@ -1,86 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab3BAEGX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 23:06:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5110 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877Ab3BAEGV (ORCPT
+	id S1754136Ab3BAELr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 23:11:47 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:33544 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab3BAELq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 23:06:21 -0500
-X-Authority-Analysis: v=2.0 cv=QcjkT7nv c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zzhEZVgmVRcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=QEcsOeN0EBIA:10 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=onQwBMIIbOLC4SLre_YA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1359691579.5642.14.camel@gandalf.local.home>
-Subject: Re: [PATCH 3/4] Export blk_fill_rwbs()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Thu, 31 Jan 2013 23:06:19 -0500
-In-Reply-To: <510B3D2A.3040007@huawei.com>
-References: <1358285142-10576-1-git-send-email-koverstreet@google.com>
-	  <1358285142-10576-3-git-send-email-koverstreet@google.com>
-	 <1359690521.5642.10.camel@gandalf.local.home> <510B3D2A.3040007@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Jan 2013 23:11:46 -0500
+From: Len Brown <lenb@kernel.org>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 1/4] intel_idle: stop using driver_data for static flags
+Date: Thu, 31 Jan 2013 23:11:33 -0500
+Message-Id: <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.8.1.2.422.g08c0e7f
+In-Reply-To: <1359691896-23567-1-git-send-email-lenb@kernel.org>
+References: <1359691896-23567-1-git-send-email-lenb@kernel.org>
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-01 at 11:57 +0800, Li Zefan wrote:
-> on 2013/2/1 11:48, Steven Rostedt wrote:
-> > Li,
-> > 
-> > Can you give an Ack or Nack for this.
-> > 
-> 
-> I think this patch shouldn't go into upstream without bcache code. We don't
-> export symbols for out of tree code.
-> 
+From: Len Brown <len.brown@intel.com>
 
-Even for GPL code? I have no problem either way, as we never guarantee a
-module ABI. Hence, if it is exported, there's no guarantee that it will
-exist or even act the same in later versions.
+The commit, 4202735e8ab6ecfb0381631a0d0b58fefe0bd4e2
+(cpuidle: Split cpuidle_state structure and move per-cpu statistics fields)
+observed that the MWAIT flags for Cn on every processor to date were the
+same, and created get_driver_data() to supply them.
 
-Kernel modules (internal, external, GPL or not) don't have the luxury of
-a stable ABI as user space does.
+Unfortunately, that assumption is false, going forward.
+So here we restore the MWAIT flags to the cpuidle_state table.
+However, instead restoring the old "driver_data" field,
+we put the flags into the existing "flags" field,
+where they probalby should have lived all along.
 
-But I'll take this as a Nack.
+This patch does not change any operation.
 
-Thanks,
+This patch removes 1 of the 3 users of cpuidle_state_usage.driver_data.
+Perhaps some day we'll get rid of the other 2.
 
--- Steve
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/idle/intel_idle.c | 75 ++++++++++++++++-------------------------------
+ 1 file changed, 26 insertions(+), 49 deletions(-)
 
-> > 
-> > On Tue, 2013-01-15 at 13:25 -0800, Kent Overstreet wrote:
-> >> Exported so it can be used by bcache's tracepoints
-> >>
-> >> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> >> CC: Steven Rostedt <rostedt@goodmis.org>
-> >> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> >> CC: Ingo Molnar <mingo@redhat.com>
-> >> ---
-> >>  kernel/trace/blktrace.c | 1 +
-> >>  1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-> >> index c0bd030..dbe1667 100644
-> >> --- a/kernel/trace/blktrace.c
-> >> +++ b/kernel/trace/blktrace.c
-> >> @@ -1806,6 +1806,7 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
-> >>  
-> >>  	rwbs[i] = '\0';
-> >>  }
-> >> +EXPORT_SYMBOL_GPL(blk_fill_rwbs);
-> >>  
-> >>  #endif /* CONFIG_EVENT_TRACING */
-> >>  
-> > 
-> > 
-> > 
-
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 2df9414..8331753 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -109,6 +109,16 @@ static struct cpuidle_state *cpuidle_state_table;
+ #define CPUIDLE_FLAG_TLB_FLUSHED	0x10000
+ 
+ /*
++ * MWAIT takes an 8-bit "hint" in EAX "suggesting"
++ * the C-state (top nibble) and sub-state (bottom nibble)
++ * 0x00 means "MWAIT(C1)", 0x10 means "MWAIT(C2)" etc.
++ * 
++ * We store the hint at the top of our "flags" for each state.
++ */
++#define flags_2_MWAIT_EAX(flags) (((flags) >> 24) & 0xFF)
++#define MWAIT_EAX_2_flags(eax) ((eax & 0xFF) << 24)
++
++/*
+  * States are indexed by the cstate number,
+  * which is also the index into the MWAIT hint array.
+  * Thus C0 is a dummy.
+@@ -118,21 +128,21 @@ static struct cpuidle_state nehalem_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 	{ /* MWAIT C1 */
+ 		.name = "C1-NHM",
+ 		.desc = "MWAIT 0x00",
+-		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
+ 		.exit_latency = 3,
+ 		.target_residency = 6,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C2 */
+ 		.name = "C3-NHM",
+ 		.desc = "MWAIT 0x10",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 20,
+ 		.target_residency = 80,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C3 */
+ 		.name = "C6-NHM",
+ 		.desc = "MWAIT 0x20",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x20) |CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 200,
+ 		.target_residency = 800,
+ 		.enter = &intel_idle },
+@@ -143,28 +153,28 @@ static struct cpuidle_state snb_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 	{ /* MWAIT C1 */
+ 		.name = "C1-SNB",
+ 		.desc = "MWAIT 0x00",
+-		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
+ 		.exit_latency = 1,
+ 		.target_residency = 1,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C2 */
+ 		.name = "C3-SNB",
+ 		.desc = "MWAIT 0x10",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 80,
+ 		.target_residency = 211,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C3 */
+ 		.name = "C6-SNB",
+ 		.desc = "MWAIT 0x20",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x20) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 104,
+ 		.target_residency = 345,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C4 */
+ 		.name = "C7-SNB",
+ 		.desc = "MWAIT 0x30",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x30) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 109,
+ 		.target_residency = 345,
+ 		.enter = &intel_idle },
+@@ -175,28 +185,28 @@ static struct cpuidle_state ivb_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 	{ /* MWAIT C1 */
+ 		.name = "C1-IVB",
+ 		.desc = "MWAIT 0x00",
+-		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
+ 		.exit_latency = 1,
+ 		.target_residency = 1,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C2 */
+ 		.name = "C3-IVB",
+ 		.desc = "MWAIT 0x10",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 59,
+ 		.target_residency = 156,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C3 */
+ 		.name = "C6-IVB",
+ 		.desc = "MWAIT 0x20",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x20) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 80,
+ 		.target_residency = 300,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C4 */
+ 		.name = "C7-IVB",
+ 		.desc = "MWAIT 0x30",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x30) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 87,
+ 		.target_residency = 300,
+ 		.enter = &intel_idle },
+@@ -207,14 +217,14 @@ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 	{ /* MWAIT C1 */
+ 		.name = "C1-ATM",
+ 		.desc = "MWAIT 0x00",
+-		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
+ 		.exit_latency = 1,
+ 		.target_residency = 4,
+ 		.enter = &intel_idle },
+ 	{ /* MWAIT C2 */
+ 		.name = "C2-ATM",
+ 		.desc = "MWAIT 0x10",
+-		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID,
+ 		.exit_latency = 20,
+ 		.target_residency = 80,
+ 		.enter = &intel_idle },
+@@ -222,7 +232,7 @@ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 	{ /* MWAIT C4 */
+ 		.name = "C4-ATM",
+ 		.desc = "MWAIT 0x30",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x30) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 100,
+ 		.target_residency = 400,
+ 		.enter = &intel_idle },
+@@ -230,41 +240,12 @@ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 	{ /* MWAIT C6 */
+ 		.name = "C6-ATM",
+ 		.desc = "MWAIT 0x52",
+-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.flags = MWAIT_EAX_2_flags(0x52) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+ 		.exit_latency = 140,
+ 		.target_residency = 560,
+ 		.enter = &intel_idle },
+ };
+ 
+-static long get_driver_data(int cstate)
+-{
+-	int driver_data;
+-	switch (cstate) {
+-
+-	case 1:	/* MWAIT C1 */
+-		driver_data = 0x00;
+-		break;
+-	case 2:	/* MWAIT C2 */
+-		driver_data = 0x10;
+-		break;
+-	case 3:	/* MWAIT C3 */
+-		driver_data = 0x20;
+-		break;
+-	case 4:	/* MWAIT C4 */
+-		driver_data = 0x30;
+-		break;
+-	case 5:	/* MWAIT C5 */
+-		driver_data = 0x40;
+-		break;
+-	case 6:	/* MWAIT C6 */
+-		driver_data = 0x52;
+-		break;
+-	default:
+-		driver_data = 0x00;
+-	}
+-	return driver_data;
+-}
+-
+ /**
+  * intel_idle
+  * @dev: cpuidle_device
+@@ -278,8 +259,7 @@ static int intel_idle(struct cpuidle_device *dev,
+ {
+ 	unsigned long ecx = 1; /* break on interrupt flag */
+ 	struct cpuidle_state *state = &drv->states[index];
+-	struct cpuidle_state_usage *state_usage = &dev->states_usage[index];
+-	unsigned long eax = (unsigned long)cpuidle_get_statedata(state_usage);
++	unsigned long eax = flags_2_MWAIT_EAX(state->flags);
+ 	unsigned int cstate;
+ 	int cpu = smp_processor_id();
+ 
+@@ -558,9 +538,6 @@ static int intel_idle_cpu_init(int cpu)
+ 		if (cpuidle_state_table[cstate].enter == NULL)
+ 			continue;
+ 
+-		dev->states_usage[dev->state_count].driver_data =
+-			(void *)get_driver_data(cstate);
+-
+ 		dev->state_count += 1;
+ 	}
+ 
+-- 
+1.8.1.2.422.g08c0e7f
 
