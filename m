@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab3BATDj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 14:03:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59656 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757094Ab3BATDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 14:03:38 -0500
-Message-ID: <510C1178.1020904@zytor.com>
-Date: Fri, 01 Feb 2013 11:03:20 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757398Ab3BATNk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 14:13:40 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:33383 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756319Ab3BATNi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 14:13:38 -0500
 MIME-Version: 1.0
-To: William Hubbs <w.d.hubbs@gmail.com>
-CC: linux-kernel@vger.kernel.org, mpagano@gentoo.org
-Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
-References: <1359672699-23540-1-git-send-email-w.d.hubbs@gmail.com> <510AFCA1.5000700@zytor.com> <20130201171453.GA1630@linux1>
-In-Reply-To: <20130201171453.GA1630@linux1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <Pine.LNX.4.44L0.1301311002190.1876-100000@iolanthe.rowland.org>
+References: <CANK3SE09VqvshdLrV4xp2W8BHZqLmuz-pV9jQVj7tbk1JBX+9g@mail.gmail.com>
+ <Pine.LNX.4.44L0.1301311002190.1876-100000@iolanthe.rowland.org>
+From: Mark Einon <mark.einon@gmail.com>
+Date: Fri, 1 Feb 2013 19:13:23 +0000
+Message-ID: <CANK3SE25kcgSu2dwKtQKU6-wvryC4qNQJu_nj3NPJHQTTC0oXw@mail.gmail.com>
+Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 09:14 AM, William Hubbs wrote:
-> On Thu, Jan 31, 2013 at 03:22:09PM -0800, H. Peter Anvin wrote:
->> On 01/31/2013 02:51 PM, William Hubbs wrote:
->>> On a system that does not use an initramfs, /dev/root was always
->>> listed in /proc/mounts. This breaks software which scans /proc/mounts to
->>> determine which file systems are mounted since /dev/root is not a valid
->>> device name.
->>>
->>> This changes that processing so that "/dev/root" is only added to
->>> /proc/mounts if a root device is not specified with the root= option on
->>> the kernel command line.
->>>
->>> Signed-off-by: William Hubbs <w.d.hubbs@gmail.com>
+On 31 January 2013 15:04, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 30 Jan 2013, Mark Einon wrote:
+>
+>> >> > >> This patch fixes the kernel warning generated when putting an MSI MS-1727
+>> >> > >> GT740 laptop into suspend mode. The call sequence in this case calls
+>> >> > >> free_irq() twice, once in pci_remove() and once then in pci_suspend().
+>> >> > >
+>> >> > > You mean /first/ in pci_suspend() and /then/ in pci_remove() on the
+>> >> > > already suspended devices, right?
+>> >> >
+>> >> > Yes, I did. The call sequence is suspend then resume. My bad.
+>> >
+>> > Why does the pci_suspend routine call free_irq() at all?  As far as I
+>> > know, it's not supposed to do that.  Won't the device continue to use
+>> > the same IRQ after it is resumed?
 >>
->> Let me also point out that most of the time, the kernel actually has a
->> udev device name for an actual device...
+>> This sounds reasonable to me - I think we could probably get rid of
+>> the request_irq() call from resume, and use
+>> disable_irq()/enable_irq()?
 >
-> I'm not sure what you mean. If you mean /dev/root is not an actual
-> device and should not be listed in /proc/mounts, that is correct and
-> that is why I am proposing this patch.
+> Why mess around with IRQ settings at all?  Just have the suspend
+> routine tell the controller to stop generating them.
+>
+> Alan Stern
 >
 
-What I meant is that even if you *don't* specify a root= device the 
-modern kernel will generally have a usable name.
+I looked into doing this; using context_stop() to stop the controller running.
 
-	-hpa
+However, removing the enable_irq() from pci_resume() involves not
+calling ohci_enable() (as it is also the fw_card_driver.enable
+function, and can't easily be modified). As this call involves a lot
+of register writes and I have no devices to test, I decided against
+it.
 
+I'll send an updated patch for consideration that merely uses a bool
+to stop the irq being freed twice - crude, but it works without
+changing too much code.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Cheers,
 
+Mark
