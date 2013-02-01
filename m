@@ -1,38 +1,73 @@
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab3A3Aac (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 29 Jan 2013 19:30:32 -0500
-Received: from mx3.suomi24.fi ([80.76.154.16]:54235 "EHLO
-	s24-maa01.sth.basefarm.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751652Ab3A3Aaa (ORCPT
+	id S1751671Ab3BAFGy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 00:06:54 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37734 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab3BAFGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Jan 2013 19:30:30 -0500
-Message-ID: <30191344.162881359505754005.JavaMail.defaultUser@defaultHost>
-Date: Wed, 30 Jan 2013 01:29:14 +0100 (CET)
-From: beatrice leonard <beatriceleonard@suomi24.fi>
-Subject: HI
+	Fri, 1 Feb 2013 00:06:51 -0500
+From: J Keerthy <j-keerthy@ti.com>
+To: <linux-kernel@vger.kernel.org>, <lgirdwood@gmail.com>,
+        <broonie@opensource.wolfsonmicro.com>
+CC: <j-keerthy@ti.com>
+Subject: [PATCH] Regulator: Reorder the min max assignment in the sequence of regulator_set_voltage function
+Date: Fri, 1 Feb 2013 10:34:58 +0530
+Message-ID: <1359695098-3630-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain;charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The min and max values for regulators are getting assigned before actually
+the voltage is set. So making sure that min and max values are assigned
+only if the voltage is successfully set else keeping the last successfully
+set voltage's min and max values.
 
+This is boot tested on OMAP4430 and OMAP4460 boards.
 
+Signed-off-by: J Keerthy <j-keerthy@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com> 
+---
+ drivers/regulator/core.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
---
-Hello dear
-
-How are you doing today, i hope every things is ok with you as its my
-pleasure to contact you after viewing your profile which really interest me in 
-having communication with you, if you will have the
-desire with me so that we can get to know each other better and see what will 
-happen in future. i will be very happy if you can write me back
-and lets know all about each other ok, so that I will send you my
-pictures, I will be waiting to hear from you as I
-wish you all the best for your day.
-yours new friend.
-  Beatrice
---
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 2785843..12140fb 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -81,6 +81,8 @@ struct regulator {
+ 	int uA_load;
+ 	int min_uV;
+ 	int max_uV;
++	int curr_min_uV;
++	int curr_max_uV;
+ 	char *supply_name;
+ 	struct device_attribute dev_attr;
+ 	struct regulator_dev *rdev;
+@@ -2315,6 +2317,8 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
+ 	ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
+ 	if (ret < 0)
+ 		goto out;
++	regulator->curr_min_uV = regulator->min_uV;
++	regulator->curr_max_uV = regulator->max_uV;
+ 	regulator->min_uV = min_uV;
+ 	regulator->max_uV = max_uV;
+ 
+@@ -2325,6 +2329,11 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
+ 	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
+ 
+ out:
++	if (ret) {
++		regulator->min_uV = regulator->curr_min_uV;
++		regulator->max_uV = regulator->curr_max_uV;
++	}
++
+ 	mutex_unlock(&rdev->mutex);
+ 	return ret;
+ }
+-- 
+1.7.5.4
 
