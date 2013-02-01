@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab3BAImW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:42:22 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63123 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3BAImS (ORCPT
+	id S1756026Ab3BAImg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:42:36 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:63152 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755961Ab3BAImc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:42:18 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-98-510b7fe677ba
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH 0/2] perf: add new uncore command
-References: <1359640479-5289-1-git-send-email-eranian@google.com>
-Date: Fri, 01 Feb 2013 17:42:13 +0900
-In-Reply-To: <1359640479-5289-1-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Thu, 31 Jan 2013 14:54:37 +0100")
-Message-ID: <878v78togq.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 1 Feb 2013 03:42:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CA+icZUW5tBotrZT9QtNPao-3rEccohBW8a4diS2nJ+ONgTWLaQ@mail.gmail.com>
+References: <CA+icZUW5tBotrZT9QtNPao-3rEccohBW8a4diS2nJ+ONgTWLaQ@mail.gmail.com>
+Date: Fri, 1 Feb 2013 09:42:30 +0100
+Message-ID: <CAKMK7uEFCm5JPD9bg4uO9K_q-w0=9GWzRLoB9H-_=ZR7NxA9=A@mail.gmail.com>
+Subject: Re: Revert "console: implement lockdep support for console_lock"
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: sedat.dilek@gmail.com
+Cc: Dave Airlie <airlied@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Stephane
+On Fri, Feb 1, 2013 at 9:21 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> people having the fbcon-locking-fixes [1] in their local GIT tree can
+> revert this change?
 
-On Thu, 31 Jan 2013 14:54:37 +0100, Stephane Eranian wrote:
-> This patchset adds a new command to perf: perf uncore.
-> It is used to measure processor socket-level metrics
-> on a system-wide basis and at all priv levels.
->
-> The command comes with a set of predefined key metrics
-> which are useful to measure multi-socket system imbalance
-> and various bandwidths.
->
-> The following metrics are currently defined:
->   - memory bandwidth (Nehalem, Westmere, SandyBridge-EP)
->   - PCIe bandwidth (SandyBridge-EP)
->   - QPI bandwidth (SandyBridge-EP)
->   - C-state residency (SandyBridge-EP)
->
-> Others can be added in the future.
->
-> The command provides options to modify the unit of the metrics
-> (default: MB/s for bandwidth).
->
-> Example on Nehalem:
->
->  # perf uncore
->  #------------------------------
->  #           Socket0           |
->  #------------------------------
->  #        RAM Bandwidth        |
->  #            Wr             Rd|
->  #          MB/s           MB/s|
->  #------------------------------
->          4954.99       14897.29
->          4953.97       14894.56
->          4947.52       14874.97
->
-> To make plotting easier, the output can be augmented with a timestamp:
->
->  # perf uncore -T
->  #----------------------------------------
->  #         |           Socket0           |
->  #         |------------------------------
->  #   Time  |        RAM Bandwidth        |
->  #    in   |            Wr             Rd|
->  #   secs  |          MB/s           MB/s|
->  #----------------------------------------
->           1        4952.50       14890.49
->           2        4955.55       14900.19
->           3        4949.13       14879.60
->           4        4954.66       14896.26
->
-> The code is split between generic layer (builtin-uncore.c) and
-> an arch specific layer (arch/*/util/uncore.c). All events are
-> hardcoded because they don't change for a given processor and
-> metric computation requires combining multiple events.
+Yeah, if you have all the fixes reverting this is fine and appreciated
+to increase testing. Dave will probably push the revert himself to
+drm-next soon.
+-Daniel
 
->From a quick glancing, I think this is basically what perf stat does
-with selected events, right?  As we now have your interval printing I
-can't find much difference.
-
-And there's a patchset [1] from Jiri to support some kind of formula -
-yeah, now I've written the correct spelling. :) - that might fit to this
-purpose if you provide suitable formula file IMHO.  So I guess we don't
-need to have another command and can reuse perf stat, no?
-
-Thanks,
-Namhyung
+>
+> commit ff0d05bf73620eb7dc8aee7423e992ef87870bdf
+> Refs: v3.8-rc5-194-gff0d05b
+> Author:     Dave Airlie <airlied@gmail.com>
+> AuthorDate: Thu Jan 31 14:27:03 2013 +1100
+> Commit:     Dave Airlie <airlied@gmail.com>
+> CommitDate: Thu Jan 31 15:46:56 2013 +1100
+>
+>     Revert "console: implement lockdep support for console_lock"
+>
+>     This reverts commit daee779718a319ff9f83e1ba3339334ac650bb22.
+>
+>     I'll requeue this after the console locking fixes, so lockdep
+>     is useful again for people until fbcon is fixed.
+>
+>     Signed-off-by: Dave Airlie <airlied@redhat.com>
+>
+> Thanks!
+>
+> Regards,
+> - Sedat
+>
+> [1] http://cgit.freedesktop.org/~airlied/linux/log/?h=fbcon-locking-fixes
 
 
-[1] http://lwn.net/Articles/532634/
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
