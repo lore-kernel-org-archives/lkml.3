@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927Ab3BAWcH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 17:32:07 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:51591 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757885Ab3BAWcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 17:32:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1302011442200.11804@jlaw-desktop.mno.stratus.com>
-References: <alpine.DEB.2.02.1301181302260.31163@jlaw-desktop.mno.stratus.com>
- <alpine.DEB.2.02.1301181322500.31163@jlaw-desktop.mno.stratus.com>
- <1359674965.2426.13.camel@zim.stowe> <alpine.DEB.2.02.1302011442200.11804@jlaw-desktop.mno.stratus.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 1 Feb 2013 15:31:41 -0700
-Message-ID: <CAErSpo7OYFF7YGDneoTvVjhxMq1q92UewddseLrx_w7VJ+JOBA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PCI: ASPM exit link state code could skip devices
-To: Joe Lawrence <Joe.Lawrence@stratus.com>
-Cc: Myron Stowe <mstowe@redhat.com>, linux-pci@vger.kernel.org,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Bulkow <david.bulkow@stratus.com>, shli@kernel.org,
-        shli@fusionio.com, kaneshige.kenji@jp.fujitsu.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757933Ab3BAWeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 17:34:06 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:55588 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757885Ab3BAWeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 17:34:02 -0500
+Message-ID: <1359758038.17807.18.camel@joe-AO722>
+Subject: Re: [PATCH] tile: revert pr_info to printk in <asm/io.h>
+From: Joe Perches <joe@perches.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, David Dillow <dillowda@ornl.gov>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org
+Date: Fri, 01 Feb 2013 14:33:58 -0800
+In-Reply-To: <201302012043.r11KhFXi024365@farm-0021.internal.tilera.com>
+References: <201302012043.r11KhFXi024365@farm-0021.internal.tilera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 12:55 PM, Joe Lawrence <Joe.Lawrence@stratus.com> wrote:
-> On Thu, 31 Jan 2013, Myron Stowe wrote:
+On Fri, 2013-02-01 at 12:34 -0500, Chris Metcalf wrote:
+> Using pr_info in a header exposes us to potential trouble from
+> subsystems that define pr_fmt.  This change fixes:
+>
+>   In file included from include/linux/scatterlist.h:10,
+>                    from include/scsi/scsi.h:12,
+>                    from drivers/infiniband/ulp/srp/ib_srp.c:46:
+>   arch/tile/include/asm/io.h: In function ‘ioport_map’:
+>   arch/tile/include/asm/io.h:296: error: expected ‘)’ before ‘PFX’
 
->> PCI: ASPM exit link state code is skipping devices
->>
->> From: Myron Stowe <myron.stowe@redhat.com>
->>
->> On PCI bus hotplug removal, 'pcie_aspm_exit_link_state' can potentially
->> skip parent devices that have link_state allocated.  Instead of exiting
->> early if a given device in not PCIe, check whether or not the device's
->> parent has link_state allocated.  This enables 'pcie_aspm_exit_link_state'
->> to properly clean up parent link_state when the last function in a slot
->> might not be PCIe.
->>
->> Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
->> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
->> ---
->>
->>  drivers/pci/pcie/aspm.c |    5 +----
->>  1 files changed, 1 insertions(+), 4 deletions(-)
->>
->>
->> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
->> index 8474b6a..aa52727 100644
->> --- a/drivers/pci/pcie/aspm.c
->> +++ b/drivers/pci/pcie/aspm.c
->> @@ -634,10 +634,7 @@ void pcie_aspm_exit_link_state(struct pci_dev *pdev)
->>       struct pci_dev *parent = pdev->bus->self;
->>       struct pcie_link_state *link, *root, *parent_link;
->>
->> -     if (!pci_is_pcie(pdev) || !parent || !parent->link_state)
->> -             return;
->> -     if ((pci_pcie_type(parent) != PCI_EXP_TYPE_ROOT_PORT) &&
->> -         (pci_pcie_type(parent) != PCI_EXP_TYPE_DOWNSTREAM))
->> +     if (!parent || !parent->link_state)
->>               return;
->>
->>       down_read(&pci_bus_sem);
->>
->>
->>
->
-> Hi Myron,
->
-> The patch tests eliminates the reported crash when hotplugging our
-> problem PCI bus.
->
-> The additional checks removed from pcie_aspm_exit_link_state (ie, the
-> simplification) do appear to be unnecessary as pcie_aspm_init_link_state
-> is already preventing such devices from allocating link state.
+Interesting.
 
-I added a Tested-by for you, Joe, and applied this to my pci/joe-aspm
-branch for v3.9.  Thanks!
+> diff --git a/arch/tile/include/asm/io.h b/arch/tile/include/asm/io.h
+[]
+> @@ -292,7 +292,7 @@ static inline long ioport_panic(void)
+>  
+>  static inline void __iomem *ioport_map(unsigned long port, unsigned int len)
+>  {
+> -	pr_info("ioport_map: mapping IO resources is unsupported on tile.\n");
+> +	printk("ioport_map: mapping IO resources is unsupported on tile.\n");
+
+It'd be nicer to add an appropriate KERN_<LEVEL> here.
+
+My preference would be to change ib_srp.c (and ib_srpt) like:
+---
+ drivers/infiniband/ulp/srp/ib_srp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index d5088ce..59bf409 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -30,7 +30,7 @@
+  * SOFTWARE.
+  */
+ 
+-#define pr_fmt(fmt) PFX fmt
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/module.h>
+ #include <linux/init.h>
+
+
+
