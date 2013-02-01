@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161049Ab3BAKsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:48:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38694 "EHLO mail.kernel.org"
+	id S1161065Ab3BAKsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:48:21 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38709 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422682Ab3BAKsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:48:08 -0500
+	id S1161046Ab3BAKsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:48:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Hanisch <fhanisch@uni-potsdam.de>,
-        Matthew Robbetts <wingfeathera@gmail.com>,
-        Michael Beer <beerml@sigma6audio.de>, Daniel Mack <daniel@caiaq.de>,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 09/15] ALSA: usb-audio: fix invalid length check for RME and other UAC 2 devices
-Date: Fri,  1 Feb 2013 11:48:42 +0100
-Message-Id: <20130201104757.141048264@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Borislav Petkov <bp@suse.de>
+Subject: [ 10/15] EDAC: Test correct variable in ->store function
+Date: Fri,  1 Feb 2013 11:48:43 +0100
+Message-Id: <20130201104757.212014649@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104756.470588207@linuxfoundation.org>
 References: <20130201104756.470588207@linuxfoundation.org>
@@ -28,58 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit d56268fb108c7c21e19933588ca4d94652585183 upstream.
+commit 8024c4c0b1057d1cd811fc9c3f88f81de9729fcd upstream.
 
-Commit 23caaf19b11e (ALSA: usb-mixer: Add support for Audio Class v2.0)
-forgot to adjust the length check for UAC 2.0 feature unit descriptors.
-This would make the code abort on encountering a feature unit without
-per-channel controls, and thus prevented the driver to work with any
-device having such a unit, such as the RME Babyface or Fireface UCX.
+We're testing for ->show but calling ->store().
 
-Reported-by: Florian Hanisch <fhanisch@uni-potsdam.de>
-Tested-by: Matthew Robbetts <wingfeathera@gmail.com>
-Tested-by: Michael Beer <beerml@sigma6audio.de>
-Cc: Daniel Mack <daniel@caiaq.de>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/edac/edac_pci_sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -1238,16 +1238,23 @@ static int parse_audio_feature_unit(stru
- 		}
- 		channels = (hdr->bLength - 7) / csize - 1;
- 		bmaControls = hdr->bmaControls;
-+		if (hdr->bLength < 7 + csize) {
-+			snd_printk(KERN_ERR "usbaudio: unit %u: "
-+				   "invalid UAC_FEATURE_UNIT descriptor\n",
-+				   unitid);
-+			return -EINVAL;
-+		}
- 	} else {
- 		struct uac2_feature_unit_descriptor *ftr = _ftr;
- 		csize = 4;
- 		channels = (hdr->bLength - 6) / 4 - 1;
- 		bmaControls = ftr->bmaControls;
--	}
--
--	if (hdr->bLength < 7 || !csize || hdr->bLength < 7 + csize) {
--		snd_printk(KERN_ERR "usbaudio: unit %u: invalid UAC_FEATURE_UNIT descriptor\n", unitid);
--		return -EINVAL;
-+		if (hdr->bLength < 6 + csize) {
-+			snd_printk(KERN_ERR "usbaudio: unit %u: "
-+				   "invalid UAC_FEATURE_UNIT descriptor\n",
-+				   unitid);
-+			return -EINVAL;
-+		}
- 	}
+--- a/drivers/edac/edac_pci_sysfs.c
++++ b/drivers/edac/edac_pci_sysfs.c
+@@ -257,7 +257,7 @@ static ssize_t edac_pci_dev_store(struct
+ 	struct edac_pci_dev_attribute *edac_pci_dev;
+ 	edac_pci_dev = (struct edac_pci_dev_attribute *)attr;
  
- 	/* parse the source unit */
+-	if (edac_pci_dev->show)
++	if (edac_pci_dev->store)
+ 		return edac_pci_dev->store(edac_pci_dev->value, buffer, count);
+ 	return -EIO;
+ }
 
 
