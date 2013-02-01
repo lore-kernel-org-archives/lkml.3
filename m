@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab3BANKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:10:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44685 "EHLO mail.kernel.org"
+	id S1757437Ab3BANKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:10:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44740 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757123Ab3BANJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:09:59 -0500
+	id S1755473Ab3BANKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:10:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [ 31/89] DM-RAID: Fix RAID10s check for sufficient redundancy
-Date: Fri,  1 Feb 2013 14:07:46 +0100
-Message-Id: <20130201130209.735748050@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 32/89] mac80211: synchronize scan off/on-channel and PS states
+Date: Fri,  1 Feb 2013 14:07:47 +0100
+Message-Id: <20130201130209.809912787@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -25,240 +27,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Brassow <jbrassow@redhat.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 55ebbb59c1c6eb1b040f62b8c4ae0b724de6e55a upstream.
+commit aacde9ee45225f7e0b90960f479aef83c66bfdc0 upstream.
 
-Before attempting to activate a RAID array, it is checked for sufficient
-redundancy.  That is, we make sure that there are not too many failed
-devices - or devices specified for rebuild - to undermine our ability to
-activate the array.  The current code performs this check twice - once to
-ensure there were not too many devices specified for rebuild by the user
-('validate_rebuild_devices') and again after possibly experiencing a failure
-to read the superblock ('analyse_superblocks').  Neither of these checks are
-sufficient.  The first check is done properly but with insufficient
-information about the possible failure state of the devices to make a good
-determination if the array can be activated.  The second check is simply
-done wrong in the case of RAID10 because it doesn't account for the
-independence of the stripes (i.e. mirror sets).  The solution is to use the
-properly written check ('validate_rebuild_devices'), but perform the check
-after the superblocks have been read and we know which devices have failed.
-This gives us one check instead of two and performs it in a location where
-it can be done right.
+Since:
 
-Only RAID10 was affected and it was affected in the following ways:
-- the code did not properly catch the condition where a user specified
-  a device for rebuild that already had a failed device in the same mirror
-  set.  (This condition would, however, be caught at a deeper level in MD.)
-- the code triggers a false positive and denies activation when devices in
-  independent mirror sets have failed - counting the failures as though they
-  were all in the same set.
+commit b23b025fe246f3acc2988eb6d400df34c27cb8ae
+Author: Ben Greear <greearb@candelatech.com>
+Date:   Fri Feb 4 11:54:17 2011 -0800
 
-The most likely place this error was introduced (or this patch should have
-been included) is in commit 4ec1e369 - first introduced in v3.7-rc1.
-Consequently this fix should also go in v3.7.y, however there is a
-small conflict on the .version in raid_target, so I'll submit a
-separate patch to -stable.
+    mac80211: Optimize scans on current operating channel.
 
-Signed-off-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+we do not disable PS while going back to operational channel (on
+ieee80211_scan_state_suspend) and deffer that until scan finish.
+But since we are allowed to send frames, we can send a frame to AP
+without PM bit set, so disable PS on AP side. Then when we switch
+to off-channel (in ieee80211_scan_state_resume) we do not enable PS.
+Hence we are off-channel with PS disabled, frames are not buffered
+by AP.
+
+To fix remove offchannel_ps_disable argument and always enable PS when
+going off-channel and disable it when going on-channel, like it was
+before.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Tested-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/device-mapper/dm-raid.txt |    1 
- drivers/md/dm-raid.c                    |  101 +++++++++++---------------------
- 2 files changed, 38 insertions(+), 64 deletions(-)
+ net/mac80211/ieee80211_i.h |    6 ++----
+ net/mac80211/offchannel.c  |   19 +++++++------------
+ net/mac80211/scan.c        |   15 +++++----------
+ 3 files changed, 14 insertions(+), 26 deletions(-)
 
---- a/Documentation/device-mapper/dm-raid.txt
-+++ b/Documentation/device-mapper/dm-raid.txt
-@@ -141,3 +141,4 @@ Version History
- 1.2.0	Handle creation of arrays that contain failed devices.
- 1.3.0	Added support for RAID 10
- 1.3.1	Allow device replacement/rebuild for RAID 10
-+1.3.2   Fix/improve redundancy checking for RAID10
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -338,24 +338,22 @@ static int validate_region_size(struct r
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1279,10 +1279,8 @@ int ieee80211_request_sched_scan_stop(st
+ void ieee80211_sched_scan_stopped_work(struct work_struct *work);
+ 
+ /* off-channel helpers */
+-void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local,
+-				    bool offchannel_ps_enable);
+-void ieee80211_offchannel_return(struct ieee80211_local *local,
+-				 bool offchannel_ps_disable);
++void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local);
++void ieee80211_offchannel_return(struct ieee80211_local *local);
+ void ieee80211_roc_setup(struct ieee80211_local *local);
+ void ieee80211_start_next_roc(struct ieee80211_local *local);
+ void ieee80211_roc_purge(struct ieee80211_sub_if_data *sdata);
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -102,8 +102,7 @@ static void ieee80211_offchannel_ps_disa
+ 	ieee80211_sta_reset_conn_monitor(sdata);
  }
  
- /*
-- * validate_rebuild_devices
-+ * validate_raid_redundancy
-  * @rs
-  *
-- * Determine if the devices specified for rebuild can result in a valid
-- * usable array that is capable of rebuilding the given devices.
-+ * Determine if there are enough devices in the array that haven't
-+ * failed (or are being rebuilt) to form a usable array.
-  *
-  * Returns: 0 on success, -EINVAL on failure.
-  */
--static int validate_rebuild_devices(struct raid_set *rs)
-+static int validate_raid_redundancy(struct raid_set *rs)
+-void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local,
+-				    bool offchannel_ps_enable)
++void ieee80211_offchannel_stop_vifs(struct ieee80211_local *local)
  {
- 	unsigned i, rebuild_cnt = 0;
- 	unsigned rebuilds_per_group, copies, d;
+ 	struct ieee80211_sub_if_data *sdata;
  
--	if (!(rs->print_flags & DMPF_REBUILD))
--		return 0;
--
- 	for (i = 0; i < rs->md.raid_disks; i++)
--		if (!test_bit(In_sync, &rs->dev[i].rdev.flags))
-+		if (!test_bit(In_sync, &rs->dev[i].rdev.flags) ||
-+		    !rs->dev[i].rdev.sb_page)
- 			rebuild_cnt++;
+@@ -131,8 +130,7 @@ void ieee80211_offchannel_stop_vifs(stru
  
- 	switch (rs->raid_type->level) {
-@@ -391,27 +389,24 @@ static int validate_rebuild_devices(stru
- 		 *          A    A    B    B    C
- 		 *          C    D    D    E    E
- 		 */
--		rebuilds_per_group = 0;
- 		for (i = 0; i < rs->md.raid_disks * copies; i++) {
-+			if (!(i % copies))
-+				rebuilds_per_group = 0;
- 			d = i % rs->md.raid_disks;
--			if (!test_bit(In_sync, &rs->dev[d].rdev.flags) &&
-+			if ((!rs->dev[d].rdev.sb_page ||
-+			     !test_bit(In_sync, &rs->dev[d].rdev.flags)) &&
- 			    (++rebuilds_per_group >= copies))
- 				goto too_many;
--			if (!((i + 1) % copies))
--				rebuilds_per_group = 0;
+ 		if (sdata->vif.type != NL80211_IFTYPE_MONITOR) {
+ 			netif_tx_stop_all_queues(sdata->dev);
+-			if (offchannel_ps_enable &&
+-			    (sdata->vif.type == NL80211_IFTYPE_STATION) &&
++			if (sdata->vif.type == NL80211_IFTYPE_STATION &&
+ 			    sdata->u.mgd.associated)
+ 				ieee80211_offchannel_ps_enable(sdata);
  		}
- 		break;
- 	default:
--		DMERR("The rebuild parameter is not supported for %s",
--		      rs->raid_type->name);
--		rs->ti->error = "Rebuild not supported for this RAID type";
--		return -EINVAL;
-+		if (rebuild_cnt)
-+			return -EINVAL;
- 	}
- 
- 	return 0;
- 
- too_many:
--	rs->ti->error = "Too many rebuild devices specified";
- 	return -EINVAL;
+@@ -140,8 +138,7 @@ void ieee80211_offchannel_stop_vifs(stru
+ 	mutex_unlock(&local->iflist_mtx);
  }
  
-@@ -662,9 +657,6 @@ static int parse_raid_params(struct raid
- 	}
- 	rs->md.dev_sectors = sectors_per_dev;
- 
--	if (validate_rebuild_devices(rs))
--		return -EINVAL;
--
- 	/* Assume there are no metadata devices until the drives are parsed */
- 	rs->md.persistent = 0;
- 	rs->md.external = 1;
-@@ -993,28 +985,10 @@ static int super_validate(struct mddev *
- static int analyse_superblocks(struct dm_target *ti, struct raid_set *rs)
+-void ieee80211_offchannel_return(struct ieee80211_local *local,
+-				 bool offchannel_ps_disable)
++void ieee80211_offchannel_return(struct ieee80211_local *local)
  {
- 	int ret;
--	unsigned redundancy = 0;
- 	struct raid_dev *dev;
- 	struct md_rdev *rdev, *tmp, *freshest;
- 	struct mddev *mddev = &rs->md;
+ 	struct ieee80211_sub_if_data *sdata;
  
--	switch (rs->raid_type->level) {
--	case 1:
--		redundancy = rs->md.raid_disks - 1;
--		break;
--	case 4:
--	case 5:
--	case 6:
--		redundancy = rs->raid_type->parity_devs;
--		break;
--	case 10:
--		redundancy = raid10_md_layout_to_copies(mddev->layout) - 1;
--		break;
--	default:
--		ti->error = "Unknown RAID type";
--		return -EINVAL;
--	}
--
- 	freshest = NULL;
- 	rdev_for_each_safe(rdev, tmp, mddev) {
- 		/*
-@@ -1043,44 +1017,43 @@ static int analyse_superblocks(struct dm
- 			break;
- 		default:
- 			dev = container_of(rdev, struct raid_dev, rdev);
--			if (redundancy--) {
--				if (dev->meta_dev)
--					dm_put_device(ti, dev->meta_dev);
-+			if (dev->meta_dev)
-+				dm_put_device(ti, dev->meta_dev);
+@@ -157,11 +154,9 @@ void ieee80211_offchannel_return(struct
+ 			continue;
  
--				dev->meta_dev = NULL;
--				rdev->meta_bdev = NULL;
-+			dev->meta_dev = NULL;
-+			rdev->meta_bdev = NULL;
+ 		/* Tell AP we're back */
+-		if (offchannel_ps_disable &&
+-		    sdata->vif.type == NL80211_IFTYPE_STATION) {
+-			if (sdata->u.mgd.associated)
+-				ieee80211_offchannel_ps_disable(sdata);
+-		}
++		if (sdata->vif.type == NL80211_IFTYPE_STATION &&
++		    sdata->u.mgd.associated)
++			ieee80211_offchannel_ps_disable(sdata);
  
--				if (rdev->sb_page)
--					put_page(rdev->sb_page);
-+			if (rdev->sb_page)
-+				put_page(rdev->sb_page);
+ 		if (sdata->vif.type != NL80211_IFTYPE_MONITOR) {
+ 			/*
+@@ -381,7 +376,7 @@ void ieee80211_sw_roc_work(struct work_s
+ 			local->tmp_channel = NULL;
+ 			ieee80211_hw_config(local, 0);
  
--				rdev->sb_page = NULL;
-+			rdev->sb_page = NULL;
- 
--				rdev->sb_loaded = 0;
-+			rdev->sb_loaded = 0;
- 
--				/*
--				 * We might be able to salvage the data device
--				 * even though the meta device has failed.  For
--				 * now, we behave as though '- -' had been
--				 * set for this device in the table.
--				 */
--				if (dev->data_dev)
--					dm_put_device(ti, dev->data_dev);
--
--				dev->data_dev = NULL;
--				rdev->bdev = NULL;
-+			/*
-+			 * We might be able to salvage the data device
-+			 * even though the meta device has failed.  For
-+			 * now, we behave as though '- -' had been
-+			 * set for this device in the table.
-+			 */
-+			if (dev->data_dev)
-+				dm_put_device(ti, dev->data_dev);
- 
--				list_del(&rdev->same_set);
-+			dev->data_dev = NULL;
-+			rdev->bdev = NULL;
- 
--				continue;
--			}
--			ti->error = "Failed to load superblock";
--			return ret;
-+			list_del(&rdev->same_set);
+-			ieee80211_offchannel_return(local, true);
++			ieee80211_offchannel_return(local);
  		}
+ 
+ 		ieee80211_recalc_idle(local);
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -310,7 +310,7 @@ static void __ieee80211_scan_completed(s
+ 	if (!was_hw_scan) {
+ 		ieee80211_configure_filter(local);
+ 		drv_sw_scan_complete(local);
+-		ieee80211_offchannel_return(local, true);
++		ieee80211_offchannel_return(local);
  	}
  
- 	if (!freshest)
- 		return 0;
+ 	ieee80211_recalc_idle(local);
+@@ -355,7 +355,7 @@ static int ieee80211_start_sw_scan(struc
+ 	local->next_scan_state = SCAN_DECISION;
+ 	local->scan_channel_idx = 0;
  
-+	if (validate_raid_redundancy(rs)) {
-+		rs->ti->error = "Insufficient redundancy to activate array";
-+		return -EINVAL;
-+	}
-+
- 	/*
- 	 * Validation of the freshest device provides the source of
- 	 * validation for the remaining devices.
-@@ -1430,7 +1403,7 @@ static void raid_resume(struct dm_target
+-	ieee80211_offchannel_stop_vifs(local, true);
++	ieee80211_offchannel_stop_vifs(local);
  
- static struct target_type raid_target = {
- 	.name = "raid",
--	.version = {1, 3, 1},
-+	.version = {1, 3, 2},
- 	.module = THIS_MODULE,
- 	.ctr = raid_ctr,
- 	.dtr = raid_dtr,
+ 	ieee80211_configure_filter(local);
+ 
+@@ -680,12 +680,8 @@ static void ieee80211_scan_state_suspend
+ 	local->scan_channel = NULL;
+ 	ieee80211_hw_config(local, IEEE80211_CONF_CHANGE_CHANNEL);
+ 
+-	/*
+-	 * Re-enable vifs and beaconing.  Leave PS
+-	 * in off-channel state..will put that back
+-	 * on-channel at the end of scanning.
+-	 */
+-	ieee80211_offchannel_return(local, false);
++	/* disable PS */
++	ieee80211_offchannel_return(local);
+ 
+ 	*next_delay = HZ / 5;
+ 	/* afterwards, resume scan & go to next channel */
+@@ -695,8 +691,7 @@ static void ieee80211_scan_state_suspend
+ static void ieee80211_scan_state_resume(struct ieee80211_local *local,
+ 					unsigned long *next_delay)
+ {
+-	/* PS already is in off-channel mode */
+-	ieee80211_offchannel_stop_vifs(local, false);
++	ieee80211_offchannel_stop_vifs(local);
+ 
+ 	if (local->ops->flush) {
+ 		drv_flush(local, false);
 
 
