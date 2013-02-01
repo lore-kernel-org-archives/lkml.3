@@ -1,63 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab3BAKAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:00:00 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:46205 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756359Ab3BAJ7z (ORCPT
+	id S1756673Ab3BAKBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:01:12 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33836 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756259Ab3BAKBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:59:55 -0500
-Message-ID: <510B9213.1040508@tao.ma>
-Date: Fri, 01 Feb 2013 17:59:47 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 05:01:08 -0500
+Date: Fri, 1 Feb 2013 11:03:17 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: daniel@ffwll.ch, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [UPDATE][PATCH 4/4] GPU/i915: Fix acpi_bus_get_device() check in
+ drivers/gpu/drm/i915/intel_opregion.c
+Message-ID: <20130201100317.GG5885@phenom.ffwll.local>
+Mail-Followup-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Mika Westerberg <mika.westerberg@linux.intel.com>,
+	Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+	dri-devel@lists.freedesktop.org
+References: <1451967.YMyGeCCNtu@vostro.rjw.lan>
+ <6099377.PFvsxPeyib@vostro.rjw.lan>
+ <5109E11A.5030400@jp.fujitsu.com>
+ <5109E2AF.2000107@jp.fujitsu.com>
+ <5109E49E.1070005@jp.fujitsu.com>
+ <20130131100330.GE5885@phenom.ffwll.local>
+ <510B1168.2080401@jp.fujitsu.com>
+ <510B1200.3000509@jp.fujitsu.com>
+ <510B16EC.7030903@jp.fujitsu.com>
 MIME-Version: 1.0
-To: "Bryn M. Reeves" <bmr@redhat.com>
-CC: Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: How to online remove an error scsi disk from the system?
-References: <510B5CFC.2040801@tao.ma> <510B749E.8020501@acm.org> <510B904B.4050508@redhat.com>
-In-Reply-To: <510B904B.4050508@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510B16EC.7030903@jp.fujitsu.com>
+X-Operating-System: Linux phenom 3.8.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 05:52 PM, Bryn M. Reeves wrote:
-> On 02/01/2013 07:54 AM, Bart Van Assche wrote:
->>   * proc_scsi_write - handle writes to /proc/scsi/scsi
->>   * @file: not used
->>   * @buf: buffer to write
->>   * @length: length of buf, at most PAGE_SIZE
->>   * @ppos: not used
->>   *
->>   * Description: this provides a legacy mechanism to add or remove
->>   * devices by Host, Channel, ID, and Lun.  To use,
->>   * "echo 'scsi add-single-device 0 1 2 3' > /proc/scsi/scsi" or
->>   * "echo 'scsi remove-single-device 0 1 2 3' > /proc/scsi/scsi" with
->>   * "0 1 2 3" replaced by the Host, Channel, Id, and Lun.
+On Fri, Feb 01, 2013 at 10:14:20AM +0900, Yasuaki Ishimatsu wrote:
+> 2013/02/01 9:53, Yasuaki Ishimatsu wrote:
+> >2013/02/01 9:50, Yasuaki Ishimatsu wrote:
+> >>2013/01/31 19:03, Daniel Vetter wrote:
+> >>>On Thu, Jan 31, 2013 at 12:27:26PM +0900, Yasuaki Ishimatsu wrote:
+> >>>>I forgot to change subject. So I resend a patch.
+> >>>>
+> >>>>---
+> >>>>acpi_bus_get_device() returns int not acpi_status.
+> >>>>
+> >>>>The patch change not to apply ACPI_FAILURE() to the return value of
+> >>>>acpi_bus_get_device().
+> >>>>
+> >>>>Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> >>>
+> >>>I've tried to apply this to drm-intel-next-queued, but git am didn't
+> >>>really like your patch - it failed to apply. Can you please rebase to the
+> >>>drm-intel-next-queued branch from
+> >>>
+> >>>git://people.freedesktop.org/~danvet/drm-intel
+> >>>
+> >>>and please resubmit the patch, preferrably formatted with git
+> >>>format-patch?
+> >>
+> >>My mailer added a space in the patch. I updated the patch.
+> >>How abot it?
+> >>
+> >>---
+> >>acpi_bus_get_device() returns int not acpi_status.
+> >>
+> >>The patch change not to apply ACPI_FAILURE() to the return value of
+> >>acpi_bus_get_device().
+> >>
+> >>Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> >>---
+> >>  drivers/gpu/drm/i915/intel_opregion.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >>diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+> >>index 7741c22..4d33874 100644
+> >>--- a/drivers/gpu/drm/i915/intel_opregion.c
+> >>+++ b/drivers/gpu/drm/i915/intel_opregion.c
+> >>@@ -347,7 +347,7 @@ static void intel_didl_outputs(struct drm_device *dev)
+> >>      int i = 0;
+> >>
+> >>      handle = DEVICE_ACPI_HANDLE(&dev->pdev->dev);
+> >>-    if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev)))
+> >>+    if (!handle || acpi_bus_get_device(handle, &acpi_dev))
+> >>          return;
+> >>
+> >>      if (acpi_is_video_device(acpi_dev))
+> >>
+> >
+> >Oops. My mailer added a space again...
+> >I'll check my mailer again.
 > 
-> The proc interface is deprecated; this can all be done via sysfs today,
-> e.g.:
-> 
-> echo 1 > /sys/block/sdc/device/delete
-> 
-> Is equivalent to issuing scsi remove-single-device to proc.
-yes, but the result is the same. It will do some IO first which will
-cause this command hang.
+> I do not understand why space was added to the patch.
+> So I attached the patch. Please check it.
 
-Thanks,
-Tao
-> 
-> Regards,
-> Bryn.
-> 
-> 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Yeah, worked this time. Queued for -next, thanks for the patch.
+-Daniel
 
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+> >
+> >Thanks,
+> >Yasuaki Ishimatsu
+> >
+> >>--
+> >>To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> >>the body of a message to majordomo@vger.kernel.org
+> >>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> >
+> >--
+> >To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> >the body of a message to majordomo@vger.kernel.org
+> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+> acpi_bus_get_device() returns int not acpi_status.
+> 
+> The patch change not to apply ACPI_FAILURE() to the return value of
+> acpi_bus_get_device().
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
+>  drivers/gpu/drm/i915/intel_opregion.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+> index 7741c22..4d33874 100644
+> --- a/drivers/gpu/drm/i915/intel_opregion.c
+> +++ b/drivers/gpu/drm/i915/intel_opregion.c
+> @@ -347,7 +347,7 @@ static void intel_didl_outputs(struct drm_device *dev)
+>  	int i = 0;
+>  
+>  	handle = DEVICE_ACPI_HANDLE(&dev->pdev->dev);
+> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev)))
+> +	if (!handle || acpi_bus_get_device(handle, &acpi_dev))
+>  		return;
+>  
+>  	if (acpi_is_video_device(acpi_dev))
+> 
+
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
