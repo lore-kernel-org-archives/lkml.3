@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422782Ab3BAKvV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:51:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39250 "EHLO mail.kernel.org"
+	id S1422822Ab3BAKvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:51:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39369 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422738Ab3BAKvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:51:17 -0500
+	id S1422775Ab3BAKve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:51:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anderson Lizardo <anderson.lizardo@openbossa.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 24/33] Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
-Date: Fri,  1 Feb 2013 11:49:29 +0100
-Message-Id: <20130201104726.372099492@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 27/33] NFS: Dont silently fail setattr() requests on mountpoints
+Date: Fri,  1 Feb 2013 11:49:32 +0100
+Message-Id: <20130201104726.581911153@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
@@ -27,43 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anderson Lizardo <anderson.lizardo@openbossa.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 0a9ab9bdb3e891762553f667066190c1d22ad62b upstream.
+commit ab225417825963b6dc66be7ea80f94ac1378dfdf upstream.
 
-The length parameter should be sizeof(req->name) - 1 because there is no
-guarantee that string provided by userspace will contain the trailing
-'\0'.
+Ensure that any setattr and getattr requests for junctions and/or
+mountpoints are sent to the server. Ever since commit
+0ec26fd0698 (vfs: automount should ignore LOOKUP_FOLLOW), we have
+silently dropped any setattr requests to a server-side mountpoint.
+For referrals, we have silently dropped both getattr and setattr
+requests.
 
-Can be easily reproduced by manually setting req->name to 128 non-zero
-bytes prior to ioctl(HIDPCONNADD) and checking the device name setup on
-input subsystem:
+This patch restores the original behaviour for setattr on mountpoints,
+and tries to do the same for referrals, provided that we have a
+filehandle...
 
-$ cat /sys/devices/pnp0/00\:04/tty/ttyS0/hci0/hci0\:1/input8/name
-AAAAAA[...]AAAAAAAAf0:af:f0:af:f0:af
-
-("f0:af:f0:af:f0:af" is the device bluetooth address, taken from "phys"
-field in struct hid_device due to overflow.)
-
-Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hidp/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/namespace.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/net/bluetooth/hidp/core.c
-+++ b/net/bluetooth/hidp/core.c
-@@ -949,7 +949,7 @@ static int hidp_setup_hid(struct hidp_se
- 	hid->version = req->version;
- 	hid->country = req->country;
+--- a/fs/nfs/namespace.c
++++ b/fs/nfs/namespace.c
+@@ -253,11 +253,31 @@ out_nofree:
+ 	return mnt;
+ }
  
--	strncpy(hid->name, req->name, 128);
-+	strncpy(hid->name, req->name, sizeof(req->name) - 1);
- 	strncpy(hid->phys, batostr(&bt_sk(session->ctrl_sock->sk)->src), 64);
- 	strncpy(hid->uniq, batostr(&bt_sk(session->ctrl_sock->sk)->dst), 64);
++static int
++nfs_namespace_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
++{
++	if (NFS_FH(dentry->d_inode)->size != 0)
++		return nfs_getattr(mnt, dentry, stat);
++	generic_fillattr(dentry->d_inode, stat);
++	return 0;
++}
++
++static int
++nfs_namespace_setattr(struct dentry *dentry, struct iattr *attr)
++{
++	if (NFS_FH(dentry->d_inode)->size != 0)
++		return nfs_setattr(dentry, attr);
++	return -EACCES;
++}
++
+ const struct inode_operations nfs_mountpoint_inode_operations = {
+ 	.getattr	= nfs_getattr,
++	.setattr	= nfs_setattr,
+ };
  
+ const struct inode_operations nfs_referral_inode_operations = {
++	.getattr	= nfs_namespace_getattr,
++	.setattr	= nfs_namespace_setattr,
+ };
+ 
+ static void nfs_expire_automounts(struct work_struct *work)
 
 
