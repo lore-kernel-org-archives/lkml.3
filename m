@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab3BAJxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 04:53:43 -0500
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:56141 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756235Ab3BAJxh convert rfc822-to-8bit (ORCPT
+	id S1756638Ab3BAJy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 04:54:57 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:33104 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756283Ab3BAJyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 04:53:37 -0500
+	Fri, 1 Feb 2013 04:54:54 -0500
+Message-ID: <510B8F57.9070706@tao.ma>
+Date: Fri, 01 Feb 2013 17:48:07 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <51085315.2000302@free-electrons.com>
-References: <1359313332-12305-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1359313332-12305-2-git-send-email-maxime.ripard@free-electrons.com>
-	<CACRpkdZi0zCNf6LDd9UAcd57kFqqWyteVqxL8WfDrFfrt9_5sQ@mail.gmail.com>
-	<51085315.2000302@free-electrons.com>
-Date: Fri, 1 Feb 2013 10:53:36 +0100
-Message-ID: <CACRpkdYzX8PFVLei0+UJvEA6rGq_RBGsMKdRs0RnmAQL3h7S5A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] pinctrl: sunxi: Add of_xlate function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, Emilio Lopez <emilio@elopez.com.ar>,
-        Alejandro Mery <amery@geeks.cl>, Stefan Roese <sr@denx.de>,
-        linux-kernel@vger.kernel.org
+To: Jack Wang <jack_wang@usish.com>
+CC: linux-scsi@vger.kernel.org, "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: How to online remove an error scsi disk from the system?
+References: <510B5CFC.2040801@tao.ma> <008101ce0059$2a4976b0$7edc6410$@com> <510B8836.6090801@tao.ma> <008b01ce005d$ff8c8200$fea58600$@com>
+In-Reply-To: <008b01ce005d$ff8c8200$fea58600$@com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 11:54 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> Le 29/01/2013 23:41, Linus Walleij a écrit :
->> On Sun, Jan 27, 2013 at 8:02 PM, Maxime Ripard
->> <maxime.ripard@free-electrons.com> wrote:
+On 02/01/2013 05:24 PM, Jack Wang wrote:
+> 
+> On 02/01/2013 04:50 PM, Jack Wang wrote:
+>> Hi All,
+>> 	In our product system, we have several sata disks attached to one 
+>> machine. So when one of the disk fails, the jbd2(yes, we use ext4) 
+>> will hang forever and we will get something in /var/log/messages like
+> below.
+>> It seems to me that the io sent to the scsi layer is never returned 
+>> back with -EIO which is a little bit surprised for me(It should be a 
+>> timeout somewhere, right?). We have tried echo "offline" > 
+>> /sys/block/sdl/device/state, but it doesn't work. So is there any way 
+>> for us to let the scsi device returns all the io requests back with 
+>> EIO so that all the end_io can be called accordingly? Am I missing
+> something here?
 >>
->>> Since the pin controller of sunxi chips is represented as a single bank
->>> in the driver.
->>> Since this is neither convenient nor represented that way in the
->>> datasheets, define a custom of_xlate function with the layout <bank pin
->>> flag>
->>>
->>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>> Thanks,
+>> Tao
+>> [Jack Wang]
+>> Hi Tao,
 >>
->> This does not apply and I only have 1/3 it seems?
+>> Have you tried:
+>>  echo 1 > /sys/block/sdv/device/delete
+> It will do some IO first so it will hang doing IO.
+>>  echo "- - -" > /sys/class/scsi_host/host
+> What do you mean for this line?
+> 
+> [Jack Wang] Sorry I mean to let the driver rescan to get the disk back.
+> The line should be :
+>  echo "- - -" > /sys/class/scsi_host/hostx/scan.
+> 
+> Per above delete does not work , so no need to run this.
 >>
->> Sorry, help me understand which order these patches go in...
->
-> My bad, I forgot to mention the order of the patchsets, and to cc you
-> for the all series... Sorry about that.
->
-> This patch should come after the patch series that adds the support for
-> the A10 SoCs in the pinctrl driver.
+>> another way is :
+>> find out which phy the disk attached to and:
+>> echo 1 > /sys/class/sas_phy/phy-x:x:x/link_reset
+> sorry, I have done it, but there is no response.
+> 
+> [Jack Wang] 
+> What about
+> echo 1 > /sys/class/sas_phy/phy-x:x:x/hard_reset
+sorry, no response either.
 
-I now tried to apply this on top of the A10 series and it
-*still* does not apply.
+Thanks,
+Tao
+> 
+> ?
+> Thanks,
+> Tao
+>>
+>> Jack
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-kernel" in the body of a message to majordomo@vger.kernel.org 
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-> Do you want me to resend this serie and cc you?
-
-Please rebase these three on my allwinner branch:
-git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-allwinner-sunxi
-
-Seen here:
-http://git.kernel.org/?p=linux/kernel/git/linusw/linux-pinctrl.git;a=shortlog;h=refs/heads/allwinner-sunxi
-
-Yours,
-Linus Walleij
