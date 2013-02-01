@@ -1,136 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab3BAWns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 17:43:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396Ab3BAWnq (ORCPT
+	id S1757918Ab3BAWwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 17:52:54 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:65289 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756741Ab3BAWwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 17:43:46 -0500
-Date: Fri, 1 Feb 2013 14:43:45 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Felipe Balbi <balbi@ti.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v1] block: partition: optimize memory allocation in
- check_partition
-Message-Id: <20130201144345.4f5f0d74.akpm@linux-foundation.org>
-In-Reply-To: <1359721392-7956-1-git-send-email-ming.lei@canonical.com>
-References: <1359721392-7956-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Feb 2013 17:52:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <510BE9AB.9010702@gmail.com>
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo6M-c3diVEUpUESgL=2PenxHYkW1eb=OGBdxxWwkge-Bw@mail.gmail.com>
+ <1598719.tGLtx5aHMZ@vostro.rjw.lan> <51072E1D.8020901@huawei.com> <510BE9AB.9010702@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 1 Feb 2013 15:52:29 -0700
+Message-ID: <CAErSpo7zOeefmuV7Pe08pQEER54wMUOUT68X_QuKsJduzfoexQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v5 0/8] introduce PCI bus notifier chain to get rid of
+ the ACPI PCI subdriver interfaces
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  1 Feb 2013 20:23:12 +0800
-Ming Lei <ming.lei@canonical.com> wrote:
+On Fri, Feb 1, 2013 at 9:13 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> On 01/29/2013 10:04 AM, Jiang Liu wrote:
+>> On 2013-1-29 8:34, Rafael J. Wysocki wrote:
+>>> On Monday, January 28, 2013 01:56:33 PM Bjorn Helgaas wrote:
+>>>> On Fri, Jan 18, 2013 at 9:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>>>> This is an RFC patchset to address review comments in thread at:
+>>>>> https://patchwork.kernel.org/patch/1946851/. The patch just pasts
+>>>>> compilation. If no objection to the new implementation, I will
+>>>>> go on to modify acpiphp driver and conduct tests.
+>>>>>
+>>>>> The main changes from V4 to V5 includes:
+>>>>> 1) introduce a dedicated notifier chain for PCI buses
+>>>>> 2) change pci_slot as built-in driver
+>>>>> 3) unify the way to create/destroy PCI slots
+>>>>> 4) introduce a kernel option to disable PCIe native hotplug
+>>>>>
+>>>>> TODO:
+>>>>> 1) change acpiphp as built-in and unify the way to create/destroy ACPI
+>>>>>    based hotplug slots.
+>>>>> 2) change other ACPI PCI subdriver in Yinghai's root bridge hotplug series
+>>>>>    to use the PCI bus notifier chain.
+>>>>> 3) Remove the ACPI PCI subdriver interface eventaully.
+>>>>>
+>>>>> Jiang Liu (8):
+>>>>>   PCI: make PCI device create/destroy logic symmetric
+>>>>>   PCI: split registration of PCI bus devices into two stages
+>>>>>   PCI: add a blocking notifier chain for PCI bus addition/removal
+>>>>>   ACPI, PCI: avoid building pci_slot as module
+>>>>>   PCI, ACPI: hook PCI bus notifications to create/destroy PCI slots
+>>>>>   pci_slot: replace printk(KERN_xxx) with pr_xxx()
+>>>>>   PCI/PCIe: add "pci=nopciehp" to disable PCIe native hotplug
+>>>>>   PCI/PCIe: only claim PME from firmware when CONFIG_PCIE_PME is
+>>>>>     enabled
+>>>>>
+>>>>>  Documentation/kernel-parameters.txt |    2 +
+>>>>>  drivers/acpi/Kconfig                |    5 +-
+>>>>>  drivers/acpi/internal.h             |    5 +
+>>>>>  drivers/acpi/pci_root.c             |    8 +-
+>>>>>  drivers/acpi/pci_slot.c             |  217 ++++++++++-------------------------
+>>>>>  drivers/acpi/scan.c                 |    1 +
+>>>>>  drivers/pci/bus.c                   |   26 ++++-
+>>>>>  drivers/pci/pci.c                   |    2 +
+>>>>>  drivers/pci/pci.h                   |    1 +
+>>>>>  drivers/pci/pcie/portdrv_core.c     |    7 +-
+>>>>>  drivers/pci/pcie/portdrv_pci.c      |    3 +
+>>>>>  drivers/pci/probe.c                 |    7 +-
+>>>>>  drivers/pci/remove.c                |   15 +--
+>>>>>  include/linux/pci.h                 |   21 ++++
+>>>>>  14 files changed, 142 insertions(+), 178 deletions(-)
+>>>>
+>>>> I think the problem we're trying to solve is that we don't initialize
+>>>> hot-added devices, correctly, e.g., we don't set up AER, we don't
+>>>> update acpi/pci_slot stuff, we probably don't set up PME etc.  We also
+>>>> have similar issues like IOMMU init on powerpc.
+>>>>
+>>>> Notifier chains seem like an unnecessarily complicated way to deal
+>>>> with this.  They're great for communicating between modules that stay
+>>>> at arm's length from each other.  But that's not the case here --
+>>>> everything is PCI and is quite closely coupled.  I think AER, PME,
+>>>> slot, etc., should  be initialized directly in pci_device_add() or
+>>>> somewhere nearby.
+>>>
+>>> I agree.
+>>>
+>>>> This might sound a bit radical because it implies some fairly
+>>>> far-reaching changes.  It means this code can't be a module (the only
+>>>> one that can be built as a module today is pciehp, and I think
+>>>> everybody agrees that we should make it static as soon as we can
+>>>> figure out the acpiphp/pciehp issue).  I think it also means the
+>>>> pcieportdrv concept is of dubious value, since all the services should
+>>>> be known at build-time and we probably don't need a registration
+>>>> interface for them.
+>>>
+>>> It is of dubious value regardless.  It just adds complexity for no gain.
+>>> Moreover, these things are in fact not mutually independent.
+>>>
+>>> I've had a lot of headaches trying to work around that when I was working
+>>> on PME support and later on _OSC for root bridges.  Let's just take that
+>>> stuff away once and for good. :-)
+>> Hi Bjorn and Rafael,
+>>       Thanks for advice. We will go this direction to change those modules
+>> as built-in.
+>> Regards!
+>> Gerry
+>>
+> Hi Bjorn,
+>         I have done some investigation about how to implement this without
+> using notifier chain. Due to commit "PCI: Put pci_dev in device tree as early
+> as possible", a PCI device will be registered to the driver core before creating
+> the subordinate PCI bus. So we can't reply on the ACPI PCI device glue code
+> to create/destroy PCI slots or acpiphp hotplug slots. So my current plan is
+> to introduce two weak functions as below, is it acceptable?
 
-> Currently, sizeof(struct parsed_partitions) may be 64KB in 32bit arch,
-> so it is easy to trigger page allocation failure by check_partition,
-> especially in hotplug block device situation(such as, USB mass storage,
-> MMC card, ...), and Felipe Balbi has observed the failure.
-> 
-> This patch does below optimizations on the allocation of struct
-> parsed_partitions to try to address the issue:
-> 
-> - make parsed_partitions.parts as pointer so that the pointed memory
-> can fit in 32KB buffer, then approximate 32KB memory can be saved
-> 
-> - vmalloc the buffer pointed by parsed_partitions.parts because
-> 32KB is still a bit big for kmalloc
-> 
-> - given that many devices have the partition count limit, so only
-> allocate disk_max_parts() partitions instead of 256 partitions
+That seems fine to me.  I think you wrote "pcibios_remove_bus(b)"
+below in pci_create_root_bus() when you probably meant
+"pcibios_add_bus(b)."  But I'm sure you would have found that soon :)
 
-This is only true when !(disk->flags & GENHD_FL_EXT_DEVT) in
-disk_max_parts().  Which I suspect is basically "never".  Oh well.
+Anyway, I think a directly-called weak function will be much easier to
+understand than a notifier-based solution.
 
-> Cc: stable@vger.kernel.org
+Bjorn
 
-I don't think I agree with the -stable backport.  The bug isn't
-terribly serious and the patch is far more extensive than it really
-needed to be.
-
-If we do think the fix should be backported then it would be better to
-do it as a series of two patches.  A nice simple one (say, a basic
-s/kmalloc/vmalloc/) for 3.8 and -stable, then a more extensive
-optimise-things patch for 3.9-rc1.
-
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-
-A Reported-by:Felipe would be nice here.  We appreciate bug reports and
-this little gesture is the least we can do.
-
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index b494066..a5c22e7 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -673,6 +673,8 @@ add_dev:
+>         ret = device_register(&child->dev);
+>         WARN_ON(ret < 0);
 >
-> ...
+> +       pcibios_add_bus(child);
+> +
+>         /* Create legacy_io and legacy_mem files for this bus */
+>         pci_create_legacy_files(child);
 >
->  struct parsed_partitions *
->  check_partition(struct gendisk *hd, struct block_device *bdev)
+> @@ -1661,6 +1663,14 @@ int __weak pcibios_root_bridge_prepare(struct pci_host_bridge *
+>         return 0;
+>  }
+>
+> +void __weak pcibios_add_bus(struct pci_bus *bus)
+> +{
+> +}
+> +
+> +void __weak pcibios_remove_bus(struct pci_bus *bus)
+> +{
+> +}
+> +
+>  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>                 struct pci_ops *ops, void *sysdata, struct list_head *resources)
 >  {
->  	struct parsed_partitions *state;
->  	int i, res, err;
->  
-> -	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
-> +	i = disk_max_parts(hd);
-> +	state = allocate_partitions(i);
->  	if (!state)
->  		return NULL;
-> +	state->limit = i;
-
-I suggest this assignment be performed in allocate_partitions() itself.
-That's better than requiring that all allocate_partitions() callers
-remember to fill it in.
-
-
->  	state->pp_buf = (char *)__get_free_page(GFP_KERNEL);
->  	if (!state->pp_buf) {
-> -		kfree(state);
-> +		free_partitions(state);
->  		return NULL;
->  	}
->  	state->pp_buf[0] = '\0';
+> @@ -1715,6 +1725,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int b
+>         if (error)
+>                 goto class_dev_reg_err;
 >
-> ...
+> +       pcibios_remove_bus(b);
+> +
+>         /* Create legacy_io and legacy_mem files for this bus */
+>         pci_create_legacy_files(b);
 >
-> --- a/block/partitions/check.h
-> +++ b/block/partitions/check.h
-> @@ -15,13 +15,15 @@ struct parsed_partitions {
->  		int flags;
->  		bool has_info;
->  		struct partition_meta_info info;
-> -	} parts[DISK_MAX_PARTS];
-> +	} *parts;
->  	int next;
->  	int limit;
->  	bool access_beyond_eod;
->  	char *pp_buf;
->  };
-
-With this change, DISK_MAX_PARTS becomes a rather dangerous thing - do
-we have code floating around which does
-
-	for (i = 0; i < DISK_MAX_PARTS; i++)
-		access(parsed_partitions.parts[i]);
-
-?
-
-If so, we should do s/DISK_MAX_PARTS/parsed_partitions.limit/.
-
-The only such code I can find is in
-block/partitions/mac.c:mac_partition().  And with your patch, this code
-is potentially buggy, I suspect.  We could do
-s/DISK_MAX_PARTS/state->limit/, but would that work?  What happens if
-disk_max_parts() returned a value which is smaller than blocks_in_map?
-
-It needs some thought.  I'm reluctant to apply this version of the
-patch due to this.
-
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index fc38c48..3dbdf82 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -52,6 +52,7 @@ void pci_remove_bus(struct pci_bus *bus)
+>                 return;
 >
-> ...
+>         pci_remove_legacy_files(bus);
+> +       pcibios_remove_bus(child);
+>         device_unregister(&bus->dev);
+>  }
+>  EXPORT_SYMBOL(pci_remove_bus);
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 056d3d6..fd8ba0c 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -380,6 +380,8 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+>                      void *release_data);
 >
-
+>  int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
+> +void pcibios_add_bus(struct pci_bus *bus);
+> +void pcibios_remove_bus(struct pci_bus *bus);
+>
+>  /*
+>   * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
+>
+>
+>>>
+>>> Thanks,
+>>> Rafael
+>>>
+>>>
+>>
+>>
+>
