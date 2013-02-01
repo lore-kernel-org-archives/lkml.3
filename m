@@ -1,212 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab3BACip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:38:45 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:41752 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229Ab3BACin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:38:43 -0500
+	id S1754821Ab3BACnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 21:43:15 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:8721 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752492Ab3BACnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 21:43:12 -0500
+X-IronPort-AV: E=Sophos;i="4.84,579,1355068800"; 
+   d="scan'208";a="6674106"
+Message-ID: <510B2B8A.7040407@cn.fujitsu.com>
+Date: Fri, 01 Feb 2013 10:42:18 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomdOzuXXGAr2r0LFULhr5AYLHWyhDON+9AKjMv9L6zkAg@mail.gmail.com>
-References: <09a94ff044ff6a6f7a5d953c3b1f3102c1dc50cf.1359653181.git.viresh.kumar@linaro.org>
-	<118c59263751862b1750ed9f96639a4e70069e66.1359653181.git.viresh.kumar@linaro.org>
-	<20130131185004.GB20164@balto.lan>
-	<1730121.raxo9SGZyf@vostro.rjw.lan>
-	<20130131225114.GA6433@balto.lan>
-	<CAKohpomdOzuXXGAr2r0LFULhr5AYLHWyhDON+9AKjMv9L6zkAg@mail.gmail.com>
-Date: Fri, 1 Feb 2013 08:08:42 +0530
-Message-ID: <CAKohponEPOO3vH3Kn8UChXEaNP36gDaDh-ym4Z9ZjcHbs418cQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: governors: Remove code redundancy between governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Shawn Guo <shawn.guo@linaro.org>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Content-Type: multipart/mixed; boundary=14dae93b59b642943404d4a0a401
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: Jianguo Wu <wujianguo@huawei.com>, akpm@linux-foundation.org,
+        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>       <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>      <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>     <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>    <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com>   <1359628705.2048.5.camel@kernel> <510B1B4B.5080207@huawei.com>  <1359682576.3574.1.camel@kernel> <510B20F9.10408@cn.fujitsu.com> <1359685040.1303.6.camel@kernel>
+In-Reply-To: <1359685040.1303.6.camel@kernel>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/01 10:41:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/01 10:41:55,
+	Serialize complete at 2013/02/01 10:41:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae93b59b642943404d4a0a401
-Content-Type: text/plain; charset=ISO-8859-1
+Hi Simon,
 
-On 1 February 2013 08:01, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Really!! I see bleeding edge as df0e3f4 and i don't see the $(subject) patch
-> in it :)
+On 02/01/2013 10:17 AM, Simon Jeons wrote:
+>> For example:
+>>
+>>                                          64TB, what ever
+>>      xxxTB, what ever
+>> logic address space:     |_____kernel_______|_________user_________________|
+>>                                          \  \  /  /
+>>                                           \  /\  /
+>> physical address space:              |___\/__\/_____________|  4GB or
+>> 8GB, what ever
+>>                                             *****
+>
+> How much address space user process can have on x86_64? Also 8GB?
 
-Well it might have been dropped by Rafael due to build error, which would
-be fixed by:
+Usually, we don't say that.
 
-diff --git a/drivers/cpufreq/cpufreq_governor.c
-b/drivers/cpufreq/cpufreq_governor.c
-index dc99472..7aaa9b1 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -194,6 +194,7 @@ bool need_load_eval(struct cpu_dbs_common_info *cdbs,
+8GB is your physical memory, right ?
+But kernel space and user space is the logic conception in OS. They are 
+in logic
+address space.
 
-        return true;
- }
-+EXPORT_SYMBOL_GPL(need_load_eval);
+So both the kernel space and the user space can use all the physical memory.
+But if the page is already in use by either of them, the other one 
+cannot use it.
+For example, some pages are direct mapped to kernel, and is in use by 
+kernel, the
+user space cannot map it.
 
- int cpufreq_governor_dbs(struct dbs_data *dbs_data,
-                struct cpufreq_policy *policy, unsigned int event)
+>
+>>
+>> The ***** part physical is mapped to user space in the process' own
+>> pagetable.
+>> It is also direct mapped in kernel's pagetable. So the kernel can also
+>> access it. :)
+>
+> But how to protect user process not modify kernel memory?
 
+This is the job of CPU. On intel cpus, user space code is running in 
+level 3, and
+kernel space code is running in level 0. So the code in level 3 cannot 
+access the data
+segment in level 0.
 
-Original patch attached with this change.
-
---14dae93b59b642943404d4a0a401
-Content-Type: application/octet-stream; 
-	name="0001-cpufreq-governors-Remove-code-redundancy-between-gov.patch"
-Content-Disposition: attachment; 
-	filename="0001-cpufreq-governors-Remove-code-redundancy-between-gov.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hcmq47f40
-
-RnJvbSA1ZWEzZTViMGJhMTdiOWIyNDE1ODJhZDllYzdhYWY5ZWQ3NjEwOGFmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NWVhM2U1YjBiYTE3YjliMjQxNTgyYWQ5ZWM3YWFm
-OWVkNzYxMDhhZi4xMzU5Njg2MjUyLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
-VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogVGh1LCAzMSBKYW4g
-MjAxMyAyMjo1MjowNiArMDUzMApTdWJqZWN0OiBbUEFUQ0hdIGNwdWZyZXE6IGdvdmVybm9yczog
-UmVtb3ZlIGNvZGUgcmVkdW5kYW5jeSBiZXR3ZWVuIGdvdmVybm9ycwoKV2l0aCB0aGUgaW5jbHVz
-aW9uIG9mIGZvbGxvd2luZyBwYXRjaGVzOgoKOWY0ZWIxMCBjcHVmcmVxOiBjb25zZXJ2YXRpdmU6
-IGNhbGwgZGJzX2NoZWNrX2NwdSBvbmx5IHdoZW4gbmVjZXNzYXJ5Cjc3MmI0YjEgY3B1ZnJlcTog
-b25kZW1hbmQ6IGNhbGwgZGJzX2NoZWNrX2NwdSBvbmx5IHdoZW4gbmVjZXNzYXJ5Cgpjb2RlIHJl
-ZHVuZGFuY3kgaXMgaW50cm9kdWNlZCBhZ2Fpbi4gR2V0IHJpZCBvZiBpdC4KClNpZ25lZC1vZmYt
-Ynk6IFZpcmVzaCBLdW1hciA8dmlyZXNoLmt1bWFyQGxpbmFyby5vcmc+Ci0tLQogZHJpdmVycy9j
-cHVmcmVxL2NwdWZyZXFfY29uc2VydmF0aXZlLmMgfCA1MiArKysrLS0tLS0tLS0tLS0tLS0tLS0t
-LQogZHJpdmVycy9jcHVmcmVxL2NwdWZyZXFfZ292ZXJub3IuYyAgICAgfCAxOSArKysrKysrKysK
-IGRyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxX2dvdmVybm9yLmggICAgIHwgIDIgKwogZHJpdmVycy9j
-cHVmcmVxL2NwdWZyZXFfb25kZW1hbmQuYyAgICAgfCA3NyArKysrKysrKysrLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tCiA0IGZpbGVzIGNoYW5nZWQsIDUzIGluc2VydGlvbnMoKyksIDk3IGRlbGV0
-aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxX2NvbnNlcnZhdGl2
-ZS5jIGIvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXFfY29uc2VydmF0aXZlLmMKaW5kZXggYzE4YTMw
-NC4uZThiYjkxNSAxMDA2NDQKLS0tIGEvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXFfY29uc2VydmF0
-aXZlLmMKKysrIGIvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXFfY29uc2VydmF0aXZlLmMKQEAgLTEx
-MSw1OCArMTExLDI0IEBAIHN0YXRpYyB2b2lkIGNzX2NoZWNrX2NwdShpbnQgY3B1LCB1bnNpZ25l
-ZCBpbnQgbG9hZCkKIAl9CiB9CiAKLXN0YXRpYyB2b2lkIGNzX3RpbWVyX3VwZGF0ZShzdHJ1Y3Qg
-Y3NfY3B1X2Ric19pbmZvX3MgKmRic19pbmZvLCBib29sIHNhbXBsZSwKLQkJCSAgICBzdHJ1Y3Qg
-ZGVsYXllZF93b3JrICpkdykKK3N0YXRpYyB2b2lkIGNzX2Ric190aW1lcihzdHJ1Y3Qgd29ya19z
-dHJ1Y3QgKndvcmspCiB7CisJc3RydWN0IGRlbGF5ZWRfd29yayAqZHcgPSB0b19kZWxheWVkX3dv
-cmsod29yayk7CisJc3RydWN0IGNzX2NwdV9kYnNfaW5mb19zICpkYnNfaW5mbyA9IGNvbnRhaW5l
-cl9vZih3b3JrLAorCQkJc3RydWN0IGNzX2NwdV9kYnNfaW5mb19zLCBjZGJzLndvcmsud29yayk7
-CiAJdW5zaWduZWQgaW50IGNwdSA9IGRic19pbmZvLT5jZGJzLmN1cl9wb2xpY3ktPmNwdTsKKwlz
-dHJ1Y3QgY3NfY3B1X2Ric19pbmZvX3MgKmNvcmVfZGJzX2luZm8gPSAmcGVyX2NwdShjc19jcHVf
-ZGJzX2luZm8sCisJCQljcHUpOwogCWludCBkZWxheSA9IGRlbGF5X2Zvcl9zYW1wbGluZ19yYXRl
-KGNzX3R1bmVycy5zYW1wbGluZ19yYXRlKTsKIAotCWlmIChzYW1wbGUpCisJbXV0ZXhfbG9jaygm
-Y29yZV9kYnNfaW5mby0+Y2Ricy50aW1lcl9tdXRleCk7CisJaWYgKG5lZWRfbG9hZF9ldmFsKCZj
-b3JlX2Ric19pbmZvLT5jZGJzLCBjc190dW5lcnMuc2FtcGxpbmdfcmF0ZSkpCiAJCWRic19jaGVj
-a19jcHUoJmNzX2Ric19kYXRhLCBjcHUpOwogCiAJc2NoZWR1bGVfZGVsYXllZF93b3JrX29uKHNt
-cF9wcm9jZXNzb3JfaWQoKSwgZHcsIGRlbGF5KTsKKwltdXRleF91bmxvY2soJmNvcmVfZGJzX2lu
-Zm8tPmNkYnMudGltZXJfbXV0ZXgpOwogfQogCi1zdGF0aWMgdm9pZCBjc190aW1lcl9jb29yZGlu
-YXRlZChzdHJ1Y3QgY3NfY3B1X2Ric19pbmZvX3MgKmRic19pbmZvX2xvY2FsLAotCQkJCSBzdHJ1
-Y3QgZGVsYXllZF93b3JrICpkdykKLXsKLQlzdHJ1Y3QgY3NfY3B1X2Ric19pbmZvX3MgKmRic19p
-bmZvOwotCWt0aW1lX3QgdGltZV9ub3c7Ci0JczY0IGRlbHRhX3VzOwotCWJvb2wgc2FtcGxlID0g
-dHJ1ZTsKLQotCS8qIHVzZSBsZWFkZXIgQ1BVJ3MgZGJzX2luZm8gKi8KLQlkYnNfaW5mbyA9ICZw
-ZXJfY3B1KGNzX2NwdV9kYnNfaW5mbywKLQkJCSAgICBkYnNfaW5mb19sb2NhbC0+Y2Ricy5jdXJf
-cG9saWN5LT5jcHUpOwotCW11dGV4X2xvY2soJmRic19pbmZvLT5jZGJzLnRpbWVyX211dGV4KTsK
-LQotCXRpbWVfbm93ID0ga3RpbWVfZ2V0KCk7Ci0JZGVsdGFfdXMgPSBrdGltZV91c19kZWx0YSh0
-aW1lX25vdywgZGJzX2luZm8tPmNkYnMudGltZV9zdGFtcCk7Ci0KLQkvKiBEbyBub3RoaW5nIGlm
-IHdlIHJlY2VudGx5IGhhdmUgc2FtcGxlZCAqLwotCWlmIChkZWx0YV91cyA8IChzNjQpKGNzX3R1
-bmVycy5zYW1wbGluZ19yYXRlIC8gMikpCi0JCXNhbXBsZSA9IGZhbHNlOwotCWVsc2UKLQkJZGJz
-X2luZm8tPmNkYnMudGltZV9zdGFtcCA9IHRpbWVfbm93OwotCi0JY3NfdGltZXJfdXBkYXRlKGRi
-c19pbmZvLCBzYW1wbGUsIGR3KTsKLQltdXRleF91bmxvY2soJmRic19pbmZvLT5jZGJzLnRpbWVy
-X211dGV4KTsKLX0KLQotc3RhdGljIHZvaWQgY3NfZGJzX3RpbWVyKHN0cnVjdCB3b3JrX3N0cnVj
-dCAqd29yaykKLXsKLQlzdHJ1Y3QgZGVsYXllZF93b3JrICpkdyA9IHRvX2RlbGF5ZWRfd29yayh3
-b3JrKTsKLQlzdHJ1Y3QgY3NfY3B1X2Ric19pbmZvX3MgKmRic19pbmZvID0gY29udGFpbmVyX29m
-KHdvcmssCi0JCQlzdHJ1Y3QgY3NfY3B1X2Ric19pbmZvX3MsIGNkYnMud29yay53b3JrKTsKLQot
-CWlmIChwb2xpY3lfaXNfc2hhcmVkKGRic19pbmZvLT5jZGJzLmN1cl9wb2xpY3kpKSB7Ci0JCWNz
-X3RpbWVyX2Nvb3JkaW5hdGVkKGRic19pbmZvLCBkdyk7Ci0JfSBlbHNlIHsKLQkJbXV0ZXhfbG9j
-aygmZGJzX2luZm8tPmNkYnMudGltZXJfbXV0ZXgpOwotCQljc190aW1lcl91cGRhdGUoZGJzX2lu
-Zm8sIHRydWUsIGR3KTsKLQkJbXV0ZXhfdW5sb2NrKCZkYnNfaW5mby0+Y2Ricy50aW1lcl9tdXRl
-eCk7Ci0JfQotfQogc3RhdGljIGludCBkYnNfY3B1ZnJlcV9ub3RpZmllcihzdHJ1Y3Qgbm90aWZp
-ZXJfYmxvY2sgKm5iLCB1bnNpZ25lZCBsb25nIHZhbCwKIAkJdm9pZCAqZGF0YSkKIHsKZGlmZiAt
-LWdpdCBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxX2dvdmVybm9yLmMgYi9kcml2ZXJzL2NwdWZy
-ZXEvY3B1ZnJlcV9nb3Zlcm5vci5jCmluZGV4IDI5ZDZhNTkuLjdhYWE5YjEgMTAwNjQ0Ci0tLSBh
-L2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxX2dvdmVybm9yLmMKKysrIGIvZHJpdmVycy9jcHVmcmVx
-L2NwdWZyZXFfZ292ZXJub3IuYwpAQCAtMTc3LDYgKzE3NywyNSBAQCBzdGF0aWMgaW5saW5lIHZv
-aWQgZGJzX3RpbWVyX2V4aXQoc3RydWN0IGRic19kYXRhICpkYnNfZGF0YSwgaW50IGNwdSkKIAlj
-YW5jZWxfZGVsYXllZF93b3JrX3N5bmMoJmNkYnMtPndvcmspOwogfQogCisvKiBXaWxsIHJldHVy
-biBpZiB3ZSBuZWVkIHRvIGV2YWx1YXRlIGNwdSBsb2FkIGFnYWluIG9yIG5vdCAqLworYm9vbCBu
-ZWVkX2xvYWRfZXZhbChzdHJ1Y3QgY3B1X2Ric19jb21tb25faW5mbyAqY2RicywKKwkJdW5zaWdu
-ZWQgaW50IHNhbXBsaW5nX3JhdGUpCit7CisJaWYgKHBvbGljeV9pc19zaGFyZWQoY2Ricy0+Y3Vy
-X3BvbGljeSkpIHsKKwkJa3RpbWVfdCB0aW1lX25vdyA9IGt0aW1lX2dldCgpOworCQlzNjQgZGVs
-dGFfdXMgPSBrdGltZV91c19kZWx0YSh0aW1lX25vdywgY2Ricy0+dGltZV9zdGFtcCk7CisKKwkJ
-LyogRG8gbm90aGluZyBpZiB3ZSByZWNlbnRseSBoYXZlIHNhbXBsZWQgKi8KKwkJaWYgKGRlbHRh
-X3VzIDwgKHM2NCkoc2FtcGxpbmdfcmF0ZSAvIDIpKQorCQkJcmV0dXJuIGZhbHNlOworCQllbHNl
-CisJCQljZGJzLT50aW1lX3N0YW1wID0gdGltZV9ub3c7CisJfQorCisJcmV0dXJuIHRydWU7Cit9
-CitFWFBPUlRfU1lNQk9MX0dQTChuZWVkX2xvYWRfZXZhbCk7CisKIGludCBjcHVmcmVxX2dvdmVy
-bm9yX2RicyhzdHJ1Y3QgZGJzX2RhdGEgKmRic19kYXRhLAogCQlzdHJ1Y3QgY3B1ZnJlcV9wb2xp
-Y3kgKnBvbGljeSwgdW5zaWduZWQgaW50IGV2ZW50KQogewpkaWZmIC0tZ2l0IGEvZHJpdmVycy9j
-cHVmcmVxL2NwdWZyZXFfZ292ZXJub3IuaCBiL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxX2dvdmVy
-bm9yLmgKaW5kZXggYzE5YTE2Yy4uMTYzMTRiNiAxMDA2NDQKLS0tIGEvZHJpdmVycy9jcHVmcmVx
-L2NwdWZyZXFfZ292ZXJub3IuaAorKysgYi9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcV9nb3Zlcm5v
-ci5oCkBAIC0xNzEsNiArMTcxLDggQEAgc3RhdGljIGlubGluZSBpbnQgZGVsYXlfZm9yX3NhbXBs
-aW5nX3JhdGUodW5zaWduZWQgaW50IHNhbXBsaW5nX3JhdGUpCiAKIHU2NCBnZXRfY3B1X2lkbGVf
-dGltZSh1bnNpZ25lZCBpbnQgY3B1LCB1NjQgKndhbGwpOwogdm9pZCBkYnNfY2hlY2tfY3B1KHN0
-cnVjdCBkYnNfZGF0YSAqZGJzX2RhdGEsIGludCBjcHUpOworYm9vbCBuZWVkX2xvYWRfZXZhbChz
-dHJ1Y3QgY3B1X2Ric19jb21tb25faW5mbyAqY2RicywKKwkJdW5zaWduZWQgaW50IHNhbXBsaW5n
-X3JhdGUpOwogaW50IGNwdWZyZXFfZ292ZXJub3JfZGJzKHN0cnVjdCBkYnNfZGF0YSAqZGJzX2Rh
-dGEsCiAJCXN0cnVjdCBjcHVmcmVxX3BvbGljeSAqcG9saWN5LCB1bnNpZ25lZCBpbnQgZXZlbnQp
-OwogI2VuZGlmIC8qIF9DUFVGUkVRX0dPVkVSTkVSX0ggKi8KZGlmZiAtLWdpdCBhL2RyaXZlcnMv
-Y3B1ZnJlcS9jcHVmcmVxX29uZGVtYW5kLmMgYi9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcV9vbmRl
-bWFuZC5jCmluZGV4IDc1ZWZkNWUuLmYzOGI4ZGEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY3B1ZnJl
-cS9jcHVmcmVxX29uZGVtYW5kLmMKKysrIGIvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXFfb25kZW1h
-bmQuYwpAQCAtMjE2LDc1ICsyMTYsNDQgQEAgc3RhdGljIHZvaWQgb2RfY2hlY2tfY3B1KGludCBj
-cHUsIHVuc2lnbmVkIGludCBsb2FkX2ZyZXEpCiAJfQogfQogCi1zdGF0aWMgdm9pZCBvZF90aW1l
-cl91cGRhdGUoc3RydWN0IG9kX2NwdV9kYnNfaW5mb19zICpkYnNfaW5mbywgYm9vbCBzYW1wbGUs
-Ci0JCQkgICAgc3RydWN0IGRlbGF5ZWRfd29yayAqZHcpCitzdGF0aWMgdm9pZCBvZF9kYnNfdGlt
-ZXIoc3RydWN0IHdvcmtfc3RydWN0ICp3b3JrKQogeworCXN0cnVjdCBkZWxheWVkX3dvcmsgKmR3
-ID0gdG9fZGVsYXllZF93b3JrKHdvcmspOworCXN0cnVjdCBvZF9jcHVfZGJzX2luZm9fcyAqZGJz
-X2luZm8gPQorCQljb250YWluZXJfb2Yod29yaywgc3RydWN0IG9kX2NwdV9kYnNfaW5mb19zLCBj
-ZGJzLndvcmsud29yayk7CiAJdW5zaWduZWQgaW50IGNwdSA9IGRic19pbmZvLT5jZGJzLmN1cl9w
-b2xpY3ktPmNwdTsKLQlpbnQgZGVsYXksIHNhbXBsZV90eXBlID0gZGJzX2luZm8tPnNhbXBsZV90
-eXBlOworCXN0cnVjdCBvZF9jcHVfZGJzX2luZm9fcyAqY29yZV9kYnNfaW5mbyA9ICZwZXJfY3B1
-KG9kX2NwdV9kYnNfaW5mbywKKwkJCWNwdSk7CisJaW50IGRlbGF5LCBzYW1wbGVfdHlwZSA9IGNv
-cmVfZGJzX2luZm8tPnNhbXBsZV90eXBlOworCWJvb2wgZXZhbF9sb2FkOworCisJbXV0ZXhfbG9j
-aygmY29yZV9kYnNfaW5mby0+Y2Ricy50aW1lcl9tdXRleCk7CisJZXZhbF9sb2FkID0gbmVlZF9s
-b2FkX2V2YWwoJmNvcmVfZGJzX2luZm8tPmNkYnMsCisJCQlvZF90dW5lcnMuc2FtcGxpbmdfcmF0
-ZSk7CiAKIAkvKiBDb21tb24gTk9STUFMX1NBTVBMRSBzZXR1cCAqLwotCWRic19pbmZvLT5zYW1w
-bGVfdHlwZSA9IE9EX05PUk1BTF9TQU1QTEU7CisJY29yZV9kYnNfaW5mby0+c2FtcGxlX3R5cGUg
-PSBPRF9OT1JNQUxfU0FNUExFOwogCWlmIChzYW1wbGVfdHlwZSA9PSBPRF9TVUJfU0FNUExFKSB7
-Ci0JCWRlbGF5ID0gZGJzX2luZm8tPmZyZXFfbG9famlmZmllczsKLQkJaWYgKHNhbXBsZSkKLQkJ
-CV9fY3B1ZnJlcV9kcml2ZXJfdGFyZ2V0KGRic19pbmZvLT5jZGJzLmN1cl9wb2xpY3ksCi0JCQkJ
-CQlkYnNfaW5mby0+ZnJlcV9sbywKKwkJZGVsYXkgPSBjb3JlX2Ric19pbmZvLT5mcmVxX2xvX2pp
-ZmZpZXM7CisJCWlmIChldmFsX2xvYWQpCisJCQlfX2NwdWZyZXFfZHJpdmVyX3RhcmdldChjb3Jl
-X2Ric19pbmZvLT5jZGJzLmN1cl9wb2xpY3ksCisJCQkJCQljb3JlX2Ric19pbmZvLT5mcmVxX2xv
-LAogCQkJCQkJQ1BVRlJFUV9SRUxBVElPTl9IKTsKIAl9IGVsc2UgewotCQlpZiAoc2FtcGxlKQor
-CQlpZiAoZXZhbF9sb2FkKQogCQkJZGJzX2NoZWNrX2NwdSgmb2RfZGJzX2RhdGEsIGNwdSk7Ci0J
-CWlmIChkYnNfaW5mby0+ZnJlcV9sbykgeworCQlpZiAoY29yZV9kYnNfaW5mby0+ZnJlcV9sbykg
-ewogCQkJLyogU2V0dXAgdGltZXIgZm9yIFNVQl9TQU1QTEUgKi8KLQkJCWRic19pbmZvLT5zYW1w
-bGVfdHlwZSA9IE9EX1NVQl9TQU1QTEU7Ci0JCQlkZWxheSA9IGRic19pbmZvLT5mcmVxX2hpX2pp
-ZmZpZXM7CisJCQljb3JlX2Ric19pbmZvLT5zYW1wbGVfdHlwZSA9IE9EX1NVQl9TQU1QTEU7CisJ
-CQlkZWxheSA9IGNvcmVfZGJzX2luZm8tPmZyZXFfaGlfamlmZmllczsKIAkJfSBlbHNlIHsKIAkJ
-CWRlbGF5ID0gZGVsYXlfZm9yX3NhbXBsaW5nX3JhdGUob2RfdHVuZXJzLnNhbXBsaW5nX3JhdGUK
-LQkJCQkJCSogZGJzX2luZm8tPnJhdGVfbXVsdCk7CisJCQkJCQkqIGNvcmVfZGJzX2luZm8tPnJh
-dGVfbXVsdCk7CiAJCX0KIAl9CiAKIAlzY2hlZHVsZV9kZWxheWVkX3dvcmtfb24oc21wX3Byb2Nl
-c3Nvcl9pZCgpLCBkdywgZGVsYXkpOwotfQotCi1zdGF0aWMgdm9pZCBvZF90aW1lcl9jb29yZGlu
-YXRlZChzdHJ1Y3Qgb2RfY3B1X2Ric19pbmZvX3MgKmRic19pbmZvX2xvY2FsLAotCQkJCSBzdHJ1
-Y3QgZGVsYXllZF93b3JrICpkdykKLXsKLQlzdHJ1Y3Qgb2RfY3B1X2Ric19pbmZvX3MgKmRic19p
-bmZvOwotCWt0aW1lX3QgdGltZV9ub3c7Ci0JczY0IGRlbHRhX3VzOwotCWJvb2wgc2FtcGxlID0g
-dHJ1ZTsKLQotCS8qIHVzZSBsZWFkZXIgQ1BVJ3MgZGJzX2luZm8gKi8KLQlkYnNfaW5mbyA9ICZw
-ZXJfY3B1KG9kX2NwdV9kYnNfaW5mbywKLQkJCSAgICBkYnNfaW5mb19sb2NhbC0+Y2Ricy5jdXJf
-cG9saWN5LT5jcHUpOwotCW11dGV4X2xvY2soJmRic19pbmZvLT5jZGJzLnRpbWVyX211dGV4KTsK
-LQotCXRpbWVfbm93ID0ga3RpbWVfZ2V0KCk7Ci0JZGVsdGFfdXMgPSBrdGltZV91c19kZWx0YSh0
-aW1lX25vdywgZGJzX2luZm8tPmNkYnMudGltZV9zdGFtcCk7Ci0KLQkvKiBEbyBub3RoaW5nIGlm
-IHdlIHJlY2VudGx5IGhhdmUgc2FtcGxlZCAqLwotCWlmIChkZWx0YV91cyA8IChzNjQpKG9kX3R1
-bmVycy5zYW1wbGluZ19yYXRlIC8gMikpCi0JCXNhbXBsZSA9IGZhbHNlOwotCWVsc2UKLQkJZGJz
-X2luZm8tPmNkYnMudGltZV9zdGFtcCA9IHRpbWVfbm93OwotCi0Jb2RfdGltZXJfdXBkYXRlKGRi
-c19pbmZvLCBzYW1wbGUsIGR3KTsKLQltdXRleF91bmxvY2soJmRic19pbmZvLT5jZGJzLnRpbWVy
-X211dGV4KTsKLX0KLQotc3RhdGljIHZvaWQgb2RfZGJzX3RpbWVyKHN0cnVjdCB3b3JrX3N0cnVj
-dCAqd29yaykKLXsKLQlzdHJ1Y3QgZGVsYXllZF93b3JrICpkdyA9IHRvX2RlbGF5ZWRfd29yayh3
-b3JrKTsKLQlzdHJ1Y3Qgb2RfY3B1X2Ric19pbmZvX3MgKmRic19pbmZvID0KLQkJY29udGFpbmVy
-X29mKHdvcmssIHN0cnVjdCBvZF9jcHVfZGJzX2luZm9fcywgY2Ricy53b3JrLndvcmspOwotCi0J
-aWYgKHBvbGljeV9pc19zaGFyZWQoZGJzX2luZm8tPmNkYnMuY3VyX3BvbGljeSkpIHsKLQkJb2Rf
-dGltZXJfY29vcmRpbmF0ZWQoZGJzX2luZm8sIGR3KTsKLQl9IGVsc2UgewotCQltdXRleF9sb2Nr
-KCZkYnNfaW5mby0+Y2Ricy50aW1lcl9tdXRleCk7Ci0JCW9kX3RpbWVyX3VwZGF0ZShkYnNfaW5m
-bywgdHJ1ZSwgZHcpOwotCQltdXRleF91bmxvY2soJmRic19pbmZvLT5jZGJzLnRpbWVyX211dGV4
-KTsKLQl9CisJbXV0ZXhfdW5sb2NrKCZjb3JlX2Ric19pbmZvLT5jZGJzLnRpbWVyX211dGV4KTsK
-IH0KIAogLyoqKioqKioqKioqKioqKioqKioqKioqKioqIHN5c2ZzIGludGVyZmFjZSAqKioqKioq
-KioqKioqKioqKioqKioqKiovCi0tIAoxLjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
---14dae93b59b642943404d4a0a401--
+Thanks. :)
