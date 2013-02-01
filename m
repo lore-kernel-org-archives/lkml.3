@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab3BAAwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 19:52:39 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:44350 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab3BAAwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 19:52:36 -0500
-Date: Thu, 31 Jan 2013 16:52:25 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kbuild test robot <fengguang.wu@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernel/cgroup_freezer.c:151:3: error: 'system_freezing_cnt'
- undeclared
-Message-ID: <20130201005225.GQ6824@mtj.dyndns.org>
-References: <510aa746.fVU8ZdQ2hys/RwjS%fengguang.wu@intel.com>
- <20130131231433.GM6824@mtj.dyndns.org>
- <510B1051.5010200@tilera.com>
+	id S1755300Ab3BAAxO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 19:53:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43152 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751738Ab3BAAxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 19:53:12 -0500
+Date: Fri, 1 Feb 2013 00:53:08 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dm-devel@redhat.com, Daniel Browning <db@kavod.com>,
+        linux-kernel@vger.kernel.org, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, stable@vger.kernel.org
+Subject: [git pull] Further device-mapper fixes for 3.8
+Message-ID: <20130201005308.GG3228@agk-dp.fab.redhat.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	dm-devel@redhat.com, Daniel Browning <db@kavod.com>,
+	linux-kernel@vger.kernel.org, Joe Thornber <ejt@redhat.com>,
+	Mike Snitzer <snitzer@redhat.com>, stable@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <510B1051.5010200@tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Chris.
+Please pull from:
 
-On Thu, Jan 31, 2013 at 07:46:09PM -0500, Chris Metcalf wrote:
-> That seems reasonable to me, but I'm happy to experiment with
-> including Kconfig.freezer from the arch/tile/Kconfig if that feels
-> like a better solution.
+  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.8-fixes-2
 
-AFAICS, there's nothing arch specific about freezer and cgroup_freezer
-could be useful even without powersaving, so maybe give it a shot?
+to get the following device-mapper fixes for 3.8.
+ 
+Thanks,
+Alasdair
+  
+----------------------------------------------------------------
+A fix for stacked dm thin devices and a fix for the new dm WRITE SAME
+support.
 
-Thanks.
+----------------------------------------------------------------
+Alasdair G Kergon (1):
+      dm: fix write same requests counting
 
--- 
-tejun
+Mike Snitzer (1):
+      dm thin: fix queue limits stacking
+
+ drivers/md/dm-thin.c |   13 +------------
+ drivers/md/dm.c      |    6 ++++--
+ 2 files changed, 5 insertions(+), 14 deletions(-)
