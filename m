@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161305Ab3BAKt4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:49:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39060 "EHLO mail.kernel.org"
+	id S1161261Ab3BAKtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:49:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39018 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161062Ab3BAKtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:49:53 -0500
+	id S1161238Ab3BAKtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:49:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        xueminsu <xuemin.su@intel.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 10/33] radeon_display: Use pointer return error codes
-Date: Fri,  1 Feb 2013 11:49:15 +0100
-Message-Id: <20130201104725.390267351@linuxfoundation.org>
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [ 06/33] ARM: at91: rm9200: remake the BGA as default version
+Date: Fri,  1 Feb 2013 11:49:11 +0100
+Message-Id: <20130201104725.108149661@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
@@ -26,31 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xueminsu <xuemin.su@intel.com>
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-commit b2f4b03f8a378cd626d2ea67d19e7470c050a098 upstream.
+commit 36224d0fe0f34cdde66a381708853ebadeac799c upstream.
 
-drm_mode_addfb() expects fb_create return error code
-instead of NULL.
+Make BGA as the default version as we are supposed to just have
+to specify when we use the PQFP version.
 
-Signed-off-by: xueminsu <xuemin.su@intel.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Issue was existing since commit:
+3e90772 (ARM: at91: fix at91rm9200 soc subtype handling).
+
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-at91/setup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -1136,7 +1136,7 @@ radeon_user_framebuffer_create(struct dr
- 	if (ret) {
- 		kfree(radeon_fb);
- 		drm_gem_object_unreference_unlocked(obj);
--		return NULL;
-+		return ERR_PTR(ret);
- 	}
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -104,6 +104,8 @@ static void __init soc_detect(u32 dbgu_b
+ 	switch (socid) {
+ 	case ARCH_ID_AT91RM9200:
+ 		at91_soc_initdata.type = AT91_SOC_RM9200;
++		if (at91_soc_initdata.subtype == AT91_SOC_SUBTYPE_NONE)
++			at91_soc_initdata.subtype = AT91_SOC_RM9200_BGA;
+ 		at91_boot_soc = at91rm9200_soc;
+ 		break;
  
- 	return &radeon_fb->base;
 
 
