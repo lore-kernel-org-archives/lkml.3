@@ -1,97 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab3BACC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 21:02:29 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24407 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650Ab3BACC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 21:02:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="285067130"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Li, Fei" <fei.li@intel.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        anish singh <anish198519851985@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: RE: [PATCH V3] suspend: enable freeze timeout configuration through
- sys
-Thread-Topic: [PATCH V3] suspend: enable freeze timeout configuration
- through sys
-Thread-Index: AQHOAB9jeX1OoVIGSkm3lU8CxrRPQJhkP1Kg
-Date: Fri, 1 Feb 2013 02:02:21 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A2212E8@SHSMSX101.ccr.corp.intel.com>
-References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <BEC9F67575FA1E429CA7CF5AE9BE36343F0D19@SHSMSX102.ccr.corp.intel.com>
- <CAK7N6vpdmLv-G3q-m9nbWs1jV-s=k9c4gQ-wKOZsMGZrm4AhVw@mail.gmail.com>
- <1503699.1Mx8Tt0bYE@vostro.rjw.lan>
- <BEC9F67575FA1E429CA7CF5AE9BE36343F0F00@SHSMSX102.ccr.corp.intel.com>
- <510B20B5.20900@jp.fujitsu.com>
-In-Reply-To: <510B20B5.20900@jp.fujitsu.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754882Ab3BACG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 21:06:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58841 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab3BACGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Jan 2013 21:06:52 -0500
+Message-ID: <1359684403.1303.3.camel@kernel>
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Jianguo Wu <wujianguo@huawei.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, akpm@linux-foundation.org,
+        rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        glommer@parallels.com, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org
+Date: Thu, 31 Jan 2013 20:06:43 -0600
+In-Reply-To: <510B20F2.20906@huawei.com>
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+	      <1359463973.1624.15.camel@kernel> <5108F2B3.3090506@cn.fujitsu.com>
+	     <1359595344.1557.13.camel@kernel> <5109E59F.5080104@cn.fujitsu.com>
+	    <1359613162.1587.0.camel@kernel> <510A18FA.2010107@cn.fujitsu.com>
+	   <1359622123.1391.19.camel@kernel> <510A3CE6.202@cn.fujitsu.com>
+	  <1359628705.2048.5.camel@kernel> <510B1B4B.5080207@huawei.com>
+	 <1359682576.3574.1.camel@kernel> <510B20F2.20906@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1122Vxs023348
 
-> >>>>>> -#define TIMEOUT    (20 * HZ)
-> >>>>>> +unsigned int __read_mostly sys_freeze_process_timeout_msecs =
-> >> 20000;
-> >>>>>
-> >>>>> 20000 does not mean 20 seconds since we can select HZ other than
-> 1000.
-> >>>>> So (20 * HZ) is better than 20000.
-> >>>>>
-> >>>> [Li, Fei]
-> >>>> Are you sure about this, (20*HZ) better than 20000, or you mean 20 *
-> >> MSEC_PER_SEC?
-> >>> Yasuaki  mean HZ value will not always be 1000.The value of HZ differs for
-> >> each
-> >>>   supported architecture. In fact, on some supported architectures,
-> >>> it even differs between machine types.
-> >>> When writing kernel code, never assume that HZ has any given value.
-> >>> Right now you are assuming that the delay will be always 20 seconds
-> because
-> >> of
-> >>> your assumption of HZ.
+Hi Jianguo,
+On Fri, 2013-02-01 at 09:57 +0800, Jianguo Wu wrote:
+> On 2013/2/1 9:36, Simon Jeons wrote:
+> 
+> > On Fri, 2013-02-01 at 09:32 +0800, Jianguo Wu wrote:
+> >> On 2013/1/31 18:38, Simon Jeons wrote:
 > >>
-> >> That's correct, the initial value should be 20 * HZ (i.e. as before).
-> > [Li, Fei]
-> > Yes, you are right, and IMHO it's already as this in the patch,
-> > as 20 * HZ == msecs_to_jiffies(20000), with the current definition
-> MSEC_PER_SEC
-> > of 1000L. I'll update the default value as 20 * MSEC_PER_SEC in patch V4.
+> >>> Hi Tang,
+> >>> On Thu, 2013-01-31 at 17:44 +0800, Tang Chen wrote:
+> >>>> Hi Simon,
+> >>>>
+> >>>> On 01/31/2013 04:48 PM, Simon Jeons wrote:
+> >>>>> Hi Tang,
+> >>>>> On Thu, 2013-01-31 at 15:10 +0800, Tang Chen wrote:
+> >>>>>
+> >>>>> 1. IIUC, there is a button on machine which supports hot-remove memory,
+> >>>>> then what's the difference between press button and echo to /sys?
+> >>>>
+> >>>> No important difference, I think. Since I don't have the machine you are
+> >>>> saying, I cannot surely answer you. :)
+> >>>> AFAIK, pressing the button means trigger the hotplug from hardware, sysfs
+> >>>> is just another entrance. At last, they will run into the same code.
+> >>>>
+> >>>>> 2. Since kernel memory is linear mapping(I mean direct mapping part),
+> >>>>> why can't put kernel direct mapping memory into one memory device, and
+> >>>>> other memory into the other devices?
+> >>>>
+> >>>> We cannot do that because in that way, we will lose NUMA performance.
+> >>>>
+> >>>> If you know NUMA, you will understand the following example:
+> >>>>
+> >>>> node0:                    node1:
+> >>>>     cpu0~cpu15                cpu16~cpu31
+> >>>>     memory0~memory511         memory512~memory1023
+> >>>>
+> >>>> cpu16~cpu31 access memory16~memory1023 much faster than memory0~memory511.
+> >>>> If we set direct mapping area in node0, and movable area in node1, then
+> >>>> the kernel code running on cpu16~cpu31 will have to access 
+> >>>> memory0~memory511.
+> >>>> This is a terrible performance down.
+> >>>
+> >>> So if config NUMA, kernel memory will not be linear mapping anymore? For
+> >>> example, 
+> >>>
+> >>> Node 0  Node 1 
+> >>>
+> >>> 0 ~ 10G 11G~14G
+> >>>
+> >>> kernel memory only at Node 0? Can part of kernel memory also at Node 1?
+> >>>
+> >>> How big is kernel direct mapping memory in x86_64? Is there max limit?
+> >>
+> >>
+> >> Max kernel direct mapping memory in x86_64 is 64TB.
+> > 
+> > For example, I have 8G memory, all of them will be direct mapping for
+> > kernel? then userspace memory allocated from where?
 > 
-> 20 * MSEC_PER_SEC is not 20 seconds. In Linux, 1 * HZ is 1 seconds.
-Sure.
+> Direct mapping memory means you can use __va() and pa(), but not means that them
+> can be only used by kernel, them can be used by user-space too, as long as them are free.
 
-> Thus,
->   - If HZ is defined as 1000, 1000 is 1 seconds.
->   - If HZ is defined as 250, 250 is 1 seconds.
-> 
-> 20 * MSEC_PER_SEC is always 20000.
-
-> Thus,
->   - If HZ is defined as 1000, 20 * MSEC_PER_SEC is 20 seconds.
->   - If HZ is defined as 250, 20 * MSEC_PER_SEC is 80 seconds.
-Could you check the patch again?
-The patch are using msecs_to_jiffies(20 * MSEC_PER_SEC), not 20 * MSEC_PER_SEC.
-msecs_to_jiffies() has done the conversion from MSEC_PER_SEC to HZ.
+IIUC, the benefit of va() and pa() is just for quick get
+virtual/physical address, it takes advantage of linear mapping. But mmu
+still need to go through pgd/pud/pmd/pte, correct?
 
 > 
-> So you should use 20 * HZ if you define timeout at 20 seconds.
+> > 
+> >>
+> >>> It seems that only around 896MB on x86_32. 
+> >>>
+> >>>>
+> >>>>> As you know x86_64 don't need
+> >>>>> highmem, IIUC, all kernel memory will linear mapping in this case. Is my
+> >>>>> idea available? If is correct, x86_32 can't implement in the same way
+> >>>>> since highmem(kmap/kmap_atomic/vmalloc) can map any address, so it's
+> >>>>> hard to focus kernel memory on single memory device.
+> >>>>
+> >>>> Sorry, I'm not quite familiar with x86_32 box.
+> >>>>
+> >>>>> 3. In current implementation, if memory hotplug just need memory
+> >>>>> subsystem and ACPI codes support? Or also needs firmware take part in?
+> >>>>> Hope you can explain in details, thanks in advance. :)
+> >>>>
+> >>>> We need firmware take part in, such as SRAT in ACPI BIOS, or the firmware
+> >>>> based memory migration mentioned by Liu Jiang.
+> >>>
+> >>> Is there any material about firmware based memory migration?
+> >>>
+> >>>>
+> >>>> So far, I only know this. :)
+> >>>>
+> >>>>> 4. What's the status of memory hotplug? Apart from can't remove kernel
+> >>>>> memory, other things are fully implementation?
+> >>>>
+> >>>> I think the main job is done for now. And there are still bugs to fix.
+> >>>> And this functionality is not stable.
+> >>>>
+> >>>> Thanks. :)
+> >>>
+> >>>
+> >>> --
+> >>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >>> the body to majordomo@kvack.org.  For more info on Linux MM,
+> >>> see: http://www.linux-mm.org/ .
+> >>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >>>
+> >>> .
+> >>>
+> >>
+> >>
+> >>
+> > 
+> > 
+> > 
+> > .
+> > 
 > 
-> Thanks,
-> Yasuaki Ishimatsu.
+> 
+> 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
