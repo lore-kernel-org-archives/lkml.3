@@ -1,121 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab3BAIng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 03:43:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:14144 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752639Ab3BAInf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 03:43:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,579,1355126400"; 
-   d="scan'208";a="285243397"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Zhang, Rui" <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] Thermal: Fix to use read critical temperature when
- required
-Thread-Topic: [PATCH] Thermal: Fix to use read critical temperature when
- required
-Thread-Index: AQHN7f777pj3G73esU2unP3xUOldgJhkRhoAgACOIZA=
-Date: Fri, 1 Feb 2013 08:43:29 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5927488E@BGSMSX101.gar.corp.intel.com>
-References: <1357690739-17009-1-git-send-email-amit.daniel@samsung.com>
- <1359697446.2241.95.camel@rzhang1-mobl4>
-In-Reply-To: <1359697446.2241.95.camel@rzhang1-mobl4>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1755892Ab3BAIoN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 03:44:13 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:58917 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980Ab3BAIoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 03:44:10 -0500
+Message-ID: <510B8059.5040609@linaro.org>
+Date: Fri, 01 Feb 2013 09:44:09 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Len Brown <lenb@kernel.org>
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 1/4] intel_idle: stop using driver_data for static flags
+References: <1359691896-23567-1-git-send-email-lenb@kernel.org> <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com>
+In-Reply-To: <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r118hceK025033
 
-> -----Original Message-----
-> From: Zhang, Rui
-> Sent: Friday, February 01, 2013 11:14 AM
-> To: Amit Daniel Kachhap
-> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; R, Durgadoss
-> Subject: Re: [PATCH] Thermal: Fix to use read critical temperature when
-> required
+On 02/01/2013 05:11 AM, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
 > 
-> On Tue, 2013-01-08 at 16:18 -0800, Amit Daniel Kachhap wrote:
-> > This patch modifies the code to use get_crit_temp instead of
-> > the normal get_trip_temp when critical threshold point is crossed
-> > or queried about.
-> >
+> The commit, 4202735e8ab6ecfb0381631a0d0b58fefe0bd4e2
+> (cpuidle: Split cpuidle_state structure and move per-cpu statistics fields)
+> observed that the MWAIT flags for Cn on every processor to date were the
+> same, and created get_driver_data() to supply them.
 > 
-> is there any problem in the current code?
-> 
-> > Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> > ---
-> >  drivers/thermal/thermal_sys.c |   15 +++++++++++++--
-> >  1 file changed, 13 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> > index ecdfc7d..0dc6403 100644
-> > --- a/drivers/thermal/thermal_sys.c
-> > +++ b/drivers/thermal/thermal_sys.c
-> > @@ -345,7 +345,10 @@ static void handle_critical_trips(struct
-> thermal_zone_device *tz,
-> >  {
-> >  	long trip_temp;
-> >
-> > -	tz->ops->get_trip_temp(tz, trip, &trip_temp);
-> > +	if (tz->ops->get_crit_temp)
-> > +		tz->ops->get_crit_temp(tz, &trip_temp);
-> > +	else
-> > +		tz->ops->get_trip_temp(tz, trip, &trip_temp);
-> >
-> handle_critical_trips() can handle both active and hot trip points.
-> this change will break HOT trip point.
-> 
-> >  	/* If we have not crossed the trip_temp, we do not care. */
-> >  	if (tz->temperature < trip_temp)
-> > @@ -550,6 +553,7 @@ trip_point_temp_show(struct device *dev, struct
-> device_attribute *attr,
-> >  	struct thermal_zone_device *tz = to_thermal_zone(dev);
-> >  	int trip, ret;
-> >  	long temperature;
-> > +	enum thermal_trip_type type;
-> >
-> >  	if (!tz->ops->get_trip_temp)
-> >  		return -EPERM;
-> > @@ -557,7 +561,14 @@ trip_point_temp_show(struct device *dev, struct
-> device_attribute *attr,
-> >  	if (!sscanf(attr->attr.name, "trip_point_%d_temp", &trip))
-> >  		return -EINVAL;
-> >
-> > -	ret = tz->ops->get_trip_temp(tz, trip, &temperature);
-> > +	ret = tz->ops->get_trip_type(tz, trip, &type);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	if (type == THERMAL_TRIP_CRITICAL && tz->ops->get_crit_temp)
-> > +		ret = tz->ops->get_crit_temp(tz, &temperature);
-> > +	else
-> > +		ret = tz->ops->get_trip_temp(tz, trip, &temperature);
-> >
-> 
-> what's the benefit of using .get_crit_temp() instead of .get_trip_temp()
-> for CRITICAL trip points here?
-> .get_trip_point can also get the critical trip point temperature.
-> 
-> instead, I think we could remove .get_crit_temp callback.
+> Unfortunately, that assumption is false, going forward.
+> So here we restore the MWAIT flags to the cpuidle_state table.
+> However, instead restoring the old "driver_data" field,
+> we put the flags into the existing "flags" field,
+> where they probalby should have lived all along.
 
-I agree with you Rui here :-)
+Removing the driver_data is a good thing but I am not sure it is the
+case by moving the MWAIT flags to the cpuidle_state's flags field. We
+are mixing arch specific flags with a generic code.
 
-> for hwmon sysfs, we just need to use get_trip_type to find the critical
-> trip point.
+This is prone to errors because new flags could appear for the cpuidle
+core code and could collide with the arch specific flags.
 
-Yes, this should work.
+Wouldn't make sense to add a private field in the struct cpuidle_state
+structure to let the driver/arch specific to store whatever is needed ?
 
-Thanks,
-Durga
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+struct cpuidle_state {
+
+	...
+	unsigned long private;
+	...
+
+}
+
+
+> This patch does not change any operation.
+> 
+> This patch removes 1 of the 3 users of cpuidle_state_usage.driver_data.
+> Perhaps some day we'll get rid of the other 2.
+
++1 :)
+
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> ---
+>  drivers/idle/intel_idle.c | 75 ++++++++++++++++-------------------------------
+>  1 file changed, 26 insertions(+), 49 deletions(-)
+> 
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index 2df9414..8331753 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -109,6 +109,16 @@ static struct cpuidle_state *cpuidle_state_table;
+>  #define CPUIDLE_FLAG_TLB_FLUSHED	0x10000
+>  
+>  /*
+> + * MWAIT takes an 8-bit "hint" in EAX "suggesting"
+> + * the C-state (top nibble) and sub-state (bottom nibble)
+> + * 0x00 means "MWAIT(C1)", 0x10 means "MWAIT(C2)" etc.
+> + * 
+> + * We store the hint at the top of our "flags" for each state.
+> + */
+> +#define flags_2_MWAIT_EAX(flags) (((flags) >> 24) & 0xFF)
+> +#define MWAIT_EAX_2_flags(eax) ((eax & 0xFF) << 24)
+> +
+> +/*
+>   * States are indexed by the cstate number,
+>   * which is also the index into the MWAIT hint array.
+>   * Thus C0 is a dummy.
+> @@ -118,21 +128,21 @@ static struct cpuidle_state nehalem_cstates[MWAIT_MAX_NUM_CSTATES] = {
+>  	{ /* MWAIT C1 */
+>  		.name = "C1-NHM",
+>  		.desc = "MWAIT 0x00",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID,
+> +		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
+>  		.exit_latency = 3,
+>  		.target_residency = 6,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C2 */
+>  		.name = "C3-NHM",
+>  		.desc = "MWAIT 0x10",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 20,
+>  		.target_residency = 80,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C3 */
+>  		.name = "C6-NHM",
+>  		.desc = "MWAIT 0x20",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x20) |CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 200,
+>  		.target_residency = 800,
+>  		.enter = &intel_idle },
+> @@ -143,28 +153,28 @@ static struct cpuidle_state snb_cstates[MWAIT_MAX_NUM_CSTATES] = {
+>  	{ /* MWAIT C1 */
+>  		.name = "C1-SNB",
+>  		.desc = "MWAIT 0x00",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID,
+> +		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
+>  		.exit_latency = 1,
+>  		.target_residency = 1,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C2 */
+>  		.name = "C3-SNB",
+>  		.desc = "MWAIT 0x10",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 80,
+>  		.target_residency = 211,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C3 */
+>  		.name = "C6-SNB",
+>  		.desc = "MWAIT 0x20",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x20) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 104,
+>  		.target_residency = 345,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C4 */
+>  		.name = "C7-SNB",
+>  		.desc = "MWAIT 0x30",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x30) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 109,
+>  		.target_residency = 345,
+>  		.enter = &intel_idle },
+> @@ -175,28 +185,28 @@ static struct cpuidle_state ivb_cstates[MWAIT_MAX_NUM_CSTATES] = {
+>  	{ /* MWAIT C1 */
+>  		.name = "C1-IVB",
+>  		.desc = "MWAIT 0x00",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID,
+> +		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
+>  		.exit_latency = 1,
+>  		.target_residency = 1,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C2 */
+>  		.name = "C3-IVB",
+>  		.desc = "MWAIT 0x10",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 59,
+>  		.target_residency = 156,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C3 */
+>  		.name = "C6-IVB",
+>  		.desc = "MWAIT 0x20",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x20) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 80,
+>  		.target_residency = 300,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C4 */
+>  		.name = "C7-IVB",
+>  		.desc = "MWAIT 0x30",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x30) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 87,
+>  		.target_residency = 300,
+>  		.enter = &intel_idle },
+> @@ -207,14 +217,14 @@ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
+>  	{ /* MWAIT C1 */
+>  		.name = "C1-ATM",
+>  		.desc = "MWAIT 0x00",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID,
+> +		.flags = MWAIT_EAX_2_flags(0x00) | CPUIDLE_FLAG_TIME_VALID,
+>  		.exit_latency = 1,
+>  		.target_residency = 4,
+>  		.enter = &intel_idle },
+>  	{ /* MWAIT C2 */
+>  		.name = "C2-ATM",
+>  		.desc = "MWAIT 0x10",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID,
+> +		.flags = MWAIT_EAX_2_flags(0x10) | CPUIDLE_FLAG_TIME_VALID,
+>  		.exit_latency = 20,
+>  		.target_residency = 80,
+>  		.enter = &intel_idle },
+> @@ -222,7 +232,7 @@ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
+>  	{ /* MWAIT C4 */
+>  		.name = "C4-ATM",
+>  		.desc = "MWAIT 0x30",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x30) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 100,
+>  		.target_residency = 400,
+>  		.enter = &intel_idle },
+> @@ -230,41 +240,12 @@ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
+>  	{ /* MWAIT C6 */
+>  		.name = "C6-ATM",
+>  		.desc = "MWAIT 0x52",
+> -		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.flags = MWAIT_EAX_2_flags(0x52) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
+>  		.exit_latency = 140,
+>  		.target_residency = 560,
+>  		.enter = &intel_idle },
+>  };
+>  
+> -static long get_driver_data(int cstate)
+> -{
+> -	int driver_data;
+> -	switch (cstate) {
+> -
+> -	case 1:	/* MWAIT C1 */
+> -		driver_data = 0x00;
+> -		break;
+> -	case 2:	/* MWAIT C2 */
+> -		driver_data = 0x10;
+> -		break;
+> -	case 3:	/* MWAIT C3 */
+> -		driver_data = 0x20;
+> -		break;
+> -	case 4:	/* MWAIT C4 */
+> -		driver_data = 0x30;
+> -		break;
+> -	case 5:	/* MWAIT C5 */
+> -		driver_data = 0x40;
+> -		break;
+> -	case 6:	/* MWAIT C6 */
+> -		driver_data = 0x52;
+> -		break;
+> -	default:
+> -		driver_data = 0x00;
+> -	}
+> -	return driver_data;
+> -}
+> -
+>  /**
+>   * intel_idle
+>   * @dev: cpuidle_device
+> @@ -278,8 +259,7 @@ static int intel_idle(struct cpuidle_device *dev,
+>  {
+>  	unsigned long ecx = 1; /* break on interrupt flag */
+>  	struct cpuidle_state *state = &drv->states[index];
+> -	struct cpuidle_state_usage *state_usage = &dev->states_usage[index];
+> -	unsigned long eax = (unsigned long)cpuidle_get_statedata(state_usage);
+> +	unsigned long eax = flags_2_MWAIT_EAX(state->flags);
+>  	unsigned int cstate;
+>  	int cpu = smp_processor_id();
+>  
+> @@ -558,9 +538,6 @@ static int intel_idle_cpu_init(int cpu)
+>  		if (cpuidle_state_table[cstate].enter == NULL)
+>  			continue;
+>  
+> -		dev->states_usage[dev->state_count].driver_data =
+> -			(void *)get_driver_data(cstate);
+> -
+>  		dev->state_count += 1;
+>  	}
+>  
+> 
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
