@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab3BATNk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 14:13:40 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:33383 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756319Ab3BATNi (ORCPT
+	id S1757407Ab3BATOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 14:14:32 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51139 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754766Ab3BATOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 14:13:38 -0500
+	Fri, 1 Feb 2013 14:14:30 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18/tp7bcixEmzhm1lxhVbgy
+Date: Fri, 1 Feb 2013 11:14:24 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, rob.herring@calxeda.com,
+        rob@landley.net, b-cousson@ti.com, linux-usb@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org
+Subject: Re: [PATCH v4 4/4] drivers: usb: start using the control module
+ driver
+Message-ID: <20130201191424.GQ22517@atomide.com>
+References: <1359109440-2195-1-git-send-email-kishon@ti.com>
+ <1359109440-2195-5-git-send-email-kishon@ti.com>
+ <20130125102700.GO15886@arwen.pp.htv.fi>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1301311002190.1876-100000@iolanthe.rowland.org>
-References: <CANK3SE09VqvshdLrV4xp2W8BHZqLmuz-pV9jQVj7tbk1JBX+9g@mail.gmail.com>
- <Pine.LNX.4.44L0.1301311002190.1876-100000@iolanthe.rowland.org>
-From: Mark Einon <mark.einon@gmail.com>
-Date: Fri, 1 Feb 2013 19:13:23 +0000
-Message-ID: <CANK3SE25kcgSu2dwKtQKU6-wvryC4qNQJu_nj3NPJHQTTC0oXw@mail.gmail.com>
-Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130125102700.GO15886@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 January 2013 15:04, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Wed, 30 Jan 2013, Mark Einon wrote:
->
->> >> > >> This patch fixes the kernel warning generated when putting an MSI MS-1727
->> >> > >> GT740 laptop into suspend mode. The call sequence in this case calls
->> >> > >> free_irq() twice, once in pci_remove() and once then in pci_suspend().
->> >> > >
->> >> > > You mean /first/ in pci_suspend() and /then/ in pci_remove() on the
->> >> > > already suspended devices, right?
->> >> >
->> >> > Yes, I did. The call sequence is suspend then resume. My bad.
->> >
->> > Why does the pci_suspend routine call free_irq() at all?  As far as I
->> > know, it's not supposed to do that.  Won't the device continue to use
->> > the same IRQ after it is resumed?
->>
->> This sounds reasonable to me - I think we could probably get rid of
->> the request_irq() call from resume, and use
->> disable_irq()/enable_irq()?
->
-> Why mess around with IRQ settings at all?  Just have the suspend
-> routine tell the controller to stop generating them.
->
-> Alan Stern
->
+* Felipe Balbi <balbi@ti.com> [130125 02:30]:
+> Hi,
+> 
+> On Fri, Jan 25, 2013 at 03:54:00PM +0530, Kishon Vijay Abraham I wrote:
+> > Start using the control module driver for powering on the PHY and for
+> > writing to the mailbox instead of writing to the control module
+> > registers on their own.
+> > 
+> > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> > ---
+> >  Documentation/devicetree/bindings/usb/omap-usb.txt |    4 ++
+> >  Documentation/devicetree/bindings/usb/usb-phy.txt  |    7 +-
+> >  arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |   13 ----
+> 
+> I'm taking this patch but I'm leaving out the omap_hwmod_44xx_data.c
+> change just to kill dependency. Can you send that single change as a
+> separate patch which Tony can queue ?
 
-I looked into doing this; using context_stop() to stop the controller running.
+For the USB patches, please also leave out patches touching
+arch/arm/mach-omap2/devices.c. Those are almost guaranteed to
+cause pointless merge conflicts with other branches.
 
-However, removing the enable_irq() from pci_resume() involves not
-calling ohci_enable() (as it is also the fw_card_driver.enable
-function, and can't easily be modified). As this call involves a lot
-of register writes and I have no devices to test, I decided against
-it.
+I suggest you set up few immutable branches:
 
-I'll send an updated patch for consideration that merely uses a bool
-to stop the irq being freed twice - crude, but it works without
-changing too much code.
+1. Minimal platform_data changes for all your USB changes
 
-Cheers,
+This should contain include/linux/platform_data changes and
+changes to arch/arm/*omap* so me and Paul can merge it in too
+to avoid merge conflicts.
 
-Mark
+2. The rest of the driver/usb changes
+
+This can then be based on #1 branch above.
+
+3. Changes for the .dts files for Benoit
+
+These can be queued separately from #1 and #2 above.
+
+Regards,
+
+Tony
