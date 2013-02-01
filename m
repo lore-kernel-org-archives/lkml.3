@@ -1,230 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab3BAScH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 13:32:07 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:15261 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757090Ab3BAScD (ORCPT
+	id S1756800Ab3BASeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 13:34:50 -0500
+Received: from ngcobalt07.manitu.net ([217.11.48.107]:54875 "EHLO
+	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab3BASer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 13:32:03 -0500
-Message-ID: <1359743519.2759.38.camel@lorien2>
-Subject: Re: IO_PAGE_FAULTs on unity mapped regions during amd_iommu_init()
- in Linux 3.4
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Joerg Roedel <joro@8bytes.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        iommu@lists.linux-foundation.org, shuahkhan@gmail.com
-Date: Fri, 01 Feb 2013 11:31:59 -0700
-In-Reply-To: <20130201130035.GE25591@8bytes.org>
-References: <1359657210.6061.3.camel@lorien2>
-	 <20130201130035.GE25591@8bytes.org>
-Organization: ISS-Linux
-Content-Type: multipart/mixed; boundary="=-9Y90mSEDPkKGf20NaSCm"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Mime-Version: 1.0
+	Fri, 1 Feb 2013 13:34:47 -0500
+X-manitu-Original-Sender-IP: 127.0.0.1
+X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
+Date: Fri, 1 Feb 2013 19:33:57 +0100
+From: Roland Eggner <edvx1@systemanalysen.net>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH resend v3 3/3] kconfig: nconf:  add vi-style navigation
+ keys
+Message-ID: <20130201183357.GD11098@mobil.systemanalysen.net>
+Reply-To: Roland Eggner <edvx1@systemanalysen.net>
+Mail-Followup-To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+	Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
+	Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+	linux-kbuild@vger.kernel.org
+References: <20130201182237.GA11098@mobil.systemanalysen.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5gxpn/Q6ypwruk0T"
+Content-Disposition: inline
+In-Reply-To: <20130201182237.GA11098@mobil.systemanalysen.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-9Y90mSEDPkKGf20NaSCm
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+--5gxpn/Q6ypwruk0T
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2013-02-01 at 14:00 +0100, Joerg Roedel wrote:
-> Hi Shuah,
-> 
-> On Thu, Jan 31, 2013 at 11:33:30AM -0700, Shuah Khan wrote:
-> > Access to these ranges continues to work with no errors until AMD IOMMU
-> > driver disables and re-enables IOMMU in enable_iommus(). These faults
-> > don't persist and appear between the enable_iommus() call and before
-> > amd_iommu_init() gets done printing "AMD-Vi: Lazy IO/TLB flushing
-> > enabled" message.
-> 
-> Hmm, okay. I had a look into the v3.4 sources. This looks like a race
-> condition. The IOMMUs are enabled in amd_iommu_init_hardware() but the
-> unity-mapped regions are created later in amd_iommu_init_dma_ops(). This
-> leaves a small window where the page-faults happen that you see.
-> 
-> But I am not sure why this doesn't hit on 3.7 and above. The race is
-> still there. Anyway, definitly something that needs to be fixed.
-> 
+>From: Roland Eggner <edvx1@systemanalysen.net>
 
-Hi Joerg,
+Add vi-style navigation keys, based on initial work by Dmitry Voytik.  User=
+s of=20
+netbooks, notebooks and other devices with keyboards lacking a dedicated nu=
+mber=20
+keypad will enjoy.  And advanced users of vim, less, mutt, =E2=80=A6 having=
+ navigation=20
+by keys hjkl =E2=80=9Chardwired=E2=80=9D in their fingers will =E2=80=9Cfly=
+=E2=80=9D :)
+In global help window called by key <F1> provide a table with all current a=
+nd=20
+added keybindings:
 
-Yes, 3.7 has the same window of opportunity for this race condition,
-however I couldn't figure out why it doesn't happen on 3.7. On 3.7 the
-window between amd_iommu_init_hardware() and amd_iommu_init_dma_ops()
-might actually be wider than the window in 3.4.
+| Menu navigation keys        plain style             vi-style           |
+| ---------------------------------------------------------------------- |
+| Linewise up                 <Up>                    <k>                |
+| Linewise down               <Down>                  <j>                |
+| Pagewise up                 <Page Up>               <Ctrl-b>  <Ctrl-p> |
+| Pagewise down               <Page Down>             <Ctrl-f>  <Ctrl-n> |
+| First entry                 <Home>                  <g>                |
+| Last entry                  <End>                   <G>                |
+| Enter a submenu             <Right>  <Enter>        <l>                |
+| Go back to parent menu      <Left>   <Esc>  <F5>    <h>                |
+| Close a help window         <Enter>  <Esc>  <F5>                       |
+| Close entry window, apply   <Enter>                                    |
+| Close entry window, forget  <Esc>  <F5>                                |
+| Start incremental, case-insensitive search for STRING in menu entries, |
+|     no regex support, STRING is displayed in upper left corner         |
+|                             </>STRING                                  |
+|     Remove last character   <Backspace>                                |
+|     Jump to next hit        <Down>                                     |
+|     Jump to previous hit    <Up>                                       |
+| Exit menu search mode       </>  <Esc>                                 |
+| Search for configuration variables with or without leading CONFIG_     |
+|                             <F8>RegExpr<Enter>                         |
+| Verbose search help         <F8><F1>                                   |
+| ---------------------------------------------------------------------- |
 
-I think understanding why it doesn't happen on 3.7 is probably key. On
-3.6, I experimented with back-porting your Split device table
-initialization patch (33f28c59e18d83fd2aeef258d211be66b9b80eb3) from 3.7
-and the patch that moved iommu_init from subsys_initcall() to
-arch_initcall() and that solved the problem on 3.6. I am attaching those
-patches. I can't easily back-port either one of those to 3.4 though.
+Intention is an easy to memorize set of keybindings resembling user interfa=
+ces=20
+of other frequently used software, not a strict clone of the historic vi us=
+er=20
+interface.  In contrast to historic vi, <Ctrl-f> <Ctrl-b> is used for=20
+characterwise right and left movement by libreadline (bash, xfsprogs, bc, g=
+db,=20
+python, ruby, hunspell, mysql, sqlite, gnupg, xine-ui, parted =E2=80=A6).  =
+Thus pagewise=20
+movement by <Ctrl-f> <Ctrl-b> would be weird for my fingers, so I have adde=
+d=20
+<Ctrl-n> <Ctrl-p>, resembling e.g. thread-wise navigation in mutt message l=
+ists.
 
-That experiment made me think that this problem has something to do with
-when device_table gets initialized vs. dma_ops are initialized. However,
-there is no change to when unity mapped regions are created in 3.4 and
-3.7.
+To call help related to the current menu entry, currently any of the keys <=
+?>=20
+<h> may be used.  To solve the conflict with new navigation key <h>, this i=
+s=20
+changed to keys <?> <H>.  Lesser experienced users will not note, they use =
+<?>. =20
+And advanced users will consider, how much faster they can work, when all=
+=20
+frequently used keys are in the middle of the keyboard.
 
-If you look at 3.4 initialization sequence closely, you will notice that
-init_device_table() gets called before init_iommu_all() and
-init_memory_definitions() get done.
-
-Another big difference is 3.4 init_device_table() sets DEV_ENTRY_VALID,
-and DEV_ENTRY_TRANSLATION bits way earlier than 3.7 and these bits get
-set in init_device_table_dma() which is called much later in 3.7.
-
-init_unity_mappings_for_device() has a strong dependency on pci
-sub-system having been initialized. Is it possible to move it up closer
-to amd_iommu_init_hardware()?
-
-I have a system I can reproduce the problem easily and I have a tried
-making a few changes to the initialization sequence, with no results.
-Any thoughts what other changes should I be looking at to solve the
-problem besides the ones I already tried.
-
-Thanks,
--- Shuah
-
-
-
-
-
-
---=-9Y90mSEDPkKGf20NaSCm
-Content-Disposition: attachment;
-	filename*0=0001-iommu-amd-delay-dma-init-right-before-dma_ops-are-in.pat;
-	filename*1=ch
-Content-Type: text/x-patch;
-	name="0001-iommu-amd-delay-dma-init-right-before-dma_ops-are-in.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From a91c02486e5ecb332c4e63d2ec35262c573c6631 Mon Sep 17 00:00:00 2001
-From: Shuah Khan <shuahkhan@gmail.com>
-Date: Fri, 21 Dec 2012 16:28:03 -0700
-Subject: [PATCH] iommu/amd: delay dma init right before dma_ops are
- initialized - backport
-
-
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+Signed-off-by: Dmitry Voytik <dvv.kernel@gmail.com>
+Signed-off-by: Roland Eggner <edvx1@systemanalysen.net>
 ---
- drivers/iommu/amd_iommu_init.c |   45 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 44 insertions(+), 1 deletion(-)
+scripts/kconfig/nconf.c |  81 ++++++++++++++++++++++++++++++---------------=
+---
+1 files changed, 51 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 18a89b7..33a9a6e 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1308,7 +1308,7 @@ static int __init init_memory_definitions(struct acpi_table_header *table)
-  * Init the device table to not allow DMA access for devices and
-  * suppress all page faults
-  */
--static void init_device_table(void)
-+static void init_device_table_dma(void)
- {
- 	u32 devid;
- 
-@@ -1318,6 +1318,32 @@ static void init_device_table(void)
- 	}
- }
- 
-+/*
-+Dont' need - probably
-+static void __init uninit_device_table_dma(void)
-+{
-+	u32 devid;
+To be applied on vanilla 3.8-rc3
+
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -12,6 +12,8 @@
+ #include "nconf.h"
+ #include <ctype.h>
+=20
++#define KEY_CONTROL(k) ((k) & 0x1f)
 +
-+	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
-+		amd_iommu_dev_table[devid].data[0] = 0ULL;
-+		amd_iommu_dev_table[devid].data[1] = 0ULL;
-+	}
-+}
-+*/
-+
-+static void init_device_table(void)
-+{
-+/*
-+Dont' need - probably
-+
-+	u32 devid;
-+
-+	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid)
-+		set_dev_entry_bit(devid, DEV_ENTRY_IRQ_TBL_EN);
-+*/
-+	return;
-+}
-+
- static void iommu_init_flags(struct amd_iommu *iommu)
- {
- 	iommu->acpi_flags & IVHD_FLAG_HT_TUN_EN_MASK ?
-@@ -1494,6 +1520,16 @@ static void __init free_on_init_error(void)
- #endif
- }
- 
-+static void __init free_dma_resources(void)
-+{
-+	amd_iommu_uninit_devices();
-+
-+	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
-+		   get_order(MAX_DOMAIN_ID/8));
-+
-+	free_unity_maps();
-+}
-+
- /*
-  * This is the hardware init function for AMD IOMMU in the system.
-  * This function is called either from amd_iommu_init or from the interrupt
-@@ -1657,8 +1693,14 @@ static bool detect_ivrs(void)
- 
- static int amd_iommu_init_dma(void)
- {
-+	struct amd_iommu *iommu;
- 	int ret;
- 
-+	init_device_table_dma();
-+
-+	for_each_iommu(iommu)
-+		iommu_flush_all_caches(iommu);
-+
- 	if (iommu_pass_through)
- 		ret = amd_iommu_init_passthrough();
- 	else
-@@ -1762,6 +1804,7 @@ static int __init amd_iommu_init(void)
- 
- 	ret = iommu_go_to_state(IOMMU_INITIALIZED);
- 	if (ret) {
-+		free_dma_resources();
- 		disable_iommus();
- 		free_on_init_error();
- 	}
--- 
-1.7.9.5
+ static const char nconf_global_help[] =3D N_(
+ "Help windows\n"
+ "------------\n"
+@@ -21,7 +23,7 @@ static const char nconf_global_help[] =3D=20
+ "o  A short version of the global help is available by key <F3>.\n"
+ "\n"
+ "o  Local help:  To get help related to the current menu entry, use any\n"
+-"   of <?> <h> keys, or if in a data entry window then use <F1> key.\n"
++"   of <?> <H> keys, or if in a data entry window then use <F1> key.\n"
+ "\n"
+ "\n"
+ "Menu entries\n"
+@@ -47,16 +49,16 @@ static const char nconf_global_help[] =3D=20
+ "A trailing \"--->\" designates a submenu.\n"
+ "\n"
+ "\n"
+-"Menu navigation keys\n"
++"Menu navigation keys        plain style             vi-style\n"
+ "----------------------------------------------------------------------\n"
+-"Linewise up                 <Up>\n"
+-"Linewise down               <Down>\n"
+-"Pagewise up                 <Page Up>\n"
+-"Pagewise down               <Page Down>\n"
+-"First entry                 <Home>\n"
+-"Last entry                  <End>\n"
+-"Enter a submenu             <Right>  <Enter>\n"
+-"Go back to parent menu      <Left>   <Esc>  <F5>\n"
++"Linewise up                 <Up>                    <k>\n"
++"Linewise down               <Down>                  <j>\n"
++"Pagewise up                 <Page Up>               <Ctrl-b>  <Ctrl-p>\n"
++"Pagewise down               <Page Down>             <Ctrl-f>  <Ctrl-n>\n"
++"First entry                 <Home>                  <g>\n"
++"Last entry                  <End>                   <G>\n"
++"Enter a submenu             <Right>  <Enter>        <l>\n"
++"Go back to parent menu      <Left>   <Esc>  <F5>    <h>\n"
+ "Close a help window         <Enter>  <Esc>  <F5>\n"
+ "Close entry window, apply   <Enter>\n"
+ "Close entry window, forget  <Esc>  <F5>\n"
+@@ -90,8 +92,8 @@ static const char nconf_global_help[] =3D=20
+ "\n"
+ "Text Box (Help Window)\n"
+ "----------------------\n"
+-"Use movement keys <Down> <Up> <PageDown> <PageUp> <End> <Home> as listed =
+in\n"
+-"table above.\n"
++"Use movement keys <Down> <Up> <j> <k> <PageDown> <PageUp> <End> <Home>\n"
++"as listed in table above.\n"
+ "\n"
+ "Press any of <Enter> <Esc> <q> <F5> <F9> to exit.\n"
+ "\n"
+@@ -134,9 +136,9 @@ menu_no_f_instructions[] =3D N_(
+ "Submenus are designated by a trailing \"--->\".\n"
+ "\n"
+ "Use the following keys to navigate the menus:\n"
+-"Move up or down by any of <Up> <Down> keys.\n"
+-"To enter a submenu use any of <Enter> <Right> keys.\n"
+-"To go back to the parent menu use any of <Esc> <Left> keys.\n"
++"Move up or down by any of <Up> <Down> <k> <j> keys.\n"
++"To enter a submenu use any of <Enter> <Right> <l> keys.\n"
++"To go back to the parent menu use any of <Esc> <Left> <h> keys.\n"
+ "Pressing <y> includes, <n> excludes, <m> modularizes features.\n"
+ "Pressing <Space> cycles through the available options.\n"
+ "To search for menu entries use key </>.\n"
+@@ -145,15 +147,15 @@ menu_no_f_instructions[] =3D N_(
+ "You do not have function keys support.\n"
+ "Use key <1> instead of <F1>, <2> instead of <F2>, etc.\n"
+ "For verbose global help use key <1>.\n"
+-"For help related to the current menu entry use any of <?> <h> keys.\n"),
++"For help related to the current menu entry use any of <?> <H> keys.\n"),
+ menu_instructions[] =3D N_(
+ "Legend:  [*] built-in  [ ] excluded  <M> module  < > module capable.\n"
+ "Submenus are designated by a trailing \"--->\".\n"
+ "\n"
+ "Use the following keys to navigate the menus:\n"
+-"Move up or down by any of <Up> <Down> keys.\n"
+-"To enter a submenu use any of <Enter> <Right> keys.\n"
+-"To go back to the parent menu use any of <Esc> <Left> keys.\n"
++"Move up or down by any of <Up> <Down> <k> <j> keys.\n"
++"To enter a submenu use any of <Enter> <Right> <l> keys.\n"
++"To go back to the parent menu use any of <Esc> <Left> <h> keys.\n"
+ "Pressing <y> includes, <n> excludes, <m> modularizes features.\n"
+ "Pressing <Space> cycles through the available options.\n"
+ "To search for menu entries use key </>.\n"
+@@ -161,11 +163,11 @@ menu_instructions[] =3D N_(
+ "\n"
+ "Key <1> may be used instead of <F1>, <2> instead of <F2>, etc.\n"
+ "For verbose global help use key <F1>.\n"
+-"For help related to the current menu entry use any of <?> <h> keys.\n"),
++"For help related to the current menu entry use any of <?> <H> keys.\n"),
+ radiolist_instructions[] =3D N_(
+-"Use <Up> <Down> <Home> <End> keys to navigate this\n"
++"Use <Up> <Down> <Home> <End> <k> <j> <g> <G> keys to navigate this\n"
+ "radiolist followed by <Space>.\n"
+-"For help related to the current entry use any of <?> <h> keys.\n"
++"For help related to the current entry use any of <?> <H> keys.\n"
+ "For global help use key <F1>.\n"),
+ inputbox_instructions_int[] =3D N_(
+ "Please enter a decimal value.\n"
+@@ -1101,24 +1103,32 @@ static void conf(struct menu *menu)
+ 				break;
+ 			switch (res) {
+ 			case KEY_DOWN:
++			case 'j':
+ 				menu_driver(curses_menu, REQ_DOWN_ITEM);
+ 				break;
+ 			case KEY_UP:
++			case 'k':
+ 				menu_driver(curses_menu, REQ_UP_ITEM);
+ 				break;
+ 			case KEY_NPAGE:
++			case KEY_CONTROL('f'):
++			case KEY_CONTROL('n'):
+ 				menu_driver(curses_menu, REQ_SCR_DPAGE);
+ 				break;
+ 			case KEY_PPAGE:
++			case KEY_CONTROL('b'):
++			case KEY_CONTROL('p'):
+ 				menu_driver(curses_menu, REQ_SCR_UPAGE);
+ 				break;
+ 			case KEY_HOME:
++			case 'g':
+ 				menu_driver(curses_menu, REQ_FIRST_ITEM);
+ 				break;
+ 			case KEY_END:
++			case 'G':
+ 				menu_driver(curses_menu, REQ_LAST_ITEM);
+ 				break;
+-			case 'h':
++			case 'H':
+ 			case '?':
+ 				show_help((struct menu *) item_data());
+ 				break;
+@@ -1126,14 +1136,15 @@ static void conf(struct menu *menu)
+ 			if (res =3D=3D 10 || res =3D=3D 27 ||
+ 				res =3D=3D 32 || res =3D=3D 'n' || res =3D=3D 'y' ||
+ 				res =3D=3D KEY_LEFT || res =3D=3D KEY_RIGHT ||
+-				res =3D=3D 'm')
++				res =3D=3D 'h' || res =3D=3D 'l' || res =3D=3D 'm')
+ 				break;
+ 			refresh_all_windows(main_window);
+ 		}
+=20
+ 		refresh_all_windows(main_window);
+ 		/* if ESC or left*/
+-		if (res =3D=3D 27 || (menu !=3D &rootmenu && res =3D=3D KEY_LEFT))
++		if (res =3D=3D 27 || (menu !=3D &rootmenu
++			&& (res =3D=3D 'h' || res =3D=3D KEY_LEFT)))
+ 			break;
+=20
+ 		/* remember location in the menu */
+@@ -1155,6 +1166,7 @@ static void conf(struct menu *menu)
+ 			else if (item_is_tag('m'))
+ 				conf(submenu);
+ 			break;
++		case 'l':
+ 		case KEY_RIGHT:
+ 		case 10: /* ENTER WAS PRESSED */
+ 			switch (item_tag()) {
+@@ -1286,36 +1298,44 @@ static void conf_choice(struct menu *men
+ 				break;
+ 			switch (res) {
+ 			case KEY_DOWN:
++			case 'j':
+ 				menu_driver(curses_menu, REQ_DOWN_ITEM);
+ 				break;
+ 			case KEY_UP:
++			case 'k':
+ 				menu_driver(curses_menu, REQ_UP_ITEM);
+ 				break;
+ 			case KEY_NPAGE:
++			case KEY_CONTROL('f'):
++			case KEY_CONTROL('n'):
+ 				menu_driver(curses_menu, REQ_SCR_DPAGE);
+ 				break;
+ 			case KEY_PPAGE:
++			case KEY_CONTROL('b'):
++			case KEY_CONTROL('p'):
+ 				menu_driver(curses_menu, REQ_SCR_UPAGE);
+ 				break;
+ 			case KEY_HOME:
++			case 'g':
+ 				menu_driver(curses_menu, REQ_FIRST_ITEM);
+ 				break;
+ 			case KEY_END:
++			case 'G':
+ 				menu_driver(curses_menu, REQ_LAST_ITEM);
+ 				break;
+-			case 'h':
++			case 'H':
+ 			case '?':
+ 				show_help((struct menu *) item_data());
+ 				break;
+ 			}
+-			if (res =3D=3D 10 || res =3D=3D 27 || res =3D=3D ' ' ||
+-					res =3D=3D KEY_LEFT){
++			if (res =3D=3D 10 || res =3D=3D 27 || res =3D=3D ' '
++				|| res =3D=3D 'h' || res =3D=3D KEY_LEFT){
+ 				break;
+ 			}
+ 			refresh_all_windows(main_window);
+ 		}
+ 		/* if ESC or left */
+-		if (res =3D=3D 27 || res =3D=3D KEY_LEFT)
++		if (res =3D=3D 27 || res =3D=3D 'h' || res =3D=3D KEY_LEFT)
+ 			break;
+=20
+ 		child =3D item_data();
+@@ -1324,10 +1344,11 @@ static void conf_choice(struct menu *men
+ 		switch (res) {
+ 		case ' ':
+ 		case  10:
++		case 'l':
+ 		case KEY_RIGHT:
+ 			sym_set_tristate_value(child->sym, yes);
+ 			return;
+-		case 'h':
++		case 'H':
+ 		case '?':
+ 			show_help(child);
+ 			active =3D child->sym;
 
 
---=-9Y90mSEDPkKGf20NaSCm
-Content-Disposition: attachment; filename="iommu-moving-initialization-earlier.patch"
-Content-Type: text/x-patch; name="iommu-moving-initialization-earlier.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+--=20
+Roland Eggner
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index ddbdaca..1065a1a 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -861,7 +861,7 @@ static int __init iommu_init(void)
- 
- 	return 0;
- }
--subsys_initcall(iommu_init);
-+arch_initcall(iommu_init);
- 
- int iommu_domain_get_attr(struct iommu_domain *domain,
- 			  enum iommu_attr attr, void *data)
+--5gxpn/Q6ypwruk0T
+Content-Type: application/pgp-signature
 
---=-9Y90mSEDPkKGf20NaSCm--
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iEYEARECAAYFAlEMCpUACgkQdN/hKfT7G/LEMQCeIeJ7+WeJ3/suJxgQxqD7UZnm
++hcAoJX9sspe3k0U4RF3Dwslh0dm9qMN
+=71dy
+-----END PGP SIGNATURE-----
+
+--5gxpn/Q6ypwruk0T--
