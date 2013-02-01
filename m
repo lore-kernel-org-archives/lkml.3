@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3BANJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:09:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44617 "EHLO mail.kernel.org"
+	id S1757384Ab3BANJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:09:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44627 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232Ab3BANJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:09:34 -0500
+	id S1757123Ab3BANJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:09:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "Sergey V." <sftp.mtuci@gmail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 26/89] mwifiex: update config_bands during infra association
-Date: Fri,  1 Feb 2013 14:07:41 +0100
-Message-Id: <20130201130209.370951271@linuxfoundation.org>
+Subject: [ 27/89] mwifiex: fix typo in PCIe adapter NULL check
+Date: Fri,  1 Feb 2013 14:07:42 +0100
+Message-Id: <20130201130209.457027166@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -26,85 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Avinash Patil <patila@marvell.com>
 
-commit d7b9c5204e9c6810a20d509ee47bc70419096e59 upstream.
+commit 83f0c6d1f502bd75bb4a9e31e8d64e59c6894ad1 upstream.
 
-Currently "adapter->config_bands" is updated during infra
-association only if channel is provided by user in "iw connect"
-command. config_bands is used while preparing association
-request to calculate supported rates by intersecting our rates
-with the rates advertised by AP.
+Add missing "!" as we are supposed to check "!card->adapter"
+in PCIe suspend handler.
 
-There is corner case in which we include zero rates in
-supported rates TLV based on previous IBSS network history,
-which leads to association failure.
-
-This patch fixes the problem by correctly updating config_bands.
-
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
 Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Reviewed-by: Sergey V. <sftp.mtuci@gmail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/cfg80211.c  |   15 +--------------
- drivers/net/wireless/mwifiex/sta_ioctl.c |   14 ++++++++++++++
- 2 files changed, 15 insertions(+), 14 deletions(-)
+ drivers/net/wireless/mwifiex/pcie.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -1462,7 +1462,7 @@ mwifiex_cfg80211_assoc(struct mwifiex_pr
- 	struct cfg80211_ssid req_ssid;
- 	int ret, auth_type = 0;
- 	struct cfg80211_bss *bss = NULL;
--	u8 is_scanning_required = 0, config_bands = 0;
-+	u8 is_scanning_required = 0;
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@ -161,7 +161,7 @@ static int mwifiex_pcie_suspend(struct p
  
- 	memset(&req_ssid, 0, sizeof(struct cfg80211_ssid));
- 
-@@ -1481,19 +1481,6 @@ mwifiex_cfg80211_assoc(struct mwifiex_pr
- 	/* disconnect before try to associate */
- 	mwifiex_deauthenticate(priv, NULL);
- 
--	if (channel) {
--		if (mode == NL80211_IFTYPE_STATION) {
--			if (channel->band == IEEE80211_BAND_2GHZ)
--				config_bands = BAND_B | BAND_G | BAND_GN;
--			else
--				config_bands = BAND_A | BAND_AN;
--
--			if (!((config_bands | priv->adapter->fw_bands) &
--			      ~priv->adapter->fw_bands))
--				priv->adapter->config_bands = config_bands;
--		}
--	}
--
- 	/* As this is new association, clear locally stored
- 	 * keys and security related flags */
- 	priv->sec_info.wpa_enabled = false;
---- a/drivers/net/wireless/mwifiex/sta_ioctl.c
-+++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
-@@ -265,6 +265,20 @@ int mwifiex_bss_start(struct mwifiex_pri
- 		if (ret)
- 			goto done;
- 
-+		if (bss_desc) {
-+			u8 config_bands = 0;
-+
-+			if (mwifiex_band_to_radio_type((u8) bss_desc->bss_band)
-+			    == HostCmd_SCAN_RADIO_TYPE_BG)
-+				config_bands = BAND_B | BAND_G | BAND_GN;
-+			else
-+				config_bands = BAND_A | BAND_AN;
-+
-+			if (!((config_bands | adapter->fw_bands) &
-+			      ~adapter->fw_bands))
-+				adapter->config_bands = config_bands;
-+		}
-+
- 		ret = mwifiex_check_network_compatibility(priv, bss_desc);
- 		if (ret)
- 			goto done;
+ 	if (pdev) {
+ 		card = (struct pcie_service_card *) pci_get_drvdata(pdev);
+-		if (!card || card->adapter) {
++		if (!card || !card->adapter) {
+ 			pr_err("Card or adapter structure is not valid\n");
+ 			return 0;
+ 		}
 
 
