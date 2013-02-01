@@ -1,131 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422838Ab3BAKvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:51:43 -0500
-Received: from mail.kernel.org ([198.145.19.201]:39416 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422775Ab3BAKvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:51:40 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang YanQing <udknight@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Beulich <jbeulich@suse.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
-        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: [ 28/33] smp: Fix SMP function call empty cpu mask race
-Date: Fri,  1 Feb 2013 11:49:33 +0100
-Message-Id: <20130201104726.652213721@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
-In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
-References: <20130201104724.605715763@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1422795Ab3BAKv1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:51:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52033 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422779Ab3BAKvU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:51:20 -0500
+Date: Fri, 1 Feb 2013 02:51:03 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-cb16008bcc6ea53617ca06c9eb4ab0ecafe04585@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, eranina@google.com, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung.kim@lge.com, eranina@google.com,
+        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
+In-Reply-To: <1358845787-1350-13-git-send-email-namhyung@kernel.org>
+References: <1358845787-1350-13-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf gtk/browser:
+  Add support for event group view
+Git-Commit-ID: cb16008bcc6ea53617ca06c9eb4ab0ecafe04585
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:51:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Commit-ID:  cb16008bcc6ea53617ca06c9eb4ab0ecafe04585
+Gitweb:     http://git.kernel.org/tip/cb16008bcc6ea53617ca06c9eb4ab0ecafe04585
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 22 Jan 2013 18:09:40 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 31 Jan 2013 13:07:47 -0300
 
-------------------
+perf gtk/browser: Add support for event group view
 
-From: Wang YanQing <udknight@gmail.com>
+Show group members's overhead also when showing leader's if event
+group is enabled.
 
-commit f44310b98ddb7f0d06550d73ed67df5865e3eda5 upstream.
-
-I get the following warning every day with v3.7, once or
-twice a day:
-
-  [ 2235.186027] WARNING: at /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x2f/0xb8()
-
-As explained by Linus as well:
-
- |
- | Once we've done the "list_add_rcu()" to add it to the
- | queue, we can have (another) IPI to the target CPU that can
- | now see it and clear the mask.
- |
- | So by the time we get to actually send the IPI, the mask might
- | have been cleared by another IPI.
- |
-
-This patch also fixes a system hang problem, if the data->cpumask
-gets cleared after passing this point:
-
-        if (WARN_ONCE(!mask, "empty IPI mask"))
-                return;
-
-then the problem in commit 83d349f35e1a ("x86: don't send an IPI to
-the empty set of CPU's") will happen again.
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Jan Beulich <jbeulich@suse.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: peterz@infradead.org
-Cc: mina86@mina86.org
-Cc: srivatsa.bhat@linux.vnet.ibm.com
-Link: http://lkml.kernel.org/r/20130126075357.GA3205@udknight
-[ Tidied up the changelog and the comment in the code. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranina@google.com>
+Link: http://lkml.kernel.org/r/1358845787-1350-13-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/smp.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ tools/perf/ui/gtk/hists.c | 56 +++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 52 insertions(+), 4 deletions(-)
 
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -31,6 +31,7 @@ struct call_function_data {
- 	struct call_single_data	csd;
- 	atomic_t		refs;
- 	cpumask_var_t		cpumask;
-+	cpumask_var_t		cpumask_ipi;
- };
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 38be79d..c87a98c 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -8,8 +8,7 @@
  
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
-@@ -54,6 +55,9 @@ hotplug_cfd(struct notifier_block *nfb,
- 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
- 				cpu_to_node(cpu)))
- 			return notifier_from_errno(-ENOMEM);
-+		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
-+				cpu_to_node(cpu)))
-+			return notifier_from_errno(-ENOMEM);
- 		break;
+ #define MAX_COLUMNS			32
  
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -63,6 +67,7 @@ hotplug_cfd(struct notifier_block *nfb,
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		free_cpumask_var(cfd->cpumask);
-+		free_cpumask_var(cfd->cpumask_ipi);
- 		break;
- #endif
+-static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
+-					    double percent)
++static int __percent_color_snprintf(char *buf, size_t size, double percent)
+ {
+ 	int ret = 0;
+ 	const char *markup;
+@@ -18,7 +17,7 @@ static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
+ 	if (markup)
+ 		ret += scnprintf(buf, size, markup);
+ 
+-	ret += scnprintf(buf + ret, size - ret, "%6.2f%%", percent);
++	ret += scnprintf(buf + ret, size - ret, " %6.2f%%", percent);
+ 
+ 	if (markup)
+ 		ret += scnprintf(buf + ret, size - ret, "</span>");
+@@ -37,7 +36,55 @@ static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 	if (hists->stats.total_period)
+ 		percent = 100.0 * get_field(he) / hists->stats.total_period;
+ 
+-	ret = perf_gtk__percent_color_snprintf(hpp->buf, hpp->size, percent);
++	ret = __percent_color_snprintf(hpp->buf, hpp->size, percent);
++
++	if (symbol_conf.event_group) {
++		int prev_idx, idx_delta;
++		struct perf_evsel *evsel = hists_to_evsel(hists);
++		struct hist_entry *pair;
++		int nr_members = evsel->nr_members;
++
++		if (nr_members <= 1)
++			return ret;
++
++		prev_idx = perf_evsel__group_idx(evsel);
++
++		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
++			u64 period = get_field(pair);
++			u64 total = pair->hists->stats.total_period;
++
++			evsel = hists_to_evsel(pair->hists);
++			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
++
++			while (idx_delta--) {
++				/*
++				 * zero-fill group members in the middle which
++				 * have no sample
++				 */
++				ret += __percent_color_snprintf(hpp->buf + ret,
++								hpp->size - ret,
++								0.0);
++			}
++
++			percent = 100.0 * period / total;
++			ret += __percent_color_snprintf(hpp->buf + ret,
++							hpp->size - ret,
++							percent);
++
++			prev_idx = perf_evsel__group_idx(evsel);
++		}
++
++		idx_delta = nr_members - prev_idx - 1;
++
++		while (idx_delta--) {
++			/*
++			 * zero-fill group members at last which have no sample
++			 */
++			ret += __percent_color_snprintf(hpp->buf + ret,
++							hpp->size - ret,
++							0.0);
++		}
++	}
+ 	return ret;
+ }
+ 
+@@ -96,6 +143,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 	struct perf_hpp hpp = {
+ 		.buf		= s,
+ 		.size		= sizeof(s),
++		.ptr		= hists_to_evsel(hists),
  	};
-@@ -524,6 +529,12 @@ void smp_call_function_many(const struct
- 		return;
- 	}
  
-+	/*
-+	 * After we put an entry into the list, data->cpumask
-+	 * may be cleared again when another CPU sends another IPI for
-+	 * a SMP function call, so data->cpumask will be zero.
-+	 */
-+	cpumask_copy(data->cpumask_ipi, data->cpumask);
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
- 	 * Place entry at the _HEAD_ of the list, so that any cpu still
-@@ -547,7 +558,7 @@ void smp_call_function_many(const struct
- 	smp_mb();
- 
- 	/* Send a message to all CPUs in the map */
--	arch_send_call_function_ipi_mask(data->cpumask);
-+	arch_send_call_function_ipi_mask(data->cpumask_ipi);
- 
- 	/* Optionally wait for the CPUs to complete */
- 	if (wait)
-
-
+ 	nr_cols = 0;
