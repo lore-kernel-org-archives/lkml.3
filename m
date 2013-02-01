@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab3BAHGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 02:06:14 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35694 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab3BAHGL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 02:06:11 -0500
-Message-ID: <510B693A.70807@ti.com>
-Date: Fri, 1 Feb 2013 12:35:30 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <anilkumar@ti.com>,
-        <tony@atomide.com>, <hs@denx.de>,
-        <broonie@opensource.wolfsonmicro.com>, <sameo@linux.intel.com>,
-        <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
-        <rob@landley.net>, <rob.herring@calxeda.com>,
-        <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V2 1/6] pinctrl: pinctrl-single: use arch_initcall and
- module_exit
-References: <1359445134-13323-1-git-send-email-manishv.b@ti.com> <1359445134-13323-2-git-send-email-manishv.b@ti.com> <CACRpkdbf7TwrjfT2rhqQFGc3yh_Nt117RtzQO2y6g5Ddx5Ay_w@mail.gmail.com>
-In-Reply-To: <CACRpkdbf7TwrjfT2rhqQFGc3yh_Nt117RtzQO2y6g5Ddx5Ay_w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1752923Ab3BAHHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 02:07:45 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:6078 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894Ab3BAHHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 02:07:44 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, fabio.porcedda@gmail.com,
+        JM.Lin@atmel.com, wenyou.yang@atmel.com, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 4/8] watchdog/at91sam9_wdt: Adjust the options of watchdog_info
+Date: Fri,  1 Feb 2013 15:06:22 +0800
+Message-Id: <1359702386-21284-5-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359702386-21284-1-git-send-email-wenyou.yang@atmel.com>
+References: <1359702386-21284-1-git-send-email-wenyou.yang@atmel.com>
+X-OriginalArrivalTime: 01 Feb 2013 07:07:26.0419 (UTC) FILETIME=[CA6F3A30:01CE004A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/29/2013 4:29 PM, Linus Walleij wrote:
-> On Tue, Jan 29, 2013 at 8:38 AM, Vishwanathrao Badarkhe, Manish
-> <manishv.b@ti.com> wrote:
-> 
->> Currently, I2C driver gets probed before pinctrl driver.
->> To achieve I2C pin muxing via pinctrl driver before I2C
->> probe get called, register pinctrl driver in arch_initcall.
->> Also, add module_exit to unregister pinctrl driver.
->>
->> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
-> 
-> So your I2C driver is not returning -EPROBE_DEFER
-> if it cannot find its pins?
-> 
-> Hm, well I can live with this, if Tony ACKs it.
+Since the Watchdog Timer Mode Register can be only written only once,
+so the watchdog_info shall not support WDIOF_SETTIMEOUT
+and WDIOF_MAGICCLOSE options, remove them.
 
-FWIW, most of the other pinctrl drivers seem to be using arch_initcall() 
-already.
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: wim@iguana.be
+Cc: linux-watchdog@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/watchdog/at91sam9_wdt.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-$ grep -r arch_initcall drivers/pinctrl/*
-drivers/pinctrl/pinctrl-at91.c:arch_initcall(at91_pinctrl_init);
-drivers/pinctrl/pinctrl-coh901.c:arch_initcall(u300_gpio_init);
-drivers/pinctrl/pinctrl-imx35.c:arch_initcall(imx35_pinctrl_init);
-drivers/pinctrl/pinctrl-imx51.c:arch_initcall(imx51_pinctrl_init);
-drivers/pinctrl/pinctrl-imx53.c:arch_initcall(imx53_pinctrl_init);
-drivers/pinctrl/pinctrl-imx6q.c:arch_initcall(imx6q_pinctrl_init);
-drivers/pinctrl/pinctrl-sirf.c:arch_initcall(sirfsoc_pinmux_init);
-drivers/pinctrl/pinctrl-tegra20.c:arch_initcall(tegra20_pinctrl_init);
-drivers/pinctrl/pinctrl-tegra30.c:arch_initcall(tegra30_pinctrl_init);
-drivers/pinctrl/pinctrl-u300.c:arch_initcall(u300_pmx_init);
-drivers/pinctrl/spear/pinctrl-spear300.c:arch_initcall(spear300_pinctrl_init);
-drivers/pinctrl/spear/pinctrl-spear320.c:arch_initcall(spear320_pinctrl_init);
-drivers/pinctrl/spear/pinctrl-spear310.c:arch_initcall(spear310_pinctrl_init);
-drivers/pinctrl/spear/pinctrl-spear1340.c:arch_initcall(spear1340_pinctrl_init);
-drivers/pinctrl/spear/pinctrl-spear1310.c:arch_initcall(spear1310_pinctrl_init);
+diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+index ce7930b..c6d9f1f 100644
+--- a/drivers/watchdog/at91sam9_wdt.c
++++ b/drivers/watchdog/at91sam9_wdt.c
+@@ -152,8 +152,7 @@ static int at91wdt_enable(struct watchdog_device *wddev, unsigned int timeout)
+ 
+ static const struct watchdog_info at91_wdt_info = {
+ 	.identity	= DRV_NAME,
+-	.options	= WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING |
+-						WDIOF_MAGICCLOSE,
++	.options	= WDIOF_KEEPALIVEPING,
+ };
+ 
+ static int at91wdt_start(struct watchdog_device *wddev)
+-- 
+1.7.9.5
 
-Thanks,
-Sekhar
