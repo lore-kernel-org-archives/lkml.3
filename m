@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161065Ab3BAKsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:48:21 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38709 "EHLO mail.kernel.org"
+	id S1161084Ab3BAKs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:48:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38719 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161046Ab3BAKsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:48:12 -0500
+	id S1161046Ab3BAKs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:48:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Borislav Petkov <bp@suse.de>
-Subject: [ 10/15] EDAC: Test correct variable in ->store function
-Date: Fri,  1 Feb 2013 11:48:43 +0100
-Message-Id: <20130201104757.212014649@linuxfoundation.org>
+        Anderson Lizardo <anderson.lizardo@openbossa.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 11/15] Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
+Date: Fri,  1 Feb 2013 11:48:44 +0100
+Message-Id: <20130201104757.282044951@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104756.470588207@linuxfoundation.org>
 References: <20130201104756.470588207@linuxfoundation.org>
@@ -25,30 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Anderson Lizardo <anderson.lizardo@openbossa.org>
 
-commit 8024c4c0b1057d1cd811fc9c3f88f81de9729fcd upstream.
+commit 0a9ab9bdb3e891762553f667066190c1d22ad62b upstream.
 
-We're testing for ->show but calling ->store().
+The length parameter should be sizeof(req->name) - 1 because there is no
+guarantee that string provided by userspace will contain the trailing
+'\0'.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Can be easily reproduced by manually setting req->name to 128 non-zero
+bytes prior to ioctl(HIDPCONNADD) and checking the device name setup on
+input subsystem:
+
+$ cat /sys/devices/pnp0/00\:04/tty/ttyS0/hci0/hci0\:1/input8/name
+AAAAAA[...]AAAAAAAAf0:af:f0:af:f0:af
+
+("f0:af:f0:af:f0:af" is the device bluetooth address, taken from "phys"
+field in struct hid_device due to overflow.)
+
+Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_pci_sysfs.c |    2 +-
+ net/bluetooth/hidp/core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/edac/edac_pci_sysfs.c
-+++ b/drivers/edac/edac_pci_sysfs.c
-@@ -257,7 +257,7 @@ static ssize_t edac_pci_dev_store(struct
- 	struct edac_pci_dev_attribute *edac_pci_dev;
- 	edac_pci_dev = (struct edac_pci_dev_attribute *)attr;
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -934,7 +934,7 @@ static int hidp_setup_hid(struct hidp_se
+ 	hid->version = req->version;
+ 	hid->country = req->country;
  
--	if (edac_pci_dev->show)
-+	if (edac_pci_dev->store)
- 		return edac_pci_dev->store(edac_pci_dev->value, buffer, count);
- 	return -EIO;
- }
+-	strncpy(hid->name, req->name, 128);
++	strncpy(hid->name, req->name, sizeof(req->name) - 1);
+ 	strncpy(hid->phys, batostr(&bt_sk(session->ctrl_sock->sk)->src), 64);
+ 	strncpy(hid->uniq, batostr(&bt_sk(session->ctrl_sock->sk)->dst), 64);
+ 
 
 
