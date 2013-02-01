@@ -1,96 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab3BAFlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 00:41:10 -0500
-Received: from mail.windriver.com ([147.11.1.11]:48990 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab3BAFlI (ORCPT
+	id S1755035Ab3BAFnL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 00:43:11 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:36855 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab3BAFnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 00:41:08 -0500
-Message-ID: <510B554D.1000905@gmail.com>
-Date: Fri, 1 Feb 2013 13:40:29 +0800
-From: Hui Wang <jason77.wang@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
-MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Hui Wang <jason77.wang@gmail.com>, Cyril Chemparathy <cyril@ti.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <marc.zyngier@arm.com>, <sboyd@codeaurora.org>,
-        <linus.walleij@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 02/13] ARM: LPAE: use phys_addr_t in alloc_init_pud()
-References: <1359669512-31276-1-git-send-email-cyril@ti.com> <1359669512-31276-3-git-send-email-cyril@ti.com> <510B327E.3050502@gmail.com> <alpine.LFD.2.02.1301312218270.6300@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1301312218270.6300@xanadu.home>
-Content-Type: text/plain; charset="US-ASCII"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Feb 2013 00:43:09 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        fabio.baltieri@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: governors: Reset tunables only for cpufreq_unregister_governor()
+Date: Fri,  1 Feb 2013 11:12:58 +0530
+Message-Id: <d9de945975ad2064693275335b4022c8efd013e3.1359697315.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 01 Feb 2013 05:43:05.0777 (UTC) FILETIME=[020E8A10:01CE003F]
+X-MC-Unique: 113020105430700201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r115hEbW024187
 
-Nicolas Pitre wrote:
-> On Fri, 1 Feb 2013, Hui Wang wrote:
->
->   
->> Cyril Chemparathy wrote:
->>     
->>> From: Vitaly Andrianov <vitalya@ti.com>
->>>
->>> This patch fixes the alloc_init_pud() function to use phys_addr_t instead of
->>> unsigned long when passing in the phys argument.
->>>
->>> This is an extension to commit 97092e0c56830457af0639f6bd904537a150ea4a
->>> (ARM:
->>> pgtable: use phys_addr_t for physical addresses), which applied similar
->>> changes
->>> elsewhere in the ARM memory management code.
->>>
->>> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
->>> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
->>> Acked-by: Nicolas Pitre <nico@linaro.org>
->>> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
->>> ---
->>>  arch/arm/mm/mmu.c |    3 ++-
->>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
->>> index 9f06102..ef43689 100644
->>> --- a/arch/arm/mm/mmu.c
->>> +++ b/arch/arm/mm/mmu.c
->>> @@ -612,7 +612,8 @@ static void __init alloc_init_section(pud_t *pud,
->>> unsigned long addr,
->>>  }
->>>   static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
->>> -	unsigned long end, unsigned long phys, const struct mem_type *type)
->>> +				  unsigned long end, phys_addr_t phys,
->>> +				  const struct mem_type *type)
->>>   
->>>       
->> The change is correct but seems useless so far. This function only be called
->> from map_lowmem and devicemaps_init, from i know neither lowmem nor device io
->> registers of existing platforms exceed 32bit address.
->>     
->
-> It is not because you are not aware of any existing platforms with RAM 
-> or device IO above the 4GB mark that they don't exist.
->
-> For example, some LPAE systems have all their RAM located above the 4G 
-> physical address mark. A simple (potentially non DMA capable) alias 
-> exists in the low 32-bit address space to allow the system to boot and 
-> switch to the real physical RAM addresses once the MMU is turned on.  
-> Some of that RAM is still qualified as "low mem" i.e. the portion of RAM 
-> that the kernel keeps permanently mapped in the 32-bit virtual space 
-> even if all of it is above the 4G mark in physical space.
->
->
->   
-Got it, thanks for sharing the knowledge.
+Currently, whenever governor->governor() is called for CPUFRREQ_GOV_START event
+we reset few tunables of governor. Which isn't correct, as this routine is
+called for every cpu hot-[un]plugging event. We should actually be resetting
+these only when the governor module is removed and re-installed.
 
-Regards,
-Hui.
-> Nicolas
->
->   
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq.c          |  4 ++++
+ drivers/cpufreq/cpufreq_governor.c | 24 ++++++++++++++++--------
+ include/linux/cpufreq.h            |  1 +
+ 3 files changed, 21 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 8d521422..9656420 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1561,6 +1561,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 						policy->cpu, event);
+ 	ret = policy->governor->governor(policy, event);
+ 
++	if (!policy->governor->initialized && (event == CPUFREQ_GOV_START))
++		policy->governor->initialized = 1;
++
+ 	/* we keep one module reference alive for
+ 			each CPU governed by this CPU */
+ 	if ((event != CPUFREQ_GOV_START) || ret)
+@@ -1584,6 +1587,7 @@ int cpufreq_register_governor(struct cpufreq_governor *governor)
+ 
+ 	mutex_lock(&cpufreq_governor_mutex);
+ 
++	governor->initialized = 0;
+ 	err = -EBUSY;
+ 	if (__find_governor(governor->name) == NULL) {
+ 		err = 0;
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 7aaa9b1..79795c4 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -254,11 +254,6 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ 			return rc;
+ 		}
+ 
+-		/* policy latency is in nS. Convert it to uS first */
+-		latency = policy->cpuinfo.transition_latency / 1000;
+-		if (latency == 0)
+-			latency = 1;
+-
+ 		/*
+ 		 * conservative does not implement micro like ondemand
+ 		 * governor, thus we are bound to jiffes/HZ
+@@ -270,20 +265,33 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+ 			cpufreq_register_notifier(cs_ops->notifier_block,
+ 					CPUFREQ_TRANSITION_NOTIFIER);
+ 
+-			dbs_data->min_sampling_rate = MIN_SAMPLING_RATE_RATIO *
+-				jiffies_to_usecs(10);
++			if (!policy->governor->initialized)
++				dbs_data->min_sampling_rate =
++					MIN_SAMPLING_RATE_RATIO *
++					jiffies_to_usecs(10);
+ 		} else {
+ 			od_dbs_info->rate_mult = 1;
+ 			od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
+ 			od_ops->powersave_bias_init_cpu(cpu);
+-			od_tuners->io_is_busy = od_ops->io_busy();
++
++			if (!policy->governor->initialized)
++				od_tuners->io_is_busy = od_ops->io_busy();
+ 		}
+ 
++		if (policy->governor->initialized)
++			goto unlock;
++
++		/* policy latency is in nS. Convert it to uS first */
++		latency = policy->cpuinfo.transition_latency / 1000;
++		if (latency == 0)
++			latency = 1;
++
+ 		/* Bring kernel and HW constraints together */
+ 		dbs_data->min_sampling_rate = max(dbs_data->min_sampling_rate,
+ 				MIN_LATENCY_MULTIPLIER * latency);
+ 		*sampling_rate = max(dbs_data->min_sampling_rate, latency *
+ 				LATENCY_MULTIPLIER);
++unlock:
+ 		mutex_unlock(&dbs_data->mutex);
+ 
+ 		/* Initiate timer time stamp */
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index feb360c..6bf3f2d 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -183,6 +183,7 @@ static inline unsigned long cpufreq_scale(unsigned long old, u_int div, u_int mu
+ 
+ struct cpufreq_governor {
+ 	char	name[CPUFREQ_NAME_LEN];
++	int	initialized;
+ 	int	(*governor)	(struct cpufreq_policy *policy,
+ 				 unsigned int event);
+ 	ssize_t	(*show_setspeed)	(struct cpufreq_policy *policy,
+-- 
+1.7.12.rc2.18.g61b472e
+
 
