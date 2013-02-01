@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3BAVGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 16:06:55 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:52780 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab3BAVGv convert rfc822-to-8bit (ORCPT
+	id S1757595Ab3BAVMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 16:12:03 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:52275 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757227Ab3BAVL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 16:06:51 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Subject: RE: [RFC][PATCH v8 2/3] trace,x86: add x86 irq vector tracepoints
-Thread-Topic: [RFC][PATCH v8 2/3] trace,x86: add x86 irq vector tracepoints
-Thread-Index: Ac34JJMyFwTt3KidTvasHhLQsjVWNwIxO5IAAApzF3A=
-Date: Fri, 1 Feb 2013 21:06:02 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A5F834@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A508CE@USINDEM103.corp.hds.com>
- <1359752614.5642.49.camel@gandalf.local.home>
-In-Reply-To: <1359752614.5642.49.camel@gandalf.local.home>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-02-01_05:2013-02-01,2013-02-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1302010152
+	Fri, 1 Feb 2013 16:11:59 -0500
+Message-ID: <1359752988.22968.16.camel@thor.lan>
+Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Fri, 01 Feb 2013 16:09:48 -0500
+In-Reply-To: <CANK3SE25kcgSu2dwKtQKU6-wvryC4qNQJu_nj3NPJHQTTC0oXw@mail.gmail.com>
+References: <CANK3SE09VqvshdLrV4xp2W8BHZqLmuz-pV9jQVj7tbk1JBX+9g@mail.gmail.com>
+	 <Pine.LNX.4.44L0.1301311002190.1876-100000@iolanthe.rowland.org>
+	 <CANK3SE25kcgSu2dwKtQKU6-wvryC4qNQJu_nj3NPJHQTTC0oXw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +#include <asm/hw_irq.h>
-> > +#include <asm/desc.h>
-> > +
-> > +static struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
-> > +				    (unsigned long) trace_idt_table };
-> > +
-> > +#ifndef CONFIG_X86_64
-> > +gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
-> > +					= { { { { 0, 0 } } }, };
-> > +#endif
-> > +
-> > +static struct desc_ptr orig_idt_descr[NR_CPUS];
+On Fri, 2013-02-01 at 19:13 +0000, Mark Einon wrote:
+> On 31 January 2013 15:04, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Wed, 30 Jan 2013, Mark Einon wrote:
+> >
+> >> >> > >> This patch fixes the kernel warning generated when putting an MSI MS-1727
+> >> >> > >> GT740 laptop into suspend mode. The call sequence in this case calls
+> >> >> > >> free_irq() twice, once in pci_remove() and once then in pci_suspend().
+> >> >> > >
+> >> >> > > You mean /first/ in pci_suspend() and /then/ in pci_remove() on the
+> >> >> > > already suspended devices, right?
+> >> >> >
+> >> >> > Yes, I did. The call sequence is suspend then resume. My bad.
+> >> >
+> >> > Why does the pci_suspend routine call free_irq() at all?  As far as I
+> >> > know, it's not supposed to do that.  Won't the device continue to use
+> >> > the same IRQ after it is resumed?
+> >>
+> >> This sounds reasonable to me - I think we could probably get rid of
+> >> the request_irq() call from resume, and use
+> >> disable_irq()/enable_irq()?
+> >
+> > Why mess around with IRQ settings at all?  Just have the suspend
+> > routine tell the controller to stop generating them.
+> >
+> > Alan Stern
+> >
 > 
-> BTW, this should be:
+> I looked into doing this; using context_stop() to stop the controller running.
 > 
-> static DEFINE_PER_CPU(struct desc_ptr, orig_idt_descr);
+> However, removing the enable_irq() from pci_resume() involves not
+> calling ohci_enable() (as it is also the fw_card_driver.enable
+> function, and can't easily be modified). As this call involves a lot
+> of register writes and I have no devices to test, I decided against
+> it.
 > 
-> And look at the patch I made about the NMI/DEBUG trap handling to see how to use it.
+> I'll send an updated patch for consideration that merely uses a bool
+> to stop the irq being freed twice - crude, but it works without
+> changing too much code.
 
-Thanks.
-I'm looking at your patch right now and will update my patch.
+Hi Mark,
 
-Seiji
+I think what Alan means is that the suspend/resume code should just
+mask/unmask interrupts at the OHCI controller, via the OHCI
+IntEventClear/Set registers (naturally, saving the current mask and
+restoring it on resume).
+
+Of course, there's a lot more to do with an OHCI controller -- as you
+note. Like stopping running DMA contexts :)  And restarting them on
+resume.
+
+I'd do it, but I'm buried to my eyeballs in tty right now -- not fun. I
+can _eventually_ do this as I need to address problems with the FW643
+anyway at some point, but it's going to be a little while.
+
+In the meantime, I'm a little confused: you say you can't test this code
+because you have no hardware; but then how'd you trip this bug?
+
+Regards,
+Peter Hurley
+
