@@ -1,208 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161032Ab3BAKqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:46:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030237Ab3BAKoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:44:21 -0500
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH 13/18] ext4: use ext4_zero_partial_blocks in punch_hole
-Date: Fri,  1 Feb 2013 11:43:39 +0100
-Message-Id: <1359715424-32318-14-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
-References: <1359715424-32318-1-git-send-email-lczerner@redhat.com>
+	id S1756940Ab3BAKrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:47:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51940 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161009Ab3BAKqn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:46:43 -0500
+Date: Fri, 1 Feb 2013 02:46:20 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-843985e953ddcc3d57a62641b377c8d3222859e2@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
+        tglx@linutronix.de, namhyung@kernel.org, jolsa@redhat.com
+In-Reply-To: <1358845787-1350-9-git-send-email-namhyung@kernel.org>
+References: <1358845787-1350-9-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf gtk/browser:
+  Convert hpp helpers to a function
+Git-Commit-ID: 843985e953ddcc3d57a62641b377c8d3222859e2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Feb 2013 02:46:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're doing to get rid of ext4_discard_partial_page_buffers() since it is
-duplicating some code and also partially duplicating work of
-truncate_pagecache_range(), moreover the old implementation was much
-clearer.
+Commit-ID:  843985e953ddcc3d57a62641b377c8d3222859e2
+Gitweb:     http://git.kernel.org/tip/843985e953ddcc3d57a62641b377c8d3222859e2
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 22 Jan 2013 18:09:36 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 31 Jan 2013 13:07:46 -0300
 
-Now when the truncate_inode_pages_range() can handle truncating non page
-aligned regions we can use this to invalidate and zero out block aligned
-region of the punched out range and then use ext4_block_truncate_page()
-to zero the unaligned blocks on the start and end of the range. This
-will greatly simplify the punch hole code. Moreover after this commit we
-can get rid of the ext4_discard_partial_page_buffers() completely.
+perf gtk/browser: Convert hpp helpers to a function
 
-This has been tested on ppc64 with 1k block size with fsx and xfstests
-without any problems.
+The hpp helpers do same job for each field so it was implemented as
+macro in order to access those fields easily.  But it gets cumbersome to
+maintain a large function in a macro as the function grows. Factor it
+out to a function with a little helper macro to access field.
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1358845787-1350-9-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- fs/ext4/ext4.h    |    2 +
- fs/ext4/extents.c |   79 ++++++-----------------------------------------------
- fs/ext4/inode.c   |   31 +++++++++++++++++++++
- 3 files changed, 42 insertions(+), 70 deletions(-)
+ tools/perf/ui/gtk/hists.c | 68 ++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 47 insertions(+), 21 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 4246a55..665b975 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2090,6 +2090,8 @@ extern int ext4_block_truncate_page(handle_t *handle,
- 		struct address_space *mapping, loff_t from);
- extern int ext4_block_zero_page_range(handle_t *handle,
- 		struct address_space *mapping, loff_t from, loff_t length);
-+extern int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
-+			     loff_t lstart, loff_t lend);
- extern int ext4_discard_partial_page_buffers(handle_t *handle,
- 		struct address_space *mapping, loff_t from,
- 		loff_t length, int flags);
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 5ce5a14..7b44dc1 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4639,7 +4639,6 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
- 	ext4_lblk_t first_block, stop_block;
- 	struct address_space *mapping = inode->i_mapping;
- 	handle_t *handle;
--	loff_t first_page, last_page, page_len;
- 	loff_t first_page_offset, last_page_offset;
- 	int credits, err = 0;
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index c03da79..38be79d 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -8,32 +8,58 @@
  
-@@ -4680,17 +4679,13 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
- 		   offset;
- 	}
+ #define MAX_COLUMNS			32
  
--	first_page = (offset + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
--	last_page = (offset + length) >> PAGE_CACHE_SHIFT;
-+	first_page_offset = round_up(offset, sb->s_blocksize);
-+	last_page_offset = round_down((offset + length), sb->s_blocksize) - 1;
- 
--	first_page_offset = first_page << PAGE_CACHE_SHIFT;
--	last_page_offset = last_page << PAGE_CACHE_SHIFT;
--
--	/* Now release the pages */
--	if (last_page_offset > first_page_offset) {
-+	/* Now release the pages and zero block aligned part of pages*/
-+	if (last_page_offset > first_page_offset)
- 		truncate_pagecache_range(inode, first_page_offset,
--					 last_page_offset - 1);
--	}
-+					 last_page_offset);
- 
- 	/* Wait all existing dio workers, newcomers will block on i_mutex */
- 	ext4_inode_block_unlocked_dio(inode);
-@@ -4707,66 +4702,10 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
- 	}
- 
- 
--	/*
--	 * Now we need to zero out the non-page-aligned data in the
--	 * pages at the start and tail of the hole, and unmap the buffer
--	 * heads for the block aligned regions of the page that were
--	 * completely zeroed.
--	 */
--	if (first_page > last_page) {
--		/*
--		 * If the file space being truncated is contained within a page
--		 * just zero out and unmap the middle of that page
--		 */
--		err = ext4_discard_partial_page_buffers(handle,
--			mapping, offset, length, 0);
--
--		if (err)
--			goto out;
--	} else {
--		/*
--		 * zero out and unmap the partial page that contains
--		 * the start of the hole
--		 */
--		page_len  = first_page_offset - offset;
--		if (page_len > 0) {
--			err = ext4_discard_partial_page_buffers(handle, mapping,
--						   offset, page_len, 0);
--			if (err)
--				goto out;
--		}
--
--		/*
--		 * zero out and unmap the partial page that contains
--		 * the end of the hole
--		 */
--		page_len = offset + length - last_page_offset;
--		if (page_len > 0) {
--			err = ext4_discard_partial_page_buffers(handle, mapping,
--					last_page_offset, page_len, 0);
--			if (err)
--				goto out;
--		}
--	}
--
--	/*
--	 * If i_size is contained in the last page, we need to
--	 * unmap and zero the partial page after i_size
--	 */
--	if (inode->i_size >> PAGE_CACHE_SHIFT == last_page &&
--	   inode->i_size % PAGE_CACHE_SIZE != 0) {
--
--		page_len = PAGE_CACHE_SIZE -
--			(inode->i_size & (PAGE_CACHE_SIZE - 1));
--
--		if (page_len > 0) {
--			err = ext4_discard_partial_page_buffers(handle,
--			  mapping, inode->i_size, page_len, 0);
--
--			if (err)
--				goto out;
--		}
--	}
-+	err = ext4_zero_partial_blocks(handle, inode, offset,
-+				       offset + length - 1);
-+	if (err)
-+		goto out;
- 
- 	first_block = (offset + sb->s_blocksize - 1) >>
- 		EXT4_BLOCK_SIZE_BITS(sb);
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 5ccf556..5df9716 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3672,6 +3672,37 @@ unlock:
- 	return err;
- }
- 
-+int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
-+			     loff_t lstart, loff_t lend)
+-#define HPP__COLOR_FN(_name, _field)						\
+-static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
+-					 struct hist_entry *he)			\
++static int perf_gtk__percent_color_snprintf(char *buf, size_t size,
++					    double percent)
 +{
-+	struct super_block *sb = inode->i_sb;
-+	struct address_space *mapping = inode->i_mapping;
-+	unsigned partial = lstart & (sb->s_blocksize - 1);
-+	ext4_fsblk_t start = lstart >> sb->s_blocksize_bits;
-+	ext4_fsblk_t end = lend >> sb->s_blocksize_bits;
-+	int err = 0;
++	int ret = 0;
++	const char *markup;
 +
-+	/* Handle partial zero within the single block */
-+	if (start == end) {
-+		err = ext4_block_zero_page_range(handle, mapping,
-+						 lstart, lend - lstart + 1);
-+		return err;
-+	}
-+	/* Handle partial zero out on the start of the range */
-+	if (partial) {
-+		err = ext4_block_zero_page_range(handle, mapping,
-+						 lstart, sb->s_blocksize);
-+		if (err)
-+			return err;
-+	}
-+	/* Handle partial zero out on the end of the range */
-+	partial = lend & (sb->s_blocksize - 1);
-+	if (partial != sb->s_blocksize - 1)
-+		err = ext4_block_zero_page_range(handle, mapping,
-+						 lend - partial, partial + 1);
-+	return err;
++	markup = perf_gtk__get_percent_color(percent);
++	if (markup)
++		ret += scnprintf(buf, size, markup);
++
++	ret += scnprintf(buf + ret, size - ret, "%6.2f%%", percent);
++
++	if (markup)
++		ret += scnprintf(buf + ret, size - ret, "</span>");
++
++	return ret;
 +}
 +
- int ext4_can_truncate(struct inode *inode)
- {
- 	if (S_ISREG(inode->i_mode))
--- 
-1.7.7.6
-
++
++static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
++			    u64 (*get_field)(struct hist_entry *))
++{
++	int ret;
++	double percent = 0.0;
++	struct hists *hists = he->hists;
++
++	if (hists->stats.total_period)
++		percent = 100.0 * get_field(he) / hists->stats.total_period;
++
++	ret = perf_gtk__percent_color_snprintf(hpp->buf, hpp->size, percent);
++	return ret;
++}
++
++#define __HPP_COLOR_PERCENT_FN(_type, _field)					\
++static u64 he_get_##_field(struct hist_entry *he)				\
+ {										\
+-	struct hists *hists = he->hists;					\
+-	double percent = 100.0 * he->stat._field / hists->stats.total_period;	\
+-	const char *markup;							\
+-	int ret = 0;								\
+-										\
+-	markup = perf_gtk__get_percent_color(percent);				\
+-	if (markup)								\
+-		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
+-	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%6.2f%%", percent); 	\
+-	if (markup)								\
+-		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
++	return he->stat._field;							\
++}										\
+ 										\
+-	return ret;								\
++static int perf_gtk__hpp_color_##_type(struct perf_hpp *hpp,			\
++				       struct hist_entry *he)			\
++{										\
++	return __hpp__color_fmt(hpp, he, he_get_##_field);			\
+ }
+ 
+-HPP__COLOR_FN(overhead, period)
+-HPP__COLOR_FN(overhead_sys, period_sys)
+-HPP__COLOR_FN(overhead_us, period_us)
+-HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
+-HPP__COLOR_FN(overhead_guest_us, period_guest_us)
++__HPP_COLOR_PERCENT_FN(overhead, period)
++__HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
++__HPP_COLOR_PERCENT_FN(overhead_us, period_us)
++__HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
++__HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
+ 
+-#undef HPP__COLOR_FN
++#undef __HPP_COLOR_PERCENT_FN
+ 
+ 
+ void perf_gtk__init_hpp(void)
