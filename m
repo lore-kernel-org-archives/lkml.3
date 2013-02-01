@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab3BAP0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 10:26:49 -0500
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:43423 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab3BAP0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 10:26:46 -0500
-Date: Fri, 1 Feb 2013 17:26:43 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Jerome Glisse <j.glisse@gmail.com>
-cc: Alex Deucher <alexander.deucher@amd.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: Radeon RV100 init fails with specific card+mobo - IRQ problem
-In-Reply-To: <CAH3drwb-248ngSqiXZGU=X1k45V8wmN4127_0gr=AQA=px2g0g@mail.gmail.com>
-Message-ID: <alpine.SOC.1.00.1302011726290.17427@math.ut.ee>
-References: <alpine.SOC.1.00.1302011321220.17427@math.ut.ee> <CAH3drwb-248ngSqiXZGU=X1k45V8wmN4127_0gr=AQA=px2g0g@mail.gmail.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1756495Ab3BAP2X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 10:28:23 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:35238 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754766Ab3BAP2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 10:28:20 -0500
+Date: Fri, 1 Feb 2013 10:28:19 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Derek Basehore <dbasehore@chromium.org>, <JBottomley@parallels.com>,
+        Jeff Garzik <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
+In-Reply-To: <510BAC49.7000709@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1302011026070.1752-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Adding some printks reveals it calls
-> > r100_init() -> radeon_irq_kms_init() -> drm_irq_install() ->
-> > drm_dev_to_irq() and that fails. So no IRQ, no KMS.
-> >
-> > lspci does not show Interrupt like on some other PCI devices.
-> > /proc/interrupts obviously does not contain the irq since we do not
-> > register any yet.
-> >
-> > There is no BIOS option of "Enable IRQ for VGA" or similar (BIOS is
-> > latest). Could this be the problem?
-> >
-> > What can I do to get KMS working on this computer?
-> >
-> > --
-> > Meelis Roos (mroos@linux.ee)
+On Fri, 1 Feb 2013, Aaron Lu wrote:
+
+> Hi Derek,
 > 
-> Try booting with radeon.agp_mode=-1
+> On 12/21/2012 12:35 PM, Derek Basehore wrote:
+> > We no longer wait for the disk to spin up in sd_resume. It now enters the
+> > request to spinup the disk into the elevator and returns.
+> > 
+> > A function is scheduled under the scsi_sd_probe_domain to wait for the command
+> > to spinup the disk to complete. This function then checks for errors and cleans
+> > up after the sd resume function.
+> > 
+> > This allows system resume to complete much faster on systems with an HDD since
+> > spinning up the disk is a significant portion of resume time.
+> 
+> An alternative way of possibly solving this problem from PM's point of
+> view might be:
+> 1 Set both ata port and scsi device's runtime status to RPM_SUSPENDED
+>   in their system suspend callback;
+> 2 On resume, do nothing in their system resume callback;
+> 3 With request based runtime PM introduced here:
+>   http://thread.gmane.org/gmane.linux.power-management.general/30405
+>   When a request comes for the HDD after system resume, both the ata
+>   port and the scsi device will be runtime resumed, which involves
+>   re-initialize the ata link(in ata port's runtime resume callback) and
+>   spin up the HDD(in sd's runtime resume callback).
+> 
+> To make HDD un-affetcted by runtime PM during normal use, a large enough
+> autosuspend_delay can be set for it.
+> 
+> Just my 2 cents, I've not verified or tried in any way yet :-)
 
-radeon: `-1' invalid for parameter `agp_mode'
+It's a good idea.  The problem is that it won't work if CONFIG_PM_SLEEP
+is enabled but CONFIG_PM_RUNTIME isn't.
 
--- 
-Meelis Roos (mroos@linux.ee)
+Alan Stern
+
