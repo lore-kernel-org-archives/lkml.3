@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3BAGYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 01:24:05 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:45291 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab3BAGYD (ORCPT
+	id S1755383Ab3BAGkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 01:40:13 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:44294 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab3BAGkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 01:24:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAFp+6iF2HMmiMVR4YyEG7bmpCZ4KdwBT7q2Jy-P1SMVtoVBn6g@mail.gmail.com>
-References: <1359631232-7107-1-git-send-email-gautam.vivek@samsung.com>
-	<510A56BF.3040804@ti.com>
-	<CAFp+6iFkb=U0CJA=3zmQvd5XfMwbROuRJjXoJG7zvvq4_upzNw@mail.gmail.com>
-	<20130131152527.GE4064@arwen.pp.htv.fi>
-	<CAFp+6iHvKYiF_neANRq5roAEJwhvcaLk7pAd7Dy94Z5XiDkhgA@mail.gmail.com>
-	<20130131153836.GF4064@arwen.pp.htv.fi>
-	<510B50DA.6010201@ti.com>
-	<CAFp+6iF2HMmiMVR4YyEG7bmpCZ4KdwBT7q2Jy-P1SMVtoVBn6g@mail.gmail.com>
-Date: Fri, 1 Feb 2013 11:54:01 +0530
-Message-ID: <CAFp+6iGZU29nt4yBjkyeeS+s_D1=AamgGTOsJq1xo_5z2O-sDg@mail.gmail.com>
-Subject: Re: [PATCH RFC] usb: dwc3: Get PHY from platform specific dwc3 dt node.
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: kishon <kishon@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        gregkh@linuxfoundation.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Feb 2013 01:40:09 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 1/3] cpufreq: TEGRA: Set policy->cpus from driver->init()
+Date: Fri,  1 Feb 2013 12:10:00 +0530
+Message-Id: <1bf82454ab1f16b13212548d7c9605067c8b7a0d.1359700705.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 01 Feb 2013 06:40:05.0202 (UTC) FILETIME=[F8316320:01CE0046]
+X-MC-Unique: 113020106400712101
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r116eWBX024428
 
-Hi Balbi,
+For multicore SoC's, with cores sharing clock line, we are required to set
+policy->cpus and policy->related_cpus with mask of cpus.
 
+With following patch, we need to set policy->cpus with mask of all possible cpus
+and policy->related_cpus would be filled automatically by the cpufreq core.
 
-On Fri, Feb 1, 2013 at 11:52 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
-> Hi Kishon,
->
->
-> On Fri, Feb 1, 2013 at 10:51 AM, kishon <kishon@ti.com> wrote:
->> Hi,
->>
->>
->> On Thursday 31 January 2013 09:08 PM, Felipe Balbi wrote:
->>>
->>> On Thu, Jan 31, 2013 at 09:00:37PM +0530, Vivek Gautam wrote:
->>>>
->>>> Hi Felipe,
->>>>
->>>>
->>>> On Thu, Jan 31, 2013 at 8:55 PM, Felipe Balbi <balbi@ti.com> wrote:
->>>>>
->>>>> Hi,
->>>>>
->>>>> On Thu, Jan 31, 2013 at 08:53:27PM +0530, Vivek Gautam wrote:
->>>>>>>>
->>>>>>>> Moreover, SoCs having multiple dwc3 controllers will have multiple
->>>>>>>> PHYs, which eventually be added using usb_add_phy_dev(), and not
->>>>>>>> using usb_add_phy(). So each dwc3 controller won't be able to
->>>>>>>> get PHYs by simply calling devm_usb_get_phy() also.
->>>>>>>
->>>>>>>
->>>>>>> No. We have added usb_get_phy_dev() for that purpose in the case of
->>>>>>> non-dt.
->>>>>>> I think, instead you can have a patch to use devm_usb_get_phy_dev()
->>>>>>> here and
->>>>>>> in exynos platform specific code use usb_bind_phy() to bind the phy
->>>>>>> and
->>>>>>> controller till you change it to dt.
->>>>>>>
->>>>>>
->>>>>> We have dt support for dwc3-exynos, in such case we should go ahead
->>>>>> with
->>>>>> of_platform_populate(), right ?
->>>>>> But if when i use of_platform_populate() i will not be able to set
->>>>>> dma_mask to dwc3->dev. :-(
->>
->>
->> You can do something like this
->>
->> static u64 dwc3_exynos_dma_mask = DMA_BIT_MASK(32);
->>
->> static int dwc3_exynos_set_dmamask(struct device *dev, void *c)
->> {
->>         dev->dma_mask = &dwc3_exynos_dma_mask;
->>
->>         return 0;
->> }
->>
->> And in your probe after of_platform_populate, you can add
->>
->> device_for_each_child(&pdev->dev, NULL, dwc3_exynos_set_dmamask);
->>
->> Here pdev is the platform device of dwc3-exynos. By this way all the
->> children of dwc3-exynos will have dma_mask set to the required value.
->>
->
-> Nice idea, thanks :-)
-> hmm.. so i can patch this now, and get things working ;-)
->
+commit 4948b355e90080cd5ec1e91189f65a01e4186ef2
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Tue Jan 29 14:39:08 2013 +0000
 
-If this is fine with you shall i go ahead and post a patch for the same ? ;-)
+    cpufreq: Simplify cpufreq_add_dev()
 
+Current Tegra driver fills only ->related_cpus and not ->cpus, which looks to be
+incorrect. Lets fix it.
 
->> I'm not sure if there is any other better way to achieve the same (without
->> patching of.c ;-))
->>
->
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>
+---
+ arch/arm/mach-tegra/cpu-tegra.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-
+diff --git a/arch/arm/mach-tegra/cpu-tegra.c b/arch/arm/mach-tegra/cpu-tegra.c
+index a74d3c7..e7ddcb2 100644
+--- a/arch/arm/mach-tegra/cpu-tegra.c
++++ b/arch/arm/mach-tegra/cpu-tegra.c
+@@ -244,7 +244,7 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency = 300 * 1000;
+ 
+ 	policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
+-	cpumask_copy(policy->related_cpus, cpu_possible_mask);
++	cpumask_copy(policy->cpus, cpu_possible_mask);
+ 
+ 	if (policy->cpu == 0)
+ 		register_pm_notifier(&tegra_cpu_pm_notifier);
 -- 
-Thanks & Regards
-Vivek
+1.7.12.rc2.18.g61b472e
+
+
