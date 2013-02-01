@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab3BANWo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:22:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45006 "EHLO mail.kernel.org"
+	id S1757560Ab3BANXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:23:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44952 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757416Ab3BANLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:11:34 -0500
+	id S1757250Ab3BANLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:11:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 45/89] ALSA: hda - Add a fixup for Packard-Bell desktop with ALC880
-Date: Fri,  1 Feb 2013 14:08:00 +0100
-Message-Id: <20130201130210.732640826@linuxfoundation.org>
+        Robert Shade <robert.shade@gmail.com>, Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 41/89] ath9k: disable the tasklet before taking the PCU lock
+Date: Fri,  1 Feb 2013 14:07:56 +0100
+Message-Id: <20130201130210.458915965@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -25,32 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 0712eea349d8e2b6d0e44b94a752d999319027fb upstream.
+commit 4668cce527acb3bd048c5e6c99b157a14b214671 upstream.
 
-A Packard-Bell desktop machine gives no proper pin configuration from
-BIOS.  It's almost equivalent with the 6stack+fp standard config, just
-take the existing fixup.
+Fixes a reported CPU soft lockup where the tasklet tries to acquire the
+lock and blocks while ath_prepare_reset (holding the lock) waits for it
+to complete.
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=901846
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Robert Shade <robert.shade@gmail.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath9k/main.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4688,6 +4688,7 @@ static const struct snd_pci_quirk alc880
- 	SND_PCI_QUIRK(0x1584, 0x9077, "Uniwill P53", ALC880_FIXUP_VOL_KNOB),
- 	SND_PCI_QUIRK(0x161f, 0x203d, "W810", ALC880_FIXUP_W810),
- 	SND_PCI_QUIRK(0x161f, 0x205d, "Medion Rim 2150", ALC880_FIXUP_MEDION_RIM),
-+	SND_PCI_QUIRK(0x1631, 0xe011, "PB 13201056", ALC880_FIXUP_6ST),
- 	SND_PCI_QUIRK(0x1734, 0x107c, "FSC F1734", ALC880_FIXUP_F1734),
- 	SND_PCI_QUIRK(0x1734, 0x1094, "FSC Amilo M1451G", ALC880_FIXUP_FUJITSU),
- 	SND_PCI_QUIRK(0x1734, 0x10ac, "FSC AMILO Xi 1526", ALC880_FIXUP_F1734),
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -195,16 +195,12 @@ static bool ath_prepare_reset(struct ath
+ 	ath9k_debug_samp_bb_mac(sc);
+ 	ath9k_hw_disable_interrupts(ah);
+ 
+-	tasklet_disable(&sc->intr_tq);
+-
+ 	if (!ath_stoprecv(sc))
+ 		ret = false;
+ 
+ 	if (!ath_drain_all_txq(sc, retry_tx))
+ 		ret = false;
+ 
+-	tasklet_enable(&sc->intr_tq);
+-
+ 	return ret;
+ }
+ 
+@@ -261,6 +257,7 @@ static int ath_reset_internal(struct ath
+ 
+ 	__ath_cancel_work(sc);
+ 
++	tasklet_disable(&sc->intr_tq);
+ 	spin_lock_bh(&sc->sc_pcu_lock);
+ 
+ 	if (!(sc->hw->conf.flags & IEEE80211_CONF_OFFCHANNEL)) {
+@@ -291,6 +288,8 @@ static int ath_reset_internal(struct ath
+ 
+ out:
+ 	spin_unlock_bh(&sc->sc_pcu_lock);
++	tasklet_enable(&sc->intr_tq);
++
+ 	return r;
+ }
+ 
 
 
