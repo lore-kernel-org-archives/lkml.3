@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab3BAL7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 06:59:06 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:31910 "EHLO multi.imgtec.com"
+	id S1756784Ab3BAL7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 06:59:04 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:31914 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756227Ab3BAL6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756283Ab3BAL6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Feb 2013 06:58:20 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>
 CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 2/6] metag: add boot time LNKGET/LNKSET check
-Date: Fri, 1 Feb 2013 11:49:06 +0000
-Message-ID: <1359719350-24560-3-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH 6/6] metag: protect more non-MMU memory regions
+Date: Fri, 1 Feb 2013 11:49:10 +0000
+Message-ID: <1359719350-24560-7-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1359719350-24560-1-git-send-email-james.hogan@imgtec.com>
 References: <1359719350-24560-1-git-send-email-james.hogan@imgtec.com>
@@ -22,127 +22,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add boot time check for whether LNKGET/LNKSET go through or around the
-cache. Depending on the configuration an info message (no harm), warning
-(technically wrong but no harm), or big WARN (expect failure in either
-kernel or userland) may be emitted if the behaviour is not as expected:
+Rename setup_txprivext() to setup_priv() and add initialisation of some
+more per-thread privilege protection registers:
 
-Configuration                                Hardware   Response
-------------------------------------------   --------   --------
-AROUND_CACHE                                 through    pr_info
-!AROUND_CACHE && ATOMICITY_LNKGET            around     WARN (kernel)
-     "        && !ATOMICITY_LNKGET && SMP    around     WARN (user)
-     "                   "         && !SMP   around     pr_warn
+ - TxPRIVSYSR: 0x04400000-0x047fffff
+               0x05000000-0x07ffffff
+               0x84000000-0x87ffffff
+ - TxPIOREG:   0x02000000-0x02ffffff
+               0x04800000-0x048fffff
+ - TxSYREG:    0x04000000-0x04000fff (except write fetch system event)
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/mm/cache.c |   79 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 79 insertions(+), 0 deletions(-)
+ arch/metag/include/asm/processor.h |    2 +-
+ arch/metag/kernel/setup.c          |   45 ++++++++++++++++++++++++++++++++----
+ arch/metag/kernel/smp.c            |    2 +-
+ 3 files changed, 42 insertions(+), 7 deletions(-)
 
-diff --git a/arch/metag/mm/cache.c b/arch/metag/mm/cache.c
-index 89da74a..4dd96e4 100644
---- a/arch/metag/mm/cache.c
-+++ b/arch/metag/mm/cache.c
-@@ -14,6 +14,7 @@
- #include <linux/io.h>
- #include <asm/cacheflush.h>
- #include <asm/core_reg.h>
-+#include <asm/global_lock.h>
- #include <asm/metag_isa.h>
- #include <asm/metag_mem.h>
- #include <asm/metag_regs.h>
-@@ -36,6 +37,82 @@ static int icache_set_shift = METAG_TBI_CACHE_SIZE_BASE_LOG2
- static unsigned char dcache_sets_log2 = DEFAULT_CACHE_WAYS_LOG2;
- static unsigned char icache_sets_log2 = DEFAULT_CACHE_WAYS_LOG2;
+diff --git a/arch/metag/include/asm/processor.h b/arch/metag/include/asm/processor.h
+index b7e2528..9b029a7 100644
+--- a/arch/metag/include/asm/processor.h
++++ b/arch/metag/include/asm/processor.h
+@@ -154,7 +154,7 @@ unsigned long get_wchan(struct task_struct *p);
  
-+#ifndef CONFIG_METAG_META12
-+/**
-+ * metag_lnkget_probe() - Probe whether lnkget/lnkset go around the cache
+ #define cpu_relax()     barrier()
+ 
+-extern void setup_txprivext(void);
++extern void setup_priv(void);
+ 
+ static inline unsigned int hard_processor_id(void)
+ {
+diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
+index dcb1d6d..9803ca4 100644
+--- a/arch/metag/kernel/setup.c
++++ b/arch/metag/kernel/setup.c
+@@ -35,6 +35,7 @@
+ #include <asm/hwthread.h>
+ #include <asm/l2cache.h>
+ #include <asm/mach/arch.h>
++#include <asm/metag_mem.h>
+ #include <asm/metag_regs.h>
+ #include <asm/mmu.h>
+ #include <asm/mmzone.h>
+@@ -75,6 +76,32 @@
+ 			 META2_PRIV			| \
+ 			 UNALIGNED_PRIV)
+ 
++/*
++ * Protect access to:
++ * 0x06000000-0x07ffffff Direct mapped region
++ * 0x05000000-0x05ffffff MMU table region (Meta1)
++ * 0x04400000-0x047fffff Cache flush region
++ * 0x84000000-0x87ffffff Core cache memory region (Meta2)
++ *
++ * Allow access to:
++ * 0x80000000-0x81ffffff Core code memory region (Meta2)
 + */
-+static volatile u32 lnkget_testdata[16] __initdata __aligned(64);
-+
-+#define LNKGET_CONSTANT 0xdeadbeef
-+
-+void __init metag_lnkget_probe(void)
-+{
-+	int temp;
-+	long flags;
-+
-+	/*
-+	 * It's conceivable the user has configured a globally coherent cache
-+	 * shared with non-Linux hardware threads, so use LOCK2 to prevent them
-+	 * from executing and causing cache eviction during the test.
-+	 */
-+	__global_lock2(flags);
-+
-+	/* read a value to bring it into the cache */
-+	(void)lnkget_testdata[0];
-+	lnkget_testdata[0] = 0;
-+
-+	/* lnkget/lnkset it to modify it */
-+	asm volatile(
-+		"1:	LNKGETD %0, [%1]\n"
-+		"	LNKSETD [%1], %2\n"
-+		"	DEFR	%0, TXSTAT\n"
-+		"	ANDT	%0, %0, #HI(0x3f000000)\n"
-+		"	CMPT	%0, #HI(0x02000000)\n"
-+		"	BNZ	1b\n"
-+		: "=&d" (temp)
-+		: "da" (&lnkget_testdata[0]), "bd" (LNKGET_CONSTANT)
-+		: "cc");
-+
-+	/* re-read it to see if the cached value changed */
-+	temp = lnkget_testdata[0];
-+
-+	__global_unlock2(flags);
-+
-+	/* flush the cache line to fix any incoherency */
-+	__builtin_dcache_flush((void *)&lnkget_testdata[0]);
-+
-+#if defined(CONFIG_METAG_LNKGET_AROUND_CACHE)
-+	/* if the cache is right, LNKGET_AROUND_CACHE is unnecessary */
-+	if (temp == LNKGET_CONSTANT)
-+		pr_info("LNKGET/SET go through cache but CONFIG_METAG_LNKGET_AROUND_CACHE=y\n");
-+#elif defined(CONFIG_METAG_ATOMICITY_LNKGET)
-+	/*
-+	 * if the cache is wrong, LNKGET_AROUND_CACHE is really necessary
-+	 * because the kernel is configured to use LNKGET/SET for atomicity
-+	 */
-+	WARN(temp != LNKGET_CONSTANT,
-+	     "LNKGET/SET go around cache but CONFIG_METAG_LNKGET_AROUND_CACHE=n\n"
-+	     "Expect kernel failure as it's used for atomicity primitives\n");
-+#elif defined(CONFIG_SMP)
-+	/*
-+	 * if the cache is wrong, LNKGET_AROUND_CACHE should be used or the
-+	 * gateway page won't flush and userland could break.
-+	 */
-+	WARN(temp != LNKGET_CONSTANT,
-+	     "LNKGET/SET go around cache but CONFIG_METAG_LNKGET_AROUND_CACHE=n\n"
-+	     "Expect userland failure as it's used for user gateway page\n");
++#ifdef CONFIG_METAG_META12
++#define PRIVSYSR_BITS	TXPRIVSYSR_ALL_BITS
 +#else
-+	/*
-+	 * if the cache is wrong, LNKGET_AROUND_CACHE is set wrong, but it
-+	 * doesn't actually matter as it doesn't have any effect on !SMP &&
-+	 * !ATOMICITY_LNKGET.
-+	 */
-+	if (temp != LNKGET_CONSTANT)
-+		pr_warn("LNKGET/SET go around cache but CONFIG_METAG_LNKGET_AROUND_CACHE=n\n");
++#define PRIVSYSR_BITS	(TXPRIVSYSR_ALL_BITS & ~TXPRIVSYSR_CORECODE_BIT)
 +#endif
-+}
-+#endif /* !CONFIG_METAG_META12 */
 +
- /**
-  * metag_cache_probe() - Probe L1 cache configuration.
-  *
-@@ -68,6 +145,8 @@ void __init metag_cache_probe(void)
- 	dcache_set_shift += (config & METAC_CORECFG2_DCSZ_BITS)
- 				>> METAC_CORECFG2_DCSZ_S;
- 	dcache_set_shift -= dcache_sets_log2;
++/* Protect all 0x02xxxxxx and 0x048xxxxx. */
++#define PIOREG_BITS	0xffffffff
 +
-+	metag_lnkget_probe();
- #else
- 	/* Extract cache sizes from global heap segment */
- 	unsigned long val, u;
++/*
++ * Protect all 0x04000xx0 (system events)
++ * except write combiner flush and write fence (system events 4 and 5).
++ */
++#define PSYREG_BITS	0xfffffffb
++
++
+ extern char _heap_start[];
+ 
+ #ifdef CONFIG_METAG_BUILTIN_DTB
+@@ -371,7 +398,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	paging_init(heap_end);
+ 
+-	setup_txprivext();
++	setup_priv();
+ 
+ 	/* Setup the boot cpu's mapping. The rest will be setup below. */
+ 	cpu_2_hwthread_id[smp_processor_id()] = hard_processor_id();
+@@ -531,13 +558,21 @@ void __init metag_start_kernel(char *args)
+ 	start_kernel();
+ }
+ 
+-/*
+- * Setup TXPRIVEXT register to be prevent userland from touching our
+- * precious registers.
++/**
++ * setup_priv() - Set up privilege protection registers.
++ *
++ * Set up privilege protection registers such as TXPRIVEXT to prevent userland
++ * from touching our precious registers and sensitive memory areas.
+  */
+-void setup_txprivext(void)
++void setup_priv(void)
+ {
++	unsigned int offset = hard_processor_id() << TXPRIVREG_STRIDE_S;
++
+ 	__core_reg_set(TXPRIVEXT, PRIV_BITS);
++
++	metag_out32(PRIVSYSR_BITS, T0PRIVSYSR + offset);
++	metag_out32(PIOREG_BITS,   T0PIOREG   + offset);
++	metag_out32(PSYREG_BITS,   T0PSYREG   + offset);
+ }
+ 
+ PTBI pTBI_get(unsigned int cpu)
+diff --git a/arch/metag/kernel/smp.c b/arch/metag/kernel/smp.c
+index d116312..4b6d1f14 100644
+--- a/arch/metag/kernel/smp.c
++++ b/arch/metag/kernel/smp.c
+@@ -268,7 +268,7 @@ asmlinkage void secondary_start_kernel(void)
+ 
+ 	preempt_disable();
+ 
+-	setup_txprivext();
++	setup_priv();
+ 
+ 	/*
+ 	 * Enable local interrupts.
 -- 
 1.7.7.6
 
