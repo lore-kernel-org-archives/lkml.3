@@ -1,152 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab3BAXHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 18:07:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757313Ab3BAXHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 18:07:34 -0500
-Date: Fri, 1 Feb 2013 17:06:56 -0600
-From: Clark Williams <williams@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        RT <linux-rt-users@vger.kernel.org>
-Subject: [PATCH] [PREEMPT_RT] make pagefault_{disable,enable}() back into
- static inlines
-Message-ID: <20130201170656.75c0ce3c@redhat.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/GcB7YkkRro/k7IwNWseJEd9"; protocol="application/pgp-signature"
+	id S1030196Ab3BAXKs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 18:10:48 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:35806 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757885Ab3BAXKq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 18:10:46 -0500
+Message-ID: <510C4B60.20802@mvista.com>
+Date: Sat, 02 Feb 2013 03:10:24 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: balbi@ti.com
+CC: Matt Porter <mporter@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Chris Ball <cjb@laptop.org>, Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
+References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <510C1D0E.6030401@mvista.com> <20130201185820.GE29898@arwen.pp.htv.fi> <510C2A47.1090607@mvista.com> <20130201205600.GA31762@arwen.pp.htv.fi>
+In-Reply-To: <20130201205600.GA31762@arwen.pp.htv.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/GcB7YkkRro/k7IwNWseJEd9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello.
 
-Thomas,
+On 02-02-2013 0:56, Felipe Balbi wrote:
 
-The PREEMPT_RT behavior of moving pagefault_disable() and
-pagefault_enable() into mm/memory.c as EXPORT_SYMBOL_GPL symbols breaks
-compilation of a third-party driver that builds fine on a stock kernel.
-Yes, I know, I know, it's a binary driver, but my problem is that it
-already compiles and works on a stock kernel; the compile breaks only
-on a PREEMPT_RT kernel. The driver doesn't use the fault routines
-directly but the symbols get pulled in due to references in
-include/linux/io-memory.h.
+>>> good point, do you wanna send some patches ?
 
-One way to "fix" it would be to change the definitions to EXPORT_SYMBOL,
-but what I wondered is if we should move them back into uaccess.h as
-static inlines (like the upstream versions). I've done that in the
-attached patch and it seems to work fine. What I'm not sure of are the
-performance implications of calling migrate_{disable,enable} from a
-static inline.=20
+>>     I have already sent them countless times and even stuck CPPI 4.1 support (in
+>> arch/arm/common/cppi41.c) in Russell's patch system. TI requested to remove the
+>> patch. :-(
 
-Thoughts?
+> sticking into arch/arm/common/ wasn't a nice move.
 
-Signed-off-by: Clark Williams <williams@redhat.com>
----
- include/linux/uaccess.h | 25 +++++++++++++++++++++++--
- mm/memory.c             | 26 --------------------------
- 2 files changed, 23 insertions(+), 28 deletions(-)
+    Like with EDMA we have nothing else to do with CPPI 4.1 being shared by 
+DaVinci-like and OMAP-like SOCs. Thank TI for creatring this mess. And 
+actually even that is not a good place since I think I know of a MIPS SoC 
+having CPPI 4.1 as well, just out of tree.
 
-diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
-index 44b3751..f2f6c08 100644
---- a/include/linux/uaccess.h
-+++ b/include/linux/uaccess.h
-@@ -4,6 +4,8 @@
- #include <linux/preempt.h>
- #include <asm/uaccess.h>
-=20
-+#include <linux/sched.h>
-+
- /*
-  * These routines enable/disable the pagefault handler in that
-  * it will not take any MM locks and go straight to the fixup table.
-@@ -33,8 +35,27 @@ static inline void pagefault_enable(void)
- 	raw_pagefault_enable();
- }
- #else
--extern void pagefault_disable(void);
--extern void pagefault_enable(void);
-+static inline void pagefault_disable(void)
-+{
-+	migrate_disable();
-+	current->pagefault_disabled++;
-+	/*
-+	 * make sure to have issued the store before a pagefault
-+	 * can hit.
-+	 */
-+	barrier();
-+}
-+
-+static inline void pagefault_enable(void)
-+{
-+	/*
-+	 * make sure to issue those last loads/stores before enabling
-+	 * the pagefault handler again.
-+	 */
-+	barrier();
-+	current->pagefault_disabled--;
-+	migrate_enable();
-+}
- #endif
-=20
- #ifndef ARCH_HAS_NOCACHE_UACCESS
-diff --git a/mm/memory.c b/mm/memory.c
-index 66f0ca8..6140eb8 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3484,32 +3484,6 @@ unlock:
- 	return 0;
- }
-=20
--#ifdef CONFIG_PREEMPT_RT_FULL
--void pagefault_disable(void)
--{
--	migrate_disable();
--	current->pagefault_disabled++;
--	/*
--	 * make sure to have issued the store before a pagefault
--	 * can hit.
--	 */
--	barrier();
--}
--EXPORT_SYMBOL_GPL(pagefault_disable);
--
--void pagefault_enable(void)
--{
--	/*
--	 * make sure to issue those last loads/stores before enabling
--	 * the pagefault handler again.
--	 */
--	barrier();
--	current->pagefault_disabled--;
--	migrate_enable();
--}
--EXPORT_SYMBOL_GPL(pagefault_enable);
--#endif
--
- /*
-  * By the time we get here, we already hold the mm semaphore
-  */
---=20
-1.7.11.7
+ > But then again, so
+ > wasn't asking for the patch to be removed :-s
 
+    Unfortunately, Russell has done it -- all that was discuseed without me in 
+the loop even. :-/
 
---Sig_/GcB7YkkRro/k7IwNWseJEd9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+>>> I guess to make the MUSB side simpler we would need musb-dma-engine glue
+>>> to map dmaengine to the private MUSB API. Then we would have some
+>>> starting point to also move inventra (and anybody else) to dmaengine
+>>> API.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+>>     Why? Inventra is a dedicated device's private DMA controller, why make
+>> universal DMA driver for it?
 
-iEYEARECAAYFAlEMSpkACgkQHyuj/+TTEp20xgCgoCvUAbTqn+yC3njKxkTBpTBu
-3x4AnibtJAgso1lgxfHn3PwVnYz1xseZ
-=ATzR
------END PGP SIGNATURE-----
+> because it doesn't make sense to support multiple DMA APIs. We can check
+> from MUSB's registers if it was configured with Inventra DMA support and
+> based on that we can register MUSB's own DMA Engine to dmaengine API.
 
---Sig_/GcB7YkkRro/k7IwNWseJEd9--
+     I still disagree. IMO drivers/dma/ is for standalone DMA engines. Else we 
+could stick every bus mastering device's DMA engines there. CPPI 4.1 is in 
+design standlone DMA engine, despite all in-tree implementations having it as 
+subblock of MUSB and serving only MUSB.
+
+WBR, Sergei
+
