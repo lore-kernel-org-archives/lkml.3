@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab3BADyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Jan 2013 22:54:31 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:64271 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab3BADy2 (ORCPT
+	id S1754229Ab3BAD5w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Jan 2013 22:57:52 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:30661 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab3BAD5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Jan 2013 22:54:28 -0500
+	Thu, 31 Jan 2013 22:57:51 -0500
+Message-ID: <510B3D2A.3040007@huawei.com>
+Date: Fri, 1 Feb 2013 11:57:30 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1560132.gKXbKl82oR@vostro.rjw.lan>
-References: <1359554017-28620-1-git-send-email-fabio.baltieri@linaro.org>
-	<CAKohpomTNkEOrnyQWKJ8siajg67-fpe4EnYxiipgmN8STMSwAQ@mail.gmail.com>
-	<20130131110613.GD30667@balto.lan>
-	<1560132.gKXbKl82oR@vostro.rjw.lan>
-Date: Fri, 1 Feb 2013 09:24:27 +0530
-Message-ID: <CAKohpomcu4pZf8pwxCkW5RcGWbeEN3NTCpYWyzPGaUt6noB80w@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: governors: clean timer init and exit code
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Fabio Baltieri <fabio.baltieri@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        swarren@wwwdotorg.org, linaro-dev@lists.linaro.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, mathieu.poirier@linaro.org,
-        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Kent Overstreet <koverstreet@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-bcache@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 3/4] Export blk_fill_rwbs()
+References: <1358285142-10576-1-git-send-email-koverstreet@google.com>  <1358285142-10576-3-git-send-email-koverstreet@google.com> <1359690521.5642.10.camel@gandalf.local.home>
+In-Reply-To: <1359690521.5642.10.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 January 2013 18:36, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, January 31, 2013 12:06:13 PM Fabio Baltieri wrote:
->> On Thu, Jan 31, 2013 at 04:23:06PM +0530, Viresh Kumar wrote:
+on 2013/2/1 11:48, Steven Rostedt wrote:
+> Li,
+> 
+> Can you give an Ack or Nack for this.
+> 
 
->> > As discussed over IRC, you will fix following in few days:
->> > - Code redundancy within governors
->> > - Removing second_time: label and cdbs->enable field
->> > - Fixing params to timer init and exit to make them more efficient.
+I think this patch shouldn't go into upstream without bcache code. We don't
+export symbols for out of tree code.
+
+> Thanks,
+> 
+> -- Steve
+> 
+> 
+> On Tue, 2013-01-15 at 13:25 -0800, Kent Overstreet wrote:
+>> Exported so it can be used by bcache's tracepoints
 >>
->> That's the plan, I'd leave it up to Rafael to decide if further cleanup
->> patches should be included in 3.9 merge window or skip to the following
->> one... I understand that we are starting to be late on the -rc and I
->> also prefer to focus on fixup.
->
-> The deadline for 3.9 merge window patches is about 2 days before 3.8-rc7
-> (assuming that there will be -rc7) and by that time they need to be in
-> linux-next.  Whatever doesn't make it will have to go after 3.9-rc1 or be
-> postponed until the 3.10 merge window.
+>> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+>> CC: Steven Rostedt <rostedt@goodmis.org>
+>> CC: Frederic Weisbecker <fweisbec@gmail.com>
+>> CC: Ingo Molnar <mingo@redhat.com>
+>> ---
+>>  kernel/trace/blktrace.c | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+>> index c0bd030..dbe1667 100644
+>> --- a/kernel/trace/blktrace.c
+>> +++ b/kernel/trace/blktrace.c
+>> @@ -1806,6 +1806,7 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
+>>  
+>>  	rwbs[i] = '\0';
+>>  }
+>> +EXPORT_SYMBOL_GPL(blk_fill_rwbs);
+>>  
+>>  #endif /* CONFIG_EVENT_TRACING */
+>>  
+> 
+> 
+> 
 
-For everybody else, i have patched above in a different patchset.
