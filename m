@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab3BANHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:07:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44279 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932067Ab3BANHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756974Ab3BANHc (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Feb 2013 08:07:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44261 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755768Ab3BANH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:07:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luciano Coelho <coelho@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [ 08/89] ARM: OMAP2+: omap4-panda: add UART2 muxing for WiLink shared transport
-Date: Fri,  1 Feb 2013 14:07:23 +0100
-Message-Id: <20130201130208.071206270@linuxfoundation.org>
+        James Bottomley <JBottomley@Parallels.com>,
+        Subhash Jadavani <subhashj@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 07/89] ARM: DMA: Fix struct page iterator in dma_cache_maint() to work with sparsemem
+Date: Fri,  1 Feb 2013 14:07:22 +0100
+Message-Id: <20130201130208.001009182@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -25,35 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luciano Coelho <coelho@ti.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 7662a9c60fee25d7234da4be6d8eab2b2ac88448 upstream.
+commit 15653371c67c3fbe359ae37b720639dd4c7b42c5 upstream.
 
-Add the UART2 muxing data to the board file (this used to be,
-erroneously, done in the bootloader).
+Subhash Jadavani reported this partial backtrace:
+  Now consider this call stack from MMC block driver (this is on the ARMv7
+  based board):
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+  [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
+  [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
+  [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from [<c0017ff8>] (dma_map_sg+0x3c/0x114)
+
+This is caused by incrementing the struct page pointer, and running off
+the end of the sparsemem page array.  Fix this by incrementing by pfn
+instead, and convert the pfn to a struct page.
+
+Suggested-by: James Bottomley <JBottomley@Parallels.com>
+Tested-by: Subhash Jadavani <subhashj@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/board-omap4panda.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm/mm/dma-mapping.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -402,6 +402,12 @@ static struct omap_board_mux board_mux[]
- 		  OMAP_PULL_ENA),
- 	OMAP4_MUX(ABE_MCBSP1_FSX, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
- 
-+	/* UART2 - BT/FM/GPS shared transport */
-+	OMAP4_MUX(UART2_CTS,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_RTS,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_RX,	OMAP_PIN_INPUT	| OMAP_MUX_MODE0),
-+	OMAP4_MUX(UART2_TX,	OMAP_PIN_OUTPUT	| OMAP_MUX_MODE0),
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -776,25 +776,27 @@ static void dma_cache_maint_page(struct
+ 	size_t size, enum dma_data_direction dir,
+ 	void (*op)(const void *, size_t, int))
+ {
++	unsigned long pfn;
++	size_t left = size;
 +
- 	{ .reg_offset = OMAP_MUX_TERMINATOR },
- };
++	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
++	offset %= PAGE_SIZE;
++
+ 	/*
+ 	 * A single sg entry may refer to multiple physically contiguous
+ 	 * pages.  But we still need to process highmem pages individually.
+ 	 * If highmem is not configured then the bulk of this loop gets
+ 	 * optimized out.
+ 	 */
+-	size_t left = size;
+ 	do {
+ 		size_t len = left;
+ 		void *vaddr;
  
++		page = pfn_to_page(pfn);
++
+ 		if (PageHighMem(page)) {
+-			if (len + offset > PAGE_SIZE) {
+-				if (offset >= PAGE_SIZE) {
+-					page += offset / PAGE_SIZE;
+-					offset %= PAGE_SIZE;
+-				}
++			if (len + offset > PAGE_SIZE)
+ 				len = PAGE_SIZE - offset;
+-			}
+ 			vaddr = kmap_high_get(page);
+ 			if (vaddr) {
+ 				vaddr += offset;
+@@ -811,7 +813,7 @@ static void dma_cache_maint_page(struct
+ 			op(vaddr, len, dir);
+ 		}
+ 		offset = 0;
+-		page++;
++		pfn++;
+ 		left -= len;
+ 	} while (left);
+ }
 
 
