@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab3BANJC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 08:09:02 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44565 "EHLO mail.kernel.org"
+	id S1757244Ab3BANIj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 08:08:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44477 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756898Ab3BANI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 08:08:58 -0500
+	id S1757167Ab3BANIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 08:08:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Ben Myers <bpm@sgi.com>, xfs@oss.sgi.com
-Subject: [ 21/89] xfs: Fix possible use-after-free with AIO
-Date: Fri,  1 Feb 2013 14:07:36 +0100
-Message-Id: <20130201130209.001078820@linuxfoundation.org>
+        Jaroslav Skarvada <jskarvad@redhat.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 28/89] iwlegacy: fix IBSS cleanup
+Date: Fri,  1 Feb 2013 14:07:43 +0100
+Message-Id: <20130201130209.531027387@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201130207.444989281@linuxfoundation.org>
 References: <20130201130207.444989281@linuxfoundation.org>
@@ -25,40 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 4b05d09c18d9aa62d2e7fb4b057f54e5a38963f5 upstream.
+commit fa4cffcba9e13798ed7c6b8526b91b1631ecb53e upstream.
 
-Running AIO is pinning inode in memory using file reference. Once AIO
-is completed using aio_complete(), file reference is put and inode can
-be freed from memory. So we have to be sure that calling aio_complete()
-is the last thing we do with the inode.
+We do not correctly change interface type when switching from
+IBSS mode to STA mode, that results in microcode errors.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-CC: xfs@oss.sgi.com
-CC: Ben Myers <bpm@sgi.com>
-Reviewed-by: Ben Myers <bpm@sgi.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Resolves:
+https://bugzilla.redhat.com/show_bug.cgi?id=886946
+
+Reported-by: Jaroslav Skarvada <jskarvad@redhat.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_aops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlegacy/common.c |   35 +++++++++++++--------------------
+ 1 file changed, 14 insertions(+), 21 deletions(-)
 
---- a/fs/xfs/xfs_aops.c
-+++ b/fs/xfs/xfs_aops.c
-@@ -86,11 +86,11 @@ xfs_destroy_ioend(
+--- a/drivers/net/wireless/iwlegacy/common.c
++++ b/drivers/net/wireless/iwlegacy/common.c
+@@ -3957,17 +3957,21 @@ il_connection_init_rx_config(struct il_p
+ 
+ 	memset(&il->staging, 0, sizeof(il->staging));
+ 
+-	if (!il->vif) {
++	switch (il->iw_mode) {
++	case NL80211_IFTYPE_UNSPECIFIED:
+ 		il->staging.dev_type = RXON_DEV_TYPE_ESS;
+-	} else if (il->vif->type == NL80211_IFTYPE_STATION) {
++		break;
++	case NL80211_IFTYPE_STATION:
+ 		il->staging.dev_type = RXON_DEV_TYPE_ESS;
+ 		il->staging.filter_flags = RXON_FILTER_ACCEPT_GRP_MSK;
+-	} else if (il->vif->type == NL80211_IFTYPE_ADHOC) {
++		break;
++	case NL80211_IFTYPE_ADHOC:
+ 		il->staging.dev_type = RXON_DEV_TYPE_IBSS;
+ 		il->staging.flags = RXON_FLG_SHORT_PREAMBLE_MSK;
+ 		il->staging.filter_flags =
+ 		    RXON_FILTER_BCON_AWARE_MSK | RXON_FILTER_ACCEPT_GRP_MSK;
+-	} else {
++		break;
++	default:
+ 		IL_ERR("Unsupported interface type %d\n", il->vif->type);
+ 		return;
+ 	}
+@@ -4550,8 +4554,7 @@ out:
+ EXPORT_SYMBOL(il_mac_add_interface);
+ 
+ static void
+-il_teardown_interface(struct il_priv *il, struct ieee80211_vif *vif,
+-		      bool mode_change)
++il_teardown_interface(struct il_priv *il, struct ieee80211_vif *vif)
+ {
+ 	lockdep_assert_held(&il->mutex);
+ 
+@@ -4560,9 +4563,7 @@ il_teardown_interface(struct il_priv *il
+ 		il_force_scan_end(il);
  	}
  
- 	if (ioend->io_iocb) {
-+		inode_dio_done(ioend->io_inode);
- 		if (ioend->io_isasync) {
- 			aio_complete(ioend->io_iocb, ioend->io_error ?
- 					ioend->io_error : ioend->io_result, 0);
- 		}
--		inode_dio_done(ioend->io_inode);
+-	if (!mode_change)
+-		il_set_mode(il);
+-
++	il_set_mode(il);
+ }
+ 
+ void
+@@ -4575,8 +4576,8 @@ il_mac_remove_interface(struct ieee80211
+ 
+ 	WARN_ON(il->vif != vif);
+ 	il->vif = NULL;
+-
+-	il_teardown_interface(il, vif, false);
++	il->iw_mode = NL80211_IFTYPE_UNSPECIFIED;
++	il_teardown_interface(il, vif);
+ 	memset(il->bssid, 0, ETH_ALEN);
+ 
+ 	D_MAC80211("leave\n");
+@@ -4685,18 +4686,10 @@ il_mac_change_interface(struct ieee80211
  	}
  
- 	mempool_free(ioend, xfs_ioend_pool);
+ 	/* success */
+-	il_teardown_interface(il, vif, true);
+ 	vif->type = newtype;
+ 	vif->p2p = false;
+-	err = il_set_mode(il);
+-	WARN_ON(err);
+-	/*
+-	 * We've switched internally, but submitting to the
+-	 * device may have failed for some reason. Mask this
+-	 * error, because otherwise mac80211 will not switch
+-	 * (and set the interface type back) and we'll be
+-	 * out of sync with it.
+-	 */
++	il->iw_mode = newtype;
++	il_teardown_interface(il, vif);
+ 	err = 0;
+ 
+ out:
 
 
