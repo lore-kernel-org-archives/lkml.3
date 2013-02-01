@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab3BAUn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 15:43:29 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:21477 "EHLO
+	id S1757575Ab3BAUnl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 15:43:41 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:21481 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757525Ab3BAUnZ (ORCPT
+	with ESMTP id S1757548Ab3BAUng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 15:43:25 -0500
-Message-ID: <201302012043.r11KhNZF024371@farm-0021.internal.tilera.com>
+	Fri, 1 Feb 2013 15:43:36 -0500
+Message-ID: <201302012043.r11KhZFs024379@farm-0021.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 1 Feb 2013 15:04:26 -0500
-Subject: [PATCH] Export {enable,disable}_percpu_irq().
-To: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 1 Feb 2013 15:21:41 -0500
+Subject: [PATCH] tile: fix memcpy_*io functions for allnoconfig
+To: <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions are used by (for example) the tilegx onchip
-network driver, and it's useful to be able to load that driver
-as a module.
+On tilepro without CONFIG_PCI, we can't provide inlines of these
+functions, as we don't have readl/writel.
+
+In addition, fix memset_io() signature to take a volatile void *.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- kernel/irq/manage.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/tile/include/asm/io.h |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index e49a288..88e7bed 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1524,6 +1524,7 @@ void enable_percpu_irq(unsigned int irq, unsigned int type)
- out:
- 	irq_put_desc_unlock(desc, flags);
- }
-+EXPORT_SYMBOL_GPL(enable_percpu_irq);
+diff --git a/arch/tile/include/asm/io.h b/arch/tile/include/asm/io.h
+index 865e529..aaa423d 100644
+--- a/arch/tile/include/asm/io.h
++++ b/arch/tile/include/asm/io.h
+@@ -250,7 +250,9 @@ static inline void writeq(u64 val, unsigned long addr)
+ #define iowrite32 writel
+ #define iowrite64 writeq
  
- void disable_percpu_irq(unsigned int irq)
+-static inline void memset_io(void *dst, int val, size_t len)
++#if CHIP_HAS_MMIO() || defined(CONFIG_PCI)
++
++static inline void memset_io(volatile void *dst, int val, size_t len)
  {
-@@ -1537,6 +1538,7 @@ void disable_percpu_irq(unsigned int irq)
- 	irq_percpu_disable(desc, cpu);
- 	irq_put_desc_unlock(desc, flags);
+ 	int x;
+ 	BUG_ON((unsigned long)dst & 0x3);
+@@ -277,6 +279,8 @@ static inline void memcpy_toio(volatile void __iomem *dst, const void *src,
+ 		writel(*(u32 *)(src + x), dst + x);
  }
-+EXPORT_SYMBOL_GPL(disable_percpu_irq);
  
++#endif
++
  /*
-  * Internal function to unregister a percpu irqaction.
+  * The Tile architecture does not support IOPORT, even with PCI.
+  * Unfortunately we can't yet simply not declare these methods,
 -- 
 1.7.10.3
 
