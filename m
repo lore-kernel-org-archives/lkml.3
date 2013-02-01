@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab3BAHf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 02:35:29 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:53466 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab3BAHfY (ORCPT
+	id S1755839Ab3BAHyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 02:54:16 -0500
+Received: from gerard.telenet-ops.be ([195.130.132.48]:42166 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab3BAHyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 02:35:24 -0500
+	Fri, 1 Feb 2013 02:54:11 -0500
+Message-ID: <510B749E.8020501@acm.org>
+Date: Fri, 01 Feb 2013 08:54:06 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1359694058-24452-1-git-send-email-sasha.levin@oracle.com>
-References: <1359694058-24452-1-git-send-email-sasha.levin@oracle.com>
-Date: Fri, 1 Feb 2013 09:35:22 +0200
-X-Google-Sender-Auth: 9gkV3FsLsBt19s7-X0FGXtURf4w
-Message-ID: <CAOJsxLFxmW674R2shbj0s0Jy9hBjM5ob5QwaEbJw3O9+FtTUyw@mail.gmail.com>
-Subject: Re: [PATCH 0/7] liblock: userspace lockdep
-From: Pekka Enberg <penberg@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: mingo@redhat.com, peterz@infradead.org, paulus@samba.org,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tao Ma <tm@tao.ma>
+CC: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: How to online remove an error scsi disk from the system?
+References: <510B5CFC.2040801@tao.ma>
+In-Reply-To: <510B5CFC.2040801@tao.ma>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 6:47 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> This patch series adds a userspace lock correctnes validator into
-> tools/lib/liblock.
->
-> There are no changes to any kernel code whatsoever, lockdep is
-> being used as is.
->
-> First 6 patches are the liblock implementation, the last one is
-> an example of liblock being used on an existing codebase.
+On 02/01/13 07:13, Tao Ma wrote:
+> 	In our product system, we have several sata disks attached to one
+> machine. So when one of the disk fails, the jbd2(yes, we use ext4) will
+> hang forever and we will get something in /var/log/messages like below.
+> It seems to me that the io sent to the scsi layer is never returned back
+> with -EIO which is a little bit surprised for me(It should be a timeout
+> somewhere, right?). We have tried echo "offline" >
+> /sys/block/sdl/device/state, but it doesn't work. So is there any way
+> for us to let the scsi device returns all the io requests back with EIO
+> so that all the end_io can be called accordingly? Am I missing something
+> here?
 
-This is awesome, Sasha! For the whole series:
+Please note that I'm not familiar with SAS. But I found this in 
+drivers/scsi/scsi_proc.c:
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+  * proc_scsi_write - handle writes to /proc/scsi/scsi
+  * @file: not used
+  * @buf: buffer to write
+  * @length: length of buf, at most PAGE_SIZE
+  * @ppos: not used
+  *
+  * Description: this provides a legacy mechanism to add or remove
+  * devices by Host, Channel, ID, and Lun.  To use,
+  * "echo 'scsi add-single-device 0 1 2 3' > /proc/scsi/scsi" or
+  * "echo 'scsi remove-single-device 0 1 2 3' > /proc/scsi/scsi" with
+  * "0 1 2 3" replaced by the Host, Channel, Id, and Lun.
+
+Bart.
