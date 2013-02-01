@@ -1,117 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758Ab3BAPcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 10:32:54 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:47867 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab3BAPcv (ORCPT
+	id S1755463Ab3BAPiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 10:38:09 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36430 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3BAPiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 10:32:51 -0500
-Message-ID: <510BDFBD.7090808@linux.vnet.ibm.com>
-Date: Fri, 01 Feb 2013 09:31:09 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv4 3/7] zswap: add to mm/
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com> <1359495627-30285-4-git-send-email-sjenning@linux.vnet.ibm.com> <20130131070716.GF23548@blaptop> <510AC0C6.4020705@linux.vnet.ibm.com> <20130201023821.GB6262@blaptop>
-In-Reply-To: <20130201023821.GB6262@blaptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020115-7282-0000-0000-000013AACA7A
+	Fri, 1 Feb 2013 10:38:07 -0500
+From: chenggang.qin@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: chenggang <chenggang.qcg@alibaba-inc.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] Tracepoint: Add 'file name' as a parameter of tracepoint events ext4:ext4_direct_IO_enter&ext4:ext4_direct_IO_exit
+Date: Fri,  1 Feb 2013 23:37:38 +0800
+Message-Id: <510be15d.29bf440a.56c6.ffffb82e@mx.google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <y>
+References: <y>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 08:38 PM, Minchan Kim wrote:
-> On Thu, Jan 31, 2013 at 01:06:46PM -0600, Seth Jennings wrote:
->> On 01/31/2013 01:07 AM, Minchan Kim wrote:
->>> On Tue, Jan 29, 2013 at 03:40:23PM -0600, Seth Jennings wrote:
->>>> zswap is a thin compression backend for frontswap. It receives
->>>> pages from frontswap and attempts to store them in a compressed
->>>> memory pool, resulting in an effective partial memory reclaim and
->>>> dramatically reduced swap device I/O.
->>>>
->>>> Additionally, in most cases, pages can be retrieved from this
->>>> compressed store much more quickly than reading from tradition
->>>> swap devices resulting in faster performance for many workloads.
->>>>
->>>> This patch adds the zswap driver to mm/
->>>>
->>>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>>> ---
->>>>  mm/Kconfig  |  15 ++
->>>>  mm/Makefile |   1 +
->>>>  mm/zswap.c  | 656 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>  3 files changed, 672 insertions(+)
->>>>  create mode 100644 mm/zswap.c
->>>>
->>>> diff --git a/mm/Kconfig b/mm/Kconfig
->>>> index 278e3ab..14b9acb 100644
->>>> --- a/mm/Kconfig
->>>> +++ b/mm/Kconfig
->>>> @@ -446,3 +446,18 @@ config FRONTSWAP
->>>>  	  and swap data is stored as normal on the matching swap device.
->>>>  
->>>>  	  If unsure, say Y to enable frontswap.
->>>> +
->>>> +config ZSWAP
->>>> +	bool "In-kernel swap page compression"
->>>> +	depends on FRONTSWAP && CRYPTO
->>>> +	select CRYPTO_LZO
->>>> +	select ZSMALLOC
->>>
->>> Again, I'm asking why zswap should have a dependent on CRPYTO?
->>> Couldn't we support it as a option? I'd like to use zswap without CRYPTO
->>> like zram.
->>
->> The reason we need CRYPTO is that zswap uses it to support a pluggable
->> compression model.  zswap can use any compressor that has a crypto API
->> driver.  zswap has _symbol dependencies_ on CRYPTO.  If it isn't
->> selected, the build breaks.
-> 
-> I think we can factor out compressoin part and remove dependency
-> at compile time by Kconfig. No?
+From: chenggang <chenggang.qcg@alibaba-inc.com>
 
-I'm still not following.  How would one "factor out" the crypto API
-dependency when we use it to access the compressor modules.
+Yesterday, I implemented these tracepoint events in VFS subsystem. 
+It is not a good idea.
+Now, I modified two existing tracepoint events in ext4 subsystem to implement 
+the same function.
 
-The only thing I can think you're saying is to hack up the code with
-ifdefs to call the lzo code directly based on a Kconfig option.  I
-really hope you aren't saying that though :-/
+Many database systems use their own page cache subsystems and use the direct IO
+to access the disks. Sometimes, the system engineers want to know the misses
+rate of the database system's page cache. They also require to know what files 
+are accessed by the target processes with the direct IO method. These requirements 
+can be satisfied by recording the database's file access behavior through the way
+of direct IO. So, we add 'file name' as a parameter of tracepoint events: 
+ext4:ext4_direct_IO_enter & ext4:ext4_direct_IO_exit.
 
-> Of course, if we disable CRYPTO in Kconfig,
-> we lost pluggable model but not a problem for embedded system.
+Then, we will extend the perf or blktrace's function to use these tracepoint events.
 
-The pluggable model is _very_ necessary for us because we use it to
-access our hardware compression accelerator.  We do not use lzo in
-that case.  We use 842 (crypto/842.c and drivers/crypto/nx/nx-842.c).
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Chenggang Qin <chenggang.qcg@alibaba-inc.com>
 
-I'm not sure why we are misunderstanding on this.  Is there a specific
-objection to depending the crypto API here? I understand that you are
-thinking about embedded systems.  Does the enabling CRYPTO and
-CRYPTO_LZO add significant size to the kernel or something?  Just
-trying to understand why this is a problem.
+---
+ fs/ext4/inode.c             |    7 +++++--
+ include/trace/events/ext4.h |   22 ++++++++++++++--------
+ 2 files changed, 19 insertions(+), 10 deletions(-)
 
-Thanks,
-Seth
-
-> 
-> Anyway, If it's a burden for you at a moment, I'm not going to insist on it.
-> Will do it for myself.
-
-
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index cbfe13b..92a379f 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3202,6 +3202,7 @@ static ssize_t ext4_direct_IO(int rw, struct kiocb *iocb,
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
+ 	ssize_t ret;
++	const unsigned char *fname;
+ 
+ 	/*
+ 	 * If we are doing data journalling we don't support O_DIRECT
+@@ -3213,13 +3214,15 @@ static ssize_t ext4_direct_IO(int rw, struct kiocb *iocb,
+ 	if (ext4_has_inline_data(inode))
+ 		return 0;
+ 
+-	trace_ext4_direct_IO_enter(inode, offset, iov_length(iov, nr_segs), rw);
++	fname = file->f_path.dentry->d_name.name;
++	trace_ext4_direct_IO_enter(inode, offset, iov_length(iov, nr_segs), rw,
++				   fname);
+ 	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
+ 		ret = ext4_ext_direct_IO(rw, iocb, iov, offset, nr_segs);
+ 	else
+ 		ret = ext4_ind_direct_IO(rw, iocb, iov, offset, nr_segs);
+ 	trace_ext4_direct_IO_exit(inode, offset,
+-				iov_length(iov, nr_segs), rw, ret);
++				iov_length(iov, nr_segs), rw, ret, fname);
+ 	return ret;
+ }
+ 
+diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
+index 7e8c36b..532bbb4 100644
+--- a/include/trace/events/ext4.h
++++ b/include/trace/events/ext4.h
+@@ -1211,9 +1211,10 @@ DEFINE_EVENT(ext4__bitmap_load, ext4_load_inode_bitmap,
+ );
+ 
+ TRACE_EVENT(ext4_direct_IO_enter,
+-	TP_PROTO(struct inode *inode, loff_t offset, unsigned long len, int rw),
++	TP_PROTO(struct inode *inode, loff_t offset, unsigned long len, int rw,
++		 const unsigned char *fname),
+ 
+-	TP_ARGS(inode, offset, len, rw),
++	TP_ARGS(inode, offset, len, rw, fname),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(	dev_t,	dev			)
+@@ -1221,6 +1222,7 @@ TRACE_EVENT(ext4_direct_IO_enter,
+ 		__field(	loff_t,	pos			)
+ 		__field(	unsigned long,	len		)
+ 		__field(	int,	rw			)
++		__string(	fname,	fname			)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -1229,19 +1231,20 @@ TRACE_EVENT(ext4_direct_IO_enter,
+ 		__entry->pos	= offset;
+ 		__entry->len	= len;
+ 		__entry->rw	= rw;
++		__assign_str(fname, fname);
+ 	),
+ 
+-	TP_printk("dev %d,%d ino %lu pos %lld len %lu rw %d",
++	TP_printk("dev %d,%d ino %lu pos %lld len %lu rw %d fname %s",
+ 		  MAJOR(__entry->dev), MINOR(__entry->dev),
+ 		  (unsigned long) __entry->ino,
+-		  __entry->pos, __entry->len, __entry->rw)
++		  __entry->pos, __entry->len, __entry->rw, __get_str(fname))
+ );
+ 
+ TRACE_EVENT(ext4_direct_IO_exit,
+ 	TP_PROTO(struct inode *inode, loff_t offset, unsigned long len,
+-		 int rw, int ret),
++		 int rw, int ret, const unsigned char *fname),
+ 
+-	TP_ARGS(inode, offset, len, rw, ret),
++	TP_ARGS(inode, offset, len, rw, ret, fname),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(	dev_t,	dev			)
+@@ -1250,6 +1253,7 @@ TRACE_EVENT(ext4_direct_IO_exit,
+ 		__field(	unsigned long,	len		)
+ 		__field(	int,	rw			)
+ 		__field(	int,	ret			)
++		__string(	fname,	fname			)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -1259,13 +1263,15 @@ TRACE_EVENT(ext4_direct_IO_exit,
+ 		__entry->len	= len;
+ 		__entry->rw	= rw;
+ 		__entry->ret	= ret;
++		__assign_str(fname, fname);
+ 	),
+ 
+-	TP_printk("dev %d,%d ino %lu pos %lld len %lu rw %d ret %d",
++	TP_printk("dev %d,%d ino %lu pos %lld len %lu rw %d ret %d fname %s",
+ 		  MAJOR(__entry->dev), MINOR(__entry->dev),
+ 		  (unsigned long) __entry->ino,
+ 		  __entry->pos, __entry->len,
+-		  __entry->rw, __entry->ret)
++		  __entry->rw, __entry->ret,
++		  __get_str(fname))
+ );
+ 
+ TRACE_EVENT(ext4_fallocate_enter,
+-- 
+1.7.9.5
 
