@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161214Ab3BAKtT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 05:49:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38951 "EHLO mail.kernel.org"
+	id S1161246Ab3BAKtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 05:49:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:39008 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161200Ab3BAKtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 05:49:16 -0500
+	id S1161140Ab3BAKt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 05:49:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 01/33] can: c_can: fix invalid error codes
-Date: Fri,  1 Feb 2013 11:49:06 +0100
-Message-Id: <20130201104724.725107530@linuxfoundation.org>
+        James Bottomley <JBottomley@Parallels.com>,
+        Subhash Jadavani <subhashj@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 05/33] ARM: DMA: Fix struct page iterator in dma_cache_maint() to work with sparsemem
+Date: Fri,  1 Feb 2013 11:49:10 +0100
+Message-Id: <20130201104725.002076791@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.2.434.g9a6c84e.dirty
 In-Reply-To: <20130201104724.605715763@linuxfoundation.org>
 References: <20130201104724.605715763@linuxfoundation.org>
@@ -27,41 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Sobrie <olivier@sobrie.be>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 6ea45886865c1abb01bb861f7f6bdd5d0f398cb3 upstream.
+commit 15653371c67c3fbe359ae37b720639dd4c7b42c5 upstream.
 
-Errors in CAN protocol (location) are reported in data[3] of the can
-frame instead of data[2].
+Subhash Jadavani reported this partial backtrace:
+  Now consider this call stack from MMC block driver (this is on the ARMv7
+  based board):
 
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+  [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
+  [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
+  [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from [<c0017ff8>] (dma_map_sg+0x3c/0x114)
+
+This is caused by incrementing the struct page pointer, and running off
+the end of the sparsemem page array.  Fix this by incrementing by pfn
+instead, and convert the pfn to a struct page.
+
+Suggested-by: James Bottomley <JBottomley@Parallels.com>
+Tested-by: Subhash Jadavani <subhashj@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mm/dma-mapping.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -914,7 +914,7 @@ static int c_can_handle_bus_err(struct n
- 		break;
- 	case LEC_ACK_ERROR:
- 		netdev_dbg(dev, "ack error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_ACK |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_ACK |
- 				CAN_ERR_PROT_LOC_ACK_DEL);
- 		break;
- 	case LEC_BIT1_ERROR:
-@@ -927,7 +927,7 @@ static int c_can_handle_bus_err(struct n
- 		break;
- 	case LEC_CRC_ERROR:
- 		netdev_dbg(dev, "CRC error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
- 				CAN_ERR_PROT_LOC_CRC_DEL);
- 		break;
- 	default:
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -503,25 +503,27 @@ static void dma_cache_maint_page(struct
+ 	size_t size, enum dma_data_direction dir,
+ 	void (*op)(const void *, size_t, int))
+ {
++	unsigned long pfn;
++	size_t left = size;
++
++	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
++	offset %= PAGE_SIZE;
++
+ 	/*
+ 	 * A single sg entry may refer to multiple physically contiguous
+ 	 * pages.  But we still need to process highmem pages individually.
+ 	 * If highmem is not configured then the bulk of this loop gets
+ 	 * optimized out.
+ 	 */
+-	size_t left = size;
+ 	do {
+ 		size_t len = left;
+ 		void *vaddr;
+ 
++		page = pfn_to_page(pfn);
++
+ 		if (PageHighMem(page)) {
+-			if (len + offset > PAGE_SIZE) {
+-				if (offset >= PAGE_SIZE) {
+-					page += offset / PAGE_SIZE;
+-					offset %= PAGE_SIZE;
+-				}
++			if (len + offset > PAGE_SIZE)
+ 				len = PAGE_SIZE - offset;
+-			}
+ 			vaddr = kmap_high_get(page);
+ 			if (vaddr) {
+ 				vaddr += offset;
+@@ -538,7 +540,7 @@ static void dma_cache_maint_page(struct
+ 			op(vaddr, len, dir);
+ 		}
+ 		offset = 0;
+-		page++;
++		pfn++;
+ 		left -= len;
+ 	} while (left);
+ }
 
 
