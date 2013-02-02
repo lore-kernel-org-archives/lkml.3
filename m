@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab3BBGEL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 01:04:11 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35554 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab3BBGEJ (ORCPT
+	id S1751759Ab3BBGVQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 01:21:16 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:65454 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3BBGVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 01:04:09 -0500
+	Sat, 2 Feb 2013 01:21:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130201135114.GF25591@8bytes.org>
-References: <003801cde30b$d9667b90$8c3372b0$%cho@samsung.com>
-	<50E1E62B.3090501@gmail.com>
-	<CAHQjnOMav9A43m4=7=N9kzEHTHE_q_ygu8x6mzY6Cus=q0c06A@mail.gmail.com>
-	<20130201135114.GF25591@8bytes.org>
-Date: Sat, 2 Feb 2013 14:56:23 +0900
-X-Google-Sender-Auth: gDU-N6J10FgHkRIeoewbPMcG6Rg
-Message-ID: <CAHQjnOP1U=LRU-fe-HuWzp=17s=KG8zPvSO3_zeVrrviEkmyHw@mail.gmail.com>
-Subject: Re: [PATCH v6 05/12] iommu/exynos: support for device tree
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Hyunwoong Kim <khw0178.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Subash Patel <supash.ramaswamy@linaro.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Rahul Sharma <rahul.sharma@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAKYAXd_3Fxxsw=nQs3aZK8V+DqfhYgWmF14Qxr7J-QJ+i-9=Ug@mail.gmail.com>
+References: <1358561834-8108-1-git-send-email-linkinjeon@gmail.com>
+	<20130121110442.GF5588@quack.suse.cz>
+	<CAKYAXd-_chC9zFtC7A=puo9AgQSAD5JbkF=y=ZYP5vS7bO7-dg@mail.gmail.com>
+	<20130122100447.GA31140@quack.suse.cz>
+	<CAKYAXd_3Fxxsw=nQs3aZK8V+DqfhYgWmF14Qxr7J-QJ+i-9=Ug@mail.gmail.com>
+Date: Sat, 2 Feb 2013 15:21:09 +0900
+Message-ID: <CAKYAXd8YuAmy+EDK9ck8n1kq_GgzRUfhSbgrVZWa5sdaPUKPKA@mail.gmail.com>
+Subject: Re: [PATCH] udf: add extent cache support in case of file reading
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        Bonggil Bak <bgbak@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 10:51 PM, Joerg Roedel <joro@8bytes.org> wrote:
-> Cho,
->
-> On Wed, Jan 02, 2013 at 02:53:49PM +0900, KyongHo Cho wrote:
->> On Tuesday, January 1, 2013, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
->
->> > Cc: devicetree-discuss@lists.ozlabs.org
->
-> Since patch 7 of this set is already merged, do you mind to re-post the
-> rest of this patch-set with the latest comments addressed? I can have a
-> look at it again then and consider it for 3.9.
->
-Thank you for your considerations.
+Hi. Jan.
 
-I also think that I need to post the patch set again with some fixes that are
-addressed in the comments.
+Sorry for interrupt.
+Have you taken this patch to your tree ? I can not find it..
+or Is there any issue regarding this patch ?
 
-Due to the heavy workload in my business I have hardly had a chance to
-handle this patch-set.
-As soon as the business lets me handle other pending issues, I will
-work on this patchset.
-I think I can start to it in the next 2 weeks.
+Thanks!
 
-Thank you.
-
-KyongHo.
+2013/1/22, Namjae Jeon <linkinjeon@gmail.com>:
+> 2013/1/22, Jan Kara <jack@suse.cz>:
+>> On Tue 22-01-13 09:45:09, Namjae Jeon wrote:
+>>> 2013/1/21, Jan Kara <jack@suse.cz>:
+>>> > @@ -2222,6 +2219,8 @@ int udf_read_extent_cache(struct inode *inode,
+>>> > loff_t
+>>> > bcount,
+>>> >  		*lbcount = iinfo->cached_extent.lstart;
+>>> >  		memcpy(pos, &iinfo->cached_extent.epos,
+>>> >  		       sizeof(struct extent_position));
+>>> > +		if (pos->bh)
+>>> > +			get_bh(pos->bh);
+>>> >  		spin_unlock(&iinfo->i_extent_cache_lock);
+>>> >  		return 1;
+>>> >  	} else
+>>> >   This is the most important - we should give buffer reference to
+>>> > pos->bh.
+>>> > Caller will eventually free it right?
+>>> This change is not required as we give buffer reference to pos->bh at
+>>> the time of cache update.
+>>> When we start reading a file, first we try to read the cache which
+>>> will lead to cache miss.
+>>> So, we would really access the pos->bh in udf_update_extent_cache for
+>>> the first time, and this is where the buffer reference is incremented.
+>>> Calling get_bh at 2 places will eventually lead to mem leak.
+>>> Let me know your opinion.
+>>   Yes, udf_update_extent_cache() gets its own reference to bh but that is
+>> dropped in udf_clear_extent_cache(). So I think udf_read_extent_cache()
+>> needs to get a reference to the caller (as the caller will eventually
+>> free
+>> the bh via brelse(epos.bh) e.g. in udf_extend_file(). Also I realized
+>> udf_update_extent_cache() needs to first clear the cache if it is valid.
+>> Otherwise it just overwrites bh pointer and reference is leaked. Is it
+>> clearer now?
+> Yes, you're right. Also, this patch looks good to me.
+>>
+>>   I've also changed locking of udf_clear_extent_cache() so that
+>> i_extent_cache_lock is always taken for that function - it makes the
+>> locking rules obvious at the first sight.
+> Yes, right. it is needed.
+> When we test with this patch, working fine.
+> Thanks Jan!
+>>
+>>   Attached is the patch I currently carry.
+>>
+>> 								Honza
+>>
+>> --
+>> Jan Kara <jack@suse.cz>
+>> SUSE Labs, CR
+>>
+>
