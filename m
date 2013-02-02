@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757810Ab3BBO4y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 09:56:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44491 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754235Ab3BBO4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 09:56:51 -0500
-Date: Sat, 2 Feb 2013 15:58:01 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org, akpm@linux-foundation.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug
- framework
-Message-ID: <20130202145801.GB1434@kroah.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
- <9860755.q4y3PrCFZx@vostro.rjw.lan>
- <20130201072312.GB1180@kroah.com>
- <1987042.JQv02Zsfg5@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1987042.JQv02Zsfg5@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757794Ab3BBPBV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 10:01:21 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:53347 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab3BBPBU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 10:01:20 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 2 Feb 2013 16:01:03 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
+Message-ID: <20130202160103.0ce1fc43@stein>
+In-Reply-To: <CANK3SE2nsxLMUyANzsov4d86ow4v9NuzaZsS3XvjpQJOfYXYUQ@mail.gmail.com>
+References: <CANK3SE09VqvshdLrV4xp2W8BHZqLmuz-pV9jQVj7tbk1JBX+9g@mail.gmail.com>
+	<Pine.LNX.4.44L0.1301311002190.1876-100000@iolanthe.rowland.org>
+	<CANK3SE25kcgSu2dwKtQKU6-wvryC4qNQJu_nj3NPJHQTTC0oXw@mail.gmail.com>
+	<1359752988.22968.16.camel@thor.lan>
+	<CANK3SE2nsxLMUyANzsov4d86ow4v9NuzaZsS3XvjpQJOfYXYUQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 11:12:59PM +0100, Rafael J. Wysocki wrote:
-> On Friday, February 01, 2013 08:23:12 AM Greg KH wrote:
-> > On Thu, Jan 31, 2013 at 09:54:51PM +0100, Rafael J. Wysocki wrote:
-> > > > > But, again, I'm going to ask why you aren't using the existing cpu /
-> > > > > memory / bridge / node devices that we have in the kernel.  Please use
-> > > > > them, or give me a _really_ good reason why they will not work.
-> > > > 
-> > > > We cannot use the existing system devices or ACPI devices here.  During
-> > > > hot-plug, ACPI handler sets this shp_device info, so that cpu and memory
-> > > > handlers (drivers/cpu.c and mm/memory_hotplug.c) can obtain their target
-> > > > device information in a platform-neutral way.  During hot-add, we first
-> > > > creates an ACPI device node (i.e. device under /sys/bus/acpi/devices),
-> > > > but platform-neutral modules cannot use them as they are ACPI-specific.
-> > > 
-> > > But suppose we're smart and have ACPI scan handlers that will create
-> > > "physical" device nodes for those devices during the ACPI namespace scan.
-> > > Then, the platform-neutral nodes will be able to bind to those "physical"
-> > > nodes.  Moreover, it should be possible to get a hierarchy of device objects
-> > > this way that will reflect all of the dependencies we need to take into
-> > > account during hot-add and hot-remove operations.  That may not be what we
-> > > have today, but I don't see any *fundamental* obstacles preventing us from
-> > > using this approach.
-> > 
-> > I would _much_ rather see that be the solution here as I think it is the
-> > proper one.
-> > 
-> > > This is already done for PCI host bridges and platform devices and I don't
-> > > see why we can't do that for the other types of devices too.
-> > 
-> > I agree.
-> > 
-> > > The only missing piece I see is a way to handle the "eject" problem, i.e.
-> > > when we try do eject a device at the top of a subtree and need to tear down
-> > > the entire subtree below it, but if that's going to lead to a system crash,
-> > > for example, we want to cancel the eject.  It seems to me that we'll need some
-> > > help from the driver core here.
-> > 
-> > I say do what we always have done here, if the user asked us to tear
-> > something down, let it happen as they are the ones that know best :)
-> > 
-> > Seriously, I guess this gets back to the "fail disconnect" idea that the
-> > ACPI developers keep harping on.  I thought we already resolved this
-> > properly by having them implement it in their bus code, no reason the
-> > same thing couldn't happen here, right?
+On Feb 01 Mark Einon wrote:
+> On 1 February 2013 21:09, Peter Hurley <peter@hurleysoftware.com> wrote:
+> >>>> On Jan 29 Alan Stern wrote:
+> >>>>> Why does the pci_suspend routine call free_irq() at all?  As far as I 
+> >>>>> know, it's not supposed to do that.  Won't the device continue to use 
+> >>>>> the same IRQ after it is resumed?
+
+As far as I can tell, it happened to be done that way as a side effect of
+how the probe() and resume() methods share code.  It has remained like
+this since the initial implementation:
+http://git.kernel.org/linus/2aef469a35a2
+
+Still, at this point I would like to learn whether .suspend() followed
+by .remove() is a valid order of sequence which drivers must support
+before I prepare myself to get comfortable with a refactoring of
+firewire-ohci's .probe()/.resume()/suspend()/remove().  Obviously, so far
+my assumption was that a successful .suspend() can only ever be followed
+by .resume().
+
+> > I think what Alan means is that the suspend/resume code should just
+> > mask/unmask interrupts at the OHCI controller, via the OHCI
+> > IntEventClear/Set registers (naturally, saving the current mask and
+> > restoring it on resume).
+> >
+> > Of course, there's a lot more to do with an OHCI controller -- as you
+> > note. Like stopping running DMA contexts :)  And restarting them on
+> > resume.
+> >
+> > I'd do it, but I'm buried to my eyeballs in tty right now -- not fun. I
+> > can _eventually_ do this as I need to address problems with the FW643
+> > anyway at some point, but it's going to be a little while.
 > 
-> Not really. :-)  We haven't ever resolved that particular issue I'm afraid.
-
-Ah, I didn't realize that.
-
-> > I don't think the core needs to do anything special, but if so, I'll be glad
-> > to review it.
+> Hi Peter,
 > 
-> OK, so this is the use case.  We have "eject" defined for something like
-> a container with a number of CPU cores, PCI host bridge, and a memory
-> controller under it.  And a few pretty much arbitrary I/O devices as a bonus.
+> Ok, understood. I can certainly attempt a patch if I get time.
 > 
-> Now, there's a button on the system case labeled as "Eject" and if that button
-> is pressed, we're supposed to _try_ to eject all of those things at once.  We
-> are allowed to fail that request, though, if that's problematic for some
-> reason, but we're supposed to let the BIOS know about that.
+> >
+> > In the meantime, I'm a little confused: you say you can't test this code
+> > because you have no hardware; but then how'd you trip this bug?
 > 
-> Do you seriously think that if that button is pressed, we should just proceed
-> with removing all that stuff no matter what?  That'd be kind of like Russian
-> roulette for whoever pressed that button, because s/he could only press it and
-> wait for the system to either crash or not.  Or maybe to crash a bit later
-> because of some delayed stuff that would hit one of those devices that had just
-> gone.  Surely not a situation any admin of a high-availability system would
-> like to be in. :-)
-> 
-> Quite frankly, I have no idea how that can be addressed in a single bus type,
-> let alone ACPI (which is not even a proper bus type, just something pretending
-> to be one).
+> I can test the code in that I have a firewire port on my laptop, but
+> haven't got anything to plug into the port.
+> I assume that any large changes I make are quite capable of breaking
+> something there...
 
-You don't have it as a single bus type, you have a controller somewhere,
-off of the bus being destroyed, that handles sending remove events to
-the device and tearing everything down.  PCI does this from the very
-beginning.
-
-I know it's more complicated with these types of devices, and I think we
-are getting closer to the correct solution, I just don't want to ever
-see duplicate devices in the driver model for the same physical device.
-
-thanks,
-
-greg k-h
+This is a valid assumption.  Some years ago I caused a regression in
+stable kernel branches in exactly this way myself.
+-- 
+Stefan Richter
+-=====-===-= --=- ---=-
+http://arcgraph.de/sr/
