@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab3BBOxK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 09:53:10 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:65039 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757715Ab3BBOxH (ORCPT
+	id S1757929Ab3BBOx0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 09:53:26 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:46837 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757715Ab3BBOxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 09:53:07 -0500
+	Sat, 2 Feb 2013 09:53:24 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: jaegeuk.kim@samsung.com
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 5/6] f2fs: make accessor to get sections for particular block type
-Date: Sat,  2 Feb 2013 23:52:59 +0900
-Message-Id: <1359816779-16390-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH 6/6] f2fs: optimize the return condition for has_not_enough_free_secs
+Date: Sat,  2 Feb 2013 23:53:15 +0900
+Message-Id: <1359816795-16424-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,76 +24,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Introduce accessor to get the sections based upon the block type
-(node,dents...) and modify the functions : should_do_checkpoint,
-has_not_enough_free_secs to use this accessor function to get
-the node sections and dent sections.
+Instead of evaluating the free_sections and then deciding to return
+true/false from that path. We can directly use the evaluation condition
+for returning proper value.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/f2fs/f2fs.h    |    8 ++++++++
- fs/f2fs/gc.h      |    8 ++------
- fs/f2fs/segment.h |    9 ++-------
- 3 files changed, 12 insertions(+), 13 deletions(-)
+ fs/f2fs/segment.h |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 5022a7d..58dd608 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -573,6 +573,14 @@ static inline int get_pages(struct f2fs_sb_info *sbi, int count_type)
- 	return atomic_read(&sbi->nr_pages[count_type]);
- }
- 
-+static inline int get_blocktype_secs(struct f2fs_sb_info *sbi, int block_type)
-+{
-+	unsigned int pages_per_sec = sbi->segs_per_sec *
-+					(1 << sbi->log_blocks_per_seg);
-+	return ((get_pages(sbi, block_type) + pages_per_sec - 1)
-+			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
-+}
-+
- static inline block_t valid_user_blocks(struct f2fs_sb_info *sbi)
- {
- 	block_t ret;
-diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
-index 3abdf83..c407a75 100644
---- a/fs/f2fs/gc.h
-+++ b/fs/f2fs/gc.h
-@@ -106,11 +106,7 @@ static inline int is_idle(struct f2fs_sb_info *sbi)
- 
- static inline bool should_do_checkpoint(struct f2fs_sb_info *sbi)
- {
--	unsigned int pages_per_sec = sbi->segs_per_sec *
--					(1 << sbi->log_blocks_per_seg);
--	int node_secs = ((get_pages(sbi, F2FS_DIRTY_NODES) + pages_per_sec - 1)
--			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
--	int dent_secs = ((get_pages(sbi, F2FS_DIRTY_DENTS) + pages_per_sec - 1)
--			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
-+	int node_secs = get_blocktype_secs(sbi, F2FS_DIRTY_NODES);
-+	int dent_secs = get_blocktype_secs(sbi, F2FS_DIRTY_DENTS);
- 	return free_sections(sbi) <= (node_secs + 2 * dent_secs + 2);
- }
 diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index 66a288a..a9417b9 100644
+index a9417b9..458bf5c 100644
 --- a/fs/f2fs/segment.h
 +++ b/fs/f2fs/segment.h
-@@ -459,13 +459,8 @@ static inline int get_ssr_segment(struct f2fs_sb_info *sbi, int type)
- 
- static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi)
- {
--	unsigned int pages_per_sec = (1 << sbi->log_blocks_per_seg) *
--			sbi->segs_per_sec;
--	int node_secs = ((get_pages(sbi, F2FS_DIRTY_NODES) + pages_per_sec - 1)
--			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
--	int dent_secs = ((get_pages(sbi, F2FS_DIRTY_DENTS) + pages_per_sec - 1)
--			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
--
-+	int node_secs = get_blocktype_secs(sbi, F2FS_DIRTY_NODES);
-+	int dent_secs = get_blocktype_secs(sbi, F2FS_DIRTY_DENTS);
+@@ -464,10 +464,8 @@ static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi)
  	if (sbi->por_doing)
  		return false;
  
+-	if (free_sections(sbi) <= (node_secs + 2 * dent_secs +
+-						reserved_sections(sbi)))
+-		return true;
+-	return false;
++	return (free_sections(sbi) <= (node_secs + 2 * dent_secs +
++						reserved_sections(sbi)));
+ }
+ 
+ static inline int utilization(struct f2fs_sb_info *sbi)
 -- 
 1.7.9.5
 
