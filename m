@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab3BBA2w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 19:28:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53666 "EHLO
+	id S1757297Ab3BBAaB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 19:30:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53676 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755713Ab3BBA2u (ORCPT
+	with ESMTP id S1756243Ab3BBA37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 19:28:50 -0500
-Date: Fri, 1 Feb 2013 16:28:48 -0800
+	Fri, 1 Feb 2013 19:29:59 -0500
+Date: Fri, 1 Feb 2013 16:29:57 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Linux MM <linux-mm@kvack.org>, David Hansen <dave@linux.vnet.ibm.com>,
+To: Cody P Schafer <cody@linux.vnet.ibm.com>, Linux MM <linux-mm@kvack.org>,
+        David Hansen <dave@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Catalin Marinas <catalin.marinas@arm.com>
 Subject: Re: [PATCH 6/9] mm/page_alloc: add informative debugging message in
  page_outside_zone_boundaries()
-Message-Id: <20130201162848.74bdb2a7.akpm@linux-foundation.org>
-In-Reply-To: <1358463181-17956-7-git-send-email-cody@linux.vnet.ibm.com>
+Message-Id: <20130201162957.3ec618cf.akpm@linux-foundation.org>
+In-Reply-To: <20130201162848.74bdb2a7.akpm@linux-foundation.org>
 References: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com>
 	<1358463181-17956-7-git-send-email-cody@linux.vnet.ibm.com>
+	<20130201162848.74bdb2a7.akpm@linux-foundation.org>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,45 +28,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jan 2013 14:52:58 -0800
-Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
+On Fri, 1 Feb 2013 16:28:48 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> Add a debug message which prints when a page is found outside of the
-> boundaries of the zone it should belong to. Format is:
-> 	"page $pfn outside zone [ $start_pfn - $end_pfn ]"
+> > +	if (ret)
+> > +		pr_debug("page %lu outside zone [ %lu - %lu ]\n",
+> > +			pfn, start_pfn, start_pfn + sp);
+> > +
+> >  	return ret;
+> >  }
 > 
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  mm/page_alloc.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+> As this condition leads to a VM_BUG_ON(), "pr_debug" seems rather wimpy
+> and I doubt if we need to be concerned about flooding the console.
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index f8ed277..f1783cf 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -239,13 +239,20 @@ static int page_outside_zone_boundaries(struct zone *zone, struct page *page)
->  	int ret = 0;
->  	unsigned seq;
->  	unsigned long pfn = page_to_pfn(page);
-> +	unsigned long sp, start_pfn;
->  
->  	do {
->  		seq = zone_span_seqbegin(zone);
-> +		start_pfn = zone->zone_start_pfn;
-> +		sp = zone->spanned_pages;
->  		if (!zone_spans_pfn(zone, pfn))
->  			ret = 1;
->  	} while (zone_span_seqretry(zone, seq));
->  
-> +	if (ret)
-> +		pr_debug("page %lu outside zone [ %lu - %lu ]\n",
-> +			pfn, start_pfn, start_pfn + sp);
-> +
->  	return ret;
->  }
+> I'll switch it to pr_err.
 
-As this condition leads to a VM_BUG_ON(), "pr_debug" seems rather wimpy
-and I doubt if we need to be concerned about flooding the console.
-
-I'll switch it to pr_err.
+otoh, as nobody has ever hit that VM_BUG_ON() (yes?), do we really need
+the patch?
 
