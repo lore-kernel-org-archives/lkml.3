@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab3BBF65 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 00:58:57 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:54507 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab3BBF6z (ORCPT
+	id S1752046Ab3BBGEL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 01:04:11 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35554 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab3BBGEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 00:58:55 -0500
-Date: Sat, 2 Feb 2013 16:58:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: linux-next: build warning after merge of the tip tree
-Message-Id: <20130202165853.399001fb288754a9af6ffa13@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__2_Feb_2013_16_58_53_+1100_CZ2z_0VokBn6/hsU"
+	Sat, 2 Feb 2013 01:04:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130201135114.GF25591@8bytes.org>
+References: <003801cde30b$d9667b90$8c3372b0$%cho@samsung.com>
+	<50E1E62B.3090501@gmail.com>
+	<CAHQjnOMav9A43m4=7=N9kzEHTHE_q_ygu8x6mzY6Cus=q0c06A@mail.gmail.com>
+	<20130201135114.GF25591@8bytes.org>
+Date: Sat, 2 Feb 2013 14:56:23 +0900
+X-Google-Sender-Auth: gDU-N6J10FgHkRIeoewbPMcG6Rg
+Message-ID: <CAHQjnOP1U=LRU-fe-HuWzp=17s=KG8zPvSO3_zeVrrviEkmyHw@mail.gmail.com>
+Subject: Re: [PATCH v6 05/12] iommu/exynos: support for device tree
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Hyunwoong Kim <khw0178.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Subash Patel <supash.ramaswamy@linaro.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Rahul Sharma <rahul.sharma@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__2_Feb_2013_16_58_53_+1100_CZ2z_0VokBn6/hsU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Feb 1, 2013 at 10:51 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> Cho,
+>
+> On Wed, Jan 02, 2013 at 02:53:49PM +0900, KyongHo Cho wrote:
+>> On Tuesday, January 1, 2013, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+>
+>> > Cc: devicetree-discuss@lists.ozlabs.org
+>
+> Since patch 7 of this set is already merged, do you mind to re-post the
+> rest of this patch-set with the latest comments addressed? I can have a
+> look at it again then and consider it for 3.9.
+>
+Thank you for your considerations.
 
-Hi all,
+I also think that I need to post the patch set again with some fixes that are
+addressed in the comments.
 
-After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning:
+Due to the heavy workload in my business I have hardly had a chance to
+handle this patch-set.
+As soon as the business lets me handle other pending issues, I will
+work on this patchset.
+I think I can start to it in the next 2 weeks.
 
-arch/x86/mm/numa.c: In function 'setup_node_data':
-arch/x86/mm/numa.c:222:3: warning: passing argument 1 of '__phys_addr_nodeb=
-ug' makes integer from pointer without a cast [enabled by default]
-arch/x86/include/asm/page_64.h:12:29: note: expected 'long unsigned int' bu=
-t argument is of type 'void *'
+Thank you.
 
-Introduced by commit a25b9316841c ("x86, mm: Make DEBUG_VIRTUAL work
-earlier in boot").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Sat__2_Feb_2013_16_58_53_+1100_CZ2z_0VokBn6/hsU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRDKsdAAoJEECxmPOUX5FEjT0P/3qDkEYGJaKutX4a20BIyDsB
-AfPnK76MiIIvneDb+wGCAAnNJ6DRBio1u89udMMwP6kVaV+N2Vw0mzhQJBZIyfKr
-rTwRg2LLlX+R98Ln/noEIbbM5qW9NEHcXLp+i/Gf7B/ZaqF86WCi96HFAXpuJlTj
-3EOixZ8i97kgjVit0Sx8kapfYYJ2SAWU8VW3Wywh2gKkRBGqfBJDXMqwYJ4tAmVY
-AvoeqE2frThroOeUAEdG9YWSq/ymZ3AmWjgNn7DzlsBG7bpa/k56n5PtLII5xGK6
-iKwwY+pPuF38Ppd9wRuS6UxH4l8laTaZQNbBol/5HhtqeQ95PdWNgDmRPSDCMv+C
-3AN+5S5OAjkfwwLQcuek2jEuxfCxIt7aGqDcKlyiq3lFUFe2eI9QZKuDFCsbbU8m
-1xbxGa/u1ozZgX9tFOeIIIOzlYCe9KKgP4vbfMneh3gP2IduDKani0rZuXokMfG9
-/XjP18hQlRc/VbLFQDhLHZxLZmqbaaGo0txV8h0N/eMc5/eW3UiQw8xEW4aZTedY
-c32LLN/E1h5n321Ooo+TaA0HL9qUMAIkvMgkZglMiLCu8QVoCdFJpNxcXZvml7g0
-bNlgnrG1O93WtS5gAXr0OrVxA47hQYpNIqyU5NFspW0jUsZHIxAVv9d//J21/GGe
-WWqoSHezBRaam4SIM45s
-=MS5c
------END PGP SIGNATURE-----
-
---Signature=_Sat__2_Feb_2013_16_58_53_+1100_CZ2z_0VokBn6/hsU--
+KyongHo.
