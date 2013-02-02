@@ -1,111 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020Ab3BBRRb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 12:17:31 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56473 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757803Ab3BBRR1 (ORCPT
+	id S1758008Ab3BBR1J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 12:27:09 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:33435 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757837Ab3BBR1H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 12:17:27 -0500
-Message-ID: <510D4A10.9040404@mvista.com>
-Date: Sat, 02 Feb 2013 21:17:04 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Felipe Balbi <balbi@ti.com>, Matt Porter <mporter@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
-References: <510C1D0E.6030401@mvista.com> <20130201185820.GE29898@arwen.pp.htv.fi> <510C2A47.1090607@mvista.com> <20130201205600.GA31762@arwen.pp.htv.fi> <20130201213003.GW2637@n2100.arm.linux.org.uk> <510C58DF.3010103@mvista.com> <20130202004455.GX2637@n2100.arm.linux.org.uk> <510C7554.3060800@mvista.com> <20130202101851.GY2637@n2100.arm.linux.org.uk> <510D3E7E.6000707@mvista.com> <20130202164522.GC2637@n2100.arm.linux.org.uk>
-In-Reply-To: <20130202164522.GC2637@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 2 Feb 2013 12:27:07 -0500
+From: Romain KUNTZ <r.kuntz@ipflavors.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
+Date: Sat, 2 Feb 2013 18:27:03 +0100
+Message-Id: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        herbert@gondor.hengli.com.au,
+        Emmanuel THIERRY <emmanuel.thierry@telecom-bretagne.eu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+The current algorithm to insert XFRM policies with a mark and a mask
+allows the insertion of more generic policies, but fails when trying
+to install more specific policies.
 
-On 02-02-2013 20:45, Russell King - ARM Linux wrote:
+For example, executing the below commands in that order succeed:
+ ip -6 xfrm policy flush
+ ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
+ ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
 
->>> There are two people on this thread CC list who were also involved or
->>> CC'd on the mails from the thread in 2010...  Tony and Felipe.
->>> Unfortunately, the person who agreed to do the work is no longer in the
->>> land of the living.  Yes I know it's inconvenient for people to die
->>> when they've still got lots of important work to do but that's what can
->>> happen...
+But it fails in the reverse order:
+ ip -6 xfrm policy flush
+ ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
+ ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
+ RTNETLINK answers: File exists
 
->>     Hm... wasn't it David Brownell? He's the only person who I know has
->> died recently who has dealt with DaVinci, MUSB and the releated stuff.
+This patch modifies the tests on the marks and masks and takes the most
+straightforward way: compare the mask and mark separately. It requires to 
+give the xfrm_mark structure as an argument to some of the xfrm_policy_*
+functions, instead of just the mark.
 
-> Actually, it wasn't David who was going to do it - that's where the email
-> thread gets messy because the mailer David was using makes no distinction
-> in text format between what bits of text make up the original email being
-> replied to, and which bits of text are written by David.
+This patch covers the problem for XFRM policies, a similar problem
+exists with XFRM states. If the proposed solution is satisfactory, I 
+will propose a similar patch for the states. Comments are welcome.
 
-    Hm, strange...
+Signed-off-by: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
+Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
+---
+ include/net/xfrm.h     |    6 ++++--
+ net/xfrm/xfrm_policy.c |   18 +++++++++++-------
+ net/xfrm/xfrm_user.c   |   13 +++++++------
+ 3 files changed, 22 insertions(+), 15 deletions(-)
 
-> It might have been Felipe; there appears to be an email from Felipe saying
-> that as the immediate parent to David's email.  But that's not really the
-> point here.  The point is that _someone_ agreed to put the work in, and
-> _that_ agreement is what caused the patch to be discarded.
+diff --git a/include/net/xfrm.h b/include/net/xfrm.h
+index 63445ed..cdd79b7 100644
+--- a/include/net/xfrm.h
++++ b/include/net/xfrm.h
+@@ -1529,12 +1529,14 @@ extern int xfrm_policy_walk(struct net *net, struct xfrm_policy_walk *walk,
+ 	int (*func)(struct xfrm_policy *, int, int, void*), void *);
+ extern void xfrm_policy_walk_done(struct xfrm_policy_walk *walk);
+ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl);
+-struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net, u32 mark,
++struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net,
++					  struct xfrm_mark *mark,
+ 					  u8 type, int dir,
+ 					  struct xfrm_selector *sel,
+ 					  struct xfrm_sec_ctx *ctx, int delete,
+ 					  int *err);
+-struct xfrm_policy *xfrm_policy_byid(struct net *net, u32 mark, u8, int dir, u32 id, int delete, int *err);
++struct xfrm_policy *xfrm_policy_byid(struct net *net, struct xfrm_mark *mark,
++				     u8, int dir, u32 id, int delete, int *err);
+ int xfrm_policy_flush(struct net *net, u8 type, struct xfrm_audit *audit_info);
+ u32 xfrm_get_acqseq(void);
+ extern int xfrm_alloc_spi(struct xfrm_state *x, u32 minspi, u32 maxspi);
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index 07c5857..d9fe665 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -569,7 +569,6 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
+ 	struct xfrm_policy *delpol;
+ 	struct hlist_head *chain;
+ 	struct hlist_node *entry, *newpos;
+-	u32 mark = policy->mark.v & policy->mark.m;
+ 
+ 	write_lock_bh(&xfrm_policy_lock);
+ 	chain = policy_hash_bysel(net, &policy->selector, policy->family, dir);
+@@ -578,7 +577,8 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
+ 	hlist_for_each_entry(pol, entry, chain, bydst) {
+ 		if (pol->type == policy->type &&
+ 		    !selector_cmp(&pol->selector, &policy->selector) &&
+-		    (mark & pol->mark.m) == pol->mark.v &&
++		    policy->mark.v == pol->mark.v &&
++		    policy->mark.m == pol->mark.m &&
+ 		    xfrm_sec_ctx_match(pol->security, policy->security) &&
+ 		    !WARN_ON(delpol)) {
+ 			if (excl) {
+@@ -623,7 +623,8 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
+ }
+ EXPORT_SYMBOL(xfrm_policy_insert);
+ 
+-struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net, u32 mark, u8 type,
++struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net,
++					  struct xfrm_mark *mark, u8 type,
+ 					  int dir, struct xfrm_selector *sel,
+ 					  struct xfrm_sec_ctx *ctx, int delete,
+ 					  int *err)
+@@ -638,7 +639,8 @@ struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net, u32 mark, u8 type,
+ 	ret = NULL;
+ 	hlist_for_each_entry(pol, entry, chain, bydst) {
+ 		if (pol->type == type &&
+-		    (mark & pol->mark.m) == pol->mark.v &&
++		    mark->v == pol->mark.v &&
++		    mark->m == pol->mark.m &&
+ 		    !selector_cmp(sel, &pol->selector) &&
+ 		    xfrm_sec_ctx_match(ctx, pol->security)) {
+ 			xfrm_pol_hold(pol);
+@@ -663,8 +665,9 @@ struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net, u32 mark, u8 type,
+ }
+ EXPORT_SYMBOL(xfrm_policy_bysel_ctx);
+ 
+-struct xfrm_policy *xfrm_policy_byid(struct net *net, u32 mark, u8 type,
+-				     int dir, u32 id, int delete, int *err)
++struct xfrm_policy *xfrm_policy_byid(struct net *net, struct xfrm_mark *mark,
++				     u8 type, int dir, u32 id,
++				     int delete, int *err)
+ {
+ 	struct xfrm_policy *pol, *ret;
+ 	struct hlist_head *chain;
+@@ -680,7 +683,8 @@ struct xfrm_policy *xfrm_policy_byid(struct net *net, u32 mark, u8 type,
+ 	ret = NULL;
+ 	hlist_for_each_entry(pol, entry, chain, byidx) {
+ 		if (pol->type == type && pol->index == id &&
+-		    (mark & pol->mark.m) == pol->mark.v) {
++		    mark->v == pol->mark.v &&
++		    mark->m == pol->mark.m) {
+ 			xfrm_pol_hold(pol);
+ 			if (delete) {
+ 				*err = security_xfrm_policy_delete(
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index eb872b2..2d41902 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -1602,7 +1602,7 @@ static int xfrm_get_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 	struct km_event c;
+ 	int delete;
+ 	struct xfrm_mark m;
+-	u32 mark = xfrm_mark_get(attrs, &m);
++	xfrm_mark_get(attrs, &m);
+ 
+ 	p = nlmsg_data(nlh);
+ 	delete = nlh->nlmsg_type == XFRM_MSG_DELPOLICY;
+@@ -1616,7 +1616,8 @@ static int xfrm_get_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 		return err;
+ 
+ 	if (p->index)
+-		xp = xfrm_policy_byid(net, mark, type, p->dir, p->index, delete, &err);
++		xp = xfrm_policy_byid(net, &m, type, p->dir,
++				      p->index, delete, &err);
+ 	else {
+ 		struct nlattr *rt = attrs[XFRMA_SEC_CTX];
+ 		struct xfrm_sec_ctx *ctx;
+@@ -1633,7 +1634,7 @@ static int xfrm_get_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 			if (err)
+ 				return err;
+ 		}
+-		xp = xfrm_policy_bysel_ctx(net, mark, type, p->dir, &p->sel,
++		xp = xfrm_policy_bysel_ctx(net, &m, type, p->dir, &p->sel,
+ 					   ctx, delete, &err);
+ 		security_xfrm_policy_free(ctx);
+ 	}
+@@ -1905,7 +1906,7 @@ static int xfrm_add_pol_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 	u8 type = XFRM_POLICY_TYPE_MAIN;
+ 	int err = -ENOENT;
+ 	struct xfrm_mark m;
+-	u32 mark = xfrm_mark_get(attrs, &m);
++	xfrm_mark_get(attrs, &m);
+ 
+ 	err = copy_from_user_policy_type(&type, attrs);
+ 	if (err)
+@@ -1916,7 +1917,7 @@ static int xfrm_add_pol_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 		return err;
+ 
+ 	if (p->index)
+-		xp = xfrm_policy_byid(net, mark, type, p->dir, p->index, 0, &err);
++		xp = xfrm_policy_byid(net, &m, type, p->dir, p->index, 0, &err);
+ 	else {
+ 		struct nlattr *rt = attrs[XFRMA_SEC_CTX];
+ 		struct xfrm_sec_ctx *ctx;
+@@ -1933,7 +1934,7 @@ static int xfrm_add_pol_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 			if (err)
+ 				return err;
+ 		}
+-		xp = xfrm_policy_bysel_ctx(net, mark, type, p->dir,
++		xp = xfrm_policy_bysel_ctx(net, &m, type, p->dir,
+ 					   &p->sel, ctx, 0, &err);
+ 		security_xfrm_policy_free(ctx);
+ 	}
+-- 
+1.7.2.5
 
-> And, as I've already explained, you brought up the subject of it being
-> discarded shortly after, and it got discussed there _again_, and the
-> same things were said _again_ by at least two people about it being in
-> drivers/dma.
-
-    It wasn't said that somebody concrete was going to work on it. I had to 
-explcitly write an email laying all further responsibility on CPPI 4.1 support 
-on TI back then.
-
-> But anyway, that's all past history.  What was said back then about it
-> being elsewhere in the tree is just as relevant today as it was back
-> then.  The only difference is that because that message wasn't received,
-> it's now two years later with no progress on that.  And that's got
-> *nothing* what so ever to do with me.
-
-    Yes, of course. In my original mail that started the discussion I said 
-that we have to wait indefinitely for TI to write the new DMA driver. I just 
-wondered wouldn't it be better to use the same approach as for EDMA with 
-transitioning to drivers/dma/ step by step.
-
-> I know people like to blame me just because I'm apparantly the focus of
-> the blame culture, but really this is getting beyond a joke.
-
-> So, I want an apology from you for your insistance that I'm to blame
-> for this.
-
-    OK, I apologise if you consider yourself the target of my blame. My aim 
-was rather to establish the truth about that decision taken back in Dec 2010 
--- which we seem to have achieved.
-
-> Moreover, _I_ want to know what is going to happen in the
-> future with this so that I don't end up being blamed anymore for the
-> lack of progress on this issue.
-
-    Nothing. My blame for the lack of progress has long been laid on TI, after 
-I explictly passed the responsibility for the driver to them. My intent with 
-the mail that started the discussion was to probe whether we still have 
-another opportunity of having MUSB DMA support for OMAP-L1x and Sitara. I just 
-thought that you might have changed your mind somehow on the matter.
-
-WBR, Sergei
 
