@@ -1,121 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab3BBM1z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 07:27:55 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:43308 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756859Ab3BBM1x (ORCPT
+	id S1757571Ab3BBMqU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 07:46:20 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33722 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757270Ab3BBMqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 07:27:53 -0500
-Date: Sat, 2 Feb 2013 23:27:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: linux-next: manual merge of the clk tree with the arm-soc tree
-Message-Id: <20130202232740.f337dc3a00741a224a4a0e4f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__2_Feb_2013_23_27_40_+1100_sW65nj_ZkFSB1xIs"
+	Sat, 2 Feb 2013 07:46:17 -0500
+Date: Sat, 2 Feb 2013 12:45:33 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Matt Porter <mporter@ti.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, Tony Lindgren <tony@atomide.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
+	arm/common
+Message-ID: <20130202124533.GA2637@n2100.arm.linux.org.uk>
+References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <2077c13e12314dc3adc8e5b653855da0@DFLE72.ent.ti.com> <20130201185959.GQ2244@beef>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130201185959.GQ2244@beef>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__2_Feb_2013_23_27_40_+1100_sW65nj_ZkFSB1xIs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Feb 01, 2013 at 01:59:59PM -0500, Matt Porter wrote:
+> On Fri, Feb 01, 2013 at 07:52:46PM +0000, Sergei Shtylyov wrote:
+> > Hello.
+> > 
+> > On 02/01/2013 09:49 PM, Matt Porter wrote:
+> > 
+> > >>> Move mach-davinci/dma.c to common/edma.c so it can be used
+> > >>> by OMAP (specifically AM33xx) as well.
+> > 
+> > >> I think this should rather go to drivers/dma/?
+> > 
+> > > No, this is the private EDMA API. It's the analogous thing to
+> > > the private OMAP dma API that is in plat-omap/dma.c. The actual
+> > > dmaengine driver is in drivers/dma/edma.c as a wrapper around
+> > > this...same way OMAP DMA engine conversion is being done.
+> > 
+> >   Keeps me wondering why we couldn't have the same with CPPI 4.1 when I proposed
+> > that, instead of waiting indefinitely for TI to convert it to drivers/dma/
+> > directly. We could have working MUSB DMA on OMAP-L1x/Sitara all this time... Sigh.
+> 
+> That is a shame. Yeah, I've pointed out that I was doing this exactly
+> the same way as was acceptable for the OMAP DMA conversion since it was
+> in RFC. The reasons are sound since in both cases, we have many drivers
+> to convert that need to continue using the private DMA APIs.
 
-Hi Mike,
+It's very simple.
 
-Today's linux-next merge of the clk tree got a conflict in
-include/asm-generic/vmlinux.lds.h between commit ae278a935f08
-("clocksource: add common of_clksrc_init() function") from the arm-soc
-tree and commit f2f6c2556dcc ("clk: add common of_clk_init() function")
-from the clk tree.
+The OMAP DMA stuff in plat-omap/dma.c has existed for a long time, well
+before things like the DMA engine API came into being.  Same with a lot
+of the DMA code in arch/arm.  It is therefore in the privileged position
+of having "grandfather" rights when it comes to existing in mainline.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+However, today what we're finding is that these private per-platform APIs
+are sub-optimal; they prevent the peripheral drivers in the drivers/
+subtree from being re-used on other SoCs.  So, even through they pre-exist
+the DMA engine support, they're being gradually converted to the API.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Moreover, we have _far_ too much code in arch/arm.  It's something that
+has been attracted complaints from Linus.  It's something that's got us
+close to having updates to arch/arm refused during merge windows.  It's
+got us close to having parts of arch/arm deleted from the mainline kernel.
 
-diff --cc include/asm-generic/vmlinux.lds.h
-index fc62ac5,c1fe60a..0000000
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@@ -149,25 -149,16 +149,34 @@@
-  #define TRACE_SYSCALLS()
-  #endif
- =20
- +#ifdef CONFIG_CLKSRC_OF
- +#define CLKSRC_OF_TABLES() . =3D ALIGN(8);				\
- +			   VMLINUX_SYMBOL(__clksrc_of_table) =3D .;	\
- +			   *(__clksrc_of_table)				\
- +			   *(__clksrc_of_table_end)
- +#else
- +#define CLKSRC_OF_TABLES()
- +#endif
- +
- +#ifdef CONFIG_IRQCHIP
- +#define IRQCHIP_OF_MATCH_TABLE()					\
- +	. =3D ALIGN(8);							\
- +	VMLINUX_SYMBOL(__irqchip_begin) =3D .;				\
- +	*(__irqchip_of_table)		  				\
- +	*(__irqchip_of_end)
- +#else
- +#define IRQCHIP_OF_MATCH_TABLE()
- +#endif
- =20
-+ #ifdef CONFIG_COMMON_CLK
-+ #define CLK_OF_TABLES() . =3D ALIGN(8);				\
-+ 			VMLINUX_SYMBOL(__clk_of_table) =3D .;	\
-+ 			*(__clk_of_table)			\
-+ 			*(__clk_of_table_end)
-+ #else
-+ #define CLK_OF_TABLES()
-+ #endif
-+=20
-  #define KERNEL_DTB()							\
-  	STRUCT_ALIGN();							\
-  	VMLINUX_SYMBOL(__dtb_start) =3D .;				\
-@@@ -511,9 -502,8 +520,10 @@@
-  	DEV_DISCARD(init.rodata)					\
-  	CPU_DISCARD(init.rodata)					\
-  	MEM_DISCARD(init.rodata)					\
- +	CLKSRC_OF_TABLES()						\
-+ 	CLK_OF_TABLES()							\
- -	KERNEL_DTB()
- +	KERNEL_DTB()							\
- +	IRQCHIP_OF_MATCH_TABLE()
- =20
-  #define INIT_TEXT							\
-  	*(.init.text)							\
+The long term plan is _still_ to remove arch/arm/*omap*/dma.c and move
+the whole thing to drivers/dma.  That can only happen when everything is
+converted (or the drivers which aren't converted have been retired and
+deleted) - and provided that TI decide to continue funding that work.
+That's still uncertain since the whole TI OMAP thing imploded two months
+ago.
 
---Signature=_Sat__2_Feb_2013_23_27_40_+1100_sW65nj_ZkFSB1xIs
-Content-Type: application/pgp-signature
+Now, CPPI is brand new code to arch/arm - always has been.  It post-dates
+the DMA engine API.  And it's been said many times about moving it to
+drivers/dma.  The problem is Sergei doesn't want to do it - he's anti the
+DMA engine API for whatever reasons he can dream up.  He professes no
+knowledge of my dislike for having it in arch/arm, yet there's emails
+from years back showing that he knew about it.  TI knows about it; Ajay
+about it.  Yet... well... history speaks volumes about this.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Now, there may be a new problem with CPPI.  That being we're now requiring
+DT support.  _Had_ this been done prior to the push for DT, then it would
+not have been a concern, because then the problem becomes one for DT.
+But now that OMAP is being converted to DT, and DT is The Way To Go now,
+that's an additional problem that needs to be grappled with - or it may
+make things easier.
 
-iQIcBAEBCAAGBQJRDQY8AAoJEECxmPOUX5FEplQP+QGl2rg61nwHAhUwa8t41mjI
-1EXG/T/GqNLPM8tSnChdnyjk99Hywt2MZD1tYIvFzPMd8dHi4av8tCBtpMzaPqvi
-wY5by4vYK7aCb6wM2ghmO2kIPhetvD/7lOCAkSrdvE2J+6i3o2iRQ0ecKfkjJjVq
-pQQaClpH8gO/OF1V0knL4RVTB3crHn+AyzhvdwTV725KkGyawf+vj+b2QPRWrPeM
-TF2rb093CkYkogEBbJGPCXWwbE5M1wAVqr3o4GkUDEN2BYEZWW1gxaqs4r2LIIri
-rzYe0pg6LYeePaGTuDENT8YN8zI1i8mIsELO+BfVA2wHTuaLm58d+fvOSaEXFAJC
-w1yzQFy34cQcq6ReZedDrV/oP5lo4BNDo1maUBlGqQOP4tXP4pNyn/+7STY8NNwZ
-zS5FEaUVswYTj4TdzNKtiV4VXczMRsm8YCwzbSKIOLxd1DMZvkTzI0YTirTWZqqM
-jEEMizIfMX2/TcfV+ID6saAb7q9tztARvfnZ6VA5S5VYb9WIvMtLaR1at5yqF/Po
-W9hEEOb0/+Izsjm7JKeflz/xgyb5u2lXCDmAmIMJQr5H88TsXqpQJm4b8SNN1kF1
-ST5bQ9/jyNaH6oKSQxGbntLcOmnzNQPNSEA3cdipaPgSOmQiVNndDfN/0z7aEc8A
-tUw/nfU4638Fa7MpNrXk
-=RpfZ
------END PGP SIGNATURE-----
+However, as I've said now many times: CPPI is _not_ going in arch/arm.
+Period.  That makes it not my problem.  Period.
 
---Signature=_Sat__2_Feb_2013_23_27_40_+1100_sW65nj_ZkFSB1xIs--
+I really have nothing further to say on CPPI; everything that can be said
+has already been said.  If there's still pressure to have it in arch/arm,
+I will _NOT_ respond to it, because there's nothing to be said about it
+which hasn't been said before.  The only reason it's still being pressed
+for is a total reluctance to do anything about it being in arch/arm.
