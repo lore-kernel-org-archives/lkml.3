@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab3BBJo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 04:44:26 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:58388 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab3BBJoX (ORCPT
+	id S1755167Ab3BBKFO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 05:05:14 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:43879 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab3BBKFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 04:44:23 -0500
-Message-ID: <510CDFF1.80408@linaro.org>
-Date: Sat, 02 Feb 2013 10:44:17 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 2 Feb 2013 05:05:10 -0500
+Date: Sat, 2 Feb 2013 11:05:06 +0100
+From: Jiri Pirko <jiri@resnulli.us>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
+        =?utf-8?B?IllPU0hJRlVKSSBIaWRlYWtpIC8g5ZCJ6Jek6Iux5piOIg==?= 
+	<yoshfuji@linux-ipv6.org>
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+Message-ID: <20130202100506.GB1864@minipsycho.orion>
+References: <20130202142253.e31167bf695f000c0c78f4cc@canb.auug.org.au>
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>
-Subject: Re: [PATCH 1/4] intel_idle: stop using driver_data for static flags
-References: <1359691896-23567-1-git-send-email-lenb@kernel.org> <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com> <510B8059.5040609@linaro.org> <510C0C22.4000801@kernel.org> <510C3EC5.3060709@linaro.org> <510C7708.4080707@kernel.org>
-In-Reply-To: <510C7708.4080707@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130202142253.e31167bf695f000c0c78f4cc@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2013 03:16 AM, Len Brown wrote:
-> 
->>> intel_idle already uses a driver-specific flag:
->>>
->>> #define CPUIDLE_FLAG_TLB_FLUSHED        0x10000
->>>
->>> This patch just uses 4 more bits along with that one.
->>
->> Ok. In this case it would make sense to move this flag out of the
->> generic core code to the intel_idle.c file ?
-> 
-> This flag is already local to intel_idle.c.
-> If another architecture finds it useful,
-> then yes, it would make sense to move it to the shared header.
+Sat, Feb 02, 2013 at 04:22:53AM CET, sfr@canb.auug.org.au wrote:
+>Hi all,
+>
+>Today's linux-next merge of the net-next tree got a conflict in
+>net/ipv6/route.c between commit bd30e947207e ("ipv6: do not create
+>neighbor entries for local delivery") from the net tree and commit
+>c440f1609b65 ("ipv6: Do not depend on rt->n in ip6_pol_route()") from the
+>net-next tree.
+>
+>I fixed it up (I think - see below) and can carry the fix as necessary
+>(no action is required).
+>
+>-- 
+>Cheers,
+>Stephen Rothwell                    sfr@canb.auug.org.au
+>
+>diff --cc net/ipv6/route.c
+>index 363d8b7,f3328bc..0000000
+>--- a/net/ipv6/route.c
+>+++ b/net/ipv6/route.c
+>@@@ -928,7 -884,7 +884,7 @@@ restart
+>  	dst_hold(&rt->dst);
+>  	read_unlock_bh(&table->tb6_lock);
+>  
+>- 	if (!rt->n && !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
+> -	if (!(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_GATEWAY)))
+>++	if (!(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL | RTF_GATEWAY)))
 
-Oh, right. Sorry I puzzled myself with the name. I was convinced it was
-in the shared header.
+I believe that no change here is correct to do. RTF_LOCAL here is needed
+only before Yoshifuji's "IPv6 rt->n removal"
+	
+	
+>  		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
+>  	else if (!(rt->dst.flags & DST_HOST))
+>  		nrt = rt6_alloc_clone(rt, &fl6->daddr);
 
->> and move the [dec/en]coding
->> macro flags_2_MWAIT_EAX and MWAIT_EAX_2_flags (with a more appropriate
->> name for a generic code) to the cpuidle.h file ?
-> 
-> I think that a driver's private flag definitions
-> should remain local to the driver.  It makes no sense
-> to pollute the name space of other drivers for stuff
-> that doesn't mean anything to them.  MWAIT is pretty
-> specific to x86 -- and re-naming it to something 'generic'
-> isn't going to make the code easier to read.
-
-Ok, let me rephrase it because I think how it was presented was not clear.
-
-As we want to use the half of the state flags for private purpose, I
-suggested to add the encoding/decoding function in the shared header file.
-
-The mwait eax flags are not encoded and the CPUIDLE_FLAG_TLB_FLUSHED is
-encoded.
-
-I suggested to unify both and to use an encoding function from the
-shared header file.
-
-#define CPUIDLE_PRIVATE_FLAGS(_flags_) \
-	((_flags_) << 16) & CPUIDLE_DRIVER_FLAGS_MASK
-
-For example:
-
-#define FLAG_TLB_FLUSHED CPUIDLE_PRIVATE_FLAGS(0x1)
-#define FLAG_MWAIT_C1    CPUIDLE_PRIVATE_FLAGS(0x0)
-#define FLAG_MWAIT_C2    CPUIDLE_PRIVATE_FLAGS(0x10)
-#define FLAG_MWAIT_C3    CPUIDLE_PRIVATE_FLAGS(0x20)
-#define FLAG_MWAIT_C4    CPUIDLE_PRIVATE_FLAGS(0x30)
-#define FLAG_MWAIT_C5    CPUIDLE_PRIVATE_FLAGS(0x40)
-#define FLAG_MWAIT_C6    CPUIDLE_PRIVATE_FLAGS(0x52)
-
-And then:
-
-...
-
-.flags = FLAG_TLB_FLUSHED | FLAG_MWAIT_C2 | CPUIDLE_FLAG_TIME_VALID
-
-...
-
-But in the idle function, you need to retrieve the 'value' of the EAX
-not a flag, so there is the need for an extra macro conversion and mask
-the TLB flag.
-
-Well, this is a detail, so feel free to ignore this suggestion :)
-
-Thanks
-  -- Daniel
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
