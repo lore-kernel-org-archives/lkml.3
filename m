@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab3BBPQD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 10:16:03 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:43512 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757731Ab3BBPQB (ORCPT
+	id S1757946Ab3BBPQL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 10:16:11 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:53525 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757731Ab3BBPQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 10:16:01 -0500
-Date: Sat, 2 Feb 2013 10:16:00 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-cc: Mark Einon <mark.einon@gmail.com>, Peter Hurley <peter@hurleysoftware.com>,
-        <linux1394-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
-In-Reply-To: <20130202160103.0ce1fc43@stein>
-Message-ID: <Pine.LNX.4.44L0.1302021010340.25931-100000@netrider.rowland.org>
+	Sat, 2 Feb 2013 10:16:07 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1359548921-14925-1-git-send-email-andreas@gaisler.com>
+References: <1359548921-14925-1-git-send-email-andreas@gaisler.com>
+Date: Sat, 2 Feb 2013 16:16:06 +0100
+Message-ID: <CACRpkdbAS05dVOrE2E5Uu6qfzfgcoz_KqQmqZxz5Pne9BbCt-g@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Add device driver for GRGPIO cores
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Feb 2013, Stefan Richter wrote:
+On Wed, Jan 30, 2013 at 1:28 PM, Andreas Larsson <andreas@gaisler.com> wrote:
 
-> On Feb 01 Mark Einon wrote:
-> > On 1 February 2013 21:09, Peter Hurley <peter@hurleysoftware.com> wrote:
-> > >>>> On Jan 29 Alan Stern wrote:
-> > >>>>> Why does the pci_suspend routine call free_irq() at all?  As far as I 
-> > >>>>> know, it's not supposed to do that.  Won't the device continue to use 
-> > >>>>> the same IRQ after it is resumed?
-> 
-> As far as I can tell, it happened to be done that way as a side effect of
-> how the probe() and resume() methods share code.  It has remained like
-> this since the initial implementation:
-> http://git.kernel.org/linus/2aef469a35a2
+> This driver supports GRGPIO gpio cores available in the GRLIB VHDL IP core
+> library.
+>
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 
-At one point, quite a few years ago, Linus complained about drivers the 
-release IRQs during suspend only to reacquire them during resume.  A 
-little refactoring should be able to separate out resource 
-acquisition/release (done only during probe and remove) from activation 
-and shutdown (also done during resume and suspend).
+OK...
 
-> Still, at this point I would like to learn whether .suspend() followed
-> by .remove() is a valid order of sequence which drivers must support
-> before I prepare myself to get comfortable with a refactoring of
-> firewire-ohci's .probe()/.resume()/suspend()/remove().  Obviously, so far
-> my assumption was that a successful .suspend() can only ever be followed
-> by .resume().
+> +#if defined(__BIG_ENDIAN)
+> +static inline u32 grgpio_read_reg(u32 __iomem *reg)
+> +{
+> +       return ioread32be(reg);
+> +}
+> +
+> +static inline void grgpio_write_reg(u32 __iomem *reg, u32 val)
+> +{
+> +       iowrite32be(val, reg);
+> +}
+> +#else
+> +static inline u32 grgpio_read_reg(u32 __iomem *reg)
+> +{
+> +       return ioread32(reg);
+> +}
+> +
+> +static inline void grgpio_write_reg(u32 __iomem *reg, u32 val)
+> +{
+> +       iowrite32(val, reg);
+> +}
+> +#endif
 
-It depends on the subsystem.  Some subsystems do have suspend -> remove
-transitions and others don't.  In general, it's a good idea for drivers
-to be prepared for removal while the system is asleep.  Presumably any
-hot-unpluggable bus (which includes most of the important buses these
-days) would have to support it.
+Where is this __BIG_ENDIAN flag coming from?
 
-Alan Stern
+And do you really have and test this regularly on both LE and BE hardware?
+I am worrying a bit about maintenance...
 
+> +static void grgpio_set_sbit(struct grgpio_priv *priv, u32 __iomem *reg,
+> +                          unsigned offset, int val, u32 *shadow)
+> +{
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&priv->lock, flags);
+> +
+> +       if (val)
+> +               *shadow |= (1 << offset);
+> +       else
+> +               *shadow &= ~(1 << offset);
+> +       grgpio_write_reg(reg, *shadow);
+> +
+> +       spin_unlock_irqrestore(&priv->lock, flags);
+> +}
+
+This is all very basic stuff. Please make a best effort to reuse or
+augment and reuse this:
+drivers/gpio/gpio-generic.c
+
+IIRC this one also handles endianness issues, but I could be wrong.
+
+Yours,
+Linus Walleij
