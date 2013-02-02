@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab3BBMqU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 07:46:20 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33722 "EHLO
+	id S1757588Ab3BBMtn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 07:49:43 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33741 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270Ab3BBMqR (ORCPT
+	with ESMTP id S1757270Ab3BBMtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 07:46:17 -0500
-Date: Sat, 2 Feb 2013 12:45:33 +0000
+	Sat, 2 Feb 2013 07:49:41 -0500
+Date: Sat, 2 Feb 2013 12:49:06 +0000
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matt Porter <mporter@ti.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, Tony Lindgren <tony@atomide.com>,
+To: Tony Lindgren <tony@atomide.com>
+Cc: Matt Porter <mporter@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>, Vinod Koul <vinod.koul@intel.com>,
+        Rob Landley <rob@landley.net>, Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux DaVinci Kernel List 
 	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
 Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
 	arm/common
-Message-ID: <20130202124533.GA2637@n2100.arm.linux.org.uk>
-References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <2077c13e12314dc3adc8e5b653855da0@DFLE72.ent.ti.com> <20130201185959.GQ2244@beef>
+Message-ID: <20130202124906.GB2637@n2100.arm.linux.org.uk>
+References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <20130201184107.GM22517@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130201185959.GQ2244@beef>
+In-Reply-To: <20130201184107.GM22517@atomide.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 01:59:59PM -0500, Matt Porter wrote:
-> On Fri, Feb 01, 2013 at 07:52:46PM +0000, Sergei Shtylyov wrote:
-> > Hello.
-> > 
-> > On 02/01/2013 09:49 PM, Matt Porter wrote:
-> > 
-> > >>> Move mach-davinci/dma.c to common/edma.c so it can be used
-> > >>> by OMAP (specifically AM33xx) as well.
-> > 
-> > >> I think this should rather go to drivers/dma/?
-> > 
-> > > No, this is the private EDMA API. It's the analogous thing to
-> > > the private OMAP dma API that is in plat-omap/dma.c. The actual
-> > > dmaengine driver is in drivers/dma/edma.c as a wrapper around
-> > > this...same way OMAP DMA engine conversion is being done.
-> > 
-> >   Keeps me wondering why we couldn't have the same with CPPI 4.1 when I proposed
-> > that, instead of waiting indefinitely for TI to convert it to drivers/dma/
-> > directly. We could have working MUSB DMA on OMAP-L1x/Sitara all this time... Sigh.
+On Fri, Feb 01, 2013 at 10:41:08AM -0800, Tony Lindgren wrote:
+> * Matt Porter <mporter@ti.com> [130201 10:25]:
+> > Move mach-davinci/dma.c to common/edma.c so it can be used
+> > by OMAP (specifically AM33xx) as well.
 > 
-> That is a shame. Yeah, I've pointed out that I was doing this exactly
-> the same way as was acceptable for the OMAP DMA conversion since it was
-> in RFC. The reasons are sound since in both cases, we have many drivers
-> to convert that need to continue using the private DMA APIs.
+> I think this should rather go to drivers/dma/?
 
-It's very simple.
+Yes, it should, but just like OMAP, there's a conversion effort that needs
+to be gone through.  It has one point - and only one point - which allows
+its continued existence under arch/arm, and that is it already exists
+there.
 
-The OMAP DMA stuff in plat-omap/dma.c has existed for a long time, well
-before things like the DMA engine API came into being.  Same with a lot
-of the DMA code in arch/arm.  It is therefore in the privileged position
-of having "grandfather" rights when it comes to existing in mainline.
+If it was new code, the answer would be a definite NACK, but it isn't.
+It's pre-existing code which is already in mainline.  It's merely being
+moved.
 
-However, today what we're finding is that these private per-platform APIs
-are sub-optimal; they prevent the peripheral drivers in the drivers/
-subtree from being re-used on other SoCs.  So, even through they pre-exist
-the DMA engine support, they're being gradually converted to the API.
-
-Moreover, we have _far_ too much code in arch/arm.  It's something that
-has been attracted complaints from Linus.  It's something that's got us
-close to having updates to arch/arm refused during merge windows.  It's
-got us close to having parts of arch/arm deleted from the mainline kernel.
-
-The long term plan is _still_ to remove arch/arm/*omap*/dma.c and move
-the whole thing to drivers/dma.  That can only happen when everything is
-converted (or the drivers which aren't converted have been retired and
-deleted) - and provided that TI decide to continue funding that work.
-That's still uncertain since the whole TI OMAP thing imploded two months
-ago.
-
-Now, CPPI is brand new code to arch/arm - always has been.  It post-dates
-the DMA engine API.  And it's been said many times about moving it to
-drivers/dma.  The problem is Sergei doesn't want to do it - he's anti the
-DMA engine API for whatever reasons he can dream up.  He professes no
-knowledge of my dislike for having it in arch/arm, yet there's emails
-from years back showing that he knew about it.  TI knows about it; Ajay
-about it.  Yet... well... history speaks volumes about this.
-
-Now, there may be a new problem with CPPI.  That being we're now requiring
-DT support.  _Had_ this been done prior to the push for DT, then it would
-not have been a concern, because then the problem becomes one for DT.
-But now that OMAP is being converted to DT, and DT is The Way To Go now,
-that's an additional problem that needs to be grappled with - or it may
-make things easier.
-
-However, as I've said now many times: CPPI is _not_ going in arch/arm.
-Period.  That makes it not my problem.  Period.
-
-I really have nothing further to say on CPPI; everything that can be said
-has already been said.  If there's still pressure to have it in arch/arm,
-I will _NOT_ respond to it, because there's nothing to be said about it
-which hasn't been said before.  The only reason it's still being pressed
-for is a total reluctance to do anything about it being in arch/arm.
+Another plus point for it is that there does seem to be a DMA engine
+driver for it, so hopefully we'll see it killed off in arch/arm soon.
