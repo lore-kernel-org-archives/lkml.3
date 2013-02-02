@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab3BBOUk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 09:20:40 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7481 "EHLO
+	id S1757952Ab3BBOUp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 09:20:45 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15416 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757563Ab3BBOT5 (ORCPT
+	with ESMTP id S1757582Ab3BBOT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 2 Feb 2013 09:19:57 -0500
-X-Authority-Analysis: v=2.0 cv=NqdTgrhJ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=U268sceQe-gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=hWNkcvGvoSMA:10 a=BQAXH_W91nN-Ym3oDY4A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=AwkJTDR0FhKAvPza:21 a=Eg14JJjTZqj6ocLT:21 a=HnboOlaG0lJzeyiOYr4A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ClgRE1hsI-YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=aUbUlCo8OHkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=7d_E57ReAAAA:8 a=VkbnAb4FAAAA:8 a=4SYdAwbj8XM_HKwSaUgA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=P0L4MiLVX5EXBvIo:21 a=20tVxRNybZZJiy0M:21 a=ukJ-VpEIbZO5sIHEFOYA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130202141955.701304493@goodmis.org>
+Message-Id: <20130202141954.959421467@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sat, 02 Feb 2013 09:18:48 -0500
+Date: Sat, 02 Feb 2013 09:18:44 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 06/11] ring-buffer: Add stats field for amount read from trace ring buffer
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [PATCH 02/11] tracing: Remove tracepoint sample code
 References: <20130202141842.189550803@goodmis.org>
-Content-Disposition: inline; filename=0006-ring-buffer-Add-stats-field-for-amount-read-from-tra.patch
+Content-Disposition: inline; filename=0002-tracing-Remove-tracepoint-sample-code.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,88 +32,280 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Add a stat about the number of events read from the ring buffer:
+The tracepoint sample code was used to teach developers how to
+create their own tracepoints. But now the trace_events have been
+added as a higher level that is used directly by developers today.
 
- #  cat /debug/tracing/per_cpu/cpu0/stats
-entries: 39869
-overrun: 870512
-commit overrun: 0
-bytes: 1449912
-oldest event ts:  6561.368690
-now ts:  6565.246426
-dropped events: 0
-read events: 112    <-- Added
+Only the trace_event code should use the tracepoint interface
+directly and no new tracepoints should be added.
 
+Besides, the example had a race condition with the use of the
+ ->d_name.name dentry field, as pointed out by Al Viro.
+
+Best just to remove the code so it wont be used by other developers.
+
+Link: http://lkml.kernel.org/r/20130123225523.GY4939@ZenIV.linux.org.uk
+
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ring_buffer.h |    1 +
- kernel/trace/ring_buffer.c  |   18 ++++++++++++++++++
- kernel/trace/trace.c        |    3 +++
- 3 files changed, 22 insertions(+)
+ samples/Kconfig                                |    6 ---
+ samples/Makefile                               |    2 +-
+ samples/tracepoints/Makefile                   |    6 ---
+ samples/tracepoints/tp-samples-trace.h         |   11 -----
+ samples/tracepoints/tracepoint-probe-sample.c  |   57 --------------------=
+----
+ samples/tracepoints/tracepoint-probe-sample2.c |   44 ------------------
+ samples/tracepoints/tracepoint-sample.c        |   57 --------------------=
+----
+ 7 files changed, 1 insertion(+), 182 deletions(-)
+ delete mode 100644 samples/tracepoints/Makefile
+ delete mode 100644 samples/tracepoints/tp-samples-trace.h
+ delete mode 100644 samples/tracepoints/tracepoint-probe-sample.c
+ delete mode 100644 samples/tracepoints/tracepoint-probe-sample2.c
+ delete mode 100644 samples/tracepoints/tracepoint-sample.c
 
-diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-index 519777e..1342e69 100644
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -167,6 +167,7 @@ unsigned long ring_buffer_entries_cpu(struct ring_buffe=
-r *buffer, int cpu);
- unsigned long ring_buffer_overrun_cpu(struct ring_buffer *buffer, int cpu);
- unsigned long ring_buffer_commit_overrun_cpu(struct ring_buffer *buffer, i=
-nt cpu);
- unsigned long ring_buffer_dropped_events_cpu(struct ring_buffer *buffer, i=
-nt cpu);
-+unsigned long ring_buffer_read_events_cpu(struct ring_buffer *buffer, int =
-cpu);
+diff --git a/samples/Kconfig b/samples/Kconfig
+index 7b6792a..6181c2c 100644
+--- a/samples/Kconfig
++++ b/samples/Kconfig
+@@ -5,12 +5,6 @@ menuconfig SAMPLES
 =20
- u64 ring_buffer_time_stamp(struct ring_buffer *buffer, int cpu);
- void ring_buffer_normalize_time_stamp(struct ring_buffer *buffer,
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 13950d9..7244acd 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3103,6 +3103,24 @@ ring_buffer_dropped_events_cpu(struct ring_buffer *b=
-uffer, int cpu)
- EXPORT_SYMBOL_GPL(ring_buffer_dropped_events_cpu);
+ if SAMPLES
 =20
- /**
-+ * ring_buffer_read_events_cpu - get the number of events successfully read
-+ * @buffer: The ring buffer
-+ * @cpu: The per CPU buffer to get the number of events read
-+ */
-+unsigned long
-+ring_buffer_read_events_cpu(struct ring_buffer *buffer, int cpu)
-+{
-+	struct ring_buffer_per_cpu *cpu_buffer;
-+
-+	if (!cpumask_test_cpu(cpu, buffer->cpumask))
-+		return 0;
-+
-+	cpu_buffer =3D buffer->buffers[cpu];
-+	return cpu_buffer->read;
-+}
-+EXPORT_SYMBOL_GPL(ring_buffer_read_events_cpu);
-+
-+/**
-  * ring_buffer_entries - get the number of entries in a buffer
-  * @buffer: The ring buffer
-  *
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d399592..90a1c71 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4430,6 +4430,9 @@ tracing_stats_read(struct file *filp, char __user *ub=
-uf,
- 	cnt =3D ring_buffer_dropped_events_cpu(tr->buffer, cpu);
- 	trace_seq_printf(s, "dropped events: %ld\n", cnt);
+-config SAMPLE_TRACEPOINTS
+-	tristate "Build tracepoints examples -- loadable modules only"
+-	depends on TRACEPOINTS && m
+-	help
+-	  This build tracepoints example modules.
+-
+ config SAMPLE_TRACE_EVENTS
+ 	tristate "Build trace_events examples -- loadable modules only"
+ 	depends on EVENT_TRACING && m
+diff --git a/samples/Makefile b/samples/Makefile
+index 5ef08bb..1a60c62 100644
+--- a/samples/Makefile
++++ b/samples/Makefile
+@@ -1,4 +1,4 @@
+ # Makefile for Linux samples code
 =20
-+	cnt =3D ring_buffer_read_events_cpu(tr->buffer, cpu);
-+	trace_seq_printf(s, "read events: %ld\n", cnt);
-+
- 	count =3D simple_read_from_buffer(ubuf, count, ppos, s->buffer, s->len);
-=20
- 	kfree(s);
+-obj-$(CONFIG_SAMPLES)	+=3D kobject/ kprobes/ tracepoints/ trace_events/ \
++obj-$(CONFIG_SAMPLES)	+=3D kobject/ kprobes/ trace_events/ \
+ 			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
+diff --git a/samples/tracepoints/Makefile b/samples/tracepoints/Makefile
+deleted file mode 100644
+index 36479ad..0000000
+--- a/samples/tracepoints/Makefile
++++ /dev/null
+@@ -1,6 +0,0 @@
+-# builds the tracepoint example kernel modules;
+-# then to use one (as root):  insmod <module_name.ko>
+-
+-obj-$(CONFIG_SAMPLE_TRACEPOINTS) +=3D tracepoint-sample.o
+-obj-$(CONFIG_SAMPLE_TRACEPOINTS) +=3D tracepoint-probe-sample.o
+-obj-$(CONFIG_SAMPLE_TRACEPOINTS) +=3D tracepoint-probe-sample2.o
+diff --git a/samples/tracepoints/tp-samples-trace.h b/samples/tracepoints/t=
+p-samples-trace.h
+deleted file mode 100644
+index 4d46be9..0000000
+--- a/samples/tracepoints/tp-samples-trace.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-#ifndef _TP_SAMPLES_TRACE_H
+-#define _TP_SAMPLES_TRACE_H
+-
+-#include <linux/proc_fs.h>	/* for struct inode and struct file */
+-#include <linux/tracepoint.h>
+-
+-DECLARE_TRACE(subsys_event,
+-	TP_PROTO(struct inode *inode, struct file *file),
+-	TP_ARGS(inode, file));
+-DECLARE_TRACE_NOARGS(subsys_eventb);
+-#endif
+diff --git a/samples/tracepoints/tracepoint-probe-sample.c b/samples/tracep=
+oints/tracepoint-probe-sample.c
+deleted file mode 100644
+index 744c0b9..0000000
+--- a/samples/tracepoints/tracepoint-probe-sample.c
++++ /dev/null
+@@ -1,57 +0,0 @@
+-/*
+- * tracepoint-probe-sample.c
+- *
+- * sample tracepoint probes.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/file.h>
+-#include <linux/dcache.h>
+-#include "tp-samples-trace.h"
+-
+-/*
+- * Here the caller only guarantees locking for struct file and struct inod=
+e.
+- * Locking must therefore be done in the probe to use the dentry.
+- */
+-static void probe_subsys_event(void *ignore,
+-			       struct inode *inode, struct file *file)
+-{
+-	path_get(&file->f_path);
+-	dget(file->f_path.dentry);
+-	printk(KERN_INFO "Event is encountered with filename %s\n",
+-		file->f_path.dentry->d_name.name);
+-	dput(file->f_path.dentry);
+-	path_put(&file->f_path);
+-}
+-
+-static void probe_subsys_eventb(void *ignore)
+-{
+-	printk(KERN_INFO "Event B is encountered\n");
+-}
+-
+-static int __init tp_sample_trace_init(void)
+-{
+-	int ret;
+-
+-	ret =3D register_trace_subsys_event(probe_subsys_event, NULL);
+-	WARN_ON(ret);
+-	ret =3D register_trace_subsys_eventb(probe_subsys_eventb, NULL);
+-	WARN_ON(ret);
+-
+-	return 0;
+-}
+-
+-module_init(tp_sample_trace_init);
+-
+-static void __exit tp_sample_trace_exit(void)
+-{
+-	unregister_trace_subsys_eventb(probe_subsys_eventb, NULL);
+-	unregister_trace_subsys_event(probe_subsys_event, NULL);
+-	tracepoint_synchronize_unregister();
+-}
+-
+-module_exit(tp_sample_trace_exit);
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Mathieu Desnoyers");
+-MODULE_DESCRIPTION("Tracepoint Probes Samples");
+diff --git a/samples/tracepoints/tracepoint-probe-sample2.c b/samples/trace=
+points/tracepoint-probe-sample2.c
+deleted file mode 100644
+index 9fcf990..0000000
+--- a/samples/tracepoints/tracepoint-probe-sample2.c
++++ /dev/null
+@@ -1,44 +0,0 @@
+-/*
+- * tracepoint-probe-sample2.c
+- *
+- * 2nd sample tracepoint probes.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/fs.h>
+-#include "tp-samples-trace.h"
+-
+-/*
+- * Here the caller only guarantees locking for struct file and struct inod=
+e.
+- * Locking must therefore be done in the probe to use the dentry.
+- */
+-static void probe_subsys_event(void *ignore,
+-			       struct inode *inode, struct file *file)
+-{
+-	printk(KERN_INFO "Event is encountered with inode number %lu\n",
+-		inode->i_ino);
+-}
+-
+-static int __init tp_sample_trace_init(void)
+-{
+-	int ret;
+-
+-	ret =3D register_trace_subsys_event(probe_subsys_event, NULL);
+-	WARN_ON(ret);
+-
+-	return 0;
+-}
+-
+-module_init(tp_sample_trace_init);
+-
+-static void __exit tp_sample_trace_exit(void)
+-{
+-	unregister_trace_subsys_event(probe_subsys_event, NULL);
+-	tracepoint_synchronize_unregister();
+-}
+-
+-module_exit(tp_sample_trace_exit);
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Mathieu Desnoyers");
+-MODULE_DESCRIPTION("Tracepoint Probes Samples");
+diff --git a/samples/tracepoints/tracepoint-sample.c b/samples/tracepoints/=
+tracepoint-sample.c
+deleted file mode 100644
+index f4d89e0..0000000
+--- a/samples/tracepoints/tracepoint-sample.c
++++ /dev/null
+@@ -1,57 +0,0 @@
+-/* tracepoint-sample.c
+- *
+- * Executes a tracepoint when /proc/tracepoint-sample is opened.
+- *
+- * (C) Copyright 2007 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+- *
+- * This file is released under the GPLv2.
+- * See the file COPYING for more details.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/sched.h>
+-#include <linux/proc_fs.h>
+-#include "tp-samples-trace.h"
+-
+-DEFINE_TRACE(subsys_event);
+-DEFINE_TRACE(subsys_eventb);
+-
+-struct proc_dir_entry *pentry_sample;
+-
+-static int my_open(struct inode *inode, struct file *file)
+-{
+-	int i;
+-
+-	trace_subsys_event(inode, file);
+-	for (i =3D 0; i < 10; i++)
+-		trace_subsys_eventb();
+-	return -EPERM;
+-}
+-
+-static const struct file_operations mark_ops =3D {
+-	.open =3D my_open,
+-	.llseek =3D noop_llseek,
+-};
+-
+-static int __init sample_init(void)
+-{
+-	printk(KERN_ALERT "sample init\n");
+-	pentry_sample =3D proc_create("tracepoint-sample", 0444, NULL,
+-		&mark_ops);
+-	if (!pentry_sample)
+-		return -EPERM;
+-	return 0;
+-}
+-
+-static void __exit sample_exit(void)
+-{
+-	printk(KERN_ALERT "sample exit\n");
+-	remove_proc_entry("tracepoint-sample", NULL);
+-}
+-
+-module_init(sample_init)
+-module_exit(sample_exit)
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Mathieu Desnoyers");
+-MODULE_DESCRIPTION("Tracepoint sample");
 --=20
 1.7.10.4
 
@@ -124,13 +318,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRDSCLAAoJEOdOSU1xswtMLV0H/2vHa9Afth+dnebOVvr5E7fc
-9bofBeh3jff2h6NUuGSoIgKOV1HhYjQJOfptZ6VuGAKBTrzVctHhDIRluaApclcH
-KNw/ukICMAxQQJtUzOdoaKZTVAZrpmfVVwlK8lkNTEM75laSiIZDdkUWVO6Ai1LA
-BP5DhOWvXv9OzXJMD/5aebJvgsj+yyt6p/gbwjFxq/BCGD7PYbHH3KqWuDrgcFSl
-exHRatbw1kba6GpFmvliMwNhM/UohUJ8eCFam/UbpIuUvav17M3Ye/XYLDc1bVTn
-3oi+jh27FEuIaS4cSi77DvIfU4zX6uhPWvlIBdYKz3Y/5n6v4vrybtiaE3DkjPc=
-=IgDR
+iQEcBAABAgAGBQJRDSCLAAoJEOdOSU1xswtMhIkIAMntiFfoNQBah97IbJ5e5Dqj
+dGd31P1Pkhy3iBpURZUrGuHuAkrlERI7n5TuuRSnZ19Ttp0yU4aaLs2xYiWDaT9f
+7CCvxKxbF3pz6fZIvrddhiWA7RXvZd64HqgKF7Pp+FOT13lZQOBhA0F+biP3+Hsi
+nL/fM7YMpFrQJMEleBtlIu7oCsEdJJMb8WTNMsIXq3hwIeSgh6NXzZTBK5Q3OLit
+eEhyUo0u6tkt4MaurR6L9SmTyejlhTPiQ90QjnYHMQEJgwAUnL3N1v6M2BlTThY6
+WIYCbYfhrwWSs9jJtKgT6zOL42nDxNQ+c+Y97myrlKBOKnsboNNWWWGPgdRcRTk=
+=Yy/F
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
