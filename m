@@ -1,168 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab3BBKoj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 05:44:39 -0500
-Received: from mga03.intel.com ([143.182.124.21]:33618 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755810Ab3BBKoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 05:44:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,590,1355126400"; 
-   d="scan'208";a="251788617"
-Message-ID: <510CEE46.80308@intel.com>
-Date: Sat, 02 Feb 2013 18:45:26 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Derek Basehore <dbasehore@chromium.org>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
-References: <Pine.LNX.4.44L0.1302011026070.1752-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1302011026070.1752-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756497Ab3BBLUy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 06:20:54 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58554 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756252Ab3BBLUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 06:20:50 -0500
+Date: Sat, 2 Feb 2013 22:20:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoffer Dall <c.dall@virtualopensystems.com>,
+        Will Deacon <will.deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the cortex tree with the arm tree
+Message-Id: <20130202222036.0db6c1d208843975be1f8dba@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__2_Feb_2013_22_20_36_+1100_WR4bBAlW8CqK=M36"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 11:28 PM, Alan Stern wrote:
-> On Fri, 1 Feb 2013, Aaron Lu wrote:
-> 
->> Hi Derek,
->>
->> On 12/21/2012 12:35 PM, Derek Basehore wrote:
->>> We no longer wait for the disk to spin up in sd_resume. It now enters the
->>> request to spinup the disk into the elevator and returns.
->>>
->>> A function is scheduled under the scsi_sd_probe_domain to wait for the command
->>> to spinup the disk to complete. This function then checks for errors and cleans
->>> up after the sd resume function.
->>>
->>> This allows system resume to complete much faster on systems with an HDD since
->>> spinning up the disk is a significant portion of resume time.
->>
->> An alternative way of possibly solving this problem from PM's point of
->> view might be:
->> 1 Set both ata port and scsi device's runtime status to RPM_SUSPENDED
->>   in their system suspend callback;
->> 2 On resume, do nothing in their system resume callback;
->> 3 With request based runtime PM introduced here:
->>   http://thread.gmane.org/gmane.linux.power-management.general/30405
->>   When a request comes for the HDD after system resume, both the ata
->>   port and the scsi device will be runtime resumed, which involves
->>   re-initialize the ata link(in ata port's runtime resume callback) and
->>   spin up the HDD(in sd's runtime resume callback).
->>
->> To make HDD un-affetcted by runtime PM during normal use, a large enough
->> autosuspend_delay can be set for it.
->>
->> Just my 2 cents, I've not verified or tried in any way yet :-)
-> 
-> It's a good idea.  The problem is that it won't work if CONFIG_PM_SLEEP
-> is enabled but CONFIG_PM_RUNTIME isn't.
+--Signature=_Sat__2_Feb_2013_22_20_36_+1100_WR4bBAlW8CqK=M36
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, what a pity... thanks for the hint.
+Hi Uwe,
 
-But the code is really simple if we ignore this problem(with some proper
-modifications to scsi bus PM callbacks, see the delayed_resume branch if
-you are interested), so I'm tempted to post it here :-)
+Today's linux-next merge of the cortex tree got a conflict in
+arch/arm/include/asm/cputype.h between commit 59530adc3f1b ("ARM: Define
+CPU part numbers and implementors") from the arm tree and commit
+6ebd4d038dbb ("ARM: stub out read_cpuid and read_cpuid_ext for
+CPU_CP15=3Dn") from the cortex tree.
 
- drivers/ata/libata-core.c | 22 +++++++++++-----------
- drivers/scsi/scsi_pm.c    | 14 +++++++++++---
- 2 files changed, 22 insertions(+), 14 deletions(-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 497adea..38000fc 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5355,10 +5355,19 @@ static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
- 
- static int ata_port_suspend(struct device *dev)
- {
-+	int ret;
-+
- 	if (pm_runtime_suspended(dev))
- 		return 0;
- 
--	return ata_port_suspend_common(dev, PMSG_SUSPEND);
-+	ret = ata_port_suspend_common(dev, PMSG_SUSPEND);
-+	if (!ret) {
-+		__pm_runtime_disable(dev, false);
-+		pm_runtime_set_suspended(dev);
-+		pm_runtime_enable(dev);
-+	}
-+
-+	return ret;
- }
- 
- static int ata_port_do_freeze(struct device *dev)
-@@ -5393,16 +5402,7 @@ static int ata_port_resume_common(struct device *dev, pm_message_t mesg)
- 
- static int ata_port_resume(struct device *dev)
- {
--	int rc;
--
--	rc = ata_port_resume_common(dev, PMSG_RESUME);
--	if (!rc) {
--		pm_runtime_disable(dev);
--		pm_runtime_set_active(dev);
--		pm_runtime_enable(dev);
--	}
--
--	return rc;
-+	return 0;
- }
- 
- /*
-diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-index d9956b6..d0b6997 100644
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -127,13 +127,21 @@ static int scsi_bus_prepare(struct device *dev)
- static int scsi_bus_suspend(struct device *dev)
- {
- 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
--	return scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
-+	int ret;
-+
-+	ret = scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
-+	if (!ret) {
-+		__pm_runtime_disable(dev, false);
-+		pm_runtime_set_suspended(dev);
-+		pm_runtime_enable(dev);
-+	}
-+
-+	return ret;
- }
- 
- static int scsi_bus_resume(struct device *dev)
- {
--	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
--	return scsi_bus_resume_common(dev, pm ? pm->resume : NULL);
-+	return 0;
- }
- 
- static int scsi_bus_freeze(struct device *dev)
--- 
-1.8.1
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/arm/include/asm/cputype.h
+index ad41ec2,574269e..0000000
+--- a/arch/arm/include/asm/cputype.h
++++ b/arch/arm/include/asm/cputype.h
+@@@ -59,30 -60,25 +60,43 @@@ extern unsigned int processor_id
+  		    : "cc");						\
+  		__val;							\
+  	})
+- #else
+- #define read_cpuid(reg) (processor_id)
+- #define read_cpuid_ext(reg) 0
+- #endif
++=20
++ #else /* ifdef CONFIG_CPU_CP15 */
+ =20
+ +#define ARM_CPU_IMP_ARM			0x41
+ +#define ARM_CPU_IMP_INTEL		0x69
+ +
+ +#define ARM_CPU_PART_ARM1136		0xB360
+ +#define ARM_CPU_PART_ARM1156		0xB560
+ +#define ARM_CPU_PART_ARM1176		0xB760
+ +#define ARM_CPU_PART_ARM11MPCORE	0xB020
+ +#define ARM_CPU_PART_CORTEX_A8		0xC080
+ +#define ARM_CPU_PART_CORTEX_A9		0xC090
+ +#define ARM_CPU_PART_CORTEX_A5		0xC050
+ +#define ARM_CPU_PART_CORTEX_A15		0xC0F0
+ +#define ARM_CPU_PART_CORTEX_A7		0xC070
+ +
+ +#define ARM_CPU_XSCALE_ARCH_MASK	0xe000
+ +#define ARM_CPU_XSCALE_ARCH_V1		0x2000
+ +#define ARM_CPU_XSCALE_ARCH_V2		0x4000
+ +#define ARM_CPU_XSCALE_ARCH_V3		0x6000
+ +
+  /*
++  * read_cpuid and read_cpuid_ext should only ever be called on machines t=
+hat
++  * have cp15 so warn on other usages.
++  */
++ #define read_cpuid(reg)							\
++ 	({								\
++ 		WARN_ON_ONCE(1);					\
++ 		0;							\
++ 	})
++=20
++ #define read_cpuid_ext(reg) read_cpuid(reg)
++=20
++ #endif /* ifdef CONFIG_CPU_CP15 / else */
++=20
++ #ifdef CONFIG_CPU_CP15
++ /*
+   * The CPU ID never changes at run time, so we might as well tell the
+   * compiler that it's constant.  Use this function to read the CPU ID
+   * rather than directly reading processor_id or read_cpuid() directly.
+@@@ -92,21 -88,15 +106,30 @@@ static inline unsigned int __attribute_
+  	return read_cpuid(CPUID_ID);
+  }
+ =20
++ #else /* ifdef CONFIG_CPU_CP15 */
++=20
++ static inline unsigned int __attribute_const__ read_cpuid_id(void)
++ {
++ 	return processor_id;
++ }
++=20
++ #endif /* ifdef CONFIG_CPU_CP15 / else */
++=20
+ +static inline unsigned int __attribute_const__ read_cpuid_implementor(voi=
+d)
+ +{
+ +	return (read_cpuid_id() & 0xFF000000) >> 24;
+ +}
+ +
+ +static inline unsigned int __attribute_const__ read_cpuid_part_number(voi=
+d)
+ +{
+ +	return read_cpuid_id() & 0xFFF0;
+ +}
+ +
+ +static inline unsigned int __attribute_const__ xscale_cpu_arch_version(vo=
+id)
+ +{
+ +	return read_cpuid_part_number() & ARM_CPU_XSCALE_ARCH_MASK;
+ +}
+ +
+  static inline unsigned int __attribute_const__ read_cpuid_cachetype(void)
+  {
+  	return read_cpuid(CPUID_CACHETYPE);
 
-Below branch has all the code necessary to try this out:
-https://github.com/aaronlu/linux.git delayed_resume
+--Signature=_Sat__2_Feb_2013_22_20_36_+1100_WR4bBAlW8CqK=M36
+Content-Type: application/pgp-signature
 
-And you will have to enable runtime PM for both ata port and scsi device,
-it works for HDD and normal ODD(ZPODD needs some extra work), tested on
-my thinkpad R61i with a HDD and an ODD.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-But yeah, as Alan has said, this can't be a general solution.
-But someday it may be, when CONFIG_RUNTIME_PM and CONFIG_PM_SLEEP are
-regarded as base functions of the kernel and always compiled in :-)
+iQIcBAEBCAAGBQJRDPaEAAoJEECxmPOUX5FEd7gP/1itwJgcaVl19mhLj27sCsgX
+cDmBkhlhFml525IrRJ1wj3Tlf1uCkWueP48zgKfam1Wo8nvpfB6GpN7+gNtWGF7V
+beZULR4x2nsDPNlG0BQ5B0BJGSkKxn18kbJODIHRR4czic+H1TPDEExxVifWpxzL
+aIzg+HlQHMOiujmPVWhK3f0GhqeKWqhEsanK/QpL4ARxA5hZ5Eqe9v6Yimei/Cc8
+3g8FuOc1trIBrhFqluCr61V9cR7Q0X0m4gfpWkY1AQsgVbqHEcuC4J6SW+wMX5Md
+vJ2GLI+FDlwr3dBV67XGaOJPmdw/AHXwk21FJbnKC1CuNSx6Up3/6SFagwxTUL7e
+7GVngpk1Cc1gvAN4d82qXVscN0Jgl9lysgzAerG/e99k1iL+KiGZ7/ZprjEN0oMG
+ipsDtu06pLenT58HcKQONZvhtjVAZvVEEy7Sm57G2EPhXHcMX/uzbgO4PfM78Ykd
+CRpQ+2V19ayDNsAVA7t5E+WSUNaDxMRCBzf8oiFMl0ShZhryrUm3urm91FPr0vGI
+5I2pP4sjLQBlBLEmpc4c3zgNYNc3+0C1U5SxaFnbUO4/NO3B7cxD6hpUFjYkRMg9
+9e8x1AIOhu+WkvRPNstKkmN90qVlVHFYXwpXySURhYX3hJZo1M5P1pNmIBgjpvw7
+u/C1rmab9uirJBohbFIS
+=f1if
+-----END PGP SIGNATURE-----
 
-Sorry for the noise.
-
--Aaron
+--Signature=_Sat__2_Feb_2013_22_20_36_+1100_WR4bBAlW8CqK=M36--
