@@ -1,114 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab3BBAIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 19:08:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53629 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100Ab3BBAIY (ORCPT
+	id S1757117Ab3BBAOU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 19:14:20 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:50832 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755973Ab3BBAOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 19:08:24 -0500
-Date: Fri, 1 Feb 2013 16:08:23 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm: accelerate mm_populate() treatment of THP pages
-Message-Id: <20130201160823.f88f222f.akpm@linux-foundation.org>
-In-Reply-To: <1359591980-29542-3-git-send-email-walken@google.com>
-References: <1359591980-29542-1-git-send-email-walken@google.com>
-	<1359591980-29542-3-git-send-email-walken@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 1 Feb 2013 19:14:18 -0500
+Message-ID: <510C5A45.5050802@mvista.com>
+Date: Sat, 02 Feb 2013 04:13:57 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Felipe Balbi <balbi@ti.com>, Matt Porter <mporter@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
+References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <510C1D0E.6030401@mvista.com> <20130201185820.GE29898@arwen.pp.htv.fi> <510C2A47.1090607@mvista.com> <20130201205600.GA31762@arwen.pp.htv.fi> <20130201213003.GW2637@n2100.arm.linux.org.uk>
+In-Reply-To: <20130201213003.GW2637@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jan 2013 16:26:19 -0800
-Michel Lespinasse <walken@google.com> wrote:
+Hello.
 
-> This change adds a page_mask argument to follow_page.
-> 
-> follow_page sets *page_mask to HPAGE_PMD_NR - 1 when it encounters a THP page,
-> and to 0 in other cases.
-> 
-> __get_user_pages() makes use of this in order to accelerate populating
-> THP ranges - that is, when both the pages and vmas arrays are NULL,
-> we don't need to iterate HPAGE_PMD_NR times to cover a single THP page
-> (and we also avoid taking mm->page_table_lock that many times).
-> 
-> Other follow_page() call sites can safely ignore the value returned in
-> *page_mask.
+On 02-02-2013 1:30, Russell King - ARM Linux wrote:
 
-Seems sensible, but the implementation is rather ungainly.
+>> On Fri, Feb 01, 2013 at 11:49:11PM +0300, Sergei Shtylyov wrote:
+>>>> good point, do you wanna send some patches ?
 
-If we're going to add this unused page_mask local to many functions
-then let's at least miminize the scope of that variable and explain why
-it's there.  For example,
+>>>     I have already sent them countless times and even stuck CPPI 4.1 support (in
+>>> arch/arm/common/cppi41.c) in Russell's patch system. TI requested to remove the
+>>> patch. :-(
 
---- a/mm/ksm.c~mm-accelerate-mm_populate-treatment-of-thp-pages-fix
-+++ a/mm/ksm.c
-@@ -356,9 +356,10 @@ static int break_ksm(struct vm_area_stru
- {
- 	struct page *page;
- 	int ret = 0;
--	long page_mask;
- 
- 	do {
-+		long page_mask;		/* unused */
-+
- 		cond_resched();
- 		page = follow_page(vma, addr, FOLL_GET, &page_mask);
- 		if (IS_ERR_OR_NULL(page))
-@@ -454,7 +455,7 @@ static struct page *get_mergeable_page(s
- 	unsigned long addr = rmap_item->address;
- 	struct vm_area_struct *vma;
- 	struct page *page;
--	long page_mask;
-+	long page_mask;		/* unused */
- 
- 	down_read(&mm->mmap_sem);
- 	vma = find_mergeable_vma(mm, addr);
-@@ -1525,7 +1526,6 @@ static struct rmap_item *scan_get_next_r
- 	struct mm_slot *slot;
- 	struct vm_area_struct *vma;
- 	struct rmap_item *rmap_item;
--	long page_mask;
- 	int nid;
- 
- 	if (list_empty(&ksm_mm_head.mm_list))
-@@ -1600,6 +1600,8 @@ next_mm:
- 			ksm_scan.address = vma->vm_end;
- 
- 		while (ksm_scan.address < vma->vm_end) {
-+			long page_mask;		/* unused */
-+
- 			if (ksm_test_exit(mm))
- 				break;
- 			*page = follow_page(vma, ksm_scan.address, FOLL_GET,
+>> sticking into arch/arm/common/ wasn't a nice move. But then again, so
+>> wasn't asking for the patch to be removed :-s
 
+> Err, patches don't get removed, they get moved to 'discarded'.
 
+>>>> I guess to make the MUSB side simpler we would need musb-dma-engine glue
+>>>> to map dmaengine to the private MUSB API. Then we would have some
+>>>> starting point to also move inventra (and anybody else) to dmaengine
+>>>> API.
 
-Alternatively we could permit the passing of page_mask==NULL, which is
-a common convention in the get_user_pages() area.  Possibly that's a
-tad more expensive, but it will save a stack slot.
+>>>     Why? Inventra is a dedicated device's private DMA controller, why make
+>>> universal DMA driver for it?
 
+>> because it doesn't make sense to support multiple DMA APIs. We can check
+>> from MUSB's registers if it was configured with Inventra DMA support and
+>> based on that we can register MUSB's own DMA Engine to dmaengine API.
 
-However I think the best approach here is to just leave the
-follow_page() interface alone.  Rename the present implementation to
-follow_page_mask() or whatever and add
+> Hang on.  This is one of the DMA implementations which is closely
+> coupled with the USB and only the USB?  If it is...
 
-static inline<?> void follow_page(args)
-{
-	long page_mask;		/* unused */
+> I thought this had been discussed _extensively_ before.  I thought the
+> resolution on it was:
+> 1. It would not use the DMA engine API.
+> 2. It would not live in arch/arm.
+> 3. It would be placed nearby the USB driver it's associated with.
 
-	return follow_page_mask(args, &page_mask);
-}
+    Note that all this doesn't apply to CPPI 4.1 controller (as contrasted to 
+CPPI 3.0 support in MUSB aand EMAC drivers) -- it's shared by design. Just the 
+implementations that are in tree have it as MUSB's sub-block, serving only MUSB.
 
-Also, I see no sense in permitting negative page_mask values and I
-doubt if we'll be needing 64-bit values here.  Make it `unsigned int'?
+WBR, Sergei
 
-
-Finally, this version of the patch surely breaks the nommu build?
