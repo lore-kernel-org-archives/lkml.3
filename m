@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab3BBPBV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 10:01:21 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53347 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab3BBPBU (ORCPT
+	id S1757898Ab3BBPBj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 10:01:39 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53427 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757843Ab3BBPBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 10:01:20 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 2 Feb 2013 16:01:03 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] firewire: Fix ohci free_irq() warning
-Message-ID: <20130202160103.0ce1fc43@stein>
-In-Reply-To: <CANK3SE2nsxLMUyANzsov4d86ow4v9NuzaZsS3XvjpQJOfYXYUQ@mail.gmail.com>
-References: <CANK3SE09VqvshdLrV4xp2W8BHZqLmuz-pV9jQVj7tbk1JBX+9g@mail.gmail.com>
-	<Pine.LNX.4.44L0.1301311002190.1876-100000@iolanthe.rowland.org>
-	<CANK3SE25kcgSu2dwKtQKU6-wvryC4qNQJu_nj3NPJHQTTC0oXw@mail.gmail.com>
-	<1359752988.22968.16.camel@thor.lan>
-	<CANK3SE2nsxLMUyANzsov4d86ow4v9NuzaZsS3XvjpQJOfYXYUQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 2 Feb 2013 10:01:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <1359816246-3979-1-git-send-email-acourbot@nvidia.com>
+References: <1359816246-3979-1-git-send-email-acourbot@nvidia.com>
+Date: Sat, 2 Feb 2013 16:01:37 +0100
+Message-ID: <CACRpkdbFTt3bN4y5QFMFq6dfAA3XOkKWF4FY5X4jcGfYbYvxOw@mail.gmail.com>
+Subject: Re: [PATCH 0/2] gpiolib: remove gpiochip_reserve()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Dirk Opfer <dirk@opfer-online.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 01 Mark Einon wrote:
-> On 1 February 2013 21:09, Peter Hurley <peter@hurleysoftware.com> wrote:
-> >>>> On Jan 29 Alan Stern wrote:
-> >>>>> Why does the pci_suspend routine call free_irq() at all?  As far as I 
-> >>>>> know, it's not supposed to do that.  Won't the device continue to use 
-> >>>>> the same IRQ after it is resumed?
+On Sat, Feb 2, 2013 at 3:44 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-As far as I can tell, it happened to be done that way as a side effect of
-how the probe() and resume() methods share code.  It has remained like
-this since the initial implementation:
-http://git.kernel.org/linus/2aef469a35a2
+> If Dmitri could give his Acked-by or Tested-by and one of the GPIO maintainers
+> merge this series, I could go ahead with the deeper changes to gpiolib.
 
-Still, at this point I would like to learn whether .suspend() followed
-by .remove() is a valid order of sequence which drivers must support
-before I prepare myself to get comfortable with a refactoring of
-firewire-ohci's .probe()/.resume()/suspend()/remove().  Obviously, so far
-my assumption was that a successful .suspend() can only ever be followed
-by .resume().
+Good riddance.
 
-> > I think what Alan means is that the suspend/resume code should just
-> > mask/unmask interrupts at the OHCI controller, via the OHCI
-> > IntEventClear/Set registers (naturally, saving the current mask and
-> > restoring it on resume).
-> >
-> > Of course, there's a lot more to do with an OHCI controller -- as you
-> > note. Like stopping running DMA contexts :)  And restarting them on
-> > resume.
-> >
-> > I'd do it, but I'm buried to my eyeballs in tty right now -- not fun. I
-> > can _eventually_ do this as I need to address problems with the FW643
-> > anyway at some point, but it's going to be a little while.
-> 
-> Hi Peter,
-> 
-> Ok, understood. I can certainly attempt a patch if I get time.
-> 
-> >
-> > In the meantime, I'm a little confused: you say you can't test this code
-> > because you have no hardware; but then how'd you trip this bug?
-> 
-> I can test the code in that I have a firewire port on my laptop, but
-> haven't got anything to plug into the port.
-> I assume that any large changes I make are quite capable of breaking
-> something there...
+Both patches applied to get some rotation in linux-next.
 
-This is a valid assumption.  Some years ago I caused a regression in
-stable kernel branches in exactly this way myself.
--- 
-Stefan Richter
--=====-===-= --=- ---=-
-http://arcgraph.de/sr/
+This is too good stuff to wait and I like to push this work ahead
+a bit. I can still back them out if there is some problem on the
+TOSA.
+
+
+Yours,
+Linus Walleij
