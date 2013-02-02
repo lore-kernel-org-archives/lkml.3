@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab3BBBz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 20:55:26 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21163 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757361Ab3BBByc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 20:54:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,588,1355126400"; 
-   d="scan'208";a="256610569"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/5] perf, x86: Support full width counting
-Date: Fri,  1 Feb 2013 17:54:23 -0800
-Message-Id: <1359770064-6344-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1359770064-6344-1-git-send-email-andi@firstfloor.org>
-References: <1359770064-6344-1-git-send-email-andi@firstfloor.org>
+	id S1757472Ab3BBCEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 21:04:15 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:57373 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349Ab3BBCEM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Feb 2013 21:04:12 -0500
+Date: Sat, 2 Feb 2013 13:04:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Subject: linux-next: build failure after merge of the nfsd tree
+Message-Id: <20130202130403.a29346b583a802ed6ce6880b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__2_Feb_2013_13_04_03_+1100_u.JT3Mq/XF5yQ=Zj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+--Signature=_Sat__2_Feb_2013_13_04_03_+1100_u.JT3Mq/XF5yQ=Zj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Recent Intel CPUs have a new alternative MSR range for perfctrs that allows
-writing the full counter width. Enable this range if the hardware reports it
-using a new capability bit. This lowers overhead of perf stat slightly because
-it has to do less interrupts to accumulate the counter value. On Haswell it
-also avoids some problems with TSX aborting when the end of the counter
-range is reached.
+Hi,
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/include/uapi/asm/msr-index.h  |    3 +++
- arch/x86/kernel/cpu/perf_event.h       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
- 3 files changed, 10 insertions(+), 0 deletions(-)
+After merging the nfsd tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 433a59f..af41a77 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -163,6 +163,9 @@
- #define MSR_KNC_EVNTSEL0               0x00000028
- #define MSR_KNC_EVNTSEL1               0x00000029
- 
-+/* Alternative perfctr range with full access. */
-+#define MSR_IA32_PMC0			0x000004c1
-+
- /* AMD64 MSRs. Not complete. See the architecture manual for a more
-    complete list. */
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 1567b0d..ce2a863 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -278,6 +278,7 @@ union perf_capabilities {
- 		u64	pebs_arch_reg:1;
- 		u64	pebs_format:4;
- 		u64	smm_freeze:1;
-+		u64	fw_write:1;
- 	};
- 	u64	capabilities;
- };
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index aa48048..d96010a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2228,5 +2228,11 @@ __init int intel_pmu_init(void)
- 		}
- 	}
- 
-+	/* Support full width counters using alternative MSR range */
-+	if (x86_pmu.intel_cap.fw_write) {
-+		x86_pmu.max_period = x86_pmu.cntval_mask;
-+		x86_pmu.perfctr = MSR_IA32_PMC0;
-+	}
-+
- 	return 0;
- }
--- 
-1.7.7.6
+fs/nfs/dns_resolve.c: In function 'nfs_dns_resolver_cache_init':
+fs/nfs/dns_resolve.c:375:4: error: 'struct cache_detail' has no member name=
+d 'cache_upcall'
+fs/nfs/dns_resolve.c:375:35: warning: left-hand operand of comma expression=
+ has no effect [-Wunused-value]
+fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-=
+value]
+fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-=
+value]
+fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-=
+value]
+fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-=
+value]
+fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-=
+value]
+fs/nfs/dns_resolve.c:375:35: warning: value computed is not used [-Wunused-=
+value]
 
+Caused by commit aab982cb5dfb ("SUNRPC: remove cache_detail->cache_upcall
+callback").  Also, why don't those statements end in semicolons?
+
+I have used the nsfd tree from next-20130128 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Sat__2_Feb_2013_13_04_03_+1100_u.JT3Mq/XF5yQ=Zj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRDHQTAAoJEECxmPOUX5FEH/0P/AmAF4HaZ0zcckho12GTw6yO
+IIRHUo0PPB29jBGrchEkMacuf/7PMjz390D8ApmDJ8tU0QcqY2yTtpcmhnQyV9I3
+ydixxkdJv/OMLDwPC7Sb/bEDLhL9Y0k+RT1SmlKBMP3TXMkKLm4QzkaT9VXH4Ri/
+BIdKxaoZFIXW+NQo9q+eH3LwEQJ05ZL0px830s9Z+PFe281kKESjN1t2ixrxMtkX
+AD0cfxDMEo2w5oJl5b1iovHwGxajhx9Df7M0FzwLG1kPyfzTA7MsT9lSVAU6ceRE
+mmzBr5gFi3k6IX+xMcddbQ9XIdIPCzI4fk4bLDKaEFUE9wQruWrKRC8CbWuCG1Uy
+zFnK4srMVlD1XIy3cQS+PgWAjDRcvG1JDMxufrMJ4oBHwl0tyPjyX9c+1I1E9M9M
+d0Rdvvzyb1kVT+rABrNHlkQcd1LBq51w77svYwSrdaLfQYjX7gy9T2z0xFIOFezA
+Ttd01lILlTJepJkdTgD5/RGOBsr9DXbD2wXBElPZmXzJa+676T3TBbB7i8NRqg02
+NQttzo1WbuWuV1ACQTRI98hqNteVWYKoiXdnRBG4KVLeJsI/94IJYCafQ02FAJKZ
+/zLKGFuoDOfSlgotZsyitw61PIzWj0l2+pM4wZ+f7ZWbdO8rky/T9ZARAXumTHou
+99eZmNVjLzUcabuAa7So
+=1laO
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__2_Feb_2013_13_04_03_+1100_u.JT3Mq/XF5yQ=Zj--
