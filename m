@@ -1,157 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab3BBLUy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 06:20:54 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58554 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756252Ab3BBLUu (ORCPT
+	id S1756560Ab3BBLdZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 06:33:25 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:42578 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756431Ab3BBLdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 06:20:50 -0500
-Date: Sat, 2 Feb 2013 22:20:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoffer Dall <c.dall@virtualopensystems.com>,
-        Will Deacon <will.deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the cortex tree with the arm tree
-Message-Id: <20130202222036.0db6c1d208843975be1f8dba@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__2_Feb_2013_22_20_36_+1100_WR4bBAlW8CqK=M36"
+	Sat, 2 Feb 2013 06:33:23 -0500
+Message-ID: <510CF95E.2040100@ti.com>
+Date: Sat, 2 Feb 2013 17:02:46 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: <tony@atomide.com>, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 1/6] usb: otg: Add an API to bind the USB controller
+ and PHY
+References: <1359081206-5602-1-git-send-email-kishon@ti.com> <1359081206-5602-2-git-send-email-kishon@ti.com> <510C2FEA.1080207@pengutronix.de>
+In-Reply-To: <510C2FEA.1080207@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__2_Feb_2013_22_20_36_+1100_WR4bBAlW8CqK=M36
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Uwe,
+On Saturday 02 February 2013 02:43 AM, Marc Kleine-Budde wrote:
+> On 01/25/2013 03:33 AM, Kishon Vijay Abraham I wrote:
+>> In order to support platforms which has multiple PHY's (of same type) and
+>> which has multiple USB controllers, a new design is adopted wherin the binding
+>> information (between the PHY and the USB controller) should be passed to the
+>> PHY library from platform specific file (board file).
+>> So added a new API to pass the binding information.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   drivers/usb/otg/otg.c   |   37 +++++++++++++++++++++++++++++++++++++
+>>   include/linux/usb/phy.h |   22 ++++++++++++++++++++++
+>>   2 files changed, 59 insertions(+)
+>>
+>> diff --git a/drivers/usb/otg/otg.c b/drivers/usb/otg/otg.c
+>> index a30c041..8e756d9 100644
+>> --- a/drivers/usb/otg/otg.c
+>> +++ b/drivers/usb/otg/otg.c
+>> @@ -18,6 +18,7 @@
+>>   #include <linux/usb/otg.h>
+>>
+>>   static LIST_HEAD(phy_list);
+>> +static LIST_HEAD(phy_bind_list);
+>>   static DEFINE_SPINLOCK(phy_lock);
+>>
+>>   static struct usb_phy *__usb_find_phy(struct list_head *list,
+>> @@ -201,6 +202,42 @@ void usb_remove_phy(struct usb_phy *x)
+>>   }
+>>   EXPORT_SYMBOL(usb_remove_phy);
+>>
+>> +/**
+>> + * usb_bind_phy - bind the phy and the controller that uses the phy
+>> + * @dev_name: the device name of the device that will bind to the phy
+>> + * @index: index to specify the port number
+>> + * @phy_dev_name: the device name of the phy
+>> + *
+>> + * Fills the phy_bind structure with the dev_name and phy_dev_name. This will
+>> + * be used when the phy driver registers the phy and when the controller
+>> + * requests this phy.
+>> + *
+>> + * To be used by platform specific initialization code.
+>> + */
+>> +int __init usb_bind_phy(const char *dev_name, u8 index,
+>> +				const char *phy_dev_name)
+>> +{
+>> +	struct usb_phy_bind *phy_bind;
+>> +	unsigned long flags;
+>> +
+>> +	phy_bind = kzalloc(sizeof(*phy_bind), GFP_KERNEL);
+>> +	if (!phy_bind) {
+>> +		pr_err("phy_bind(): No memory for phy_bind");
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	phy_bind->dev_name = dev_name;
+>> +	phy_bind->phy_dev_name = phy_dev_name;
+>> +	phy_bind->index = index;
+>> +
+>> +	spin_lock_irqsave(&phy_lock, flags);
+>> +	list_add_tail(&phy_bind->list, &phy_bind_list);
+>> +	spin_unlock_irqrestore(&phy_lock, flags);
+>> +
+>> +	return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(usb_bind_phy);
+>> +
+>>   const char *otg_state_string(enum usb_otg_state state)
+>>   {
+>>   	switch (state) {
+>> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+>> index a29ae1e..e7eb429 100644
+>> --- a/include/linux/usb/phy.h
+>> +++ b/include/linux/usb/phy.h
+>> @@ -106,6 +106,21 @@ struct usb_phy {
+>>   			enum usb_device_speed speed);
+>>   };
+>>
+>> +/**
+>> + * struct usb_phy_bind - represent the binding for the phy
+>> + * @dev_name: the device name of the device that will bind to the phy
+>> + * @phy_dev_name: the device name of the phy
+>> + * @index: used if a single controller uses multiple phys
+>> + * @phy: reference to the phy
+>> + * @list: to maintain a linked list of the binding information
+>> + */
+>> +struct usb_phy_bind {
+>> +	const char	*dev_name;
+>> +	const char	*phy_dev_name;
+>> +	u8		index;
+>> +	struct usb_phy	*phy;
+>> +	struct list_head list;
+>> +};
+>>
+>>   /* for board-specific init logic */
+>>   extern int usb_add_phy(struct usb_phy *, enum usb_phy_type type);
+>> @@ -151,6 +166,8 @@ extern struct usb_phy *devm_usb_get_phy(struct device *dev,
+>>   	enum usb_phy_type type);
+>>   extern void usb_put_phy(struct usb_phy *);
+>>   extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
+>> +extern int usb_bind_phy(const char *dev_name, u8 index,
+>> +				const char *phy_dev_name);
+>>   #else
+>>   static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
+>>   {
+>> @@ -171,6 +188,11 @@ static inline void devm_usb_put_phy(struct device *dev, struct usb_phy *x)
+>>   {
+>>   }
+>>
+>> +static inline int usb_bind_phy(const char *dev_name, u8 index,
+>> +				const char *phy_dev_name)
+>> +{
+>> +	return NULL;
+>
+> The return value looks bogus.
 
-Today's linux-next merge of the cortex tree got a conflict in
-arch/arm/include/asm/cputype.h between commit 59530adc3f1b ("ARM: Define
-CPU part numbers and implementors") from the arm tree and commit
-6ebd4d038dbb ("ARM: stub out read_cpuid and read_cpuid_ext for
-CPU_CP15=3Dn") from the cortex tree.
+Yes. Felipe has fixed this and has merged the patch already.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/include/asm/cputype.h
-index ad41ec2,574269e..0000000
---- a/arch/arm/include/asm/cputype.h
-+++ b/arch/arm/include/asm/cputype.h
-@@@ -59,30 -60,25 +60,43 @@@ extern unsigned int processor_id
-  		    : "cc");						\
-  		__val;							\
-  	})
-- #else
-- #define read_cpuid(reg) (processor_id)
-- #define read_cpuid_ext(reg) 0
-- #endif
-+=20
-+ #else /* ifdef CONFIG_CPU_CP15 */
- =20
- +#define ARM_CPU_IMP_ARM			0x41
- +#define ARM_CPU_IMP_INTEL		0x69
- +
- +#define ARM_CPU_PART_ARM1136		0xB360
- +#define ARM_CPU_PART_ARM1156		0xB560
- +#define ARM_CPU_PART_ARM1176		0xB760
- +#define ARM_CPU_PART_ARM11MPCORE	0xB020
- +#define ARM_CPU_PART_CORTEX_A8		0xC080
- +#define ARM_CPU_PART_CORTEX_A9		0xC090
- +#define ARM_CPU_PART_CORTEX_A5		0xC050
- +#define ARM_CPU_PART_CORTEX_A15		0xC0F0
- +#define ARM_CPU_PART_CORTEX_A7		0xC070
- +
- +#define ARM_CPU_XSCALE_ARCH_MASK	0xe000
- +#define ARM_CPU_XSCALE_ARCH_V1		0x2000
- +#define ARM_CPU_XSCALE_ARCH_V2		0x4000
- +#define ARM_CPU_XSCALE_ARCH_V3		0x6000
- +
-  /*
-+  * read_cpuid and read_cpuid_ext should only ever be called on machines t=
-hat
-+  * have cp15 so warn on other usages.
-+  */
-+ #define read_cpuid(reg)							\
-+ 	({								\
-+ 		WARN_ON_ONCE(1);					\
-+ 		0;							\
-+ 	})
-+=20
-+ #define read_cpuid_ext(reg) read_cpuid(reg)
-+=20
-+ #endif /* ifdef CONFIG_CPU_CP15 / else */
-+=20
-+ #ifdef CONFIG_CPU_CP15
-+ /*
-   * The CPU ID never changes at run time, so we might as well tell the
-   * compiler that it's constant.  Use this function to read the CPU ID
-   * rather than directly reading processor_id or read_cpuid() directly.
-@@@ -92,21 -88,15 +106,30 @@@ static inline unsigned int __attribute_
-  	return read_cpuid(CPUID_ID);
-  }
- =20
-+ #else /* ifdef CONFIG_CPU_CP15 */
-+=20
-+ static inline unsigned int __attribute_const__ read_cpuid_id(void)
-+ {
-+ 	return processor_id;
-+ }
-+=20
-+ #endif /* ifdef CONFIG_CPU_CP15 / else */
-+=20
- +static inline unsigned int __attribute_const__ read_cpuid_implementor(voi=
-d)
- +{
- +	return (read_cpuid_id() & 0xFF000000) >> 24;
- +}
- +
- +static inline unsigned int __attribute_const__ read_cpuid_part_number(voi=
-d)
- +{
- +	return read_cpuid_id() & 0xFFF0;
- +}
- +
- +static inline unsigned int __attribute_const__ xscale_cpu_arch_version(vo=
-id)
- +{
- +	return read_cpuid_part_number() & ARM_CPU_XSCALE_ARCH_MASK;
- +}
- +
-  static inline unsigned int __attribute_const__ read_cpuid_cachetype(void)
-  {
-  	return read_cpuid(CPUID_CACHETYPE);
-
---Signature=_Sat__2_Feb_2013_22_20_36_+1100_WR4bBAlW8CqK=M36
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRDPaEAAoJEECxmPOUX5FEd7gP/1itwJgcaVl19mhLj27sCsgX
-cDmBkhlhFml525IrRJ1wj3Tlf1uCkWueP48zgKfam1Wo8nvpfB6GpN7+gNtWGF7V
-beZULR4x2nsDPNlG0BQ5B0BJGSkKxn18kbJODIHRR4czic+H1TPDEExxVifWpxzL
-aIzg+HlQHMOiujmPVWhK3f0GhqeKWqhEsanK/QpL4ARxA5hZ5Eqe9v6Yimei/Cc8
-3g8FuOc1trIBrhFqluCr61V9cR7Q0X0m4gfpWkY1AQsgVbqHEcuC4J6SW+wMX5Md
-vJ2GLI+FDlwr3dBV67XGaOJPmdw/AHXwk21FJbnKC1CuNSx6Up3/6SFagwxTUL7e
-7GVngpk1Cc1gvAN4d82qXVscN0Jgl9lysgzAerG/e99k1iL+KiGZ7/ZprjEN0oMG
-ipsDtu06pLenT58HcKQONZvhtjVAZvVEEy7Sm57G2EPhXHcMX/uzbgO4PfM78Ykd
-CRpQ+2V19ayDNsAVA7t5E+WSUNaDxMRCBzf8oiFMl0ShZhryrUm3urm91FPr0vGI
-5I2pP4sjLQBlBLEmpc4c3zgNYNc3+0C1U5SxaFnbUO4/NO3B7cxD6hpUFjYkRMg9
-9e8x1AIOhu+WkvRPNstKkmN90qVlVHFYXwpXySURhYX3hJZo1M5P1pNmIBgjpvw7
-u/C1rmab9uirJBohbFIS
-=f1if
------END PGP SIGNATURE-----
-
---Signature=_Sat__2_Feb_2013_22_20_36_+1100_WR4bBAlW8CqK=M36--
+Thanks
+Kishon
