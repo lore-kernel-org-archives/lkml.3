@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3BBCsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 21:48:50 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:49801 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757340Ab3BBCss (ORCPT
+	id S1757501Ab3BBDOl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 22:14:41 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:62698 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757428Ab3BBDOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 21:48:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359744545-18825-1-git-send-email-dirk.brandewie@gmail.com>
-References: <359744343-18690-1-git-send-email-dirk.brandewie@gmail.com>
-	<1359744545-18825-1-git-send-email-dirk.brandewie@gmail.com>
-Date: Sat, 2 Feb 2013 08:18:47 +0530
-X-Google-Sender-Auth: bq7nO-rcLA7v5U7tlLyzkTqhXzo
-Message-ID: <CAOh2x=m2Q3dA0D6utMKa_KaHaiEBzy0-EQeHT+Ybobb9bupfxg@mail.gmail.com>
-Subject: Re: [PATCH 1/6] cpufreq: Retrieve current frequency from scaling
- drivers with internal governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Feb 2013 22:14:40 -0500
+Subject: Re: [PATCH] IRQ CORE: irq_work_queue function return value not
+ used.
+From: anish kumar <anish198519851985@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
+        tglx@linutronix.de, mingo@kernel.org
+In-Reply-To: <CAFTL4hx8JRft0Xy02vRdOQptNcTA1TxhB+x_pzRphMxqUDgBMA@mail.gmail.com>
+References: <1351933030-1462-1-git-send-email-anish198519851985@gmail.com>
+	 <CAFTL4hx8JRft0Xy02vRdOQptNcTA1TxhB+x_pzRphMxqUDgBMA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 02 Feb 2013 08:44:24 +0530
+Message-ID: <1359774864.1666.30.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 2, 2013 at 12:19 AM,  <dirk.brandewie@gmail.com> wrote:
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+On Sat, 2013-01-26 at 17:24 +0100, Frederic Weisbecker wrote:
+> 2012/11/3 anish kumar <anish198519851985@gmail.com>:
+> > From: anish kumar <anish198519851985@gmail.com>
+> >
+> > As no one is using the return value of irq_work_queue function
+> > it is better to just make it void.
+> >
+> > Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> > ---
+> >  kernel/irq_work.c |    5 ++---
+> >  1 files changed, 2 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> > index 1588e3b..4829a31 100644
+> > --- a/kernel/irq_work.c
+> > +++ b/kernel/irq_work.c
+> > @@ -79,17 +79,16 @@ static void __irq_work_queue(struct irq_work *work)
+> >   *
+> >   * Can be re-enqueued while the callback is still in progress.
+> >   */
+> > -bool irq_work_queue(struct irq_work *work)
+> > +void irq_work_queue(struct irq_work *work)
+> 
+> Please also update the headers in include/linux/irq_work.h accordingly.
+I have sent the patch again(some time back).Is it picked up?
+http://www.gossamer-threads.com/lists/linux/kernel/1667796
+> 
+> Thanks.
+> 
+> >  {
+> >         if (!irq_work_claim(work)) {
+> >                 /*
+> >                  * Already enqueued, can't do!
+> >                  */
+> > -               return false;
+> > +               return;
+> >         }
+> >
+> >         __irq_work_queue(work);
+> > -       return true;
+> >  }
+> >  EXPORT_SYMBOL_GPL(irq_work_queue);
+> >
+> > --
+> > 1.7.1
+> >
 
-> @@ -1219,6 +1219,9 @@ unsigned int cpufreq_quick_get(unsigned int cpu)
->         struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
->         unsigned int ret_freq = 0;
->
-> +       if (cpufreq_driver && cpufreq_driver->setpolicy && cpufreq_driver->get)
-> +               return cpufreq_driver->get(cpu);
 
-You are required to do cpufreq_cpu_put() in this case too... Better do
-cpufreq_cpu_get() after your check.
-
-> +
->         if (policy) {
->                 ret_freq = policy->cur;
->                 cpufreq_cpu_put(policy);
-> --
-> 1.7.7.6
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
