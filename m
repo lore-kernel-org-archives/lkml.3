@@ -1,55 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab3BBK0T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 05:26:19 -0500
-Received: from mo-p05-ob.rzone.de ([81.169.146.180]:60220 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755475Ab3BBK0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 05:26:17 -0500
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Feb 2013 05:26:17 EST
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QEactrHijJzVWE2x/oLHqK
-X-RZG-CLASS-ID: mo05
-Message-ID: <510CE850.1050805@denx.de>
-Date: Sat, 02 Feb 2013 11:20:00 +0100
-From: Stefan Roese <sr@denx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756198Ab3BBKoj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 05:44:39 -0500
+Received: from mga03.intel.com ([143.182.124.21]:33618 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755810Ab3BBKoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 05:44:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,590,1355126400"; 
+   d="scan'208";a="251788617"
+Message-ID: <510CEE46.80308@intel.com>
+Date: Sat, 02 Feb 2013 18:45:26 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warnings after merge of the l2-mtd tree
-References: <20130202143817.a2d9246dcb11cfa08128f588@canb.auug.org.au>
-In-Reply-To: <20130202143817.a2d9246dcb11cfa08128f588@canb.auug.org.au>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Derek Basehore <dbasehore@chromium.org>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
+References: <Pine.LNX.4.44L0.1302011026070.1752-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1302011026070.1752-100000@iolanthe.rowland.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 02/02/2013 04:38 AM, Stephen Rothwell wrote:
-> Hi Artem,
+On 02/01/2013 11:28 PM, Alan Stern wrote:
+> On Fri, 1 Feb 2013, Aaron Lu wrote:
 > 
-> After merging the l2-mtd tree, today's linux-next build (x86_64
-> allmodconfig) produced these warnings:
+>> Hi Derek,
+>>
+>> On 12/21/2012 12:35 PM, Derek Basehore wrote:
+>>> We no longer wait for the disk to spin up in sd_resume. It now enters the
+>>> request to spinup the disk into the elevator and returns.
+>>>
+>>> A function is scheduled under the scsi_sd_probe_domain to wait for the command
+>>> to spinup the disk to complete. This function then checks for errors and cleans
+>>> up after the sd resume function.
+>>>
+>>> This allows system resume to complete much faster on systems with an HDD since
+>>> spinning up the disk is a significant portion of resume time.
+>>
+>> An alternative way of possibly solving this problem from PM's point of
+>> view might be:
+>> 1 Set both ata port and scsi device's runtime status to RPM_SUSPENDED
+>>   in their system suspend callback;
+>> 2 On resume, do nothing in their system resume callback;
+>> 3 With request based runtime PM introduced here:
+>>   http://thread.gmane.org/gmane.linux.power-management.general/30405
+>>   When a request comes for the HDD after system resume, both the ata
+>>   port and the scsi device will be runtime resumed, which involves
+>>   re-initialize the ata link(in ata port's runtime resume callback) and
+>>   spin up the HDD(in sd's runtime resume callback).
+>>
+>> To make HDD un-affetcted by runtime PM during normal use, a large enough
+>> autosuspend_delay can be set for it.
+>>
+>> Just my 2 cents, I've not verified or tried in any way yet :-)
 > 
-> In file included from drivers/mtd/chips/cfi_cmdset_0002.c:36:0:
-> include/linux/of_platform.h:107:13: warning: 'struct of_device_id' declared inside parameter list [enabled by default]
-> include/linux/of_platform.h:107:13: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> include/linux/of_platform.h:107:13: warning: 'struct device_node' declared inside parameter list [enabled by default]
-> drivers/mtd/chips/cfi_cmdset_0002.c: In function 'cfi_cmdset_0002':
-> drivers/mtd/chips/cfi_cmdset_0002.c:504:22: warning: unused variable 'np' [-Wunused-variable]
-> drivers/mtd/chips/cfi_cmdset_0002.c: At top level:
-> drivers/mtd/chips/cfi_cmdset_0002.c:2279:12: warning: 'cfi_ppb_lock' defined but not used [-Wunused-function]
-> drivers/mtd/chips/cfi_cmdset_0002.c:2285:12: warning: 'cfi_ppb_unlock' defined but not used [-Wunused-function]
-> drivers/mtd/chips/cfi_cmdset_0002.c:2382:12: warning: 'cfi_ppb_is_locked' defined but not used [-Wunused-function]
-> 
-> Introduced by commit c3a02f171365 ("mtd: cfi_cmdset_0002: Support
-> Persistent Protection Bits (PPB) locking").
+> It's a good idea.  The problem is that it won't work if CONFIG_PM_SLEEP
+> is enabled but CONFIG_PM_RUNTIME isn't.
 
-Sorry about that. I'll send a fixup patch shortly.
+Right, what a pity... thanks for the hint.
 
-Thanks,
-Stefan
+But the code is really simple if we ignore this problem(with some proper
+modifications to scsi bus PM callbacks, see the delayed_resume branch if
+you are interested), so I'm tempted to post it here :-)
+
+ drivers/ata/libata-core.c | 22 +++++++++++-----------
+ drivers/scsi/scsi_pm.c    | 14 +++++++++++---
+ 2 files changed, 22 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 497adea..38000fc 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5355,10 +5355,19 @@ static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
+ 
+ static int ata_port_suspend(struct device *dev)
+ {
++	int ret;
++
+ 	if (pm_runtime_suspended(dev))
+ 		return 0;
+ 
+-	return ata_port_suspend_common(dev, PMSG_SUSPEND);
++	ret = ata_port_suspend_common(dev, PMSG_SUSPEND);
++	if (!ret) {
++		__pm_runtime_disable(dev, false);
++		pm_runtime_set_suspended(dev);
++		pm_runtime_enable(dev);
++	}
++
++	return ret;
+ }
+ 
+ static int ata_port_do_freeze(struct device *dev)
+@@ -5393,16 +5402,7 @@ static int ata_port_resume_common(struct device *dev, pm_message_t mesg)
+ 
+ static int ata_port_resume(struct device *dev)
+ {
+-	int rc;
+-
+-	rc = ata_port_resume_common(dev, PMSG_RESUME);
+-	if (!rc) {
+-		pm_runtime_disable(dev);
+-		pm_runtime_set_active(dev);
+-		pm_runtime_enable(dev);
+-	}
+-
+-	return rc;
++	return 0;
+ }
+ 
+ /*
+diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+index d9956b6..d0b6997 100644
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -127,13 +127,21 @@ static int scsi_bus_prepare(struct device *dev)
+ static int scsi_bus_suspend(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+-	return scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
++	int ret;
++
++	ret = scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
++	if (!ret) {
++		__pm_runtime_disable(dev, false);
++		pm_runtime_set_suspended(dev);
++		pm_runtime_enable(dev);
++	}
++
++	return ret;
+ }
+ 
+ static int scsi_bus_resume(struct device *dev)
+ {
+-	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+-	return scsi_bus_resume_common(dev, pm ? pm->resume : NULL);
++	return 0;
+ }
+ 
+ static int scsi_bus_freeze(struct device *dev)
+-- 
+1.8.1
+
+
+Below branch has all the code necessary to try this out:
+https://github.com/aaronlu/linux.git delayed_resume
+
+And you will have to enable runtime PM for both ata port and scsi device,
+it works for HDD and normal ODD(ZPODD needs some extra work), tested on
+my thinkpad R61i with a HDD and an ODD.
+
+But yeah, as Alan has said, this can't be a general solution.
+But someday it may be, when CONFIG_RUNTIME_PM and CONFIG_PM_SLEEP are
+regarded as base functions of the kernel and always compiled in :-)
+
+Sorry for the noise.
+
+-Aaron
