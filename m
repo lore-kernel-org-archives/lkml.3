@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab3BAXvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 18:51:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21891 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633Ab3BAXvn (ORCPT
+	id S1757081Ab3BBABN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 19:01:13 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:51279 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755892Ab3BBABH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 18:51:43 -0500
-Date: Fri, 1 Feb 2013 15:51:32 -0800
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] [PATCH] PVH linux: Use ballooning to allocate grant
- table pages
-Message-ID: <20130201155132.71e0257c@mantra.us.oracle.com>
-In-Reply-To: <20130201140058.156d3b9c@mantra.us.oracle.com>
-References: <20130131183015.13bc2bff@mantra.us.oracle.com>
-	<20130131184446.654a2289@mantra.us.oracle.com>
-	<20130201140058.156d3b9c@mantra.us.oracle.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 1 Feb 2013 19:01:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <510B81D1.5070302@huawei.com>
+References: <1359562210-26536-1-git-send-email-jiang.liu@huawei.com>
+	<1359562210-26536-2-git-send-email-jiang.liu@huawei.com>
+	<CAE9FiQU2LvEjTpbjs+LUb=vU7XDC_76OEo5irR_Bn_DjvfgQ0w@mail.gmail.com>
+	<510A8F9C.5090306@gmail.com>
+	<CAE9FiQXBOj7wCJkXPoBDPiVNH7K0iQPExfrWhAuzwVcyrN+ZZQ@mail.gmail.com>
+	<510B81D1.5070302@huawei.com>
+Date: Fri, 1 Feb 2013 16:01:06 -0800
+X-Google-Sender-Auth: T9PMSrcJ6aT-O3G2WoN4QepRHSc
+Message-ID: <CAE9FiQVH=0H+YPDKSO3t5Mdi-KndZtFXBit826HCNXQ_X3USyA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] acpiphp: remove dead code for PCI host bridge hotplug
+From: Yinghai Lu <yinghai@kernel.org>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Feb 2013 14:00:58 -0800
-Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
+On Fri, Feb 1, 2013 at 12:50 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+> On 2013/1/31 23:59, Yinghai Lu wrote:
+>> On Thu, Jan 31, 2013 at 7:37 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>>
+>>> So I think the code in handle_hotplug_event_bridge() to handle P2P hot-addition
+>>> is dead. Yijing has helped to test the code by faking ACPI CUSTOM_METHOD, and it
+>>> does work as expected.
+>>
+>> ok, then.
+>>
+>> It would be better if you can append some print out from Yijing's test
+>> in the changelog.
+>>
+>
+> Hi Yinghai,
+>    I used custom_method module to make root port device 0000:00:07.0 support acpi hotplug (by adding _EJ0 method),
+> This root port device also connected to a slot which support hotplug. I tested to hot plug root port device 0000:00:07.0,
+> and test steps and info as bellow, if there are somethings missing during test, please let me know.
+> Thanks very much!
+>
+> linux-ha2:/sys/bus/pci/slots # lspci -tv
+>  \-[0000:00]-+-00.0  Intel Corporation 5520/5500/X58 I/O Hub to ESI Port
+>              +-01.0-[0000:01]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
+>              |                 \-00.1  Intel Corporation 82576 Gigabit Network Connection
+>              +-03.0-[0000:02]----00.0  LSI Logic / Symbios Logic SAS1064ET PCI-Express Fusion-MPT SAS
+>              +-04.0-[0000:03]--
+>              +-05.0-[0000:04]--
+>              +-07.0-[0000:05]--+-00.0  nVidia Corporation GT218 [GeForce G210]
+>              |                 \-00.1  nVidia Corporation High Definition Audio Controller
+>              +-0d.0  Intel Corporation Device 343a
+> linux-ha2:/sys/bus/pci/slots # ls
+> 0  0-1  1  3  5  7
+> linux-ha2:/sys/bus/pci/slots # cat 1/address
+> 0000:00:07
+> linux-ha2:/sys/bus/pci/slots # cd 1
+> linux-ha2:/sys/bus/pci/slots/1 # ls
+> adapter  address  attention  cur_bus_speed  latch  max_bus_speed  module  power
+> linux-ha2:/sys/bus/pci/slots/1 # cat power
+> 1
+> linux-ha2:/sys/bus/pci/slots/1 # echo "\_SB_.NOD0.PCI0.MRP7 3" > /sys/kernel/debug/acpi/sci_notify
+> linux-ha2:/sys/bus/pci/slots/1 # cat power
+> 0
+> linux-ha2:/sys/bus/pci/slots/1 # lspci -tv
+>  \-[0000:00]-+-00.0  Intel Corporation 5520/5500/X58 I/O Hub to ESI Port
+>              +-01.0-[0000:01]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
+>              |                 \-00.1  Intel Corporation 82576 Gigabit Network Connection
+>              +-03.0-[0000:02]----00.0  LSI Logic / Symbios Logic SAS1064ET PCI-Express Fusion-MPT SAS
+>              +-04.0-[0000:03]--
+>              +-05.0-[0000:04]--
+>              +-0d.0  Intel Corporation Device 343a
+> linux-ha2:/sys/bus/pci/slots/1 # echo "\_SB_.NOD0.PCI0.MRP7 1" > /sys/kernel/debug/acpi/sci_notify
+> linux-ha2:/sys/bus/pci/slots/1 # cat power
+> 1
+> linux-ha2:/sys/bus/pci/slots/1 # lspci -tv
+>  \-[0000:00]-+-00.0  Intel Corporation 5520/5500/X58 I/O Hub to ESI Port
+>              +-01.0-[0000:01]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
+>              |                 \-00.1  Intel Corporation 82576 Gigabit Network Connection
+>              +-03.0-[0000:02]----00.0  LSI Logic / Symbios Logic SAS1064ET PCI-Express Fusion-MPT SAS
+>              +-04.0-[0000:03]--
+>              +-05.0-[0000:04]--
+>              +-07.0-[0000:05]--+-00.0  nVidia Corporation GT218 [GeForce G210]
+>              |                 \-00.1  nVidia Corporation High Definition Audio Controller
+>              +-0d.0  Intel Corporation Device 343a
 
-> On Thu, 31 Jan 2013 18:44:46 -0800
-> Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
-> 
-> > On Thu, 31 Jan 2013 18:30:15 -0800
-> > Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
-> > 
-> > > This patch fixes a fixme in Linux to use
-> > > alloc_xenballooned_pages() to allocate pfns for grant table pages
-> > > instead of kmalloc. This also simplifies add to physmap on the
-> > > xen side a bit.
-> > 
-> > Looking at it again, I realized rc should be signed in
-> > gnttab_resume(). Below again. Thanks.
-> 
-> Konrad, Please hold off on this patch. I discovered an issue on the 
-> domU side with this change. I'm currently investigating if it's 
-> related.
+looks good.
 
-Ah right, I forgot the pfn's from balloon may not be always contigous.
-Besides these are special pfns so to speak, so in gnttab_map()
-virt_to_pfn doesn't work. 
-
-I'm gonna have to create a separate gnttab map routine for pvh case, it
-appears. Shouldn't be too bad tho.
-
-thanks,
-Mukesh
+Thanks
