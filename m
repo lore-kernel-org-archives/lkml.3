@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab3BBJfm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 04:35:42 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:33149 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab3BBJfj (ORCPT
+	id S1755060Ab3BBJo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 04:44:26 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:58388 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab3BBJoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 04:35:39 -0500
+	Sat, 2 Feb 2013 04:44:23 -0500
+Message-ID: <510CDFF1.80408@linaro.org>
+Date: Sat, 02 Feb 2013 10:44:17 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-X-Originating-IP: [111.65.28.14]
-Date: Sat, 2 Feb 2013 17:35:38 +0800
-Message-ID: <CAMVG2sumi56v4ceVrdHqj+20TmMTHqqNVF_E7GPLSVvvj9AKZQ@mail.gmail.com>
-Subject: [3.8.0-rc6] xhci NULL deref
-From: Daniel J Blueman <daniel@quora.org>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux USB <linux-usb-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Len Brown <lenb@kernel.org>
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>
+Subject: Re: [PATCH 1/4] intel_idle: stop using driver_data for static flags
+References: <1359691896-23567-1-git-send-email-lenb@kernel.org> <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com> <510B8059.5040609@linaro.org> <510C0C22.4000801@kernel.org> <510C3EC5.3060709@linaro.org> <510C7708.4080707@kernel.org>
+In-Reply-To: <510C7708.4080707@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With a couple of communication devices attached [1] on 3.8.0-rc6, XHCI
-ran into a zero-page access [2].
+On 02/02/2013 03:16 AM, Len Brown wrote:
+> 
+>>> intel_idle already uses a driver-specific flag:
+>>>
+>>> #define CPUIDLE_FLAG_TLB_FLUSHED        0x10000
+>>>
+>>> This patch just uses 4 more bits along with that one.
+>>
+>> Ok. In this case it would make sense to move this flag out of the
+>> generic core code to the intel_idle.c file ?
+> 
+> This flag is already local to intel_idle.c.
+> If another architecture finds it useful,
+> then yes, it would make sense to move it to the shared header.
 
-A quick check of the code [3,4] suggests that struct xhci_virt_device
-dev was NULL.
+Oh, right. Sorry I puzzled myself with the name. I was convinced it was
+in the shared header.
 
-I'll see if I can have netconsole enabled for when it occurs again, to
-catch any related error information.
+>> and move the [dec/en]coding
+>> macro flags_2_MWAIT_EAX and MWAIT_EAX_2_flags (with a more appropriate
+>> name for a generic code) to the cpuidle.h file ?
+> 
+> I think that a driver's private flag definitions
+> should remain local to the driver.  It makes no sense
+> to pollute the name space of other drivers for stuff
+> that doesn't mean anything to them.  MWAIT is pretty
+> specific to x86 -- and re-naming it to something 'generic'
+> isn't going to make the code easier to read.
 
-Thanks,
-  Daniel
+Ok, let me rephrase it because I think how it was presented was not clear.
 
---- [1]
+As we want to use the half of the state flags for private purpose, I
+suggested to add the encoding/decoding function in the shared header file.
 
-$ lsusb
-Bus 001 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
-Bus 002 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
-Bus 003 Device 004: ID 0424:2412 Standard Microsystems Corp.
-Bus 003 Device 003: ID 04e8:6863 Samsung Electronics Co., Ltd
-Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-Bus 004 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
-Bus 001 Device 003: ID 05ac:8510 Apple, Inc.
-Bus 002 Device 003: ID 0424:2512 Standard Microsystems Corp. USB 2.0 Hub
-Bus 003 Device 005: ID 0403:6010 Future Technology Devices
-International, Ltd FT2232C Dual USB-UART/FIFO IC
-Bus 002 Device 008: ID 05ac:8286 Apple, Inc.
-Bus 002 Device 004: ID 0a5c:4500 Broadcom Corp. BCM2046B1 USB 2.0 Hub
-(part of BCM2046 Bluetooth)
-Bus 002 Device 005: ID 05ac:0262 Apple, Inc.
+The mwait eax flags are not encoded and the CPUIDLE_FLAG_TLB_FLUSHED is
+encoded.
 
---- [2]
+I suggested to unify both and to use an encoding function from the
+shared header file.
 
-Unable to handle NULL pointer dereference 000000000000000508
+#define CPUIDLE_PRIVATE_FLAGS(_flags_) \
+	((_flags_) << 16) & CPUIDLE_DRIVER_FLAGS_MASK
 
-RAX: 00000000000000500
-RBX: 00000000000000000
-RCX: 00000000000000508
-RDX: 00000000000000000
-RSI: 00000000000000006
-RDI: 00000000000000000
-RBP: ffff88026f203dc8
+For example:
 
-xhci_stream_id_to_ring+0x40
-handle_cmd_completion+0x16a
-? rebalance_domains+0x96
-xhci_irq+0x27b
+#define FLAG_TLB_FLUSHED CPUIDLE_PRIVATE_FLAGS(0x1)
+#define FLAG_MWAIT_C1    CPUIDLE_PRIVATE_FLAGS(0x0)
+#define FLAG_MWAIT_C2    CPUIDLE_PRIVATE_FLAGS(0x10)
+#define FLAG_MWAIT_C3    CPUIDLE_PRIVATE_FLAGS(0x20)
+#define FLAG_MWAIT_C4    CPUIDLE_PRIVATE_FLAGS(0x30)
+#define FLAG_MWAIT_C5    CPUIDLE_PRIVATE_FLAGS(0x40)
+#define FLAG_MWAIT_C6    CPUIDLE_PRIVATE_FLAGS(0x52)
 
---- [3]
+And then:
 
-(gdb) disassemble xhci_stream_id_to_ring+0x40
-   0xffffffff813384e0 <+0>:	mov    %esi,%esi
-   0xffffffff813384e2 <+2>:	push   %rbp
-   0xffffffff813384e3 <+3>:	lea    (%rsi,%rsi,2),%rax
-   0xffffffff813384e7 <+7>:	mov    %rsp,%rbp
-   0xffffffff813384ea <+10>:	lea    (%rsi,%rax,4),%rax
-   0xffffffff813384ee <+14>:	shl    $0x4,%rax
-   0xffffffff813384f2 <+18>:	test   %edx,%edx
-   0xffffffff813384f4 <+20>:	lea    0x20(%rdi,%rax,1),%rax
-   0xffffffff813384f9 <+25>:	lea    0x8(%rax),%rcx
-   0xffffffff813384fd <+29>:	je     0xffffffff81338520
-<xhci_stream_id_to_ring+64>
-   0xffffffff813384ff <+31>:	mov    0x8(%rcx),%rax
-   0xffffffff81338503 <+35>:	test   %rax,%rax
-   0xffffffff81338506 <+38>:	je     0xffffffff81338530
-<xhci_stream_id_to_ring+80>
-   0xffffffff81338508 <+40>:	cmp    0x8(%rax),%edx // deref
+...
 
---- [4]
+.flags = FLAG_TLB_FLUSHED | FLAG_MWAIT_C2 | CPUIDLE_FLAG_TIME_VALID
 
-struct xhci_ring *xhci_stream_id_to_ring(
-		struct xhci_virt_device *dev,
-		unsigned int ep_index,
-		unsigned int stream_id)
-{
-	struct xhci_virt_ep *ep = &dev->eps[ep_index];
+...
 
-	if (stream_id == 0)
-		return ep->ring; // deref
-	if (!ep->stream_info)
-		return NULL;
+But in the idle function, you need to retrieve the 'value' of the EAX
+not a flag, so there is the need for an extra macro conversion and mask
+the TLB flag.
 
-	if (stream_id > ep->stream_info->num_streams)
-		return NULL;
-	return ep->stream_info->stream_rings[stream_id];
-}
+Well, this is a detail, so feel free to ignore this suggestion :)
+
+Thanks
+  -- Daniel
+
 -- 
-Daniel J Blueman
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
