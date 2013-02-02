@@ -1,167 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab3BBUoY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 15:44:24 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:49063 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941Ab3BBUoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 15:44:23 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] PM: make VT switching to the suspend console optional v2
-Date: Sat, 02 Feb 2013 21:50:35 +0100
-Message-ID: <2424360.s1UolC1PMO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1933562.n2GhljaZKo@vostro.rjw.lan>
-References: <1359819248-3714-1-git-send-email-jbarnes@virtuousgeek.org> <1359819248-3714-2-git-send-email-jbarnes@virtuousgeek.org> <1933562.n2GhljaZKo@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751883Ab3BBUp7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 15:45:59 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:45189 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab3BBUp5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 15:45:57 -0500
+From: Paul Sbarra <sbarra.paul@gmail.com>
+To: jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Sbarra <sbarra.paul@gmail.com>
+Subject: [PATCH 1/3] hid: Add report descriptor for Logitech Driving Force wheel
+Date: Sat,  2 Feb 2013 14:45:23 -0600
+Message-Id: <1359837925-6383-1-git-send-email-sbarra.paul@gmail.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 02, 2013 08:39:21 PM Rafael J. Wysocki wrote:
-> On Saturday, February 02, 2013 04:34:08 PM Jesse Barnes wrote:
-> > KMS drivers can potentially restore the display configuration without
-> > userspace help.  Such drivers can can call a new funciton,
-> > pm_vt_switch_required(false) if they support this feature.  In that
-> > case, the PM layer won't VT switch to the suspend console at suspend
-> > time and then back to the original VT on resume, but rather leave things
-> > alone for a nicer looking suspend and resume sequence.
-> > 
-> > v2: make a function so we can handle multiple drivers (Alan)
-> > 
-> > Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > ---
-> >  include/linux/pm.h     |    2 ++
-> >  kernel/power/console.c |   59 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 61 insertions(+)
-> > 
-> > diff --git a/include/linux/pm.h b/include/linux/pm.h
-> > index 03d7bb1..5c2b131 100644
-> > --- a/include/linux/pm.h
-> > +++ b/include/linux/pm.h
-> > @@ -35,6 +35,8 @@ extern void (*pm_idle)(void);
-> >  extern void (*pm_power_off)(void);
-> >  extern void (*pm_power_off_prepare)(void);
-> >  
-> > +extern void pm_vt_switch_required(bool required);
-> > +
-> >  /*
-> >   * Device power management
-> >   */
-> > diff --git a/kernel/power/console.c b/kernel/power/console.c
-> > index b1dc456..67c4de3 100644
-> > --- a/kernel/power/console.c
-> > +++ b/kernel/power/console.c
-> > @@ -4,6 +4,7 @@
-> >   * Originally from swsusp.
-> >   */
-> >  
-> > +#include <linux/console.h>
-> >  #include <linux/vt_kern.h>
-> >  #include <linux/kbd_kern.h>
-> >  #include <linux/vt.h>
-> > @@ -14,8 +15,63 @@
-> >  
-> >  static int orig_fgconsole, orig_kmsg;
-> >  
-> > +DEFINE_SPINLOCK(vt_switch_lock);
-> > +static int vt_switch_required = -1;
-> > +
-> > +/**
-> > + * pm_vt_switch_required - indicate VT switch at suspend requirements
-> > + * @required: if true, caller needs VT switch at suspend/resume time
-> > + *
-> > + * The different console drivers may or may not require VT switches across
-> > + * suspend/resume, depending on how they handle restoring video state and
-> > + * what may be running.
-> > + *
-> > + * Drivers can indicate support for switchless suspend/resume, which can
-> > + * save time and flicker, by using this routine and passing 'false' as
-> > + * the argument.  If any loaded driver needs VT switching, or the
-> > + * no_console_suspend argument has been passed on the command line, VT
-> > + * switches will occur.
-> > + */
-> 
-> It seems to me that we'll need a separate counter for the number of registered
-> drivers and do the switch if that number is equal to the number of drivers that
-> have passed false to this thing.
-> 
-> In which case we can simplify this slightly and introduce
-> pm_vt_swtich_not_required(void)
+This is the original report descriptor as reported by lsusb -vd 046d:c294.
 
-Sorry, that won't be sufficient.  Rather something like pm_vt_switch_get()
-(indicating "I'll do the switch, thanks") and pm_vt_switch_put() (indicating
-"now you need to do the switch yourself").
+Signed-off-by: Paul Sbarra <sbarra.paul@gmail.com>
+---
+ drivers/hid/hid-lg.c | 84 ++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 79 insertions(+), 5 deletions(-)
 
-> and then the only drivers that need to bother
-> will be the ones known to not require the switch.
-> 
-> Otherwise it will be kind of error prone I'm afraid.
-
-Thanks,
-Rafael
-
-
-> > +void pm_vt_switch_required(bool required)
-> > +{
-> > +	spin_lock(&vt_switch_lock);
-> > +	if (vt_switch_required == -1) {
-> > +		/* First call, set up real value */
-> > +		if (!required)
-> > +			vt_switch_required = 0;
-> > +		if (required)
-> > +			vt_switch_required = 1;
-> > +	} else {
-> > +		/*
-> > +		 * Subsequent caller, make sure we handle the case
-> > +		 * where a driver binds, needs VT switch, but then unbinds
-> > +		 * later and a switchless driver is present.
-> > +		 */
-> > +		if (!required && vt_switch_required > 0)
-> > +			vt_switch_required--;
-> > +		else if (required)
-> > +			vt_switch_required++;
-> > +	}
-> > +	spin_unlock(&vt_switch_lock);
-> > +}
-> > +EXPORT_SYMBOL(pm_vt_switch_required);
-> > +
-> > +static bool pm_vt_switch(void)
-> > +{
-> > +	bool ret = true;
-> > +
-> > +	spin_lock(&vt_switch_lock);
-> > +	if (!vt_switch_required && console_suspend_enabled)
-> > +		ret = false;
-> > +	spin_unlock(&vt_switch_lock);
-> > +	return ret;
-> > +}
-> > +
-> >  int pm_prepare_console(void)
-> >  {
-> > +	if (!pm_vt_switch())
-> > +		return 0;
-> > +
-> >  	orig_fgconsole = vt_move_to_console(SUSPEND_CONSOLE, 1);
-> >  	if (orig_fgconsole < 0)
-> >  		return 1;
-> > @@ -26,6 +82,9 @@ int pm_prepare_console(void)
-> >  
-> >  void pm_restore_console(void)
-> >  {
-> > +	if (!pm_vt_switch())
-> > +		return;
-> > +
-> >  	if (orig_fgconsole >= 0) {
-> >  		vt_move_to_console(orig_fgconsole, 0);
-> >  		vt_kmsg_redirect(orig_kmsg);
-> > 
-> 
+diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
+index a2f8e88..9312a62 100644
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -40,17 +40,83 @@
+ #define LG_FF3			0x1000
+ #define LG_FF4			0x2000
+ 
+-/* Size of the original descriptor of the Driving Force Pro wheel */
++/* Size of the original descriptors of the Driving Force (and Pro) wheels */
++#define DF_RDESC_ORIG_SIZE	130
+ #define DFP_RDESC_ORIG_SIZE	97
+ 
+-/* Fixed report descriptor for Logitech Driving Force Pro wheel controller
++/* Fixed report descriptors for Logitech Driving Force (and Pro)
++ * wheel controllers
+  *
+- * The original descriptor hides the separate throttle and brake axes in
++ * The original descriptors hide the separate throttle and brake axes in
+  * a custom vendor usage page, providing only a combined value as
+  * GenericDesktop.Y.
+- * This descriptor removes the combined Y axis and instead reports
++ * These descriptors remove the combined Y axis and instead report
+  * separate throttle (Y) and brake (RZ).
+  */
++static __u8 df_rdesc_fixed[] = {
++0x05, 0x01,         /*  Usage Page (Desktop),                   */
++0x09, 0x04,         /*  Usage (Joystik),                        */
++0xA1, 0x01,         /*  Collection (Application),               */
++0xA1, 0x02,         /*      Collection (Logical),               */
++0x95, 0x01,         /*          Report Count (1),               */
++0x75, 0x0A,         /*          Report Size (10),               */
++0x14,               /*          Logical Minimum (0),            */
++0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),         */
++0x34,               /*          Physical Minimum (0),           */
++0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),        */
++0x09, 0x30,         /*          Usage (X),                      */
++0x81, 0x02,         /*          Input (Variable),               */
++0x95, 0x0C,         /*          Report Count (12),              */
++0x75, 0x01,         /*          Report Size (1),                */
++0x25, 0x01,         /*          Logical Maximum (1),            */
++0x45, 0x01,         /*          Physical Maximum (1),           */
++0x05, 0x09,         /*          Usage (Buttons),                */
++0x19, 0x01,         /*          Usage Minimum (1),              */
++0x29, 0x0c,         /*          Usage Maximum (12),             */
++0x81, 0x02,         /*          Input (Variable),               */
++0x95, 0x02,         /*          Report Count (2),               */
++0x06, 0x00, 0xFF,   /*          Usage Page (Vendor: 65280),     */
++0x09, 0x01,         /*          Usage (?: 1),                   */
++0x81, 0x02,         /*          Input (Variable),               */
++0x05, 0x01,         /*          Usage Page (Desktop),           */
++0x09, 0x31,         /*          Usage (Y),                      */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x95, 0x01,         /*          Report Count (1),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x81, 0x02,         /*          Input (Variable),               */
++0x25, 0x07,         /*          Logical Maximum (7),            */
++0x46, 0x3B, 0x01,   /*          Physical Maximum (315),         */
++0x75, 0x04,         /*          Report Size (4),                */
++0x65, 0x14,         /*          Unit (Degrees),                 */
++0x09, 0x39,         /*          Usage (Hat Switch),             */
++0x81, 0x42,         /*          Input (Variable, Null State),   */
++0x75, 0x01,         /*          Report Size (1),                */
++0x95, 0x04,         /*          Report Count (4),               */
++0x65, 0x00,         /*          Unit (none),                    */
++0x06, 0x00, 0xFF,   /*          Usage Page (Vendor: 65280),     */
++0x09, 0x01,         /*          Usage (?: 1),                   */
++0x25, 0x01,         /*          Logical Maximum (1),            */
++0x45, 0x01,         /*          Physical Maximum (1),           */
++0x81, 0x02,         /*          Input (Variable),               */
++0x95, 0x02,         /*          Report Count (2),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x09, 0x02,         /*          Usage (?: 2),                   */
++0x81, 0x02,         /*          Input (Variable),               */
++0xC0,               /*      End Collection,                     */
++0xA1, 0x02,         /*      Collection (Logical),               */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x95, 0x07,         /*          Report Count (7),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x09, 0x03,         /*          Usage (?: 3),                   */
++0x91, 0x02,         /*          Output (Variable),              */
++0xC0,               /*      End Collection,                     */
++0xC0                /*  End Collection                          */
++};
++
+ static __u8 dfp_rdesc_fixed[] = {
+ 0x05, 0x01,         /*  Usage Page (Desktop),                   */
+ 0x09, 0x04,         /*  Usage (Joystik),                        */
+@@ -99,7 +165,6 @@ static __u8 dfp_rdesc_fixed[] = {
+ 0xC0                /*  End Collection                          */
+ };
+ 
+-
+ /*
+  * Certain Logitech keyboards send in report #3 keys which are far
+  * above the logical maximum described in descriptor. This extends
+@@ -135,6 +200,15 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 	}
+ 
+ 	switch (hdev->product) {
++	case USB_DEVICE_ID_LOGITECH_WHEEL:
++		if (*rsize == DF_RDESC_ORIG_SIZE) {
++			hid_info(hdev,
++				"fixing up Logitech Driving Force report descriptor\n");
++			rdesc = df_rdesc_fixed;
++			*rsize = sizeof(df_rdesc_fixed);
++		}
++		break;
++
+ 	case USB_DEVICE_ID_LOGITECH_DFP_WHEEL:
+ 		if (*rsize == DFP_RDESC_ORIG_SIZE) {
+ 			hid_info(hdev,
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.1
+
