@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab3BBXLn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 18:11:43 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:60758 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab3BBXLk (ORCPT
+	id S1752234Ab3BBXt0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 18:49:26 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:54224 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab3BBXtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 18:11:40 -0500
-Date: Sat, 2 Feb 2013 15:11:35 -0800
-From: Tejun Heo <tj@kernel.org>
-To: David Teigland <teigland@redhat.com>
-Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        Christine Caulfield <ccaulfie@redhat.com>, cluster-devel@redhat.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] idr: fix a subtle bug in idr_get_next()
-Message-ID: <20130202231135.GB3940@mtj.dyndns.org>
-References: <1359163872-1949-1-git-send-email-tj@kernel.org>
- <1359163872-1949-11-git-send-email-tj@kernel.org>
- <20130128155723.GC16789@redhat.com>
- <20130129151317.GA11609@redhat.com>
- <20130130212417.GJ24014@redhat.com>
- <20130131235320.GN6824@mtj.dyndns.org>
- <20130201001841.GP6824@mtj.dyndns.org>
- <20130201174443.GC3812@redhat.com>
- <20130201180028.GC31863@mtj.dyndns.org>
- <20130202231048.GA3940@mtj.dyndns.org>
+	Sat, 2 Feb 2013 18:49:25 -0500
+Date: Sun, 3 Feb 2013 00:49:20 +0100
+From: Simon Baatz <gmbnomis@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] ARM: kirkwood: fix to retain gbe MAC addresses
+ for DT kernels
+Message-ID: <20130202234919.GB17361@schnuecks.de>
+References: <20130130183049.GR7717@titan.lakedaemon.net>
+ <1359577799-23351-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130202231048.GA3940@mtj.dyndns.org>
+In-Reply-To: <1359577799-23351-1-git-send-email-sebastian.hesselbarth@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 02, 2013 at 03:10:48PM -0800, Tejun Heo wrote:
-> Fix it by ensuring proceeding to the next slot doesn't carry over the
-> unaligned offset - ie. use round_up(id + 1, slot_distance) instead of
-> id += slot_distance.
+Hi Sebastian, Jason,
+
+On Wed, Jan 30, 2013 at 09:29:58PM +0100, Sebastian Hesselbarth wrote:
+> The ethernet controller used on kirkwood looses its MAC address
+> register contents when the corresponding clock is gated. As soon as
+> mv643xx_eth is built as module, the clock gets gated and when loading
+> the module, the MAC address is gone.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: David Teigland <teigland@redhat.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Proper DT support for the mv643xx_eth driver is expected soon, so we add
+> a workaround to always enable ge0/ge1 clocks on kirkwood. This workaround
+> is also already used on non-DT kirkwood kernels.
+> 
+> Reported-by: Simon Baatz <gmbnomis@gmail.com>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-David, can you please test whether the patch makes the skipped
-deletion bug go away?
+Tested this on IB-NAS6210 (kirkwood, single GBE interface). Using
+mv643xx_eth as a module works again now and yields
 
-Thanks!
+# cat /sys/kernel/debug/clk/tclk/ge[01]/clk_enable_count 
+2
+1
 
--- 
-tejun
+as expected.
+
+- Simon
