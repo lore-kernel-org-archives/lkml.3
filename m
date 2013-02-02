@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab3BBABN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 19:01:13 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:51279 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755892Ab3BBABH (ORCPT
+	id S1757140Ab3BBACB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 19:02:01 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:52465 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755713Ab3BBAB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 19:01:07 -0500
+	Fri, 1 Feb 2013 19:01:58 -0500
+Message-ID: <510C5761.7050401@mvista.com>
+Date: Sat, 02 Feb 2013 04:01:37 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <510B81D1.5070302@huawei.com>
-References: <1359562210-26536-1-git-send-email-jiang.liu@huawei.com>
-	<1359562210-26536-2-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQU2LvEjTpbjs+LUb=vU7XDC_76OEo5irR_Bn_DjvfgQ0w@mail.gmail.com>
-	<510A8F9C.5090306@gmail.com>
-	<CAE9FiQXBOj7wCJkXPoBDPiVNH7K0iQPExfrWhAuzwVcyrN+ZZQ@mail.gmail.com>
-	<510B81D1.5070302@huawei.com>
-Date: Fri, 1 Feb 2013 16:01:06 -0800
-X-Google-Sender-Auth: T9PMSrcJ6aT-O3G2WoN4QepRHSc
-Message-ID: <CAE9FiQVH=0H+YPDKSO3t5Mdi-KndZtFXBit826HCNXQ_X3USyA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] acpiphp: remove dead code for PCI host bridge hotplug
-From: Yinghai Lu <yinghai@kernel.org>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matt Porter <mporter@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
+References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <2077c13e12314dc3adc8e5b653855da0@DFLE72.ent.ti.com> <20130201185959.GQ2244@beef>
+In-Reply-To: <20130201185959.GQ2244@beef>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 12:50 AM, Yijing Wang <wangyijing@huawei.com> wrote:
-> On 2013/1/31 23:59, Yinghai Lu wrote:
->> On Thu, Jan 31, 2013 at 7:37 AM, Jiang Liu <liuj97@gmail.com> wrote:
->>>
->>> So I think the code in handle_hotplug_event_bridge() to handle P2P hot-addition
->>> is dead. Yijing has helped to test the code by faking ACPI CUSTOM_METHOD, and it
->>> does work as expected.
->>
->> ok, then.
->>
->> It would be better if you can append some print out from Yijing's test
->> in the changelog.
->>
->
-> Hi Yinghai,
->    I used custom_method module to make root port device 0000:00:07.0 support acpi hotplug (by adding _EJ0 method),
-> This root port device also connected to a slot which support hotplug. I tested to hot plug root port device 0000:00:07.0,
-> and test steps and info as bellow, if there are somethings missing during test, please let me know.
-> Thanks very much!
->
-> linux-ha2:/sys/bus/pci/slots # lspci -tv
->  \-[0000:00]-+-00.0  Intel Corporation 5520/5500/X58 I/O Hub to ESI Port
->              +-01.0-[0000:01]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
->              |                 \-00.1  Intel Corporation 82576 Gigabit Network Connection
->              +-03.0-[0000:02]----00.0  LSI Logic / Symbios Logic SAS1064ET PCI-Express Fusion-MPT SAS
->              +-04.0-[0000:03]--
->              +-05.0-[0000:04]--
->              +-07.0-[0000:05]--+-00.0  nVidia Corporation GT218 [GeForce G210]
->              |                 \-00.1  nVidia Corporation High Definition Audio Controller
->              +-0d.0  Intel Corporation Device 343a
-> linux-ha2:/sys/bus/pci/slots # ls
-> 0  0-1  1  3  5  7
-> linux-ha2:/sys/bus/pci/slots # cat 1/address
-> 0000:00:07
-> linux-ha2:/sys/bus/pci/slots # cd 1
-> linux-ha2:/sys/bus/pci/slots/1 # ls
-> adapter  address  attention  cur_bus_speed  latch  max_bus_speed  module  power
-> linux-ha2:/sys/bus/pci/slots/1 # cat power
-> 1
-> linux-ha2:/sys/bus/pci/slots/1 # echo "\_SB_.NOD0.PCI0.MRP7 3" > /sys/kernel/debug/acpi/sci_notify
-> linux-ha2:/sys/bus/pci/slots/1 # cat power
-> 0
-> linux-ha2:/sys/bus/pci/slots/1 # lspci -tv
->  \-[0000:00]-+-00.0  Intel Corporation 5520/5500/X58 I/O Hub to ESI Port
->              +-01.0-[0000:01]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
->              |                 \-00.1  Intel Corporation 82576 Gigabit Network Connection
->              +-03.0-[0000:02]----00.0  LSI Logic / Symbios Logic SAS1064ET PCI-Express Fusion-MPT SAS
->              +-04.0-[0000:03]--
->              +-05.0-[0000:04]--
->              +-0d.0  Intel Corporation Device 343a
-> linux-ha2:/sys/bus/pci/slots/1 # echo "\_SB_.NOD0.PCI0.MRP7 1" > /sys/kernel/debug/acpi/sci_notify
-> linux-ha2:/sys/bus/pci/slots/1 # cat power
-> 1
-> linux-ha2:/sys/bus/pci/slots/1 # lspci -tv
->  \-[0000:00]-+-00.0  Intel Corporation 5520/5500/X58 I/O Hub to ESI Port
->              +-01.0-[0000:01]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
->              |                 \-00.1  Intel Corporation 82576 Gigabit Network Connection
->              +-03.0-[0000:02]----00.0  LSI Logic / Symbios Logic SAS1064ET PCI-Express Fusion-MPT SAS
->              +-04.0-[0000:03]--
->              +-05.0-[0000:04]--
->              +-07.0-[0000:05]--+-00.0  nVidia Corporation GT218 [GeForce G210]
->              |                 \-00.1  nVidia Corporation High Definition Audio Controller
->              +-0d.0  Intel Corporation Device 343a
+Hello.
 
-looks good.
+On 01-02-2013 22:59, Matt Porter wrote:
 
-Thanks
+>>>>> Move mach-davinci/dma.c to common/edma.c so it can be used
+>>>>> by OMAP (specifically AM33xx) as well.
+
+>>>> I think this should rather go to drivers/dma/?
+
+>>> No, this is the private EDMA API. It's the analogous thing to
+>>> the private OMAP dma API that is in plat-omap/dma.c. The actual
+>>> dmaengine driver is in drivers/dma/edma.c as a wrapper around
+>>> this...same way OMAP DMA engine conversion is being done.
+
+>>    Keeps me wondering why we couldn't have the same with CPPI 4.1 when I proposed
+>> that, instead of waiting indefinitely for TI to convert it to drivers/dma/
+>> directly. We could have working MUSB DMA on OMAP-L1x/Sitara all this time... Sigh.
+
+> That is a shame. Yeah, I've pointed out that I was doing this exactly
+> the same way as was acceptable for the OMAP DMA conversion since it was
+> in RFC. The reasons are sound since in both cases, we have many drivers
+> to convert that need to continue using the private DMA APIs.
+
+    In case of CPPI 4.1, we'd only have to convert MUSB DMA driver. Other 
+in-tree CPPI 4.1 having SoCs don't use it for anything but MUSB -- it even is 
+sub-block of their MUSB device, AFAIK (I maybe wrong about Sitaras -- I don't 
+know them well).
+
+> -Matt
+
+WBR, Sergei
+
