@@ -1,102 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab3BBMML (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 07:12:11 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:47513 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756539Ab3BBMMJ (ORCPT
+	id S1757346Ab3BBMSV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 07:18:21 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33682 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756761Ab3BBMSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 07:12:09 -0500
-Message-ID: <510D0293.8030509@openvz.org>
-Date: Sat, 02 Feb 2013 16:12:03 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
+	Sat, 2 Feb 2013 07:18:17 -0500
+Date: Sat, 2 Feb 2013 12:17:38 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sergei Shtylyov <sshtylyov@mvista.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: Matt Porter <mporter@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
+	arm/common
+Message-ID: <20130202121738.GZ2637@n2100.arm.linux.org.uk>
+References: <20130201184915.GP2244@beef> <510C1D0E.6030401@mvista.com> <20130201185820.GE29898@arwen.pp.htv.fi> <510C2A47.1090607@mvista.com> <20130201205600.GA31762@arwen.pp.htv.fi> <20130201213003.GW2637@n2100.arm.linux.org.uk> <510C58DF.3010103@mvista.com> <20130202004455.GX2637@n2100.arm.linux.org.uk> <510C7554.3060800@mvista.com> <20130202101851.GY2637@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend
- finalization
-References: <20130118113019.6698.25941.stgit@zurg> <51077499.90602@openvz.org> <7488961.Q6GFlfgakd@vostro.rjw.lan> <2547462.dZlJyWsOdA@vostro.rjw.lan>
-In-Reply-To: <2547462.dZlJyWsOdA@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130202101851.GY2637@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> On Tuesday, January 29, 2013 12:55:15 PM Rafael J. Wysocki wrote:
->> On Tuesday, January 29, 2013 11:04:57 AM Konstantin Khlebnikov wrote:
->>> Rafael J. Wysocki wrote:
->>>> On Monday, January 28, 2013 04:17:42 PM Bjorn Helgaas wrote:
->>>>> [+cc Rafael]
->>>>>
->>>>> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
->>>>> <khlebnikov@openvz.org>   wrote:
->>>>>> This patch effectively reverts commit 42eca2302146fed51335b95128e949ee6f54478f
->>>>>> ("PCI: Don't touch card regs after runtime suspend D3")
->>>>>>
->>>>>> | This patch checks whether the pci state is saved and doesn't attempt to hit
->>>>>> | any registers after that point if it is.
->>>>>>
->>>>>> This seems completely wrong. Yes, PCI configuration space has been saved by
->>>>>> driver, but this doesn't means that all job is done and device has been
->>>>>> suspended and ready for waking up in the future.
->>>>>>
->>>>>> For example driver e1000e for ethernet in my thinkpad x220 saves pci-state
->>>>>> but device cannot wakeup after that, because it needs some ACPI callbacks
->>>>>> which usually called from pci_finish_runtime_suspend().
->>>>>>
->>>>>> | Optimus (dual-gpu) laptops seem to have their own form of D3cold, but
->>>>>> | unfortunately enter it on normal D3 transitions via the ACPI callback.
->>>>>>
->>>>>> Hardware which disappears from the bus unexpectedly is exception, so let's
->>>>>> handle it as an exception. Its driver should set device state to D3cold and
->>>>>> the rest code will handle it properly.
->>>>>
->>>>> Functions in D3cold don't have power, so it's completely expected that
->>>>> they would disappear from the bus and not respond to config accesses.
->>>>> Maybe Dave was referring to D3hot, where functions *should* respond to
->>>>> config accesses.  I dunno.
->>>>>
->>>>> Just to be clear, it sounds like 42eca230 caused a regression on your
->>>>> e1000e device?  If so, I guess we should revert it unless you and Dave
->>>>> can figure out a better patch that fixes both your e1000e device and
->>>>> the Optimus issue.
->>>>
->>>> Yes, if there's a regression, let's revert it, but I'd like the regression
->>>> to be described clearly.
->>>
->>> Yep, this is regression.
->>>
->>> commit 42eca2302146fed51335b95128e949ee6f54478f ("PCI: Don't touch
->>> card regs after runtime suspend D3") changes state convention during
->>> runtime-suspend transaction too much. If PCI configuration space
->>> has been saved by driver that does not means that all job is done
->>> and device has been suspended and ready for waking up in the future.
->>>
->>> e1000e saves pci-config space itself, but it requires operations which
->>> pci_finish_runtime_suspend() does: preparing for wake (calling particular
->>> platform pm-callbacks) and switching to proper sleep state.
->>
->> Well, I'd argue this is a bug in e1000e.  Why does it need to save the PCI
->> config space even though pci_pm_runtime_suspend() will do that anyway?
->
-> I honestly don't think we should revert 42eca2302146 because of this.
->
-> Yes, there is a requirement that drivers not save the PCI config space by
-> themselves unless they want to do the whole power management by themselves too
-> and e1000e is not following that.  So either we need to drop the
-> pci_save_state() from __e1000_shutdown() which I would prefer (I'm not really
-> sure why it is there), or e1000_runtime_suspend() needs to call
-> pci_finish_runtime_suspend() by itself.
+On Sat, Feb 02, 2013 at 10:18:51AM +0000, Russell King - ARM Linux wrote:
+> On Sat, Feb 02, 2013 at 06:09:24AM +0400, Sergei Shtylyov wrote:
+> > Hello.
+> >
+> > On 02-02-2013 4:44, Russell King - ARM Linux wrote:
+> >
+> >>>>> On Fri, Feb 01, 2013 at 11:49:11PM +0300, Sergei Shtylyov wrote:
+> >>>>>>> good point, do you wanna send some patches ?
+> >
+> >>>>>>      I have already sent them countless times and even stuck CPPI 4.1 support (in
+> >>>>>> arch/arm/common/cppi41.c) in Russell's patch system. TI requested to remove the
+> >>>>>> patch. :-(
+> >
+> >>>>> sticking into arch/arm/common/ wasn't a nice move. But then again, so
+> >>>>> wasn't asking for the patch to be removed :-s
+> >
+> >>>> Err, patches don't get removed, they get moved to 'discarded'.
+> >
+> >>>     Any chance to bring it back to life? :-)
+> >>>     Although... drivers/usb/musb/cppi41.c would need to be somewhat
+> >>> reworked for at least AM35x and I don't have time. But that may change,
+> >>> of course.
+> >
+> >> Right, I've just looked back at the various meeting minutes from December
+> >> 2010 when the CPPI stuff was discussed.  Yes, I archive these things and
+> >> all email discussions for referencing in cases like this.
+> >
+> >    Thanks.
+> >
+> >> Unfortunately, they do not contain any useful information other than the
+> >> topic having been brought up.  At that point, the CPPI stuff was in
+> >> mach-davinci, and I had suggested moving it into drivers/dma.
+> >
+> >    I don't remember that, probably was out of the loop again.
 
-Yet another problem: some drivers calls pci_save_state() from ->probe() callback
-to use this saved state in pci_error_handlers->slot_reset().
-As result pdev->state_saved is true mostly all time.
-At least e1000e and drivers/pci/pcie/portdrv_pci.c are doing this.
+Here you go - this goes back even _further_ - November 2009 - on the
+mailing list.  The entire thread:
 
-I think it will be safer to revert 42eca2302146 in v3.8
+http://lists.arm.linux.org.uk/lurker/thread/20091102.105759.a54cf3f5.en.html
+
+And selected emails from it:
+
+http://lists.arm.linux.org.uk/lurker/message/20091102.103706.38c029b5.en.html
+On Mon, Nov 02, 2009 at 10:37:06AM +0000, I wrote:
+| On Mon, Nov 02, 2009 at 04:27:59PM +0530, Gupta, Ajay Kumar wrote:
+| > Another option is to create arch/arm/ti-common to place all TI platform's
+| > common software, such as CPPI4.1 used both in DA8xx and AM3517.
+| 
+| No thanks.  I really don't see why we should allow TI to have yet more
+| directories scattered throughout the tree that are out of place with
+| existing conventions.
+| 
+| And what is this CPPI thing anyway?
+| 
+| http://acronyms.thefreedictionary.com/CPPI
+| 
+| "Communications Port Programming Interface" seems to be about the best
+| applicable one from that list!
+| 
+| If it's a USB DMA device (from the patches I can find, that seems to be
+| the case) then why can't it live in drivers/usb or drivers/dma ?
+
+And again:
+
+http://lists.arm.linux.org.uk/lurker/message/20091102.115458.61cde450.en.html
+On Mon, Nov 02, 2009 at 11:54:58AM +0000, I wrote:
+| On Mon, Nov 02, 2009 at 04:27:59PM +0530, Gupta, Ajay Kumar wrote:
+| > CPPI4.1 DMA engine can be used either by USB or by Ethernet interface though
+| > currently only USB is using it but in future even Ethernet devices may use it.
+| 
+| drivers/dma does seem to be the right place for this.
+
+http://lists.arm.linux.org.uk/lurker/message/20091102.110217.adec3ca7.en.html
+Even Felipe Balbi said so:
+| you might want to provide support for it via drivers/dma and for the
+| musb stuff, you just add the wrappers musb uses. See how tusb6010_omap.c
+| uses OMAP's system dma which is also used by any other driver which
+| requests a dma channel.
+
+And it seems that _YOU_ did get the message - see your quoted text in:
+http://lists.arm.linux.org.uk/lurker/message/20091230.132240.ecd56b3d.en.html
+> We're currently having it there but the matter is it should be shred
+> between different platforms, so arch/arm/common/ seems like the right
+> place (which Russell didn't like, suggesting ill suited for that
+> drivers/dma/ instead).
+
+See - you acknowledge here that I don't like it.  So you _KNOW_ my views
+on it in December 2009, contary to what you're saying in this thread.
+
+Yet, you persisted with putting it in arch/arm/common:
+
+http://lists.arm.linux.org.uk/lurker/message/20100515.181453.472c7c10.en.html
+| Changes since the previous version:
+| - moved everything from arch/arm/mach-davinci/ to arch/arm/common/;
+| - s/CONFIG_CPPI41/CONFIG_TI_CPPI41/, made that option invisible;
+| - added #include <linux/slab.h> for kzalloc();
+| - switched alloc_queue() and cppi41_queue_free() to using bit operations;
+| - replaced 'static' linking_ram[] by local variable in cppi41_queue_mgr_init();
+| - fixed pr_debug() in cppi41_dma_ctrlr_init() to print the real queue manager #.
+
+So, see, I had already objected to it being in arch/arm well before
+you stuck your patch into the patch system.  And somehow you think
+that ignoring my previous comments and doing it anyway will result in
+progress?
+
+So, let's recap.  The timeline behind this is:
+
++ 2 Nov 2009: Question asked about putting it in arch/arm/ti-common
+  + I responded saying a clear no to that, suggesting other locations
+    all of which were outside arch/arm.
+  + I responded again saying an hour or two later saying the same thing.
+  + Felipe Balbi agreed with drivers/dma.
++ 15 May 2010: v5 posted with it in arch/arm/common
++ 06 Aug 2010: put into patch system sa 6305/1
++ 06 Dec 2010: TI meeting.
+  + Pre-meeting notes show that my views on this are known:
+    + I'll quote this from it: "Russell suggested to move the driver at
+      drivers/dma/".
+    + Raises concern that DMA engine API may not fit.
+  + I respond to that concern as work has been done on the DMA engine API
+    to improve the slave mode support recently as a result of Linus Walleij's
+    work on AMBA PL08x DMA support.
+    (I would _not_ have done so if I had changed my view about it being
+     under drivers/dma/).
++ 07 Dec 2010: emails talking about moving MUSB over to DMA engine API
+  so that MUSB should not care about its DMA backend (that being CPPI
+  or some other one.)
+  + Email with "Let's see if I can get it all done by 2.6.39."
++ 08 Dec 2010: patch 6305/1 discarded from the patch system as there now
+  seems to be concensus on the issue.
++ 03 Jan 2011: you ask me why it was discarded
+  http://lists.arm.linux.org.uk/lurker/thread/20110103.160610.8cbe8e7d.en.html
+  + I respond "It may have been that it's inventing its own API rather
+    than using something like the DMA engine API."
+  + Ajay said: "This issue was discussed recently at TI and proposal was
+    to place it to drivers/dma folder. Moreover, even Felipe also seems
+    to move other musb DMAs (Inventra, CPPI3.0, TUSB) to drivers/dma."
+
+Oh, and then we come to this interesting email from Felipe to you, in
+response to your reluctance to put it in drivers/dma.
+| Do I really have to spell it out ? Really ?
+| 
+| You don't need to physically move the part of the code to drivers/dma,
+| but it has to use the API. The mentor DMA is internal to MUSB.
+| tusb6010_omap.c isn't.
+| 
+| Where it makes sense to move the code under drivers/dma, it will be
+| done, where it doesn't, it won't be done, but it will use the same API.
+| That's all.
+| 
+| The end goal is just to drop all these ad-hoc "APIs" for accessing DMA
+| on musb code.
+
+See the common theme here?  I don't like it under arch/arm.  I've been
+pretty _consistent_ in suggesting drivers/dma/ all through that...
+Others have said it.  People even acknowledge that's what I've been
+saying, people who were not in the original discussion.
+
+What I think is this: it is _YOU_ who don't want to hear that message,
+so _YOU_ are intentionally ignoring it, and _YOU_ are looking for
+someone to blame for it.  You've decided I'm to blame because _YOU_
+aren't listening.
+
+The reason there hasn't been any progress on this is _NOT_ down to me.
+I've provided my feedback, and promptly been ignored.  Others have told
+you the same thing, and promptly been ignored.  Sorry, this is not my
+problem.  This is entirely YOUR problem, one of your own making.
+
+But whatever.  We are NOT going to put CPPI under arch/arm.  Not now that
+during the last merge window Linus complained to Arnd about the amount of
+code coming through for arch/arm _AGAIN_.  Not after last time Linus
+complained about TI OMAP which prompted the creation of arm-soc.  AND THAT
+IS *FINAL*.  CPPI DMA SUPPORT IS *NOT* GOING UNDER ARCH/ARM.  PERIOD.  NOT
+GOING TO HAPPEN.
+
+Is this clear enough yet, or how many more years of emails do you need
+yet more emails to get this message through?
