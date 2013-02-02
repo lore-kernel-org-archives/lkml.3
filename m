@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab3BBDXL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 22:23:11 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:52065 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757586Ab3BBDW5 (ORCPT
+	id S1757676Ab3BBDXN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 22:23:13 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39833 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757590Ab3BBDW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 22:22:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359744343-18690-3-git-send-email-dirk.brandewie@gmail.com>
-References: <1359744343-18690-1-git-send-email-dirk.brandewie@gmail.com>
-	<1359744343-18690-3-git-send-email-dirk.brandewie@gmail.com>
-Date: Sat, 2 Feb 2013 08:52:55 +0530
-X-Google-Sender-Auth: MxctlyObTmjAi2gzLaE_hLgq2Jw
-Message-ID: <CAOh2x=mb0ffYoS70L_63T1YUG6a74EazyxM0R3ec2GTN2PPWTQ@mail.gmail.com>
-Subject: Re: [PATCH 2/6] cpufreq: Only query drivers that implement cpufreq_driver.target()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Feb 2013 22:22:56 -0500
+Date: Sat, 2 Feb 2013 14:22:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        =?UTF-8?B?IllPU0hJRlVKSSBIaWRlYWtpIC8g5ZCJ6Jek6Iux5piOIg==?= 
+	<yoshfuji@linux-ipv6.org>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20130202142253.e31167bf695f000c0c78f4cc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__2_Feb_2013_14_22_53_+1100_iAj=Jt9rSdQWnb0v"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 2, 2013 at 12:15 AM,  <dirk.brandewie@gmail.com> wrote:
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
->
-> Scaling drivers that implement cpufreq_driver.setpolicy() have
-> internal governors and may/will change the current operating frequency
-> very frequently this will cause cpufreq_out_of_sync() to be called
-> every time. Only call cpufreq_driver.get() for drivers that implement
-> cpufreq_driver.target()
->
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> ---
->  drivers/cpufreq/cpufreq.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 1c037f0..493cd50 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1794,7 +1794,7 @@ int cpufreq_update_policy(unsigned int cpu)
->
->         /* BIOS might change freq behind our back
->           -> ask driver for current freq and notify governors about a change */
-> -       if (cpufreq_driver->get) {
-> +       if (cpufreq_driver->get && cpufreq_driver->target) {
+--Signature=_Sat__2_Feb_2013_14_22_53_+1100_iAj=Jt9rSdQWnb0v
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This would mean policy->cur has a garbage value. I don't really know
-how would other routine behave on this. Would it make sense to make
-policy->cur zero atleast?
+Hi all,
+
+Today's linux-next merge of the net-next tree got a conflict in
+net/ipv6/route.c between commit bd30e947207e ("ipv6: do not create
+neighbor entries for local delivery") from the net tree and commit
+c440f1609b65 ("ipv6: Do not depend on rt->n in ip6_pol_route()") from the
+net-next tree.
+
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/ipv6/route.c
+index 363d8b7,f3328bc..0000000
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@@ -928,7 -884,7 +884,7 @@@ restart
+  	dst_hold(&rt->dst);
+  	read_unlock_bh(&table->tb6_lock);
+ =20
+- 	if (!rt->n && !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
+ -	if (!(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_GATEWAY)))
+++	if (!(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL | RTF_GATEWAY)))
+  		nrt =3D rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
+  	else if (!(rt->dst.flags & DST_HOST))
+  		nrt =3D rt6_alloc_clone(rt, &fl6->daddr);
+
+--Signature=_Sat__2_Feb_2013_14_22_53_+1100_iAj=Jt9rSdQWnb0v
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRDIaNAAoJEECxmPOUX5FEkQkP/igox+vuoIvcKiwo9HyG7XJU
+Vbeh1nVIrJmtOBREE3Ngnj/dXa/Dhvyi/rY5DQdJ11uGOPyWRCf3oWrrlZNl3JLH
+BvURxweh+bbHqRnOzpZvUwXjBYk3mB7/ycnj01Riywe4yR5tq4SH3pFRebctjMt2
+WDVg/eW8PDYlotvHwphaCvnjpnmIs225/YWXbUNO5Un4epjeYnxnRA2if2627VTB
+ugSQEzoFv3HNklN5ZP5xCgQKqlAxbAoE9iw8BwEoc5BWzsVqFWFkkeVw6NSP3e/x
+GlQLgdcOo2BC/Mg24f25HoGfebRKF+oqfFt3RynvcOJKOFCelAKjezOYKWBqoydl
+BaoAaXlhY7vnL746b+kk7jguEnwpbBsEvfIhn4W4PHV8X282PtqWJ1GHfhH/x/XR
+HszfIIJjybT+x2Tg8dn7Y99lgzlais9eXc6llYoiq11fwYBApKj9rzgnUakRPJOP
+SowNfYGTznbDhQN5TksH0N8xMv2rSGg2z1FG7r2/O4yBcgjr+cIs5pzTkOmAsHec
+44BgvkyMsRYLRWWDPguyyVCp/hqnozjN9e7p4lQPS/JXMBrI17b2nwtUQc8I1LXE
+57io3S7yvM6rpSJKw8PNfBqH7yd0xX8YMv5wtCLuRzCcN9uXFIEFejOiT8ZS2RzW
+WnYdi9lIY/61FLmYyuxo
+=g7Qb
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__2_Feb_2013_14_22_53_+1100_iAj=Jt9rSdQWnb0v--
