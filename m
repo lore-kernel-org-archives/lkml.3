@@ -1,207 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab3BBR1J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 12:27:09 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:33435 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757837Ab3BBR1H convert rfc822-to-8bit (ORCPT
+	id S1758058Ab3BBR2E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 12:28:04 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:34055 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758012Ab3BBR2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 12:27:07 -0500
-From: Romain KUNTZ <r.kuntz@ipflavors.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
-Date: Sat, 2 Feb 2013 18:27:03 +0100
-Message-Id: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        herbert@gondor.hengli.com.au,
-        Emmanuel THIERRY <emmanuel.thierry@telecom-bretagne.eu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-X-Mailer: Apple Mail (2.1499)
+	Sat, 2 Feb 2013 12:28:01 -0500
+Message-ID: <510D4C8A.4050305@mvista.com>
+Date: Sat, 02 Feb 2013 21:27:38 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Matt Porter <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
+References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <2077c13e12314dc3adc8e5b653855da0@DFLE72.ent.ti.com> <20130201185959.GQ2244@beef> <20130202124533.GA2637@n2100.arm.linux.org.uk>
+In-Reply-To: <20130202124533.GA2637@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current algorithm to insert XFRM policies with a mark and a mask
-allows the insertion of more generic policies, but fails when trying
-to install more specific policies.
+Hello.
 
-For example, executing the below commands in that order succeed:
- ip -6 xfrm policy flush
- ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
- ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
+On 02-02-2013 16:45, Russell King - ARM Linux wrote:
 
-But it fails in the reverse order:
- ip -6 xfrm policy flush
- ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
- ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
- RTNETLINK answers: File exists
+> Now, CPPI is brand new code to arch/arm - always has been.  It post-dates
+> the DMA engine API.  And it's been said many times about moving it to
+> drivers/dma.  The problem is Sergei doesn't want to do it - he's anti the
 
-This patch modifies the tests on the marks and masks and takes the most
-straightforward way: compare the mask and mark separately. It requires to 
-give the xfrm_mark structure as an argument to some of the xfrm_policy_*
-functions, instead of just the mark.
+    I *can't* do it, and I have denied all further responibility for it.
 
-This patch covers the problem for XFRM policies, a similar problem
-exists with XFRM states. If the proposed solution is satisfactory, I 
-will propose a similar patch for the states. Comments are welcome.
+> DMA engine API for whatever reasons he can dream up.  He professes no
 
-Signed-off-by: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
-Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
----
- include/net/xfrm.h     |    6 ++++--
- net/xfrm/xfrm_policy.c |   18 +++++++++++-------
- net/xfrm/xfrm_user.c   |   13 +++++++------
- 3 files changed, 22 insertions(+), 15 deletions(-)
+    I'm not dreaming anything up. Please understand that CPPI 4.1 is not just 
+a normal DMA controller -- it's a complex of several devices with DMA 
+controller being only one of them, and one that can't work autonomously but 
+only thru the proxy of the queue manager. That queue manager stuff I found 
+hard to fit into drivers/dma/ infrastructure. Myabe it was a honest mistake, 
+of course.
 
-diff --git a/include/net/xfrm.h b/include/net/xfrm.h
-index 63445ed..cdd79b7 100644
---- a/include/net/xfrm.h
-+++ b/include/net/xfrm.h
-@@ -1529,12 +1529,14 @@ extern int xfrm_policy_walk(struct net *net, struct xfrm_policy_walk *walk,
- 	int (*func)(struct xfrm_policy *, int, int, void*), void *);
- extern void xfrm_policy_walk_done(struct xfrm_policy_walk *walk);
- int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl);
--struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net, u32 mark,
-+struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net,
-+					  struct xfrm_mark *mark,
- 					  u8 type, int dir,
- 					  struct xfrm_selector *sel,
- 					  struct xfrm_sec_ctx *ctx, int delete,
- 					  int *err);
--struct xfrm_policy *xfrm_policy_byid(struct net *net, u32 mark, u8, int dir, u32 id, int delete, int *err);
-+struct xfrm_policy *xfrm_policy_byid(struct net *net, struct xfrm_mark *mark,
-+				     u8, int dir, u32 id, int delete, int *err);
- int xfrm_policy_flush(struct net *net, u8 type, struct xfrm_audit *audit_info);
- u32 xfrm_get_acqseq(void);
- extern int xfrm_alloc_spi(struct xfrm_state *x, u32 minspi, u32 maxspi);
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index 07c5857..d9fe665 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -569,7 +569,6 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
- 	struct xfrm_policy *delpol;
- 	struct hlist_head *chain;
- 	struct hlist_node *entry, *newpos;
--	u32 mark = policy->mark.v & policy->mark.m;
- 
- 	write_lock_bh(&xfrm_policy_lock);
- 	chain = policy_hash_bysel(net, &policy->selector, policy->family, dir);
-@@ -578,7 +577,8 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
- 	hlist_for_each_entry(pol, entry, chain, bydst) {
- 		if (pol->type == policy->type &&
- 		    !selector_cmp(&pol->selector, &policy->selector) &&
--		    (mark & pol->mark.m) == pol->mark.v &&
-+		    policy->mark.v == pol->mark.v &&
-+		    policy->mark.m == pol->mark.m &&
- 		    xfrm_sec_ctx_match(pol->security, policy->security) &&
- 		    !WARN_ON(delpol)) {
- 			if (excl) {
-@@ -623,7 +623,8 @@ int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)
- }
- EXPORT_SYMBOL(xfrm_policy_insert);
- 
--struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net, u32 mark, u8 type,
-+struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net,
-+					  struct xfrm_mark *mark, u8 type,
- 					  int dir, struct xfrm_selector *sel,
- 					  struct xfrm_sec_ctx *ctx, int delete,
- 					  int *err)
-@@ -638,7 +639,8 @@ struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net, u32 mark, u8 type,
- 	ret = NULL;
- 	hlist_for_each_entry(pol, entry, chain, bydst) {
- 		if (pol->type == type &&
--		    (mark & pol->mark.m) == pol->mark.v &&
-+		    mark->v == pol->mark.v &&
-+		    mark->m == pol->mark.m &&
- 		    !selector_cmp(sel, &pol->selector) &&
- 		    xfrm_sec_ctx_match(ctx, pol->security)) {
- 			xfrm_pol_hold(pol);
-@@ -663,8 +665,9 @@ struct xfrm_policy *xfrm_policy_bysel_ctx(struct net *net, u32 mark, u8 type,
- }
- EXPORT_SYMBOL(xfrm_policy_bysel_ctx);
- 
--struct xfrm_policy *xfrm_policy_byid(struct net *net, u32 mark, u8 type,
--				     int dir, u32 id, int delete, int *err)
-+struct xfrm_policy *xfrm_policy_byid(struct net *net, struct xfrm_mark *mark,
-+				     u8 type, int dir, u32 id,
-+				     int delete, int *err)
- {
- 	struct xfrm_policy *pol, *ret;
- 	struct hlist_head *chain;
-@@ -680,7 +683,8 @@ struct xfrm_policy *xfrm_policy_byid(struct net *net, u32 mark, u8 type,
- 	ret = NULL;
- 	hlist_for_each_entry(pol, entry, chain, byidx) {
- 		if (pol->type == type && pol->index == id &&
--		    (mark & pol->mark.m) == pol->mark.v) {
-+		    mark->v == pol->mark.v &&
-+		    mark->m == pol->mark.m) {
- 			xfrm_pol_hold(pol);
- 			if (delete) {
- 				*err = security_xfrm_policy_delete(
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index eb872b2..2d41902 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -1602,7 +1602,7 @@ static int xfrm_get_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	struct km_event c;
- 	int delete;
- 	struct xfrm_mark m;
--	u32 mark = xfrm_mark_get(attrs, &m);
-+	xfrm_mark_get(attrs, &m);
- 
- 	p = nlmsg_data(nlh);
- 	delete = nlh->nlmsg_type == XFRM_MSG_DELPOLICY;
-@@ -1616,7 +1616,8 @@ static int xfrm_get_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
- 		return err;
- 
- 	if (p->index)
--		xp = xfrm_policy_byid(net, mark, type, p->dir, p->index, delete, &err);
-+		xp = xfrm_policy_byid(net, &m, type, p->dir,
-+				      p->index, delete, &err);
- 	else {
- 		struct nlattr *rt = attrs[XFRMA_SEC_CTX];
- 		struct xfrm_sec_ctx *ctx;
-@@ -1633,7 +1634,7 @@ static int xfrm_get_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
- 			if (err)
- 				return err;
- 		}
--		xp = xfrm_policy_bysel_ctx(net, mark, type, p->dir, &p->sel,
-+		xp = xfrm_policy_bysel_ctx(net, &m, type, p->dir, &p->sel,
- 					   ctx, delete, &err);
- 		security_xfrm_policy_free(ctx);
- 	}
-@@ -1905,7 +1906,7 @@ static int xfrm_add_pol_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	u8 type = XFRM_POLICY_TYPE_MAIN;
- 	int err = -ENOENT;
- 	struct xfrm_mark m;
--	u32 mark = xfrm_mark_get(attrs, &m);
-+	xfrm_mark_get(attrs, &m);
- 
- 	err = copy_from_user_policy_type(&type, attrs);
- 	if (err)
-@@ -1916,7 +1917,7 @@ static int xfrm_add_pol_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
- 		return err;
- 
- 	if (p->index)
--		xp = xfrm_policy_byid(net, mark, type, p->dir, p->index, 0, &err);
-+		xp = xfrm_policy_byid(net, &m, type, p->dir, p->index, 0, &err);
- 	else {
- 		struct nlattr *rt = attrs[XFRMA_SEC_CTX];
- 		struct xfrm_sec_ctx *ctx;
-@@ -1933,7 +1934,7 @@ static int xfrm_add_pol_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
- 			if (err)
- 				return err;
- 		}
--		xp = xfrm_policy_bysel_ctx(net, mark, type, p->dir,
-+		xp = xfrm_policy_bysel_ctx(net, &m, type, p->dir,
- 					   &p->sel, ctx, 0, &err);
- 		security_xfrm_policy_free(ctx);
- 	}
--- 
-1.7.2.5
+> knowledge of my dislike for having it in arch/arm, yet there's emails
+> from years back showing that he knew about it.  TI knows about it; Ajay
+> about it.  Yet... well... history speaks volumes about this.
 
+    Some details have slipped rom my memory after that many years. Im sorry 
+for that.
+
+> Now, there may be a new problem with CPPI.  That being we're now requiring
+> DT support.  _Had_ this been done prior to the push for DT, then it would
+> not have been a concern, because then the problem becomes one for DT.
+> But now that OMAP is being converted to DT, and DT is The Way To Go now,
+> that's an additional problem that needs to be grappled with - or it may
+> make things easier.
+
+    DaVinci is also being converted to device tree. However, that support 
+remains optional for now. Not sure it will make things easier, as we still 
+have two distinct devices to declare in the device tree: DMA controller and 
+queue manager, and we'll have to describe the interconnect between them too 
+(as a props of DMA controller I guess)...
+
+WBR, Sergei
 
