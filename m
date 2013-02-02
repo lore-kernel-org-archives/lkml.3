@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab3BBQUv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 11:20:51 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:36182 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582Ab3BBQUs (ORCPT
+	id S1758001Ab3BBQ1W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 11:27:22 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:62096 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757582Ab3BBQ1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 11:20:48 -0500
-Date: Sat, 2 Feb 2013 16:20:52 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v5 9/9] devcg: propagate local changes down the
- hierarchy
-Message-ID: <20130202162052.GB11284@mail.hallyn.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
- <20130201190958.GP17632@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130201190958.GP17632@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 2 Feb 2013 11:27:19 -0500
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH 0/9] gpiolib: remove gpio_desc[] static array
+Date: Sun,  3 Feb 2013 01:29:22 +0900
+Message-Id: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
-> +/**
-> + * propagate_exception - propagates a new exception to the children
-> + * @devcg_root: device cgroup that added a new exception
-> + *
-> + * returns: 0 in case of success, != 0 in case of error
-> + */
-> +static int propagate_exception(struct dev_cgroup *devcg_root)
-> +{
-> +	struct cgroup *root = devcg_root->css.cgroup;
-> +	struct dev_cgroup *devcg, *parent, *tmp;
-> +	int rc = 0;
-> +	LIST_HEAD(pending);
-> +
-> +	get_online_devcg(root, &pending);
-> +
-> +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-> +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-> +
-> +		dev_exception_clean(&devcg->exceptions);
-> +		if (devcg->behavior == parent->behavior) {
-> +			rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
+Since Linus kindly merged the gpiochip_reserve() removal patches, here comes the
+main course.
 
-Let's say parent A and child B both have DEFAULT_DENY, with a set of let's
-say 5 whitelist exceptions.  Now the parent adds two more whitelist
-exceptions.  As you say, we don't propagate those.
+This series removes the ARCH_NR_GPIOS sized static array of GPIO descriptors
+that stood in gpiolib and replaces it with a more flexible mechanism that
+dynamically allocates GPIO descriptors as chips are added.
 
-Now the parent removes one of it's whitelist exceptions.
-devcgroup_update_access() calls dev_exception_rm() followed by
-propagate_exception(), which comes here and copies the parent's
-whitelist - including the two new whitelist rules - to the
-child.
+ARCH_NR_GPIOS is still here, but now only controls the upper limit of the GPIO
+integer space, i.e. which GPIO numbers are valid and where GPIO chips without a
+base GPIO are placed in the GPIO space. Technically it would be possible to get
+rid of it completely - but this might change GPIO numbers on some architectures
+and make people unhappy. At least it can now be arbitrarily high without
+consuming more memory.
 
--serge
+As a result of this series, gpiolib has a slightly lower memory footprint (~-9KB
+on my Tegra2 board which has a GPIO space of 1024 but only uses 232 of them), is
+very slightly slower (because of the gpio to descriptor conversion which is
+linear instead of being constant), and (most importantly) is prepared to receive
+the new descriptor-based public GPIO interface.
+
+The linear-time conversion between GPIO numbers and descriptors might make some
+teeth grind, but please consider the following. First, even though the
+conversion is O(n), this is a very small n (the number of GPIO chips), and I
+doubt the overhead would be even perceptible. Second, the gpio descriptor
+interface that will follow this series will not require this conversion since it
+works with descriptors directly. Finally, the GPIO framework allow platforms
+that are concerned about performance to implement gpio_get_value() and
+gpio_set_value() with a fast path shortcutting gpiolib for those GPIO numbers
+for which performance matters, and this is not affected at all by this series.
+
+The patches are split as much as possible to make the switch as easy to follow
+as possible - they may actually be oversplit, if this is the case please let me
+know and I will resubmit the series.
+
+This has been tested on a Tegra 2 Ventana board. I made sure that debugfs and
+sysfs were working as before, and that GPIOs had the expected value. Being a
+rather deep change, it should certainly undergo some more testing.
+
+Alexandre Courbot (9):
+  gpiolib: link all gpio_chips using a list
+  gpiolib: use gpio_chips list in gpiolib_sysfs_init
+  gpiolib: use gpio_chips list in gpiochip_find
+  gpiolib: use gpio_chips list in sysfs ops
+  gpiolib: use gpio_chips list in gpiochip_find_base
+  gpiolib: use descriptors internally
+  gpiolib: let gpio_chip reference its descriptors
+  gpiolib: use gpio_chips list in gpio_to_desc
+  gpiolib: dynamically allocate descriptors array
+
+ drivers/gpio/gpiolib.c     | 694 ++++++++++++++++++++++++++++-----------------
+ include/asm-generic/gpio.h |   5 +
+ 2 files changed, 440 insertions(+), 259 deletions(-)
+
+-- 
+1.8.1.1
+
