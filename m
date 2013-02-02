@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab3BBUMP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 15:12:15 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:48846 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758074Ab3BBUMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 15:12:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Steven Newbury <steve@snewbury.org.uk>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH 1/2] ACPI / scan: Make namespace scanning and trimming mutually exclusive
-Date: Sat, 02 Feb 2013 21:18:28 +0100
-Message-ID: <1750337.zfO6ANFbLh@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1359806321.30277.3.camel@infinity>
-References: <1581701.fnbebHrKch@vostro.rjw.lan> <CAE9FiQV+DDb0ap=sipQjUWCdz8Qsfs2dYDVrb0FmKL4F1BjhOw@mail.gmail.com> <1359806321.30277.3.camel@infinity>
+	id S1758130Ab3BBUS2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 15:18:28 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:61711 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758076Ab3BBUSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 15:18:25 -0500
+Message-ID: <510D748E.4010605@kernel.org>
+Date: Sat, 02 Feb 2013 15:18:22 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>
+Subject: Re: [PATCH 1/4] intel_idle: stop using driver_data for static flags
+References: <1359691896-23567-1-git-send-email-lenb@kernel.org> <9a38405338d7464c852c4524465f84f8a2ac22fb.1359691799.git.len.brown@intel.com> <510B8059.5040609@linaro.org> <510C0C22.4000801@kernel.org> <510C3EC5.3060709@linaro.org> <510C7708.4080707@kernel.org> <510CDFF1.80408@linaro.org>
+In-Reply-To: <510CDFF1.80408@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 02, 2013 11:58:41 AM Steven Newbury wrote:
-> On Sat, 2013-01-26 at 15:19 -0800, Yinghai Lu wrote:
-> > On Sat, Jan 26, 2013 at 2:41 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >
-> > > There is no guarantee that acpi_bus_scan() and acpi_bus_trim() will
-> > > not be run in parallel for the same scope of the ACPI namespace,
-> > > which may lead to a great deal of confusion, so introduce a new mutex
-> > > to prevent that from happening.
-> > >
-> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Acked-by: Yinghai Lu <yinghai@kernel.org>
-> > 
-> > Steven,
-> > 
-> > Can you apply this one to for-pci-res-alloc to check if racing with
-> > docking hotplug/eject
-> > still happen?
-> > or wait one or two days after i rebase that branch.
+
+>> I think that a driver's private flag definitions
+>> should remain local to the driver.  It makes no sense
+>> to pollute the name space of other drivers for stuff
+>> that doesn't mean anything to them.  MWAIT is pretty
+>> specific to x86 -- and re-naming it to something 'generic'
+>> isn't going to make the code easier to read.
 > 
-> Tried merging with linux-pm/bleeding-edge, same behaviour:
+> Ok, let me rephrase it because I think how it was presented was not clear.
 > 
-> [ 3589.013578] ACPI: \_SB_.PCI0.PCIE.GDCK: undocking
-> [ 3589.585356] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=none,decodes=io+mem:owns=none
-> [ 3589.585422] ACPI: Delete PCI Interrupt Routing Table for 0000:04
-> [ 3589.585426] pci 0000:03:08.0: Oops, 'acpi_handle' corrupt
-> [ 3589.585446] pci_bus 0000:04: busn_res: [bus 04] is released
+> As we want to use the half of the state flags for private purpose, I
+> suggested to add the encoding/decoding function in the shared header file.
 > 
-> 03:08.0 PCI bridge: PLX Technology, Inc. PEX8112 x1 Lane PCI
-> Express-to-PCI Bridge (rev aa)
-> 04:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee ATI
-> Manhattan [Mobility Radeon HD 5430 Series]
-> 04:00.1 Audio device: Advanced Micro Devices [AMD] nee ATI Cedar HDMI
-> Audio [Radeon HD 5400/6300 Series]
+> The mwait eax flags are not encoded and the CPUIDLE_FLAG_TLB_FLUSHED is
+> encoded.
+> 
+> I suggested to unify both and to use an encoding function from the
+> shared header file.
+> 
+> #define CPUIDLE_PRIVATE_FLAGS(_flags_) \
+> 	((_flags_) << 16) & CPUIDLE_DRIVER_FLAGS_MASK
+> 
+> For example:
+> 
+> #define FLAG_TLB_FLUSHED CPUIDLE_PRIVATE_FLAGS(0x1)
+> #define FLAG_MWAIT_C1    CPUIDLE_PRIVATE_FLAGS(0x0)
+> #define FLAG_MWAIT_C2    CPUIDLE_PRIVATE_FLAGS(0x10)
+> #define FLAG_MWAIT_C3    CPUIDLE_PRIVATE_FLAGS(0x20)
+> #define FLAG_MWAIT_C4    CPUIDLE_PRIVATE_FLAGS(0x30)
+> #define FLAG_MWAIT_C5    CPUIDLE_PRIVATE_FLAGS(0x40)
+> #define FLAG_MWAIT_C6    CPUIDLE_PRIVATE_FLAGS(0x52)
+> 
+> And then:
+> 
+> ...
+> 
+> .flags = FLAG_TLB_FLUSHED | FLAG_MWAIT_C2 | CPUIDLE_FLAG_TIME_VALID
 
-That's because of a bug in the dock code I believe.
+I like your syntax better than what I used -- thanks for suggesting it.
 
-If you're willing to test patches, I can try to cook up something to debug/fix
-this.
+I can't use it as-is, however, because I really do need to be able to
+support unique parameters on each entry (eg. different flags for C3
+on different processors).  When some of the logical and functional
+changes in flux settle out I'll come back to re-visit the syntax.
 
-Thanks,
-Rafael
+thanks,
+-Len Brown, Intel Open Source Technology Center
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
