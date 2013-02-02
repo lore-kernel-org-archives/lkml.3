@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab3BBPQL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 10:16:11 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:53525 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757731Ab3BBPQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 10:16:07 -0500
+	id S1757827Ab3BBPUk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 10:20:40 -0500
+Received: from mx2.fusionio.com ([66.114.96.31]:58028 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757563Ab3BBPUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 10:20:37 -0500
+X-ASG-Debug-ID: 1359818436-0421b503d5670b0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Sat, 2 Feb 2013 10:20:35 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "arnd@linaro.org" <arnd@linaro.org>
+Subject: Re: Oops when mounting btrfs partition
+Message-ID: <20130202152035.GA24264@shiny>
+X-ASG-Orig-Subj: Re: Oops when mounting btrfs partition
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Arnd Bergmann <arnd@arndb.de>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+	"arnd@linaro.org" <arnd@linaro.org>
+References: <4028366.UQxPtEU6If@wuerfel>
 MIME-Version: 1.0
-In-Reply-To: <1359548921-14925-1-git-send-email-andreas@gaisler.com>
-References: <1359548921-14925-1-git-send-email-andreas@gaisler.com>
-Date: Sat, 2 Feb 2013 16:16:06 +0100
-Message-ID: <CACRpkdbAS05dVOrE2E5Uu6qfzfgcoz_KqQmqZxz5Pne9BbCt-g@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Add device driver for GRGPIO cores
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4028366.UQxPtEU6If@wuerfel>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1359818436
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.41
+X-Barracuda-Spam-Status: No, SCORE=0.41 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=SUBJECT_FUZZY_TION
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.121614
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.41 SUBJECT_FUZZY_TION     Attempt to obfuscate words in Subject:
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 1:28 PM, Andreas Larsson <andreas@gaisler.com> wrote:
+Hi Arnd,
 
-> This driver supports GRGPIO gpio cores available in the GRLIB VHDL IP core
-> library.
->
-> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+First things first, nospace_cache is a safe thing to use.  It is slow
+because it's finding free extents, but it's just a cache and always safe
+to discard.  With your other errors, I'd just mount it readonly
+and then you won't waste time on atime updates.
 
-OK...
+I'll take a look at the BUG you got during log recovery.  We've fixed a
+few of those during the 3.8 rc cycle.
 
-> +#if defined(__BIG_ENDIAN)
-> +static inline u32 grgpio_read_reg(u32 __iomem *reg)
-> +{
-> +       return ioread32be(reg);
-> +}
-> +
-> +static inline void grgpio_write_reg(u32 __iomem *reg, u32 val)
-> +{
-> +       iowrite32be(val, reg);
-> +}
-> +#else
-> +static inline u32 grgpio_read_reg(u32 __iomem *reg)
-> +{
-> +       return ioread32(reg);
-> +}
-> +
-> +static inline void grgpio_write_reg(u32 __iomem *reg, u32 val)
-> +{
-> +       iowrite32(val, reg);
-> +}
-> +#endif
+> Feb  1 22:57:37 localhost kernel: [ 8561.599482] Kernel BUG at ffffffffa01fdcf7 [verbose debug info unavailable]
 
-Where is this __BIG_ENDIAN flag coming from?
+> Jan 14 19:18:42 localhost kernel: [1060055.746373] btrfs csum failed ino 15619835 off 454656 csum 2755731641 private 864823192
+> Jan 14 19:18:42 localhost kernel: [1060055.746381] btrfs: bdev /dev/sdb1 errs: wr 0, rd 0, flush 0, corrupt 17, gen 0
+> ...
+> Jan 21 16:35:40 localhost kernel: [1655047.701147] parent transid verify failed on 17006399488 wanted 54700 found 54764
 
-And do you really have and test this regularly on both LE and BE hardware?
-I am worrying a bit about maintenance...
+These aren't good.  With a few exceptions for really tight races in fsx
+use cases, csum errors are bad data from the disk.  The transid verify
+failed shows we wanted to find a metadata block from generation 54700
+but found 54764 instead:
 
-> +static void grgpio_set_sbit(struct grgpio_priv *priv, u32 __iomem *reg,
-> +                          unsigned offset, int val, u32 *shadow)
-> +{
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&priv->lock, flags);
-> +
-> +       if (val)
-> +               *shadow |= (1 << offset);
-> +       else
-> +               *shadow &= ~(1 << offset);
-> +       grgpio_write_reg(reg, *shadow);
-> +
-> +       spin_unlock_irqrestore(&priv->lock, flags);
-> +}
+54700 = 0xD5AC
+54764 = 0xD5EC
 
-This is all very basic stuff. Please make a best effort to reuse or
-augment and reuse this:
-drivers/gpio/gpio-generic.c
+This same bad block comes up a few different times.
 
-IIRC this one also handles endianness issues, but I could be wrong.
+> Jan 21 16:35:40 localhost kernel: [1655047.752692] btrfs read error corrected: ino 1 off 17006399488 (dev /dev/sdb1 sector 64689288)
 
-Yours,
-Linus Walleij
+This shows we pulled from the second copy of this block and got the
+right answer, and then wrote the right answer to the duplicate.
+Inode 1 means it was metadata.
+
+But for some reason still aborted the transaction.  It could have been
+an EIO on the correction, but the auto correction code in 3.5 did work
+well.
+
+I think your plan to pull the data off and reformat is a good one.  I'd
+also look hard at your ram since drives don't usually send back single bit
+errors.
+
+-chris
+
