@@ -1,203 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab3BBHPs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 02:15:48 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:36321 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab3BBHPp (ORCPT
+	id S1753651Ab3BBIZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 03:25:56 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:44915 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3BBIZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 02:15:45 -0500
+	Sat, 2 Feb 2013 03:25:52 -0500
+Message-ID: <510CCD88.30200@openvz.org>
+Date: Sat, 02 Feb 2013 12:25:44 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
 MIME-Version: 1.0
-In-Reply-To: <CAKgNAkgQA=zK=2ZnytPFU=DH6jr0sja0iy6K+j6c7unheLFniQ@mail.gmail.com>
-References: <1358849741-9611-4-git-send-email-avagin@openvz.org>
-	<1359486181-29088-1-git-send-email-avagin@openvz.org>
-	<CAKgNAkgQA=zK=2ZnytPFU=DH6jr0sja0iy6K+j6c7unheLFniQ@mail.gmail.com>
-Date: Sat, 2 Feb 2013 08:15:44 +0100
-Message-ID: <CANaxB-zAh_kC=P1CPPB0EMa4JVozVizOc_KMw1Y0=7ocUsqHzA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] signalfd: add ability to read siginfo-s without
- dequeuing signals (v2)
-From: Andrey Wagin <avagin@gmail.com>
-To: mtk.manpages@gmail.com
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, criu@openvz.org,
-        Dave Jones <davej@redhat.com>, linux-fsdevel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Howells <dhowells@redhat.com>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: shmem: use new radix tree iterator
+References: <1359699238-7327-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1359699238-7327-1-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/2 Michael Kerrisk (man-pages) <mtk.manpages@gmail.com>:
+Johannes Weiner wrote:
+> In shmem_find_get_pages_and_swap, use the faster radix tree iterator
+> construct from 78c1d78 "radix-tree: introduce bit-optimized iterator".
 >
-> On Jan 30, 2013 8:05 AM, "Andrey Vagin" <avagin@openvz.org> wrote:
->>
->> If signalfd is created with the flag SFD_PEEK, it reads siginfo-s
->> without dequeuing signals.
->>
->> For reading not first siginfo pread(fd, buf, size, pos) can be used,
->> where ppos / sizeof(signalfd_siginfo) is a sequence number of a signal
->> in a queue.
->
-> Andrey,
->
-> Is it perhaps worth erroring (EINVAL) if  ((ppos % sizeof
-> (signalfd_siginfo)) != 0) ?
+> Signed-off-by: Johannes Weiner<hannes@cmpxchg.org>
 
-Yes, it's already in the patch.
+Hmm, ACK. shmem_unuse_inode() also can be redone in this way.
+I did something similar year ago: https://lkml.org/lkml/2012/2/10/388
+As result we can rid of radix_tree_locate_item() and shmem_find_get_pages_and_swap()
 
-@@ -257,9 +298,15 @@ static ssize_t signalfd_read(struct file *file,
-char __user *buf, size_t count,
-        if (!count)
-                return -EINVAL;
-
-+       if (*ppos % sizeof(struct signalfd_siginfo))
-+               return -EINVAL;
-+
-
-
+> ---
+>   mm/shmem.c | 25 ++++++++++++-------------
+>   1 file changed, 12 insertions(+), 13 deletions(-)
 >
-> Cheers,
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index a368a1c..c5dc8ae 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -336,19 +336,19 @@ static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+>   					pgoff_t start, unsigned int nr_pages,
+>   					struct page **pages, pgoff_t *indices)
+>   {
+> -	unsigned int i;
+> -	unsigned int ret;
+> -	unsigned int nr_found;
+> +	void **slot;
+> +	unsigned int ret = 0;
+> +	struct radix_tree_iter iter;
+> +
+> +	if (!nr_pages)
+> +		return 0;
 >
-> Michael
+>   	rcu_read_lock();
+>   restart:
+> -	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
+> -				(void ***)pages, indices, start, nr_pages);
+> -	ret = 0;
+> -	for (i = 0; i<  nr_found; i++) {
+> +	radix_tree_for_each_slot(slot,&mapping->page_tree,&iter, start) {
+>   		struct page *page;
+>   repeat:
+> -		page = radix_tree_deref_slot((void **)pages[i]);
+> +		page = radix_tree_deref_slot(slot);
+>   		if (unlikely(!page))
+>   			continue;
+>   		if (radix_tree_exception(page)) {
+> @@ -365,17 +365,16 @@ static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+>   			goto repeat;
 >
->> This functionality is required for checkpointing pending signals.
->>
->> v2: * signals can be dumped only from one queue.
->>     * treat pos as offset in bytes, not in elements, so pos should be
->>       aligned to the size of signalfd_siginfo.
->>
->> Cc: Oleg Nesterov <oleg@redhat.com>
->> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
->> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->> Cc: David Howells <dhowells@redhat.com>
->> Cc: Dave Jones <davej@redhat.com>
->> Cc: Andrey Vagin <avagin@openvz.org>
->> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
->> Cc: Pavel Emelyanov <xemul@parallels.com>
->> CC: Cyrill Gorcunov <gorcunov@openvz.org>
->> Signed-off-by: Andrey Vagin <avagin@openvz.org>
->> ---
->>  fs/signalfd.c                 | 61
->> ++++++++++++++++++++++++++++++++++++++++---
->>  include/uapi/linux/signalfd.h |  2 ++
->>  2 files changed, 60 insertions(+), 3 deletions(-)
->>
->> diff --git a/fs/signalfd.c b/fs/signalfd.c
->> index 8019ec9..0da6a30 100644
->> --- a/fs/signalfd.c
->> +++ b/fs/signalfd.c
->> @@ -51,6 +51,47 @@ struct signalfd_ctx {
->>         sigset_t sigmask;
->>  };
->>
->> +static int peek_signal(struct sigpending *pending, sigset_t *mask,
->> +                               siginfo_t *info, loff_t *pseq)
->> +{
->> +       struct sigqueue *q;
->> +       int ret = 0;
->> +
->> +       spin_lock_irq(&current->sighand->siglock);
->> +
->> +       list_for_each_entry(q, &pending->list, list) {
->> +               if (sigismember(mask, q->info.si_signo))
->> +                       continue;
->> +
->> +               if ((*pseq)-- == 0) {
->> +                       copy_siginfo(info, &q->info);
->> +                       ret = info->si_signo;
->> +                       break;
->> +               }
->> +       }
->> +
->> +       spin_unlock_irq(&current->sighand->siglock);
->> +
->> +       return ret;
->> +}
->> +
->> +static ssize_t signalfd_peek(struct signalfd_ctx *ctx,
->> +                               siginfo_t *info, loff_t *ppos, int
->> queue_mask)
->> +{
->> +       loff_t seq = *ppos / sizeof(struct signalfd_siginfo);
->> +       int signr = 0;
->> +
->> +       if (queue_mask & SIGQUEUE_PRIVATE)
->> +               signr = peek_signal(&current->pending,
->> +                                       &ctx->sigmask, info, &seq);
->> +       else if (queue_mask & SIGQUEUE_SHARED)
->> +               signr = peek_signal(&current->signal->shared_pending,
->> +                                        &ctx->sigmask, info, &seq);
->> +       (*ppos) += sizeof(struct signalfd_siginfo);
->> +
->> +       return signr;
->> +}
->> +
->>  static int signalfd_release(struct inode *inode, struct file *file)
->>  {
->>         kfree(file->private_data);
->> @@ -257,9 +298,15 @@ static ssize_t signalfd_read(struct file *file, char
->> __user *buf, size_t count,
->>         if (!count)
->>                 return -EINVAL;
->>
->> +       if (*ppos % sizeof(struct signalfd_siginfo))
->> +               return -EINVAL;
->> +
->>         siginfo = (struct signalfd_siginfo __user *) buf;
->>         do {
->> -               ret = signalfd_dequeue(ctx, &info, nonblock, qmask);
->> +               if (file->f_flags & SFD_PEEK)
->> +                       ret = signalfd_peek(ctx, &info, ppos, qmask);
->> +               else
->> +                       ret = signalfd_dequeue(ctx, &info, nonblock,
->> qmask);
->>
->>                 if (unlikely(ret <= 0))
->>                         break;
->> @@ -315,7 +362,12 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user
->> *, user_mask,
->>         BUILD_BUG_ON(SFD_CLOEXEC != O_CLOEXEC);
->>         BUILD_BUG_ON(SFD_NONBLOCK != O_NONBLOCK);
->>
->> -       if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW | SFD_QUEUES))
->> +       if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK |
->> +                       SFD_RAW | SFD_PEEK | SFD_QUEUES))
->> +               return -EINVAL;
->> +
->> +       /* SFD_PEEK can be used for one queue only */
->> +       if ((flags & SFD_PEEK) && ((flags & SFD_QUEUES) == SFD_QUEUES))
->>                 return -EINVAL;
->>
->>         if (sizemask != sizeof(sigset_t) ||
->> @@ -352,7 +404,10 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user
->> *, user_mask,
->>                 }
->>
->>                 file->f_flags |= (flags & SFD_QUEUES) ? : SFD_QUEUES;
->> -               file->f_flags |= flags & SFD_RAW;
->> +               file->f_flags |= flags & (SFD_RAW | SFD_PEEK);
->> +
->> +               if (file->f_flags & SFD_PEEK)
->> +                       file->f_mode |= FMODE_PREAD;
->>
->>                 fd_install(ufd, file);
->>         } else {
->> diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
->> index 481b658..24c5d2d 100644
->> --- a/include/uapi/linux/signalfd.h
->> +++ b/include/uapi/linux/signalfd.h
->> @@ -20,6 +20,8 @@
->>  #define SFD_SHARED_QUEUE O_DIRECTORY
->>  /* Read signals from a per-thread queue */
->>  #define SFD_PER_THREAD_QUEUE O_EXCL
->> +/* Read signals without removing them from a queue */
->> +#define SFD_PEEK O_APPEND
->>
->>  struct signalfd_siginfo {
->>         __u32 ssi_signo;
->> --
->> 1.7.11.7
->>
+>   		/* Has the page moved? */
+> -		if (unlikely(page != *((void **)pages[i]))) {
+> +		if (unlikely(page != *slot)) {
+>   			page_cache_release(page);
+>   			goto repeat;
+>   		}
+>   export:
+> -		indices[ret] = indices[i];
+> +		indices[ret] = iter.index;
+>   		pages[ret] = page;
+> -		ret++;
+> +		if (++ret == nr_pages)
+> +			break;
+>   	}
+> -	if (unlikely(!ret&&  nr_found))
+> -		goto restart;
+>   	rcu_read_unlock();
+>   	return ret;
+>   }
+
