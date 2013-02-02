@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751016Ab3BBFig (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 00:38:36 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:55530 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab3BBFif (ORCPT
+	id S1751877Ab3BBFlK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 00:41:10 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:61469 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab3BBFlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 00:38:35 -0500
+	Sat, 2 Feb 2013 00:41:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359744343-18690-7-git-send-email-dirk.brandewie@gmail.com>
+In-Reply-To: <1359744343-18690-9-git-send-email-dirk.brandewie@gmail.com>
 References: <1359744343-18690-1-git-send-email-dirk.brandewie@gmail.com>
-	<1359744343-18690-7-git-send-email-dirk.brandewie@gmail.com>
-Date: Sat, 2 Feb 2013 11:08:33 +0530
-X-Google-Sender-Auth: Dfgqd2mqmN_hXTi6sJZHJy25w8Y
-Message-ID: <CAOh2x=k0=wqYqDwnoUNn0wAmh8f0FSPtaFgFSK49hkmyrAganQ@mail.gmail.com>
-Subject: Re: [PATCH 4/6] cpufreq_stats: Do not track policies without
- associated governors.
+	<1359744343-18690-9-git-send-email-dirk.brandewie@gmail.com>
+Date: Sat, 2 Feb 2013 11:11:07 +0530
+X-Google-Sender-Auth: sU7U5cLJCSERH_fncWdcjTPuS5o
+Message-ID: <CAOh2x=mU8+mJmr=BXjSLaz7Yxg--t2mPpsc_=Xry2ArNroB8Aw@mail.gmail.com>
+Subject: Re: [PATCH 5/6] cpufreq: balance out cpufreq_cpu_{get,put} for
+ scaling drivers using setpolicy
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,43 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Sat, Feb 2, 2013 at 12:15 AM,  <dirk.brandewie@gmail.com> wrote:
 > From: Dirk Brandewie <dirk.brandewie@gmail.com>
 >
-> Scaling drivers that implement internal governors do not have governor
-> sturctures associated with them.  Do not create/remove statisitcs
-> entries for polices that do not have governors associated with them.
+> There is an additional reference added to the driver in
+> cpufreq_add_dev_policy() that is removed in__cpufreq_governor() if the
+> driver implements target().  Remove the last reference when the driver
+> implements setpolicy()
 >
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-It is not based of latest work.
-
-Why don't we want stats to be updated for these? What does stats have
-to do with governor?
+Rebase it on latest work as cpufreq_add_dev_policy() doesn't exist anymore.
 
 > ---
->  drivers/cpufreq/cpufreq_stats.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+>  drivers/cpufreq/cpufreq.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 >
-> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-> index 9d7732b..8a1daf4 100644
-> --- a/drivers/cpufreq/cpufreq_stats.c
-> +++ b/drivers/cpufreq/cpufreq_stats.c
-> @@ -183,7 +183,7 @@ static void cpufreq_stats_free_table(unsigned int cpu)
->  static void cpufreq_stats_free_sysfs(unsigned int cpu)
->  {
->         struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
-> -       if (policy && policy->cpu == cpu)
-> +       if (policy && policy->cpu == cpu && policy->governor)
->                 sysfs_remove_group(&policy->kobj, &stats_attr_group);
->         if (policy)
->                 cpufreq_cpu_put(policy);
-> @@ -271,6 +271,8 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
->         unsigned int cpu = policy->cpu;
->         if (val != CPUFREQ_NOTIFY)
->                 return 0;
-> +       if (!policy->governor)
-> +               return 0;
->         table = cpufreq_frequency_get_table(cpu);
->         if (!table)
->                 return 0;
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index a4fd51e..ec103bf 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1119,6 +1119,9 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+>         if (cpufreq_driver->target)
+>                 __cpufreq_governor(data, CPUFREQ_GOV_STOP);
+>
+> +       if (cpufreq_driver->setpolicy)
+> +               cpufreq_cpu_put(data);
+> +
+>         kobj = &data->kobj;
+>         cmp = &data->kobj_unregister;
+>         unlock_policy_rwsem_write(cpu);
 > --
 > 1.7.7.6
 >
