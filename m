@@ -1,181 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab3BBCZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 21:25:24 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4187 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757349Ab3BBCZV (ORCPT
+	id S1757508Ab3BBCpT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 21:45:19 -0500
+Received: from [1.9.68.9] ([1.9.68.9]:39133 "HELO mysmtp1.stec-inc.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
+	id S1757349Ab3BBCpQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Feb 2013 21:25:21 -0500
-Message-ID: <510C78F5.6050902@huawei.com>
-Date: Sat, 2 Feb 2013 10:24:53 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 1 Feb 2013 21:45:16 -0500
+X-ASG-Debug-ID: 1359769715-053ea90dcf1ea900001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: Kent Overstreet <koverstreet@google.com>,
+        Michel Lespinasse <walken@google.com>
+CC: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        linux-bcache <linux-bcache@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Kent Overstreet <kent.overstreet@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jason Warr <jason@warr.net>,
+        "thornber@redhat.com" <thornber@redhat.com>
+Date: Sat, 2 Feb 2013 09:39:00 +0800
+Subject: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Topic: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+X-ASG-Orig-Subj: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Index: Ac4A5AtW8U8rPT4hTq+3keiKLTHkEQAAfXbg
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6474@MYMBX.MY.STEC-INC.AD>
+References: <20130202004459.GA4760@blackbox.djwong.org>
+	<CANN689ExTyhZBiQ-pg3jw+sA4X459qcy3kpt82n3obJ=9AVceQ@mail.gmail.com>
+	<CAH+dOxLDVsrmuh2b+RVxwOd0+JOQ+LsbuRYB5zqTE7DnoA+XTA@mail.gmail.com>
+ <CAH+dOxKUdxF1Ds9ogncBF1K-A979j46SqGq1rVeqii8LtgHxQw@mail.gmail.com>
+In-Reply-To: <CAH+dOxKUdxF1Ds9ogncBF1K-A979j46SqGq1rVeqii8LtgHxQw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Jiang Liu <jiang.liu@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 1/2] acpiphp: create companion ACPI devices before creating
- PCI devices
-References: <1359562210-26536-1-git-send-email-jiang.liu@huawei.com> <CAErSpo5CcEudpbozcu49EOQ4eL2bE40YVNDji7RbSA7Z28y1cw@mail.gmail.com>
-In-Reply-To: <CAErSpo5CcEudpbozcu49EOQ4eL2bE40YVNDji7RbSA7Z28y1cw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1359769715
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.121558
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/2 7:06, Bjorn Helgaas wrote:
-> On Wed, Jan 30, 2013 at 9:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> From: Jiang Liu <jiang.liu@huawei.com>
->>
->> With commit 4f535093cf8f6da8c "PCI: Put pci_dev in device tree as
->> early as possible", companion ACPI devices should be created before
->> creating correspoding PCI devices, otherwise it will break the ACPI
->> PCI binding logic.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> ---
->> Hi Bjorn,
->>         This patch set applies to your pci/yinghai-root-bus branch.
->> There are still other potential bugs in the acpiphp driver under
->> investigation. So I will send out these two first to catch up with
->> the 3.9 merging window.
->>         Thanks!
->>         Gerry
+End user documentation is on our github. I think it should go with the user level utilities, rather than the kernel driver.
+-Amit
+
+> -----Original Message-----
+> From: Kent Overstreet [mailto:koverstreet@google.com]
+> Sent: Friday, February 01, 2013 5:25 PM
+> To: Michel Lespinasse
+> Cc: Darrick J. Wong; Amit Kale; linux-bcache; device-mapper
+> development; Kent Overstreet; Mike Snitzer; LKML; Jason Warr;
+> thornber@redhat.com
+> Subject: Re: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+> caching software for Linux kernel
 > 
-> I assume this fixes some sort of user-visible issue with acpiphp.
-> What failure does the user see?
-
-Hi Bjorn,
-   Before applied this patch, after hot remove and hot add pci device by acpiphp,
-we can find firmware_node under the pci device was missed.
-
-Detailed info as bellow:
-linux-ha2:/sys/bus/pci/slots # ls /sys/bus/pci/devices/0000\:05\:00.0/ -al
-total 0
-drwxr-xr-x 3 root root         0 Jan 31 10:19 .
-drwxr-xr-x 9 root root         0 Jan 31 10:19 ..
--r--r--r-- 1 root root     65536 Jan 31 10:31 boot_vga
--rw-r--r-- 1 root root     65536 Jan 31 10:31 broken_parity_status
--r--r--r-- 1 root root     65536 Jan 31 10:19 class
--rw-r--r-- 1 root root      4096 Jan 31 10:31 config
--r--r--r-- 1 root root     65536 Jan 31 10:31 consistent_dma_mask_bits
--rw-r--r-- 1 root root     65536 Jan 31 10:31 d3cold_allowed
--r--r--r-- 1 root root     65536 Jan 31 10:19 device
--r--r--r-- 1 root root     65536 Jan 31 10:31 dma_mask_bits
--rw------- 1 root root     65536 Jan 31 10:31 enable
-lrwxrwxrwx 1 root root         0 Jan 31 10:31 firmware_node -> ../../../LNXSYSTM:00/device:00/ACPI0004:00/PNP0A08:00/device:07/device:08
--r--r--r-- 1 root root     65536 Jan 31 10:19 irq
--r--r--r-- 1 root root     65536 Jan 31 10:31 local_cpulist
--r--r--r-- 1 root root     65536 Jan 31 10:20 local_cpus
--r--r--r-- 1 root root     65536 Jan 31 10:31 modalias
--rw-r--r-- 1 root root     65536 Jan 31 10:31 msi_bus
--r--r--r-- 1 root root     65536 Jan 31 10:31 numa_node
-drwxr-xr-x 2 root root         0 Jan 31 10:31 power
---w--w---- 1 root root     65536 Jan 31 10:31 remove
---w--w---- 1 root root     65536 Jan 31 10:31 rescan
--r--r--r-- 1 root root     65536 Jan 31 10:19 resource
--rw------- 1 root root  16777216 Jan 31 10:31 resource0
--rw------- 1 root root 268435456 Jan 31 10:31 resource1
--rw------- 1 root root 268435456 Jan 31 10:31 resource1_wc
--rw------- 1 root root  33554432 Jan 31 10:31 resource3
--rw------- 1 root root  33554432 Jan 31 10:31 resource3_wc
--rw------- 1 root root       128 Jan 31 10:31 resource5
--rw------- 1 root root    524288 Jan 31 10:31 rom
-lrwxrwxrwx 1 root root         0 Jan 31 10:19 subsystem -> ../../../../bus/pci
--r--r--r-- 1 root root     65536 Jan 31 10:19 subsystem_device
--r--r--r-- 1 root root     65536 Jan 31 10:19 subsystem_vendor
--rw-r--r-- 1 root root     65536 Jan 31 10:19 uevent
--r--r--r-- 1 root root     65536 Jan 31 10:19 vendor
-linux-ha2:/sys/bus/pci/slots # cd 0
-linux-ha2:/sys/bus/pci/slots/0 # cat address
-0000:05:00
-linux-ha2:/sys/bus/pci/slots/0 # cat power
-1
-linux-ha2:/sys/bus/pci/slots/0 # echo 0 > power
-linux-ha2:/sys/bus/pci/slots/0 # echo 1 > power
-linux-ha2:/sys/bus/pci/slots/0 # ls /sys/bus/pci/devices/0000\:05\:00.0/ -al
-total 0
-drwxr-xr-x 3 root root         0 Jan 31 10:31 .
-drwxr-xr-x 9 root root         0 Jan 31 10:19 ..
--r--r--r-- 1 root root     65536 Jan 31 10:31 boot_vga
--rw-r--r-- 1 root root     65536 Jan 31 10:31 broken_parity_status
--r--r--r-- 1 root root     65536 Jan 31 10:31 class
--rw-r--r-- 1 root root      4096 Jan 31 10:31 config
--r--r--r-- 1 root root     65536 Jan 31 10:31 consistent_dma_mask_bits
--rw-r--r-- 1 root root     65536 Jan 31 10:31 d3cold_allowed
--r--r--r-- 1 root root     65536 Jan 31 10:31 device
--r--r--r-- 1 root root     65536 Jan 31 10:31 dma_mask_bits
--rw------- 1 root root     65536 Jan 31 10:31 enable
--r--r--r-- 1 root root     65536 Jan 31 10:31 irq
--r--r--r-- 1 root root     65536 Jan 31 10:31 local_cpulist
--r--r--r-- 1 root root     65536 Jan 31 10:31 local_cpus
--r--r--r-- 1 root root     65536 Jan 31 10:31 modalias
--rw-r--r-- 1 root root     65536 Jan 31 10:31 msi_bus
--r--r--r-- 1 root root     65536 Jan 31 10:31 numa_node
-drwxr-xr-x 2 root root         0 Jan 31 10:31 power
---w--w---- 1 root root     65536 Jan 31 10:31 remove
---w--w---- 1 root root     65536 Jan 31 10:31 rescan
--r--r--r-- 1 root root     65536 Jan 31 10:31 resource
--rw------- 1 root root  16777216 Jan 31 10:31 resource0
--rw------- 1 root root 268435456 Jan 31 10:31 resource1
--rw------- 1 root root 268435456 Jan 31 10:31 resource1_wc
--rw------- 1 root root  33554432 Jan 31 10:31 resource3
--rw------- 1 root root  33554432 Jan 31 10:31 resource3_wc
--rw------- 1 root root       128 Jan 31 10:31 resource5
--rw------- 1 root root    524288 Jan 31 10:31 rom
-lrwxrwxrwx 1 root root         0 Jan 31 10:31 subsystem -> ../../../../bus/pci
--r--r--r-- 1 root root     65536 Jan 31 10:31 subsystem_device
--r--r--r-- 1 root root     65536 Jan 31 10:31 subsystem_vendor
--rw-r--r-- 1 root root     65536 Jan 31 10:31 uevent
--r--r--r-- 1 root root     65536 Jan 31 10:31 vendor
-linux-ha2:/sys/bus/pci/slots/0 #
-
-So after hot add pci device again, we lost the firmware_node link under device.
-firmware_node -> ../../../LNXSYSTM:00/device:00/ACPI0004:00/PNP0A08:00/device:07/device:08
-
-
+> Also, where's the end user documentation?
 > 
->> ---
->>  drivers/pci/hotplug/acpiphp_glue.c |    6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
->> index bd784ff..acb7af2 100644
->> --- a/drivers/pci/hotplug/acpiphp_glue.c
->> +++ b/drivers/pci/hotplug/acpiphp_glue.c
->> @@ -839,6 +839,9 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->>         if (slot->flags & SLOT_ENABLED)
->>                 goto err_exit;
->>
->> +       list_for_each_entry(func, &slot->funcs, sibling)
->> +               acpiphp_bus_add(func);
->> +
->>         num = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
->>         if (num == 0) {
->>                 /* Maybe only part of funcs are added. */
->> @@ -862,9 +865,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
->>                 }
->>         }
->>
->> -       list_for_each_entry(func, &slot->funcs, sibling)
->> -               acpiphp_bus_add(func);
->> -
->>         pci_bus_assign_resources(bus);
->>         acpiphp_sanitize_bus(bus);
->>         acpiphp_set_hpp_values(bus);
->> --
->> 1.7.9.5
->>
-> 
-> 
+> On Fri, Feb 1, 2013 at 5:23 PM, Kent Overstreet
+> <koverstreet@google.com> wrote:
+> > On Fri, Feb 1, 2013 at 4:57 PM, Michel Lespinasse <walken@google.com>
+> wrote:
+> >> On Fri, Feb 1, 2013 at 4:44 PM, Darrick J. Wong
+> <darrick.wong@oracle.com> wrote:
+> >>> This is a patch to migrate STEC's enhanceio driver out of their
+> >>> github repository and into the staging tree.  From their README:
+> >>>
+> >>> "EnhanceIO driver is based on EnhanceIO SSD caching software
+> product
+> >>> developed by STEC Inc. EnhanceIO was derived from Facebook's open
+> >>> source Flashcache project. EnhanceIO uses SSDs as cache devices for
+> >>> traditional rotating hard disk drives (referred to as source
+> volumes throughout this document).
+> >>> EnhanceIO can work with any block device, be it an entire physical
+> >>> disk, an individual disk partition,  a RAIDed DAS device, a SAN
+> >>> volume, a device mapper volume or a software RAID (md) device."
+> >>
+> >> What's your take on the benefits of this vs bcache ?
+> >
+> > I've been trying to review it it for cache coherency and consistency
+> > wrt. power failures, but the complete lack of high level
+> documentation
+> > is making that difficult.
+> >
+> > I saw some benchmarks the other day where on writes EIO was faster
+> > than the raw device, which was... suspicious.
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
 
 
--- 
-Thanks!
-Yijing
 
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
