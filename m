@@ -1,29 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3BBQER (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 11:04:17 -0500
-Received: from mail.cm-coimbra.pt ([194.79.83.226]:45355 "EHLO
-	mail.cm-coimbra.pt" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab3BBQEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 11:04:15 -0500
-X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Feb 2013 11:04:14 EST
-Date: Sat, 2 Feb 2013 15:56:55 +0000 (WET)
-From: Kisang Jung <irenel@cm-coimbra.pt>
-Reply-To: kisang_jung@live.com
-Message-ID: <137590838.342928.1359820615928.JavaMail.root@cm-coimbra.pt>
-Subject: Please permit me to send more details
+	id S1757923Ab3BBQKt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 11:10:49 -0500
+Received: from shutemov.name ([204.155.152.216]:37784 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757185Ab3BBQKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 11:10:46 -0500
+Date: Sat, 2 Feb 2013 18:12:29 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Aaron Durbin <adurbin@google.com>, Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH 3/4] eventfd: make operations on eventfd return -EIDRM if
+ it's hung up
+Message-ID: <20130202161229.GB12939@shutemov.name>
+References: <510CB733.2080904@huawei.com>
+ <510CB772.80908@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.203.67.148]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - FF3.0 (Win)/7.2.1_GA_2790)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510CB772.80908@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Feb 02, 2013 at 02:51:30PM +0800, Li Zefan wrote:
+> Currently when a cgroup is removed, it calls eventfd_signal() for
+> each registered cgroup event, so userspace can be notified and blocked
+> reads can be unblocked.
+> 
+> The problem is, if we have multiple threads blocked on the same eventfd,
+> only one of them will be unlocked.
+> 
+> This patch makes sure all operations on the same eventfd can be unbocked.
+> 
+> There's another problem, a new cgroup event can be registered while we
+> are removing the cgroup, and then reading the eventfd will be blocked
+> until the thread is killed. This patch also fixes this issue.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+>  fs/eventfd.c    | 23 +++++++++++++++++++++--
+>  kernel/cgroup.c |  1 -
+>  2 files changed, 21 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/eventfd.c b/fs/eventfd.c
+> index acf15e3..48de15a 100644
+> --- a/fs/eventfd.c
+> +++ b/fs/eventfd.c
+> @@ -35,6 +35,7 @@ struct eventfd_ctx {
+>  	 */
+>  	__u64 count;
+>  	unsigned int flags;
+> +	bool hung_up;
+>  };
+>  
+>  /**
+> @@ -71,11 +72,19 @@ EXPORT_SYMBOL_GPL(eventfd_signal);
+>   * eventfd_signal_hangup - Notify that this eventfd is hung up.
+>   * @ctx: [in] Pointer to the eventfd context.
+>   *
+> - * Issue a POLLHUP wakeup.
+> + * Issue a POLLHUP wakeup. All current blocked reads, writes and polls on
+> + * this eventfd will return with -EIDRM. Future operations on it will also
+> + * return with -EDIRM.
+>   */
+>  void eventfd_signal_hangup(struct eventfd_ctx *ctx)
+>  {
+> -	wake_up_poll(&ctx->wqh, POLLHUP);
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&ctx->wqh.lock, flags);
+> +	ctx->hung_up = true;
+> +	if (waitqueue_active(&ctx->wqh))
+> +		wake_up_locked_poll(&ctx->wqh, POLLHUP);
+> +	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
+>  }
+>  
+>  static void eventfd_free_ctx(struct eventfd_ctx *ctx)
+> @@ -140,6 +149,8 @@ static unsigned int eventfd_poll(struct file *file, poll_table *wait)
+>  		events |= POLLERR;
+>  	if (ULLONG_MAX - 1 > ctx->count)
+>  		events |= POLLOUT;
+> +	if (ctx->hung_up)
+> +		events |= POLLHUP;
+>  	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
+>  
+>  	return events;
+> @@ -208,6 +219,10 @@ ssize_t eventfd_ctx_read(struct eventfd_ctx *ctx, int no_wait, __u64 *cnt)
+>  		__add_wait_queue(&ctx->wqh, &wait);
+>  		for (;;) {
+>  			set_current_state(TASK_INTERRUPTIBLE);
+> +			if (ctx->hung_up) {
+> +				res = -EIDRM;
+> +				break;
+> +			}
 
+Shouldn't we just return indicate end-of-file if ctx->hung_up?
 
-I have a business deal worth USD$98.6M I wish to introduce to you, this is legitimate and may be of appeal to you. Contact me directly on kisang_jung@live.hk 
+>  			if (ctx->count > 0) {
+>  				res = 0;
+>  				break;
+> @@ -272,6 +287,10 @@ static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t c
+>  		__add_wait_queue(&ctx->wqh, &wait);
+>  		for (res = 0;;) {
+>  			set_current_state(TASK_INTERRUPTIBLE);
+> +			if (ctx->hung_up) {
+> +				res = -EIDRM;
 
+-EPIPE?
+
+> +				break;
+> +			}
+>  			if (ULLONG_MAX - ctx->count > ucnt) {
+>  				res = sizeof(ucnt);
+>  				break;
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index a3d361b..fcb1ab6 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -4373,7 +4373,6 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+>  		ctx = eventfd_ctx_get(event->eventfd);
+>  		spin_unlock(&cgrp->event_list_lock);
+>  
+> -		eventfd_signal(ctx, 1);
+>  		eventfd_signal_hangup(ctx);
+>  		eventfd_ctx_put(ctx);
+>  
+> -- 
+> 1.8.0.2
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+ Kirill A. Shutemov
