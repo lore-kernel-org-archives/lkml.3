@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab3BBOUp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 09:20:45 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15416 "EHLO
+	id S1757967Ab3BBOUu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 09:20:50 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20565 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582Ab3BBOT5 (ORCPT
+	with ESMTP id S1757653Ab3BBOT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 2 Feb 2013 09:19:57 -0500
-X-Authority-Analysis: v=2.0 cv=W/m6pGqk c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ClgRE1hsI-YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=aUbUlCo8OHkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=7d_E57ReAAAA:8 a=VkbnAb4FAAAA:8 a=4SYdAwbj8XM_HKwSaUgA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=P0L4MiLVX5EXBvIo:21 a=20tVxRNybZZJiy0M:21 a=ukJ-VpEIbZO5sIHEFOYA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=f6AJohfk66MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=hZThTVmvb6gA:10 a=pGLkceISAAAA:8 a=VqJqp3NRGl-_L7Ud1H4A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=3SB9BO7HcYhJhif8x14A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130202141954.959421467@goodmis.org>
+Message-Id: <20130202141955.509272919@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sat, 02 Feb 2013 09:18:44 -0500
+Date: Sat, 02 Feb 2013 09:18:47 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH 02/11] tracing: Remove tracepoint sample code
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 05/11] tracing/fgraph: Adjust fgraph depth before calling trace return
+ callback
 References: <20130202141842.189550803@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Remove-tracepoint-sample-code.patch
+Content-Disposition: inline; filename=0005-tracing-fgraph-Adjust-fgraph-depth-before-calling-tr.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,280 +31,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The tracepoint sample code was used to teach developers how to
-create their own tracepoints. But now the trace_events have been
-added as a higher level that is used directly by developers today.
+While debugging the virtual cputime with the function graph tracer
+with a max_depth of 1 (most common use of the max_depth so far),
+I found that I was missing kernel execution because of a race condition.
 
-Only the trace_event code should use the tracepoint interface
-directly and no new tracepoints should be added.
+The code for the return side of the function has a slight race:
 
-Besides, the example had a race condition with the use of the
- ->d_name.name dentry field, as pointed out by Al Viro.
+	ftrace_pop_return_trace(&trace, &ret, frame_pointer);
+	trace.rettime =3D trace_clock_local();
+	ftrace_graph_return(&trace);
+	barrier();
+	current->curr_ret_stack--;
 
-Best just to remove the code so it wont be used by other developers.
+The ftrace_pop_return_trace() initializes the trace structure for
+the callback. The ftrace_graph_return() uses the trace structure
+for its own use as that structure is on the stack and is local
+to this function. Then the curr_ret_stack is decremented which
+is what the trace.depth is set to.
 
-Link: http://lkml.kernel.org/r/20130123225523.GY4939@ZenIV.linux.org.uk
+If an interrupt comes in after the ftrace_graph_return() but
+before the curr_ret_stack, then the called function will get
+a depth of 2. If max_depth is set to 1 this function will be
+ignored.
 
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+The problem is that the trace has already been called, and the
+timestamp for that trace will not reflect the time the function
+was about to re-enter userspace. Calls to the interrupt will not
+be traced because the max_depth has prevented this.
+
+To solve this issue, the ftrace_graph_return() can safely be
+moved after the current->curr_ret_stack has been updated.
+This way the timestamp for the return callback will reflect
+the actual time.
+
+If an interrupt comes in after the curr_ret_stack update and
+ftrace_graph_return(), it will be traced. It may look a little
+confusing to see it within the other function, but at least
+it will not be lost.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- samples/Kconfig                                |    6 ---
- samples/Makefile                               |    2 +-
- samples/tracepoints/Makefile                   |    6 ---
- samples/tracepoints/tp-samples-trace.h         |   11 -----
- samples/tracepoints/tracepoint-probe-sample.c  |   57 --------------------=
-----
- samples/tracepoints/tracepoint-probe-sample2.c |   44 ------------------
- samples/tracepoints/tracepoint-sample.c        |   57 --------------------=
-----
- 7 files changed, 1 insertion(+), 182 deletions(-)
- delete mode 100644 samples/tracepoints/Makefile
- delete mode 100644 samples/tracepoints/tp-samples-trace.h
- delete mode 100644 samples/tracepoints/tracepoint-probe-sample.c
- delete mode 100644 samples/tracepoints/tracepoint-probe-sample2.c
- delete mode 100644 samples/tracepoints/tracepoint-sample.c
+ kernel/trace/trace_functions_graph.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/samples/Kconfig b/samples/Kconfig
-index 7b6792a..6181c2c 100644
---- a/samples/Kconfig
-+++ b/samples/Kconfig
-@@ -5,12 +5,6 @@ menuconfig SAMPLES
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_func=
+tions_graph.c
+index 7008d2e..39ada66 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -191,10 +191,16 @@ unsigned long ftrace_return_to_handler(unsigned long =
+frame_pointer)
 =20
- if SAMPLES
+ 	ftrace_pop_return_trace(&trace, &ret, frame_pointer);
+ 	trace.rettime =3D trace_clock_local();
+-	ftrace_graph_return(&trace);
+ 	barrier();
+ 	current->curr_ret_stack--;
 =20
--config SAMPLE_TRACEPOINTS
--	tristate "Build tracepoints examples -- loadable modules only"
--	depends on TRACEPOINTS && m
--	help
--	  This build tracepoints example modules.
--
- config SAMPLE_TRACE_EVENTS
- 	tristate "Build trace_events examples -- loadable modules only"
- 	depends on EVENT_TRACING && m
-diff --git a/samples/Makefile b/samples/Makefile
-index 5ef08bb..1a60c62 100644
---- a/samples/Makefile
-+++ b/samples/Makefile
-@@ -1,4 +1,4 @@
- # Makefile for Linux samples code
-=20
--obj-$(CONFIG_SAMPLES)	+=3D kobject/ kprobes/ tracepoints/ trace_events/ \
-+obj-$(CONFIG_SAMPLES)	+=3D kobject/ kprobes/ trace_events/ \
- 			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
-diff --git a/samples/tracepoints/Makefile b/samples/tracepoints/Makefile
-deleted file mode 100644
-index 36479ad..0000000
---- a/samples/tracepoints/Makefile
-+++ /dev/null
-@@ -1,6 +0,0 @@
--# builds the tracepoint example kernel modules;
--# then to use one (as root):  insmod <module_name.ko>
--
--obj-$(CONFIG_SAMPLE_TRACEPOINTS) +=3D tracepoint-sample.o
--obj-$(CONFIG_SAMPLE_TRACEPOINTS) +=3D tracepoint-probe-sample.o
--obj-$(CONFIG_SAMPLE_TRACEPOINTS) +=3D tracepoint-probe-sample2.o
-diff --git a/samples/tracepoints/tp-samples-trace.h b/samples/tracepoints/t=
-p-samples-trace.h
-deleted file mode 100644
-index 4d46be9..0000000
---- a/samples/tracepoints/tp-samples-trace.h
-+++ /dev/null
-@@ -1,11 +0,0 @@
--#ifndef _TP_SAMPLES_TRACE_H
--#define _TP_SAMPLES_TRACE_H
--
--#include <linux/proc_fs.h>	/* for struct inode and struct file */
--#include <linux/tracepoint.h>
--
--DECLARE_TRACE(subsys_event,
--	TP_PROTO(struct inode *inode, struct file *file),
--	TP_ARGS(inode, file));
--DECLARE_TRACE_NOARGS(subsys_eventb);
--#endif
-diff --git a/samples/tracepoints/tracepoint-probe-sample.c b/samples/tracep=
-oints/tracepoint-probe-sample.c
-deleted file mode 100644
-index 744c0b9..0000000
---- a/samples/tracepoints/tracepoint-probe-sample.c
-+++ /dev/null
-@@ -1,57 +0,0 @@
--/*
-- * tracepoint-probe-sample.c
-- *
-- * sample tracepoint probes.
-- */
--
--#include <linux/module.h>
--#include <linux/file.h>
--#include <linux/dcache.h>
--#include "tp-samples-trace.h"
--
--/*
-- * Here the caller only guarantees locking for struct file and struct inod=
-e.
-- * Locking must therefore be done in the probe to use the dentry.
-- */
--static void probe_subsys_event(void *ignore,
--			       struct inode *inode, struct file *file)
--{
--	path_get(&file->f_path);
--	dget(file->f_path.dentry);
--	printk(KERN_INFO "Event is encountered with filename %s\n",
--		file->f_path.dentry->d_name.name);
--	dput(file->f_path.dentry);
--	path_put(&file->f_path);
--}
--
--static void probe_subsys_eventb(void *ignore)
--{
--	printk(KERN_INFO "Event B is encountered\n");
--}
--
--static int __init tp_sample_trace_init(void)
--{
--	int ret;
--
--	ret =3D register_trace_subsys_event(probe_subsys_event, NULL);
--	WARN_ON(ret);
--	ret =3D register_trace_subsys_eventb(probe_subsys_eventb, NULL);
--	WARN_ON(ret);
--
--	return 0;
--}
--
--module_init(tp_sample_trace_init);
--
--static void __exit tp_sample_trace_exit(void)
--{
--	unregister_trace_subsys_eventb(probe_subsys_eventb, NULL);
--	unregister_trace_subsys_event(probe_subsys_event, NULL);
--	tracepoint_synchronize_unregister();
--}
--
--module_exit(tp_sample_trace_exit);
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Mathieu Desnoyers");
--MODULE_DESCRIPTION("Tracepoint Probes Samples");
-diff --git a/samples/tracepoints/tracepoint-probe-sample2.c b/samples/trace=
-points/tracepoint-probe-sample2.c
-deleted file mode 100644
-index 9fcf990..0000000
---- a/samples/tracepoints/tracepoint-probe-sample2.c
-+++ /dev/null
-@@ -1,44 +0,0 @@
--/*
-- * tracepoint-probe-sample2.c
-- *
-- * 2nd sample tracepoint probes.
-- */
--
--#include <linux/module.h>
--#include <linux/fs.h>
--#include "tp-samples-trace.h"
--
--/*
-- * Here the caller only guarantees locking for struct file and struct inod=
-e.
-- * Locking must therefore be done in the probe to use the dentry.
-- */
--static void probe_subsys_event(void *ignore,
--			       struct inode *inode, struct file *file)
--{
--	printk(KERN_INFO "Event is encountered with inode number %lu\n",
--		inode->i_ino);
--}
--
--static int __init tp_sample_trace_init(void)
--{
--	int ret;
--
--	ret =3D register_trace_subsys_event(probe_subsys_event, NULL);
--	WARN_ON(ret);
--
--	return 0;
--}
--
--module_init(tp_sample_trace_init);
--
--static void __exit tp_sample_trace_exit(void)
--{
--	unregister_trace_subsys_event(probe_subsys_event, NULL);
--	tracepoint_synchronize_unregister();
--}
--
--module_exit(tp_sample_trace_exit);
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Mathieu Desnoyers");
--MODULE_DESCRIPTION("Tracepoint Probes Samples");
-diff --git a/samples/tracepoints/tracepoint-sample.c b/samples/tracepoints/=
-tracepoint-sample.c
-deleted file mode 100644
-index f4d89e0..0000000
---- a/samples/tracepoints/tracepoint-sample.c
-+++ /dev/null
-@@ -1,57 +0,0 @@
--/* tracepoint-sample.c
-- *
-- * Executes a tracepoint when /proc/tracepoint-sample is opened.
-- *
-- * (C) Copyright 2007 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-- *
-- * This file is released under the GPLv2.
-- * See the file COPYING for more details.
-- */
--
--#include <linux/module.h>
--#include <linux/sched.h>
--#include <linux/proc_fs.h>
--#include "tp-samples-trace.h"
--
--DEFINE_TRACE(subsys_event);
--DEFINE_TRACE(subsys_eventb);
--
--struct proc_dir_entry *pentry_sample;
--
--static int my_open(struct inode *inode, struct file *file)
--{
--	int i;
--
--	trace_subsys_event(inode, file);
--	for (i =3D 0; i < 10; i++)
--		trace_subsys_eventb();
--	return -EPERM;
--}
--
--static const struct file_operations mark_ops =3D {
--	.open =3D my_open,
--	.llseek =3D noop_llseek,
--};
--
--static int __init sample_init(void)
--{
--	printk(KERN_ALERT "sample init\n");
--	pentry_sample =3D proc_create("tracepoint-sample", 0444, NULL,
--		&mark_ops);
--	if (!pentry_sample)
--		return -EPERM;
--	return 0;
--}
--
--static void __exit sample_exit(void)
--{
--	printk(KERN_ALERT "sample exit\n");
--	remove_proc_entry("tracepoint-sample", NULL);
--}
--
--module_init(sample_init)
--module_exit(sample_exit)
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Mathieu Desnoyers");
--MODULE_DESCRIPTION("Tracepoint sample");
++	/*
++	 * The trace should run after decrementing the ret counter
++	 * in case an interrupt were to come in. We don't want to
++	 * lose the interrupt if max_depth is set.
++	 */
++	ftrace_graph_return(&trace);
++
+ 	if (unlikely(!ret)) {
+ 		ftrace_graph_stop();
+ 		WARN_ON(1);
 --=20
 1.7.10.4
 
@@ -318,13 +113,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRDSCLAAoJEOdOSU1xswtMhIkIAMntiFfoNQBah97IbJ5e5Dqj
-dGd31P1Pkhy3iBpURZUrGuHuAkrlERI7n5TuuRSnZ19Ttp0yU4aaLs2xYiWDaT9f
-7CCvxKxbF3pz6fZIvrddhiWA7RXvZd64HqgKF7Pp+FOT13lZQOBhA0F+biP3+Hsi
-nL/fM7YMpFrQJMEleBtlIu7oCsEdJJMb8WTNMsIXq3hwIeSgh6NXzZTBK5Q3OLit
-eEhyUo0u6tkt4MaurR6L9SmTyejlhTPiQ90QjnYHMQEJgwAUnL3N1v6M2BlTThY6
-WIYCbYfhrwWSs9jJtKgT6zOL42nDxNQ+c+Y97myrlKBOKnsboNNWWWGPgdRcRTk=
-=Yy/F
+iQEcBAABAgAGBQJRDSCLAAoJEOdOSU1xswtMNcIIAMYHLqm0v8wefxh6A0glqhpr
+zYhjPGsrdMxtcgx6wwHcchkRIXyOVlFBzpisnIwV7UQ9V7zCi1gE3OjqkZcN0D/O
+ayrIek8CJBFU+K6Wr+wJBb2msmoiBIIUINsyoDMnC27l2kVeYngjt6RZySWieJYA
+CFN3rPLXHWuduOTD2qZTGwiq39Rg7ME+fjagI7UrhR3xtXbiSYd5Dgr40XeUQuin
+Jj8J2DnCggxWk3eUk7/RQT7uMzvzhBUTKMe/ZJ5bTdGGM9nij+JJSECzviA0fUR0
+nTKCG8eKxaSOWsFLqtLxU1IwNjzjwPuht5PRHs/wK46vTX7EvtbBtsHVA46OE8w=
+=6hyz
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
