@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab3BBBye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Feb 2013 20:54:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21163 "EHLO mga09.intel.com"
+	id S1757483Ab3BBByh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Feb 2013 20:54:37 -0500
+Received: from mga11.intel.com ([192.55.52.93]:49802 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756990Ab3BBByb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757258Ab3BBByb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Feb 2013 20:54:31 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,588,1355126400"; 
-   d="scan'208";a="280025131"
+   d="scan'208";a="285662443"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, acme@redhat.com, eranian@google.com,
-        jolsa@redhat.com, namhyung@kernel.org
-Subject: Basic perf PMU support for Haswell v3
-Date: Fri,  1 Feb 2013 17:54:19 -0800
-Message-Id: <1359770064-6344-1-git-send-email-andi@firstfloor.org>
+        jolsa@redhat.com, namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 5/5] perf, x86: Move NMI clearing to end of PMI handler after the counter registers are reset
+Date: Fri,  1 Feb 2013 17:54:24 -0800
+Message-Id: <1359770064-6344-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1359770064-6344-1-git-send-email-andi@firstfloor.org>
+References: <1359770064-6344-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is based on v7 of the full Haswell PMU support, but 
-ported to the latest perf/core and stripped down to the
-extreme "perf for dummies" edition as requested.  
+From: Andi Kleen <ak@linux.intel.com>
 
-I removed some more patches, these will come soon later.
-I moved parts of an later patch (counter constraints for qualifiers) 
-into an earlier patch, to support the full raw bits at least.
+This avoids some problems with spurious PMIs on Haswell.
+Haswell seems to behave more like P4 in this regard. Do
+the same thing as the P4 perf handler by unmasking
+the NMI only at the end. Shouldn't make any difference
+for earlier non P4 cores.
 
-For anything beyond basic usage this is not very useful.
-I expect speedy merging of the other parts now.
-No git branch, because it doesn't make sense to have that 
-many branches.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-Contains support for:
-- Basic Haswell PMU and PEBS support
-- Late unmasking of the PMI
-- Support for wide counters
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index d96010a..33fc662 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1122,16 +1122,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	/*
+-	 * Some chipsets need to unmask the LVTPC in a particular spot
+-	 * inside the nmi handler.  As a result, the unmasking was pushed
+-	 * into all the nmi handlers.
+-	 *
+-	 * This handler doesn't seem to have any issues with the unmasking
+-	 * so it was left at the top.
+-	 */
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+@@ -1191,6 +1181,11 @@ again:
+ 
+ done:
+ 	intel_pmu_enable_all(0);
++	/*
++	 * Only unmask the NMI after the overflow counters
++	 * have been reset.
++	 */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	return handled;
+ }
+ 
+-- 
+1.7.7.6
 
-v2: Addressed Stephane's feedback. See individual patches for details.
-v3: now even more bite-sized. Qualifier constraints merged earlier.
-Add some Reviewed-bys.
-
--Andi
