@@ -1,96 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757999Ab3BBR6X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 12:58:23 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62262 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab3BBR6U (ORCPT
+	id S1758045Ab3BBSHN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 13:07:13 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:57569 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757662Ab3BBSHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 12:58:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "arnd@linaro.org" <arnd@linaro.org>
-Subject: Re: Oops when mounting btrfs partition
-Date: Sat, 02 Feb 2013 18:58:14 +0100
-Message-ID: <5060362.oVLQKVsh9C@wuerfel>
-User-Agent: KMail/4.10 rc3 (Linux/3.8.0-3-generic; KDE/4.9.98; x86_64; ; )
-In-Reply-To: <20130202152035.GA24264@shiny>
-References: <4028366.UQxPtEU6If@wuerfel> <20130202152035.GA24264@shiny>
+	Sat, 2 Feb 2013 13:07:10 -0500
+Date: Sat, 2 Feb 2013 13:07:47 -0500
+From: Matt Porter <mporter@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
+ arm/common
+Message-ID: <20130202180747.GS2244@beef>
+References: <1359742975-10421-1-git-send-email-mporter@ti.com>
+ <1359742975-10421-2-git-send-email-mporter@ti.com>
+ <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com>
+ <20130201184915.GP2244@beef>
+ <2077c13e12314dc3adc8e5b653855da0@DFLE72.ent.ti.com>
+ <20130201185959.GQ2244@beef>
+ <e9be6668da8b4372a04687847daa1d8c@DFLE72.ent.ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:vdVmUTHDys+IeSxCBJYoHX24cx98/RLeHOSHCDRy2lt
- YxKzkj7RS2PWYIVm58HkACPm4u33t4XO09AgSGnbQyH+D1n4aQ
- UrgABoD+5pNxetdSfhB/yBSlfWO3Rt19coIl/LF6N3gucSvGJJ
- pDNOzcRzgjZr3VnMGdJSMeE0FygvhC6eeQiuiMh2Oe57tvt6Bd
- 3MoEF0svM7L5FITAblTEtx55r6fLZCfxj1ovy0GQGDj7sGNcNv
- FlLVxu6S0ZanHMOHu3cAWGdMGfdOO06bA04bfYUG6me2lrki+x
- BxI7H3LafYIMpQDN4ArD6TbpLsw0Tz1QbTfaxm5IacXJ8Zxcbe
- Ra0RBeOiC95ulYvIoFHk=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e9be6668da8b4372a04687847daa1d8c@DFLE72.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 02 February 2013 10:20:35 Chris Mason wrote:
-> Hi Arnd,
+On Sat, Feb 02, 2013 at 12:01:37AM +0000, Sergei Shtylyov wrote:
+> Hello.
 > 
-> First things first, nospace_cache is a safe thing to use.  It is slow
-> because it's finding free extents, but it's just a cache and always safe
-> to discard.  With your other errors, I'd just mount it readonly
-> and then you won't waste time on atime updates.
-
-Ok, I see. Thanks for taking a look so quickly.
-
-> I'll take a look at the BUG you got during log recovery.  We've fixed a
-> few of those during the 3.8 rc cycle.
-
-Well, it happened on 3.8-rc4 and on 3.5 here, so I'd guess it's a
-different one.
-
-> > Feb  1 22:57:37 localhost kernel: [ 8561.599482] Kernel BUG at ffffffffa01fdcf7 [verbose debug info unavailable]
+> On 01-02-2013 22:59, Matt Porter wrote:
 > 
-> > Jan 14 19:18:42 localhost kernel: [1060055.746373] btrfs csum failed ino 15619835 off 454656 csum 2755731641 private 864823192
-> > Jan 14 19:18:42 localhost kernel: [1060055.746381] btrfs: bdev /dev/sdb1 errs: wr 0, rd 0, flush 0, corrupt 17, gen 0
-> > ...
-> > Jan 21 16:35:40 localhost kernel: [1655047.701147] parent transid verify failed on 17006399488 wanted 54700 found 54764
+> >>>>> Move mach-davinci/dma.c to common/edma.c so it can be used
+> >>>>> by OMAP (specifically AM33xx) as well.
 > 
-> These aren't good.  With a few exceptions for really tight races in fsx
-> use cases, csum errors are bad data from the disk.  The transid verify
-> failed shows we wanted to find a metadata block from generation 54700
-> but found 54764 instead:
+> >>>> I think this should rather go to drivers/dma/?
 > 
-> 54700 = 0xD5AC
-> 54764 = 0xD5EC
+> >>> No, this is the private EDMA API. It's the analogous thing to
+> >>> the private OMAP dma API that is in plat-omap/dma.c. The actual
+> >>> dmaengine driver is in drivers/dma/edma.c as a wrapper around
+> >>> this...same way OMAP DMA engine conversion is being done.
 > 
-> This same bad block comes up a few different times.
+> >>    Keeps me wondering why we couldn't have the same with CPPI 4.1 when I proposed
+> >> that, instead of waiting indefinitely for TI to convert it to drivers/dma/
+> >> directly. We could have working MUSB DMA on OMAP-L1x/Sitara all this time... Sigh.
+> 
+> > That is a shame. Yeah, I've pointed out that I was doing this exactly
+> > the same way as was acceptable for the OMAP DMA conversion since it was
+> > in RFC. The reasons are sound since in both cases, we have many drivers
+> > to convert that need to continue using the private DMA APIs.
+> 
+>     In case of CPPI 4.1, we'd only have to convert MUSB DMA driver. Other 
+> in-tree CPPI 4.1 having SoCs don't use it for anything but MUSB -- it even is 
+> sub-block of their MUSB device, AFAIK (I maybe wrong about Sitaras -- I don't 
+> know them well).
 
-The machine has had problems with data consistency in the past, so
-I'm not too surprised with getting a single-bit error, although this
-is the first time in a year that I've seen problems, and I replaced
-the faulty memory modules some time ago.
+Well, it's pretty clear to me now that there's good reason for it not
+landing in arch/arm/ so the obvious path is to do the dmaengine
+conversion and put it in drivers/dma/ if it's really a generic dma engine.
+I'm not sure why you express concern over the dma engine api not fitting
+with CPPI 4.1? If it doesn't work, work with Vinod to fix the api. It's
+expected, I'm working on dmaengine API changes right now to deal with a
+limitation of EDMA that needs to be abstracted.
 
-Anyway, I already ordered a replacement box a few weeks ago, and that
-one will have ECC memory besides being a modern Opteron system to replace
-the aging Core 2.
+As pointed out, edma.c is already here in arch/arm/, so moving it doesn't
+add something new. It does let us regression test all platforms that use it
+(both Davinci and AM33xx) as I go through the conversion process.
 
-> > Jan 21 16:35:40 localhost kernel: [1655047.752692] btrfs read error corrected: ino 1 off 17006399488 (dev /dev/sdb1 sector 64689288)
-> 
-> This shows we pulled from the second copy of this block and got the
-> right answer, and then wrote the right answer to the duplicate.
-> Inode 1 means it was metadata.
-> 
-> But for some reason still aborted the transaction.  It could have been
-> an EIO on the correction, but the auto correction code in 3.5 did work
-> well.
-> 
-> I think your plan to pull the data off and reformat is a good one.  I'd
-> also look hard at your ram since drives don't usually send back single bit
-> errors.
-
-Ok. I'll wait before reformmatting though, in case you need to take
-a look at the data later to find out why it crashed without fsck finding
-a problem.
-
-	Arnd
+-Matt
