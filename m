@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab3BBQ1W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 11:27:22 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:62096 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582Ab3BBQ1T (ORCPT
+	id S1758067Ab3BBQ1f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 11:27:35 -0500
+Received: from mail-da0-f50.google.com ([209.85.210.50]:51541 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758008Ab3BBQ11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 11:27:19 -0500
+	Sat, 2 Feb 2013 11:27:27 -0500
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>,
@@ -14,67 +14,141 @@ To: Grant Likely <grant.likely@secretlab.ca>,
 Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, gnurou@gmail.com,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 0/9] gpiolib: remove gpio_desc[] static array
-Date: Sun,  3 Feb 2013 01:29:22 +0900
-Message-Id: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH 1/9] gpiolib: link all gpio_chips using a list
+Date: Sun,  3 Feb 2013 01:29:24 +0900
+Message-Id: <1359822572-26009-3-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
+References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since Linus kindly merged the gpiochip_reserve() removal patches, here comes the
-main course.
+Add a list member to gpio_chip that allows all chips to be parsed
+quickly. The current method requires parsing the entire GPIO integer
+space, which is painfully slow. Using a list makes many chip operations
+that involve lookup or parsing faster, and also simplifies the code. It
+is also necessary to eventually get rid of the global gpio_desc[] array.
 
-This series removes the ARCH_NR_GPIOS sized static array of GPIO descriptors
-that stood in gpiolib and replaces it with a more flexible mechanism that
-dynamically allocates GPIO descriptors as chips are added.
+The list of gpio_chips is always ordered by base GPIO number to ensure
+chips traversal is done in the right order.
 
-ARCH_NR_GPIOS is still here, but now only controls the upper limit of the GPIO
-integer space, i.e. which GPIO numbers are valid and where GPIO chips without a
-base GPIO are placed in the GPIO space. Technically it would be possible to get
-rid of it completely - but this might change GPIO numbers on some architectures
-and make people unhappy. At least it can now be arbitrarily high without
-consuming more memory.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpio/gpiolib.c     | 51 +++++++++++++++++++++++++++++++++++++++-------
+ include/asm-generic/gpio.h |  2 ++
+ 2 files changed, 46 insertions(+), 7 deletions(-)
 
-As a result of this series, gpiolib has a slightly lower memory footprint (~-9KB
-on my Tegra2 board which has a GPIO space of 1024 but only uses 232 of them), is
-very slightly slower (because of the gpio to descriptor conversion which is
-linear instead of being constant), and (most importantly) is prepared to receive
-the new descriptor-based public GPIO interface.
-
-The linear-time conversion between GPIO numbers and descriptors might make some
-teeth grind, but please consider the following. First, even though the
-conversion is O(n), this is a very small n (the number of GPIO chips), and I
-doubt the overhead would be even perceptible. Second, the gpio descriptor
-interface that will follow this series will not require this conversion since it
-works with descriptors directly. Finally, the GPIO framework allow platforms
-that are concerned about performance to implement gpio_get_value() and
-gpio_set_value() with a fast path shortcutting gpiolib for those GPIO numbers
-for which performance matters, and this is not affected at all by this series.
-
-The patches are split as much as possible to make the switch as easy to follow
-as possible - they may actually be oversplit, if this is the case please let me
-know and I will resubmit the series.
-
-This has been tested on a Tegra 2 Ventana board. I made sure that debugfs and
-sysfs were working as before, and that GPIOs had the expected value. Being a
-rather deep change, it should certainly undergo some more testing.
-
-Alexandre Courbot (9):
-  gpiolib: link all gpio_chips using a list
-  gpiolib: use gpio_chips list in gpiolib_sysfs_init
-  gpiolib: use gpio_chips list in gpiochip_find
-  gpiolib: use gpio_chips list in sysfs ops
-  gpiolib: use gpio_chips list in gpiochip_find_base
-  gpiolib: use descriptors internally
-  gpiolib: let gpio_chip reference its descriptors
-  gpiolib: use gpio_chips list in gpio_to_desc
-  gpiolib: dynamically allocate descriptors array
-
- drivers/gpio/gpiolib.c     | 694 ++++++++++++++++++++++++++++-----------------
- include/asm-generic/gpio.h |   5 +
- 2 files changed, 440 insertions(+), 259 deletions(-)
-
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index e27877a..0050766 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -3,6 +3,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/spinlock.h>
++#include <linux/list.h>
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/debugfs.h>
+@@ -71,6 +72,8 @@ struct gpio_desc {
+ };
+ static struct gpio_desc gpio_desc[ARCH_NR_GPIOS];
+ 
++static LIST_HEAD(gpio_chips);
++
+ #ifdef CONFIG_GPIO_SYSFS
+ static DEFINE_IDR(dirent_idr);
+ #endif
+@@ -1013,6 +1016,43 @@ static inline void gpiochip_unexport(struct gpio_chip *chip)
+ 
+ #endif /* CONFIG_GPIO_SYSFS */
+ 
++/*
++ * Add a new chip to the global chips list, keeping the list of chips sorted
++ * by base order.
++ *
++ * Return -EBUSY if the new chip overlaps with some other chip's integer
++ * space.
++ */
++static int gpiochip_add_to_list(struct gpio_chip *chip)
++{
++	struct list_head *pos = &gpio_chips;
++	struct gpio_chip *_chip;
++	int err = 0;
++
++	/* find where to insert our chip */
++	list_for_each(pos, &gpio_chips) {
++		_chip = list_entry(pos, struct gpio_chip, list);
++		/* shall we insert before _chip? */
++		if (_chip->base >= chip->base + chip->ngpio)
++			break;
++	}
++
++	/* are we stepping on the chip right before? */
++	if (pos != &gpio_chips && pos->prev != &gpio_chips) {
++		_chip = list_entry(pos->prev, struct gpio_chip, list);
++		if (_chip->base + _chip->ngpio > chip->base) {
++			dev_err(chip->dev,
++			       "GPIO integer space overlap, cannot add chip\n");
++			err = -EBUSY;
++		}
++	}
++
++	if (!err)
++		list_add_tail(&chip->list, pos);
++
++	return err;
++}
++
+ /**
+  * gpiochip_add() - register a gpio_chip
+  * @chip: the chip to register, with chip->base initialized
+@@ -1054,13 +1094,8 @@ int gpiochip_add(struct gpio_chip *chip)
+ 		chip->base = base;
+ 	}
+ 
+-	/* these GPIO numbers must not be managed by another gpio_chip */
+-	for (id = base; id < base + chip->ngpio; id++) {
+-		if (gpio_desc[id].chip != NULL) {
+-			status = -EBUSY;
+-			break;
+-		}
+-	}
++	status = gpiochip_add_to_list(chip);
++
+ 	if (status == 0) {
+ 		for (id = base; id < base + chip->ngpio; id++) {
+ 			gpio_desc[id].chip = chip;
+@@ -1134,6 +1169,8 @@ int gpiochip_remove(struct gpio_chip *chip)
+ 	if (status == 0) {
+ 		for (id = chip->base; id < chip->base + chip->ngpio; id++)
+ 			gpio_desc[id].chip = NULL;
++
++		list_del(&chip->list);
+ 	}
+ 
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index 2034e69..b562f95 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -53,6 +53,7 @@ struct device_node;
+  * @label: for diagnostics
+  * @dev: optional device providing the GPIOs
+  * @owner: helps prevent removal of modules exporting active GPIOs
++ * @list: links gpio_chips together for traversal
+  * @request: optional hook for chip-specific activation, such as
+  *	enabling module power and clock; may sleep
+  * @free: optional hook for chip-specific deactivation, such as
+@@ -98,6 +99,7 @@ struct gpio_chip {
+ 	const char		*label;
+ 	struct device		*dev;
+ 	struct module		*owner;
++	struct list_head        list;
+ 
+ 	int			(*request)(struct gpio_chip *chip,
+ 						unsigned offset);
 -- 
 1.8.1.1
 
