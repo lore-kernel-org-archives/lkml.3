@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab3BBHAV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 02:00:21 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:60678 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab3BBHAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 02:00:19 -0500
-Message-ID: <510CB963.1020405@huawei.com>
-Date: Sat, 2 Feb 2013 14:59:47 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1753200Ab3BBHEg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 02:04:36 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44362 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751245Ab3BBHEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 02:04:34 -0500
+Message-ID: <510CBAB7.2060100@ti.com>
+Date: Sat, 2 Feb 2013 12:35:27 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Aaron Durbin <adurbin@google.com>, Greg Thelen <gthelen@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 0/4] cgroup: bug fixes for eventfd
-References: <510CB733.2080904@huawei.com>
-In-Reply-To: <510CB733.2080904@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Matt Porter <mporter@ti.com>
+CC: Chris Ball <cjb@laptop.org>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Jon Hunter <jon-hunter@ti.com>
+Subject: Re: [PATCH 1/3] mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
+References: <1359752479-29427-1-git-send-email-mporter@ti.com> <1359752479-29427-2-git-send-email-mporter@ti.com>
+In-Reply-To: <1359752479-29427-2-git-send-email-mporter@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(forgot to cc Kirill A. Shutemov <kirill.shutemov@linux.intel.com>, added)
-
-On 2013/2/2 14:50, Li Zefan wrote:
-> There're three bugs.
-> 
-> - If thread A is removing a cgroup, while thread B is closing an eventfd, the
-> two threads might free the same cgroup event and thus crash the kernel.
-> 
-> This is fixed by patch #1 and patch #2.
-> 
-> - If there're multiple threads are blocking in read() on the same eventfd,
-> and someone removes the cgroup, only one thread will be notified and unblocked,
-> and others won't be unblocked until those threads are killed.
-> 
-> - If thread A is removing a cgroup, while thread B is registering a cgroup event
-> and then read the eventfd, it might block until the thread is killed.
-> 
-> These two are fixed by patch #3.
-> 
-> 0001-eventfd-Introduce-eventfd_signal_hangup.patch
-> 0002-cgroup-fix-cgroup_rmdir-vs-close-eventfd-race.patch
-> 0003-eventfd-make-operations-on-eventfd-return-EIDRM-if-i.patch
-> 0004-cgroup-adapt-to-the-new-way-of-detecting-cgroup-remo.patch
-> 
-> --
->  fs/eventfd.c                         | 30 ++++++++++++++++++++++++++++++
->  include/linux/eventfd.h              |  5 +++++
->  kernel/cgroup.c                      | 30 ++++++++++++++++++------------
->  tools/cgroup/cgroup_event_listener.c | 12 +++++-------
->  4 files changed, 58 insertions(+), 19 deletions(-)
-> 
+On Saturday 02 February 2013 02:31 AM, Matt Porter wrote:
+> Convert dmaengine channel requests to use
+> dma_request_slave_channel_compat(). This supports platforms booting
+> with or without DT populated.
+>
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
+> ---
+Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
 
