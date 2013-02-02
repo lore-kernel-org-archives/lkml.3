@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab3BBRuN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 12:50:13 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37520 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757137Ab3BBRuK (ORCPT
+	id S1757999Ab3BBR6X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 12:58:23 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:62262 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab3BBR6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 12:50:10 -0500
-Message-ID: <510D51CD.6020506@linutronix.de>
-Date: Sat, 02 Feb 2013 18:50:05 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	Sat, 2 Feb 2013 12:58:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Mason <chris.mason@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "arnd@linaro.org" <arnd@linaro.org>
+Subject: Re: Oops when mounting btrfs partition
+Date: Sat, 02 Feb 2013 18:58:14 +0100
+Message-ID: <5060362.oVLQKVsh9C@wuerfel>
+User-Agent: KMail/4.10 rc3 (Linux/3.8.0-3-generic; KDE/4.9.98; x86_64; ; )
+In-Reply-To: <20130202152035.GA24264@shiny>
+References: <4028366.UQxPtEU6If@wuerfel> <20130202152035.GA24264@shiny>
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        tglx@linutronix.de
-Subject: Re: [RFC 2/2] sched/fair: prefer a CPU in the "lowest" idle state
-References: <1359580757-4121-1-git-send-email-bigeasy@linutronix.de> <1359580757-4121-3-git-send-email-bigeasy@linutronix.de> <5109D313.1020409@linux.vnet.ibm.com>
-In-Reply-To: <5109D313.1020409@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:vdVmUTHDys+IeSxCBJYoHX24cx98/RLeHOSHCDRy2lt
+ YxKzkj7RS2PWYIVm58HkACPm4u33t4XO09AgSGnbQyH+D1n4aQ
+ UrgABoD+5pNxetdSfhB/yBSlfWO3Rt19coIl/LF6N3gucSvGJJ
+ pDNOzcRzgjZr3VnMGdJSMeE0FygvhC6eeQiuiMh2Oe57tvt6Bd
+ 3MoEF0svM7L5FITAblTEtx55r6fLZCfxj1ovy0GQGDj7sGNcNv
+ FlLVxu6S0ZanHMOHu3cAWGdMGfdOO06bA04bfYUG6me2lrki+x
+ BxI7H3LafYIMpQDN4ArD6TbpLsw0Tz1QbTfaxm5IacXJ8Zxcbe
+ Ra0RBeOiC95ulYvIoFHk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 03:12 AM, Michael Wang wrote:
-> I'm not sure, but just concern about this case:
+On Saturday 02 February 2013 10:20:35 Chris Mason wrote:
+> Hi Arnd,
 > 
-> 	group 0		cpu 0			cpu 1
-> 			least idle		4 task
+> First things first, nospace_cache is a safe thing to use.  It is slow
+> because it's finding free extents, but it's just a cache and always safe
+> to discard.  With your other errors, I'd just mount it readonly
+> and then you won't waste time on atime updates.
+
+Ok, I see. Thanks for taking a look so quickly.
+
+> I'll take a look at the BUG you got during log recovery.  We've fixed a
+> few of those during the 3.8 rc cycle.
+
+Well, it happened on 3.8-rc4 and on 3.5 here, so I'd guess it's a
+different one.
+
+> > Feb  1 22:57:37 localhost kernel: [ 8561.599482] Kernel BUG at ffffffffa01fdcf7 [verbose debug info unavailable]
 > 
-> 	group 1		cpu 2			cpu 3
-> 			1 task			1 task
+> > Jan 14 19:18:42 localhost kernel: [1060055.746373] btrfs csum failed ino 15619835 off 454656 csum 2755731641 private 864823192
+> > Jan 14 19:18:42 localhost kernel: [1060055.746381] btrfs: bdev /dev/sdb1 errs: wr 0, rd 0, flush 0, corrupt 17, gen 0
+> > ...
+> > Jan 21 16:35:40 localhost kernel: [1655047.701147] parent transid verify failed on 17006399488 wanted 54700 found 54764
 > 
-> The previous logical will pick group 1 and now it will take group 0, and
-> that cause more imbalance, doesn't it?
+> These aren't good.  With a few exceptions for really tight races in fsx
+> use cases, csum errors are bad data from the disk.  The transid verify
+> failed shows we wanted to find a metadata block from generation 54700
+> but found 54764 instead:
+> 
+> 54700 = 0xD5AC
+> 54764 = 0xD5EC
+> 
+> This same bad block comes up a few different times.
 
-That depends on load of CPU 0 + 1 vs CPU 2 + 3. If the four tasks on
-CPU1 are idle then the previous code should return group 0.
-If the four tasks are running at 100% each then two of them should be
-migrated to CPU0 and this point the idle state does not matter :)
+The machine has had problems with data consistency in the past, so
+I'm not too surprised with getting a single-bit error, although this
+is the first time in a year that I've seen problems, and I replaced
+the faulty memory modules some time ago.
 
-> May be check that state in find_idlest_cpu() will be better?
+Anyway, I already ordered a replacement box a few weeks ago, and that
+one will have ECC memory besides being a modern Opteron system to replace
+the aging Core 2.
 
-You say to move this from find_idlest_group() to find_idlest_cpu()?
+> > Jan 21 16:35:40 localhost kernel: [1655047.752692] btrfs read error corrected: ino 1 off 17006399488 (dev /dev/sdb1 sector 64689288)
+> 
+> This shows we pulled from the second copy of this block and got the
+> right answer, and then wrote the right answer to the duplicate.
+> Inode 1 means it was metadata.
+> 
+> But for some reason still aborted the transaction.  It could have been
+> an EIO on the correction, but the auto correction code in 3.5 did work
+> well.
+> 
+> I think your plan to pull the data off and reformat is a good one.  I'd
+> also look hard at your ram since drives don't usually send back single bit
+> errors.
 
-> Regards,
-> Michael Wang
+Ok. I'll wait before reformmatting though, in case you need to take
+a look at the data later to find out why it crashed without fsck finding
+a problem.
 
-Sebastian
+	Arnd
