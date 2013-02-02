@@ -1,47 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab3BBPBj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 10:01:39 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:53427 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757843Ab3BBPBh (ORCPT
+	id S1757872Ab3BBPKD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 10:10:03 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:41325 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757741Ab3BBPKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 10:01:37 -0500
+	Sat, 2 Feb 2013 10:10:00 -0500
+Date: Sat, 2 Feb 2013 10:09:59 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Derek Basehore <dbasehore@chromium.org>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jeff Garzik <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
+In-Reply-To: <510CEE46.80308@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1302021003390.25931-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1359816246-3979-1-git-send-email-acourbot@nvidia.com>
-References: <1359816246-3979-1-git-send-email-acourbot@nvidia.com>
-Date: Sat, 2 Feb 2013 16:01:37 +0100
-Message-ID: <CACRpkdbFTt3bN4y5QFMFq6dfAA3XOkKWF4FY5X4jcGfYbYvxOw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] gpiolib: remove gpiochip_reserve()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Dirk Opfer <dirk@opfer-online.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 2, 2013 at 3:44 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+On Sat, 2 Feb 2013, Aaron Lu wrote:
 
-> If Dmitri could give his Acked-by or Tested-by and one of the GPIO maintainers
-> merge this series, I could go ahead with the deeper changes to gpiolib.
+> >> An alternative way of possibly solving this problem from PM's point of
+> >> view might be:
+> >> 1 Set both ata port and scsi device's runtime status to RPM_SUSPENDED
+> >>   in their system suspend callback;
 
-Good riddance.
+By the way, what reason is there for doing this to the ATA port?  Does 
+the port take a long time to resume, in the same way that a disk can 
+take a few seconds to spin back up?
 
-Both patches applied to get some rotation in linux-next.
+> >> 2 On resume, do nothing in their system resume callback;
+> >> 3 With request based runtime PM introduced here:
+> >>   http://thread.gmane.org/gmane.linux.power-management.general/30405
+> >>   When a request comes for the HDD after system resume, both the ata
+> >>   port and the scsi device will be runtime resumed, which involves
+> >>   re-initialize the ata link(in ata port's runtime resume callback) and
+> >>   spin up the HDD(in sd's runtime resume callback).
+> >>
+> >> To make HDD un-affetcted by runtime PM during normal use, a large enough
+> >> autosuspend_delay can be set for it.
+> >>
+> >> Just my 2 cents, I've not verified or tried in any way yet :-)
+> > 
+> > It's a good idea.  The problem is that it won't work if CONFIG_PM_SLEEP
+> > is enabled but CONFIG_PM_RUNTIME isn't.
+> 
+> Right, what a pity... thanks for the hint.
+> 
+> But the code is really simple if we ignore this problem(with some proper
+> modifications to scsi bus PM callbacks, see the delayed_resume branch if
+> you are interested), so I'm tempted to post it here :-)
+> 
+>  drivers/ata/libata-core.c | 22 +++++++++++-----------
+>  drivers/scsi/scsi_pm.c    | 14 +++++++++++---
+>  2 files changed, 22 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index 497adea..38000fc 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -5355,10 +5355,19 @@ static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
+>  
+>  static int ata_port_suspend(struct device *dev)
+>  {
+> +	int ret;
+> +
+>  	if (pm_runtime_suspended(dev))
+>  		return 0;
+>  
+> -	return ata_port_suspend_common(dev, PMSG_SUSPEND);
+> +	ret = ata_port_suspend_common(dev, PMSG_SUSPEND);
+> +	if (!ret) {
+> +		__pm_runtime_disable(dev, false);
 
-This is too good stuff to wait and I like to push this work ahead
-a bit. I can still back them out if there is some problem on the
-TOSA.
+Don't you mean pm_runtime_disable(dev)?
 
+> +		pm_runtime_set_suspended(dev);
+> +		pm_runtime_enable(dev);
+> +	}
+> +
+> +	return ret;
+>  }
+>  
+>  static int ata_port_do_freeze(struct device *dev)
+> @@ -5393,16 +5402,7 @@ static int ata_port_resume_common(struct device *dev, pm_message_t mesg)
+>  
+>  static int ata_port_resume(struct device *dev)
+>  {
+> -	int rc;
+> -
+> -	rc = ata_port_resume_common(dev, PMSG_RESUME);
+> -	if (!rc) {
+> -		pm_runtime_disable(dev);
+> -		pm_runtime_set_active(dev);
+> -		pm_runtime_enable(dev);
+> -	}
+> -
+> -	return rc;
+> +	return 0;
+>  }
+>  
+>  /*
+> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> index d9956b6..d0b6997 100644
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -127,13 +127,21 @@ static int scsi_bus_prepare(struct device *dev)
+>  static int scsi_bus_suspend(struct device *dev)
+>  {
+>  	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> -	return scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
+> +	int ret;
+> +
+> +	ret = scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
+> +	if (!ret) {
+> +		__pm_runtime_disable(dev, false);
+> +		pm_runtime_set_suspended(dev);
+> +		pm_runtime_enable(dev);
+> +	}
+> +
+> +	return ret;
+>  }
+>  
+>  static int scsi_bus_resume(struct device *dev)
+>  {
+> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> -	return scsi_bus_resume_common(dev, pm ? pm->resume : NULL);
+> +	return 0;
+>  }
 
-Yours,
-Linus Walleij
+This doesn't look like it would work very well with something like a CD 
+drive, which doesn't use block-layer runtime PM.  Is that what you 
+meant when you talked about modifying the SCSI PM callbacks?
+
+Alan Stern
+
