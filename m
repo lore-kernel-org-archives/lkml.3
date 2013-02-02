@@ -1,103 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab3BBTGe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 14:06:34 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:39093 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758061Ab3BBTGa (ORCPT
+	id S1758088Ab3BBTaD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 14:30:03 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:36745 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758066Ab3BBTaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 14:06:30 -0500
-Message-ID: <510D639E.3060706@mvista.com>
-Date: Sat, 02 Feb 2013 23:06:06 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
-References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <2077c13e12314dc3adc8e5b653855da0@DFLE72.ent.ti.com> <20130201185959.GQ2244@beef> <e9be6668da8b4372a04687847daa1d8c@DFLE72.ent.ti.com> <20130202180747.GS2244@beef>
-In-Reply-To: <20130202180747.GS2244@beef>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 2 Feb 2013 14:30:00 -0500
+X-Auth-Info: 8InUb7oCfYP9SgFuNOBcbwJAkcjvHTa5uWOyf+eCyO0=
+Date: Sat, 2 Feb 2013 20:29:52 +0100
+From: Anatolij Gustschin <agust@denx.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: mpc8xxx: don't set IRQ_TYPE_NONE when creating
+ irq mapping
+Message-ID: <20130202202952.378af5cb@crub>
+In-Reply-To: <CACRpkdYuSpLPnTV4bNnLnA64fix7HjCU2tP6NpDn7zo+HhQ4Wg@mail.gmail.com>
+References: <1359461275-7059-1-git-send-email-agust@denx.de>
+	<CACRpkdYuSpLPnTV4bNnLnA64fix7HjCU2tP6NpDn7zo+HhQ4Wg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, 2 Feb 2013 16:11:03 +0100
+Linus Walleij <linus.walleij@linaro.org> wrote:
 
-On 02-02-2013 22:07, Matt Porter wrote:
+> On Tue, Jan 29, 2013 at 1:07 PM, Anatolij Gustschin <agust@denx.de> wrote:
+> 
+> > Exporting gpios throws genirq error messages like
+> >
+> > genirq: Setting trigger mode 0 for irq 44 failed
+> >  (mpc512x_irq_set_type+0x0/0x18c)
+> >
+> > Do not set IRQ_TYPE_NONE in mapping function. Setting this type here
+> > ends up in returning error code in driver's irq_set_type() function
+> > and this triggers the genirq error message.
+> >
+> > Signed-off-by: Anatolij Gustschin <agust@denx.de>
+> > ---
+> >  drivers/gpio/gpio-mpc8xxx.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> >
+> > diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
+> > index 9ae29cc..a0b33a2 100644
+> > --- a/drivers/gpio/gpio-mpc8xxx.c
+> > +++ b/drivers/gpio/gpio-mpc8xxx.c
+> > @@ -292,7 +292,6 @@ static int mpc8xxx_gpio_irq_map(struct irq_domain *h, unsigned int virq,
+> >
+> >         irq_set_chip_data(virq, h->host_data);
+> >         irq_set_chip_and_handler(virq, &mpc8xxx_irq_chip, handle_level_irq);
+> > -       irq_set_irq_type(virq, IRQ_TYPE_NONE);
+> 
+> git blame says this line was put there by the IRQ subsystem maintainer
+> Thomas Gleixner.
 
->>>>>>> Move mach-davinci/dma.c to common/edma.c so it can be used
->>>>>>> by OMAP (specifically AM33xx) as well.
+Thomas renamed the old set_irq_type() call to irq_set_irq_type(), but
+this line setting the IRQ_TYPE_NONE type was there before renaming.
+It was added by commit 345e5c8a. At this time set_irq_type() checked
+its type argument and returned 0 if the type argument didn't specify
+some meaningful type in its type sense bits (and thus was equal to
+IRQ_TYPE_NONE). Effectively this line was a nop and I wonder what was
+the point of adding it.
 
->>>>>> I think this should rather go to drivers/dma/?
+> I feel very nervous about removing that, and you need a better explanation
+> what is causing the problem and how in the commit.
+> 
+> Like I want to know for sure that the problem is not triggered from
+> somewhere else.
+> 
+> Please write how and where you export this to trigger the error.
 
->>>>> No, this is the private EDMA API. It's the analogous thing to
->>>>> the private OMAP dma API that is in plat-omap/dma.c. The actual
->>>>> dmaengine driver is in drivers/dma/edma.c as a wrapper around
->>>>> this...same way OMAP DMA engine conversion is being done.
+It is very simple to trigger the error, i.e. on mpc5121 based board
+using mpc8xxx-gpio driver and exporting GPIO pins over sysfs gpio
+interface triggers it:
 
->>>>     Keeps me wondering why we couldn't have the same with CPPI 4.1 when I proposed
->>>> that, instead of waiting indefinitely for TI to convert it to drivers/dma/
->>>> directly. We could have working MUSB DMA on OMAP-L1x/Sitara all this time... Sigh.
+# cat /sys/class/gpio/gpiochip224/base 
+224
+# echo 229 > /sys/class/gpio/export
+[   83.753709] genirq: Setting trigger mode 0 for irq 44 failed (mpc512x_irq_set_type+0x0/0x164)
 
->>> That is a shame. Yeah, I've pointed out that I was doing this exactly
->>> the same way as was acceptable for the OMAP DMA conversion since it was
->>> in RFC. The reasons are sound since in both cases, we have many drivers
->>> to convert that need to continue using the private DMA APIs.
+Similar error messages appear in the kernel boot log since the
+board specifies GPIOs for matrix keypad and also SD Card write
+protect and card detect GPIOs in its device tree. For all these
+GPIOs there is an error message in the log. Here is an example
+call path shown by dump_stack() added in kernel/irq/manage.c:
 
->>      In case of CPPI 4.1, we'd only have to convert MUSB DMA driver. Other
->> in-tree CPPI 4.1 having SoCs don't use it for anything but MUSB -- it even is
->> sub-block of their MUSB device, AFAIK (I maybe wrong about Sitaras -- I don't
->> know them well).
+[    1.645277] genirq: Setting trigger mode 0 for irq 38 failed (mpc512x_irq_set_type+0x0/0x164)
+[    1.656118] Call Trace:
+[    1.658562] [cf83dc60] [c00088cc] show_stack+0x10c/0x1c0 (unreliable)
+[    1.664962] [cf83dcb0] [c03ae0e8] dump_stack+0x24/0x34
+[    1.670065] [cf83dcc0] [c006d1bc] __irq_set_trigger+0xb8/0x150
+[    1.675859] [cf83dce0] [c006ea24] irq_set_irq_type+0x4c/0x78
+[    1.681483] [cf83dd10] [c01f1c10] mpc8xxx_gpio_irq_map+0x70/0x88
+[    1.687457] [cf83dd20] [c0070578] irq_domain_associate_many+0x104/0x1e4
+[    1.694032] [cf83dd60] [c00706ec] irq_create_mapping+0x94/0x138
+[    1.699915] [cf83dd80] [c01f1d04] mpc8xxx_gpio_to_irq+0x38/0x48
+[    1.705810] [cf83dd90] [c01edbac] __gpio_to_irq+0x58/0x68
+[    1.711177] [cf83dda0] [c02c1504] matrix_keypad_probe+0x3bc/0x7a8
+[    1.717225] [cf83dde0] [c024b14c] platform_drv_probe+0x2c/0x3c
+[    1.723033] [cf83ddf0] [c0249a68] driver_probe_device+0xa0/0x250
+[    1.728993] [cf83de10] [c0249cc0] __driver_attach+0xa8/0xc0
+[    1.734532] [cf83de30] [c0247da0] bus_for_each_dev+0x6c/0xa8
+[    1.740156] [cf83de60] [c02494c8] driver_attach+0x30/0x40
+[    1.745522] [cf83de70] [c0248fe0] bus_add_driver+0x198/0x26c
+[    1.751144] [cf83de90] [c024a07c] driver_register+0x94/0x178
+[    1.756770] [cf83deb0] [c024b2f0] platform_driver_register+0x74/0x84
+[    1.763095] [cf83dec0] [c04ec6bc] matrix_keypad_driver_init+0x18/0x28
+[    1.769492] [cf83ded0] [c00039c0] do_one_initcall+0x144/0x1c4
+[    1.775208] [cf83df00] [c04d28d4] kernel_init_freeable+0x110/0x1b4
+[    1.781347] [cf83df30] [c0003fb8] kernel_init+0x20/0x108
+[    1.786634] [cf83df40] [c000ff20] ret_from_kernel_thread+0x5c/0x64
 
-> Well, it's pretty clear to me now that there's good reason for it not
-> landing in arch/arm/ so the obvious path is to do the dmaengine
-> conversion and put it in drivers/dma/ if it's really a generic dma engine.
-> I'm not sure why you express concern over the dma engine api not fitting
-> with CPPI 4.1?
+__irq_set_trigger() calls irq_set_type() callback of the mpc8xxx gpio
+irq chip with the IRQ_TYPE_NONE in its 'flags' argument. This callback
+is either mpc8xxx_irq_set_type() or mpc512x_irq_set_type(). Both these
+functions return -EINVAL in the case if IRQ_TYPE_NONE is passed in the
+flow_type argument. This return value triggers the observed error
+message in __irq_set_trigger(). Modifying these callbacks to not
+return an error in IRQ_TYPE_NONE case doesn't make any sense for me,
+so removing the line as the patch does should be okay. If nobody
+objects I'll add similar description to commit log of v2 patch.
 
-    It's not a DMA controller only, it's 3 distinct devices, with the DMA 
-controller being one among them and using another one, the queue manager, as 
-some sort of proxy. The third device doesn't exist on OMAP-L1x SoCs -- it's 
-the buffer manager.
+Turning irq_set_irq_type() into a nop in case of IRQ_TYPE_NONE in
+its type argument is not acceptable, commit a09b659cd describes the
+reason.  
 
-> If it doesn't work, work with Vinod to fix the api. It's
-> expected, I'm working on dmaengine API changes right now to deal with a
-> limitation of EDMA that needs to be abstracted.
-
-    Sorry, now it's TI's task. I no longer have time to work on this (my 
-internal project to push OMAP-L1x support upstream has expired at Sep 2010) 
-and my future in MV is very uncertain at this moment. Most probably I'll leave 
-it (or be forced to leave).
-
-> As pointed out, edma.c is already here in arch/arm/, so moving it doesn't
-> add something new. It does let us regression test all platforms that use it
-> (both Davinci and AM33xx) as I go through the conversion process.
-
-    Could have been the same with CPPI 4.1 in theory if it was added to 
-mach-davinci/ back in 2009... we'd then only have to move it. EDMA code is 
-much older of course, so it's probably more justified.
-
-> -Matt
-
-WBR, Sergei
-
+Thanks,
+Anatolij
