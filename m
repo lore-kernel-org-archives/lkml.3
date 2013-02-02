@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab3BBPKz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 10:10:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44811 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757563Ab3BBPKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 10:10:53 -0500
-Date: Sat, 2 Feb 2013 16:01:54 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "lenb@kernel.org" <lenb@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "guohanjun@huawei.com" <guohanjun@huawei.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug
- framework
-Message-ID: <20130202150154.GC1434@kroah.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
- <20130130045830.GH30002@kroah.com>
- <1359601065.15120.156.camel@misato.fc.hp.com>
- <9860755.q4y3PrCFZx@vostro.rjw.lan>
- <1359682338.15120.209.camel@misato.fc.hp.com>
- <20130201073010.GC1180@kroah.com>
- <1359751210.15120.278.camel@misato.fc.hp.com>
+	id S1757939Ab3BBPLI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 10:11:08 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:41932 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757912Ab3BBPLE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 10:11:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359751210.15120.278.camel@misato.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1359461275-7059-1-git-send-email-agust@denx.de>
+References: <1359461275-7059-1-git-send-email-agust@denx.de>
+Date: Sat, 2 Feb 2013 16:11:03 +0100
+Message-ID: <CACRpkdYuSpLPnTV4bNnLnA64fix7HjCU2tP6NpDn7zo+HhQ4Wg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: mpc8xxx: don't set IRQ_TYPE_NONE when creating irq mapping
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Anatolij Gustschin <agust@denx.de>, Peter Korsgaard <jacmet@sunsite.dk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 01:40:10PM -0700, Toshi Kani wrote:
-> On Fri, 2013-02-01 at 07:30 +0000, Greg KH wrote:
-> > On Thu, Jan 31, 2013 at 06:32:18PM -0700, Toshi Kani wrote:
-> >  > This is already done for PCI host bridges and platform devices and I don't
-> > > > see why we can't do that for the other types of devices too.
-> > > > 
-> > > > The only missing piece I see is a way to handle the "eject" problem, i.e.
-> > > > when we try do eject a device at the top of a subtree and need to tear down
-> > > > the entire subtree below it, but if that's going to lead to a system crash,
-> > > > for example, we want to cancel the eject.  It seems to me that we'll need some
-> > > > help from the driver core here.
-> > > 
-> > > There are three different approaches suggested for system device
-> > > hot-plug:
-> > >  A. Proceed within system device bus scan.
-> > >  B. Proceed within ACPI bus scan.
-> > >  C. Proceed with a sequence (as a mini-boot).
-> > > 
-> > > Option A uses system devices as tokens, option B uses acpi devices as
-> > > tokens, and option C uses resource tables as tokens, for their handlers.
-> > > 
-> > > Here is summary of key questions & answers so far.  I hope this
-> > > clarifies why I am suggesting option 3.
-> > > 
-> > > 1. What are the system devices?
-> > > System devices provide system-wide core computing resources, which are
-> > > essential to compose a computer system.  System devices are not
-> > > connected to any particular standard buses.
-> > 
-> > Not a problem, lots of devices are not connected to any "particular
-> > standard busses".  All this means is that system devices are connected
-> > to the "system" bus, nothing more.
-> 
-> Can you give me a few examples of other devices that support hotplug and
-> are not connected to any particular buses?  I will investigate them to
-> see how they are managed to support hotplug.
+On Tue, Jan 29, 2013 at 1:07 PM, Anatolij Gustschin <agust@denx.de> wrote:
 
-Any device that is attached to any bus in the driver model can be
-hotunplugged from userspace by telling it to be "unbound" from the
-driver controlling it.  Try it for any platform device in your system to
-see how it happens.
+> Exporting gpios throws genirq error messages like
+>
+> genirq: Setting trigger mode 0 for irq 44 failed
+>  (mpc512x_irq_set_type+0x0/0x18c)
+>
+> Do not set IRQ_TYPE_NONE in mapping function. Setting this type here
+> ends up in returning error code in driver's irq_set_type() function
+> and this triggers the genirq error message.
+>
+> Signed-off-by: Anatolij Gustschin <agust@denx.de>
+> ---
+>  drivers/gpio/gpio-mpc8xxx.c | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
+> index 9ae29cc..a0b33a2 100644
+> --- a/drivers/gpio/gpio-mpc8xxx.c
+> +++ b/drivers/gpio/gpio-mpc8xxx.c
+> @@ -292,7 +292,6 @@ static int mpc8xxx_gpio_irq_map(struct irq_domain *h, unsigned int virq,
+>
+>         irq_set_chip_data(virq, h->host_data);
+>         irq_set_chip_and_handler(virq, &mpc8xxx_irq_chip, handle_level_irq);
+> -       irq_set_irq_type(virq, IRQ_TYPE_NONE);
 
-> > > 2. Why are the system devices special?
-> > > The system devices are initialized during early boot-time, by multiple
-> > > subsystems, from the boot-up sequence, in pre-defined order.  They
-> > > provide low-level services to enable other subsystems to come up.
-> > 
-> > Sorry, no, that doesn't mean they are special, nothing here is unique
-> > for the point of view of the driver model from any other device or bus.
-> 
-> I think system devices are unique in a sense that they are initialized
-> before drivers run.
+git blame says this line was put there by the IRQ subsystem maintainer
+Thomas Gleixner.
 
-No, most all devices are "initialized" before a driver runs on it, USB
-is one such example, PCI another, and I'm pretty sure that there are
-others.
+I feel very nervous about removing that, and you need a better explanation
+what is causing the problem and how in the commit.
 
-> > If you need to initialize the driver
-> > core earlier, then do so.  Or, even better, just wait until enough of
-> > the system has come up and then go initialize all of the devices you
-> > have found so far as part of your boot process.
-> 
-> They are pseudo drivers that provide sysfs entry points of cpu and
-> memory.  They do not actually initialize cpu and memory.  I do not think
-> initializing cpu and memory fits into the driver model either, since
-> drivers should run after cpu and memory are initialized.
+Like I want to know for sure that the problem is not triggered from
+somewhere else.
 
-We already represent CPUs in the sysfs tree, don't represent them in two
-different places with two different structures.  Use the existing ones
-please.
+Please write how and where you export this to trigger the error.
 
-> > None of the above things you have stated seem to have anything to do
-> > with your proposed patch, so I don't understand why you have mentioned
-> > them...
-> 
-> You suggested option A before, which uses system bus scan to initialize
-> all system devices at boot time as well as hot-plug.  I tried to say
-> that this option would not be doable.
-
-I haven't yet been convinced otherwise, sorry.  Please prove me wrong :)
-
-thanks,
-
-greg k-h
+Yours,
+Linus Walleij
