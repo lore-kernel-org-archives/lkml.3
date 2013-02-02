@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab3BBKFO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 05:05:14 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:43879 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab3BBKFK (ORCPT
+	id S1755379Ab3BBKGm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 05:06:42 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:49802 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab3BBKGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 05:05:10 -0500
-Date: Sat, 2 Feb 2013 11:05:06 +0100
-From: Jiri Pirko <jiri@resnulli.us>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        =?utf-8?B?IllPU0hJRlVKSSBIaWRlYWtpIC8g5ZCJ6Jek6Iux5piOIg==?= 
-	<yoshfuji@linux-ipv6.org>
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-Message-ID: <20130202100506.GB1864@minipsycho.orion>
-References: <20130202142253.e31167bf695f000c0c78f4cc@canb.auug.org.au>
+	Sat, 2 Feb 2013 05:06:40 -0500
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH] bq27x00_battery: Fix reporting battery temperature
+Date: Sat,  2 Feb 2013 11:06:09 +0100
+Message-Id: <1359799569-5322-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130202142253.e31167bf695f000c0c78f4cc@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sat, Feb 02, 2013 at 04:22:53AM CET, sfr@canb.auug.org.au wrote:
->Hi all,
->
->Today's linux-next merge of the net-next tree got a conflict in
->net/ipv6/route.c between commit bd30e947207e ("ipv6: do not create
->neighbor entries for local delivery") from the net tree and commit
->c440f1609b65 ("ipv6: Do not depend on rt->n in ip6_pol_route()") from the
->net-next tree.
->
->I fixed it up (I think - see below) and can carry the fix as necessary
->(no action is required).
->
->-- 
->Cheers,
->Stephen Rothwell                    sfr@canb.auug.org.au
->
->diff --cc net/ipv6/route.c
->index 363d8b7,f3328bc..0000000
->--- a/net/ipv6/route.c
->+++ b/net/ipv6/route.c
->@@@ -928,7 -884,7 +884,7 @@@ restart
->  	dst_hold(&rt->dst);
->  	read_unlock_bh(&table->tb6_lock);
->  
->- 	if (!rt->n && !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
-> -	if (!(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_GATEWAY)))
->++	if (!(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL | RTF_GATEWAY)))
+Reported temperature can be also negative, so cache value in non negative Kelvin degree.
 
-I believe that no change here is correct to do. RTF_LOCAL here is needed
-only before Yoshifuji's "IPv6 rt->n removal"
-	
-	
->  		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
->  	else if (!(rt->dst.flags & DST_HOST))
->  		nrt = rt6_alloc_clone(rt, &fl6->daddr);
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+---
+ drivers/power/bq27x00_battery.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index 36b34ef..4f39dd8 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -299,7 +299,7 @@ static int bq27x00_battery_read_energy(struct bq27x00_device_info *di)
+ }
+ 
+ /*
+- * Return the battery temperature in tenths of degree Celsius
++ * Return the battery temperature in tenths of degree Kelvin
+  * Or < 0 if something fails.
+  */
+ static int bq27x00_battery_read_temperature(struct bq27x00_device_info *di)
+@@ -312,10 +312,8 @@ static int bq27x00_battery_read_temperature(struct bq27x00_device_info *di)
+ 		return temp;
+ 	}
+ 
+-	if (bq27xxx_is_chip_version_higher(di))
+-		temp -= 2731;
+-	else
+-		temp = ((temp * 5) - 5463) / 2;
++	if (!bq27xxx_is_chip_version_higher(di))
++		temp = 5 * temp / 2;
+ 
+ 	return temp;
+ }
+@@ -642,6 +640,8 @@ static int bq27x00_battery_get_property(struct power_supply *psy,
+ 		break;
+ 	case POWER_SUPPLY_PROP_TEMP:
+ 		ret = bq27x00_simple_value(di->cache.temperature, val);
++		if (ret == 0)
++			val->intval -= 2731;
+ 		break;
+ 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW:
+ 		ret = bq27x00_simple_value(di->cache.time_to_empty, val);
+-- 
+1.7.10.4
 
