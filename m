@@ -1,145 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab3BBPKD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 10:10:03 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:41325 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757741Ab3BBPKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 10:10:00 -0500
-Date: Sat, 2 Feb 2013 10:09:59 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Aaron Lu <aaron.lu@intel.com>
-cc: Derek Basehore <dbasehore@chromium.org>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jeff Garzik <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
-In-Reply-To: <510CEE46.80308@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1302021003390.25931-100000@netrider.rowland.org>
+	id S1757883Ab3BBPKz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 10:10:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44811 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757563Ab3BBPKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 10:10:53 -0500
+Date: Sat, 2 Feb 2013 16:01:54 +0100
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "lenb@kernel.org" <lenb@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "guohanjun@huawei.com" <guohanjun@huawei.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug
+ framework
+Message-ID: <20130202150154.GC1434@kroah.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+ <20130130045830.GH30002@kroah.com>
+ <1359601065.15120.156.camel@misato.fc.hp.com>
+ <9860755.q4y3PrCFZx@vostro.rjw.lan>
+ <1359682338.15120.209.camel@misato.fc.hp.com>
+ <20130201073010.GC1180@kroah.com>
+ <1359751210.15120.278.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359751210.15120.278.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Feb 2013, Aaron Lu wrote:
-
-> >> An alternative way of possibly solving this problem from PM's point of
-> >> view might be:
-> >> 1 Set both ata port and scsi device's runtime status to RPM_SUSPENDED
-> >>   in their system suspend callback;
-
-By the way, what reason is there for doing this to the ATA port?  Does 
-the port take a long time to resume, in the same way that a disk can 
-take a few seconds to spin back up?
-
-> >> 2 On resume, do nothing in their system resume callback;
-> >> 3 With request based runtime PM introduced here:
-> >>   http://thread.gmane.org/gmane.linux.power-management.general/30405
-> >>   When a request comes for the HDD after system resume, both the ata
-> >>   port and the scsi device will be runtime resumed, which involves
-> >>   re-initialize the ata link(in ata port's runtime resume callback) and
-> >>   spin up the HDD(in sd's runtime resume callback).
-> >>
-> >> To make HDD un-affetcted by runtime PM during normal use, a large enough
-> >> autosuspend_delay can be set for it.
-> >>
-> >> Just my 2 cents, I've not verified or tried in any way yet :-)
+On Fri, Feb 01, 2013 at 01:40:10PM -0700, Toshi Kani wrote:
+> On Fri, 2013-02-01 at 07:30 +0000, Greg KH wrote:
+> > On Thu, Jan 31, 2013 at 06:32:18PM -0700, Toshi Kani wrote:
+> >  > This is already done for PCI host bridges and platform devices and I don't
+> > > > see why we can't do that for the other types of devices too.
+> > > > 
+> > > > The only missing piece I see is a way to handle the "eject" problem, i.e.
+> > > > when we try do eject a device at the top of a subtree and need to tear down
+> > > > the entire subtree below it, but if that's going to lead to a system crash,
+> > > > for example, we want to cancel the eject.  It seems to me that we'll need some
+> > > > help from the driver core here.
+> > > 
+> > > There are three different approaches suggested for system device
+> > > hot-plug:
+> > >  A. Proceed within system device bus scan.
+> > >  B. Proceed within ACPI bus scan.
+> > >  C. Proceed with a sequence (as a mini-boot).
+> > > 
+> > > Option A uses system devices as tokens, option B uses acpi devices as
+> > > tokens, and option C uses resource tables as tokens, for their handlers.
+> > > 
+> > > Here is summary of key questions & answers so far.  I hope this
+> > > clarifies why I am suggesting option 3.
+> > > 
+> > > 1. What are the system devices?
+> > > System devices provide system-wide core computing resources, which are
+> > > essential to compose a computer system.  System devices are not
+> > > connected to any particular standard buses.
 > > 
-> > It's a good idea.  The problem is that it won't work if CONFIG_PM_SLEEP
-> > is enabled but CONFIG_PM_RUNTIME isn't.
+> > Not a problem, lots of devices are not connected to any "particular
+> > standard busses".  All this means is that system devices are connected
+> > to the "system" bus, nothing more.
 > 
-> Right, what a pity... thanks for the hint.
+> Can you give me a few examples of other devices that support hotplug and
+> are not connected to any particular buses?  I will investigate them to
+> see how they are managed to support hotplug.
+
+Any device that is attached to any bus in the driver model can be
+hotunplugged from userspace by telling it to be "unbound" from the
+driver controlling it.  Try it for any platform device in your system to
+see how it happens.
+
+> > > 2. Why are the system devices special?
+> > > The system devices are initialized during early boot-time, by multiple
+> > > subsystems, from the boot-up sequence, in pre-defined order.  They
+> > > provide low-level services to enable other subsystems to come up.
+> > 
+> > Sorry, no, that doesn't mean they are special, nothing here is unique
+> > for the point of view of the driver model from any other device or bus.
 > 
-> But the code is really simple if we ignore this problem(with some proper
-> modifications to scsi bus PM callbacks, see the delayed_resume branch if
-> you are interested), so I'm tempted to post it here :-)
+> I think system devices are unique in a sense that they are initialized
+> before drivers run.
+
+No, most all devices are "initialized" before a driver runs on it, USB
+is one such example, PCI another, and I'm pretty sure that there are
+others.
+
+> > If you need to initialize the driver
+> > core earlier, then do so.  Or, even better, just wait until enough of
+> > the system has come up and then go initialize all of the devices you
+> > have found so far as part of your boot process.
 > 
->  drivers/ata/libata-core.c | 22 +++++++++++-----------
->  drivers/scsi/scsi_pm.c    | 14 +++++++++++---
->  2 files changed, 22 insertions(+), 14 deletions(-)
+> They are pseudo drivers that provide sysfs entry points of cpu and
+> memory.  They do not actually initialize cpu and memory.  I do not think
+> initializing cpu and memory fits into the driver model either, since
+> drivers should run after cpu and memory are initialized.
+
+We already represent CPUs in the sysfs tree, don't represent them in two
+different places with two different structures.  Use the existing ones
+please.
+
+> > None of the above things you have stated seem to have anything to do
+> > with your proposed patch, so I don't understand why you have mentioned
+> > them...
 > 
-> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-> index 497adea..38000fc 100644
-> --- a/drivers/ata/libata-core.c
-> +++ b/drivers/ata/libata-core.c
-> @@ -5355,10 +5355,19 @@ static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
->  
->  static int ata_port_suspend(struct device *dev)
->  {
-> +	int ret;
-> +
->  	if (pm_runtime_suspended(dev))
->  		return 0;
->  
-> -	return ata_port_suspend_common(dev, PMSG_SUSPEND);
-> +	ret = ata_port_suspend_common(dev, PMSG_SUSPEND);
-> +	if (!ret) {
-> +		__pm_runtime_disable(dev, false);
+> You suggested option A before, which uses system bus scan to initialize
+> all system devices at boot time as well as hot-plug.  I tried to say
+> that this option would not be doable.
 
-Don't you mean pm_runtime_disable(dev)?
+I haven't yet been convinced otherwise, sorry.  Please prove me wrong :)
 
-> +		pm_runtime_set_suspended(dev);
-> +		pm_runtime_enable(dev);
-> +	}
-> +
-> +	return ret;
->  }
->  
->  static int ata_port_do_freeze(struct device *dev)
-> @@ -5393,16 +5402,7 @@ static int ata_port_resume_common(struct device *dev, pm_message_t mesg)
->  
->  static int ata_port_resume(struct device *dev)
->  {
-> -	int rc;
-> -
-> -	rc = ata_port_resume_common(dev, PMSG_RESUME);
-> -	if (!rc) {
-> -		pm_runtime_disable(dev);
-> -		pm_runtime_set_active(dev);
-> -		pm_runtime_enable(dev);
-> -	}
-> -
-> -	return rc;
-> +	return 0;
->  }
->  
->  /*
-> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-> index d9956b6..d0b6997 100644
-> --- a/drivers/scsi/scsi_pm.c
-> +++ b/drivers/scsi/scsi_pm.c
-> @@ -127,13 +127,21 @@ static int scsi_bus_prepare(struct device *dev)
->  static int scsi_bus_suspend(struct device *dev)
->  {
->  	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> -	return scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
-> +	int ret;
-> +
-> +	ret = scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
-> +	if (!ret) {
-> +		__pm_runtime_disable(dev, false);
-> +		pm_runtime_set_suspended(dev);
-> +		pm_runtime_enable(dev);
-> +	}
-> +
-> +	return ret;
->  }
->  
->  static int scsi_bus_resume(struct device *dev)
->  {
-> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> -	return scsi_bus_resume_common(dev, pm ? pm->resume : NULL);
-> +	return 0;
->  }
+thanks,
 
-This doesn't look like it would work very well with something like a CD 
-drive, which doesn't use block-layer runtime PM.  Is that what you 
-meant when you talked about modifying the SCSI PM callbacks?
-
-Alan Stern
-
+greg k-h
