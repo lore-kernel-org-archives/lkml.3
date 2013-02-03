@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3BCKQv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 05:16:51 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:55032 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960Ab3BCKQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 05:16:49 -0500
-Message-ID: <1359886593.510e3901cb3fa@imp.free.fr>
-Date: Sun, 03 Feb 2013 11:16:33 +0100
-From: yann.morin.1998@free.fr
-To: Roland Eggner <edvx1@systemanalysen.net>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Dmitry Voytik <dvv.kernel@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH resend v3 0/3] kconfig: nconf:  rewrite help texts, add vi-style navigation keys
-References: <20130201182237.GA11098@mobil.systemanalysen.net>
-In-Reply-To: <20130201182237.GA11098@mobil.systemanalysen.net>
+	id S1753226Ab3BCKWy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 05:22:54 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:58031 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab3BCKWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 05:22:52 -0500
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Anatolij Gustschin <agust@denx.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: mpc8xxx: don't set IRQ_TYPE_NONE when creating irq mapping
+References: <1359461275-7059-1-git-send-email-agust@denx.de>
+	<CACRpkdYuSpLPnTV4bNnLnA64fix7HjCU2tP6NpDn7zo+HhQ4Wg@mail.gmail.com>
+	<20130202202952.378af5cb@crub>
+Date: Sun, 03 Feb 2013 11:22:45 +0100
+In-Reply-To: <20130202202952.378af5cb@crub> (Anatolij Gustschin's message of
+	"Sat, 2 Feb 2013 20:29:52 +0100")
+Message-ID: <87r4kx66iy.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 3.2.8
-X-Originating-IP: 94.23.60.27
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rolland, All,
+>>>>> "Anatolij" == Anatolij Gustschin <agust@denx.de> writes:
 
-Quoting Roland Eggner <edvx1@systemanalysen.net>:
-> Yann, Michal,
->
-> thanks for advice and comments to v2, I tried to address all and posted v3
-> a week ago.  Got no reply and resent now.
+Hi,
 
-I'm on the move (at FOSDEM). I will look at this when I'm
-back home (wednesday).
+ Anatolij> Thomas renamed the old set_irq_type() call to
+ Anatolij> irq_set_irq_type(), but this line setting the IRQ_TYPE_NONE
+ Anatolij> type was there before renaming.  It was added by commit
+ Anatolij> 345e5c8a. At this time set_irq_type() checked its type
+ Anatolij> argument and returned 0 if the type argument didn't specify
+ Anatolij> some meaningful type in its type sense bits (and thus was
+ Anatolij> equal to IRQ_TYPE_NONE). Effectively this line was a nop and
+ Anatolij> I wonder what was the point of adding it.
 
-> I would like to see this in 3.9.
-> How to proceed?
+Sorry, don't recall. It's been quite a while, and I've haven't worked on
+anything mpc8xxx for a few years by now. Most likely one of the other
+gpio drivers did it like this back then.
 
-Given the current state of the -rc series, I think we still
-have a bit of time before the merge window opens again.
+I don't remember the details, but your description makes sense so if
+nobody disagrees you can have my:
 
-Regards,
-Yann E. MORIN.
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
 
-
-
+-- 
+Bye, Peter Korsgaard
