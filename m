@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab3BCO4O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:56:14 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34300 "EHLO
+	id S1754289Ab3BCO4R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:56:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34295 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753462Ab3BCO4L (ORCPT
+	by vger.kernel.org with ESMTP id S1754214Ab3BCO4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:56:11 -0500
-Message-Id: <20130203144649.001149710@decadent.org.uk>
+	Sun, 3 Feb 2013 09:56:10 -0500
+Message-Id: <20130203144648.920699833@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:40 +0100
+Date: Sun, 03 Feb 2013 15:47:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 056/128] s390/time: fix sched_clock() overflow
+Cc: akpm@linux-foundation.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@fwll.ch>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 055/128] drm/i915: Invalidate the relocation presumed_offsets along the slow
+ path
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,94 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit ed4f20943cd4c7b55105c04daedf8d63ab6d499c upstream.
+commit 262b6d363fcff16359c93bd58c297f961f6e6273 upstream.
 
-Converting a 64 Bit TOD format value to nanoseconds means that the value
-must be divided by 4.096. In order to achieve that we multiply with 125
-and divide by 512.
-When used within sched_clock() this triggers an overflow after appr.
-417 days. Resulting in a sched_clock() return value that is much smaller
-than previously and therefore may cause all sort of weird things in
-subsystems that rely on a monotonic sched_clock() behaviour.
+In the slow path, we are forced to copy the relocations prior to
+acquiring the struct mutex in order to handle pagefaults. We forgo
+copying the new offsets back into the relocation entries in order to
+prevent a recursive locking bug should we trigger a pagefault whilst
+holding the mutex for the reservations of the execbuffer. Therefore, we
+need to reset the presumed_offsets just in case the objects are rebound
+back into their old locations after relocating for this exexbuffer - if
+that were to happen we would assume the relocations were valid and leave
+the actual pointers to the kernels dangling, instant hang.
 
-To fix this implement a tod_to_ns() helper function which converts TOD
-values without overflow and call this function from both places that
-open coded the conversion: sched_clock() and kvm_s390_handle_wait().
+Fixes regression from commit bcf50e2775bbc3101932d8e4ab8c7902aa4163b4
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Sun Nov 21 22:07:12 2010 +0000
 
-Reviewed-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+    drm/i915: Handle pagefaults in execbuffer user relocations
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=55984
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@fwll.ch>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/include/asm/timex.h |   28 ++++++++++++++++++++++++++++
- arch/s390/kernel/time.c       |    2 +-
- arch/s390/kvm/interrupt.c     |    2 +-
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/arch/s390/include/asm/timex.h b/arch/s390/include/asm/timex.h
-index fba4d66..4c060bb 100644
---- a/arch/s390/include/asm/timex.h
-+++ b/arch/s390/include/asm/timex.h
-@@ -128,4 +128,32 @@ static inline unsigned long long get_clock_monotonic(void)
- 	return get_clock_xt() - sched_clock_base_cc;
- }
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index d6a994a..26d08bb 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -539,6 +539,8 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
+ 	total = 0;
+ 	for (i = 0; i < count; i++) {
+ 		struct drm_i915_gem_relocation_entry __user *user_relocs;
++		u64 invalid_offset = (u64)-1;
++		int j;
  
-+/**
-+ * tod_to_ns - convert a TOD format value to nanoseconds
-+ * @todval: to be converted TOD format value
-+ * Returns: number of nanoseconds that correspond to the TOD format value
-+ *
-+ * Converting a 64 Bit TOD format value to nanoseconds means that the value
-+ * must be divided by 4.096. In order to achieve that we multiply with 125
-+ * and divide by 512:
-+ *
-+ *    ns = (todval * 125) >> 9;
-+ *
-+ * In order to avoid an overflow with the multiplication we can rewrite this.
-+ * With a split todval == 2^32 * th + tl (th upper 32 bits, tl lower 32 bits)
-+ * we end up with
-+ *
-+ *    ns = ((2^32 * th + tl) * 125 ) >> 9;
-+ * -> ns = (2^23 * th * 125) + ((tl * 125) >> 9);
-+ *
-+ */
-+static inline unsigned long long tod_to_ns(unsigned long long todval)
-+{
-+	unsigned long long ns;
-+
-+	ns = ((todval >> 32) << 23) * 125;
-+	ns += ((todval & 0xffffffff) * 125) >> 9;
-+	return ns;
-+}
-+
- #endif
-diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
-index aff0e35..a5f4f5a 100644
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -63,7 +63,7 @@ static DEFINE_PER_CPU(struct clock_event_device, comparators);
-  */
- unsigned long long notrace __kprobes sched_clock(void)
- {
--	return (get_clock_monotonic() * 125) >> 9;
-+	return tod_to_ns(get_clock_monotonic());
- }
+ 		user_relocs = (void __user *)(uintptr_t)exec[i].relocs_ptr;
  
- /*
-diff --git a/arch/s390/kvm/interrupt.c b/arch/s390/kvm/interrupt.c
-index c30615e..82c481d 100644
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -408,7 +408,7 @@ int kvm_s390_handle_wait(struct kvm_vcpu *vcpu)
- 		return 0;
+@@ -549,6 +551,25 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
+ 			goto err;
+ 		}
+ 
++		/* As we do not update the known relocation offsets after
++		 * relocating (due to the complexities in lock handling),
++		 * we need to mark them as invalid now so that we force the
++		 * relocation processing next time. Just in case the target
++		 * object is evicted and then rebound into its old
++		 * presumed_offset before the next execbuffer - if that
++		 * happened we would make the mistake of assuming that the
++		 * relocations were valid.
++		 */
++		for (j = 0; j < exec[i].relocation_count; j++) {
++			if (copy_to_user(&user_relocs[j].presumed_offset,
++					 &invalid_offset,
++					 sizeof(invalid_offset))) {
++				ret = -EFAULT;
++				mutex_lock(&dev->struct_mutex);
++				goto err;
++			}
++		}
++
+ 		reloc_offset[i] = total;
+ 		total += exec[i].relocation_count;
  	}
- 
--	sltime = ((vcpu->arch.sie_block->ckc - now)*125)>>9;
-+	sltime = tod_to_ns(vcpu->arch.sie_block->ckc - now);
- 
- 	hrtimer_start(&vcpu->arch.ckc_timer, ktime_set (0, sltime) , HRTIMER_MODE_REL);
- 	VCPU_EVENT(vcpu, 5, "enabled wait via clock comparator: %llx ns", sltime);
 
 
