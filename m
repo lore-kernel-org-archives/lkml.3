@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab3BCO4m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:56:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34366 "EHLO
+	id S1754148Ab3BCO46 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:56:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34400 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754477Ab3BCO4h (ORCPT
+	by vger.kernel.org with ESMTP id S1754541Ab3BCO4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:56:37 -0500
-Message-Id: <20130203144649.993812410@decadent.org.uk>
+	Sun, 3 Feb 2013 09:56:50 -0500
+Message-Id: <20130203144650.528447302@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:51 +0100
+Date: Sun, 03 Feb 2013 15:47:57 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Pratyush Anand <pratyush.anand@st.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 067/128] usb: dwc3: gadget: fix ep->maxburst for ep0
+Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
+Subject: [ 073/128] ALSA: hda - Add Conexant CX20751/2/3/4 codec support
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,31 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pratyush Anand <pratyush.anand@st.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 6048e4c69d80600baba35856651056860d5d8f5a upstream.
+commit 61d648fb4726f8a89c07cd1904f9c2e11bf26df5 upstream.
 
-dwc3_gadget_set_ep_config expects maxburst as incremented by 1. So, by
-default initialize ep->maxburst to 1 for ep0.
+These are almost compatible with the older Conexant codecs.
 
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/dwc3/gadget.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_conexant.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 2e43b33..2fdd767 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1605,6 +1605,7 @@ static int dwc3_gadget_init_endpoints(struct dwc3 *dwc)
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 2cfcec0..a03fc33 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4559,6 +4559,10 @@ static int patch_conexant_auto(struct hda_codec *codec)
+  */
  
- 		if (epnum == 0 || epnum == 1) {
- 			dep->endpoint.maxpacket = 512;
-+			dep->endpoint.maxburst = 1;
- 			dep->endpoint.ops = &dwc3_gadget_ep0_ops;
- 			if (!epnum)
- 				dwc->gadget.ep0 = &dep->endpoint;
+ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
++	{ .id = 0x14f11510, .name = "CX20751/2",
++	  .patch = patch_conexant_auto },
++	{ .id = 0x14f11511, .name = "CX20753/4",
++	  .patch = patch_conexant_auto },
+ 	{ .id = 0x14f15045, .name = "CX20549 (Venice)",
+ 	  .patch = patch_cxt5045 },
+ 	{ .id = 0x14f15047, .name = "CX20551 (Waikiki)",
+@@ -4596,6 +4600,8 @@ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
+ 	{} /* terminator */
+ };
+ 
++MODULE_ALIAS("snd-hda-codec-id:14f11510");
++MODULE_ALIAS("snd-hda-codec-id:14f11511");
+ MODULE_ALIAS("snd-hda-codec-id:14f15045");
+ MODULE_ALIAS("snd-hda-codec-id:14f15047");
+ MODULE_ALIAS("snd-hda-codec-id:14f15051");
 
 
