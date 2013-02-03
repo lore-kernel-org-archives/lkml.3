@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab3BCBVb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:21:31 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:46219 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3BCBVR (ORCPT
+	id S1753405Ab3BCBVr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:21:47 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:63549 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab3BCBVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:21:17 -0500
+	Sat, 2 Feb 2013 20:21:22 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
-        axboe@kernel.dk, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/62] idr: remove _idr_rc_to_errno() hack
-Date: Sat,  2 Feb 2013 17:20:04 -0800
-Message-Id: <1359854463-2538-4-git-send-email-tj@kernel.org>
+        axboe@kernel.dk, Tejun Heo <tj@kernel.org>, stable@vger.kernel.org
+Subject: [PATCH 06/62] block: fix synchronization and limit check in blk_alloc_devt()
+Date: Sat,  2 Feb 2013 17:20:07 -0800
+Message-Id: <1359854463-2538-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -22,147 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idr uses -1, IDR_NEED_TO_GROW and IDR_NOMORE_SPACE to communicate
-exception conditions internally.  The return value is later translated
-to errno values using _idr_rc_to_errno().
+idr allocation in blk_alloc_devt() wasn't synchronized against lookup
+and removal, and its limit check was off by one - 1 << MINORBITS is
+the number of minors allowed, not the maximum allowed minor.
 
-This is confusing.  Drop the custom ones and consistently use -EAGAIN
-for "tree needs to grow", -ENOMEM for "need more memory" and -ENOSPC
-for "ran out of ID space".
-
-Due to the weird memory preloading mechanism, [ra]_get_new*() return
--EAGAIN on memory shortage, so we need to substitute -ENOMEM w/
--EAGAIN on those interface functions.  They'll eventually be cleaned
-up and the translations will go away.
-
-This patch doesn't introduce any functional changes.
+Add locking and rename MAX_EXT_DEVT to NR_EXT_DEVT and fix limit
+checking.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: stable@vger.kernel.org
 ---
- include/linux/idr.h |  6 ------
- lib/idr.c           | 35 +++++++++++++++++++++++------------
- 2 files changed, 23 insertions(+), 18 deletions(-)
+ block/genhd.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index 7c0700c..92e84f7 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -70,12 +70,6 @@ struct idr {
- }
- #define DEFINE_IDR(name)	struct idr name = IDR_INIT(name)
+diff --git a/block/genhd.c b/block/genhd.c
+index 9a289d7..49abda1 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -25,7 +25,7 @@ static DEFINE_MUTEX(block_class_lock);
+ struct kobject *block_depr;
  
--/* Actions to be taken after a call to _idr_sub_alloc */
--#define IDR_NEED_TO_GROW -2
--#define IDR_NOMORE_SPACE -3
+ /* for extended dynamic devt allocation, currently only one major is used */
+-#define MAX_EXT_DEVT		(1 << MINORBITS)
++#define NR_EXT_DEVT		(1 << MINORBITS)
+ 
+ /* For extended devt allocation.  ext_devt_mutex prevents look up
+  * results from going away underneath its user.
+@@ -420,17 +420,18 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
+ 	do {
+ 		if (!idr_pre_get(&ext_devt_idr, GFP_KERNEL))
+ 			return -ENOMEM;
++		mutex_lock(&ext_devt_mutex);
+ 		rc = idr_get_new(&ext_devt_idr, part, &idx);
++		if (!rc && idx >= NR_EXT_DEVT) {
++			idr_remove(&ext_devt_idr, idx);
++			rc = -EBUSY;
++		}
++		mutex_unlock(&ext_devt_mutex);
+ 	} while (rc == -EAGAIN);
+ 
+ 	if (rc)
+ 		return rc;
+ 
+-	if (idx > MAX_EXT_DEVT) {
+-		idr_remove(&ext_devt_idr, idx);
+-		return -EBUSY;
+-	}
 -
--#define _idr_rc_to_errno(rc) ((rc) == -1 ? -EAGAIN : -ENOSPC)
--
- /**
-  * DOC: idr sync
-  * idr synchronization (stolen from radix-tree.h)
-diff --git a/lib/idr.c b/lib/idr.c
-index 282841b..bde6eec 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -133,6 +133,21 @@ int idr_pre_get(struct idr *idp, gfp_t gfp_mask)
- }
- EXPORT_SYMBOL(idr_pre_get);
- 
-+/**
-+ * sub_alloc - try to allocate an id without growing the tree depth
-+ * @idp: idr handle
-+ * @starting_id: id to start search at
-+ * @id: pointer to the allocated handle
-+ * @pa: idr_layer[MAX_IDR_LEVEL] used as backtrack buffer
-+ *
-+ * Allocate an id in range [@starting_id, INT_MAX] from @idp without
-+ * growing its depth.  Returns
-+ *
-+ *  the allocated id >= 0 if successful,
-+ *  -EAGAIN if the tree needs to grow for allocation to succeed,
-+ *  -ENOSPC if the id space is exhausted,
-+ *  -ENOMEM if more idr_layers need to be allocated.
-+ */
- static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa)
- {
- 	int n, m, sh;
-@@ -161,7 +176,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa)
- 			/* if already at the top layer, we need to grow */
- 			if (id >= 1 << (idp->layers * IDR_BITS)) {
- 				*starting_id = id;
--				return IDR_NEED_TO_GROW;
-+				return -EAGAIN;
- 			}
- 			p = pa[l];
- 			BUG_ON(!p);
-@@ -180,7 +195,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa)
- 			id = ((id >> sh) ^ n ^ m) << sh;
- 		}
- 		if ((id >= MAX_IDR_BIT) || (id < 0))
--			return IDR_NOMORE_SPACE;
-+			return -ENOSPC;
- 		if (l == 0)
- 			break;
- 		/*
-@@ -189,7 +204,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa)
- 		if (!p->ary[m]) {
- 			new = get_from_free_list(idp);
- 			if (!new)
--				return -1;
-+				return -ENOMEM;
- 			new->layer = l-1;
- 			rcu_assign_pointer(p->ary[m], new);
- 			p->count++;
-@@ -215,7 +230,7 @@ build_up:
- 	layers = idp->layers;
- 	if (unlikely(!p)) {
- 		if (!(p = get_from_free_list(idp)))
--			return -1;
-+			return -ENOMEM;
- 		p->layer = 0;
- 		layers = 1;
- 	}
-@@ -246,7 +261,7 @@ build_up:
- 				__move_to_free_list(idp, new);
- 			}
- 			spin_unlock_irqrestore(&idp->lock, flags);
--			return -1;
-+			return -ENOMEM;
- 		}
- 		new->ary[0] = p;
- 		new->count = 1;
-@@ -258,7 +273,7 @@ build_up:
- 	rcu_assign_pointer(idp->top, p);
- 	idp->layers = layers;
- 	v = sub_alloc(idp, &id, pa);
--	if (v == IDR_NEED_TO_GROW)
-+	if (v == -EAGAIN)
- 		goto build_up;
- 	return(v);
- }
-@@ -306,12 +321,8 @@ int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
- 	int rv;
- 
- 	rv = idr_get_new_above_int(idp, ptr, starting_id);
--	/*
--	 * This is a cheap hack until the IDR code can be fixed to
--	 * return proper error values.
--	 */
- 	if (rv < 0)
--		return _idr_rc_to_errno(rv);
-+		return rv == -ENOMEM ? -EAGAIN : rv;
- 	*id = rv;
+ 	*devt = MKDEV(BLOCK_EXT_MAJOR, blk_mangle_minor(idx));
  	return 0;
  }
-@@ -766,7 +777,7 @@ int ida_get_new_above(struct ida *ida, int starting_id, int *p_id)
- 	/* get vacant slot */
- 	t = idr_get_empty_slot(&ida->idr, idr_id, pa);
- 	if (t < 0)
--		return _idr_rc_to_errno(t);
-+		return t == -ENOMEM ? -EAGAIN : t;
- 
- 	if (t * IDA_BITMAP_BITS >= MAX_IDR_BIT)
- 		return -ENOSPC;
 -- 
 1.8.1
 
