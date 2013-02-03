@@ -1,152 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab3BCN12 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 08:27:28 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:53881 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab3BCN10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 08:27:26 -0500
-Message-ID: <510E65B3.10901@gmail.com>
-Date: Sun, 03 Feb 2013 14:27:15 +0100
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	id S1753279Ab3BCNfP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 08:35:15 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:55093 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752258Ab3BCNfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 08:35:12 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: fli24 <fei.li@intel.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, chuansheng.liu@intel.com
+Subject: Re: [PATCH V4] suspend: enable freeze timeout configuration through sys
+Date: Sun, 03 Feb 2013 14:41:27 +0100
+Message-ID: <1919836.fQMoKOYYSd@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1359708963.7240.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <1359608132.7918.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <1359708963.7240.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v2] media: tvp514x: add OF support
-References: <1359464832-8875-1-git-send-email-prabhakar.lad@ti.com> <510C43A0.7090906@gmail.com> <CA+V-a8u6VADw_HfbBN4ESGUXTSMKfVyKZaEf1bhVGACof6qZ8A@mail.gmail.com>
-In-Reply-To: <CA+V-a8u6VADw_HfbBN4ESGUXTSMKfVyKZaEf1bhVGACof6qZ8A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Friday, February 01, 2013 04:56:03 PM fli24 wrote:
 
-On 02/03/2013 11:13 AM, Prabhakar Lad wrote:
-[...]
->>> +Required Properties :
->>> +- compatible: Must be "ti,tvp514x-decoder"
->>
->>
->> There are no significant differences among TVP514* devices as listed above,
->> you would like to handle above ?
+The code looks OK, but I'm still having a more fundamental problem with this
+change, because ->
 
-Sorry for the mangled sentence, I intended to write "in the driver" instead
-of the last "above".
+> At present, the value of timeout for freezing is 20s, which is
+> meaningless in case that one thread is frozen with mutex locked
+> and another thread is trying to lock the mutex, as this time of
+> freezing will fail unavoidably.
 
->> I'm just wondering if you don't need ,for instance, two separate compatible
->> properties, e.g. "ti,tvp5146-decoder" and "ti,tvp5147-decoder" ?
->>
-> There are few differences in init/power sequence tough, I would still
-> like to have
-> single compatible property "ti,tvp514x-decoder", If you feel we need separate
-> property I will change it please let me know on this.
+-> the situation described above shouldn't happen and if it does, then there
+is a bug that needs to be fixed.
 
-As Sekhar already mentioned, wildcards in the compatible property should
-not be used. You could just use exact part names in the compatible
-properties and list them all in the tvp514x_of_match[] array. Even though
-this driver doesn't care about the differences between various tvp514?
-chips, there might be others that do.
+The change you're proposing seems to be targeted at hiding those bugs rather
+than at fixing them.  I wonder why we should hide those bugs instead of fixing
+them?
 
-[...]
->>> +#if defined(CONFIG_OF)
->>> +static const struct of_device_id tvp514x_of_match[] = {
->>> +       {.compatible = "ti,tvp514x-decoder", },
->>> +       {},
->>> +};
->>> +MODULE_DEVICE_TABLE(of, tvp514x_of_match);
->>> +
->>> +static struct tvp514x_platform_data
->>> +       *tvp514x_get_pdata(struct i2c_client *client)
->>> +{
->>> +       if (!client->dev.platform_data&&   client->dev.of_node) {
->>>
->>> +               struct tvp514x_platform_data *pdata;
->>> +               struct v4l2_of_endpoint bus_cfg;
->>> +               struct device_node *endpoint;
->>> +
->>> +               pdata = devm_kzalloc(&client->dev,
->>> +                               sizeof(struct tvp514x_platform_data),
->>> +                               GFP_KERNEL);
->>> +               client->dev.platform_data = pdata;
->>
->>
->> Do you really need to set client->dev.platform_data this way ?
->> What about passing struct tvp514x_decoder pointer to this function
->> and initializing struct tvp514x_decoder::pdata instead ?
->>
->>
-> Yes that can work too, I'll do the same.
+Rafael
 
-Ok, thanks.
 
->>> +               if (!pdata)
->>> +                       return NULL;
->>> +
->>> +               endpoint = of_get_child_by_name(client->dev.of_node,
->>> "port");
->>> +               if (endpoint)
->>> +                       endpoint = of_get_child_by_name(endpoint,
->>> "endpoint");
->>
->>
->> I think you could replace these two calls above with
->>
->>                  endpoint = v4l2_of_get_next_endpoint(client->dev.of_node);
->>
-> Ok
->
->> Now I see I should have modified this function to ensure it works also when
->> 'port' nodes are grouped in a 'ports' node.
->>
-> So V5 series of V4l OF parser doesn't have this fix ?
-
-No, it doesn't. I think we need something along the lines of:
-
-diff --git a/drivers/media/v4l2-core/v4l2-of.c 
-b/drivers/media/v4l2-core/v4l2-of.c
-index e1f570b..8a286f1 100644
---- a/drivers/media/v4l2-core/v4l2-of.c
-+++ b/drivers/media/v4l2-core/v4l2-of.c
-@@ -185,10 +185,15 @@ struct device_node 
-*v4l2_of_get_next_endpoint(const struct device_node *parent,
-                  * This is the first call, we have to find a port within
-                  * this node.
-                  */
--               for_each_child_of_node(parent, port) {
-+               while (port = of_get_next_child(parent, port)) {
-                         if (!of_node_cmp(port->name, "port"))
-                                 break;
--               }
-+                       if (!of_node_cmp(port->name, "ports")) {
-+                               parent = port;
-+                               of_node_put(port);
-+                               port = NULL:
-+                       }
-+               };
-                 if (port) {
-                         /* Found a port, get an endpoint. */
-                         endpoint = of_get_next_child(port, NULL);
-
-However this shouldn't affect you, as you don't use the 'ports' node...
-I will likely post v6 including this fix tomorrow.
-
---
-
-Regards,
-Sylwester
+> And if there is no new wakeup event registered, the system will
+> waste at most 20s for such meaningless trying of freezing.
+> 
+> With this patch, the value of timeout can be configured to smaller
+> value, so such meaningless trying of freezing will be aborted in
+> earlier time, and later freezing can be also triggered in earlier
+> time. And more power will be saved.
+> In normal case on mobile phone, it costs real little time to freeze
+> processes. On some platform, it only costs about 20ms to freeze
+> user space processes and 10ms to freeze kernel freezable threads.
+> 
+> Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
+> Signed-off-by: Li Fei <fei.li@intel.com>
+> ---
+>  Documentation/power/freezing-of-tasks.txt |    5 +++++
+>  include/linux/freezer.h                   |    5 +++++
+>  kernel/power/main.c                       |   27 +++++++++++++++++++++++++++
+>  kernel/power/process.c                    |    4 ++--
+>  4 files changed, 39 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
+> index 6ec291e..85894d8 100644
+> --- a/Documentation/power/freezing-of-tasks.txt
+> +++ b/Documentation/power/freezing-of-tasks.txt
+> @@ -223,3 +223,8 @@ since they ask the freezer to skip freezing this task, since it is anyway
+>  only after the entire suspend/hibernation sequence is complete.
+>  So, to summarize, use [un]lock_system_sleep() instead of directly using
+>  mutex_[un]lock(&pm_mutex). That would prevent freezing failures.
+> +
+> +V. Miscellaneous
+> +/sys/power/pm_freeze_timeout controls how long it will cost at most to freeze
+> +all user space processes or all freezable kernel threads, in unit of millisecond.
+> +The default value is 20000, with range of unsigned integer.
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index e4238ce..e70df40 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect */
+>  extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
+>  
+>  /*
+> + * Timeout for stopping processes
+> + */
+> +extern unsigned int freeze_timeout_msecs;
+> +
+> +/*
+>   * Check if a process has been frozen
+>   */
+>  static inline bool frozen(struct task_struct *p)
+> diff --git a/kernel/power/main.c b/kernel/power/main.c
+> index 1c16f91..3e1c9da 100644
+> --- a/kernel/power/main.c
+> +++ b/kernel/power/main.c
+> @@ -553,6 +553,30 @@ power_attr(pm_trace_dev_match);
+>  
+>  #endif /* CONFIG_PM_TRACE */
+>  
+> +#ifdef CONFIG_FREEZER
+> +static ssize_t pm_freeze_timeout_show(struct kobject *kobj,
+> +				      struct kobj_attribute *attr, char *buf)
+> +{
+> +	return sprintf(buf, "%u\n", freeze_timeout_msecs);
+> +}
+> +
+> +static ssize_t pm_freeze_timeout_store(struct kobject *kobj,
+> +				       struct kobj_attribute *attr,
+> +				       const char *buf, size_t n)
+> +{
+> +	unsigned long val;
+> +
+> +	if (kstrtoul(buf, 10, &val))
+> +		return -EINVAL;
+> +
+> +	freeze_timeout_msecs = val;
+> +	return n;
+> +}
+> +
+> +power_attr(pm_freeze_timeout);
+> +
+> +#endif	/* CONFIG_FREEZER*/
+> +
+>  static struct attribute * g[] = {
+>  	&state_attr.attr,
+>  #ifdef CONFIG_PM_TRACE
+> @@ -576,6 +600,9 @@ static struct attribute * g[] = {
+>  	&pm_print_times_attr.attr,
+>  #endif
+>  #endif
+> +#ifdef CONFIG_FREEZER
+> +	&pm_freeze_timeout_attr.attr,
+> +#endif
+>  	NULL,
+>  };
+>  
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index d5a258b..98088e0 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -21,7 +21,7 @@
+>  /* 
+>   * Timeout for stopping processes
+>   */
+> -#define TIMEOUT	(20 * HZ)
+> +unsigned int __read_mostly freeze_timeout_msecs = 20 * MSEC_PER_SEC;
+>  
+>  static int try_to_freeze_tasks(bool user_only)
+>  {
+> @@ -36,7 +36,7 @@ static int try_to_freeze_tasks(bool user_only)
+>  
+>  	do_gettimeofday(&start);
+>  
+> -	end_time = jiffies + TIMEOUT;
+> +	end_time = jiffies + msecs_to_jiffies(freeze_timeout_msecs);
+>  
+>  	if (!user_only)
+>  		freeze_workqueues_begin();
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
