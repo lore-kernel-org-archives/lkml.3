@@ -1,191 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3BCPJb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:09:31 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:53378 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab3BCPJ1 (ORCPT
+	id S1754570Ab3BCO4w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:56:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34381 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754477Ab3BCO4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 10:09:27 -0500
-MIME-Version: 1.0
-X-Originating-IP: [116.14.103.70]
-Date: Sun, 3 Feb 2013 23:09:26 +0800
-Message-ID: <CAMVG2svkJruzveuozb8RFK_j1BxqDOwBco=Aida9S680_toNiQ@mail.gmail.com>
-Subject: 3.8-rc6: nouveau lockdep recursive lock acquisition
-From: Daniel J Blueman <daniel@quora.org>
-To: =?UTF-8?Q?Marcin_=C5=9Alusarz?= <marcin.slusarz@gmail.com>
-Cc: nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 3 Feb 2013 09:56:44 -0500
+Message-Id: <20130203144650.069203440@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 03 Feb 2013 15:47:52 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 068/128] intel_idle: Dont register CPU notifier if we are not running.
+In-Reply-To: <20130203144644.035172954@decadent.org.uk>
+X-SA-Exim-Connect-IP: 151.216.67.5
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From recent additional locking in nouveau, it looks like we see
-recursive lock acquisition in 3.8-rc6:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-nouveau [ DEVICE][0000:01:00.0] BOOT0 : 0x0e7150a2
-nouveau [ DEVICE][0000:01:00.0] Chipset: GK107 (NVE7)
-nouveau [ DEVICE][0000:01:00.0] Family : NVE0
-nouveau [  VBIOS][0000:01:00.0] checking PRAMIN for image...
-nouveau [  VBIOS][0000:01:00.0] ... appears to be valid
-nouveau [  VBIOS][0000:01:00.0] using image from PRAMIN
-nouveau [  VBIOS][0000:01:00.0] BIT signature found
-nouveau [  VBIOS][0000:01:00.0] version 80.07.26.04.01
-nouveau [   PFB][0000:01:00.0] RAM type: GDDR5
-nouveau [   PFB][0000:01:00.0] RAM size: 1024 MiB
-nouveau [   PFB][0000:01:00.0]  ZCOMP: 0 tags
-init: gdm main process (960) killed by TERM signal
-vga_switcheroo: enabled
-[TTM] Zone kernel: Available graphics memory: 4038258 kiB
-[TTM] Zone  dma32: Available graphics memory: 2097152 kiB
-[TTM] Initializing pool allocator
-[TTM] Initializing DMA pool allocator
-nouveau [   DRM] VRAM: 1024 MiB
-nouveau [   DRM] GART: 512 MiB
-nouveau [   DRM] BIT BIOS found
-nouveau [   DRM] Bios version 80.07.26.04
-nouveau [   DRM] TMDS table version 2.0
-nouveau [   DRM] DCB version 4.0
-nouveau [   DRM] DCB outp 00: 048101b6 0f230010
-nouveau [   DRM] DCB outp 01: 018212d6 0f220020
-nouveau [   DRM] DCB outp 02: 01021212 00020020
-nouveau [   DRM] DCB outp 03: 088324c6 0f220010
-nouveau [   DRM] DCB outp 04: 08032402 00020010
-nouveau [   DRM] DCB outp 05: 02843862 00020010
-nouveau [   DRM] DCB conn 00: 00020047
-nouveau [   DRM] DCB conn 01: 02208146
-nouveau [   DRM] DCB conn 02: 01104246
-nouveau [   DRM] DCB conn 03: 00410361
+------------------
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.8.0-rc6-ninja+ #1 Not tainted
----------------------------------------------
-modprobe/585 is trying to acquire lock:
- (&subdev->mutex){+.+.+.}, at: [<ffffffffa016c323>]
-nouveau_instobj_create_+0x43/0x90 [nouveau]
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-but task is already holding lock:
- (&subdev->mutex){+.+.+.}, at: [<ffffffffa017672d>]
-nv50_disp_data_ctor+0x5d/0xd0 [nouveau]
+commit 6f8c2e7933679f54b6478945dc72e59ef9a3d5e0 upstream.
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
+The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
+But if later on during the module initialization we fail (say
+in cpuidle_register_driver), we stop loading, but we neglect
+to unregister the CPU notifier.  This means that during CPU
+hotplug events the system will fail:
 
-    CPU0
-    ----
- lock(&subdev->mutex);
- lock(&subdev->mutex);
+calling  intel_idle_init+0x0/0x326 @ 1
+intel_idle: MWAIT substates: 0x1120
+intel_idle: v0.4 model 0x2A
+intel_idle: lapic_timer_reliable_states 0xffffffff
+intel_idle: intel_idle yielding to none
+initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
 
- *** DEADLOCK ***
+... some time later, offlining and onlining a CPU:
 
- May be due to missing lock nesting notation
-
-4 locks held by modprobe/585:
- #0: (&__lockdep_no_validate__){......}, at: [<ffffffff813075f3>]
-__driver_attach+0x53/0xb0
- #1: (&__lockdep_no_validate__){......}, at: [<ffffffff81307601>]
-__driver_attach+0x61/0xb0
- #2: (drm_global_mutex){+.+.+.}, at: [<ffffffff812ee59c>]
-drm_get_pci_dev+0xbc/0x2b0
- #3: (&subdev->mutex){+.+.+.}, at: [<ffffffffa017672d>]
-nv50_disp_data_ctor+0x5d/0xd0 [nouveau]
-
-stack backtrace:
-Pid: 585, comm: modprobe Not tainted 3.8.0-rc6-expert+ #1
+cpu 3 spinlock event irq 62
+BUG: unable to ] __cpuidle_register_device+0x1c/0x120
+PGD 99b8b067 PUD 99b95067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
+CPU 0
+Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
+RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
+RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
+RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
+RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
+R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
+R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
+FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
+CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
+Stack:
+ ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
+ ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
+ 0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
 Call Trace:
- [<ffffffff8108fde2>] validate_chain.isra.33+0xd72/0x10d0
- [<ffffffff8105fa08>] ? __kernel_text_address+0x58/0x80
- [<ffffffff8100575d>] ? print_context_stack+0x5d/0xd0
- [<ffffffff81090bc1>] __lock_acquire+0x3a1/0xb60
- [<ffffffff8108d504>] ? __lock_is_held+0x54/0x80
- [<ffffffff8109184a>] lock_acquire+0x5a/0x70
- [<ffffffffa016c323>] ? nouveau_instobj_create_+0x43/0x90 [nouveau]
- [<ffffffff81558739>] mutex_lock_nested+0x69/0x340
- [<ffffffffa016c323>] ? nouveau_instobj_create_+0x43/0x90 [nouveau]
- [<ffffffffa0152370>] ? nouveau_object_create_+0x60/0xa0 [nouveau]
- [<ffffffffa016c323>] nouveau_instobj_create_+0x43/0x90 [nouveau]
- [<ffffffffa016cf8c>] nv50_instobj_ctor+0x4c/0xf0 [nouveau]
- [<ffffffffa0152163>] nouveau_object_ctor+0x33/0xc0 [nouveau]
- [<ffffffffa016cd51>] nv50_instmem_alloc+0x21/0x30 [nouveau]
- [<ffffffffa0150917>] nouveau_gpuobj_create_+0x247/0x2f0 [nouveau]
- [<ffffffff8155b35a>] ? _raw_spin_unlock_irqrestore+0x3a/0x70
- [<ffffffff810921fd>] ? trace_hardirqs_on_caller+0x10d/0x1a0
- [<ffffffffa014f4bc>] nouveau_engctx_create_+0x25c/0x2a0 [nouveau]
- [<ffffffffa0176791>] nv50_disp_data_ctor+0xc1/0xd0 [nouveau]
- [<ffffffffa0153722>] ? nouveau_subdev_reset+0x52/0x60 [nouveau]
- [<ffffffffa0152163>] nouveau_object_ctor+0x33/0xc0 [nouveau]
- [<ffffffffa0152a42>] nouveau_object_new+0x112/0x240 [nouveau]
- [<ffffffffa01f4b1d>] nv50_display_create+0x18d/0x860 [nouveau]
- [<ffffffff8105cb5d>] ? __cancel_work_timer+0x6d/0xc0
- [<ffffffffa01db8eb>] nouveau_display_create+0x3cb/0x670 [nouveau]
- [<ffffffffa01cb1bf>] nouveau_drm_load+0x26f/0x590 [nouveau]
- [<ffffffff81304c99>] ? device_register+0x19/0x20
- [<ffffffff812efe91>] ? drm_sysfs_device_add+0x81/0xb0
- [<ffffffff812ee65e>] drm_get_pci_dev+0x17e/0x2b0
- [<ffffffff81245e56>] ? __pci_set_master+0x26/0x80
- [<ffffffffa01cab2a>] nouveau_drm_probe+0x25a/0x2a0 [nouveau]
- [<ffffffff8124a386>] local_pci_probe+0x46/0x80
- [<ffffffff8124ac11>] pci_device_probe+0x101/0x110
- [<ffffffff813073d6>] driver_probe_device+0x76/0x240
- [<ffffffff81307643>] __driver_attach+0xa3/0xb0
- [<ffffffff813075a0>] ? driver_probe_device+0x240/0x240
- [<ffffffff8130564d>] bus_for_each_dev+0x4d/0x90
- [<ffffffff81306f39>] driver_attach+0x19/0x20
- [<ffffffff81306af0>] bus_add_driver+0x1a0/0x270
- [<ffffffffa023d000>] ? 0xffffffffa023cfff
- [<ffffffff81307cd2>] driver_register+0x72/0x170
- [<ffffffffa023d000>] ? 0xffffffffa023cfff
- [<ffffffff8124ad0f>] __pci_register_driver+0x5f/0x70
- [<ffffffff812ee8a5>] drm_pci_init+0x115/0x130
- [<ffffffffa023d000>] ? 0xffffffffa023cfff
- [<ffffffffa023d000>] ? 0xffffffffa023cfff
- [<ffffffffa023d04d>] nouveau_drm_init+0x4d/0x1000 [nouveau]
- [<ffffffff810002da>] do_one_initcall+0x11a/0x170
- [<ffffffff8109d044>] load_module+0xe84/0x1470
- [<ffffffff81098c30>] ? in_lock_functions+0x20/0x20
- [<ffffffff8122c22e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff8109d6e7>] sys_init_module+0xb7/0xe0
- [<ffffffff8155c156>] system_call_fastpath+0x1a/0x1f
-[drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[drm] No driver support for vblank timestamp query.
-nouveau W[   DRM] voltage table 0x50 unknown
-nouveau [   DRM] 4 available performance level(s)
-nouveau [   DRM] 1: core 209MHz shader 419MHz memory 405MHz voltage 520mV
-nouveau [   DRM] 2: core 390MHz shader 780MHz memory 1080MHz voltage 610mV
-nouveau [   DRM] 3: core 1000MHz shader 2000MHz memory 1080MHz voltage 630mV
-nouveau [   DRM] 4: core 1254MHz shader 2508MHz memory 1080MHz voltage 630mV
-nouveau [   DRM] c:
-nouveau [   DRM] MM: using COPY for buffer copies
-nouveau 0000:01:00.0: No connectors reported connected with modes
-[drm] Cannot find any crtc or sizes - going 1024x768
-nouveau [   DRM] allocated 1024x768 fb: 0x80000, bo ffff88025b966800
-nouveau 0000:01:00.0: fb1: nouveaufb frame buffer device
-[drm] Initialized nouveau 1.1.0 20120801 for 0000:01:00.0 on minor 1
-snd_hda_intel 0000:01:00.1: enabling device (0000 -> 0002)
-hda-intel 0000:01:00.1: Handle VGA-switcheroo audio client
-snd_hda_intel 0000:01:00.1: irq 49 for MSI/MSI-X
-input: HDA NVidia HDMI/DP,pcm=8 as
-/devices/pci0000:00/0000:00:01.0/0000:01:00.1/sound/card1/input11
-input: HDA NVidia HDMI/DP,pcm=7 as
-/devices/pci0000:00/0000:00:01.0/0000:01:00.1/sound/card1/input12
-input: HDA NVidia HDMI/DP,pcm=3 as
-/devices/pci0000:00/0000:00:01.0/0000:01:00.1/sound/card1/input13
-hda-intel 0000:01:00.1: Disabling via VGA-switcheroo
-VGA switcheroo: switched nouveau off
-nouveau [   DRM] suspending fbcon...
-nouveau [   DRM] suspending display...
-nouveau [   DRM] unpinning framebuffer(s)...
-nouveau [   DRM] evicting buffers...
-nouveau [   DRM] suspending client object trees...
-nouveau E[   I2C][0000:01:00.0] AUXCH(3): begin idle timeout 0xffffffff
-nouveau E[   I2C][0000:01:00.0] AUXCH(2): begin idle timeout 0xffffffff
-nouveau E[   I2C][0000:01:00.0] AUXCH(1): begin idle timeout 0xffffffff
-applesmc: light sensor data length set to 10
-nouveau E[   I2C][0000:01:00.0] AUXCH(1): begin idle timeout 0xffffffff
-nouveau E[   I2C][0000:01:00.0] AUXCH(3): begin idle timeout 0xffffffff
-nouveau E[   I2C][0000:01:00.0] AUXCH(2): begin idle timeout 0xffffffff
--- 
-Daniel J Blueman
+ [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
+ [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
+ [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
+ [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
+ [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
+ [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
+ [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
+ [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
+ [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
+ [<ffffffff81652e18>] cpu_up+0xd9/0xec
+ [<ffffffff8164a254>] store_online+0x94/0xd0
+ [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
+ [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
+ [<ffffffff811a1024>] vfs_write+0xb4/0x130
+ [<ffffffff811a17ea>] sys_write+0x5a/0xa0
+ [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
+Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
+RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+ RSP <ffff88009dacfcb8>
+
+This patch fixes that by moving the CPU notifier registration
+as the last item to be done by the module.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[bwh: Backported to 3.2: notifier is registered only if we do not have ARAT]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -431,10 +431,8 @@ static int intel_idle_probe(void)
+ 
+ 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
+ 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+-	else {
++	else
+ 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
+-		register_cpu_notifier(&setup_broadcast_notifier);
+-	}
+ 
+ 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+ 		" model 0x%X\n", boot_cpu_data.x86_model);
+@@ -597,6 +595,9 @@ static int __init intel_idle_init(void)
+ 		return retval;
+ 	}
+ 
++	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
++		register_cpu_notifier(&setup_broadcast_notifier);
++
+ 	return 0;
+ }
+ 
+
+
