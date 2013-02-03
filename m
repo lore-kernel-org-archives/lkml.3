@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab3BCO6d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:58:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34604 "EHLO
+	id S1755163Ab3BCO7U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:59:20 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34652 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755045Ab3BCO6W (ORCPT
+	by vger.kernel.org with ESMTP id S1755108Ab3BCO6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:58:22 -0500
-Message-Id: <20130203144654.194892645@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:30 -0500
+Message-Id: <20130203144655.283435658@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:39 +0100
+Date: Sun, 03 Feb 2013 15:48:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>, Jean Delvare <khali@linux-fr.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 115/128] drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it
- exists
+Cc: akpm@linux-foundation.org, Matt Fleming <matt.fleming@intel.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [ 127/128] x86, efi: Set runtime_version to the EFI spec revision
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,149 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 9f9c9cbb60576a1518d0bf93fb8e499cffccf377 upstream.
+commit 712ba9e9afc4b3d3d6fa81565ca36fe518915c01 upstream.
 
-The right dmi version is in SMBIOS if it's zero in DMI region
+efi.runtime_version is erroneously being set to the value of the
+vendor's firmware revision instead of that of the implemented EFI
+specification. We can't deduce which EFI functions are available based
+on the revision of the vendor's firmware since the version scheme is
+likely to be unique to each vendor.
 
-This issue was originally found from an oracle bug.
-One customer noticed system UUID doesn't match between dmidecode & uek2.
+What we really need to know is the revision of the implemented EFI
+specification, which is available in the EFI System Table header.
 
- - HP ProLiant BL460c G6 :
-   # cat /sys/devices/virtual/dmi/id/product_uuid
-   00000000-0000-4C48-3031-4D5030333531
-   # dmidecode | grep -i uuid
-   UUID: 00000000-0000-484C-3031-4D5030333531
-
->From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than
-network byte order.
-
-So we need to get dmi version to distinguish.  If version is 0.0, the
-real version is taken from the SMBIOS version.  This is part of original
-kernel comment in code.
-
-[akpm@linux-foundation.org: checkpatch fixes]
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: Feng Jin <joe.jin@oracle.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/firmware/dmi_scan.c |   62 ++++++++++++++++++++++++++++++++-----------
- 1 file changed, 47 insertions(+), 15 deletions(-)
+ arch/x86/platform/efi/efi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 3714e3c..fd3ae62 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -119,12 +119,12 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
- 	return 0;
- }
- 
--static int __init dmi_checksum(const u8 *buf)
-+static int __init dmi_checksum(const u8 *buf, u8 len)
- {
- 	u8 sum = 0;
- 	int a;
- 
--	for (a = 0; a < 15; a++)
-+	for (a = 0; a < len; a++)
- 		sum += buf[a];
- 
- 	return sum == 0;
-@@ -415,30 +415,57 @@ static int __init dmi_present(const char __iomem *p)
- 	u8 buf[15];
- 
- 	memcpy_fromio(buf, p, 15);
--	if ((memcmp(buf, "_DMI_", 5) == 0) && dmi_checksum(buf)) {
-+	if (dmi_checksum(buf, 15)) {
- 		dmi_num = (buf[13] << 8) | buf[12];
- 		dmi_len = (buf[7] << 8) | buf[6];
- 		dmi_base = (buf[11] << 24) | (buf[10] << 16) |
- 			(buf[9] << 8) | buf[8];
- 
--		/*
--		 * DMI version 0.0 means that the real version is taken from
--		 * the SMBIOS version, which we don't know at this point.
--		 */
--		dmi_ver = (buf[14] & 0xf0) << 4 | (buf[14] & 0x0f);
--		if (buf[14] != 0)
--			printk(KERN_INFO "DMI %d.%d present.\n",
--			       buf[14] >> 4, buf[14] & 0xF);
--		else
--			printk(KERN_INFO "DMI present.\n");
- 		if (dmi_walk_early(dmi_decode) == 0) {
-+			if (dmi_ver)
-+				pr_info("SMBIOS %d.%d present.\n",
-+				       dmi_ver >> 8, dmi_ver & 0xFF);
-+			else {
-+				dmi_ver = (buf[14] & 0xF0) << 4 |
-+					   (buf[14] & 0x0F);
-+				pr_info("Legacy DMI %d.%d present.\n",
-+				       dmi_ver >> 8, dmi_ver & 0xFF);
-+			}
- 			dmi_dump_ids();
- 			return 0;
- 		}
- 	}
-+	dmi_ver = 0;
- 	return 1;
- }
- 
-+static int __init smbios_present(const char __iomem *p)
-+{
-+	u8 buf[32];
-+	int offset = 0;
-+
-+	memcpy_fromio(buf, p, 32);
-+	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
-+		dmi_ver = (buf[6] << 8) + buf[7];
-+
-+		/* Some BIOS report weird SMBIOS version, fix that up */
-+		switch (dmi_ver) {
-+		case 0x021F:
-+		case 0x0221:
-+			pr_debug("SMBIOS version fixup(2.%d->2.%d)\n",
-+			       dmi_ver & 0xFF, 3);
-+			dmi_ver = 0x0203;
-+			break;
-+		case 0x0233:
-+			pr_debug("SMBIOS version fixup(2.%d->2.%d)\n", 51, 6);
-+			dmi_ver = 0x0206;
-+			break;
-+		}
-+		offset = 16;
-+	}
-+	return dmi_present(buf + offset);
-+}
-+
- void __init dmi_scan_machine(void)
- {
- 	char __iomem *p, *q;
-@@ -456,7 +483,7 @@ void __init dmi_scan_machine(void)
- 		if (p == NULL)
- 			goto error;
- 
--		rc = dmi_present(p + 0x10); /* offset of _DMI_ string */
-+		rc = smbios_present(p);
- 		dmi_iounmap(p, 32);
- 		if (!rc) {
- 			dmi_available = 1;
-@@ -474,7 +501,12 @@ void __init dmi_scan_machine(void)
- 			goto error;
- 
- 		for (q = p; q < p + 0x10000; q += 16) {
--			rc = dmi_present(q);
-+			if (memcmp(q, "_SM_", 4) == 0 && q - p <= 0xFFE0)
-+				rc = smbios_present(q);
-+			else if (memcmp(q, "_DMI_", 5) == 0)
-+				rc = dmi_present(q);
-+			else
-+				continue;
- 			if (!rc) {
- 				dmi_available = 1;
- 				dmi_iounmap(p, 0x10000);
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index ad44391..3568248 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -941,7 +941,7 @@ void __init efi_enter_virtual_mode(void)
+ 	 *
+ 	 * Call EFI services through wrapper functions.
+ 	 */
+-	efi.runtime_version = efi_systab.fw_revision;
++	efi.runtime_version = efi_systab.hdr.revision;
+ 	efi.get_time = virt_efi_get_time;
+ 	efi.set_time = virt_efi_set_time;
+ 	efi.get_wakeup_time = virt_efi_get_wakeup_time;
 
 
