@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3BCBZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:25:59 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:65290 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab3BCBW7 (ORCPT
+	id S1754172Ab3BCB0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:26:16 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:58745 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab3BCBW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:59 -0500
+	Sat, 2 Feb 2013 20:22:57 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
-        axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>
-Subject: [PATCH 52/62] inotify: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:53 -0800
-Message-Id: <1359854463-2538-53-git-send-email-tj@kernel.org>
+        axboe@kernel.dk, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 51/62] dlm: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:52 -0800
+Message-Id: <1359854463-2538-52-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -24,67 +22,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the much saner new idr interface.
-
-Note that the adhoc cyclic id allocation is buggy.  If wraparound
-happens, the previous code with idr_get_new_above() may segfault and
-the converted code will trigger WARN and return -EINVAL.  Even if it's
-fixed to wrap to zero, the code will be prone to unnecessary -ENOSPC
-failures after the first wraparound.  We probably need to implement
-proper cyclic support in idr.
+Convert to the much saner new idr interface.  Error return values from
+recover_idr_add() mix -1 and -errno.  The conversion doesn't change
+that but it looks iffy.
 
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- fs/notify/inotify/inotify_user.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ fs/dlm/lock.c    | 18 ++++++------------
+ fs/dlm/recover.c | 27 +++++++++++++--------------
+ 2 files changed, 19 insertions(+), 26 deletions(-)
 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 228a2c2..8f8099c 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -364,22 +364,20 @@ static int inotify_add_to_idr(struct idr *idr, spinlock_t *idr_lock,
+diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
+index a579f30..353942f 100644
+--- a/fs/dlm/lock.c
++++ b/fs/dlm/lock.c
+@@ -1182,7 +1182,7 @@ static void detach_lkb(struct dlm_lkb *lkb)
+ static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
  {
- 	int ret;
+ 	struct dlm_lkb *lkb;
+-	int rv, id;
++	int rv;
  
--	do {
--		if (unlikely(!idr_pre_get(idr, GFP_KERNEL)))
--			return -ENOMEM;
-+	idr_preload(GFP_KERNEL);
-+	spin_lock(idr_lock);
+ 	lkb = dlm_allocate_lkb(ls);
+ 	if (!lkb)
+@@ -1198,19 +1198,13 @@ static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
+ 	mutex_init(&lkb->lkb_cb_mutex);
+ 	INIT_WORK(&lkb->lkb_cb_work, dlm_callback_work);
  
--		spin_lock(idr_lock);
--		ret = idr_get_new_above(idr, i_mark, *last_wd + 1,
--					&i_mark->wd);
-+	ret = idr_alloc(idr, i_mark, *last_wd + 1, 0, GFP_NOWAIT);
-+	if (ret >= 0) {
- 		/* we added the mark to the idr, take a reference */
--		if (!ret) {
--			*last_wd = i_mark->wd;
--			fsnotify_get_mark(&i_mark->fsn_mark);
--		}
--		spin_unlock(idr_lock);
--	} while (ret == -EAGAIN);
-+		i_mark->wd = ret;
-+		*last_wd = i_mark->wd;
-+		fsnotify_get_mark(&i_mark->fsn_mark);
-+	}
- 
--	return ret;
-+	spin_unlock(idr_lock);
+- retry:
+-	rv = idr_pre_get(&ls->ls_lkbidr, GFP_NOFS);
+-	if (!rv)
+-		return -ENOMEM;
+-
++	idr_preload(GFP_NOFS);
+ 	spin_lock(&ls->ls_lkbidr_spin);
+-	rv = idr_get_new_above(&ls->ls_lkbidr, lkb, 1, &id);
+-	if (!rv)
+-		lkb->lkb_id = id;
++	rv = idr_alloc(&ls->ls_lkbidr, lkb, 1, 0, GFP_NOWAIT);
++	if (rv >= 0)
++		lkb->lkb_id = rv;
+ 	spin_unlock(&ls->ls_lkbidr_spin);
+-
+-	if (rv == -EAGAIN)
+-		goto retry;
 +	idr_preload_end();
-+	return ret < 0 ? ret : 0;
+ 
+ 	if (rv < 0) {
+ 		log_error(ls, "create_lkb idr error %d", rv);
+diff --git a/fs/dlm/recover.c b/fs/dlm/recover.c
+index 236d108..a6bc63f 100644
+--- a/fs/dlm/recover.c
++++ b/fs/dlm/recover.c
+@@ -305,27 +305,26 @@ static int recover_idr_empty(struct dlm_ls *ls)
+ static int recover_idr_add(struct dlm_rsb *r)
+ {
+ 	struct dlm_ls *ls = r->res_ls;
+-	int rv, id;
+-
+-	rv = idr_pre_get(&ls->ls_recover_idr, GFP_NOFS);
+-	if (!rv)
+-		return -ENOMEM;
++	int rv;
+ 
++	idr_preload(GFP_NOFS);
+ 	spin_lock(&ls->ls_recover_idr_lock);
+ 	if (r->res_id) {
+-		spin_unlock(&ls->ls_recover_idr_lock);
+-		return -1;
+-	}
+-	rv = idr_get_new_above(&ls->ls_recover_idr, r, 1, &id);
+-	if (rv) {
+-		spin_unlock(&ls->ls_recover_idr_lock);
+-		return rv;
++		rv = -1;
++		goto out_unlock;
+ 	}
+-	r->res_id = id;
++	rv = idr_alloc(&ls->ls_recover_idr, r, 1, 0, GFP_NOWAIT);
++	if (rv < 0)
++		goto out_unlock;
++
++	r->res_id = rv;
+ 	ls->ls_recover_list_count++;
+ 	dlm_hold_rsb(r);
++	rv = 0;
++out_unlock:
+ 	spin_unlock(&ls->ls_recover_idr_lock);
+-	return 0;
++	idr_preload_end();
++	return rv;
  }
  
- static struct inotify_inode_mark *inotify_idr_find_locked(struct fsnotify_group *group,
+ static void recover_idr_del(struct dlm_rsb *r)
 -- 
 1.8.1
 
