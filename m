@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3BCB0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:26:16 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:58745 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab3BCBW5 (ORCPT
+	id S1754219Ab3BCB1A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:27:00 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:54274 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066Ab3BCBWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:57 -0500
+	Sat, 2 Feb 2013 20:22:52 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
-        axboe@kernel.dk, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 51/62] dlm: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:52 -0800
-Message-Id: <1359854463-2538-52-git-send-email-tj@kernel.org>
+        axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org
+Subject: [PATCH 48/62] thermal: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:49 -0800
+Message-Id: <1359854463-2538-49-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -22,105 +23,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the much saner new idr interface.  Error return values from
-recover_idr_add() mix -1 and -errno.  The conversion doesn't change
-that but it looks iffy.
+Convert to the much saner new idr interface.
 
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- fs/dlm/lock.c    | 18 ++++++------------
- fs/dlm/recover.c | 27 +++++++++++++--------------
- 2 files changed, 19 insertions(+), 26 deletions(-)
+ drivers/thermal/cpu_cooling.c | 17 +++++------------
+ drivers/thermal/thermal_sys.c | 17 +++++------------
+ 2 files changed, 10 insertions(+), 24 deletions(-)
 
-diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
-index a579f30..353942f 100644
---- a/fs/dlm/lock.c
-+++ b/fs/dlm/lock.c
-@@ -1182,7 +1182,7 @@ static void detach_lkb(struct dlm_lkb *lkb)
- static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 836828e..c33fa53 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -73,21 +73,14 @@ static struct cpufreq_cooling_device *notify_device;
+  */
+ static int get_idr(struct idr *idr, int *id)
  {
- 	struct dlm_lkb *lkb;
--	int rv, id;
-+	int rv;
- 
- 	lkb = dlm_allocate_lkb(ls);
- 	if (!lkb)
-@@ -1198,19 +1198,13 @@ static int create_lkb(struct dlm_ls *ls, struct dlm_lkb **lkb_ret)
- 	mutex_init(&lkb->lkb_cb_mutex);
- 	INIT_WORK(&lkb->lkb_cb_work, dlm_callback_work);
- 
-- retry:
--	rv = idr_pre_get(&ls->ls_lkbidr, GFP_NOFS);
--	if (!rv)
+-	int err;
+-again:
+-	if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
 -		return -ENOMEM;
--
-+	idr_preload(GFP_NOFS);
- 	spin_lock(&ls->ls_lkbidr_spin);
--	rv = idr_get_new_above(&ls->ls_lkbidr, lkb, 1, &id);
--	if (!rv)
--		lkb->lkb_id = id;
-+	rv = idr_alloc(&ls->ls_lkbidr, lkb, 1, 0, GFP_NOWAIT);
-+	if (rv >= 0)
-+		lkb->lkb_id = rv;
- 	spin_unlock(&ls->ls_lkbidr_spin);
--
--	if (rv == -EAGAIN)
--		goto retry;
-+	idr_preload_end();
++	int ret;
  
- 	if (rv < 0) {
- 		log_error(ls, "create_lkb idr error %d", rv);
-diff --git a/fs/dlm/recover.c b/fs/dlm/recover.c
-index 236d108..a6bc63f 100644
---- a/fs/dlm/recover.c
-+++ b/fs/dlm/recover.c
-@@ -305,27 +305,26 @@ static int recover_idr_empty(struct dlm_ls *ls)
- static int recover_idr_add(struct dlm_rsb *r)
- {
- 	struct dlm_ls *ls = r->res_ls;
--	int rv, id;
+ 	mutex_lock(&cooling_cpufreq_lock);
+-	err = idr_get_new(idr, NULL, id);
++	ret = idr_alloc(idr, NULL, 0, 0, GFP_KERNEL);
+ 	mutex_unlock(&cooling_cpufreq_lock);
 -
--	rv = idr_pre_get(&ls->ls_recover_idr, GFP_NOFS);
--	if (!rv)
--		return -ENOMEM;
-+	int rv;
- 
-+	idr_preload(GFP_NOFS);
- 	spin_lock(&ls->ls_recover_idr_lock);
- 	if (r->res_id) {
--		spin_unlock(&ls->ls_recover_idr_lock);
--		return -1;
--	}
--	rv = idr_get_new_above(&ls->ls_recover_idr, r, 1, &id);
--	if (rv) {
--		spin_unlock(&ls->ls_recover_idr_lock);
--		return rv;
-+		rv = -1;
-+		goto out_unlock;
- 	}
--	r->res_id = id;
-+	rv = idr_alloc(&ls->ls_recover_idr, r, 1, 0, GFP_NOWAIT);
-+	if (rv < 0)
-+		goto out_unlock;
-+
-+	r->res_id = rv;
- 	ls->ls_recover_list_count++;
- 	dlm_hold_rsb(r);
-+	rv = 0;
-+out_unlock:
- 	spin_unlock(&ls->ls_recover_idr_lock);
--	return 0;
-+	idr_preload_end();
-+	return rv;
+-	if (unlikely(err == -EAGAIN))
+-		goto again;
+-	else if (unlikely(err))
+-		return err;
+-
+-	*id = *id & MAX_IDR_MASK;
++	if (unlikely(ret < 0))
++		return ret;
++	*id = ret;
+ 	return 0;
  }
  
- static void recover_idr_del(struct dlm_rsb *r)
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index 8c8ce80..84e95f3 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -132,23 +132,16 @@ EXPORT_SYMBOL_GPL(thermal_unregister_governor);
+ 
+ static int get_idr(struct idr *idr, struct mutex *lock, int *id)
+ {
+-	int err;
+-
+-again:
+-	if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
+-		return -ENOMEM;
++	int ret;
+ 
+ 	if (lock)
+ 		mutex_lock(lock);
+-	err = idr_get_new(idr, NULL, id);
++	ret = idr_alloc(idr, NULL, 0, 0, GFP_KERNEL);
+ 	if (lock)
+ 		mutex_unlock(lock);
+-	if (unlikely(err == -EAGAIN))
+-		goto again;
+-	else if (unlikely(err))
+-		return err;
+-
+-	*id = *id & MAX_IDR_MASK;
++	if (unlikely(ret < 0))
++		return ret;
++	*id = ret;
+ 	return 0;
+ }
+ 
 -- 
 1.8.1
 
