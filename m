@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab3BCQOu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 11:14:50 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:42587 "EHLO mail.skyhub.de"
+	id S1753792Ab3BCQOy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 11:14:54 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42592 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960Ab3BCQOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753072Ab3BCQOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Feb 2013 11:14:47 -0500
 From: Borislav Petkov <bp@alien8.de>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <bp@suse.de>
-Subject: [PATCH 0/4] x86, head_32: Some cleanups
-Date: Sun,  3 Feb 2013 17:14:35 +0100
-Message-Id: <1359908079-10469-1-git-send-email-bp@alien8.de>
+Subject: [PATCH 1/4] x86, head_32: Remove i386 pieces
+Date: Sun,  3 Feb 2013 17:14:36 +0100
+Message-Id: <1359908079-10469-2-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.1.2.422.g08c0e7f
+In-Reply-To: <1359908079-10469-1-git-send-email-bp@alien8.de>
+References: <1359908079-10469-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Hi,
+Remove code fragments detecting a 386 CPU since we don't support those
+anymore. Also, do not do alignment checks because they're done only at
+CPL3. Also, no need to preserve EFLAGS.
 
-here are some initial low-hanging fruits wrt head_32.S cleanup. I've
-made them as easily digestible as possible; after all, this is boot asm
-and meddling with it tends to upset kernels.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/head_32.S | 22 +++++-----------------
+ 1 file changed, 5 insertions(+), 17 deletions(-)
 
-Also, I've made the assumption that having boot_cpu_data.cpuid_level
-contain the CPUID level for the boot cpu means that the APs have the
-same CPUID level. This should be the case on X86.
-
-They boot fine 486 and 486SX in qemu but I'd like to hear whether
-the direction I'm going is ok before I continue testing them on real
-hardware.
-
-Thanks.
-
-
-Borislav Petkov (4):
-  x86, head_32: Remove i386 pieces
-  x86: Detect CPUID support early at boot
-  x86, head_32: Remove CPUID detection from default_entry
-  x86, 32-bit: Drop new_cpu_data
-
- arch/x86/include/asm/processor.h |   1 -
- arch/x86/kernel/head_32.S        | 105 ++++++++++++++++-----------------------
- arch/x86/kernel/setup.c          |   3 --
- arch/x86/lguest/boot.c           |   6 +--
- arch/x86/xen/enlighten.c         |   8 +--
- 5 files changed, 51 insertions(+), 72 deletions(-)
-
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index c8932c79e78b..a9c5cc851285 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -394,30 +394,21 @@ default_entry:
+ 	jz 1f				# Did we do this already?
+ 	call *%eax
+ 1:
+-	
+-/* check if it is 486 or 386. */
++
+ /*
+- * XXX - this does a lot of unnecessary setup.  Alignment checks don't
+- * apply at our cpl of 0 and the stack ought to be aligned already, and
+- * we don't need to preserve eflags.
++ * Check if it is 486
+  */
+ 	movl $-1,X86_CPUID	# -1 for no CPUID initially
+-	movb $3,X86		# at least 386
++	movb $4,X86		# at least 486
+ 	pushfl			# push EFLAGS
+ 	popl %eax		# get EFLAGS
+ 	movl %eax,%ecx		# save original EFLAGS
+-	xorl $0x240000,%eax	# flip AC and ID bits in EFLAGS
++	xorl $0x200000,%eax	# flip ID bit in EFLAGS
+ 	pushl %eax		# copy to EFLAGS
+ 	popfl			# set EFLAGS
+ 	pushfl			# get new EFLAGS
+ 	popl %eax		# put it in eax
+ 	xorl %ecx,%eax		# change in flags
+-	pushl %ecx		# restore original EFLAGS
+-	popfl
+-	testl $0x40000,%eax	# check if AC bit changed
+-	je is386
+-
+-	movb $4,X86		# at least 486
+ 	testl $0x200000,%eax	# check if ID bit changed
+ 	je is486
+ 
+@@ -445,10 +436,7 @@ default_entry:
+ 	movl %edx,X86_CAPABILITY
+ 
+ is486:	movl $0x50022,%ecx	# set AM, WP, NE and MP
+-	jmp 2f
+-
+-is386:	movl $2,%ecx		# set MP
+-2:	movl %cr0,%eax
++	movl %cr0,%eax
+ 	andl $0x80000011,%eax	# Save PG,PE,ET
+ 	orl %ecx,%eax
+ 	movl %eax,%cr0
 -- 
 1.8.1.2.422.g08c0e7f
 
