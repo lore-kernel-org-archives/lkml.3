@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab3BCOys (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:54:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34054 "EHLO
+	id S1753712Ab3BCPZz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:25:55 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34080 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752933Ab3BCOyl (ORCPT
+	by vger.kernel.org with ESMTP id S1752933Ab3BCOyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:54:41 -0500
-Message-Id: <20130203144644.330068882@decadent.org.uk>
+	Sun, 3 Feb 2013 09:54:49 -0500
+Message-Id: <20130203144644.660417656@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:46:47 +0100
+Date: Sun, 03 Feb 2013 15:46:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Alexander Graf <agraf@suse.de>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 003/128] virtio-blk: Dont free ida when disk is in use
+Cc: akpm@linux-foundation.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 007/128] USB: Ignore xHCI Reset Device status.
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,57 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Graf <agraf@suse.de>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit f4953fe6c4aeada2d5cafd78aa97587a46d2d8f9 upstream.
+commit 8b8132bc3d1cc3d4c0687e4d638a482fa920d98a upstream.
 
-When a file system is mounted on a virtio-blk disk, we then remove it
-and then reattach it, the reattached disk gets the same disk name and
-ids as the hot removed one.
+When the USB core finishes reseting a USB device, the xHCI driver sends
+a Reset Device command to the host.  The xHC then updates its internal
+representation of the USB device to the 'Default' device state.  If the
+device was already in the Default state, the xHC will complete the
+command with an error status.
 
-This leads to very nasty effects - mostly rendering the newly attached
-device completely unusable.
+If a device needs to be reset several times during enumeration, the
+second reset will always fail because of the xHCI Reset Device command.
+This can cause issues during enumeration.
 
-Trying what happens when I do the same thing with a USB device, I saw
-that the sd node simply doesn't get free'd when a device gets forcefully
-removed.
+For example, usb_reset_and_verify_device calls into hub_port_init in a
+loop.  Say that on the first call into hub_port_init, the device is
+successfully reset, but doesn't respond to several set address control
+transfers.  Then the port will be disabled, but the udev will remain in
+tact.  usb_reset_and_verify_device will call into hub_port_init again.
 
-Imitate the same behavior for vd devices. This way broken vd devices
-simply are never free'd and newly attached ones keep working just fine.
+On the second call into hub_port_init, the device will be reset, and the
+xHCI driver will issue a Reset Device command.  This command will fail
+(because the device is already in the Default state), and
+usb_reset_and_verify_device will fail.  The port will be disabled, and
+the device won't be able to enumerate.
 
-Signed-off-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Fix this by ignoring the return value of the HCD reset_device callback.
+
+This commit should be backported to kernels as old as 3.2, that contain
+the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
+warm reset logic".
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/virtio_blk.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/core/hub.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -546,6 +546,7 @@ static void __devexit virtblk_remove(str
- {
- 	struct virtio_blk *vblk = vdev->priv;
- 	int index = vblk->index;
-+	int refc;
- 
- 	/* Prevent config work handler from accessing the device. */
- 	mutex_lock(&vblk->config_lock);
-@@ -560,11 +561,15 @@ static void __devexit virtblk_remove(str
- 
- 	flush_work(&vblk->config_work);
- 
-+	refc = atomic_read(&disk_to_dev(vblk->disk)->kobj.kref.refcount);
- 	put_disk(vblk->disk);
- 	mempool_destroy(vblk->pool);
- 	vdev->config->del_vqs(vdev);
- 	kfree(vblk);
--	ida_simple_remove(&vd_index_ida, index);
-+
-+	/* Only free device id if we don't have any users */
-+	if (refc == 1)
-+		ida_simple_remove(&vd_index_ida, index);
- }
- 
- static const struct virtio_device_id id_table[] = {
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 7f8f10e..3bc50fc 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2565,14 +2565,11 @@ static void hub_port_finish_reset(struct usb_hub *hub, int port1,
+ 			msleep(10 + 40);
+ 			update_devnum(udev, 0);
+ 			hcd = bus_to_hcd(udev->bus);
+-			if (hcd->driver->reset_device) {
+-				*status = hcd->driver->reset_device(hcd, udev);
+-				if (*status < 0) {
+-					dev_err(&udev->dev, "Cannot reset "
+-							"HCD device state\n");
+-					break;
+-				}
+-			}
++			/* The xHC may think the device is already reset,
++			 * so ignore the status.
++			 */
++			if (hcd->driver->reset_device)
++				hcd->driver->reset_device(hcd, udev);
+ 		}
+ 		/* FALL THROUGH */
+ 	case -ENOTCONN:
 
 
