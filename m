@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3BCBWo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:22:44 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:56870 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753962Ab3BCBWf (ORCPT
+	id S1753771Ab3BCBWz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:22:55 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:35000 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab3BCBWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:35 -0500
+	Sat, 2 Feb 2013 20:22:49 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        Rodolfo Giometti <giometti@enneenne.com>
-Subject: [PATCH 41/62] pps: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:42 -0800
-Message-Id: <1359854463-2538-42-git-send-email-tj@kernel.org>
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: [PATCH 46/62] target/iscsi: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:47 -0800
+Message-Id: <1359854463-2538-47-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -28,86 +29,84 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Rodolfo Giometti <giometti@enneenne.com>
+Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Cc: linux-scsi@vger.kernel.org
+Cc: target-devel@vger.kernel.org
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/pps/kapi.c |  2 +-
- drivers/pps/pps.c  | 36 ++++++++++++++----------------------
- 2 files changed, 15 insertions(+), 23 deletions(-)
+ drivers/target/iscsi/iscsi_target.c       | 15 ++++++++-------
+ drivers/target/iscsi/iscsi_target_login.c | 15 ++++++---------
+ 2 files changed, 14 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index f197e8e..cdad4d9 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -102,7 +102,7 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
- 		goto pps_register_source_exit;
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 339f97f..f1fdf4f 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -144,23 +144,24 @@ struct iscsi_tiqn *iscsit_add_tiqn(unsigned char *buf)
+ 	spin_lock_init(&tiqn->login_stats.lock);
+ 	spin_lock_init(&tiqn->logout_stats.lock);
+ 
+-	if (!idr_pre_get(&tiqn_idr, GFP_KERNEL)) {
+-		pr_err("idr_pre_get() for tiqn_idr failed\n");
+-		kfree(tiqn);
+-		return ERR_PTR(-ENOMEM);
+-	}
+ 	tiqn->tiqn_state = TIQN_STATE_ACTIVE;
+ 
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&tiqn_lock);
+-	ret = idr_get_new(&tiqn_idr, NULL, &tiqn->tiqn_index);
++
++	ret = idr_alloc(&tiqn_idr, NULL, 0, 0, GFP_NOWAIT);
+ 	if (ret < 0) {
+-		pr_err("idr_get_new() failed for tiqn->tiqn_index\n");
++		pr_err("idr_alloc() failed for tiqn->tiqn_index\n");
+ 		spin_unlock(&tiqn_lock);
++		idr_preload_end();
+ 		kfree(tiqn);
+ 		return ERR_PTR(ret);
  	}
++	tiqn->tiqn_index = ret;
+ 	list_add_tail(&tiqn->tiqn_list, &g_tiqn_list);
++
+ 	spin_unlock(&tiqn_lock);
++	idr_preload_end();
  
--	/* These initializations must be done before calling idr_get_new()
-+	/* These initializations must be done before calling idr_alloc()
- 	 * in order to avoid reces into pps_event().
- 	 */
- 	pps->params.api_version = PPS_API_VERS;
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index 2420d5a..de8e663 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -290,29 +290,21 @@ int pps_register_cdev(struct pps_device *pps)
- 	dev_t devt;
+ 	pr_debug("CORE[0] - Added iSCSI Target IQN: %s\n", tiqn->tiqn);
  
- 	mutex_lock(&pps_idr_lock);
--	/* Get new ID for the new PPS source */
--	if (idr_pre_get(&pps_idr, GFP_KERNEL) == 0) {
--		mutex_unlock(&pps_idr_lock);
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index fdb632f..2535d4d 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -247,19 +247,16 @@ static int iscsi_login_zero_tsih_s1(
+ 	spin_lock_init(&sess->session_usage_lock);
+ 	spin_lock_init(&sess->ttt_lock);
+ 
+-	if (!idr_pre_get(&sess_idr, GFP_KERNEL)) {
+-		pr_err("idr_pre_get() for sess_idr failed\n");
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
+-		kfree(sess);
 -		return -ENOMEM;
 -	}
--
--	/* Now really allocate the PPS source.
--	 * After idr_get_new() calling the new source will be freely available
--	 * into the kernel.
-+	/*
-+	 * Get new ID for the new PPS source.  After idr_alloc() calling
-+	 * the new source will be freely available into the kernel.
- 	 */
--	err = idr_get_new(&pps_idr, pps, &pps->id);
--	mutex_unlock(&pps_idr_lock);
--
--	if (err < 0)
--		return err;
--
--	pps->id &= MAX_IDR_MASK;
--	if (pps->id >= PPS_MAX_SOURCES) {
--		pr_err("%s: too many PPS sources in the system\n",
--					pps->info.name);
--		err = -EBUSY;
--		goto free_idr;
-+	err = idr_alloc(&pps_idr, pps, 0, PPS_MAX_SOURCES, GFP_KERNEL);
-+	if (err < 0) {
-+		if (err == -ENOSPC) {
-+			pr_err("%s: too many PPS sources in the system\n",
-+			       pps->info.name);
-+			err = -EBUSY;
-+		}
-+		goto out_unlock;
- 	}
-+	pps->id = err;
-+	mutex_unlock(&pps_idr_lock);
++	idr_preload(GFP_KERNEL);
+ 	spin_lock_bh(&sess_idr_lock);
+-	ret = idr_get_new(&sess_idr, NULL, &sess->session_index);
++	ret = idr_alloc(&sess_idr, NULL, 0, 0, GFP_NOWAIT);
++	if (ret >= 0)
++		sess->session_index = ret;
+ 	spin_unlock_bh(&sess_idr_lock);
++	idr_preload_end();
  
- 	devt = MKDEV(MAJOR(pps_devt), pps->id);
- 
-@@ -345,8 +337,8 @@ del_cdev:
- free_idr:
- 	mutex_lock(&pps_idr_lock);
- 	idr_remove(&pps_idr, pps->id);
-+out_unlock:
- 	mutex_unlock(&pps_idr_lock);
--
- 	return err;
- }
- 
+ 	if (ret < 0) {
+-		pr_err("idr_get_new() for sess_idr failed\n");
++		pr_err("idr_alloc() for sess_idr failed\n");
+ 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+ 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
+ 		kfree(sess);
 -- 
 1.8.1
 
