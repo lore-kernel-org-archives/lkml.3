@@ -1,101 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab3BCMVz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 07:21:55 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:56313 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab3BCMVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 07:21:53 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiBlAO9VDlFV5qjOPGdsb2JhbABEhV+FILMvBIEAFwMBAQEBODSCHwEBBAEnExwjBQsIAyElDwUNGAoaE4d/AwkKtRYNiVYVjAiBLoMmYQOUR4FXhgCFQIgP
-X-IronPort-AV: E=Sophos;i="4.84,594,1355094000"; 
-   d="scan'208";a="492142182"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sun, 3 Feb 2013 13:27:48 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/9] HID: core: add "report" hook, called once the
- report has been parsed
-Message-ID: <20130203122748.GA2513@polaris.bitmath.org>
-References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
- <1359649351-11092-2-git-send-email-benjamin.tissoires@gmail.com>
+	id S1752359Ab3BCMp1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 07:45:27 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53490 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023Ab3BCMpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 07:45:23 -0500
+Message-ID: <510E5BCF.9080006@ti.com>
+Date: Sun, 3 Feb 2013 18:15:03 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359649351-11092-2-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, Heiko Schocher <hs@denx.de>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Subject: Re: [PATCH v2 6/6] ARM: davinci: da850: configure system configuration
+ chip(CFGCHIP3) for emac
+References: <1359380879-26306-1-git-send-email-prabhakar.lad@ti.com> <1359380879-26306-7-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1359380879-26306-7-git-send-email-prabhakar.lad@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
-
-> This callback is called when the parsing of the report has been done
-> by hid-core (so after the calls to .event). The hid drivers can now
-> have access to the whole report by relying on the values stored in
-> the different fields.
+On 1/28/2013 7:17 PM, Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> The system configuration chip CFGCHIP3, controls the emac module.
+> This patch appropriately configures this register for emac and
+> sets DA850_MII_MDIO_CLKEN_PIN GPIO pin appropriately.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
+> Cc: netdev@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: Heiko Schocher <hs@denx.de>
 > ---
->  drivers/hid/hid-core.c | 4 ++++
->  include/linux/hid.h    | 2 ++
->  2 files changed, 6 insertions(+)
+>  arch/arm/mach-davinci/da8xx-dt.c |   28 ++++++++++++++++++++++++++++
+>  1 files changed, 28 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 5ae2cb1..b671e4e 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1195,6 +1195,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->  {
->  	struct hid_report_enum *report_enum = hid->report_enum + type;
->  	struct hid_report *report;
-> +	struct hid_driver *hdrv;
->  	unsigned int a;
->  	int rsize, csize = size;
->  	u8 *cdata = data;
-> @@ -1231,6 +1232,9 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->  	if (hid->claimed != HID_CLAIMED_HIDRAW) {
->  		for (a = 0; a < report->maxfield; a++)
->  			hid_input_field(hid, report->field[a], cdata, interrupt);
-> +		hdrv = hid->driver;
-> +		if (hdrv && hdrv->report)
-> +			hdrv->report(hid, report);
-
-I think this is more useful if called before the individual fields. In
-fact, it seems raw_event() is already doing exactly that. No need for
-a new callback, in other words.
-
->  	}
+> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+> index e533a0a..4a096e3 100644
+> --- a/arch/arm/mach-davinci/da8xx-dt.c
+> +++ b/arch/arm/mach-davinci/da8xx-dt.c
+> @@ -8,6 +8,7 @@
+>   * published by the Free Software Foundation.
+>   */
+>  #include <linux/io.h>
+> +#include <linux/gpio.h>
+>  #include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/irqdomain.h>
+> @@ -39,6 +40,32 @@ static void __init da8xx_init_irq(void)
 >  
->  	if (hid->claimed & HID_CLAIMED_INPUT)
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 828726c..e14b465 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -589,6 +589,7 @@ struct hid_usage_id {
->   * @raw_event: if report in report_table, this hook is called (NULL means nop)
->   * @usage_table: on which events to call event (NULL means all)
->   * @event: if usage in usage_table, this hook is called (NULL means nop)
-> + * @report: this hook is called after parsing a report (NULL means nop)
->   * @report_fixup: called before report descriptor parsing (NULL means nop)
->   * @input_mapping: invoked on input registering before mapping an usage
->   * @input_mapped: invoked on input registering after mapping an usage
-> @@ -627,6 +628,7 @@ struct hid_driver {
->  	const struct hid_usage_id *usage_table;
->  	int (*event)(struct hid_device *hdev, struct hid_field *field,
->  			struct hid_usage *usage, __s32 value);
-> +	void (*report)(struct hid_device *hdev, struct hid_report *report);
+>  #ifdef CONFIG_ARCH_DAVINCI_DA850
 >  
->  	__u8 *(*report_fixup)(struct hid_device *hdev, __u8 *buf,
->  			unsigned int *size);
-> -- 
-> 1.8.1
-> 
+> +static void __init da8xx_config_emac(void)
+> +{
+> +#define DA850_MII_MDIO_CLKEN_PIN	GPIO_TO_PIN(2, 6)
+> +#define DA850_EMAC_MODE_SELECT		BIT(8)
+> +	void __iomem *cfg_chip3_base;
+> +	int ret;
+> +	u32 val;
+> +
+> +	cfg_chip3_base = DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP3_REG);
+> +
+> +	val = __raw_readl(cfg_chip3_base);
+> +	val &= ~DA850_EMAC_MODE_SELECT;
+> +	/* configure the CFGCHIP3 register for MII */
+> +	__raw_writel(val, cfg_chip3_base);
+
+Use readl/writel instead.
+
+> +	pr_info("EMAC: MII PHY configured\n");
+> +
+> +	ret = gpio_request(DA850_MII_MDIO_CLKEN_PIN, "mdio_clk_en");
+> +	if (ret) {
+> +		pr_warn("Cannot open GPIO %d\n",
+> +					DA850_MII_MDIO_CLKEN_PIN);
+> +		return;
+> +	}
+> +	/* Enable/Disable MII MDIO clock */
+> +	gpio_direction_output(DA850_MII_MDIO_CLKEN_PIN, 0);
+> +}
+> +
+>  struct of_dev_auxdata da8xx_auxdata[] __initdata = {
+>  	OF_DEV_AUXDATA("ti,davinci_mdio", 0x01e24000, "davinci_mdio.0", NULL),
+>  	OF_DEV_AUXDATA("ti,davinci-dm6467-emac", 0x01e20000, "davinci_emac.1",
+> @@ -52,6 +79,7 @@ static void __init da850_init_machine(void)
+>  			     da8xx_auxdata, NULL);
+>  
+>  	da8xx_uart_clk_enable();
+> +	da8xx_config_emac();
+
+There are couple of issues with this implementation.
+
+1) da8xx_config_emac() is specific to DA850 EVM, but masquerades as
+   generic for da8xx. Looks like you need two functions, one for soc
+   specific configuration and one board specific.
+2) da8xx_config_emac() goes through all the time, whether the
+   particular board has emac module or not. Shouldn't
+   da8xx_config_emac() check if emac is actually enabled in the passed
+   dtb and only the do the configuration?
+3) The function assumes mii is used always, you can use the rmii_en dt
+   property to check if rmii/mii is enabled and configure the soc/board
+   accordingly.
+4) If the same function can work both for da850 and da830, then it can
+   be implemented outside of CONFIG_ARCH_DAVINCI_DA850.
 
 Thanks,
-Henrik
+Sekhar
