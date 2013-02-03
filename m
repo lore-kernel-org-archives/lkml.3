@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab3BCTG3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 14:06:29 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:60930 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3BCTG1 (ORCPT
+	id S1753519Ab3BCTKn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 14:10:43 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53337 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab3BCTKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 14:06:27 -0500
-Date: Sun, 3 Feb 2013 20:06:23 +0100
+	Sun, 3 Feb 2013 14:10:40 -0500
+Date: Sun, 3 Feb 2013 20:10:35 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Artem Savkov <artem.savkov@gmail.com>, x86@kernel.org,
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: mingo@redhat.com, peterz@infradead.org, paulus@samba.org,
+        acme@ghostprotocols.net, penberg@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asmlinkage tag for sys_iopl
-Message-ID: <20130203190623.GA23021@gmail.com>
-References: <1359895582-5482-1-git-send-email-artem.savkov@gmail.com>
- <20130203185912.GA22895@gmail.com>
- <20130203190435.GS4503@ZenIV.linux.org.uk>
+Subject: Re: [PATCH v2 1/7] liblockdep: wrap kernel/lockdep.c to allow usage
+ from userspace
+Message-ID: <20130203191035.GB23021@gmail.com>
+References: <1359737231-26127-1-git-send-email-sasha.levin@oracle.com>
+ <20130203110410.GA11739@gmail.com>
+ <510E8E0E.9020103@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130203190435.GS4503@ZenIV.linux.org.uk>
+In-Reply-To: <510E8E0E.9020103@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Al Viro <viro@ZenIV.linux.org.uk> wrote:
+* Sasha Levin <sasha.levin@oracle.com> wrote:
 
-> On Sun, Feb 03, 2013 at 07:59:12PM +0100, Ingo Molnar wrote:
+> On 02/03/2013 06:04 AM, Ingo Molnar wrote:
 > > 
-> > * Artem Savkov <artem.savkov@gmail.com> wrote:
+> > So I applied your patches and did:
 > > 
-> > > asmlinkage tag seems to be missing from sys_iopl prototype rendering iopl
-> > > syscalls unusable, i.e. every call returns -EINVAL. Most likely introduced in
-> > > 9e0b2428bc6a6c6df90bb701ca843820727cadf0.
+> >   cd tools/lib/lockdep
+> >   make
 > > 
-> > What commit is 9e0b2428bc6a6c6df90bb701ca843820727cadf0? It's 
-> > certainly not upstream nor in the x86 tree.
+> > and got:
+> > 
+> > comet:~/tip/tools/lib/lockdep> make
+> >   CC FPIC            common.o
+> > In file included from ./uinclude/linux/lockdep.h:13:0,
+> >                  from 
+> > /fast/mingo/tip/tools/lib/lockdep/common.c:4:
+> > ./../../../include/linux/lockdep.h:21:27: fatal error: linux/linkage.h: No such file or directory
+> > compilation terminated.
+> > make: *** [common.o] Error 1
 > 
-> It's in signal.git; proper fix is to use SYSCALL_DEFINE1().  
-> I'll push it tonight.
+> That's odd, uinclude/linux/linkage.h is an empty file which is 
+> needed there just so gcc won't complain (like it did in the 
+> example above).
 
-Thanks!
+Ah, indeed - an empty file that Quilt mishandles, so the problem 
+is on my side.
+
+Thanks,
 
 	Ingo
