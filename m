@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab3BCO6G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:58:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34519 "EHLO
+	id S1755010Ab3BCPED (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:04:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34562 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754529Ab3BCO5y (ORCPT
+	by vger.kernel.org with ESMTP id S1752099Ab3BCO6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:57:54 -0500
-Message-Id: <20130203144653.208605057@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:04 -0500
+Message-Id: <20130203144653.615730410@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:28 +0100
+Date: Sun, 03 Feb 2013 15:48:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [ 104/128] EDAC: Test correct variable in ->store function
+Cc: akpm@linux-foundation.org, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 108/128] NFSv4.1: Handle NFS4ERR_DELAY when resetting the NFSv4.1 session
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,31 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 8024c4c0b1057d1cd811fc9c3f88f81de9729fcd upstream.
+commit c489ee290bdbbace6bb63ebe6ebd4dd605819495 upstream.
 
-We're testing for ->show but calling ->store().
+NFS4ERR_DELAY is a legal reply when we call DESTROY_SESSION. It
+usually means that the server is busy handling an unfinished RPC
+request. Just sleep for a second and then retry.
+We also need to be able to handle the NFS4ERR_BACK_CHAN_BUSY return
+value. If the NFS server has outstanding callbacks, we just want to
+similarly sleep & retry.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/edac/edac_pci_sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4state.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/edac/edac_pci_sysfs.c b/drivers/edac/edac_pci_sysfs.c
-index dc6e905..0056c4d 100644
---- a/drivers/edac/edac_pci_sysfs.c
-+++ b/drivers/edac/edac_pci_sysfs.c
-@@ -256,7 +256,7 @@ static ssize_t edac_pci_dev_store(struct kobject *kobj,
- 	struct edac_pci_dev_attribute *edac_pci_dev;
- 	edac_pci_dev = (struct edac_pci_dev_attribute *)attr;
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1583,8 +1583,18 @@ static int nfs4_reset_session(struct nfs
  
--	if (edac_pci_dev->show)
-+	if (edac_pci_dev->store)
- 		return edac_pci_dev->store(edac_pci_dev->value, buffer, count);
- 	return -EIO;
- }
+ 	nfs4_begin_drain_session(clp);
+ 	status = nfs4_proc_destroy_session(clp->cl_session);
+-	if (status && status != -NFS4ERR_BADSESSION &&
+-	    status != -NFS4ERR_DEADSESSION) {
++	switch (status) {
++	case 0:
++	case -NFS4ERR_BADSESSION:
++	case -NFS4ERR_DEADSESSION:
++		break;
++	case -NFS4ERR_BACK_CHAN_BUSY:
++	case -NFS4ERR_DELAY:
++		set_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state);
++		status = 0;
++		ssleep(1);
++		goto out;
++	default:
+ 		status = nfs4_recovery_handle_error(clp, status);
+ 		goto out;
+ 	}
 
 
