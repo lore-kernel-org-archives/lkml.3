@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3BCPLi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:11:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34372 "EHLO
+	id S1754871Ab3BCPL6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:11:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34362 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754068Ab3BCO4k (ORCPT
+	by vger.kernel.org with ESMTP id S1753730Ab3BCO4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:56:40 -0500
-Message-Id: <20130203144650.157779624@decadent.org.uk>
+	Sun, 3 Feb 2013 09:56:35 -0500
+Message-Id: <20130203144649.895486085@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:53 +0100
+Date: Sun, 03 Feb 2013 15:47:50 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 069/128] ACPI / cpuidle: Fix NULL pointer issues when cpuidle is disabled
+Cc: akpm@linux-foundation.org, Wolfgang Frisch <wfpub@roembden.net>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 066/128] USB: io_ti: Fix NULL dereference in chase_port()
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,82 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Wolfgang Frisch <wfpub@roembden.net>
 
-commit b88a634a903d9670aa5f2f785aa890628ce0dece upstream.
+commit 1ee0a224bc9aad1de496c795f96bc6ba2c394811 upstream.
 
-If cpuidle is disabled, that means that:
+The tty is NULL when the port is hanging up.
+chase_port() needs to check for this.
 
-	per_cpu(acpi_cpuidle_device, pr->id)
+This patch is intended for stable series.
+The behavior was observed and tested in Linux 3.2 and 3.7.1.
 
-is set to NULL as the acpi_processor_power_init ends up failing at
+Johan Hovold submitted a more elaborate patch for the mainline kernel.
 
-	 retval = cpuidle_register_driver(&acpi_idle_driver)
+[   56.277883] usb 1-1: edge_bulk_in_callback - nonzero read bulk status received: -84
+[   56.278811] usb 1-1: USB disconnect, device number 3
+[   56.278856] usb 1-1: edge_bulk_in_callback - stopping read!
+[   56.279562] BUG: unable to handle kernel NULL pointer dereference at 00000000000001c8
+[   56.280536] IP: [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.281212] PGD 1dc1b067 PUD 1e0f7067 PMD 0
+[   56.282085] Oops: 0002 [#1] SMP
+[   56.282744] Modules linked in:
+[   56.283512] CPU 1
+[   56.283512] Pid: 25, comm: khubd Not tainted 3.7.1 #1 innotek GmbH VirtualBox/VirtualBox
+[   56.283512] RIP: 0010:[<ffffffff8144e62a>]  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.283512] RSP: 0018:ffff88001fa99ab0  EFLAGS: 00010046
+[   56.283512] RAX: 0000000000000046 RBX: 00000000000001c8 RCX: 0000000000640064
+[   56.283512] RDX: 0000000000010000 RSI: ffff88001fa99b20 RDI: 00000000000001c8
+[   56.283512] RBP: ffff88001fa99b20 R08: 0000000000000000 R09: 0000000000000000
+[   56.283512] R10: 0000000000000000 R11: ffffffff812fcb4c R12: ffff88001ddf53c0
+[   56.283512] R13: 0000000000000000 R14: 00000000000001c8 R15: ffff88001e19b9f4
+[   56.283512] FS:  0000000000000000(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
+[   56.283512] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   56.283512] CR2: 00000000000001c8 CR3: 000000001dc51000 CR4: 00000000000006e0
+[   56.283512] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   56.283512] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   56.283512] Process khubd (pid: 25, threadinfo ffff88001fa98000, task ffff88001fa94f80)
+[   56.283512] Stack:
+[   56.283512]  0000000000000046 00000000000001c8 ffffffff810578ec ffffffff812fcb4c
+[   56.283512]  ffff88001e19b980 0000000000002710 ffffffff812ffe81 0000000000000001
+[   56.283512]  ffff88001fa94f80 0000000000000202 ffffffff00000001 0000000000000296
+[   56.283512] Call Trace:
+[   56.283512]  [<ffffffff810578ec>] ? add_wait_queue+0x12/0x3c
+[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
+[   56.283512]  [<ffffffff812ffe81>] ? chase_port+0x84/0x2d6
+[   56.283512]  [<ffffffff81063f27>] ? try_to_wake_up+0x199/0x199
+[   56.283512]  [<ffffffff81263a5c>] ? tty_ldisc_hangup+0x222/0x298
+[   56.283512]  [<ffffffff81300171>] ? edge_close+0x64/0x129
+[   56.283512]  [<ffffffff810612f7>] ? __wake_up+0x35/0x46
+[   56.283512]  [<ffffffff8106135b>] ? should_resched+0x5/0x23
+[   56.283512]  [<ffffffff81264916>] ? tty_port_shutdown+0x39/0x44
+[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
+[   56.283512]  [<ffffffff8125d38c>] ? __tty_hangup+0x307/0x351
+[   56.283512]  [<ffffffff812e6ddc>] ? usb_hcd_flush_endpoint+0xde/0xed
+[   56.283512]  [<ffffffff8144e625>] ? _raw_spin_lock_irqsave+0x14/0x35
+[   56.283512]  [<ffffffff812fd361>] ? usb_serial_disconnect+0x57/0xc2
+[   56.283512]  [<ffffffff812ea99b>] ? usb_unbind_interface+0x5c/0x131
+[   56.283512]  [<ffffffff8128d738>] ? __device_release_driver+0x7f/0xd5
+[   56.283512]  [<ffffffff8128d9cd>] ? device_release_driver+0x1a/0x25
+[   56.283512]  [<ffffffff8128d393>] ? bus_remove_device+0xd2/0xe7
+[   56.283512]  [<ffffffff8128b7a3>] ? device_del+0x119/0x167
+[   56.283512]  [<ffffffff812e8d9d>] ? usb_disable_device+0x6a/0x180
+[   56.283512]  [<ffffffff812e2ae0>] ? usb_disconnect+0x81/0xe6
+[   56.283512]  [<ffffffff812e4435>] ? hub_thread+0x577/0xe82
+[   56.283512]  [<ffffffff8144daa7>] ? __schedule+0x490/0x4be
+[   56.283512]  [<ffffffff8105798f>] ? abort_exclusive_wait+0x79/0x79
+[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
+[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
+[   56.283512]  [<ffffffff810570b4>] ? kthread+0x81/0x89
+[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
+[   56.283512]  [<ffffffff8145387c>] ? ret_from_fork+0x7c/0xb0
+[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
+[   56.283512] Code: 8b 7c 24 08 e8 17 0b c3 ff 48 8b 04 24 48 83 c4 10 c3 53 48 89 fb 41 50 e8 e0 0a c3 ff 48 89 04 24 e8 e7 0a c3 ff ba 00 00 01 00
+<f0> 0f c1 13 48 8b 04 24 89 d1 c1 ea 10 66 39 d1 74 07 f3 90 66
+[   56.283512] RIP  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
+[   56.283512]  RSP <ffff88001fa99ab0>
+[   56.283512] CR2: 00000000000001c8
+[   56.283512] ---[ end trace 49714df27e1679ce ]---
 
-(in acpi_processor_power_init) and never sets the per_cpu idle
-device.  So when acpi_processor_hotplug on CPU online notification
-tries to reference said device it crashes:
-
-cpu 3 spinlock event irq 62
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-IP: [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
-PGD a259b067 PUD ab38b067 PMD 0
-Oops: 0002 [#1] SMP
-odules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi libcrc32c crc32c nouveau mxm_wmi wmi radeon ttm sg sr_mod sd_mod cdrom ata_generic ata_piix libata crc32c_intel scsi_mod atl1c i915 fbcon tileblit font bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
-CPU 1
-Pid: 3047, comm: bash Not tainted 3.8.0-rc3upstream-00250-g165c029 #1 MSI MS-7680/H61M-P23 (MS-7680)
-RIP: e030:[<ffffffff81381013>]  [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
-RSP: e02b:ffff88001742dca8  EFLAGS: 00010202
-RAX: 0000000000010be9 RBX: ffff8800a0a61800 RCX: ffff880105380000
-RDX: 0000000000000003 RSI: 0000000000000200 RDI: ffff8800a0a61800
-RBP: ffff88001742dce8 R08: ffffffff81812360 R09: 0000000000000200
-R10: aaaaaaaaaaaaaaaa R11: 0000000000000001 R12: ffff8800a0a61800
-R13: 00000000ffffff01 R14: 0000000000000000 R15: ffffffff81a907a0
-FS:  00007fd6942f7700(0000) GS:ffff880105280000(0000) knlGS:0000000000000000
-CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000004 CR3: 00000000a6773000 CR4: 0000000000042660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process bash (pid: 3047, threadinfo ffff88001742c000, task ffff880017944000)
-Stack:
- 0000000000000150 ffff880100f59e00 ffff88001742dcd8 ffff8800a0a61800
- 0000000000000000 00000000ffffff01 0000000000000000 ffffffff81a907a0
- ffff88001742dd18 ffffffff813815b1 ffff88001742dd08 ffffffff810ae336
-Call Trace:
- [<ffffffff813815b1>] acpi_processor_hotplug+0x7c/0x9f
- [<ffffffff810ae336>] ? schedule_delayed_work_on+0x16/0x20
- [<ffffffff8137ee8f>] acpi_cpu_soft_notify+0x90/0xca
- [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
- [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
- [<ffffffff81652e18>] cpu_up+0xd9/0xec
- [<ffffffff8164a254>] store_online+0x94/0xd0
- [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
- [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
-
-This patch fixes it.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Wolfgang Frisch <wfpub@roembden.net>
+Cc: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/processor_idle.c |    3 +++
+ drivers/usb/serial/io_ti.c |    3 +++
  1 file changed, 3 insertions(+)
 
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index f1a5da4..fea6f8d 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -958,6 +958,9 @@ static int acpi_processor_setup_cpuidle_cx(struct acpi_processor *pr)
- 		return -EINVAL;
- 	}
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index 58184f3..82afc4d 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -530,6 +530,9 @@ static void chase_port(struct edgeport_port *port, unsigned long timeout,
+ 	wait_queue_t wait;
+ 	unsigned long flags;
  
-+	if (!dev)
-+		return -EINVAL;
++	if (!tty)
++		return;
 +
- 	dev->cpu = pr->id;
+ 	if (!timeout)
+ 		timeout = (HZ * EDGE_CLOSING_WAIT)/100;
  
- 	if (max_cstate == 0)
 
 
