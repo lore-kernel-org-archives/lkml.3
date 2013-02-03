@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab3BCPNY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:13:24 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34330 "EHLO
+	id S1754607Ab3BCPNV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:13:21 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754344Ab3BCO4Z (ORCPT
+	by vger.kernel.org with ESMTP id S1754278Ab3BCO4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Feb 2013 09:56:25 -0500
-Message-Id: <20130203144649.384792414@decadent.org.uk>
+Message-Id: <20130203144649.281157905@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:44 +0100
+Date: Sun, 03 Feb 2013 15:47:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 060/128] staging: vt6656: Fix inconsistent structure packing
+Cc: akpm@linux-foundation.org, Andrew Cooper <andrew.cooper3@citrix.com>,
+        Frediano Ziglio <frediano.ziglio@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 059/128] xen: Fix stack corruption in xen_failsafe_callback for 32bit PVOPS
+ guests.
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,238 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Andrew Cooper <andrew.cooper3@citrix.com>
 
-commit 1ee4c55fc9620451b2a825d793042a7e0775391b upstream.
+commit 9174adbee4a9a49d0139f5d71969852b36720809 upstream.
 
-vt6656 has several headers that use the #pragma pack(1) directive to
-enable structure packing, but never disable it.  The layout of
-structures defined in other headers can then depend on which order the
-various headers are included in, breaking the One Definition Rule.
+This fixes CVE-2013-0190 / XSA-40
 
-In practice this resulted in crashes on x86_64 until the order of header
-inclusion was changed for some files in commit 11d404cb56ecd ('staging:
-vt6656: fix headers and add cfg80211.').  But we need a proper fix that
-won't be affected by future changes to the order of inclusion.
+There has been an error on the xen_failsafe_callback path for failed
+iret, which causes the stack pointer to be wrong when entering the
+iret_exc error path.  This can result in the kernel crashing.
 
-This removes the #pragma pack(1) directives and adds __packed to the
-structure definitions for which packing appears to have been intended.
+In the classic kernel case, the relevant code looked a little like:
 
-Reported-and-tested-by: Malcolm Priestley <tvboxspy@gmail.com>
+        popl %eax      # Error code from hypervisor
+        jz 5f
+        addl $16,%esp
+        jmp iret_exc   # Hypervisor said iret fault
+5:      addl $16,%esp
+                       # Hypervisor said segment selector fault
+
+Here, there are two identical addls on either option of a branch which
+appears to have been optimised by hoisting it above the jz, and
+converting it to an lea, which leaves the flags register unaffected.
+
+In the PVOPS case, the code looks like:
+
+        popl_cfi %eax         # Error from the hypervisor
+        lea 16(%esp),%esp     # Add $16 before choosing fault path
+        CFI_ADJUST_CFA_OFFSET -16
+        jz 5f
+        addl $16,%esp         # Incorrectly adjust %esp again
+        jmp iret_exc
+
+It is possible unprivileged userspace applications to cause this
+behaviour, for example by loading an LDT code selector, then changing
+the code selector to be not-present.  At this point, there is a race
+condition where it is possible for the hypervisor to return back to
+userspace from an interrupt, fault on its own iret, and inject a
+failsafe_callback into the kernel.
+
+This bug has been present since the introduction of Xen PVOPS support
+in commit 5ead97c84 (xen: Core Xen implementation), in 2.6.23.
+
+Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+Signed-off-by: Andrew Cooper <andrew.cooper3@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2]
 ---
- drivers/staging/vt6656/bssdb.h |    1 -
- drivers/staging/vt6656/int.h   |    1 -
- drivers/staging/vt6656/iocmd.h |   33 ++++++++++++++++-----------------
- drivers/staging/vt6656/iowpa.h |    8 +++-----
- 4 files changed, 19 insertions(+), 24 deletions(-)
+ arch/x86/kernel/entry_32.S |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/staging/vt6656/bssdb.h
-+++ b/drivers/staging/vt6656/bssdb.h
-@@ -92,7 +92,6 @@ typedef struct tagSRSNCapObject {
- } SRSNCapObject, *PSRSNCapObject;
- 
- // BSS info(AP)
--#pragma pack(1)
- typedef struct tagKnownBSS {
-     // BSS info
-     BOOL            bActive;
---- a/drivers/staging/vt6656/int.h
-+++ b/drivers/staging/vt6656/int.h
-@@ -34,7 +34,6 @@
- #include "device.h"
- 
- /*---------------------  Export Definitions -------------------------*/
--#pragma pack(1)
- typedef struct tagSINTData {
-     BYTE    byTSR0;
-     BYTE    byPkt0;
---- a/drivers/staging/vt6656/iocmd.h
-+++ b/drivers/staging/vt6656/iocmd.h
-@@ -95,13 +95,12 @@ typedef enum tagWZONETYPE {
- // Ioctl interface structure
- // Command structure
- //
--#pragma pack(1)
- typedef struct tagSCmdRequest {
- 	u8 name[16];
- 	void	*data;
- 	u16	    wResult;
- 	u16     wCmdCode;
--} SCmdRequest, *PSCmdRequest;
-+} __packed SCmdRequest, *PSCmdRequest;
- 
- //
- // Scan
-@@ -111,7 +110,7 @@ typedef struct tagSCmdScan {
- 
-     u8	    ssid[SSID_MAXLEN + 2];
- 
--} SCmdScan, *PSCmdScan;
-+} __packed SCmdScan, *PSCmdScan;
- 
- //
- // BSS Join
-@@ -126,7 +125,7 @@ typedef struct tagSCmdBSSJoin {
-     BOOL    bPSEnable;
-     BOOL    bShareKeyAuth;
- 
--} SCmdBSSJoin, *PSCmdBSSJoin;
-+} __packed SCmdBSSJoin, *PSCmdBSSJoin;
- 
- //
- // Zonetype Setting
-@@ -137,7 +136,7 @@ typedef struct tagSCmdZoneTypeSet {
-  BOOL       bWrite;
-  WZONETYPE  ZoneType;
- 
--} SCmdZoneTypeSet, *PSCmdZoneTypeSet;
-+} __packed SCmdZoneTypeSet, *PSCmdZoneTypeSet;
- 
- typedef struct tagSWPAResult {
-          char	ifname[100];
-@@ -145,7 +144,7 @@ typedef struct tagSWPAResult {
- 	u8 key_mgmt;
- 	u8 eap_type;
-          BOOL authenticated;
--} SWPAResult, *PSWPAResult;
-+} __packed SWPAResult, *PSWPAResult;
- 
- typedef struct tagSCmdStartAP {
- 
-@@ -157,7 +156,7 @@ typedef struct tagSCmdStartAP {
-     BOOL    bShareKeyAuth;
-     u8      byBasicRate;
- 
--} SCmdStartAP, *PSCmdStartAP;
-+} __packed SCmdStartAP, *PSCmdStartAP;
- 
- typedef struct tagSCmdSetWEP {
- 
-@@ -167,7 +166,7 @@ typedef struct tagSCmdSetWEP {
-     BOOL    bWepKeyAvailable[WEP_NKEYS];
-     u32     auWepKeyLength[WEP_NKEYS];
- 
--} SCmdSetWEP, *PSCmdSetWEP;
-+} __packed SCmdSetWEP, *PSCmdSetWEP;
- 
- typedef struct tagSBSSIDItem {
- 
-@@ -180,14 +179,14 @@ typedef struct tagSBSSIDItem {
-     BOOL    bWEPOn;
-     u32     uRSSI;
- 
--} SBSSIDItem;
-+} __packed SBSSIDItem;
- 
- 
- typedef struct tagSBSSIDList {
- 
- 	u32		    uItem;
- 	SBSSIDItem	sBSSIDList[0];
--} SBSSIDList, *PSBSSIDList;
-+} __packed SBSSIDList, *PSBSSIDList;
- 
- 
- typedef struct tagSNodeItem {
-@@ -208,7 +207,7 @@ typedef struct tagSNodeItem {
-     u32            uTxAttempts;
-     u16            wFailureRatio;
- 
--} SNodeItem;
-+} __packed SNodeItem;
- 
- 
- typedef struct tagSNodeList {
-@@ -216,7 +215,7 @@ typedef struct tagSNodeList {
- 	u32		    uItem;
- 	SNodeItem	sNodeList[0];
- 
--} SNodeList, *PSNodeList;
-+} __packed SNodeList, *PSNodeList;
- 
- 
- typedef struct tagSCmdLinkStatus {
-@@ -229,7 +228,7 @@ typedef struct tagSCmdLinkStatus {
-     u32     uChannel;
-     u32     uLinkRate;
- 
--} SCmdLinkStatus, *PSCmdLinkStatus;
-+} __packed SCmdLinkStatus, *PSCmdLinkStatus;
- 
- //
- // 802.11 counter
-@@ -247,7 +246,7 @@ typedef struct tagSDot11MIBCount {
-     u32 ReceivedFragmentCount;
-     u32 MulticastReceivedFrameCount;
-     u32 FCSErrorCount;
--} SDot11MIBCount, *PSDot11MIBCount;
-+} __packed SDot11MIBCount, *PSDot11MIBCount;
- 
- 
- 
-@@ -355,13 +354,13 @@ typedef struct tagSStatMIBCount {
-     u32   ullTxBroadcastBytes[2];
-     u32   ullTxMulticastBytes[2];
-     u32   ullTxDirectedBytes[2];
--} SStatMIBCount, *PSStatMIBCount;
-+} __packed SStatMIBCount, *PSStatMIBCount;
- 
- typedef struct tagSCmdValue {
- 
-     u32     dwValue;
- 
--} SCmdValue,  *PSCmdValue;
-+} __packed SCmdValue,  *PSCmdValue;
- 
- //
- // hostapd & viawget ioctl related
-@@ -431,7 +430,7 @@ struct viawget_hostapd_param {
- 			u8 ssid[32];
- 		} scan_req;
- 	} u;
--};
-+} __packed;
- 
- /*---------------------  Export Classes  ----------------------------*/
- 
---- a/drivers/staging/vt6656/iowpa.h
-+++ b/drivers/staging/vt6656/iowpa.h
-@@ -67,12 +67,11 @@ enum {
- 
- 
- 
--#pragma pack(1)
- typedef struct viawget_wpa_header {
- 	u8 type;
- 	u16 req_ie_len;
- 	u16 resp_ie_len;
--} viawget_wpa_header;
-+} __packed viawget_wpa_header;
- 
- struct viawget_wpa_param {
- 	u32 cmd;
-@@ -113,9 +112,8 @@ struct viawget_wpa_param {
- 			u8 *buf;
- 		} scan_results;
- 	} u;
--};
-+} __packed;
- 
--#pragma pack(1)
- struct viawget_scan_result {
- 	u8 bssid[6];
- 	u8 ssid[32];
-@@ -130,7 +128,7 @@ struct viawget_scan_result {
- 	int noise;
- 	int level;
- 	int maxrate;
--};
-+} __packed;
- 
- /*---------------------  Export Classes  ----------------------------*/
- 
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 88b725a..cf8639b 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1084,7 +1084,6 @@ ENTRY(xen_failsafe_callback)
+ 	lea 16(%esp),%esp
+ 	CFI_ADJUST_CFA_OFFSET -16
+ 	jz 5f
+-	addl $16,%esp
+ 	jmp iret_exc
+ 5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
+ 	SAVE_ALL
 
 
