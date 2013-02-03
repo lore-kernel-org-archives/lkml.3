@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab3BCBc6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:32:58 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:54734 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab3BCBVz (ORCPT
+	id S1753929Ab3BCBdT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:33:19 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56186 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab3BCBVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:21:55 -0500
+	Sat, 2 Feb 2013 20:21:53 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
         David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 19/62] drm/via: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:20 -0800
-Message-Id: <1359854463-2538-20-git-send-email-tj@kernel.org>
+Subject: [PATCH 18/62] drm/sis: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:19 -0800
+Message-Id: <1359854463-2538-19-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -35,14 +35,14 @@ This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/gpu/drm/via/via_mm.c | 13 +++----------
+ drivers/gpu/drm/sis/sis_mm.c | 13 +++----------
  1 file changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/gpu/drm/via/via_mm.c b/drivers/gpu/drm/via/via_mm.c
-index 0d55432..0ab93ff 100644
---- a/drivers/gpu/drm/via/via_mm.c
-+++ b/drivers/gpu/drm/via/via_mm.c
-@@ -148,17 +148,10 @@ int via_mem_alloc(struct drm_device *dev, void *data,
+diff --git a/drivers/gpu/drm/sis/sis_mm.c b/drivers/gpu/drm/sis/sis_mm.c
+index 2b2f78c..9a43d98 100644
+--- a/drivers/gpu/drm/sis/sis_mm.c
++++ b/drivers/gpu/drm/sis/sis_mm.c
+@@ -128,17 +128,10 @@ static int sis_drm_alloc(struct drm_device *dev, struct drm_file *file,
  	if (retval)
  		goto fail_alloc;
  
