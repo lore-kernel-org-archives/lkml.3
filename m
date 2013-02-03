@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab3BCVG6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 16:06:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52942 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753633Ab3BCVG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 16:06:56 -0500
-Date: Sun, 3 Feb 2013 22:06:45 +0100
-From: Borislav Petkov <bp@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-Message-ID: <20130203210645.GE5844@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@suse.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>,
-	Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-	lkml <linux-kernel@vger.kernel.org>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>
-References: <20130129202848.GE25415@pd.tnic>
- <2293454.v8QRHr8txR@vostro.rjw.lan>
- <20130203144656.GB5844@pd.tnic>
- <3199697.iYHk9DmIeE@vostro.rjw.lan>
- <20130203205857.GD5844@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130203205857.GD5844@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753761Ab3BCVIb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 16:08:31 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:63658 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753597Ab3BCVIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 16:08:30 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        anish kumar <anish198519851985@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] irq_work: irq_work_queue function return value not used.
+Date: Sun,  3 Feb 2013 22:08:23 +0100
+Message-Id: <1359925703-24304-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 03, 2013 at 09:58:57PM +0100, Borislav Petkov wrote:
-> and it seemed to me that when the eth cable is plugged in, it would
-> suspend and resume fine. When I then boot, unplug the cable, set all
-> tunables to "Good", suspend to disk and resume, no NMI message. When I
-> plug the cable back, only *then* the message triggered.
-> 
-> I need to play with this a bit more to get a better sense of when
-> exactly it happens.
+From: anish kumar <anish198519851985@gmail.com>
 
-Ok, not really.
+As no one is using the return value of irq_work_queue function
+it is better to just make it void.
 
-It is not influenced by the cable being plugged - it happens when I plug
-in the cable or simply shortly after resume, without the cable.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+[fix stale comments, remove now unnecessary __irq_work_queue
+intermediate function]
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ include/linux/irq_work.h |    2 +-
+ kernel/irq_work.c        |   31 ++++++++++---------------------
+ 2 files changed, 11 insertions(+), 22 deletions(-)
 
+diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+index 6a9e8f5..ce60c08 100644
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -16,7 +16,7 @@ void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
+ 	work->func = func;
+ }
+ 
+-bool irq_work_queue(struct irq_work *work);
++void irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
+ void irq_work_sync(struct irq_work *work);
+ 
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 64eddd5..c9d7478 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -63,12 +63,20 @@ void __weak arch_irq_work_raise(void)
+ }
+ 
+ /*
+- * Queue the entry and raise the IPI if needed.
++ * Enqueue the irq_work @entry unless it's already pending
++ * somewhere.
++ *
++ * Can be re-enqueued while the callback is still in progress.
+  */
+-static void __irq_work_queue(struct irq_work *work)
++void irq_work_queue(struct irq_work *work)
+ {
+ 	bool empty;
+ 
++	/* Only queue if not already pending */
++	if (!irq_work_claim(work))
++		return;
++
++	/* Queue the entry and raise the IPI if needed. */
+ 	preempt_disable();
+ 
+ 	empty = llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+@@ -78,25 +86,6 @@ static void __irq_work_queue(struct irq_work *work)
+ 
+ 	preempt_enable();
+ }
+-
+-/*
+- * Enqueue the irq_work @entry, returns true on success, failure when the
+- * @entry was already enqueued by someone else.
+- *
+- * Can be re-enqueued while the callback is still in progress.
+- */
+-bool irq_work_queue(struct irq_work *work)
+-{
+-	if (!irq_work_claim(work)) {
+-		/*
+-		 * Already enqueued, can't do!
+-		 */
+-		return false;
+-	}
+-
+-	__irq_work_queue(work);
+-	return true;
+-}
+ EXPORT_SYMBOL_GPL(irq_work_queue);
+ 
+ /*
 -- 
-Regards/Gruss,
-    Boris.
+1.7.5.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
