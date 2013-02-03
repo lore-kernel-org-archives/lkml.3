@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab3BCPVy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:21:54 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34147 "EHLO
+	id S1754610Ab3BCPV5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:21:57 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34144 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753500Ab3BCOzL (ORCPT
+	by vger.kernel.org with ESMTP id S1753854Ab3BCOzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:55:11 -0500
-Message-Id: <20130203144646.179760100@decadent.org.uk>
+	Sun, 3 Feb 2013 09:55:10 -0500
+Message-Id: <20130203144646.262981708@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:08 +0100
+Date: Sun, 03 Feb 2013 15:47:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Ian Abbott <abbotti@mev.co.uk>,
-        =?ISO-8859-15?q?=C3=89ric=20Piel?= <piel@delmic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 024/128] staging: comedi: comedi_test: fix race when cancelling command
+Cc: akpm@linux-foundation.org, Axel Lin <axel.lin@ingics.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 025/128] regulator: max8997: Use uV in voltage_map_desc
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,45 +27,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit c0729eeefdcd76db338f635162bf0739fd2c5f6f upstream.
+commit bc3b7756b5ff66828acf7bc24f148d28b8d61108 upstream.
 
-Éric Piel reported a kernel oops in the "comedi_test" module.  It was a
-NULL pointer dereference within `waveform_ai_interrupt()` (actually a
-timer function) that sometimes occurred when a running asynchronous
-command is cancelled (either by the `COMEDI_CANCEL` ioctl or by closing
-the device file).
+Current code does integer division (min_vol = min_uV / 1000) before pass
+min_vol to max8997_get_voltage_proper_val().
+So it is possible min_vol is truncated to a smaller value.
 
-This seems to be a race between the caller of `waveform_ai_cancel()`
-which on return from that function goes and tears down the running
-command, and the timer function which uses the command.  In particular,
-`async->cmd.chanlist` gets freed (and the pointer set to NULL) by
-`do_become_nonbusy()` in "comedi_fops.c" but a previously scheduled
-`waveform_ai_interrupt()` timer function will dereference that pointer
-regardless, leading to the oops.
+For example, if the request min_uV is 800900 for ldo.
+min_vol = 800900 / 1000 = 800 (mV)
+Then max8997_get_voltage_proper_val returns 800 mV for this case which is lower
+than the requested voltage.
 
-Fix it by replacing the `del_timer()` call in `waveform_ai_cancel()`
-with `del_timer_sync()`.
+Use uV rather than mV in voltage_map_desc to prevent truncation by integer
+division.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reported-by: Éric Piel <piel@delmic.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - voltage_map_desc also has an n_bits field]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/drivers/comedi_test.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/max8997.c |   36 +++++++++++++++++-------------------
+ 1 file changed, 17 insertions(+), 19 deletions(-)
 
---- a/drivers/staging/comedi/drivers/comedi_test.c
-+++ b/drivers/staging/comedi/drivers/comedi_test.c
-@@ -461,7 +461,7 @@ static int waveform_ai_cancel(struct com
- 			      struct comedi_subdevice *s)
- {
- 	devpriv->timer_running = 0;
--	del_timer(&devpriv->timer);
-+	del_timer_sync(&devpriv->timer);
- 	return 0;
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -71,26 +71,26 @@ struct voltage_map_desc {
+ 	unsigned int n_bits;
+ };
+ 
+-/* Voltage maps in mV */
++/* Voltage maps in uV */
+ static const struct voltage_map_desc ldo_voltage_map_desc = {
+-	.min = 800,	.max = 3950,	.step = 50,	.n_bits = 6,
++	.min = 800000,	.max = 3950000,	.step = 50000,	.n_bits = 6,
+ }; /* LDO1 ~ 18, 21 all */
+ 
+ static const struct voltage_map_desc buck1245_voltage_map_desc = {
+-	.min = 650,	.max = 2225,	.step = 25,	.n_bits = 6,
++	.min = 650000,	.max = 2225000,	.step = 25000,	.n_bits = 6,
+ }; /* Buck1, 2, 4, 5 */
+ 
+ static const struct voltage_map_desc buck37_voltage_map_desc = {
+-	.min = 750,	.max = 3900,	.step = 50,	.n_bits = 6,
++	.min = 750000,	.max = 3900000,	.step = 50000,	.n_bits = 6,
+ }; /* Buck3, 7 */
+ 
+-/* current map in mA */
++/* current map in uA */
+ static const struct voltage_map_desc charger_current_map_desc = {
+-	.min = 200,	.max = 950,	.step = 50,	.n_bits = 4,
++	.min = 200000,	.max = 950000,	.step = 50000,	.n_bits = 4,
+ };
+ 
+ static const struct voltage_map_desc topoff_current_map_desc = {
+-	.min = 50,	.max = 200,	.step = 10,	.n_bits = 4,
++	.min = 50000,	.max = 200000,	.step = 10000,	.n_bits = 4,
+ };
+ 
+ static const struct voltage_map_desc *reg_voltage_map[] = {
+@@ -199,7 +199,7 @@ static int max8997_list_voltage(struct r
+ 	if (val > desc->max)
+ 		return -EINVAL;
+ 
+-	return val * 1000;
++	return val;
  }
  
+ static int max8997_get_enable_register(struct regulator_dev *rdev,
+@@ -501,7 +501,6 @@ static int max8997_set_voltage_ldobuck(s
+ {
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+ 	struct i2c_client *i2c = max8997->iodev->i2c;
+-	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+ 	const struct voltage_map_desc *desc;
+ 	int rid = max8997_get_rid(rdev);
+ 	int reg, shift = 0, mask, ret;
+@@ -527,7 +526,7 @@ static int max8997_set_voltage_ldobuck(s
+ 
+ 	desc = reg_voltage_map[rid];
+ 
+-	i = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
++	i = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
+ 	if (i < 0)
+ 		return i;
+ 
+@@ -546,7 +545,7 @@ static int max8997_set_voltage_ldobuck(s
+ 		/* If the voltage is increasing */
+ 		if (org < i)
+ 			udelay(DIV_ROUND_UP(desc->step * (i - org),
+-						max8997->ramp_delay));
++						max8997->ramp_delay * 1000));
+ 	}
+ 
+ 	return ret;
+@@ -645,7 +644,6 @@ static int max8997_set_voltage_buck(stru
+ 	const struct voltage_map_desc *desc;
+ 	int new_val, new_idx, damage, tmp_val, tmp_idx, tmp_dmg;
+ 	bool gpio_dvs_mode = false;
+-	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+ 
+ 	if (rid < MAX8997_BUCK1 || rid > MAX8997_BUCK7)
+ 		return -EINVAL;
+@@ -670,7 +668,7 @@ static int max8997_set_voltage_buck(stru
+ 						selector);
+ 
+ 	desc = reg_voltage_map[rid];
+-	new_val = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
++	new_val = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
+ 	if (new_val < 0)
+ 		return new_val;
+ 
+@@ -1002,8 +1000,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck1_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck1_voltage[i] / 1000,
+-					pdata->buck1_voltage[i] / 1000 +
++					pdata->buck1_voltage[i],
++					pdata->buck1_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_alloc;
+@@ -1011,8 +1009,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck2_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck2_voltage[i] / 1000,
+-					pdata->buck2_voltage[i] / 1000 +
++					pdata->buck2_voltage[i],
++					pdata->buck2_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_alloc;
+@@ -1020,8 +1018,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck5_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck5_voltage[i] / 1000,
+-					pdata->buck5_voltage[i] / 1000 +
++					pdata->buck5_voltage[i],
++					pdata->buck5_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_alloc;
 
 
