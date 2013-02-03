@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3BCPUW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:20:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34186 "EHLO
+	id S1753921Ab3BCOzZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:55:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34166 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753934Ab3BCOz0 (ORCPT
+	by vger.kernel.org with ESMTP id S1752541Ab3BCOzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:55:26 -0500
-Message-Id: <20130203144647.169118181@decadent.org.uk>
+	Sun, 3 Feb 2013 09:55:19 -0500
+Message-Id: <20130203144646.350902952@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:19 +0100
+Date: Sun, 03 Feb 2013 15:47:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Thomas Schwinge <thomas@codesourcery.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [ 035/128] sh: Fix FDPIC binary loader
+Cc: akpm@linux-foundation.org, Mike Dunn <mikedunn@newsguy.com>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 026/128] ALSA: pxa27x: fix ac97 cold reset
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,36 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Schwinge <thomas@codesourcery.com>
+From: Mike Dunn <mikedunn@newsguy.com>
 
-commit 4a71997a3279a339e7336ea5d0cd27282e2dea44 upstream.
+commit 41b645c8624df6ace020a8863ad1449d69140f7d upstream.
 
-Ensure that the aux table is properly initialized, even when optional features
-are missing.  Without this, the FDPIC loader did not work.  This was meant to
-be included in commit d5ab780305bb6d60a7b5a74f18cf84eb6ad153b1.
+Cold reset on the pxa27x currently fails and
 
-Signed-off-by: Thomas Schwinge <thomas@codesourcery.com>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+     pxa2xx_ac97_try_cold_reset: cold reset timeout (GSR=0x44)
+
+appears in the kernel log.  Through trial-and-error (the pxa270 developer's
+manual is mostly incoherent on the topic of ac97 reset), I got cold reset to
+complete by setting the WARM_RST bit in the GCR register (and later noticed that
+pxa3xx does this for cold reset as well).  Also, a timeout loop is needed to
+wait for the reset to complete.
+
+Tested on a palm treo 680 machine.
+
+Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
+Acked-by: Igor Grinberg <grinberg@compulab.co.il>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sh/include/asm/elf.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/arm/pxa2xx-ac97-lib.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sh/include/asm/elf.h b/arch/sh/include/asm/elf.h
-index 37924af..bf9f44f 100644
---- a/arch/sh/include/asm/elf.h
-+++ b/arch/sh/include/asm/elf.h
-@@ -203,9 +203,9 @@ extern void __kernel_vsyscall;
- 	if (vdso_enabled)					\
- 		NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE);	\
- 	else							\
--		NEW_AUX_ENT(AT_IGNORE, 0);
-+		NEW_AUX_ENT(AT_IGNORE, 0)
- #else
--#define VSYSCALL_AUX_ENT
-+#define VSYSCALL_AUX_ENT	NEW_AUX_ENT(AT_IGNORE, 0)
- #endif /* CONFIG_VSYSCALL */
+diff --git a/sound/arm/pxa2xx-ac97-lib.c b/sound/arm/pxa2xx-ac97-lib.c
+index 6fc0ae9..1ecd0a66 100644
+--- a/sound/arm/pxa2xx-ac97-lib.c
++++ b/sound/arm/pxa2xx-ac97-lib.c
+@@ -148,6 +148,8 @@ static inline void pxa_ac97_warm_pxa27x(void)
  
- #ifdef CONFIG_SH_FPU
+ static inline void pxa_ac97_cold_pxa27x(void)
+ {
++	unsigned int timeout;
++
+ 	GCR &=  GCR_COLD_RST;  /* clear everything but nCRST */
+ 	GCR &= ~GCR_COLD_RST;  /* then assert nCRST */
+ 
+@@ -157,8 +159,10 @@ static inline void pxa_ac97_cold_pxa27x(void)
+ 	clk_enable(ac97conf_clk);
+ 	udelay(5);
+ 	clk_disable(ac97conf_clk);
+-	GCR = GCR_COLD_RST;
+-	udelay(50);
++	GCR = GCR_COLD_RST | GCR_WARM_RST;
++	timeout = 100;     /* wait for the codec-ready bit to be set */
++	while (!((GSR | gsr_bits) & (GSR_PCR | GSR_SCR)) && timeout--)
++		mdelay(1);
+ }
+ #endif
+ 
 
 
