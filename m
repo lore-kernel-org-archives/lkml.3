@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab3BCO46 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:56:58 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34400 "EHLO
+	id S1754619Ab3BCO5E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:57:04 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34418 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754541Ab3BCO4u (ORCPT
+	by vger.kernel.org with ESMTP id S1754604Ab3BCO46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:56:50 -0500
-Message-Id: <20130203144650.528447302@decadent.org.uk>
+	Sun, 3 Feb 2013 09:56:58 -0500
+Message-Id: <20130203144651.096276020@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:57 +0100
+Date: Sun, 03 Feb 2013 15:48:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
-Subject: [ 073/128] ALSA: hda - Add Conexant CX20751/2/3/4 codec support
+Cc: akpm@linux-foundation.org,
+        Anderson Lizardo <anderson.lizardo@openbossa.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 079/128] Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,41 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Anderson Lizardo <anderson.lizardo@openbossa.org>
 
-commit 61d648fb4726f8a89c07cd1904f9c2e11bf26df5 upstream.
+commit 0a9ab9bdb3e891762553f667066190c1d22ad62b upstream.
 
-These are almost compatible with the older Conexant codecs.
+The length parameter should be sizeof(req->name) - 1 because there is no
+guarantee that string provided by userspace will contain the trailing
+'\0'.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Can be easily reproduced by manually setting req->name to 128 non-zero
+bytes prior to ioctl(HIDPCONNADD) and checking the device name setup on
+input subsystem:
+
+$ cat /sys/devices/pnp0/00\:04/tty/ttyS0/hci0/hci0\:1/input8/name
+AAAAAA[...]AAAAAAAAf0:af:f0:af:f0:af
+
+("f0:af:f0:af:f0:af" is the device bluetooth address, taken from "phys"
+field in struct hid_device due to overflow.)
+
+Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_conexant.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/bluetooth/hidp/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 2cfcec0..a03fc33 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4559,6 +4559,10 @@ static int patch_conexant_auto(struct hda_codec *codec)
-  */
+diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+index ccd985d..03652f3 100644
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -931,7 +931,7 @@ static int hidp_setup_hid(struct hidp_session *session,
+ 	hid->version = req->version;
+ 	hid->country = req->country;
  
- static const struct hda_codec_preset snd_hda_preset_conexant[] = {
-+	{ .id = 0x14f11510, .name = "CX20751/2",
-+	  .patch = patch_conexant_auto },
-+	{ .id = 0x14f11511, .name = "CX20753/4",
-+	  .patch = patch_conexant_auto },
- 	{ .id = 0x14f15045, .name = "CX20549 (Venice)",
- 	  .patch = patch_cxt5045 },
- 	{ .id = 0x14f15047, .name = "CX20551 (Waikiki)",
-@@ -4596,6 +4600,8 @@ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
- 	{} /* terminator */
- };
+-	strncpy(hid->name, req->name, 128);
++	strncpy(hid->name, req->name, sizeof(req->name) - 1);
+ 	strncpy(hid->phys, batostr(&bt_sk(session->ctrl_sock->sk)->src), 64);
+ 	strncpy(hid->uniq, batostr(&bt_sk(session->ctrl_sock->sk)->dst), 64);
  
-+MODULE_ALIAS("snd-hda-codec-id:14f11510");
-+MODULE_ALIAS("snd-hda-codec-id:14f11511");
- MODULE_ALIAS("snd-hda-codec-id:14f15045");
- MODULE_ALIAS("snd-hda-codec-id:14f15047");
- MODULE_ALIAS("snd-hda-codec-id:14f15051");
 
 
