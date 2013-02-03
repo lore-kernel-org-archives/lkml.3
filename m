@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab3BCXlx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 18:41:53 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:60237 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753942Ab3BCXl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 18:41:27 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/2] ACPI scan handler for memory hotplug and container simplification
-Date: Mon, 04 Feb 2013 00:45:06 +0100
-Message-ID: <3164478.OcagzIMET0@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <4311642.nDd2RCVeDc@vostro.rjw.lan>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <4311642.nDd2RCVeDc@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754071Ab3BCXqS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 18:46:18 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54201 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab3BCXqP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 18:46:15 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-fa-510ef6c56ab7
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, stable@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH v7 1/4] zram: Fix deadlock bug in partial read/write
+Date: Mon,  4 Feb 2013 08:46:08 +0900
+Message-Id: <1359935171-12749-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Now zram allocates new page with GFP_KERNEL in zram I/O path
+if IO is partial. Unfortunately, It may cause deadlock with
+reclaim path like below.
 
-Patch [1/2] in this series makes the ACPI memory hotplug driver use struct
-acpi_scan_handler instead of struct acpi_driver and changes the driver to
-non-modular (as a consequence).
+write_page from fs
+fs_lock
+allocation(GFP_KERNEL)
+reclaim
+pageout
+				write_page from fs
+				fs_lock <-- deadlock
 
-Patch [2/2] is a bit funny, though.  I though I'd make the container driver
-use struct acpi_scan_handler instead of struct acpi_driver too, but then I
-noticed that its struct acpi_driver and everything it does is just plain
-garbage without any use whatsoever, so the patch simply drops that stuff.
+This patch fixes it by using GFP_NOIO.  In read path, we
+reorganize code flow so that kmap_atomic is called after the
+GFP_NOIO allocation.
 
-Both on top of linux-pm.git/bleeding-edge.  Unfortunately, I don't have the
-hardware to test those things, so if anyone can test them, I'll appreciate it
-a lot.
+Cc: stable@vger.kernel.org
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+[ penberg@kernel.org: don't use GFP_ATOMIC ]
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zram/zram_drv.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Thanks,
-Rafael
-
-
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 941b7c6..262265e 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -217,11 +217,12 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 		return 0;
+ 	}
+ 
+-	user_mem = kmap_atomic(page);
+ 	if (is_partial_io(bvec))
+ 		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-	else
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
++
++	user_mem = kmap_atomic(page);
++	if (!is_partial_io(bvec))
+ 		uncmem = user_mem;
+ 
+ 	if (!uncmem) {
+@@ -268,7 +269,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		 * This is a partial IO. We need to read the full page
+ 		 * before to write the changes.
+ 		 */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			ret = -ENOMEM;
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
