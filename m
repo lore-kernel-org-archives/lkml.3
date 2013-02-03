@@ -1,146 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab3BCIwH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 03:52:07 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:53546 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab3BCIwF (ORCPT
+	id S1753097Ab3BCJme (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 04:42:34 -0500
+Received: from kepler.killerwolves.net ([103.4.235.74]:44504 "EHLO
+	kepler.killerwolves.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752914Ab3BCJmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 03:52:05 -0500
-Message-ID: <1359881520.1328.14.camel@kernel.cn.ibm.com>
-Subject: Re: [PATCH v2] Make frontswap+cleancache and its friend be
- modularized.
-From: Ric Mason <ric.masonn@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: dan.magenheimer@oracle.com, konrad.wilk@oracle.com,
-        sjenning@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
-        akpm@linux-foundation.org, ngupta@vflare.org, rcj@linux.vnet.ibm.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Date: Sun, 03 Feb 2013 02:52:00 -0600
-In-Reply-To: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
-References: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Sun, 3 Feb 2013 04:42:31 -0500
+X-Spam-Check-By: kepler
+Message-ID: <510E3101.7070108@killerwolves.net>
+Date: Sun, 03 Feb 2013 19:42:25 +1000
+From: Ben Peddell <klightspeed@killerwolves.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] target: OOPS in target_fabric_port_link on v3.7.4
+ and v3.4.27
+References: <510E207F.1@killerwolves.net>
+In-Reply-To: <510E207F.1@killerwolves.net>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konrad,
-On Fri, 2013-02-01 at 15:22 -0500, Konrad Rzeszutek Wilk wrote:
+On 3/02/2013 6:31 PM, Ben Peddell wrote:
+> There is an OOPS in target_fabric_port_link due to a use before
+> initialization error.
+> 
+> commit 0ff8754981261a80f4b77db2536dfea92c2d4539 (target: Add link_magic
+> for fabric allow_link destination target_items) as merged in the
+> linux-3.7.y and linux-3.4.y branches relies on one of the changes that
+> occurred in commit 0fd97ccf45be26fb01b3a412f1f6c6b5044b2f16 (Simplify
+> the code a lot by killing the superflous struct se_subsystem_dev).
+> Without that change, dev is dereferenced before it is initialized.
+> 
+> Commit 0fd97ccf45be26fb01b3a412f1f6c6b5044b2f16 looks too invasive,
+> which I would guess would be why it wasn't merged in.
+> 
+> One option would be to move the dev->dev_link_magic test to after dev is
+> initialized, as presented the patches I will be following up with.
+> 
+> An alternative that will resolve this OOPS is to revert commit
+> fdf9d862969f1be18814273b03fb9497ec2dbdae (target: Add link_magic for
+> fabric allow_link destination target_items) on branch linux-3.7.y, and
+> revert commit 92a7389317838f3338466df0c0e3d23ad33cb1f4 (target: Add
+> link_magic for fabric allow_link destination target_items) on branch
+> linux-3.4.y
 
-I have already enable frontswap,cleancache,zcache,
- FRONTSWAP [=y]  
- CLEANCACHE [=y]
- ZCACHE [=y]
-But all of knode under /sys/kernel/debug/frontswap and cleancache still
-zero, my swap device is enable, where I miss?
-
-> Parts of this patch have been posted in the post (way back in November), but
-> this patchset expanded it a bit. The goal of the patches is to make the
-> different frontswap/cleancache API backends be modules - and load way way after
-> the swap system (or filesystem) has been initialized. Naturally one can still
-> build the frontswap+cleancache backend devices in the kernel. The next goal
-> (after these patches) is to also be able to unload the backend drivers - but
-> that places some interesting requirements to "reload" the swap device with
-> swap pages (don't need to worry that much about cleancache as it is a "secondary"
-> cache and can be dumped). Seth had posted some patches for that in the zswap
-> backend - and they could be more generally repurporsed.
-> 
-> Anyhow, I did not want to lose the authorship of some of the patches so I
-> didn't squash the ones that were made by Dan and mine. I can do it for review
-> if it would make it easier, but from my recollection on how Linus likes things
-> run he would prefer to keep the history (even the kludge parts).
-> 
-> The general flow prior to these patches was [I am concentrating on the
-> frontswap here, but the cleancache is similar, just s/swapon/mount/]:
-> 
->  1) kernel inits frontswap_init
->  2) kernel inits zcache (or some other backend)
->  3) user does swapon /dev/XX and the writes to the swap disk end up in
->     frontswap and then in the backend.
-> 
-> With the module loading, the 1) is still part of the bootup, but the
-> 2) or 3) can be run at anytime. This means one could load the backend
-> _after_ the swap disk has been initialized and running along. Or
-> _before_ the swap disk has been setup - but that is similar to the
-> existing case so not that exciting.
-> 
-> To deal with that scenario the frontswap keeps an queue (actually an atomic
-> bitmap of the swap disks that have been init) and when the backend registers -
-> frontswap runs the backend init on the queued up swap disks.
-> 
-> The interesting thing is that we can be to certain degree racy when the
-> swap system starts steering pages to frontswap. Meaning after the backend
-> has registered it is OK if the pages are still hitting the disk instead of
-> the backend. Naturally this is unacceptable if one were to unload the
-> backend (not yet supported) - as we need to be quite atomic at that stage
-> and need to stop processing the pages the moment the backend is being
-> unloaded. To support this, the frontswap is using the struct static_key
-> which are incredibly light when they are in usage. They are incredibly heavy
-> when the value switches (on/off), but that is OK. The next part of unloading is
-> also taking the pages that are in the backend and feed them in the swap
-> storage (and Seth's patches do some of this).
-> 
-> Also attached is one patch from Minchan that fixes the condition where the
-> backend was constricted in allocating memory at init - b/c we were holding
-> a spin-lock. His patch fixes that and we are just holding the swapon_mutex
-> instead. It has been rebased on top of my patches.
-> 
-> This patchset is based on Greg KH's staging tree (since the zcache2 has
-> now been renamed to zcache). To be exact, it is based on
-> 085494ac2039433a5df9fdd6fb653579e18b8c71
-> 
-> Dan Magenheimer (4):
->       mm: cleancache: lazy initialization to allow tmem backends to build/run as modules
->       mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
->       staging: zcache: enable ramster to be built/loaded as a module
->       xen: tmem: enable Xen tmem shim to be built/loaded as a module
-> 
-> Konrad Rzeszutek Wilk (10):
->       frontswap: Make frontswap_init use a pointer for the ops.
->       cleancache: Make cleancache_init use a pointer for the ops
->       staging: zcache: enable zcache to be built/loaded as a module
->       xen/tmem: Remove the subsys call.
->       frontswap: Remove the check for frontswap_enabled.
->       frontswap: Use static_key instead of frontswap_enabled and frontswap_ops
->       cleancache: Remove the check for cleancache_enabled.
->       cleancache: Use static_key instead of cleancache_ops and cleancache_enabled.
->       zcache/tmem: Better error checking on frontswap_register_ops return     value.
->       xen/tmem: Add missing %s in the printk statement.
-> 
-> Minchan Kim (1):
->       frontswap: Get rid of swap_lock dependency
-> 
-> 
->  drivers/staging/zcache/Kconfig                     |   6 +-
->  drivers/staging/zcache/Makefile                    |  11 +-
->  drivers/staging/zcache/ramster.h                   |   6 +-
->  drivers/staging/zcache/ramster/nodemanager.c       |   9 +-
->  drivers/staging/zcache/ramster/ramster.c           |  29 ++-
->  drivers/staging/zcache/ramster/ramster.h           |   2 +-
->  .../staging/zcache/ramster/ramster_nodemanager.h   |   2 +
->  drivers/staging/zcache/tmem.c                      |   6 +-
->  drivers/staging/zcache/tmem.h                      |   8 +-
->  drivers/staging/zcache/zcache-main.c               |  64 +++++-
->  drivers/staging/zcache/zcache.h                    |   2 +-
->  drivers/xen/Kconfig                                |   4 +-
->  drivers/xen/tmem.c                                 |  55 +++--
->  drivers/xen/xen-selfballoon.c                      |  13 +-
->  include/linux/cleancache.h                         |  27 ++-
->  include/linux/frontswap.h                          |  31 +--
->  include/xen/tmem.h                                 |   8 +
->  mm/cleancache.c                                    | 241 ++++++++++++++++++---
->  mm/frontswap.c                                     | 121 ++++++++---
->  mm/swapfile.c                                      |   7 +-
->  20 files changed, 505 insertions(+), 147 deletions(-)
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+I should have looked in the stable queue first - an equivalent to my
+patch is already in the stable queue for 3.4 and 3.7
 
