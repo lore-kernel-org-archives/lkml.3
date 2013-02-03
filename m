@@ -1,132 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab3BCM7d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 07:59:33 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:54782 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab3BCM71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 07:59:27 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Jiang Liu <liuj97@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / scan: Follow priorities of IDs when matching scan handlers
-Date: Sun, 03 Feb 2013 14:05:42 +0100
-Message-ID: <2044570.2VhKQ3rTBn@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQWbRyTqYnM7StWSv8=7+hGhPnCDPRb=-Oe5wfnefHAv+A@mail.gmail.com>
-References: <1873429.MS5RQDxTye@vostro.rjw.lan> <2566718.DLPxb38Yi2@vostro.rjw.lan> <CAE9FiQWbRyTqYnM7StWSv8=7+hGhPnCDPRb=-Oe5wfnefHAv+A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753240Ab3BCNBY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 08:01:24 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33295 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752222Ab3BCNBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 08:01:22 -0500
+Message-ID: <1359896460.29976.0.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 06/89] powerpc/book3e: Disable interrupt after
+ preempt_schedule_irq
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Tiejun Chen <tiejun.chen@windriver.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Sun, 03 Feb 2013 14:01:00 +0100
+In-Reply-To: <20130201130207.918022394@linuxfoundation.org>
+References: <20130201130207.444989281@linuxfoundation.org>
+	 <20130201130207.918022394@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-GHf5r4mvRSsgtPtM6M6D"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 151.216.67.5
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 02, 2013 08:54:46 PM Yinghai Lu wrote:
-> On Sat, Feb 2, 2013 at 4:52 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > The IDs of ACPI device nodes stored in their pnp.ids member arrays
-> > are sorted by decreasing priority (i.e. the highest-priority ID is
-> > the first entry).  This means that when matching scan handlers to
-> > device nodes, the namespace scanning code should walk the list of
-> > scan handlers for each device node ID instead of walking the list
-> > of device node IDs for each handler (the latter causes the first
-> > handler matching any of the device node IDs to be chosen, although
-> > there may be another handler matching an ID of a higher priority
-> > which should be preferred).  Make the code follow this observation.
-> >
-> > This change has been suggested and justified by Toshi Kani.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/scan.c |   42 +++++++++++++++++++++++++++++-------------
-> >  1 file changed, 29 insertions(+), 13 deletions(-)
-> >
-> > Index: test/drivers/acpi/scan.c
-> > ===================================================================
-> > --- test.orig/drivers/acpi/scan.c
-> > +++ test/drivers/acpi/scan.c
-> > @@ -1556,26 +1556,42 @@ static acpi_status acpi_bus_check_add(ac
-> >         return AE_OK;
-> >  }
-> >
-> > -static int acpi_scan_attach_handler(struct acpi_device *device)
-> > +static int acpi_scan_do_attach_handler(struct acpi_device *device, char *id)
-> >  {
-> >         struct acpi_scan_handler *handler;
-> > -       int ret = 0;
-> >
-> >         list_for_each_entry(handler, &acpi_scan_handlers_list, list_node) {
-> > -               const struct acpi_device_id *id;
-> > +               const struct acpi_device_id *devid;
-> >
-> > -               id = __acpi_match_device(device, handler->ids);
-> > -               if (!id)
-> > -                       continue;
-> > -
-> > -               ret = handler->attach(device, id);
-> > -               if (ret > 0) {
-> > -                       device->handler = handler;
-> > -                       break;
-> > -               } else if (ret < 0) {
-> > -                       break;
-> > +               for (devid = handler->ids; devid->id[0]; devid++) {
-> > +                       int ret;
-> > +
-> > +                       if (strcmp((char *)devid->id, id))
-> > +                               continue;
-> > +
-> > +                       ret = handler->attach(device, devid);
-> > +                       if (ret > 0) {
-> > +                               device->handler = handler;
-> > +                               return ret;
-> > +                       } else if (ret < 0) {
-> > +                               return ret;
-> > +                       }
-> >                 }
-> >         }
-> > +       return 0;
-> > +}
-> > +
-> > +static int acpi_scan_attach_handler(struct acpi_device *device)
-> > +{
-> > +       struct acpi_hardware_id *hwid;
-> > +       int ret = 0;
-> > +
-> > +       list_for_each_entry(hwid, &device->pnp.ids, list) {
-> > +               ret = acpi_scan_do_attach_handler(device, hwid->id);
-> > +               if (ret)
-> > +                       break;
-> > +
-> > +       }
-> >         return ret;
-> >  }
-> >
-> >
-> 
-> Looks like right to honor the order in pnp.ids.
-> 
-> so there is same problem with acpi_bus_match/acpi_match_device_ids
-> that need to fixed?
 
-Yes, there is the same problem, but I'm not sure we can actually fix it.
+--=-GHf5r4mvRSsgtPtM6M6D
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The driver core walks the list of available drivers for the given bus just
-once in bus_probe_device(), so it cannot check all drivers against each of
-the given device IDs.  So it looks like acpi_bus_match() does all it can do
-(one more reason to get rid of the ACPI bus type IMHO).
+On Fri, 2013-02-01 at 14:07 +0100, Greg Kroah-Hartman wrote:
+> 3.7-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Tiejun Chen <tiejun.chen@windriver.com>
+>=20
+> commit 572177d7c77db1981ba2563e01478126482c43bc upstream.
+>=20
+> In preempt case current arch_local_irq_restore() from
+> preempt_schedule_irq() may enable hard interrupt but we really
+> should disable interrupts when we return from the interrupt,
+> and so that we don't get interrupted after loading SRR0/1.
+>=20
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[...]
 
-Thanks,
-Rafael
+Is this needed for any earlier kernel versions?
 
+Ben.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--=20
+Ben Hutchings
+Everything should be made as simple as possible, but not simpler.
+                                                           - Albert Einstei=
+n
+
+--=-GHf5r4mvRSsgtPtM6M6D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIUAwUAUQ5fjOe/yOyVhhEJAQpBRg/4z8k3CVQ5UoAb3fW4kyge2An2twCpUsGz
+HeMjohTbwmWW8EvfY1VuBB5+PaX8fPHICTmZK5UlJ9ziQKHmAiCqRYSF+jHMX9Ul
+07qVsEJ+e4anvqEPkb7bMVpBOpIu6csl2xfvbJ6uTmCm+trBC1rd8FAJiVCWpAI1
+mckEZeUW5Z4V1fDAJU4Nzq6g/QMC4BhcMLM7dbuzUxlcR5RxCPdt6hPxMxVvSj8m
+7cRXK84CzuYhrHh0g8FwTuaFPiME0E8+d8rfjj/axlSkQLOEwhv/+hdboyGqVe96
+gT+oS/GZx4t3Fbx5SIhEctRfgKrjeiWHUuZhQvrSRc6509CScFgnmBKPhvXRGrt9
++PLUqqW6MJvfYYjXY+muZgdPVG1+TFNliEL+dwPbWA/51RQ3RUjPBZthR/9kWess
+HwoostCeEfXyiyTvX04CWma1j9Y3s22n025lV3ZPhzP0sWv4P7yGqzW4m7eJHS0v
+HM+rNEh4ccsGXAwj5/0+lMNBmLFt64jlxYT4E8KWcOC8vzywnEEoyFjCTpnn9skr
+D9b271U2OMuMZ+0v6ityFoVHQbHAXG4slDwtPbIWzcn2n8h8wdvkn1tDISq5Ix3p
+RtLV9SHff8QMguTUQhDmL0Glg2dzvDH0RGenizGr7WXNCm7VjXxhwqCxqSdwFLY5
+2ITI02HKig==
+=HGE8
+-----END PGP SIGNATURE-----
+
+--=-GHf5r4mvRSsgtPtM6M6D--
