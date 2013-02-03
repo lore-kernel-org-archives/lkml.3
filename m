@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab3BCBWR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:22:17 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49153 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742Ab3BCBWN (ORCPT
+	id S1753942Ab3BCBWb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:22:31 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:51645 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874Ab3BCBW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:13 -0500
+	Sat, 2 Feb 2013 20:22:26 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        Roland Dreier <roland@purestorage.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH 29/62] infiniband/ocrdma: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:30 -0800
-Message-Id: <1359854463-2538-30-git-send-email-tj@kernel.org>
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+Subject: [PATCH 36/62] mmc: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:37 -0800
+Message-Id: <1359854463-2538-37-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -28,48 +28,46 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: linux-rdma@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/infiniband/hw/ocrdma/ocrdma_main.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ drivers/mmc/core/host.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_main.c b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-index c4e0131..48928c8 100644
---- a/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-+++ b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-@@ -51,18 +51,6 @@ static DEFINE_IDR(ocrdma_dev_id);
+diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+index ee2e16b..1117de7 100644
+--- a/drivers/mmc/core/host.c
++++ b/drivers/mmc/core/host.c
+@@ -306,19 +306,20 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
+ 	int err;
+ 	struct mmc_host *host;
  
- static union ib_gid ocrdma_zero_sgid;
- 
--static int ocrdma_get_instance(void)
--{
--	int instance = 0;
+-	if (!idr_pre_get(&mmc_host_idr, GFP_KERNEL))
+-		return NULL;
 -
--	/* Assign an unused number */
--	if (!idr_pre_get(&ocrdma_dev_id, GFP_KERNEL))
--		return -1;
--	if (idr_get_new(&ocrdma_dev_id, NULL, &instance))
--		return -1;
--	return instance;
--}
--
- void ocrdma_get_guid(struct ocrdma_dev *dev, u8 *guid)
- {
- 	u8 mac_addr[6];
-@@ -416,7 +404,7 @@ static struct ocrdma_dev *ocrdma_add(struct be_dev_info *dev_info)
- 		goto idr_err;
+ 	host = kzalloc(sizeof(struct mmc_host) + extra, GFP_KERNEL);
+ 	if (!host)
+ 		return NULL;
  
- 	memcpy(&dev->nic_info, dev_info, sizeof(*dev_info));
--	dev->id = ocrdma_get_instance();
-+	dev->id = idr_alloc(&ocrdma_dev_id, NULL, 0, 0, GFP_KERNEL);
- 	if (dev->id < 0)
- 		goto idr_err;
+ 	/* scanning will be enabled when we're ready */
+ 	host->rescan_disable = 1;
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&mmc_host_lock);
+-	err = idr_get_new(&mmc_host_idr, host, &host->index);
++	err = idr_alloc(&mmc_host_idr, host, 0, 0, GFP_NOWAIT);
++	if (err >= 0)
++		host->index = err;
+ 	spin_unlock(&mmc_host_lock);
+-	if (err)
++	idr_preload_end();
++	if (err < 0)
+ 		goto free;
  
+ 	dev_set_name(&host->class_dev, "mmc%d", host->index);
 -- 
 1.8.1
 
