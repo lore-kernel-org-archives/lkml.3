@@ -1,259 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676Ab3BCGW6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 01:22:58 -0500
-Received: from mga03.intel.com ([143.182.124.21]:19098 "EHLO mga03.intel.com"
+	id S1751721Ab3BCGil (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 01:38:41 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33714 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab3BCGW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 01:22:56 -0500
+	id S1751363Ab3BCGih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 01:38:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,591,1355126400"; 
-   d="scan'208";a="198168323"
-Message-ID: <510E025A.9000103@intel.com>
-Date: Sun, 03 Feb 2013 14:23:22 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Derek Basehore <dbasehore@chromium.org>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
-References: <Pine.LNX.4.44L0.1302021003390.25931-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1302021003390.25931-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="280292617"
+From: Feng Tang <feng.tang@intel.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org
+Cc: Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v2 1/2] perf hists browser: Add option for runtime switching perf data file
+Date: Sun,  3 Feb 2013 14:38:20 +0800
+Message-Id: <1359873501-24541-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2013 11:09 PM, Alan Stern wrote:
-> On Sat, 2 Feb 2013, Aaron Lu wrote:
-> 
->>>> An alternative way of possibly solving this problem from PM's point of
->>>> view might be:
->>>> 1 Set both ata port and scsi device's runtime status to RPM_SUSPENDED
->>>>   in their system suspend callback;
-> 
-> By the way, what reason is there for doing this to the ATA port?  Does 
-> the port take a long time to resume, in the same way that a disk can 
-> take a few seconds to spin back up?
+Based on perf report/top/scripts browser integration idea from acme.
 
-For SATA controllers that is in AHCI programming interface, the hard
-drive will be spined up when the link is put to active state, so the
-most time consuming part is in ata, not in scsi, as the below data
-showed on my computer(hard disk is a HDD attached to a sata controller
-in AHCI mode):
-The ata port resume callback takes several seconds(2s-5s) to finish,
-while sd_resume takes only 17ms...
+This will enable user to runtime switch the data file, when this option
+is selected, it will popup all the legal data files in current working
+directory, and the filename selected by user is saved in the global
+variable "input_name", and a new key 'K_SWITCH_INPUT_DATA' will be
+passed back to the built-in command which will perform the switch.
 
-I'm not sure about other programming interfaces.
+This initial version only enables it for 'perf report'.
 
-> 
->> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
->> index 497adea..38000fc 100644
->> --- a/drivers/ata/libata-core.c
->> +++ b/drivers/ata/libata-core.c
->> @@ -5355,10 +5355,19 @@ static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
->>  
->>  static int ata_port_suspend(struct device *dev)
->>  {
->> +	int ret;
->> +
->>  	if (pm_runtime_suspended(dev))
->>  		return 0;
->>  
->> -	return ata_port_suspend_common(dev, PMSG_SUSPEND);
->> +	ret = ata_port_suspend_common(dev, PMSG_SUSPEND);
->> +	if (!ret) {
->> +		__pm_runtime_disable(dev, false);
-> 
-> Don't you mean pm_runtime_disable(dev)?
+v2: rebase to latest 'perf/core' branch (6e1d4dd) of acme's perf tree
 
-I don't think it is necessary to check_resume here, no?
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ tools/perf/ui/browsers/hists.c |  112 +++++++++++++++++++++++++++++++++++++++-
+ tools/perf/ui/keysyms.h        |    1 +
+ 2 files changed, 112 insertions(+), 1 deletion(-)
 
-> 
->> +		pm_runtime_set_suspended(dev);
->> +		pm_runtime_enable(dev);
->> +	}
->> +
->> +	return ret;
->>  }
->>  
->>  static int ata_port_do_freeze(struct device *dev)
->> @@ -5393,16 +5402,7 @@ static int ata_port_resume_common(struct device *dev, pm_message_t mesg)
->>  
->>  static int ata_port_resume(struct device *dev)
->>  {
->> -	int rc;
->> -
->> -	rc = ata_port_resume_common(dev, PMSG_RESUME);
->> -	if (!rc) {
->> -		pm_runtime_disable(dev);
->> -		pm_runtime_set_active(dev);
->> -		pm_runtime_enable(dev);
->> -	}
->> -
->> -	return rc;
->> +	return 0;
->>  }
->>  
->>  /*
->> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
->> index d9956b6..d0b6997 100644
->> --- a/drivers/scsi/scsi_pm.c
->> +++ b/drivers/scsi/scsi_pm.c
->> @@ -127,13 +127,21 @@ static int scsi_bus_prepare(struct device *dev)
->>  static int scsi_bus_suspend(struct device *dev)
->>  {
->>  	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
->> -	return scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
->> +	int ret;
->> +
->> +	ret = scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
->> +	if (!ret) {
->> +		__pm_runtime_disable(dev, false);
->> +		pm_runtime_set_suspended(dev);
->> +		pm_runtime_enable(dev);
->> +	}
->> +
->> +	return ret;
->>  }
->>  
->>  static int scsi_bus_resume(struct device *dev)
->>  {
->> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
->> -	return scsi_bus_resume_common(dev, pm ? pm->resume : NULL);
->> +	return 0;
->>  }
-> 
-> This doesn't look like it would work very well with something like a CD 
-> drive, which doesn't use block-layer runtime PM.
-
-No problem, we have the in-kernel-event-poll to resume the CD.
-And actually, during resume, some udisk program will also open the block
-device to find something out, which will also resume the CD.
-
-> Is that what you meant when you talked about modifying the SCSI PM
-> callbacks?
-
-No, the modification is actually for disk.
-With v8 of block layer runtime PM, it is no longer the case runtime
-suspend is the same as system suspend for hard disk that utilize block
-layer runtime PM: we quiesce the device and run its suspend callback for
-the device during system suspend but we didn't touch the queue's
-rpm_status as we do in runtime_suspend callback. So I did some
-modifications to scsi_pm.c to make runtime suspend and system suspend do
-exactly the same thing for disk type scsi device, no matter if they are
-using block layer runtime PM or not.
-
-Probably I had better post code here, this is a replacement for the
-patch 4 of v8 block layer runtime PM patchset(I omit the sd part, since
-it is irrevelant), please kindly review, see if you like it :-)
-
-diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-index 8f6b12c..d9956b6 100644
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -16,17 +16,44 @@
- 
- #include "scsi_priv.h"
- 
-+static int sdev_blk_suspend(struct scsi_device *sdev)
-+{
-+	int err;
-+
-+	err = blk_pre_runtime_suspend(sdev->request_queue);
-+	if (err)
-+		return err;
-+	err = pm_generic_runtime_suspend(&sdev->sdev_gendev);
-+	blk_post_runtime_suspend(sdev->request_queue, err);
-+
-+	return err;
-+}
-+
-+static int sdev_blk_resume(struct scsi_device *sdev)
-+{
-+	int err;
-+
-+	blk_pre_runtime_resume(sdev->request_queue);
-+	err = pm_generic_runtime_resume(&sdev->sdev_gendev);
-+	blk_post_runtime_resume(sdev->request_queue, err);
-+
-+	return err;
-+}
-+
- static int scsi_dev_type_suspend(struct device *dev, int (*cb)(struct device *))
- {
-+	struct scsi_device *sdev = to_scsi_device(dev);
- 	int err;
- 
--	err = scsi_device_quiesce(to_scsi_device(dev));
-+	err = scsi_device_quiesce(sdev);
- 	if (err == 0) {
--		if (cb) {
-+		if (sdev->request_queue->dev)
-+			err = sdev_blk_suspend(sdev);
-+		else if (cb)
- 			err = cb(dev);
--			if (err)
--				scsi_device_resume(to_scsi_device(dev));
--		}
-+
-+		if (err)
-+			scsi_device_resume(sdev);
- 	}
- 	dev_dbg(dev, "scsi suspend: %d\n", err);
- 	return err;
-@@ -34,11 +61,14 @@ static int scsi_dev_type_suspend(struct device *dev, int (*cb)(struct device *))
- 
- static int scsi_dev_type_resume(struct device *dev, int (*cb)(struct device *))
- {
-+	struct scsi_device *sdev = to_scsi_device(dev);
- 	int err = 0;
- 
--	if (cb)
-+	if (sdev->request_queue->dev)
-+		err = sdev_blk_resume(sdev);
-+	else if (cb)
- 		err = cb(dev);
--	scsi_device_resume(to_scsi_device(dev));
-+	scsi_device_resume(sdev);
- 	dev_dbg(dev, "scsi resume: %d\n", err);
- 	return err;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 2cf64be..eb383c8 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1241,6 +1241,96 @@ static inline bool is_report_browser(void *timer)
+ 	return timer == NULL;
  }
-@@ -185,10 +215,18 @@ static int scsi_runtime_idle(struct device *dev)
  
- 	/* Insert hooks here for targets, hosts, and transport classes */
- 
--	if (scsi_is_sdev_device(dev))
--		err = pm_schedule_suspend(dev, 100);
--	else
-+	if (scsi_is_sdev_device(dev)) {
-+		struct scsi_device *sdev = to_scsi_device(dev);
++/*
++ * Only runtime switching of perf data file will make "input_name" point
++ * to a malloced buffer. So add "is_input_name_malloced" flag to decide
++ * whether we need to call free() for current "input_name" during the switch.
++ */
++static bool is_input_name_malloced = false;
 +
-+		if (sdev->request_queue->dev) {
-+			pm_runtime_mark_last_busy(dev);
-+			err = pm_runtime_autosuspend(dev);
-+		} else {
-+			err = pm_schedule_suspend(dev, 100);
++static int switch_data_file(void)
++{
++	char *pwd, *options[32], *abs_path[32], *tmp;
++	DIR *pwd_dir;
++	int nr_options = 0, choice = -1, ret = -1;
++	struct dirent *dent;
++
++	pwd = getenv("PWD");
++	if (!pwd)
++		return ret;
++
++	pwd_dir = opendir(pwd);
++	if (!pwd_dir)
++		return ret;
++
++	memset(options, 0, sizeof(options));
++	memset(options, 0, sizeof(abs_path));
++
++	while ((dent = readdir(pwd_dir))) {
++		char path[PATH_MAX];
++		u64 magic;
++		char *name = dent->d_name;
++		FILE *file;
++
++		if (!(dent->d_type == DT_REG))
++			continue;
++
++		snprintf(path, sizeof(path), "%s/%s", pwd, name);
++
++		file = fopen(path, "r");
++		if (!file)
++			continue;
++
++		if (fread(&magic, 1, 8, file) < 8)
++			goto close_file_and_continue;
++
++		if (is_perf_magic(magic)) {
++			options[nr_options] = strdup(name);
++			if (!options[nr_options])
++				goto close_file_and_continue;
++
++			abs_path[nr_options] = strdup(path);
++			if (!abs_path[nr_options]) {
++				free(options[nr_options]);
++				ui__warning("Can't search all data files due to memory shortage.\n");
++				fclose(file);
++				break;
++			}
++
++			nr_options++;
 +		}
-+	} else {
- 		err = pm_runtime_suspend(dev);
++
++close_file_and_continue:
++		fclose(file);
++		if (nr_options >= 32) {
++			ui__warning("Too many perf data files in PWD!\n"
++				    "Only the first 32 files will be listed.\n");
++			break;
++		}
 +	}
- 	return err;
- }
++	closedir(pwd_dir);
++
++	if (nr_options) {
++		choice = ui__popup_menu(nr_options, options);
++		if (choice < nr_options && choice >= 0) {
++			tmp = strdup(abs_path[choice]);
++			if (tmp) {
++				if (is_input_name_malloced)
++					free((void *)input_name);
++				input_name = tmp;
++				is_input_name_malloced = true;
++				ret = 0;
++			} else
++				ui__warning("Data switch failed due to memory shortage!\n");
++		}
++	}
++
++	free_popup_options(options, nr_options);
++	free_popup_options(abs_path, nr_options);
++	return ret;
++}
++
++
+ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 				    const char *helpline, const char *ev_name,
+ 				    bool left_exits,
+@@ -1275,7 +1365,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 		int choice = 0,
+ 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
+ 		    annotate_f = -2, annotate_t = -2, browse_map = -2;
+-		int scripts_comm = -2, scripts_symbol = -2, scripts_all = -2;
++		int scripts_comm = -2, scripts_symbol = -2,
++		    scripts_all = -2, switch_data = -2;
  
+ 		nr_options = 0;
+ 
+@@ -1332,6 +1423,10 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			if (is_report_browser(hbt))
+ 				goto do_scripts;
+ 			continue;
++		case 's':
++			if (is_report_browser(hbt))
++				goto do_data_switch;
++			continue;
+ 		case K_F1:
+ 		case 'h':
+ 			ui_browser__help_window(&browser->b,
+@@ -1351,6 +1446,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					"d             Zoom into current DSO\n"
+ 					"t             Zoom into current Thread\n"
+ 					"r             Run available scripts('perf report' only)\n"
++					"s             Switch to another data file in PWD ('perf report' only)\n"
+ 					"P             Print histograms to perf.hist.N\n"
+ 					"V             Verbose (DSO names in callchains, etc)");
+ 			continue;
+@@ -1457,6 +1553,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 		if (asprintf(&options[nr_options], "Run scripts for all samples") > 0)
+ 			scripts_all = nr_options++;
+ 
++		if (is_report_browser(hbt) && asprintf(&options[nr_options],
++				"Switch to another data file in PWD") > 0)
++			switch_data = nr_options++;
+ add_exit_option:
+ 		options[nr_options++] = (char *)"Exit";
+ retry_popup_menu:
+@@ -1567,6 +1666,16 @@ do_scripts:
+ 
+ 			script_browse(script_opt);
+ 		}
++		/* Switch to another data file */
++		else if (choice == switch_data) {
++do_data_switch:
++			if (!switch_data_file()) {
++				key = K_SWITCH_INPUT_DATA;
++				break;
++			} else
++				ui__warning("Won't switch the data files due to\n"
++					"no valid data file get selected!\n");
++		}
+ 	}
+ out_free_stack:
+ 	pstack__delete(fstack);
+@@ -1693,6 +1802,7 @@ browse_hists:
+ 						"Do you really want to exit?"))
+ 					continue;
+ 				/* Fall thru */
++			case K_SWITCH_INPUT_DATA:
+ 			case 'q':
+ 			case CTRL('c'):
+ 				goto out;
+diff --git a/tools/perf/ui/keysyms.h b/tools/perf/ui/keysyms.h
+index 809eca5..65092d5 100644
+--- a/tools/perf/ui/keysyms.h
++++ b/tools/perf/ui/keysyms.h
+@@ -23,5 +23,6 @@
+ #define K_TIMER	 -1
+ #define K_ERROR	 -2
+ #define K_RESIZE -3
++#define K_SWITCH_INPUT_DATA -4
+ 
+ #endif /* _PERF_KEYSYMS_H_ */
 -- 
-1.8.1
-
-With this patch, the runtime suspend and system suspend for the device
-is identical, so that we can safely return in system's suspend callback
-when we found the device is already runtime suspended.
-
-Thanks,
-Aaron
+1.7.9.5
 
