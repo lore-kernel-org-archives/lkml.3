@@ -1,140 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab3BCPY3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:24:29 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:39225 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760Ab3BCPYZ (ORCPT
+	id S1754855Ab3BCPYx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:24:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34089 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753571Ab3BCOyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 10:24:25 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
-        jmorris@namei.org, axboe@kernel.dk
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
-	<87a9rltszn.fsf@xmission.com>
-	<CAOS58YPhSz4DQT5-hTkH-wW_P3b5LK1WuEbWiR8uyNZPZdf_Gw@mail.gmail.com>
-Date: Sun, 03 Feb 2013 07:24:11 -0800
-In-Reply-To: <CAOS58YPhSz4DQT5-hTkH-wW_P3b5LK1WuEbWiR8uyNZPZdf_Gw@mail.gmail.com>
-	(Tejun Heo's message of "Sun, 3 Feb 2013 06:13:53 -0800")
-Message-ID: <87ehgxo1yc.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/1e+jLPSqq37oLa4qNtK6Sb2RpQMogLiI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0335]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Tejun Heo <tj@kernel.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Sun, 3 Feb 2013 09:54:54 -0500
+Message-Id: <20130203144644.743682092@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 03 Feb 2013 15:46:52 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        John Covici <covici@ccs.covici.com>
+Subject: [ 008/128] USB: Allow USB 3.0 ports to be disabled.
+In-Reply-To: <20130203144644.035172954@decadent.org.uk>
+X-SA-Exim-Connect-IP: 151.216.67.5
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-> Hey, Eric.
->
-> On Sun, Feb 3, 2013 at 5:41 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Why the deep percpu magic?
->
-> Eh? What's magical about it?  You preload percpu buffer if you're
-> gonna be allocating an id from context which doesn't allow permissive
-> allocation.  This is the same technique used by radix tree preloading.
->  The only reason idr did its own preloading was probably because it
-> got implemented before we had proper percpu techniques.
+------------------
 
-Maybe.  I haven't been in the parts of the kernel that use the radix
-tree preloading and I having just look at a bit of it I don't like it
-either.  There is the same strong disconnect between the pieces whose
-side effects are interacting.
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-At least with the radix tree the pieces are core kernel pieces that get
-optimized like mad and you expect to have to think about.
+commit 41e7e056cdc662f704fa9262e5c6e213b4ab45dd upstream.
 
-idr is a boring thing you use because don't want to think about the
-details.  Now you are asking people to really think about the details
-when the touch a piece of code using idr.  I think that is the wrong
-trade off.
+If hot and warm reset fails, or a port remains in the Compliance Mode,
+the USB core needs to be able to disable a USB 3.0 port.  Unlike USB 2.0
+ports, once the port is placed into the Disabled link state, it will not
+report any new device connects.  To get device connect notifications, we
+need to put the link into the Disabled state, and then the RxDetect
+state.
 
->> Why don't associate idr_preload with an idr structure.
->
-> Because then you end up with a lot more preloaded buffers which are
-> much less useful.  You can't guarantee your preload target is the only
-> one who's gonna use the preload buffer so you end up with this ugly
-> -EAGAIN retry loop.  It's inefficient & inconvenient.
+The xHCI driver needs to atomically clear all change bits on USB 3.0
+port disable, so that we get Port Status Change Events for future port
+changes.  We could technically do this in the USB core instead of in the
+xHCI roothub code, since the port state machine can't advance out of the
+disabled state until we set the link state to RxDetect.  However,
+external USB 3.0 hubs don't need this code.  They are level-triggered,
+not edge-triggered like xHCI, so they will continue to send interrupt
+events when any change bit is set.  Therefore it doesn't make sense to
+put this code in the USB core.
 
-That argument makes sense.
+This patch is part of a series to fix several reports of infinite loops
+on device enumeration failure.  This includes John, when he boots with
+a USB 3.0 device (Roseweil eusb3 enclosure) attached to his NEC 0.96
+host controller.  The fix requires warm reset support, so it does not
+make sense to backport this patch to stable kernels without warm reset
+support.
 
->> When reading code with idr_preload I get this deep down creepy feeling.
->> What is this magic that is going on?
->
-> Seriously, if this gives you deep creepy feeling, you need to get on
-> with time.  It's a basic percpu technique.
+This patch should be backported to kernels as old as 3.2, contain the
+commit ID 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine warm
+reset logic"
 
-But this isn't a basic percpu technique.  This is a basic percpu
-technique hidden behind the wall.
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: John Covici <covici@ccs.covici.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/core/hub.c      |   63 +++++++++++++++++++++++++++++++++++++++++--
+ drivers/usb/host/xhci-hub.c |   31 +++++++++++++++++++--
+ 2 files changed, 90 insertions(+), 4 deletions(-)
 
-Nothing about reading idr_preload() in a line of code says.  Hey look at
-me I am version of preempt disable() that puts things in percpu
-variables that you don't know about.
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -619,6 +619,60 @@ static int hub_hub_status(struct usb_hub
+ 	return ret;
+ }
+ 
++static int hub_set_port_link_state(struct usb_hub *hub, int port1,
++			unsigned int link_status)
++{
++	return set_port_feature(hub->hdev,
++			port1 | (link_status << 3),
++			USB_PORT_FEAT_LINK_STATE);
++}
++
++/*
++ * If USB 3.0 ports are placed into the Disabled state, they will no longer
++ * detect any device connects or disconnects.  This is generally not what the
++ * USB core wants, since it expects a disabled port to produce a port status
++ * change event when a new device connects.
++ *
++ * Instead, set the link state to Disabled, wait for the link to settle into
++ * that state, clear any change bits, and then put the port into the RxDetect
++ * state.
++ */
++static int hub_usb3_port_disable(struct usb_hub *hub, int port1)
++{
++	int ret;
++	int total_time;
++	u16 portchange, portstatus;
++
++	if (!hub_is_superspeed(hub->hdev))
++		return -EINVAL;
++
++	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
++	if (ret) {
++		dev_err(hub->intfdev, "cannot disable port %d (err = %d)\n",
++				port1, ret);
++		return ret;
++	}
++
++	/* Wait for the link to enter the disabled state. */
++	for (total_time = 0; ; total_time += HUB_DEBOUNCE_STEP) {
++		ret = hub_port_status(hub, port1, &portstatus, &portchange);
++		if (ret < 0)
++			return ret;
++
++		if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
++				USB_SS_PORT_LS_SS_DISABLED)
++			break;
++		if (total_time >= HUB_DEBOUNCE_TIMEOUT)
++			break;
++		msleep(HUB_DEBOUNCE_STEP);
++	}
++	if (total_time >= HUB_DEBOUNCE_TIMEOUT)
++		dev_warn(hub->intfdev, "Could not disable port %d after %d ms\n",
++				port1, total_time);
++
++	return hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_RX_DETECT);
++}
++
+ static int hub_port_disable(struct usb_hub *hub, int port1, int set_state)
+ {
+ 	struct usb_device *hdev = hub->hdev;
+@@ -627,8 +681,13 @@ static int hub_port_disable(struct usb_h
+ 	if (hdev->children[port1-1] && set_state)
+ 		usb_set_device_state(hdev->children[port1-1],
+ 				USB_STATE_NOTATTACHED);
+-	if (!hub->error && !hub_is_superspeed(hub->hdev))
+-		ret = clear_port_feature(hdev, port1, USB_PORT_FEAT_ENABLE);
++	if (!hub->error) {
++		if (hub_is_superspeed(hub->hdev))
++			ret = hub_usb3_port_disable(hub, port1);
++		else
++			ret = clear_port_feature(hdev, port1,
++					USB_PORT_FEAT_ENABLE);
++	}
+ 	if (ret)
+ 		dev_err(hub->intfdev, "cannot disable port %d (err = %d)\n",
+ 				port1, ret);
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -725,12 +725,39 @@ int xhci_hub_control(struct usb_hcd *hcd
+ 			break;
+ 		case USB_PORT_FEAT_LINK_STATE:
+ 			temp = xhci_readl(xhci, port_array[wIndex]);
++
++			/* Disable port */
++			if (link_state == USB_SS_PORT_LS_SS_DISABLED) {
++				xhci_dbg(xhci, "Disable port %d\n", wIndex);
++				temp = xhci_port_state_to_neutral(temp);
++				/*
++				 * Clear all change bits, so that we get a new
++				 * connection event.
++				 */
++				temp |= PORT_CSC | PORT_PEC | PORT_WRC |
++					PORT_OCC | PORT_RC | PORT_PLC |
++					PORT_CEC;
++				xhci_writel(xhci, temp | PORT_PE,
++					port_array[wIndex]);
++				temp = xhci_readl(xhci, port_array[wIndex]);
++				break;
++			}
++
++			/* Put link in RxDetect (enable port) */
++			if (link_state == USB_SS_PORT_LS_RX_DETECT) {
++				xhci_dbg(xhci, "Enable port %d\n", wIndex);
++				xhci_set_link_state(xhci, port_array, wIndex,
++						link_state);
++				temp = xhci_readl(xhci, port_array[wIndex]);
++				break;
++			}
++
+ 			/* Software should not attempt to set
+-			 * port link state above '5' (Rx.Detect) and the port
++			 * port link state above '3' (U3) and the port
+ 			 * must be enabled.
+ 			 */
+ 			if ((temp & PORT_PE) == 0 ||
+-				(link_state > USB_SS_PORT_LS_RX_DETECT)) {
++				(link_state > USB_SS_PORT_LS_U3)) {
+ 				xhci_warn(xhci, "Cannot set link state.\n");
+ 				goto error;
+ 			}
 
-Nothing about idr_preload says don't you dair forget to pair me with
-preload_end().
 
->> Can't we just put the preload list_head into struct idr make
->> idr_preload and idr_preload_end take an idr argument?
->
-> Inefficient & inconvenient.
-
->> Maybe we can have a special structure we put on the stack that has
->> the list_head and the preload state instead.
-
-This suggestion you didn't address at all.
-
-If we can't put state in the structure because of the problem of
-multiple accesses why can't we take the state out of the structure
-entirely and put it into a stack local variable?
-
-That would reduce the cognitive load because it becomes clear how
-the pieces connect together.
-
-That would remove the need for disabling preemption and other behind
-the scenes magic.
-
->> The way this works just weirds me out and I really really don't like it.
->>
->> I would rather continue to use the existing functions as problematic as
->> they are as I don't need a course in deep magic to make sense of them.
->
-> Heh, this is the weirdest review I got in quite a while.  Please sit
-> down and read it again.
-
-Please sit down and relook at your interface again.  People use idr
-where they need a unique number associatedand they really don't care.
-Having to think about hidden percpu variables and preemption being
-disabled in the background brings with it a lot of extra work to use the
-interface.
-
-For the sake of a saving few lines of code you are desiging an interface
-that is harder to use correctly, and harder to think about.
-
-I think you are making completely the wrong trade off.  I don't want the
-cognitive burden of having to think about percpu and preemption
-disabling when using a boring utitlity function like the idr code.
-
-Eric
