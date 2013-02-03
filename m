@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab3BCU66 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 15:58:58 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:38956 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab3BCU6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 15:58:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <10475811.H5RONrFZPm@vostro.rjw.lan>
-References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com>
- <3500982.MUDp6kKU3R@vostro.rjw.lan> <CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com>
- <10475811.H5RONrFZPm@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sun, 3 Feb 2013 13:58:33 -0700
-Message-ID: <CAErSpo6uwYWAnxUrN99e7DjUH1BWSTUZC_dGPbDVPZLnywX-Pw@mail.gmail.com>
-Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
+	id S1753785Ab3BCU7J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 15:59:09 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58195 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753701Ab3BCU7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 15:59:04 -0500
+Date: Sun, 3 Feb 2013 21:58:57 +0100
+From: Borislav Petkov <bp@alien8.de>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bhelgaas@google.com>,
+        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+Message-ID: <20130203205857.GD5844@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>,
+	Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
+	lkml <linux-kernel@vger.kernel.org>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>
+References: <20130129202848.GE25415@pd.tnic>
+ <2293454.v8QRHr8txR@vostro.rjw.lan>
+ <20130203144656.GB5844@pd.tnic>
+ <3199697.iYHk9DmIeE@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <3199697.iYHk9DmIeE@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 3, 2013 at 1:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, January 28, 2013 02:09:22 PM Bjorn Helgaas wrote:
->> On Sun, Jan 20, 2013 at 5:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Saturday, January 19, 2013 12:07:42 AM Jiang Liu wrote:
->> >> As discussed in thread at https://patchwork.kernel.org/patch/1946851/,
->> >> there's no value in supporting CONFIG_ACPI_PCI_SLOT=m any more.
->> >> So change Kconfig and code to only support building pci_slot as
->> >> built-in driver.
->> >>
->> >> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> >
->> > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
->>
->> I think we should eventually get rid of acpi_pci_register_driver() and
->> do this initialization directly from acpi_pci_root_add().  But
->> removing the module option here is a good first step.
->>
->> Rafael, do you want to apply this (and [6/8]) via your tree?  If not,
->> I can take it.
->
-> Both applied to bleeding-edge.  I've added your ACK to the [6/8] too, hope
-> that's OK.
+On Sun, Feb 03, 2013 at 09:15:12PM +0100, Rafael J. Wysocki wrote:
+> Is suspend-to-RAM triggering that as too?
 
-Yep, that's fine, thanks!
+Nope, not really. But, just to confirm: s2r is
 
-Bjorn
+echo "shutdown" > /sys/power/disk
+echo "mem" > /sys/power/state
+
+right?
+
+Btw, this bug is very strange. So I did a couple more s2disk runs, i.e.
+
+echo "shutdown" > /sys/power/disk
+echo "disk" > /sys/power/state
+
+and it seemed to me that when the eth cable is plugged in, it would
+suspend and resume fine. When I then boot, unplug the cable, set all
+tunables to "Good", suspend to disk and resume, no NMI message. When I
+plug the cable back, only *then* the message triggered.
+
+I need to play with this a bit more to get a better sense of when
+exactly it happens.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
