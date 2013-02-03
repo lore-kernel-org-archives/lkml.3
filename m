@@ -1,120 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab3BCGRa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 01:17:30 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:48428 "EHLO smtp.gentoo.org"
+	id S1751676Ab3BCGW6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 01:22:58 -0500
+Received: from mga03.intel.com ([143.182.124.21]:19098 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab3BCGR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 01:17:28 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: James Hogan <james.hogan@imgtec.com>
-Subject: Re: [PATCH 1/1] depmod: pass -P $CONFIG_SYMBOL_PREFIX
-Date: Sun, 3 Feb 2013 01:17:24 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org,
-        "Yoshinori Sato" <ysato@users.sourceforge.jp>,
-        uclinux-dist-devel@blackfin.uclinux.org
-References: <1359625303-11842-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1359625303-11842-1-git-send-email-james.hogan@imgtec.com>
+	id S1751204Ab3BCGW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 01:22:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,591,1355126400"; 
+   d="scan'208";a="198168323"
+Message-ID: <510E025A.9000103@intel.com>
+Date: Sun, 03 Feb 2013 14:23:22 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart16008169.e9eXTBbLJr";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Derek Basehore <dbasehore@chromium.org>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
+References: <Pine.LNX.4.44L0.1302021003390.25931-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1302021003390.25931-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302030117.26295.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart16008169.e9eXTBbLJr
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 02/02/2013 11:09 PM, Alan Stern wrote:
+> On Sat, 2 Feb 2013, Aaron Lu wrote:
+> 
+>>>> An alternative way of possibly solving this problem from PM's point of
+>>>> view might be:
+>>>> 1 Set both ata port and scsi device's runtime status to RPM_SUSPENDED
+>>>>   in their system suspend callback;
+> 
+> By the way, what reason is there for doing this to the ATA port?  Does 
+> the port take a long time to resume, in the same way that a disk can 
+> take a few seconds to spin back up?
 
-On Thursday 31 January 2013 04:41:43 James Hogan wrote:
-> --- a/Makefile
-> +++ b/Makefile
->=20
-> +ifneq ($(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX)),)
-> +  depmod_args =3D -P $(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-> +endif
-> ...
->  # Run depmod only if we have System.map and depmod is executable
->  quiet_cmd_depmod =3D DEPMOD  $(KERNELRELEASE)
->        cmd_depmod =3D $(CONFIG_SHELL) $(srctree)/scripts/depmod.sh $(DEPM=
-OD) \
-> -                   $(KERNELRELEASE)
-> +                   $(KERNELRELEASE) $(depmod_args)
+For SATA controllers that is in AHCI programming interface, the hard
+drive will be spined up when the link is put to active state, so the
+most time consuming part is in ata, not in scsi, as the below data
+showed on my computer(hard disk is a HDD attached to a sata controller
+in AHCI mode):
+The ata port resume callback takes several seconds(2s-5s) to finish,
+while sd_resume takes only 17ms...
 
-scripts/Makefile.lib just does:
-	ifdef CONFIG_SYMBOL_PREFIX
-so you should do the same
+I'm not sure about other programming interfaces.
 
-that said, cmd_depmod is just a shell command.  and you're running another=
-=20
-script helper (depmod.sh).  how about passing it unconditionally ?
-	cmd_depmod =3D ... -P "$(CONFIG_SYMBOL_PREFIX)"
+> 
+>> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+>> index 497adea..38000fc 100644
+>> --- a/drivers/ata/libata-core.c
+>> +++ b/drivers/ata/libata-core.c
+>> @@ -5355,10 +5355,19 @@ static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
+>>  
+>>  static int ata_port_suspend(struct device *dev)
+>>  {
+>> +	int ret;
+>> +
+>>  	if (pm_runtime_suspended(dev))
+>>  		return 0;
+>>  
+>> -	return ata_port_suspend_common(dev, PMSG_SUSPEND);
+>> +	ret = ata_port_suspend_common(dev, PMSG_SUSPEND);
+>> +	if (!ret) {
+>> +		__pm_runtime_disable(dev, false);
+> 
+> Don't you mean pm_runtime_disable(dev)?
 
-since the default will be "no prefix", using -P "" is the same thing.
+I don't think it is necessary to check_resume here, no?
 
-> --- a/scripts/depmod.sh
-> +++ b/scripts/depmod.sh
->=20
->  DEPMOD=3D$1
-> -KERNELRELEASE=3D$2
-> +shift
-> +KERNELRELEASE=3D$1
-> +shift
+> 
+>> +		pm_runtime_set_suspended(dev);
+>> +		pm_runtime_enable(dev);
+>> +	}
+>> +
+>> +	return ret;
+>>  }
+>>  
+>>  static int ata_port_do_freeze(struct device *dev)
+>> @@ -5393,16 +5402,7 @@ static int ata_port_resume_common(struct device *dev, pm_message_t mesg)
+>>  
+>>  static int ata_port_resume(struct device *dev)
+>>  {
+>> -	int rc;
+>> -
+>> -	rc = ata_port_resume_common(dev, PMSG_RESUME);
+>> -	if (!rc) {
+>> -		pm_runtime_disable(dev);
+>> -		pm_runtime_set_active(dev);
+>> -		pm_runtime_enable(dev);
+>> -	}
+>> -
+>> -	return rc;
+>> +	return 0;
+>>  }
+>>  
+>>  /*
+>> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+>> index d9956b6..d0b6997 100644
+>> --- a/drivers/scsi/scsi_pm.c
+>> +++ b/drivers/scsi/scsi_pm.c
+>> @@ -127,13 +127,21 @@ static int scsi_bus_prepare(struct device *dev)
+>>  static int scsi_bus_suspend(struct device *dev)
+>>  {
+>>  	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+>> -	return scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
+>> +	int ret;
+>> +
+>> +	ret = scsi_bus_suspend_common(dev, pm ? pm->suspend : NULL);
+>> +	if (!ret) {
+>> +		__pm_runtime_disable(dev, false);
+>> +		pm_runtime_set_suspended(dev);
+>> +		pm_runtime_enable(dev);
+>> +	}
+>> +
+>> +	return ret;
+>>  }
+>>  
+>>  static int scsi_bus_resume(struct device *dev)
+>>  {
+>> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+>> -	return scsi_bus_resume_common(dev, pm ? pm->resume : NULL);
+>> +	return 0;
+>>  }
+> 
+> This doesn't look like it would work very well with something like a CD 
+> drive, which doesn't use block-layer runtime PM.
 
-you can do:
-	DEPMOD=3D$1
-	KERNELRELEASE=3D$2
-	shift 2
+No problem, we have the in-kernel-event-poll to resume the CD.
+And actually, during resume, some udisk program will also open the block
+device to find something out, which will also resume the CD.
 
-> +# older versions of depmod don't support -P <symbol-prefix>
-> +# support was added in module-init-tools 3.13
-> +if test "$1" =3D "-P"; then
-> +	release=3D$("$DEPMOD" --version)
-> +	package=3D$(echo "$release" | cut -d' ' -f 1)
-> +	if test "$package" =3D "module-init-tools"; then
-> +		version=3D$(echo "$release" | cut -d' ' -f 2)
-> +		later=3D$({ echo "$version"; echo "3.13"; } | sort -V | tail -n 1)
+> Is that what you meant when you talked about modifying the SCSI PM
+> callbacks?
 
-you could do instead:
-	later=3D$(printf '%s\n' "$version" "3.13" | sort -V | tail -n 1)
+No, the modification is actually for disk.
+With v8 of block layer runtime PM, it is no longer the case runtime
+suspend is the same as system suspend for hard disk that utilize block
+layer runtime PM: we quiesce the device and run its suspend callback for
+the device during system suspend but we didn't touch the queue's
+rpm_status as we do in runtime_suspend callback. So I did some
+modifications to scsi_pm.c to make runtime suspend and system suspend do
+exactly the same thing for disk type scsi device, no matter if they are
+using block layer runtime PM or not.
 
-> +		if test "$later" !=3D "$version"; then
-> +			# module-init-tools < 3.13, drop the next 2 args
-> +			shift
-> +			shift
-> +		fi
+Probably I had better post code here, this is a replacement for the
+patch 4 of v8 block layer runtime PM patchset(I omit the sd part, since
+it is irrevelant), please kindly review, see if you like it :-)
 
-shift 2
-=2Dmike
+diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+index 8f6b12c..d9956b6 100644
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -16,17 +16,44 @@
+ 
+ #include "scsi_priv.h"
+ 
++static int sdev_blk_suspend(struct scsi_device *sdev)
++{
++	int err;
++
++	err = blk_pre_runtime_suspend(sdev->request_queue);
++	if (err)
++		return err;
++	err = pm_generic_runtime_suspend(&sdev->sdev_gendev);
++	blk_post_runtime_suspend(sdev->request_queue, err);
++
++	return err;
++}
++
++static int sdev_blk_resume(struct scsi_device *sdev)
++{
++	int err;
++
++	blk_pre_runtime_resume(sdev->request_queue);
++	err = pm_generic_runtime_resume(&sdev->sdev_gendev);
++	blk_post_runtime_resume(sdev->request_queue, err);
++
++	return err;
++}
++
+ static int scsi_dev_type_suspend(struct device *dev, int (*cb)(struct device *))
+ {
++	struct scsi_device *sdev = to_scsi_device(dev);
+ 	int err;
+ 
+-	err = scsi_device_quiesce(to_scsi_device(dev));
++	err = scsi_device_quiesce(sdev);
+ 	if (err == 0) {
+-		if (cb) {
++		if (sdev->request_queue->dev)
++			err = sdev_blk_suspend(sdev);
++		else if (cb)
+ 			err = cb(dev);
+-			if (err)
+-				scsi_device_resume(to_scsi_device(dev));
+-		}
++
++		if (err)
++			scsi_device_resume(sdev);
+ 	}
+ 	dev_dbg(dev, "scsi suspend: %d\n", err);
+ 	return err;
+@@ -34,11 +61,14 @@ static int scsi_dev_type_suspend(struct device *dev, int (*cb)(struct device *))
+ 
+ static int scsi_dev_type_resume(struct device *dev, int (*cb)(struct device *))
+ {
++	struct scsi_device *sdev = to_scsi_device(dev);
+ 	int err = 0;
+ 
+-	if (cb)
++	if (sdev->request_queue->dev)
++		err = sdev_blk_resume(sdev);
++	else if (cb)
+ 		err = cb(dev);
+-	scsi_device_resume(to_scsi_device(dev));
++	scsi_device_resume(sdev);
+ 	dev_dbg(dev, "scsi resume: %d\n", err);
+ 	return err;
+ }
+@@ -185,10 +215,18 @@ static int scsi_runtime_idle(struct device *dev)
+ 
+ 	/* Insert hooks here for targets, hosts, and transport classes */
+ 
+-	if (scsi_is_sdev_device(dev))
+-		err = pm_schedule_suspend(dev, 100);
+-	else
++	if (scsi_is_sdev_device(dev)) {
++		struct scsi_device *sdev = to_scsi_device(dev);
++
++		if (sdev->request_queue->dev) {
++			pm_runtime_mark_last_busy(dev);
++			err = pm_runtime_autosuspend(dev);
++		} else {
++			err = pm_schedule_suspend(dev, 100);
++		}
++	} else {
+ 		err = pm_runtime_suspend(dev);
++	}
+ 	return err;
+ }
+ 
+-- 
+1.8.1
 
---nextPart16008169.e9eXTBbLJr
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+With this patch, the runtime suspend and system suspend for the device
+is identical, so that we can safely return in system's suspend callback
+when we found the device is already runtime suspended.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+Thanks,
+Aaron
 
-iQIcBAABAgAGBQJRDgD2AAoJEEFjO5/oN/WBSeUQAM59Ar/tZ/W/DjUqslEnFpFI
-7O4xsHCFW9sUP+4w9T3UEipI8PVgXfJZ6EnfU9v3/QRL9jgMqxcEdHeie+3YCSqN
-37TeP5En12rqYim3a+ynF55QYo0yFd2s/azD9SBD6Q966aD+mv94euO28skZl0zF
-XW3yX/zGjnxl7ikLWOrNRX5/x413prD1D/wZhhMQScFRkpMRAKfOkWPksiNm02Y5
-j5scfpYmQc8fJYrCBFobCMWDpIeDevfGWkm5v2Bw7b2qgKeg4a9jCH3lS1GB/qL/
-tDIuAZrR6vYu6H83g81afP76ZnKiY4bMafeUuMaJrWD5yJO2q0t2x1q6aR2C3Rhc
-SwhyeLHnKegwIJNAqVcoJHbm4q4R6B11ipG2TuNV4e+JJZgTteeIloYUJp762gyz
-XaYtbhKYXII2wrwq2UhDbsiRPg4Qo79OqgYBSLSrTkBm5PjwH411HxoMeQtLGEdG
-QttVlKzH3ZgDfPtBKuv1Hio2fhUAa4jmYhfd4IeBPPEkeDHPdzRzBO1V7fYaZwxp
-h0g/LfbjYy3/nn7GtWH7BdDR3hVUKyCkZqmKMAFLxd35eAXjag/I6Bnpq7It7ZRy
-1jIjF3Wa7q6J4IVuWHUIrTMDt5hYfSzxf3OzqEqN6p3+LuW5K0tBxrG+M12eUGER
-j9miftJvEMfeWb3SoiQB
-=n6PJ
------END PGP SIGNATURE-----
-
---nextPart16008169.e9eXTBbLJr--
