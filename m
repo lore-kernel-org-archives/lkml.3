@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3BCO7U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:59:20 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34652 "EHLO
+	id S1755219Ab3BCO7r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:59:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34640 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755108Ab3BCO6a (ORCPT
+	by vger.kernel.org with ESMTP id S1755089Ab3BCO63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:58:30 -0500
-Message-Id: <20130203144655.283435658@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:29 -0500
+Message-Id: <20130203144654.912374408@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:51 +0100
+Date: Sun, 03 Feb 2013 15:48:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Matt Fleming <matt.fleming@intel.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: [ 127/128] x86, efi: Set runtime_version to the EFI spec revision
+Cc: akpm@linux-foundation.org, Stefan Assmann <sassmann@kpanic.de>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 123/128] igb: release already assigned MSI-X interrupts if setup fails
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Stefan Assmann <sassmann@kpanic.de>
 
-commit 712ba9e9afc4b3d3d6fa81565ca36fe518915c01 upstream.
+commit 52285b762b3681669215bf1d17ca6143448ab7d3 upstream.
 
-efi.runtime_version is erroneously being set to the value of the
-vendor's firmware revision instead of that of the implemented EFI
-specification. We can't deduce which EFI functions are available based
-on the revision of the vendor's firmware since the version scheme is
-likely to be unique to each vendor.
+During MSI-X setup the system might run out of vectors. If this happens the
+already assigned vectors for this NIC should be freed before trying the
+disable MSI-X. Failing to do so results in the following oops.
 
-What we really need to know is the revision of the implemented EFI
-specification, which is available in the EFI System Table header.
+kernel BUG at drivers/pci/msi.c:341!
+[...]
+Call Trace:
+ [<ffffffff8128f39d>] pci_disable_msix+0x3d/0x60
+ [<ffffffffa037d1ce>] igb_reset_interrupt_capability+0x27/0x5c [igb]
+ [<ffffffffa037d229>] igb_clear_interrupt_scheme+0x26/0x2d [igb]
+ [<ffffffffa0384268>] igb_request_irq+0x73/0x297 [igb]
+ [<ffffffffa0384554>] __igb_open+0xc8/0x223 [igb]
+ [<ffffffffa0384815>] igb_open+0x13/0x15 [igb]
+ [<ffffffff8144592f>] __dev_open+0xbf/0x120
+ [<ffffffff81443e51>] __dev_change_flags+0xa1/0x180
+ [<ffffffff81445828>] dev_change_flags+0x28/0x70
+ [<ffffffff814af537>] devinet_ioctl+0x5b7/0x620
+ [<ffffffff814b01c8>] inet_ioctl+0x88/0xa0
+ [<ffffffff8142e8a0>] sock_do_ioctl+0x30/0x70
+ [<ffffffff8142ecf2>] sock_ioctl+0x72/0x270
+ [<ffffffff8118062c>] do_vfs_ioctl+0x8c/0x340
+ [<ffffffff81180981>] sys_ioctl+0xa1/0xb0
+ [<ffffffff815161a9>] system_call_fastpath+0x16/0x1b
+Code: 48 89 df e8 1f 40 ed ff 4d 39 e6 49 8b 45 10 75 b6 48 83 c4 18 5b 41 5c 41 5d 41 5e 41 5f c9 c3 48 8b 7b 20 e8 3e 91 db ff eb ae <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+RIP  [<ffffffff8128e144>] free_msi_irqs+0x124/0x130
+ RSP <ffff880037503bd8>
 
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/platform/efi/efi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index ad44391..3568248 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -941,7 +941,7 @@ void __init efi_enter_virtual_mode(void)
- 	 *
- 	 * Call EFI services through wrapper functions.
- 	 */
--	efi.runtime_version = efi_systab.fw_revision;
-+	efi.runtime_version = efi_systab.hdr.revision;
- 	efi.get_time = virt_efi_get_time;
- 	efi.set_time = virt_efi_set_time;
- 	efi.get_wakeup_time = virt_efi_get_wakeup_time;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 615b68c..60a2380 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -832,17 +832,18 @@ static int igb_request_msix(struct igb_adapter *adapter)
+ {
+ 	struct net_device *netdev = adapter->netdev;
+ 	struct e1000_hw *hw = &adapter->hw;
+-	int i, err = 0, vector = 0;
++	int i, err = 0, vector = 0, free_vector = 0;
+ 
+ 	err = request_irq(adapter->msix_entries[vector].vector,
+ 	                  igb_msix_other, 0, netdev->name, adapter);
+ 	if (err)
+-		goto out;
+-	vector++;
++		goto err_out;
+ 
+ 	for (i = 0; i < adapter->num_q_vectors; i++) {
+ 		struct igb_q_vector *q_vector = adapter->q_vector[i];
+ 
++		vector++;
++
+ 		q_vector->itr_register = hw->hw_addr + E1000_EITR(vector);
+ 
+ 		if (q_vector->rx.ring && q_vector->tx.ring)
+@@ -861,13 +862,22 @@ static int igb_request_msix(struct igb_adapter *adapter)
+ 		                  igb_msix_ring, 0, q_vector->name,
+ 		                  q_vector);
+ 		if (err)
+-			goto out;
+-		vector++;
++			goto err_free;
+ 	}
+ 
+ 	igb_configure_msix(adapter);
+ 	return 0;
+-out:
++
++err_free:
++	/* free already assigned IRQs */
++	free_irq(adapter->msix_entries[free_vector++].vector, adapter);
++
++	vector--;
++	for (i = 0; i < vector; i++) {
++		free_irq(adapter->msix_entries[free_vector++].vector,
++			 adapter->q_vector[i]);
++	}
++err_out:
+ 	return err;
+ }
+ 
 
 
