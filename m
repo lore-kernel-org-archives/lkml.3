@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab3BCOzq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:55:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34211 "EHLO
+	id S1754234Ab3BCPRw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:17:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34236 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754012Ab3BCOzi (ORCPT
+	by vger.kernel.org with ESMTP id S1754044Ab3BCOzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:55:38 -0500
-Message-Id: <20130203144647.322260470@decadent.org.uk>
+	Sun, 3 Feb 2013 09:55:45 -0500
+Message-Id: <20130203144647.879496757@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:21 +0100
+Date: Sun, 03 Feb 2013 15:47:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 037/128] USB: option: blacklist network interface on ZTE MF880
+Cc: akpm@linux-foundation.org, Laura Abbott <lauraa@codeaurora.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 043/128] mm: use aligned zone start for pfn_to_bitidx calculation
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,39 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Laura Abbott <lauraa@codeaurora.org>
 
-commit fab38246f318edcd0dcb8fd3852a47cf8938878a upstream.
+commit c060f943d0929f3e429c5d9522290584f6281d6e upstream.
 
-The driver description files gives these names to the vendor specific
-functions on this modem:
+The current calculation in pfn_to_bitidx assumes that (pfn -
+zone->zone_start_pfn) >> pageblock_order will return the same bit for
+all pfn in a pageblock.  If zone_start_pfn is not aligned to
+pageblock_nr_pages, this may not always be correct.
 
- diag: VID_19D2&PID_0284&MI_00
- nmea: VID_19D2&PID_0284&MI_01
- at:   VID_19D2&PID_0284&MI_02
- mdm:  VID_19D2&PID_0284&MI_03
- net:  VID_19D2&PID_0284&MI_04
+Consider the following with pageblock order = 10, zone start 2MB:
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  pfn     | pfn - zone start | (pfn - zone start) >> page block order
+  ----------------------------------------------------------------
+  0x26000 | 0x25e00	   |  0x97
+  0x26100 | 0x25f00	   |  0x97
+  0x26200 | 0x26000	   |  0x98
+  0x26300 | 0x26100	   |  0x98
+
+This means that calling {get,set}_pageblock_migratetype on a single page
+will not set the migratetype for the full block.  Fix this by rounding
+down zone_start_pfn when doing the bitidx calculation.
+
+For our use case, the effects of this bug were mostly tied to the fact
+that CMA allocations would either take a long time or fail to happen.
+Depending on the driver using CMA, this could result in anything from
+visual glitches to application failures.
+
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 2e8c1c8..4d85330 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -926,7 +926,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
- 	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0265, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0284, 0xff, 0xff, 0xff), /* ZTE MF880 */
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0317, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index bc6cc0e..c957805 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5604,7 +5604,7 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
+ 	pfn &= (PAGES_PER_SECTION-1);
+ 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
+ #else
+-	pfn = pfn - zone->zone_start_pfn;
++	pfn = pfn - round_down(zone->zone_start_pfn, pageblock_nr_pages);
+ 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
+ #endif /* CONFIG_SPARSEMEM */
+ }
 
 
