@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab3BCV3a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 16:29:30 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:38667 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab3BCV32 (ORCPT
+	id S1753771Ab3BCVkP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 16:40:15 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43982 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab3BCVkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 16:29:28 -0500
-Message-ID: <510ED6B4.6000405@suse.cz>
-Date: Sun, 03 Feb 2013 22:29:24 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	Sun, 3 Feb 2013 16:40:12 -0500
+Message-ID: <510ED91F.6050601@oracle.com>
+Date: Sun, 03 Feb 2013 16:39:43 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-References: <20130129202848.GE25415@pd.tnic> <5109A8F1.9040707@suse.cz> <5109B11C.2010400@suse.cz> <5170962.qHnbnlVDfx@vostro.rjw.lan> <20130131070926.GC4926@pd.tnic> <510A2B1C.1060108@suse.cz> <20130131131805.GG4926@pd.tnic>
-In-Reply-To: <20130131131805.GG4926@pd.tnic>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@kernel.org>
+CC: mingo@redhat.com, peterz@infradead.org, paulus@samba.org,
+        acme@ghostprotocols.net, penberg@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 7/7] perf: integrate liblockdep support into perf
+References: <1359738953-28745-1-git-send-email-sasha.levin@oracle.com> <20130203110537.GB11739@gmail.com>
+In-Reply-To: <20130203110537.GB11739@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 02:18 PM, Borislav Petkov wrote:
-> On Thu, Jan 31, 2013 at 09:28:12AM +0100, Jiri Slaby wrote:
->> And, does it happen if you switch all of them but NMI wtd in there?
+On 02/03/2013 06:05 AM, Ingo Molnar wrote:
 > 
-> No, but something else happens. Here's the whole dance:
+> * Sasha Levin <sasha.levin@oracle.com> wrote:
 > 
-> 1. Switch all tunables except "NMI watchdog should be turned off" to "Good"
-> 2. suspend to disk
-> 3. resume... all good
-> 4. switch "NMI watchdog should be turned off" to "Good"
-> 5. suspend to disk
-> 6. resume... all good
-> 7. start powertop, toggle "Wireless Power Saving for interface wlan0" twice.
-> I.e., "Good" -> "Bad"; "Bad" -> "Good".
+>> liblockdep is simply userspace lockdep. We can use that to analyze and
+>> verify the locking in perf.
+>>
+>> Usage is simple, to compile perf with liblockdep all that's needed it:
+>>
+>> 	make LIBLOCK=[path to liblockdep]
 > 
-> -> Boom! Unknown reason NMI. It happened right during the toggle because
-> it appeared in the framebuffer console (no X) right during me toggling
-> this.
+> Nice idea.
+> 
+> I'd suggest to link it in directly, like we link in 
+> libtraceevents.
+> 
+> Then it could be built via something like:
+> 
+>    make LOCKDEP=1
+> 
+> or so.
+> 
 
-Right, for me too. Even if I disable nmi watchdog in both the boot and
-image kernel, the NMI eventually occurs (dunno what's the trigger now
-though).
+Sounds good, I'll resend the series.
 
-Given the above I'm thinking about switching that intel wi-fi card to
-ath9k which I have at hand and retest...
 
--- 
-js
-suse labs
+Thanks,
+Sasha
+
