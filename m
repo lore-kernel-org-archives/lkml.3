@@ -1,33 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab3BCDsg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 22:48:36 -0500
-Received: from mail-da0-f45.google.com ([209.85.210.45]:43233 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925Ab3BCDsf (ORCPT
+	id S1753453Ab3BCDud (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 22:50:33 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:48255 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab3BCDub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 22:48:35 -0500
-Date: Sat, 2 Feb 2013 19:44:51 -0800
+	Sat, 2 Feb 2013 22:50:31 -0500
+Date: Sat, 2 Feb 2013 19:46:34 -0800
 From: Anton Vorontsov <anton@enomsg.org>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bq27x00_battery: Fix reporting battery temperature
-Message-ID: <20130203034451.GH25016@lizard.sbx00618.mountca.wayport.net>
-References: <1359799569-5322-1-git-send-email-pali.rohar@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
+        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 40/62] power: convert to idr_alloc()
+Message-ID: <20130203034634.GI25016@lizard.sbx00618.mountca.wayport.net>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+ <1359854463-2538-41-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1359799569-5322-1-git-send-email-pali.rohar@gmail.com>
+In-Reply-To: <1359854463-2538-41-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 02, 2013 at 11:06:09AM +0100, Pali Rohár wrote:
-> Reported temperature can be also negative, so cache value in non negative Kelvin degree.
+On Sat, Feb 02, 2013 at 05:20:41PM -0800, Tejun Heo wrote:
+> Convert to the much saner new idr interface.
 > 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> Only compile tested.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Anton Vorontsov <cbou@mail.ru>
+> Cc: David Woodhouse <dwmw2@infradead.org>
 > ---
+> This patch depends on an earlier idr changes and I think it would be
+> best to route these together through -mm.  Please holler if there's
+> any objection.  Thanks.
 
-Applied, thanks!
+Sure thing, Ack for these:
+
+>  drivers/power/bq2415x_charger.c | 11 +++--------
+>  drivers/power/bq27x00_battery.c |  9 +++------
+>  drivers/power/ds2782_battery.c  |  9 ++-------
+>  3 files changed, 8 insertions(+), 21 deletions(-)
+
+Thanks!
+
+Anton
