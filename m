@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab3BCMqb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 07:46:31 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:59718 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3BCMq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 07:46:29 -0500
-From: Artem Savkov <artem.savkov@gmail.com>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Artem Savkov <artem.savkov@gmail.com>
-Subject: [PATCH] asmlinkage tag for sys_iopl
-Date: Sun,  3 Feb 2013 16:46:22 +0400
-Message-Id: <1359895582-5482-1-git-send-email-artem.savkov@gmail.com>
-X-Mailer: git-send-email 1.8.1.1
+	id S1752432Ab3BCMtn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 07:49:43 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42050 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023Ab3BCMtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 07:49:41 -0500
+Message-ID: <510E5CC1.8050801@ti.com>
+Date: Sun, 3 Feb 2013 18:19:05 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <anilkumar@ti.com>,
+        <tony@atomide.com>, <hs@denx.de>,
+        <broonie@opensource.wolfsonmicro.com>, <sameo@linux.intel.com>,
+        <khilman@deeprootsystems.com>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <rob@landley.net>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V2 3/6] ARM: davinci: da850: add DT node for I2C0
+References: <1359445134-13323-1-git-send-email-manishv.b@ti.com> <1359445134-13323-4-git-send-email-manishv.b@ti.com>
+In-Reply-To: <1359445134-13323-4-git-send-email-manishv.b@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-asmlinkage tag seems to be missing from sys_iopl prototype rendering iopl
-syscalls unusable, i.e. every call returns -EINVAL. Most likely introduced in
-9e0b2428bc6a6c6df90bb701ca843820727cadf0.
 
-Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
----
- arch/x86/include/asm/syscalls.h | 2 +-
- arch/x86/kernel/ioport.c        | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/syscalls.h b/arch/x86/include/asm/syscalls.h
-index 13f078c..6cf0a9c 100644
---- a/arch/x86/include/asm/syscalls.h
-+++ b/arch/x86/include/asm/syscalls.h
-@@ -18,7 +18,7 @@
- /* Common in X86_32 and X86_64 */
- /* kernel/ioport.c */
- asmlinkage long sys_ioperm(unsigned long, unsigned long, int);
--long sys_iopl(unsigned int);
-+asmlinkage long sys_iopl(unsigned int);
- 
- /* kernel/ldt.c */
- asmlinkage int sys_modify_ldt(int, void __user *, unsigned long);
-diff --git a/arch/x86/kernel/ioport.c b/arch/x86/kernel/ioport.c
-index 5f98381..b1127a0 100644
---- a/arch/x86/kernel/ioport.c
-+++ b/arch/x86/kernel/ioport.c
-@@ -93,7 +93,7 @@ asmlinkage long sys_ioperm(unsigned long from, unsigned long num, int turn_on)
-  * on system-call entry - see also fork() and the signal handling
-  * code.
-  */
--long sys_iopl(unsigned int level)
-+asmlinkage long sys_iopl(unsigned int level)
- {
- 	struct pt_regs *regs = current_pt_regs();
- 	unsigned int old = (regs->flags >> 12) & 3;
--- 
-1.8.1.1
+On 1/29/2013 1:08 PM, Vishwanathrao Badarkhe, Manish wrote:
+> Add I2C0 device tree node information to da850-evm.
+> Also, add I2C0 pin muxing information in da850-evm.
+> 
+> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> ---
+> Changes since V1:
+>  - Updated i2c0 node names in dts and dtsi file.
+>  - Removed interrupt parent from i2c0 node.
+>  - Handled i2c0 pin mux inside i2c0 node.
+> 
+> :100644 100644 433027f... c9ed683... M	arch/arm/boot/dts/da850-evm.dts
+> :100644 100644 5e0eb5c... 245ab9a... M	arch/arm/boot/dts/da850.dtsi
+>  arch/arm/boot/dts/da850-evm.dts |    5 +++++
+>  arch/arm/boot/dts/da850.dtsi    |   15 +++++++++++++++
+>  2 files changed, 20 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+> index 433027f..c9ed683 100644
+> --- a/arch/arm/boot/dts/da850-evm.dts
+> +++ b/arch/arm/boot/dts/da850-evm.dts
+> @@ -27,6 +27,11 @@
+>  		serial2: serial@1d0d000 {
+>  			status = "okay";
+>  		};
+> +		i2c0: i2c0@1c22000 {
 
+This should be:
+
+i2c0: i2c@1c22000
+
+inline with what has been done in rest of this file.
+
+> +			status = "okay";
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&i2c0_pins>;
+> +		};
+>  	};
+>  	nand_cs3@62000000 {
+>  		status = "okay";
+> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+> index 5e0eb5c..245ab9a 100644
+> --- a/arch/arm/boot/dts/da850.dtsi
+> +++ b/arch/arm/boot/dts/da850.dtsi
+> @@ -56,6 +56,12 @@
+>  					0x30 0x01100000  0x0ff00000
+>  				>;
+>  			};
+> +			i2c0_pins: pinmux_i2c0_pins {
+> +				pinctrl-single,bits = <
+> +					/* I2C0_SDA,I2C0_SCL */
+> +					0x10 0x00002200 0x0000ff00
+> +				>;
+> +			};
+>  		};
+>  		serial0: serial@1c42000 {
+>  			compatible = "ns16550a";
+> @@ -81,6 +87,15 @@
+>  			interrupts = <61>;
+>  			status = "disabled";
+>  		};
+> +		i2c0: i2c0@1c22000 {
+> +			compatible = "ti,davinci-i2c";
+> +			reg = <0x22000 0x1000>;
+> +			clock-frequency = <100000>;
+
+The clock frequency is board specific. This should come from da850-evm.dts.
+
+Also, I think you can merge the auxdata addition with this patch. Can
+you post the i2c0 support separate from this series, so it can be taken
+independently? Looks like other patches have some dependencies/acks needed.
+
+Thanks,
+Sekhar
