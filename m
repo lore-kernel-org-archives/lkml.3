@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab3BCPDQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:03:16 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34576 "EHLO
+	id S1754935Ab3BCO6K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:58:10 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34521 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754947Ab3BCO6L (ORCPT
+	by vger.kernel.org with ESMTP id S1754857Ab3BCO5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:58:11 -0500
-Message-Id: <20130203144653.125738614@decadent.org.uk>
+	Sun, 3 Feb 2013 09:57:54 -0500
+Message-Id: <20130203144653.425801193@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:27 +0100
+Date: Sun, 03 Feb 2013 15:48:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
-Subject: [ 103/128] ALSA: hda - Fix non-snoop page handling
+Cc: akpm@linux-foundation.org, Matt Fleming <matt.fleming@intel.com>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Colin Ian King <colin.king@canonical.com>,
+        Steve Langasek <steve.langasek@canonical.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 106/128] samsung-laptop: Disable on EFI hardware
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,128 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 9ddf1aeb2134e72275c97a2c6ff2e3eb04f2f27a upstream.
+commit e0094244e41c4d0c7ad69920681972fc45d8ce34 upstream.
 
-For non-snoop mode, we fiddle with the page attributes of CORB/RIRB
-and the position buffer, but also the ring buffers.  The problem is
-that the current code blindly assumes that the buffer is contiguous.
-However, the ring buffers may be SG-buffers, thus a wrong vmapped
-address is passed there, leading to Oops.
+It has been reported that running this driver on some Samsung laptops
+with EFI can cause those machines to become bricked as detailed in the
+following report,
 
-This patch fixes the handling for SG-buffers.
+	https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=800701
+There have also been reports of this driver causing Machine Check
+Exceptions on recent EFI-enabled Samsung laptops,
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: open-code snd_pcm_get_dma_buf()]
+	https://bugzilla.kernel.org/show_bug.cgi?id=47121
+
+So disable it if booting from EFI since this driver relies on
+grovelling around in the BIOS memory map which isn't going to work.
+
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Colin Ian King <colin.king@canonical.com>
+Cc: Steve Langasek <steve.langasek@canonical.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/hda_intel.c |   40 ++++++++++++++++++++++++++--------------
- 1 file changed, 26 insertions(+), 14 deletions(-)
+ drivers/platform/x86/samsung-laptop.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -569,29 +569,43 @@ static char *driver_short_names[] __devi
- #define get_azx_dev(substream) (substream->runtime->private_data)
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -22,6 +22,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/rfkill.h>
+ #include <linux/acpi.h>
++#include <linux/efi.h>
  
- #ifdef CONFIG_X86
--static void __mark_pages_wc(struct azx *chip, void *addr, size_t size, bool on)
-+static void __mark_pages_wc(struct azx *chip, struct snd_dma_buffer *dmab, bool on)
- {
-+	int pages;
+ /*
+  * This driver is needed because a number of Samsung laptops do not hook
+@@ -603,6 +604,9 @@ static int __init samsung_init(void)
+ 	int loca;
+ 	int retval;
+ 
++	if (efi_enabled(EFI_BOOT))
++		return -ENODEV;
 +
- 	if (azx_snoop(chip))
- 		return;
--	if (addr && size) {
--		int pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+	if (!dmab || !dmab->area || !dmab->bytes)
-+		return;
-+
-+#ifdef CONFIG_SND_DMA_SGBUF
-+	if (dmab->dev.type == SNDRV_DMA_TYPE_DEV_SG) {
-+		struct snd_sg_buf *sgbuf = dmab->private_data;
- 		if (on)
--			set_memory_wc((unsigned long)addr, pages);
-+			set_pages_array_wc(sgbuf->page_table, sgbuf->pages);
- 		else
--			set_memory_wb((unsigned long)addr, pages);
-+			set_pages_array_wb(sgbuf->page_table, sgbuf->pages);
-+		return;
- 	}
-+#endif
-+
-+	pages = (dmab->bytes + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+	if (on)
-+		set_memory_wc((unsigned long)dmab->area, pages);
-+	else
-+		set_memory_wb((unsigned long)dmab->area, pages);
- }
- 
- static inline void mark_pages_wc(struct azx *chip, struct snd_dma_buffer *buf,
- 				 bool on)
- {
--	__mark_pages_wc(chip, buf->area, buf->bytes, on);
-+	__mark_pages_wc(chip, buf, on);
- }
- static inline void mark_runtime_wc(struct azx *chip, struct azx_dev *azx_dev,
--				   struct snd_pcm_runtime *runtime, bool on)
-+				   struct snd_pcm_substream *substream, bool on)
- {
- 	if (azx_dev->wc_marked != on) {
--		__mark_pages_wc(chip, runtime->dma_area, runtime->dma_bytes, on);
-+		__mark_pages_wc(chip, substream->runtime->dma_buffer_p, on);
- 		azx_dev->wc_marked = on;
- 	}
- }
-@@ -602,7 +616,7 @@ static inline void mark_pages_wc(struct
- {
- }
- static inline void mark_runtime_wc(struct azx *chip, struct azx_dev *azx_dev,
--				   struct snd_pcm_runtime *runtime, bool on)
-+				   struct snd_pcm_substream *substream, bool on)
- {
- }
- #endif
-@@ -1776,11 +1790,10 @@ static int azx_pcm_hw_params(struct snd_
- {
- 	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
- 	struct azx *chip = apcm->chip;
--	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct azx_dev *azx_dev = get_azx_dev(substream);
- 	int ret;
- 
--	mark_runtime_wc(chip, azx_dev, runtime, false);
-+	mark_runtime_wc(chip, azx_dev, substream, false);
- 	azx_dev->bufsize = 0;
- 	azx_dev->period_bytes = 0;
- 	azx_dev->format_val = 0;
-@@ -1788,7 +1801,7 @@ static int azx_pcm_hw_params(struct snd_
- 					params_buffer_bytes(hw_params));
- 	if (ret < 0)
- 		return ret;
--	mark_runtime_wc(chip, azx_dev, runtime, true);
-+	mark_runtime_wc(chip, azx_dev, substream, true);
- 	return ret;
- }
- 
-@@ -1797,7 +1810,6 @@ static int azx_pcm_hw_free(struct snd_pc
- 	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
- 	struct azx_dev *azx_dev = get_azx_dev(substream);
- 	struct azx *chip = apcm->chip;
--	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct hda_pcm_stream *hinfo = apcm->hinfo[substream->stream];
- 
- 	/* reset BDL address */
-@@ -1810,7 +1822,7 @@ static int azx_pcm_hw_free(struct snd_pc
- 
- 	snd_hda_codec_cleanup(apcm->codec, hinfo, substream);
- 
--	mark_runtime_wc(chip, azx_dev, runtime, false);
-+	mark_runtime_wc(chip, azx_dev, substream, false);
- 	return snd_pcm_lib_free_pages(substream);
- }
+ 	mutex_init(&sabi_mutex);
+ 	handle_backlight = true;
  
 
 
