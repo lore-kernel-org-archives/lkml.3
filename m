@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3BCO4w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:56:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34381 "EHLO
+	id S1754546Ab3BCO4u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:56:50 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34374 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754477Ab3BCO4o (ORCPT
+	by vger.kernel.org with ESMTP id S1754311Ab3BCO4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:56:44 -0500
-Message-Id: <20130203144650.069203440@decadent.org.uk>
+	Sun, 3 Feb 2013 09:56:41 -0500
+Message-Id: <20130203144650.343359756@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:52 +0100
+Date: Sun, 03 Feb 2013 15:47:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 068/128] intel_idle: Dont register CPU notifier if we are not running.
+Cc: akpm@linux-foundation.org, Russell King <rmk+kernel@arm.linux.org.uk>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Subhash Jadavani <subhashj@codeaurora.org>
+Subject: [ 071/128] ARM: DMA: Fix struct page iterator in dma_cache_maint() to work with
+ sparsemem
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,102 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 6f8c2e7933679f54b6478945dc72e59ef9a3d5e0 upstream.
+commit 15653371c67c3fbe359ae37b720639dd4c7b42c5 upstream.
 
-The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
-But if later on during the module initialization we fail (say
-in cpuidle_register_driver), we stop loading, but we neglect
-to unregister the CPU notifier.  This means that during CPU
-hotplug events the system will fail:
+Subhash Jadavani reported this partial backtrace:
+  Now consider this call stack from MMC block driver (this is on the ARMv7
+  based board):
 
-calling  intel_idle_init+0x0/0x326 @ 1
-intel_idle: MWAIT substates: 0x1120
-intel_idle: v0.4 model 0x2A
-intel_idle: lapic_timer_reliable_states 0xffffffff
-intel_idle: intel_idle yielding to none
-initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
+  [<c001b50c>] (v7_dma_inv_range+0x30/0x48) from [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c)
+  [<c0017b8c>] (dma_cache_maint_page+0x1c4/0x24c) from [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c)
+  [<c0017c28>] (___dma_page_cpu_to_dev+0x14/0x1c) from [<c0017ff8>] (dma_map_sg+0x3c/0x114)
 
-... some time later, offlining and onlining a CPU:
+This is caused by incrementing the struct page pointer, and running off
+the end of the sparsemem page array.  Fix this by incrementing by pfn
+instead, and convert the pfn to a struct page.
 
-cpu 3 spinlock event irq 62
-BUG: unable to ] __cpuidle_register_device+0x1c/0x120
-PGD 99b8b067 PUD 99b95067 PMD 0
-Oops: 0000 [#1] SMP
-Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
-CPU 0
-Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
-RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
-RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
-RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
-RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
-RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
-R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
-R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
-FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
-CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
-Stack:
- ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
- ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
- 0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
-Call Trace:
- [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
- [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
- [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
- [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
- [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
- [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
- [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
- [<ffffffff81652e18>] cpu_up+0xd9/0xec
- [<ffffffff8164a254>] store_online+0x94/0xd0
- [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
- [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
- [<ffffffff811a1024>] vfs_write+0xb4/0x130
- [<ffffffff811a17ea>] sys_write+0x5a/0xa0
- [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
-Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
-RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
- RSP <ffff88009dacfcb8>
-
-This patch fixes that by moving the CPU notifier registration
-as the last item to be done by the module.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2: notifier is registered only if we do not have ARAT]
+Suggested-by: James Bottomley <JBottomley@Parallels.com>
+Tested-by: Subhash Jadavani <subhashj@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -431,10 +431,8 @@ static int intel_idle_probe(void)
- 
- 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
- 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
--	else {
-+	else
- 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
--		register_cpu_notifier(&setup_broadcast_notifier);
--	}
- 
- 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
- 		" model 0x%X\n", boot_cpu_data.x86_model);
-@@ -597,6 +595,9 @@ static int __init intel_idle_init(void)
- 		return retval;
- 	}
- 
-+	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
-+		register_cpu_notifier(&setup_broadcast_notifier);
+ arch/arm/mm/dma-mapping.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 6b2fb87..076c26d 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -774,25 +774,27 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+ 	size_t size, enum dma_data_direction dir,
+ 	void (*op)(const void *, size_t, int))
+ {
++	unsigned long pfn;
++	size_t left = size;
 +
- 	return 0;
- }
++	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
++	offset %= PAGE_SIZE;
++
+ 	/*
+ 	 * A single sg entry may refer to multiple physically contiguous
+ 	 * pages.  But we still need to process highmem pages individually.
+ 	 * If highmem is not configured then the bulk of this loop gets
+ 	 * optimized out.
+ 	 */
+-	size_t left = size;
+ 	do {
+ 		size_t len = left;
+ 		void *vaddr;
  
++		page = pfn_to_page(pfn);
++
+ 		if (PageHighMem(page)) {
+-			if (len + offset > PAGE_SIZE) {
+-				if (offset >= PAGE_SIZE) {
+-					page += offset / PAGE_SIZE;
+-					offset %= PAGE_SIZE;
+-				}
++			if (len + offset > PAGE_SIZE)
+ 				len = PAGE_SIZE - offset;
+-			}
+ 			vaddr = kmap_high_get(page);
+ 			if (vaddr) {
+ 				vaddr += offset;
+@@ -809,7 +811,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+ 			op(vaddr, len, dir);
+ 		}
+ 		offset = 0;
+-		page++;
++		pfn++;
+ 		left -= len;
+ 	} while (left);
+ }
 
 
