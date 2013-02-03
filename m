@@ -1,204 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab3BCQUm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 11:20:42 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:40599 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab3BCQUj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 11:20:39 -0500
+	id S1753595Ab3BCQYV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 11:24:21 -0500
+Received: from powered.by.root24.eu ([91.121.15.64]:39645 "EHLO Root24.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751601Ab3BCQYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 11:24:20 -0500
+Message-ID: <510E8F30.8070300@ionic.de>
+Date: Sun, 03 Feb 2013 17:24:16 +0100
+From: Mihai Moldovan <ionic@ionic.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <F9E001219150CB45BEDC82A650F360C9014AAF02@G9W0717.americas.hpqcorp.net>
-References: <F9E001219150CB45BEDC82A650F360C9014AAF02@G9W0717.americas.hpqcorp.net>
-From: Blue Swirl <blauwirbel@gmail.com>
-Date: Sun, 3 Feb 2013 16:20:18 +0000
-Message-ID: <CAAu8pHuEDvoA1rt7mddubuOAPsp79AA7u0NDxLNyO9sfWJX0+w@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] VFIO-AER: Vfio-pci driver changes for supporting AER
-To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Ortiz, Lance E" <lance.oritz@hp.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Adam Jackson <ajax@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        stathis <stathis@npcglib.org>
+Subject: Re: [ 092/128] iommu/intel: disable DMAR for g4x integrated gfx
+References: <20130203144652.191455164@decadent.org.uk>
+In-Reply-To: <20130203144652.191455164@decadent.org.uk>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms050200090506040003050807"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 3, 2013 at 2:10 PM, Pandarathil, Vijaymohan R
-<vijaymohan.pandarathil@hp.com> wrote:
->         - New VFIO_SET_IRQ ioctl option to pass the eventfd that is signaled when
->           an error occurs in the vfio_pci_device
->
->         - Register pci_error_handler for the vfio_pci driver
->
->         - When the device encounters an error, the error handler registered by
->           the vfio_pci driver gets invoked by the AER infrastructure
->
->         - In the error handler, signal the eventfd registered for the device.
->
->         - This results in the qemu eventfd handler getting invoked and
->           appropriate action taken for the guest.
->
-> Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-> ---
->  drivers/vfio/pci/vfio_pci.c         | 43 ++++++++++++++++++++++++++++++++++++-
->  drivers/vfio/pci/vfio_pci_intrs.c   | 30 ++++++++++++++++++++++++++
->  drivers/vfio/pci/vfio_pci_private.h |  1 +
->  include/uapi/linux/vfio.h           |  1 +
->  4 files changed, 74 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-> index b28e66c..818b1ed 100644
-> --- a/drivers/vfio/pci/vfio_pci.c
-> +++ b/drivers/vfio/pci/vfio_pci.c
-> @@ -196,7 +196,9 @@ static int vfio_pci_get_irq_count(struct vfio_pci_device *vdev, int irq_type)
->
->                         return (flags & PCI_MSIX_FLAGS_QSIZE) + 1;
->                 }
-> -       }
-> +       } else if (irq_type == VFIO_PCI_ERR_IRQ_INDEX)
-> +               if (pci_is_pcie(vdev->pdev))
-> +                       return 1;
->
->         return 0;
->  }
-> @@ -302,6 +304,16 @@ static long vfio_pci_ioctl(void *device_data,
->                 if (info.argsz < minsz || info.index >= VFIO_PCI_NUM_IRQS)
->                         return -EINVAL;
->
-> +               switch (info.index) {
-> +               case VFIO_PCI_INTX_IRQ_INDEX ... VFIO_PCI_MSIX_IRQ_INDEX:
-> +                       break;
-> +               case VFIO_PCI_ERR_IRQ_INDEX:
-> +                       if (pci_is_pcie(vdev->pdev))
-> +                               break;
+This is a cryptographically signed message in MIME format.
 
-I don't know what is the policy in Linux kernel for this, but I'd add
-a comment about fall through here.
+--------------ms050200090506040003050807
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> +               default:
-> +                       return -EINVAL;
-> +               }
-> +
->                 info.flags = VFIO_IRQ_INFO_EVENTFD;
->
->                 info.count = vfio_pci_get_irq_count(vdev, info.index);
-> @@ -538,11 +550,40 @@ static void vfio_pci_remove(struct pci_dev *pdev)
->         kfree(vdev);
->  }
->
-> +static pci_ers_result_t vfio_pci_aer_err_detected(struct pci_dev *pdev,
-> +                                                 pci_channel_state_t state)
+* On 03.02.2013 03:48 PM, Ben Hutchings wrote:
+> [...]
+> +static void quirk_iommu_g4x_gfx(struct pci_dev *dev)
 > +{
-> +       struct vfio_pci_device *vpdev;
-> +       void *vdev;
-> +
-> +       vdev = vfio_device_get_from_dev(&pdev->dev);
-> +       if (vdev == NULL)
-> +               return PCI_ERS_RESULT_DISCONNECT;
-> +
-> +       vpdev = vfio_device_data(vdev);
-> +       if (vpdev == NULL) {
-> +               vfio_device_put(vdev);
-> +               return PCI_ERS_RESULT_DISCONNECT;
-> +       }
-> +
-> +       if (vpdev->err_trigger)
-> +               eventfd_signal(vpdev->err_trigger, 1);
-> +
-> +       vfio_device_put(vdev);
-> +
-> +       return PCI_ERS_RESULT_CAN_RECOVER;
-> +}
-> +
-> +static struct pci_error_handlers vfio_err_handlers = {
-> +       .error_detected = vfio_pci_aer_err_detected,
-> +};
-> +
->  static struct pci_driver vfio_pci_driver = {
->         .name           = "vfio-pci",
->         .id_table       = NULL, /* only dynamic ids */
->         .probe          = vfio_pci_probe,
->         .remove         = vfio_pci_remove,
-> +       .err_handler    = &vfio_err_handlers,
->  };
->
->  static void __exit vfio_pci_cleanup(void)
-> diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-> index 3639371..83035b1 100644
-> --- a/drivers/vfio/pci/vfio_pci_intrs.c
-> +++ b/drivers/vfio/pci/vfio_pci_intrs.c
-> @@ -745,6 +745,29 @@ static int vfio_pci_set_msi_trigger(struct vfio_pci_device *vdev,
->         return 0;
->  }
->
-> +static int vfio_pci_set_err_trigger(struct vfio_pci_device *vdev,
-> +                                   unsigned index, unsigned start,
-> +                                   unsigned count, uint32_t flags, void *data)
-> +{
-> +       int32_t fd = *(int32_t *)data;
-> +
-> +       if ((index != VFIO_PCI_ERR_IRQ_INDEX) ||
-> +           !(flags & VFIO_IRQ_SET_DATA_EVENTFD))
-> +               return -EINVAL;
-> +
-> +       if (fd == -1) {
-> +               if (vdev->err_trigger)
-> +                       eventfd_ctx_put(vdev->err_trigger);
-> +               vdev->err_trigger = NULL;
-> +               return 0;
-> +       } else if (fd >= 0) {
-> +               vdev->err_trigger = eventfd_ctx_fdget(fd);
-> +               if (IS_ERR(vdev->err_trigger))
-> +                       return PTR_ERR(vdev->err_trigger);
-> +               return 0;
-> +       } else
-> +               return -EINVAL;
-> +}
->  int vfio_pci_set_irqs_ioctl(struct vfio_pci_device *vdev, uint32_t flags,
->                             unsigned index, unsigned start, unsigned count,
->                             void *data)
-> @@ -779,6 +802,13 @@ int vfio_pci_set_irqs_ioctl(struct vfio_pci_device *vdev, uint32_t flags,
->                         break;
->                 }
->                 break;
-> +       case VFIO_PCI_ERR_IRQ_INDEX:
-> +               switch (flags & VFIO_IRQ_SET_ACTION_TYPE_MASK) {
-> +               case VFIO_IRQ_SET_ACTION_TRIGGER:
-> +                       if (pci_is_pcie(vdev->pdev))
-> +                               func = vfio_pci_set_err_trigger;
-> +                       break;
-> +               }
->         }
->
->         if (!func)
-> diff --git a/drivers/vfio/pci/vfio_pci_private.h b/drivers/vfio/pci/vfio_pci_private.h
-> index 611827c..daee62f 100644
-> --- a/drivers/vfio/pci/vfio_pci_private.h
-> +++ b/drivers/vfio/pci/vfio_pci_private.h
-> @@ -55,6 +55,7 @@ struct vfio_pci_device {
->         bool                    bardirty;
->         struct pci_saved_state  *pci_saved_state;
->         atomic_t                refcnt;
-> +       struct eventfd_ctx      *err_trigger;
->  };
->
->  #define is_intx(vdev) (vdev->irq_type == VFIO_PCI_INTX_IRQ_INDEX)
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-> index 4758d1b..7d50af4 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -310,6 +310,7 @@ enum {
->         VFIO_PCI_INTX_IRQ_INDEX,
->         VFIO_PCI_MSI_IRQ_INDEX,
->         VFIO_PCI_MSIX_IRQ_INDEX,
-> +       VFIO_PCI_ERR_IRQ_INDEX,
->         VFIO_PCI_NUM_IRQS
->  };
->
-> --
-> 1.7.11.3
->
+Shouldn't __devinit be used here too, like for quirk_iommu_rwbf?
+
+It probably doesn't matter too much. especially on platforms with Intel I=
+OMMU,
+but... it makes the code coherent.
+
+Best regards,
+
+
+Mihai
+
+
+--------------ms050200090506040003050807
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgjCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRjCCBi6gAwIBAgICHn8wDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjAzMjEyMzU3NTda
+Fw0xNDAzMjMxNTE0MzlaMIGRMRkwFwYDVQQNExAwSjh4RlU1aWNwTGFuNHlLMQswCQYDVQQG
+EwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUx
+FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
+ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMaylRRCBj2U12flvhmZMgwADN/0
+P/ej3O9uLe8XWsr6McU8my6GYxfTXFxfcLl8MxqugflmQQqq1c1Qt69n3zHi+qTvZnHBCBHs
+G1CkuL3Of7Srx6ulz0/zgNRMlDnJ7EUAIQDoYkUzn69y/4ap3n/nQf7EmO9o3FnSCX27td5Y
+J21uJp/PLvbwvG9kdWMVeiyBubwdBSoMu1D9Cy6YlqFE1DIgPO9RR6EOkie4BgMr/3eliAoK
+j7HAOkFhsqTrVy81YtxQDYNrpeMZ2imSQUP1wN1X0NNkdcIWpUNYkRdvzrmpFXxYNhwPPPiE
+BIKctzMt00Pss2ziyMqpkQFzcI8CAwEAAaOCA6kwggOlMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUypNX2Sx5I6PQ
+yCj0Lgno1pTiwnswHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
+EIEOaW9uaWNAaW9uaWMuZGUwggIhBgNVHSAEggIYMIICFDCCAhAGCysGAQQBgbU3AQICMIIB
+/zAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
+BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCB9wYI
+KwYBBQUHAgIwgeowJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBARqB
+vlRoaXMgY2VydGlmaWNhdGUgd2FzIGlzc3VlZCBhY2NvcmRpbmcgdG8gdGhlIENsYXNzIDIg
+VmFsaWRhdGlvbiByZXF1aXJlbWVudHMgb2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeSwgcmVs
+aWFuY2Ugb25seSBmb3IgdGhlIGludGVuZGVkIHB1cnBvc2UgaW4gY29tcGxpYW5jZSBvZiB0
+aGUgcmVseWluZyBwYXJ0eSBvYmxpZ2F0aW9ucy4wgZwGCCsGAQUFBwICMIGPMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQIaZExpYWJpbGl0eSBhbmQgd2FycmFu
+dGllcyBhcmUgbGltaXRlZCEgU2VlIHNlY3Rpb24gIkxlZ2FsIGFuZCBMaW1pdGF0aW9ucyIg
+b2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeS4wNgYDVR0fBC8wLTAroCmgJ4YlaHR0cDovL2Ny
+bC5zdGFydHNzbC5jb20vY3J0dTItY3JsLmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEF
+BQcwAYYtaHR0cDovL29jc3Auc3RhcnRzc2wuY29tL3N1Yi9jbGFzczIvY2xpZW50L2NhMEIG
+CCsGAQUFBzAChjZodHRwOi8vYWlhLnN0YXJ0c3NsLmNvbS9jZXJ0cy9zdWIuY2xhc3MyLmNs
+aWVudC5jYS5jcnQwIwYDVR0SBBwwGoYYaHR0cDovL3d3dy5zdGFydHNzbC5jb20vMA0GCSqG
+SIb3DQEBBQUAA4IBAQAWDJnVeIEl30sEHVyZ43IOK1RrYRyNJFAoClulBqL229p3whd4mtCY
+hE25avnoZIMPTxhjZJlnmIlr0Ahh8hjSeqzjeEIVzBV//vVRBwI1DnaJ2u965og2FBhp3KXc
+5pIHJA6aqJFqZE8EoI+81gdPB9Rc4cDAa0S4Bd4YtsLFfmxgR33EPC0MhEkwE2cihRTbF5Ye
+yW1j4sUmnaJKlv9mxAs79D6n3Ggx8YBAOnkmg/tCTbTrJcqrB67NUpFhEcgFNRNqaL2oxE3u
+qO7IjtyOzIlD+5dOJragt5dJJjXZF3NqWjsohcyYMECY8WEKUJlE0lPFQ4bPNfzWWdh16ooV
+MYID2jCCA9YCAQEwgZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
+MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
+Ey9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICHn8w
+CQYFKw4DAhoFAKCCAhswGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTMwMjAzMTYyNDE2WjAjBgkqhkiG9w0BCQQxFgQUBvqnfjwKu8JktsfgSKqizc/2r0ww
+bAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMH
+MA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIB
+KDCBpAYJKwYBBAGCNxAEMYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4
+MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQg
+Q0ECAh5/MIGmBgsqhkiG9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUg
+Q2xpZW50IENBAgIefzANBgkqhkiG9w0BAQEFAASCAQBDBj+42fSvj+WqVvtLFcTKLjsw3ELI
+OSjhhQVGmGenO9JQg5ZsnXbz3syW44XO1Uj4EVkgK0jiLoaLgxUMNRrQBap/C03kho98SG41
+hvMV90+bAdzeJoShAVOf5/eGlqvdE6kqEh6K21HLrmFZr21q6h9aBjxCa2vUsWOOEDn2eLoQ
+WjAIcIvG9DGokV0o7DR8fNRKMoz+Y9eLwyXaw806D4MhuMGSzexP+McbSwZj+7oCxFj5lQro
+Dphe0fzImCflsRKvZGgetw47wvSjLpbR8Sc/X+7UXj45Iaabn2JvXAwHNuTzewcFbfpVhbyj
+6AwJu1rCAkEQTm7vyVKR/VnqAAAAAAAA
+--------------ms050200090506040003050807--
