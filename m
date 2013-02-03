@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab3BCBXB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:23:01 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:46084 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab3BCBWz (ORCPT
+	id S1754237Ab3BCBXO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:23:14 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:40944 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab3BCBXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:55 -0500
+	Sat, 2 Feb 2013 20:23:05 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org
-Subject: [PATCH 50/62] vfio: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:51 -0800
-Message-Id: <1359854463-2538-51-git-send-email-tj@kernel.org>
+        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Subject: [PATCH 55/62] cgroup: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:56 -0800
+Message-Id: <1359854463-2538-56-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -28,45 +29,73 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org
+Cc: cgroups@vger.kernel.org
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/vfio/vfio.c | 18 +-----------------
- 1 file changed, 1 insertion(+), 17 deletions(-)
+ kernel/cgroup.c | 27 ++++++++-------------------
+ 1 file changed, 8 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index 12c264d..0132846 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -139,23 +139,7 @@ EXPORT_SYMBOL_GPL(vfio_unregister_iommu_driver);
-  */
- static int vfio_alloc_group_minor(struct vfio_group *group)
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 6b18c5c..4ee1102 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5272,7 +5272,7 @@ EXPORT_SYMBOL_GPL(free_css_id);
+ static struct css_id *get_new_cssid(struct cgroup_subsys *ss, int depth)
  {
--	int ret, minor;
--
--again:
--	if (unlikely(idr_pre_get(&vfio.group_idr, GFP_KERNEL) == 0))
--		return -ENOMEM;
--
--	/* index 0 is used by /dev/vfio/vfio */
--	ret = idr_get_new_above(&vfio.group_idr, group, 1, &minor);
--	if (ret == -EAGAIN)
--		goto again;
--	if (ret || minor > MINORMASK) {
--		if (minor > MINORMASK)
--			idr_remove(&vfio.group_idr, minor);
--		return -ENOSPC;
+ 	struct css_id *newid;
+-	int myid, error, size;
++	int ret, size;
+ 
+ 	BUG_ON(!ss->use_id);
+ 
+@@ -5280,35 +5280,24 @@ static struct css_id *get_new_cssid(struct cgroup_subsys *ss, int depth)
+ 	newid = kzalloc(size, GFP_KERNEL);
+ 	if (!newid)
+ 		return ERR_PTR(-ENOMEM);
+-	/* get id */
+-	if (unlikely(!idr_pre_get(&ss->idr, GFP_KERNEL))) {
+-		error = -ENOMEM;
+-		goto err_out;
 -	}
--
--	return minor;
-+	return idr_alloc(&vfio.group_idr, group, 1, MINORMASK + 1, GFP_KERNEL);
++
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&ss->id_lock);
+ 	/* Don't use 0. allocates an ID of 1-65535 */
+-	error = idr_get_new_above(&ss->idr, newid, 1, &myid);
++	ret = idr_alloc(&ss->idr, newid, 1, CSS_ID_MAX + 1, GFP_NOWAIT);
+ 	spin_unlock(&ss->id_lock);
++	idr_preload_end();
+ 
+ 	/* Returns error when there are no free spaces for new ID.*/
+-	if (error) {
+-		error = -ENOSPC;
++	if (ret < 0)
+ 		goto err_out;
+-	}
+-	if (myid > CSS_ID_MAX)
+-		goto remove_idr;
+ 
+-	newid->id = myid;
++	newid->id = ret;
+ 	newid->depth = depth;
+ 	return newid;
+-remove_idr:
+-	error = -ENOSPC;
+-	spin_lock(&ss->id_lock);
+-	idr_remove(&ss->idr, myid);
+-	spin_unlock(&ss->id_lock);
+ err_out:
+ 	kfree(newid);
+-	return ERR_PTR(error);
++	return ERR_PTR(ret);
+ 
  }
  
- static void vfio_free_group_minor(int minor)
 -- 
 1.8.1
 
