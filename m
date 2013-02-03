@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab3BCPT2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:19:28 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34201 "EHLO
+	id S1754078Ab3BCPT6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:19:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34188 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753646Ab3BCOzf (ORCPT
+	by vger.kernel.org with ESMTP id S1753524Ab3BCOz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:55:35 -0500
-Message-Id: <20130203144646.963643033@decadent.org.uk>
+	Sun, 3 Feb 2013 09:55:28 -0500
+Message-Id: <20130203144646.604459483@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:17 +0100
+Date: Sun, 03 Feb 2013 15:47:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Mark Rustad <mark.d.rustad@intel.com>,
-        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+Cc: akpm@linux-foundation.org, Hannes Reinecke <hare@suse.de>,
+        Nicholas Bellinger <nab@risingtidesystems.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 033/128] tcm_fc: Do not indicate retry capability to initiators
+Subject: [ 029/128] target: use correct sense code for LUN communication failure
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,37 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+From: Hannes Reinecke <hare@suse.de>
 
-commit f2eeba214bcd0215b7f558cab6420e5fd153042b upstream.
+commit 18a9df42d53fabfa43b78be1104838cc8b9762e1 upstream.
 
-When generating a PRLI response to an initiator, clear the
-FCP_SPPF_RETRY bit in the response.
+The ASC/ASCQ code for 'Logical Unit Communication failure' is
+0x08/0x00; 0x80/0x00 is vendor specific.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
-Acked by Robert Love <robert.w.love@intel.com>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Cc: Nicholas Bellinger <nab@risingtidesystems.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[bwh: Backported to 3.2: add offset to buffer index]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/tcm_fc/tfc_sess.c |    2 +-
+ drivers/target/target_core_transport.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
-index 12d6fa2..59f2b46 100644
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -396,10 +396,10 @@ static int ft_prli_locked(struct fc_rport_priv *rdata, u32 spp_len,
- 
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -4539,7 +4539,7 @@ int transport_send_check_condition_and_s
+ 		/* ILLEGAL REQUEST */
+ 		buffer[offset+SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+ 		/* LOGICAL UNIT COMMUNICATION FAILURE */
+-		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x80;
++		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x08;
+ 		break;
+ 	}
  	/*
- 	 * OR in our service parameters with other provider (initiator), if any.
--	 * TBD XXX - indicate RETRY capability?
- 	 */
- fill:
- 	fcp_parm = ntohl(spp->spp_params);
-+	fcp_parm &= ~FCP_SPPF_RETRY;
- 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
- 	return FC_SPP_RESP_ACK;
- }
 
 
