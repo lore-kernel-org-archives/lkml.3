@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab3BCB1A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:27:00 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:54274 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066Ab3BCBWw (ORCPT
+	id S1754141Ab3BCB0m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:26:42 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:63846 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab3BCBWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:52 -0500
+	Sat, 2 Feb 2013 20:22:54 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org
-Subject: [PATCH 48/62] thermal: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:49 -0800
-Message-Id: <1359854463-2538-49-git-send-email-tj@kernel.org>
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 49/62] uio: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:50 -0800
+Message-Id: <1359854463-2538-50-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -28,81 +29,51 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/thermal/cpu_cooling.c | 17 +++++------------
- drivers/thermal/thermal_sys.c | 17 +++++------------
- 2 files changed, 10 insertions(+), 24 deletions(-)
+ drivers/uio/uio.c | 19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index 836828e..c33fa53 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -73,21 +73,14 @@ static struct cpufreq_cooling_device *notify_device;
-  */
- static int get_idr(struct idr *idr, int *id)
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index 5110f36..c8b9262 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -369,26 +369,15 @@ static void uio_dev_del_attributes(struct uio_device *idev)
+ static int uio_get_minor(struct uio_device *idev)
  {
--	int err;
--again:
--	if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
--		return -ENOMEM;
-+	int ret;
+ 	int retval = -ENOMEM;
+-	int id;
  
- 	mutex_lock(&cooling_cpufreq_lock);
--	err = idr_get_new(idr, NULL, id);
-+	ret = idr_alloc(idr, NULL, 0, 0, GFP_KERNEL);
- 	mutex_unlock(&cooling_cpufreq_lock);
+ 	mutex_lock(&minor_lock);
+-	if (idr_pre_get(&uio_idr, GFP_KERNEL) == 0)
+-		goto exit;
 -
--	if (unlikely(err == -EAGAIN))
--		goto again;
--	else if (unlikely(err))
--		return err;
--
--	*id = *id & MAX_IDR_MASK;
-+	if (unlikely(ret < 0))
-+		return ret;
-+	*id = ret;
- 	return 0;
+-	retval = idr_get_new(&uio_idr, idev, &id);
+-	if (retval < 0) {
+-		if (retval == -EAGAIN)
+-			retval = -ENOMEM;
+-		goto exit;
+-	}
+-	if (id < UIO_MAX_DEVICES) {
+-		idev->minor = id;
+-	} else {
++	retval = idr_alloc(&uio_idr, idev, 0, UIO_MAX_DEVICES, GFP_KERNEL);
++	if (retval >= 0) {
++		idev->minor = retval;
++	} else if (retval == -ENOSPC) {
+ 		dev_err(idev->dev, "too many uio devices\n");
+ 		retval = -EINVAL;
+-		idr_remove(&uio_idr, id);
+ 	}
+-exit:
+ 	mutex_unlock(&minor_lock);
+ 	return retval;
  }
- 
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 8c8ce80..84e95f3 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -132,23 +132,16 @@ EXPORT_SYMBOL_GPL(thermal_unregister_governor);
- 
- static int get_idr(struct idr *idr, struct mutex *lock, int *id)
- {
--	int err;
--
--again:
--	if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
--		return -ENOMEM;
-+	int ret;
- 
- 	if (lock)
- 		mutex_lock(lock);
--	err = idr_get_new(idr, NULL, id);
-+	ret = idr_alloc(idr, NULL, 0, 0, GFP_KERNEL);
- 	if (lock)
- 		mutex_unlock(lock);
--	if (unlikely(err == -EAGAIN))
--		goto again;
--	else if (unlikely(err))
--		return err;
--
--	*id = *id & MAX_IDR_MASK;
-+	if (unlikely(ret < 0))
-+		return ret;
-+	*id = ret;
- 	return 0;
- }
- 
 -- 
 1.8.1
 
