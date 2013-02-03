@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab3BCBcB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:32:01 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:39383 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618Ab3BCBWG (ORCPT
+	id S1753761Ab3BCBca (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:32:30 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:39408 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab3BCBV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:06 -0500
+	Sat, 2 Feb 2013 20:21:59 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH 24/62] infiniband/cxgb3: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:25 -0800
-Message-Id: <1359854463-2538-25-git-send-email-tj@kernel.org>
+        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
+Subject: [PATCH 21/62] i2c: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:22 -0800
+Message-Id: <1359854463-2538-22-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -28,51 +28,90 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Steve Wise <swise@chelsio.com>
-Cc: linux-rdma@vger.kernel.org
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: linux-i2c@vger.kernel.org
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/infiniband/hw/cxgb3/iwch.h | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ drivers/i2c/i2c-core.c | 45 ++++++++++-----------------------------------
+ 1 file changed, 10 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/infiniband/hw/cxgb3/iwch.h b/drivers/infiniband/hw/cxgb3/iwch.h
-index a1c4457..8378622 100644
---- a/drivers/infiniband/hw/cxgb3/iwch.h
-+++ b/drivers/infiniband/hw/cxgb3/iwch.h
-@@ -153,19 +153,17 @@ static inline int insert_handle(struct iwch_dev *rhp, struct idr *idr,
- 				void *handle, u32 id)
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index e388590..6868351 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -935,25 +935,16 @@ out_list:
+  */
+ int i2c_add_adapter(struct i2c_adapter *adapter)
  {
- 	int ret;
--	int newid;
+-	int	id, res = 0;
 -
--	do {
--		if (!idr_pre_get(idr, GFP_KERNEL)) {
--			return -ENOMEM;
--		}
--		spin_lock_irq(&rhp->lock);
--		ret = idr_get_new_above(idr, handle, id, &newid);
--		BUG_ON(newid != id);
--		spin_unlock_irq(&rhp->lock);
--	} while (ret == -EAGAIN);
--
--	return ret;
-+
-+	idr_preload(GFP_KERNEL);
-+	spin_lock_irq(&rhp->lock);
-+
-+	ret = idr_alloc(idr, handle, id, id + 1, GFP_NOWAIT);
-+
-+	spin_unlock_irq(&rhp->lock);
-+	idr_preload_end();
-+
-+	BUG_ON(ret == -ENOSPC);
-+	return ret < 0 ? ret : 0;
- }
+-retry:
+-	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
+-		return -ENOMEM;
++	int res;
  
- static inline void remove_handle(struct iwch_dev *rhp, struct idr *idr, u32 id)
+ 	mutex_lock(&core_lock);
+-	/* "above" here means "above or equal to", sigh */
+-	res = idr_get_new_above(&i2c_adapter_idr, adapter,
+-				__i2c_first_dynamic_bus_num, &id);
++	res = idr_alloc(&i2c_adapter_idr, adapter,
++			__i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
+ 	mutex_unlock(&core_lock);
+-
+-	if (res < 0) {
+-		if (res == -EAGAIN)
+-			goto retry;
++	if (res < 0)
+ 		return res;
+-	}
+ 
+-	adapter->nr = id;
++	adapter->nr = res;
+ 	return i2c_register_adapter(adapter);
+ }
+ EXPORT_SYMBOL(i2c_add_adapter);
+@@ -984,33 +975,17 @@ EXPORT_SYMBOL(i2c_add_adapter);
+ int i2c_add_numbered_adapter(struct i2c_adapter *adap)
+ {
+ 	int	id;
+-	int	status;
+ 
+ 	if (adap->nr == -1) /* -1 means dynamically assign bus id */
+ 		return i2c_add_adapter(adap);
+-	if (adap->nr & ~MAX_IDR_MASK)
+-		return -EINVAL;
+-
+-retry:
+-	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
+-		return -ENOMEM;
+ 
+ 	mutex_lock(&core_lock);
+-	/* "above" here means "above or equal to", sigh;
+-	 * we need the "equal to" result to force the result
+-	 */
+-	status = idr_get_new_above(&i2c_adapter_idr, adap, adap->nr, &id);
+-	if (status == 0 && id != adap->nr) {
+-		status = -EBUSY;
+-		idr_remove(&i2c_adapter_idr, id);
+-	}
++	id = idr_alloc(&i2c_adapter_idr, adap, adap->nr, adap->nr + 1,
++		       GFP_KERNEL);
+ 	mutex_unlock(&core_lock);
+-	if (status == -EAGAIN)
+-		goto retry;
+-
+-	if (status == 0)
+-		status = i2c_register_adapter(adap);
+-	return status;
++	if (id < 0)
++		return id == -ENOSPC ? -EBUSY : id;
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(i2c_add_numbered_adapter);
+ 
 -- 
 1.8.1
 
