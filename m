@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab3BCBca (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:32:30 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:39408 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab3BCBV7 (ORCPT
+	id S1753519Ab3BCBVz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:21:55 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62516 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab3BCBVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:21:59 -0500
+	Sat, 2 Feb 2013 20:21:41 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
-        axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
-Subject: [PATCH 21/62] i2c: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:22 -0800
-Message-Id: <1359854463-2538-22-git-send-email-tj@kernel.org>
+        axboe@kernel.dk, Tejun Heo <tj@kernel.org>, Dan Williams <djbw@fb.com>
+Subject: [PATCH 12/62] dmaengine: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:13 -0800
+Message-Id: <1359854463-2538-13-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -28,90 +27,44 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: linux-i2c@vger.kernel.org
+Cc: Dan Williams <djbw@fb.com>
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/i2c/i2c-core.c | 45 ++++++++++-----------------------------------
- 1 file changed, 10 insertions(+), 35 deletions(-)
+ drivers/dma/dmaengine.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index e388590..6868351 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -935,25 +935,16 @@ out_list:
-  */
- int i2c_add_adapter(struct i2c_adapter *adapter)
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index a815d44..381aa2c 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -667,18 +667,14 @@ static int get_dma_id(struct dma_device *device)
  {
--	int	id, res = 0;
--
--retry:
--	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
+ 	int rc;
+ 
+- idr_retry:
+-	if (!idr_pre_get(&dma_idr, GFP_KERNEL))
 -		return -ENOMEM;
-+	int res;
+ 	mutex_lock(&dma_list_mutex);
+-	rc = idr_get_new(&dma_idr, NULL, &device->dev_id);
+-	mutex_unlock(&dma_list_mutex);
+-	if (rc == -EAGAIN)
+-		goto idr_retry;
+-	else if (rc != 0)
+-		return rc;
  
- 	mutex_lock(&core_lock);
--	/* "above" here means "above or equal to", sigh */
--	res = idr_get_new_above(&i2c_adapter_idr, adapter,
--				__i2c_first_dynamic_bus_num, &id);
-+	res = idr_alloc(&i2c_adapter_idr, adapter,
-+			__i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
- 	mutex_unlock(&core_lock);
--
--	if (res < 0) {
--		if (res == -EAGAIN)
--			goto retry;
-+	if (res < 0)
- 		return res;
--	}
- 
--	adapter->nr = id;
-+	adapter->nr = res;
- 	return i2c_register_adapter(adapter);
+-	return 0;
++	rc = idr_alloc(&dma_idr, NULL, 0, 0, GFP_KERNEL);
++	if (rc >= 0)
++		device->dev_id = rc;
++
++	mutex_unlock(&dma_list_mutex);
++	return rc < 0 ? rc : 0;
  }
- EXPORT_SYMBOL(i2c_add_adapter);
-@@ -984,33 +975,17 @@ EXPORT_SYMBOL(i2c_add_adapter);
- int i2c_add_numbered_adapter(struct i2c_adapter *adap)
- {
- 	int	id;
--	int	status;
  
- 	if (adap->nr == -1) /* -1 means dynamically assign bus id */
- 		return i2c_add_adapter(adap);
--	if (adap->nr & ~MAX_IDR_MASK)
--		return -EINVAL;
--
--retry:
--	if (idr_pre_get(&i2c_adapter_idr, GFP_KERNEL) == 0)
--		return -ENOMEM;
- 
- 	mutex_lock(&core_lock);
--	/* "above" here means "above or equal to", sigh;
--	 * we need the "equal to" result to force the result
--	 */
--	status = idr_get_new_above(&i2c_adapter_idr, adap, adap->nr, &id);
--	if (status == 0 && id != adap->nr) {
--		status = -EBUSY;
--		idr_remove(&i2c_adapter_idr, id);
--	}
-+	id = idr_alloc(&i2c_adapter_idr, adap, adap->nr, adap->nr + 1,
-+		       GFP_KERNEL);
- 	mutex_unlock(&core_lock);
--	if (status == -EAGAIN)
--		goto retry;
--
--	if (status == 0)
--		status = i2c_register_adapter(adap);
--	return status;
-+	if (id < 0)
-+		return id == -ENOSPC ? -EBUSY : id;
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(i2c_add_numbered_adapter);
- 
+ /**
 -- 
 1.8.1
 
