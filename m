@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab3BCO6r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:58:47 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34669 "EHLO
+	id S1755150Ab3BCO6d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:58:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34604 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753072Ab3BCO6o (ORCPT
+	by vger.kernel.org with ESMTP id S1755045Ab3BCO6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:58:44 -0500
-Message-Id: <20130203144654.635190691@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:22 -0500
+Message-Id: <20130203144654.194892645@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:44 +0100
+Date: Sun, 03 Feb 2013 15:48:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Ian Abbott <abbotti@mev.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 120/128] staging: comedi: dont hijack hardware device private data
+Cc: akpm@linux-foundation.org, Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Jean Delvare <khali@linux-fr.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 115/128] drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it
+ exists
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,156 +29,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
 
-commit c43435d7722134ed1fda58ce1025f41029bd58ad upstream.
+commit 9f9c9cbb60576a1518d0bf93fb8e499cffccf377 upstream.
 
-comedi_auto_config() associates a Comedi minor device number with an
-auto-configured hardware device and comedi_auto_unconfig() disassociates
-it.  Currently, these use the hardware device's private data pointer to
-point to some allocated storage holding the minor device number.  This
-is a bit of a waste of the hardware device's private data pointer,
-preventing it from being used for something more useful by the low-level
-comedi device drivers.  For example, it would make more sense if
-comedi_usb_auto_config() was passed a pointer to the struct
-usb_interface instead of the struct usb_device, but this cannot be done
-currently because the low-level comedi drivers already use the private
-data pointer in the struct usb_interface for something more useful.
+The right dmi version is in SMBIOS if it's zero in DMI region
 
-This patch stops the comedi core hijacking the hardware device's private
-data pointer.  Instead, comedi_auto_config() stores a pointer to the
-hardware device's struct device in the struct comedi_device_file_info
-associated with the minor device number, and comedi_auto_unconfig()
-calls new function comedi_find_board_minor() to recover the minor device
-number associated with the hardware device.
+This issue was originally found from an oracle bug.
+One customer noticed system UUID doesn't match between dmidecode & uek2.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ - HP ProLiant BL460c G6 :
+   # cat /sys/devices/virtual/dmi/id/product_uuid
+   00000000-0000-4C48-3031-4D5030333531
+   # dmidecode | grep -i uuid
+   UUID: 00000000-0000-484C-3031-4D5030333531
+
+>From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than
+network byte order.
+
+So we need to get dmi version to distinguish.  If version is 0.0, the
+real version is taken from the SMBIOS version.  This is part of original
+kernel comment in code.
+
+[akpm@linux-foundation.org: checkpatch fixes]
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: Feng Jin <joe.jin@oracle.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/comedi_fops.c |   18 ++++++++++++++++++
- drivers/staging/comedi/comedidev.h   |    1 +
- drivers/staging/comedi/drivers.c     |   34 ++++++++++------------------------
- drivers/staging/comedi/internal.h    |    1 +
- 4 files changed, 30 insertions(+), 24 deletions(-)
+ drivers/firmware/dmi_scan.c |   62 ++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 47 insertions(+), 15 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -2207,6 +2207,7 @@ int comedi_alloc_board_minor(struct devi
- 		kfree(info);
- 		return -ENOMEM;
- 	}
-+	info->hardware_device = hardware_device;
- 	comedi_device_init(info->device);
- 	spin_lock_irqsave(&comedi_file_info_table_lock, flags);
- 	for (i = 0; i < COMEDI_NUM_BOARD_MINORS; ++i) {
-@@ -2295,6 +2296,23 @@ void comedi_free_board_minor(unsigned mi
- 	}
+diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+index 3714e3c..fd3ae62 100644
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -119,12 +119,12 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
+ 	return 0;
  }
  
-+int comedi_find_board_minor(struct device *hardware_device)
+-static int __init dmi_checksum(const u8 *buf)
++static int __init dmi_checksum(const u8 *buf, u8 len)
+ {
+ 	u8 sum = 0;
+ 	int a;
+ 
+-	for (a = 0; a < 15; a++)
++	for (a = 0; a < len; a++)
+ 		sum += buf[a];
+ 
+ 	return sum == 0;
+@@ -415,30 +415,57 @@ static int __init dmi_present(const char __iomem *p)
+ 	u8 buf[15];
+ 
+ 	memcpy_fromio(buf, p, 15);
+-	if ((memcmp(buf, "_DMI_", 5) == 0) && dmi_checksum(buf)) {
++	if (dmi_checksum(buf, 15)) {
+ 		dmi_num = (buf[13] << 8) | buf[12];
+ 		dmi_len = (buf[7] << 8) | buf[6];
+ 		dmi_base = (buf[11] << 24) | (buf[10] << 16) |
+ 			(buf[9] << 8) | buf[8];
+ 
+-		/*
+-		 * DMI version 0.0 means that the real version is taken from
+-		 * the SMBIOS version, which we don't know at this point.
+-		 */
+-		dmi_ver = (buf[14] & 0xf0) << 4 | (buf[14] & 0x0f);
+-		if (buf[14] != 0)
+-			printk(KERN_INFO "DMI %d.%d present.\n",
+-			       buf[14] >> 4, buf[14] & 0xF);
+-		else
+-			printk(KERN_INFO "DMI present.\n");
+ 		if (dmi_walk_early(dmi_decode) == 0) {
++			if (dmi_ver)
++				pr_info("SMBIOS %d.%d present.\n",
++				       dmi_ver >> 8, dmi_ver & 0xFF);
++			else {
++				dmi_ver = (buf[14] & 0xF0) << 4 |
++					   (buf[14] & 0x0F);
++				pr_info("Legacy DMI %d.%d present.\n",
++				       dmi_ver >> 8, dmi_ver & 0xFF);
++			}
+ 			dmi_dump_ids();
+ 			return 0;
+ 		}
+ 	}
++	dmi_ver = 0;
+ 	return 1;
+ }
+ 
++static int __init smbios_present(const char __iomem *p)
 +{
-+	int minor;
-+	struct comedi_device_file_info *info;
++	u8 buf[32];
++	int offset = 0;
 +
-+	for (minor = 0; minor < COMEDI_NUM_BOARD_MINORS; minor++) {
-+		spin_lock(&comedi_file_info_table_lock);
-+		info = comedi_file_info_table[minor];
-+		if (info && info->hardware_device == hardware_device) {
-+			spin_unlock(&comedi_file_info_table_lock);
-+			return minor;
++	memcpy_fromio(buf, p, 32);
++	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
++		dmi_ver = (buf[6] << 8) + buf[7];
++
++		/* Some BIOS report weird SMBIOS version, fix that up */
++		switch (dmi_ver) {
++		case 0x021F:
++		case 0x0221:
++			pr_debug("SMBIOS version fixup(2.%d->2.%d)\n",
++			       dmi_ver & 0xFF, 3);
++			dmi_ver = 0x0203;
++			break;
++		case 0x0233:
++			pr_debug("SMBIOS version fixup(2.%d->2.%d)\n", 51, 6);
++			dmi_ver = 0x0206;
++			break;
 +		}
-+		spin_unlock(&comedi_file_info_table_lock);
++		offset = 16;
 +	}
-+	return -ENODEV;
++	return dmi_present(buf + offset);
 +}
 +
- int comedi_alloc_subdevice_minor(struct comedi_device *dev,
- 				 struct comedi_subdevice *s)
+ void __init dmi_scan_machine(void)
  {
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -234,6 +234,7 @@ struct comedi_device_file_info {
- 	struct comedi_device *device;
- 	struct comedi_subdevice *read_subdevice;
- 	struct comedi_subdevice *write_subdevice;
-+	struct device *hardware_device;
- };
+ 	char __iomem *p, *q;
+@@ -456,7 +483,7 @@ void __init dmi_scan_machine(void)
+ 		if (p == NULL)
+ 			goto error;
  
- #ifdef CONFIG_COMEDI_DEBUG
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -823,25 +823,14 @@ static int comedi_auto_config(struct dev
- 	int minor;
- 	struct comedi_device_file_info *dev_file_info;
- 	int retval;
--	unsigned *private_data = NULL;
+-		rc = dmi_present(p + 0x10); /* offset of _DMI_ string */
++		rc = smbios_present(p);
+ 		dmi_iounmap(p, 32);
+ 		if (!rc) {
+ 			dmi_available = 1;
+@@ -474,7 +501,12 @@ void __init dmi_scan_machine(void)
+ 			goto error;
  
--	if (!comedi_autoconfig) {
--		dev_set_drvdata(hardware_device, NULL);
-+	if (!comedi_autoconfig)
- 		return 0;
--	}
- 
- 	minor = comedi_alloc_board_minor(hardware_device);
- 	if (minor < 0)
- 		return minor;
- 
--	private_data = kmalloc(sizeof(unsigned), GFP_KERNEL);
--	if (private_data == NULL) {
--		retval = -ENOMEM;
--		goto cleanup;
--	}
--	*private_data = minor;
--	dev_set_drvdata(hardware_device, private_data);
--
- 	dev_file_info = comedi_get_device_file_info(minor);
- 
- 	memset(&it, 0, sizeof(it));
-@@ -854,25 +843,22 @@ static int comedi_auto_config(struct dev
- 	retval = comedi_device_attach(dev_file_info->device, &it);
- 	mutex_unlock(&dev_file_info->device->mutex);
- 
--cleanup:
--	if (retval < 0) {
--		kfree(private_data);
-+	if (retval < 0)
- 		comedi_free_board_minor(minor);
--	}
- 	return retval;
- }
- 
- static void comedi_auto_unconfig(struct device *hardware_device)
- {
--	unsigned *minor = (unsigned *)dev_get_drvdata(hardware_device);
--	if (minor == NULL)
--		return;
--
--	BUG_ON(*minor >= COMEDI_NUM_BOARD_MINORS);
-+	int minor;
- 
--	comedi_free_board_minor(*minor);
--	dev_set_drvdata(hardware_device, NULL);
--	kfree(minor);
-+	if (hardware_device == NULL)
-+		return;
-+	minor = comedi_find_board_minor(hardware_device);
-+	if (minor < 0)
-+		return;
-+	BUG_ON(minor >= COMEDI_NUM_BOARD_MINORS);
-+	comedi_free_board_minor(minor);
- }
- 
- int comedi_pci_auto_config(struct pci_dev *pcidev, const char *board_name)
---- a/drivers/staging/comedi/internal.h
-+++ b/drivers/staging/comedi/internal.h
-@@ -7,6 +7,7 @@ int insn_inval(struct comedi_device *dev
- 	       struct comedi_insn *insn, unsigned int *data);
- int comedi_alloc_board_minor(struct device *hardware_device);
- void comedi_free_board_minor(unsigned minor);
-+int comedi_find_board_minor(struct device *hardware_device);
- void comedi_reset_async_buf(struct comedi_async *async);
- int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
- 		     unsigned long new_size);
+ 		for (q = p; q < p + 0x10000; q += 16) {
+-			rc = dmi_present(q);
++			if (memcmp(q, "_SM_", 4) == 0 && q - p <= 0xFFE0)
++				rc = smbios_present(q);
++			else if (memcmp(q, "_DMI_", 5) == 0)
++				rc = dmi_present(q);
++			else
++				continue;
+ 			if (!rc) {
+ 				dmi_available = 1;
+ 				dmi_iounmap(p, 0x10000);
 
 
