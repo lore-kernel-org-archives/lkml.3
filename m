@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3BCT0Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 14:26:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50831 "EHLO
+	id S1753570Ab3BCT3B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 14:29:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50862 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab3BCT0X (ORCPT
+	with ESMTP id S1753431Ab3BCT27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 14:26:23 -0500
-Date: Sun, 3 Feb 2013 11:26:09 -0800
-From: tip-bot for Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Message-ID: <tip-c1043fcda1b9e8e5144cfdaee7be262c50dbdead@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, hiraku.toyooka.gu@hitachi.com, tglx@linutronix.de,
-        rob@landley.net
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        hiraku.toyooka.gu@hitachi.com, rostedt@goodmis.org, tglx@linutronix.de,
-        rob@landley.net
-In-Reply-To: <20121226025309.3252.150.stgit@liselsia>
-References: <20121226025309.3252.150.stgit@liselsia>
+	Sun, 3 Feb 2013 14:28:59 -0500
+Date: Sun, 3 Feb 2013 11:28:27 -0800
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-0231bb5336758426b44ccd798ccd3c5419c95d58@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, hollmann@in.tum.de, namhyung@kernel.org,
+        jolsa@redhat.com, vince@deater.net, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, hollmann@in.tum.de, namhyung@kernel.org,
+        jolsa@redhat.com, vince@deater.net, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1359714225-4231-1-git-send-email-jolsa@redhat.com>
+References: <1359714225-4231-1-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Add documentation of snapshot utility
-Git-Commit-ID: c1043fcda1b9e8e5144cfdaee7be262c50dbdead
+Subject: [tip:perf/urgent] perf: Fix event group context move
+Git-Commit-ID: 0231bb5336758426b44ccd798ccd3c5419c95d58
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,123 +33,97 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 03 Feb 2013 11:26:15 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 03 Feb 2013 11:28:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c1043fcda1b9e8e5144cfdaee7be262c50dbdead
-Gitweb:     http://git.kernel.org/tip/c1043fcda1b9e8e5144cfdaee7be262c50dbdead
-Author:     Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-AuthorDate: Wed, 26 Dec 2012 11:53:09 +0900
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Wed, 30 Jan 2013 11:02:07 -0500
+Commit-ID:  0231bb5336758426b44ccd798ccd3c5419c95d58
+Gitweb:     http://git.kernel.org/tip/0231bb5336758426b44ccd798ccd3c5419c95d58
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 1 Feb 2013 11:23:45 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 3 Feb 2013 12:01:29 +0100
 
-tracing: Add documentation of snapshot utility
+perf: Fix event group context move
 
-This patch adds snapshot description in ftrace documentation.
-This description includes what the snapshot is and how to use it.
+When we have group with mixed events (hw/sw) we want to end up
+with group leader being in hw context. So if group leader is
+initialy sw event, we move all the events under hw context.
 
-Link: http://lkml.kernel.org/r/20121226025309.3252.150.stgit@liselsia
+The move is done for each event by removing it from its context
+and adding it back into proper one. As a part of the removal the
+event is automatically disabled, which is not what we want at
+this stage of creating groups.
 
-Cc: Rob Landley <rob@landley.net>
-Signed-off-by: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+The fix is to initialize event state after removal from sw
+context.
+
+This fix resulted from the following discussion:
+
+  http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
+
+Reported-by: Andreas Hollmann <hollmann@in.tum.de>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Vince Weaver <vince@deater.net>
+Link: http://lkml.kernel.org/r/1359714225-4231-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/trace/ftrace.txt | 83 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ kernel/events/core.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index 6f51fed..53d6a3c 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -1842,6 +1842,89 @@ an error.
-  # cat buffer_size_kb
- 85
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 301079d..7b6646a 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -908,6 +908,15 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ }
  
-+Snapshot
-+--------
-+CONFIG_TRACER_SNAPSHOT makes a generic snapshot feature
-+available to all non latency tracers. (Latency tracers which
-+record max latency, such as "irqsoff" or "wakeup", can't use
-+this feature, since those are already using the snapshot
-+mechanism internally.)
+ /*
++ * Initialize event state based on the perf_event_attr::disabled.
++ */
++static inline void perf_event__state_init(struct perf_event *event)
++{
++	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
++					      PERF_EVENT_STATE_INACTIVE;
++}
 +
-+Snapshot preserves a current trace buffer at a particular point
-+in time without stopping tracing. Ftrace swaps the current
-+buffer with a spare buffer, and tracing continues in the new
-+current (=previous spare) buffer.
-+
-+The following debugfs files in "tracing" are related to this
-+feature:
-+
-+  snapshot:
-+
-+	This is used to take a snapshot and to read the output
-+	of the snapshot. Echo 1 into this file to allocate a
-+	spare buffer and to take a snapshot (swap), then read
-+	the snapshot from this file in the same format as
-+	"trace" (described above in the section "The File
-+	System"). Both reads snapshot and tracing are executable
-+	in parallel. When the spare buffer is allocated, echoing
-+	0 frees it, and echoing else (positive) values clear the
-+	snapshot contents.
-+	More details are shown in the table below.
-+
-+	status\input  |     0      |     1      |    else    |
-+	--------------+------------+------------+------------+
-+	not allocated |(do nothing)| alloc+swap |   EINVAL   |
-+	--------------+------------+------------+------------+
-+	allocated     |    free    |    swap    |   clear    |
-+	--------------+------------+------------+------------+
-+
-+Here is an example of using the snapshot feature.
-+
-+ # echo 1 > events/sched/enable
-+ # echo 1 > snapshot
-+ # cat snapshot
-+# tracer: nop
-+#
-+# entries-in-buffer/entries-written: 71/71   #P:8
-+#
-+#                              _-----=> irqs-off
-+#                             / _----=> need-resched
-+#                            | / _---=> hardirq/softirq
-+#                            || / _--=> preempt-depth
-+#                            ||| /     delay
-+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-+#              | |       |   ||||       |         |
-+          <idle>-0     [005] d...  2440.603828: sched_switch: prev_comm=swapper/5 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=snapshot-test-2 next_pid=2242 next_prio=120
-+           sleep-2242  [005] d...  2440.603846: sched_switch: prev_comm=snapshot-test-2 prev_pid=2242 prev_prio=120 prev_state=R ==> next_comm=kworker/5:1 next_pid=60 next_prio=120
-+[...]
-+          <idle>-0     [002] d...  2440.707230: sched_switch: prev_comm=swapper/2 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=snapshot-test-2 next_pid=2229 next_prio=120
-+
-+ # cat trace
-+# tracer: nop
-+#
-+# entries-in-buffer/entries-written: 77/77   #P:8
-+#
-+#                              _-----=> irqs-off
-+#                             / _----=> need-resched
-+#                            | / _---=> hardirq/softirq
-+#                            || / _--=> preempt-depth
-+#                            ||| /     delay
-+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-+#              | |       |   ||||       |         |
-+          <idle>-0     [007] d...  2440.707395: sched_switch: prev_comm=swapper/7 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=snapshot-test-2 next_pid=2243 next_prio=120
-+ snapshot-test-2-2229  [002] d...  2440.707438: sched_switch: prev_comm=snapshot-test-2 prev_pid=2229 prev_prio=120 prev_state=S ==> next_comm=swapper/2 next_pid=0 next_prio=120
-+[...]
-+
-+
-+If you try to use this snapshot feature when current tracer is
-+one of the latency tracers, you will get the following results.
-+
-+ # echo wakeup > current_tracer
-+ # echo 1 > snapshot
-+bash: echo: write error: Device or resource busy
-+ # cat snapshot
-+cat: snapshot: Device or resource busy
-+
- -----------
++/*
+  * Called at perf_event creation and when events are attached/detached from a
+  * group.
+  */
+@@ -6179,8 +6188,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	event->overflow_handler	= overflow_handler;
+ 	event->overflow_handler_context = context;
  
- More details can be found in the source code, in the
+-	if (attr->disabled)
+-		event->state = PERF_EVENT_STATE_OFF;
++	perf_event__state_init(event);
+ 
+ 	pmu = NULL;
+ 
+@@ -6609,9 +6617,17 @@ SYSCALL_DEFINE5(perf_event_open,
+ 
+ 		mutex_lock(&gctx->mutex);
+ 		perf_remove_from_context(group_leader);
++
++		/*
++		 * Removing from the context ends up with disabled
++		 * event. What we want here is event in the initial
++		 * startup state, ready to be add into new context.
++		 */
++		perf_event__state_init(group_leader);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+ 				    group_entry) {
+ 			perf_remove_from_context(sibling);
++			perf_event__state_init(sibling);
+ 			put_ctx(gctx);
+ 		}
+ 		mutex_unlock(&gctx->mutex);
