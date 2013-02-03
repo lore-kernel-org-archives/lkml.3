@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3BCO6a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:58:30 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34598 "EHLO
+	id S1755167Ab3BCO6g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:58:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34626 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754202Ab3BCO6V (ORCPT
+	by vger.kernel.org with ESMTP id S1755076Ab3BCO60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:58:21 -0500
-Message-Id: <20130203144653.917896025@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:26 -0500
+Message-Id: <20130203144655.107207701@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:36 +0100
+Date: Sun, 03 Feb 2013 15:48:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Alan Cox <alan@linux.intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 112/128] ahci: Add identifiers for ASM106x devices
+Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
+Subject: [ 125/128] ALSA: usb-audio: Fix regression by disconnection-race-fix  patch
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,37 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7b4f6ecacb14f384adc1a5a67ad95eb082c02bd1 upstream.
+[NOTE: the regression below is found only in 3.2-3.4 stable trees, so
+       there is no upstream commit corresponding to this patch]
 
-They don't always appear as AHCI class devices but instead as IDE class.
+The recent fix for the race at disconnection of usb-audio devices
+(upstream commit 978520b7) triggers Oops when a device is unplugged
+while playing on 3.2 and 3.4 kernels.  The culprit is that the
+shutdown flag check was wrongly added around the urb deactivation code
+snippet.  The urb deactivation code has to be performed even after the
+device disconnected.  Otherwise it remains undead and pokes the wild
+access in the end.
 
-Based on an initial patch by Hiroaki Nito
+The regression fix is simply reverting the shutdown flag check in that
+code.
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42804
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Reported-and-tested-by: Chris J Arges <christopherarges@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ahci.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ sound/usb/endpoint.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 51548dd..7862d17 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -405,7 +405,10 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
+diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+index 24c5114..9ab2b3e 100644
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -148,10 +148,8 @@ void snd_usb_release_substream_urbs(struct snd_usb_substream *subs, int force)
+ 	int i;
  
- 	/* Asmedia */
--	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1061 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0601), board_ahci },	/* ASM1060 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0602), board_ahci },	/* ASM1060 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+ 	/* stop urbs (to be sure) */
+-	if (!subs->stream->chip->shutdown) {
+-		deactivate_urbs(subs, force, 1);
+-		wait_clear_urbs(subs);
+-	}
++	deactivate_urbs(subs, force, 1);
++	wait_clear_urbs(subs);
  
- 	/* Generic, PCI class code for AHCI */
- 	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	for (i = 0; i < MAX_URBS; i++)
+ 		release_urb_ctx(&subs->dataurb[i]);
 
 
