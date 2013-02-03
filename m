@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3BCPV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:21:57 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34144 "EHLO
+	id S1754131Ab3BCPW1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:22:27 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34139 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753854Ab3BCOzK (ORCPT
+	by vger.kernel.org with ESMTP id S1753822Ab3BCOzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:55:10 -0500
-Message-Id: <20130203144646.262981708@decadent.org.uk>
+	Sun, 3 Feb 2013 09:55:09 -0500
+Message-Id: <20130203144644.843738847@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:09 +0100
+Date: Sun, 03 Feb 2013 15:46:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Axel Lin <axel.lin@ingics.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 025/128] regulator: max8997: Use uV in voltage_map_desc
+Cc: akpm@linux-foundation.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        John Covici <covici@ccs.covici.com>
+Subject: [ 009/128] USB: Increase reset timeout.
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,152 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit bc3b7756b5ff66828acf7bc24f148d28b8d61108 upstream.
+commit 77c7f072c87fa951e9a74805febf26466f31170c upstream.
 
-Current code does integer division (min_vol = min_uV / 1000) before pass
-min_vol to max8997_get_voltage_proper_val().
-So it is possible min_vol is truncated to a smaller value.
+John's NEC 0.96 xHCI host controller needs a longer timeout for a warm
+reset to complete.  The logs show it takes 650ms to complete the warm
+reset, so extend the hub reset timeout to 800ms to be on the safe side.
 
-For example, if the request min_uV is 800900 for ldo.
-min_vol = 800900 / 1000 = 800 (mV)
-Then max8997_get_voltage_proper_val returns 800 mV for this case which is lower
-than the requested voltage.
+This commit should be backported to kernels as old as 3.2, that contain
+the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
+warm reset logic".
 
-Use uV rather than mV in voltage_map_desc to prevent truncation by integer
-division.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - voltage_map_desc also has an n_bits field]
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: John Covici <covici@ccs.covici.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/regulator/max8997.c |   36 +++++++++++++++++-------------------
- 1 file changed, 17 insertions(+), 19 deletions(-)
+ drivers/usb/core/hub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -71,26 +71,26 @@ struct voltage_map_desc {
- 	unsigned int n_bits;
- };
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 968ec37..b9ce5e8 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2499,7 +2499,7 @@ static unsigned hub_is_wusb(struct usb_hub *hub)
+ #define HUB_SHORT_RESET_TIME	10
+ #define HUB_BH_RESET_TIME	50
+ #define HUB_LONG_RESET_TIME	200
+-#define HUB_RESET_TIMEOUT	500
++#define HUB_RESET_TIMEOUT	800
  
--/* Voltage maps in mV */
-+/* Voltage maps in uV */
- static const struct voltage_map_desc ldo_voltage_map_desc = {
--	.min = 800,	.max = 3950,	.step = 50,	.n_bits = 6,
-+	.min = 800000,	.max = 3950000,	.step = 50000,	.n_bits = 6,
- }; /* LDO1 ~ 18, 21 all */
- 
- static const struct voltage_map_desc buck1245_voltage_map_desc = {
--	.min = 650,	.max = 2225,	.step = 25,	.n_bits = 6,
-+	.min = 650000,	.max = 2225000,	.step = 25000,	.n_bits = 6,
- }; /* Buck1, 2, 4, 5 */
- 
- static const struct voltage_map_desc buck37_voltage_map_desc = {
--	.min = 750,	.max = 3900,	.step = 50,	.n_bits = 6,
-+	.min = 750000,	.max = 3900000,	.step = 50000,	.n_bits = 6,
- }; /* Buck3, 7 */
- 
--/* current map in mA */
-+/* current map in uA */
- static const struct voltage_map_desc charger_current_map_desc = {
--	.min = 200,	.max = 950,	.step = 50,	.n_bits = 4,
-+	.min = 200000,	.max = 950000,	.step = 50000,	.n_bits = 4,
- };
- 
- static const struct voltage_map_desc topoff_current_map_desc = {
--	.min = 50,	.max = 200,	.step = 10,	.n_bits = 4,
-+	.min = 50000,	.max = 200000,	.step = 10000,	.n_bits = 4,
- };
- 
- static const struct voltage_map_desc *reg_voltage_map[] = {
-@@ -199,7 +199,7 @@ static int max8997_list_voltage(struct r
- 	if (val > desc->max)
- 		return -EINVAL;
- 
--	return val * 1000;
-+	return val;
- }
- 
- static int max8997_get_enable_register(struct regulator_dev *rdev,
-@@ -501,7 +501,6 @@ static int max8997_set_voltage_ldobuck(s
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
- 	struct i2c_client *i2c = max8997->iodev->i2c;
--	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
- 	const struct voltage_map_desc *desc;
- 	int rid = max8997_get_rid(rdev);
- 	int reg, shift = 0, mask, ret;
-@@ -527,7 +526,7 @@ static int max8997_set_voltage_ldobuck(s
- 
- 	desc = reg_voltage_map[rid];
- 
--	i = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
-+	i = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
- 	if (i < 0)
- 		return i;
- 
-@@ -546,7 +545,7 @@ static int max8997_set_voltage_ldobuck(s
- 		/* If the voltage is increasing */
- 		if (org < i)
- 			udelay(DIV_ROUND_UP(desc->step * (i - org),
--						max8997->ramp_delay));
-+						max8997->ramp_delay * 1000));
- 	}
- 
- 	return ret;
-@@ -645,7 +644,6 @@ static int max8997_set_voltage_buck(stru
- 	const struct voltage_map_desc *desc;
- 	int new_val, new_idx, damage, tmp_val, tmp_idx, tmp_dmg;
- 	bool gpio_dvs_mode = false;
--	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
- 
- 	if (rid < MAX8997_BUCK1 || rid > MAX8997_BUCK7)
- 		return -EINVAL;
-@@ -670,7 +668,7 @@ static int max8997_set_voltage_buck(stru
- 						selector);
- 
- 	desc = reg_voltage_map[rid];
--	new_val = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
-+	new_val = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
- 	if (new_val < 0)
- 		return new_val;
- 
-@@ -1002,8 +1000,8 @@ static __devinit int max8997_pmic_probe(
- 		max8997->buck1_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck1_voltage[i] / 1000,
--					pdata->buck1_voltage[i] / 1000 +
-+					pdata->buck1_voltage[i],
-+					pdata->buck1_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_alloc;
-@@ -1011,8 +1009,8 @@ static __devinit int max8997_pmic_probe(
- 		max8997->buck2_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck2_voltage[i] / 1000,
--					pdata->buck2_voltage[i] / 1000 +
-+					pdata->buck2_voltage[i],
-+					pdata->buck2_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_alloc;
-@@ -1020,8 +1018,8 @@ static __devinit int max8997_pmic_probe(
- 		max8997->buck5_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck5_voltage[i] / 1000,
--					pdata->buck5_voltage[i] / 1000 +
-+					pdata->buck5_voltage[i],
-+					pdata->buck5_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_alloc;
+ static int hub_port_reset(struct usb_hub *hub, int port1,
+ 			struct usb_device *udev, unsigned int delay, bool warm);
 
 
