@@ -1,93 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab3BCNPt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 08:15:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33393 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752382Ab3BCNPr (ORCPT
+	id S1753021Ab3BCN12 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 08:27:28 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:53881 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab3BCN10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 08:15:47 -0500
-Message-ID: <1359897327.29976.4.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 38/89] ath9k: add a better fix for the rx tasklet vs rx flush
- race
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Sun, 03 Feb 2013 14:15:27 +0100
-In-Reply-To: <20130201130210.260645970@linuxfoundation.org>
-References: <20130201130207.444989281@linuxfoundation.org>
-	 <20130201130210.260645970@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-AlS1E3hS5sVsh486Qkjf"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 151.216.67.5
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 3 Feb 2013 08:27:26 -0500
+Message-ID: <510E65B3.10901@gmail.com>
+Date: Sun, 03 Feb 2013 14:27:15 +0100
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v2] media: tvp514x: add OF support
+References: <1359464832-8875-1-git-send-email-prabhakar.lad@ti.com> <510C43A0.7090906@gmail.com> <CA+V-a8u6VADw_HfbBN4ESGUXTSMKfVyKZaEf1bhVGACof6qZ8A@mail.gmail.com>
+In-Reply-To: <CA+V-a8u6VADw_HfbBN4ESGUXTSMKfVyKZaEf1bhVGACof6qZ8A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Prabhakar,
 
---=-AlS1E3hS5sVsh486Qkjf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 2013-02-01 at 14:07 +0100, Greg Kroah-Hartman wrote:
-> 3.7-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Felix Fietkau <nbd@openwrt.org>
->=20
-> commit 7fc00a3054b70b1794c2d64db703eb467ad0365c upstream.
->=20
-> Ensure that the rx tasklet is no longer running when entering the reset p=
-ath.
-> Also remove the distinction between flush and no-flush frame processing.
-> If a frame has been received and ACKed by the hardware, the stack needs t=
-o see
-> it, so that the BA receive window does not go out of sync.
->=20
-> Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-> Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On 02/03/2013 11:13 AM, Prabhakar Lad wrote:
 [...]
+>>> +Required Properties :
+>>> +- compatible: Must be "ti,tvp514x-decoder"
+>>
+>>
+>> There are no significant differences among TVP514* devices as listed above,
+>> you would like to handle above ?
 
-Are this and the following 3 fixes required for earlier kernel versions
-)3.0, 3.2, 3.4)?  If so, could you provide backports?
+Sorry for the mangled sentence, I intended to write "in the driver" instead
+of the last "above".
 
-Ben.
+>> I'm just wondering if you don't need ,for instance, two separate compatible
+>> properties, e.g. "ti,tvp5146-decoder" and "ti,tvp5147-decoder" ?
+>>
+> There are few differences in init/power sequence tough, I would still
+> like to have
+> single compatible property "ti,tvp514x-decoder", If you feel we need separate
+> property I will change it please let me know on this.
 
---=20
-Ben Hutchings
-Everything should be made as simple as possible, but not simpler.
-                                                           - Albert Einstei=
-n
+As Sekhar already mentioned, wildcards in the compatible property should
+not be used. You could just use exact part names in the compatible
+properties and list them all in the tvp514x_of_match[] array. Even though
+this driver doesn't care about the differences between various tvp514?
+chips, there might be others that do.
 
---=-AlS1E3hS5sVsh486Qkjf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+[...]
+>>> +#if defined(CONFIG_OF)
+>>> +static const struct of_device_id tvp514x_of_match[] = {
+>>> +       {.compatible = "ti,tvp514x-decoder", },
+>>> +       {},
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, tvp514x_of_match);
+>>> +
+>>> +static struct tvp514x_platform_data
+>>> +       *tvp514x_get_pdata(struct i2c_client *client)
+>>> +{
+>>> +       if (!client->dev.platform_data&&   client->dev.of_node) {
+>>>
+>>> +               struct tvp514x_platform_data *pdata;
+>>> +               struct v4l2_of_endpoint bus_cfg;
+>>> +               struct device_node *endpoint;
+>>> +
+>>> +               pdata = devm_kzalloc(&client->dev,
+>>> +                               sizeof(struct tvp514x_platform_data),
+>>> +                               GFP_KERNEL);
+>>> +               client->dev.platform_data = pdata;
+>>
+>>
+>> Do you really need to set client->dev.platform_data this way ?
+>> What about passing struct tvp514x_decoder pointer to this function
+>> and initializing struct tvp514x_decoder::pdata instead ?
+>>
+>>
+> Yes that can work too, I'll do the same.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Ok, thanks.
 
-iQIVAwUAUQ5i7+e/yOyVhhEJAQrY5w/+PBYM7ZXA45VMAk/y/BN8MSUw/l5wyVFP
-q5eA4ODs8+AFQ5pEz1sC9uKsakylYwkaeWg7o4Rl1PslZYw2+ZjZhfM6tGzmO6fp
-NTNuMJCNSbJ4n2PGV2DefoVZPqPmA6YvpZuSh7FgC9fTkzG1Dm8PwJ8YDsgkzQ5m
-1sQ0CbT0jXIXopSSzC/SvCZ18P0f/uMxH1sJaj9Ix8eOtsABsCFEcr+2InyRHTTD
-ECl8cC+SMABU4ayJ7VYDmlD3E1qRemJHqZM79RHAb27pQjN28OYBFJjI37S1aUq3
-BF0jLYLnFa/52ftmU8aSmfgKFjK4xTygyx3eNQQLHH8ybR8N0xuquDBoDmzKiZpX
-gK5fDQHaZVPOiM0B+P/Ijdz7mVZdGbGXhHB6Zl8WAXMyvoF23I+TFPFVmMhFM0OK
-oK8/xaKH4yr6ab/LSyFBLq3BjsD36kI1Zq9XT5pNntvwu275tW/vfnc+iPzmY7a2
-EGi7zMZNWHque6kHMKHaZJnO1JtpP/CXH/mP8f6gduTPnMJhmxBvAA2LJYEFT+C+
-/e2yeAPc9d9VlRLKBPz2phIxmro3hZepdqkJJu8s69fzWwTVG6AYP8cZA/P5/yDg
-MypwT65ufXpUPWJo+SBWdQiKTZPFBO2y4LgzZJTlb1sOnKGJnnrsaBwwA7jrUFi/
-ZhPLSsgr5HQ=
-=vKOg
------END PGP SIGNATURE-----
+>>> +               if (!pdata)
+>>> +                       return NULL;
+>>> +
+>>> +               endpoint = of_get_child_by_name(client->dev.of_node,
+>>> "port");
+>>> +               if (endpoint)
+>>> +                       endpoint = of_get_child_by_name(endpoint,
+>>> "endpoint");
+>>
+>>
+>> I think you could replace these two calls above with
+>>
+>>                  endpoint = v4l2_of_get_next_endpoint(client->dev.of_node);
+>>
+> Ok
+>
+>> Now I see I should have modified this function to ensure it works also when
+>> 'port' nodes are grouped in a 'ports' node.
+>>
+> So V5 series of V4l OF parser doesn't have this fix ?
 
---=-AlS1E3hS5sVsh486Qkjf--
+No, it doesn't. I think we need something along the lines of:
+
+diff --git a/drivers/media/v4l2-core/v4l2-of.c 
+b/drivers/media/v4l2-core/v4l2-of.c
+index e1f570b..8a286f1 100644
+--- a/drivers/media/v4l2-core/v4l2-of.c
++++ b/drivers/media/v4l2-core/v4l2-of.c
+@@ -185,10 +185,15 @@ struct device_node 
+*v4l2_of_get_next_endpoint(const struct device_node *parent,
+                  * This is the first call, we have to find a port within
+                  * this node.
+                  */
+-               for_each_child_of_node(parent, port) {
++               while (port = of_get_next_child(parent, port)) {
+                         if (!of_node_cmp(port->name, "port"))
+                                 break;
+-               }
++                       if (!of_node_cmp(port->name, "ports")) {
++                               parent = port;
++                               of_node_put(port);
++                               port = NULL:
++                       }
++               };
+                 if (port) {
+                         /* Found a port, get an endpoint. */
+                         endpoint = of_get_next_child(port, NULL);
+
+However this shouldn't affect you, as you don't use the 'ports' node...
+I will likely post v6 including this fix tomorrow.
+
+--
+
+Regards,
+Sylwester
