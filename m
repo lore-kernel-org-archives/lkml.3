@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab3BCPOl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:14:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34311 "EHLO
+	id S1754749Ab3BCPPP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:15:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34291 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754214Ab3BCO4S (ORCPT
+	by vger.kernel.org with ESMTP id S1754092Ab3BCO4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:56:18 -0500
-Message-Id: <20130203144649.474239317@decadent.org.uk>
+	Sun, 3 Feb 2013 09:56:10 -0500
+Message-Id: <20130203144648.564717664@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:45 +0100
+Date: Sun, 03 Feb 2013 15:47:35 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Sean Young <sean@mess.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 061/128] 8250: blacklist Winbond CIR port
+Cc: akpm@linux-foundation.org, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 051/128] PCI: shpchp: Use per-slot workqueues to avoid deadlock
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,167 +26,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sean Young <sean@mess.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 65ecc9c02dbad033a73a32916d17c107c5b25031 upstream.
+commit f652e7d2916fe2fcf9e7d709aa5b7476b431e2dd upstream.
 
-The legacy serial driver will detect the Winbond CIR device as a serial
-port, since it looks exactly like a serial port unless you know what
-it is from the PNP ID.
+When we have an SHPC-capable bridge with a second SHPC-capable bridge
+below it, pushing the upstream bridge's attention button causes a
+deadlock.
 
-Here we track this port as a special PORT_8250_CIR type, preventing the
-legacy serial driver from probing it.
+The deadlock happens because we use the shpchp_wq workqueue to run
+shpchp_pushbutton_thread(), which uses shpchp_disable_slot() to remove
+devices below the upstream bridge.  When we remove the downstream bridge,
+we call shpc_remove(), the shpchp driver's .remove() method.  That calls
+flush_workqueue(shpchp_wq), which deadlocks because the
+shpchp_pushbutton_thread() work item is still running.
 
-Signed-off-by: Sean Young <sean@mess.org>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2:
- - Adjust filenames
- - Adjust context
- - First available port type number is 22 not 23
- - s/uart\.port/port/]
+This patch avoids the deadlock by creating a workqueue for every slot
+and removing the single shared workqueue.
+
+Here's the call path that leads to the deadlock:
+
+  shpchp_queue_pushbutton_work
+    queue_work(shpchp_wq)		# shpchp_pushbutton_thread
+    ...
+
+  shpchp_pushbutton_thread
+    shpchp_disable_slot
+      remove_board
+        shpchp_unconfigure_device
+          pci_stop_and_remove_bus_device
+            ...
+              shpc_remove		# shpchp driver .remove method
+                hpc_release_ctlr
+                  cleanup_slots
+                    flush_workqueue(shpchp_wq)
+
+This change is based on code inspection, since we don't have hardware
+with this topology.
+
+Based-on-patch-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/8250.c     |   16 ++++++++++++++--
- drivers/tty/serial/8250_pnp.c |   20 +++++++++++++++-----
- include/linux/serial_core.h        |    3 ++-
- 3 files changed, 31 insertions(+), 8 deletions(-)
+ drivers/pci/hotplug/shpchp.h      |    2 +-
+ drivers/pci/hotplug/shpchp_core.c |   26 ++++++++++++++------------
+ drivers/pci/hotplug/shpchp_ctrl.c |    6 +++---
+ 3 files changed, 18 insertions(+), 16 deletions(-)
 
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -316,6 +316,9 @@ static const struct serial8250_config ua
- 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
- 		.flags		= UART_CAP_FIFO | UART_CAP_AFE | UART_CAP_EFR,
- 	},
-+	[PORT_8250_CIR] = {
-+		.name		= "CIR port"
-+	}
+--- a/drivers/pci/hotplug/shpchp.h
++++ b/drivers/pci/hotplug/shpchp.h
+@@ -46,7 +46,6 @@
+ extern int shpchp_poll_mode;
+ extern int shpchp_poll_time;
+ extern int shpchp_debug;
+-extern struct workqueue_struct *shpchp_wq;
+ 
+ #define dbg(format, arg...)						\
+ do {									\
+@@ -90,6 +89,7 @@ struct slot {
+ 	struct list_head	slot_list;
+ 	struct delayed_work work;	/* work for button event */
+ 	struct mutex lock;
++	struct workqueue_struct *wq;
+ 	u8 hp_slot;
  };
  
- #if defined(CONFIG_MIPS_ALCHEMY)
-@@ -1984,6 +1987,9 @@ static int serial8250_startup(struct uar
- 	unsigned char lsr, iir;
- 	int retval;
+--- a/drivers/pci/hotplug/shpchp_core.c
++++ b/drivers/pci/hotplug/shpchp_core.c
+@@ -39,7 +39,6 @@
+ int shpchp_debug;
+ int shpchp_poll_mode;
+ int shpchp_poll_time;
+-struct workqueue_struct *shpchp_wq;
  
-+	if (port->type == PORT_8250_CIR)
-+		return -ENODEV;
+ #define DRIVER_VERSION	"0.4"
+ #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
+@@ -122,6 +121,14 @@ static int init_slots(struct controller
+ 		slot->device = ctrl->slot_device_offset + i;
+ 		slot->hpc_ops = ctrl->hpc_ops;
+ 		slot->number = ctrl->first_slot + (ctrl->slot_num_inc * i);
 +
- 	up->port.fifosize = uart_config[up->port.type].fifo_size;
- 	up->tx_loadsz = uart_config[up->port.type].tx_loadsz;
- 	up->capabilities = uart_config[up->port.type].flags;
-@@ -2628,7 +2634,10 @@ static int serial8250_request_port(struc
- {
- 	struct uart_8250_port *up =
- 		container_of(port, struct uart_8250_port, port);
--	int ret = 0;
-+	int ret;
++		snprintf(name, sizeof(name), "shpchp-%d", slot->number);
++		slot->wq = alloc_workqueue(name, 0, 0);
++		if (!slot->wq) {
++			retval = -ENOMEM;
++			goto error_info;
++		}
 +
-+	if (port->type == PORT_8250_CIR)
-+		return -ENODEV;
+ 		mutex_init(&slot->lock);
+ 		INIT_DELAYED_WORK(&slot->work, shpchp_queue_pushbutton_work);
  
- 	ret = serial8250_request_std_resource(up);
- 	if (ret == 0 && up->port.type == PORT_RSA) {
-@@ -2647,6 +2656,9 @@ static void serial8250_config_port(struc
- 	int probeflags = PROBE_ANY;
- 	int ret;
+@@ -141,7 +148,7 @@ static int init_slots(struct controller
+ 		if (retval) {
+ 			ctrl_err(ctrl, "pci_hp_register failed with error %d\n",
+ 				 retval);
+-			goto error_info;
++			goto error_slotwq;
+ 		}
  
-+	if (port->type == PORT_8250_CIR)
-+		return;
-+
- 	/*
- 	 * Find the region that we can probe for.  This in turn
- 	 * tells us whether we can probe for the type of port.
-@@ -3215,7 +3227,7 @@ int serial8250_register_port(struct uart
- 	mutex_lock(&serial_mutex);
- 
- 	uart = serial8250_find_match_or_unused(port);
--	if (uart) {
-+	if (uart && uart->port.type != PORT_8250_CIR) {
- 		uart_remove_one_port(&serial8250_reg, &uart->port);
- 
- 		uart->port.iobase       = port->iobase;
---- a/drivers/tty/serial/8250_pnp.c
-+++ b/drivers/tty/serial/8250_pnp.c
-@@ -25,7 +25,7 @@
- #include "8250.h"
- 
- #define UNKNOWN_DEV 0x3000
--
-+#define CIR_PORT	0x0800
- 
- static const struct pnp_device_id pnp_dev_table[] = {
- 	/* Archtek America Corp. */
-@@ -362,6 +362,9 @@ static const struct pnp_device_id pnp_de
- 	{	"PNPCXXX",		UNKNOWN_DEV	},
- 	/* More unknown PnP modems */
- 	{	"PNPDXXX",		UNKNOWN_DEV	},
-+	/* Winbond CIR port, should not be probed. We should keep track
-+	   of it to prevent the legacy serial driver from probing it */
-+	{	"WEC1022",		CIR_PORT	},
- 	{	"",			0	}
- };
- 
-@@ -409,7 +412,7 @@ static int __devinit check_resources(str
-  * PnP modems, alternatively we must hardcode all modems in pnp_devices[]
-  * table.
-  */
--static int __devinit serial_pnp_guess_board(struct pnp_dev *dev, int *flags)
-+static int __devinit serial_pnp_guess_board(struct pnp_dev *dev)
- {
- 	if (!(check_name(pnp_dev_name(dev)) ||
- 		(dev->card && check_name(dev->card->name))))
-@@ -428,7 +431,7 @@ serial_pnp_probe(struct pnp_dev *dev, co
- 	int ret, line, flags = dev_id->driver_data;
- 
- 	if (flags & UNKNOWN_DEV) {
--		ret = serial_pnp_guess_board(dev, &flags);
-+		ret = serial_pnp_guess_board(dev);
- 		if (ret < 0)
- 			return ret;
+ 		get_power_status(hotplug_slot, &info->power_status);
+@@ -153,6 +160,8 @@ static int init_slots(struct controller
  	}
-@@ -436,7 +439,10 @@ serial_pnp_probe(struct pnp_dev *dev, co
- 	memset(&port, 0, sizeof(struct uart_port));
- 	if (pnp_irq_valid(dev, 0))
- 		port.irq = pnp_irq(dev, 0);
--	if (pnp_port_valid(dev, 0)) {
-+	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2)) {
-+		port.iobase = pnp_port_start(dev, 2);
-+		port.iotype = UPIO_PORT;
-+	} else if (pnp_port_valid(dev, 0)) {
- 		port.iobase = pnp_port_start(dev, 0);
- 		port.iotype = UPIO_PORT;
- 	} else if (pnp_mem_valid(dev, 0)) {
-@@ -451,6 +457,10 @@ serial_pnp_probe(struct pnp_dev *dev, co
- 		"Setup PNP port: port %x, mem 0x%lx, irq %d, type %d\n",
- 		       port.iobase, port.mapbase, port.irq, port.iotype);
- #endif
-+	if (flags & CIR_PORT) {
-+		port.flags |= UPF_FIXED_PORT | UPF_FIXED_TYPE;
-+		port.type = PORT_8250_CIR;
-+	}
  
- 	port.flags |= UPF_SKIP_TEST | UPF_BOOT_AUTOCONF;
- 	if (pnp_irq_flags(dev, 0) & IORESOURCE_IRQ_SHAREABLE)
-@@ -459,7 +469,7 @@ serial_pnp_probe(struct pnp_dev *dev, co
- 	port.dev = &dev->dev;
+ 	return 0;
++error_slotwq:
++	destroy_workqueue(slot->wq);
+ error_info:
+ 	kfree(info);
+ error_hpslot:
+@@ -173,7 +182,7 @@ void cleanup_slots(struct controller *ct
+ 		slot = list_entry(tmp, struct slot, slot_list);
+ 		list_del(&slot->slot_list);
+ 		cancel_delayed_work(&slot->work);
+-		flush_workqueue(shpchp_wq);
++		destroy_workqueue(slot->wq);
+ 		pci_hp_deregister(slot->hotplug_slot);
+ 	}
+ }
+@@ -356,18 +365,12 @@ static struct pci_driver shpc_driver = {
  
- 	line = serial8250_register_port(&port);
--	if (line < 0)
-+	if (line < 0 || (flags & CIR_PORT))
- 		return -ENODEV;
+ static int __init shpcd_init(void)
+ {
+-	int retval = 0;
+-
+-	shpchp_wq = alloc_ordered_workqueue("shpchp", 0);
+-	if (!shpchp_wq)
+-		return -ENOMEM;
++	int retval;
  
- 	pnp_set_drvdata(dev, (void *)((long)line + 1));
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -47,7 +47,8 @@
- #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
- #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
- #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
--#define PORT_MAX_8250	21	/* max port ID */
-+#define PORT_8250_CIR	22	/* CIR infrared port, has its own driver */
-+#define PORT_MAX_8250	22	/* max port ID */
+ 	retval = pci_register_driver(&shpc_driver);
+ 	dbg("%s: pci_register_driver = %d\n", __func__, retval);
+ 	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
+-	if (retval) {
+-		destroy_workqueue(shpchp_wq);
+-	}
++
+ 	return retval;
+ }
  
- /*
-  * ARM specific type numbers.  These are not currently guaranteed
+@@ -375,7 +378,6 @@ static void __exit shpcd_cleanup(void)
+ {
+ 	dbg("unload_shpchpd()\n");
+ 	pci_unregister_driver(&shpc_driver);
+-	destroy_workqueue(shpchp_wq);
+ 	info(DRIVER_DESC " version: " DRIVER_VERSION " unloaded\n");
+ }
+ 
+--- a/drivers/pci/hotplug/shpchp_ctrl.c
++++ b/drivers/pci/hotplug/shpchp_ctrl.c
+@@ -51,7 +51,7 @@ static int queue_interrupt_event(struct
+ 	info->p_slot = p_slot;
+ 	INIT_WORK(&info->work, interrupt_event_handler);
+ 
+-	queue_work(shpchp_wq, &info->work);
++	queue_work(p_slot->wq, &info->work);
+ 
+ 	return 0;
+ }
+@@ -456,7 +456,7 @@ void shpchp_queue_pushbutton_work(struct
+ 		kfree(info);
+ 		goto out;
+ 	}
+-	queue_work(shpchp_wq, &info->work);
++	queue_work(p_slot->wq, &info->work);
+  out:
+ 	mutex_unlock(&p_slot->lock);
+ }
+@@ -504,7 +504,7 @@ static void handle_button_press_event(st
+ 		p_slot->hpc_ops->green_led_blink(p_slot);
+ 		p_slot->hpc_ops->set_attention_status(p_slot, 0);
+ 
+-		queue_delayed_work(shpchp_wq, &p_slot->work, 5*HZ);
++		queue_delayed_work(p_slot->wq, &p_slot->work, 5*HZ);
+ 		break;
+ 	case BLINKINGOFF_STATE:
+ 	case BLINKINGON_STATE:
 
 
