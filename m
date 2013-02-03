@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab3BCOzn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:55:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34217 "EHLO
+	id S1754275Ab3BCPSt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:18:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34227 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753462Ab3BCOzj (ORCPT
+	by vger.kernel.org with ESMTP id S1753667Ab3BCOzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:55:39 -0500
-Message-Id: <20130203144646.508344097@decadent.org.uk>
+	Sun, 3 Feb 2013 09:55:42 -0500
+Message-Id: <20130203144647.074088437@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:12 +0100
+Date: Sun, 03 Feb 2013 15:47:18 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Chris Perl <chris.perl@gmail.com>
-Subject: [ 028/128] SUNRPC: Ensure we release the socket write lock if the rpc_task
- exits early
+Cc: akpm@linux-foundation.org, Mark Rustad <mark.d.rustad@intel.com>,
+        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 034/128] tcm_fc: Do not report target role when target is not defined
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,63 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39 upstream.
+commit edec8dfefa1f372b2dd8197da555352e76a10c03 upstream.
 
-If the rpc_task exits while holding the socket write lock before it has
-allocated an rpc slot, then the usual mechanism for releasing the write
-lock in xprt_release() is defeated.
+Clear the target role when no target is provided for
+the node performing a PRLI.
 
-The problem occurs if the call to xprt_lock_write() initially fails, so
-that the rpc_task is put on the xprt->sending wait queue. If the task
-exits after being assigned the lock by __xprt_lock_write_func, but
-before it has retried the call to xprt_lock_and_alloc_slot(), then
-it calls xprt_release() while holding the write lock, but will
-immediately exit due to the test for task->tk_rqstp != NULL.
-
-Reported-by: Chris Perl <chris.perl@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Reviewed-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Acked by Robert Love <robert.w.love@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/sched.c |    3 +--
- net/sunrpc/xprt.c  |   12 ++++++++++--
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ drivers/target/tcm_fc/tfc_sess.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -918,8 +918,7 @@ static void rpc_async_release(struct wor
+diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
+index 59f2b46..6659dd3 100644
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -355,11 +355,11 @@ static int ft_prli_locked(struct fc_rport_priv *rdata, u32 spp_len,
  
- static void rpc_release_resources_task(struct rpc_task *task)
- {
--	if (task->tk_rqstp)
--		xprt_release(task);
-+	xprt_release(task);
- 	if (task->tk_msg.rpc_cred) {
- 		put_rpccred(task->tk_msg.rpc_cred);
- 		task->tk_msg.rpc_cred = NULL;
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -1132,10 +1132,18 @@ static void xprt_request_init(struct rpc
- void xprt_release(struct rpc_task *task)
- {
- 	struct rpc_xprt	*xprt;
--	struct rpc_rqst	*req;
-+	struct rpc_rqst	*req = task->tk_rqstp;
+ 	tport = ft_tport_create(rdata->local_port);
+ 	if (!tport)
+-		return 0;	/* not a target for this local port */
++		goto not_target;	/* not a target for this local port */
  
--	if (!(req = task->tk_rqstp))
-+	if (req == NULL) {
-+		if (task->tk_client) {
-+			rcu_read_lock();
-+			xprt = rcu_dereference(task->tk_client->cl_xprt);
-+			if (xprt->snd_task == task)
-+				xprt_release_write(xprt, task);
-+			rcu_read_unlock();
-+		}
- 		return;
-+	}
+ 	acl = ft_acl_get(tport->tpg, rdata);
+ 	if (!acl)
+-		return 0;
++		goto not_target;	/* no target for this remote */
  
- 	xprt = req->rq_xprt;
- 	rpc_count_iostats(task);
+ 	if (!rspp)
+ 		goto fill;
+@@ -402,6 +402,12 @@ fill:
+ 	fcp_parm &= ~FCP_SPPF_RETRY;
+ 	spp->spp_params = htonl(fcp_parm | FCP_SPPF_TARG_FCN);
+ 	return FC_SPP_RESP_ACK;
++
++not_target:
++	fcp_parm = ntohl(spp->spp_params);
++	fcp_parm &= ~FCP_SPPF_TARG_FCN;
++	spp->spp_params = htonl(fcp_parm);
++	return 0;
+ }
+ 
+ /**
 
 
