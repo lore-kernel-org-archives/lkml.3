@@ -1,58 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3BCXqt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 18:46:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53144 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753961Ab3BCXqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 18:46:45 -0500
-Message-ID: <510EF65D.4020602@zytor.com>
-Date: Sun, 03 Feb 2013 15:44:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 4/4] x86, 32-bit: Drop new_cpu_data
-References: <1359908079-10469-1-git-send-email-bp@alien8.de> <1359908079-10469-5-git-send-email-bp@alien8.de>
-In-Reply-To: <1359908079-10469-5-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754143Ab3BCXrJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 18:47:09 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54201 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab3BCXqQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 18:46:16 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-fe-510ef6c57a06
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v7 3/4] zram: give up lazy initialization of zram metadata
+Date: Mon,  4 Feb 2013 08:46:10 +0900
+Message-Id: <1359935171-12749-3-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359935171-12749-1-git-send-email-minchan@kernel.org>
+References: <1359935171-12749-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2013 08:14 AM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
->
-> We copy it to boot_cpu_data anyway so use boot_cpu_data from the get-go.
->
+1) User of zram normally do mkfs.xxx or mkswap before using
+   the zram block device(ex, normally, do it at booting time)
+   It ends up allocating such metadata of zram before real usage so
+   benefit of lazy initialzation would be mitigated.
 
-Hmm... this is the only part of this patchset I feel skeptical towards. 
-  Overall, a lot of the early SMP code went way out of its way to have 
-zero impact on the !CONFIG_SMP case, but that was a long time ago. 
-Nowadays what we really should have is cpu_data being a percpu variable 
-separate from boot_cpu_data (which is really "all_cpu_data") even on UP.
+2) Some user want to use zram when memory pressure is high.(ie, load zram
+   dynamically, NOT booting time). It does make sense because people don't
+   want to waste memory until memory pressure is high(ie, where zram is really
+   helpful time). In this case, lazy initialzation could be failed easily
+   because we will use GFP_NOIO instead of GFP_KERNEL for avoiding deadlock.
+   So the benefit of lazy initialzation would be mitigated, too.
 
-Another cleanup desperately needed in this area is a bitvector for bugs 
-in addition to features.  In fact, I kind of suspect we should make it 
-the *same* bitvector (different words) so we cpu_has(X) works on both 
-without confusion (just put the BUGS at the end; it means that if we add 
-feature words the bug numbers will shift but that is okay.)
+3) Metadata overhead is not critical and Nitin has a plan to diet it.
+   4K : 12 byte(64bit machine) -> 64G : 192M so 0.3% isn't big overhead
+   If insane user use such big zram device up to 20, it could consume 6% of ram
+   but efficieny of zram will cover the waste.
 
-I actually mean to do this when I did the CPU feature vector stuff over 
-10 years ago, but never got around to it... and it still has never 
-gotten done.
+So this patch gives up lazy initialization and instead we initialize metadata
+at disksize setting time.
 
-The difference between bugs and features, of course, is that the former 
-should be combined across CPUs with an OR whereas the latter get 
-combined with an AND.
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zram/zram_drv.c   |   20 ++++----------------
+ drivers/staging/zram/zram_sysfs.c |    1 +
+ 2 files changed, 5 insertions(+), 16 deletions(-)
 
-	-hpa
-
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 1114cad..85055c4 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -442,16 +442,13 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+ {
+ 	struct zram *zram = queue->queuedata;
+ 
+-	if (unlikely(!zram->init_done) && zram_init_device(zram))
+-		goto error;
+-
+ 	down_read(&zram->init_lock);
+ 	if (unlikely(!zram->init_done))
+-		goto error_unlock;
++		goto error;
+ 
+ 	if (!valid_io_request(zram, bio)) {
+ 		zram_stat64_inc(zram, &zram->stats.invalid_io);
+-		goto error_unlock;
++		goto error;
+ 	}
+ 
+ 	__zram_make_request(zram, bio, bio_data_dir(bio));
+@@ -459,9 +456,8 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+ 
+ 	return;
+ 
+-error_unlock:
+-	up_read(&zram->init_lock);
+ error:
++	up_read(&zram->init_lock);
+ 	bio_io_error(bio);
+ }
+ 
+@@ -510,18 +506,12 @@ void zram_reset_device(struct zram *zram)
+ 	up_write(&zram->init_lock);
+ }
+ 
++/* zram->init_lock should be held */
+ int zram_init_device(struct zram *zram)
+ {
+ 	int ret;
+ 	size_t num_pages;
+ 
+-	down_write(&zram->init_lock);
+-
+-	if (zram->init_done) {
+-		up_write(&zram->init_lock);
+-		return 0;
+-	}
+-
+ 	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+ 		pr_info(
+ 		"There is little point creating a zram of greater than "
+@@ -570,7 +560,6 @@ int zram_init_device(struct zram *zram)
+ 	}
+ 
+ 	zram->init_done = 1;
+-	up_write(&zram->init_lock);
+ 
+ 	pr_debug("Initialization done!\n");
+ 	return 0;
+@@ -580,7 +569,6 @@ fail_no_table:
+ 	zram->disksize = 0;
+ fail:
+ 	__zram_reset_device(zram);
+-	up_write(&zram->init_lock);
+ 	pr_err("Initialization failed: err=%d\n", ret);
+ 	return ret;
+ }
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index 4143af9..369db12 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -71,6 +71,7 @@ static ssize_t disksize_store(struct device *dev,
+ 
+ 	zram->disksize = PAGE_ALIGN(disksize);
+ 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
++	zram_init_device(zram);
+ 	up_write(&zram->init_lock);
+ 
+ 	return len;
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.9.5
 
