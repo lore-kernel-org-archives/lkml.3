@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab3BCALN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 19:11:13 -0500
-Received: from mout.gmx.net ([212.227.15.19]:62285 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664Ab3BCALM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 19:11:12 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/+jJFCFSz+jOG9DmvxGFu7rmpyE2R1JHkLHNAnHj
-	eeLnLFSY1D+zpd
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: ben-linux@fluff.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] i2c/i2c-mxs: use devm_request_and_ioremap
-Date: Sun,  3 Feb 2013 01:14:57 +0100
-Message-Id: <1359850497-927-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S1752510Ab3BCARS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 19:17:18 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:62148 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab3BCARO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Feb 2013 19:17:14 -0500
+Message-ID: <1359850629.3064.1.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCHv4 0/7] zswap: compressed swap caching
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Date: Sat, 02 Feb 2013 18:17:09 -0600
+In-Reply-To: <510BDB8F.5000104@linux.vnet.ibm.com>
+References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	 <1359682784.3574.2.camel@kernel> <510BDB8F.5000104@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace a call to devm_request_mem_region followed by a call to
-dev_ioremap_nocache with devm_request_and_ioremap which does the same.
-And since res_size isn't needed anymore we can remove it as well.
+On Fri, 2013-02-01 at 09:13 -0600, Seth Jennings wrote:
+> On 01/31/2013 07:39 PM, Simon Jeons wrote:
+> > Hi Seth,
+> > On Tue, 2013-01-29 at 15:40 -0600, Seth Jennings wrote:
+> <snip>
+> >> Performance, Kernel Building:
+> >>
+> >> Setup
+> >> ========
+> >> Gentoo w/ kernel v3.7-rc7
+> >> Quad-core i5-2500 @ 3.3GHz
+> >> 512MB DDR3 1600MHz (limited with mem=512m on boot)
+> >> Filesystem and swap on 80GB HDD (about 58MB/s with hdparm -t)
+> >> majflt are major page faults reported by the time command
+> >> pswpin/out is the delta of pswpin/out from /proc/vmstat before and after
+> >> then make -jN
+> >>
+> >> Summary
+> >> ========
+> >> * Zswap reduces I/O and improves performance at all swap pressure levels.
+> >>
+> >> * Under heavy swaping at 24 threads, zswap reduced I/O by 76%, saving
+> >>   over 1.5GB of I/O, and cut runtime in half.
+> > 
+> > How to get your benchmark?
+> 
+> It's just kernel building.  So "make" :)
+> 
+> I intentionally choose this workload so people wouldn't have to jump
+> through hoops to replicate the results.
 
-Found with coccicheck and this semantic patch:
- scripts/coccinelle/api/devm_request_and_ioremap.cocci.
+Thanks for your clarify. zswap is belong to in-kernel compression,
+correct? then what's the difference between in-memory compression and
+in-kernel compression?
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/i2c/busses/i2c-mxs.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+> 
+> Seth
+> 
 
-diff --git a/drivers/i2c/busses/i2c-mxs.c b/drivers/i2c/busses/i2c-mxs.c
-index d6abaf2..4ca92b6 100644
---- a/drivers/i2c/busses/i2c-mxs.c
-+++ b/drivers/i2c/busses/i2c-mxs.c
-@@ -439,7 +439,6 @@ static int mxs_i2c_probe(struct platform_device *pdev)
- 	struct i2c_adapter *adap;
- 	struct pinctrl *pinctrl;
- 	struct resource *res;
--	resource_size_t res_size;
- 	int err, irq, dmairq;
- 	dma_cap_mask_t mask;
- 
-@@ -458,11 +457,7 @@ static int mxs_i2c_probe(struct platform_device *pdev)
- 	if (!res || irq < 0 || dmairq < 0)
- 		return -ENOENT;
- 
--	res_size = resource_size(res);
--	if (!devm_request_mem_region(dev, res->start, res_size, res->name))
--		return -EBUSY;
--
--	i2c->regs = devm_ioremap_nocache(dev, res->start, res_size);
-+	i2c->regs = devm_request_and_ioremap(dev, res);
- 	if (!i2c->regs)
- 		return -EBUSY;
- 
--- 
-1.7.8.6
 
