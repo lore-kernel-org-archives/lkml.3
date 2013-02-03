@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab3BCBWz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:22:55 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:35000 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab3BCBWt (ORCPT
+	id S1754209Ab3BCBXL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:23:11 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:43822 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147Ab3BCBXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:49 -0500
+	Sat, 2 Feb 2013 20:23:01 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
-Subject: [PATCH 46/62] target/iscsi: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:47 -0800
-Message-Id: <1359854463-2538-47-git-send-email-tj@kernel.org>
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
+Subject: [PATCH 53/62] ocfs2: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:54 -0800
+Message-Id: <1359854463-2538-54-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -29,84 +28,62 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-Cc: linux-scsi@vger.kernel.org
-Cc: target-devel@vger.kernel.org
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/target/iscsi/iscsi_target.c       | 15 ++++++++-------
- drivers/target/iscsi/iscsi_target_login.c | 15 ++++++---------
- 2 files changed, 14 insertions(+), 16 deletions(-)
+ fs/ocfs2/cluster/tcp.c | 32 +++++++++++++-------------------
+ 1 file changed, 13 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index 339f97f..f1fdf4f 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -144,23 +144,24 @@ struct iscsi_tiqn *iscsit_add_tiqn(unsigned char *buf)
- 	spin_lock_init(&tiqn->login_stats.lock);
- 	spin_lock_init(&tiqn->logout_stats.lock);
+diff --git a/fs/ocfs2/cluster/tcp.c b/fs/ocfs2/cluster/tcp.c
+index 1bfe880..7c10d75 100644
+--- a/fs/ocfs2/cluster/tcp.c
++++ b/fs/ocfs2/cluster/tcp.c
+@@ -304,28 +304,22 @@ static u8 o2net_num_from_nn(struct o2net_node *nn)
  
--	if (!idr_pre_get(&tiqn_idr, GFP_KERNEL)) {
--		pr_err("idr_pre_get() for tiqn_idr failed\n");
--		kfree(tiqn);
--		return ERR_PTR(-ENOMEM);
--	}
- 	tiqn->tiqn_state = TIQN_STATE_ACTIVE;
+ static int o2net_prep_nsw(struct o2net_node *nn, struct o2net_status_wait *nsw)
+ {
+-	int ret = 0;
+-
+-	do {
+-		if (!idr_pre_get(&nn->nn_status_idr, GFP_ATOMIC)) {
+-			ret = -EAGAIN;
+-			break;
+-		}
+-		spin_lock(&nn->nn_lock);
+-		ret = idr_get_new(&nn->nn_status_idr, nsw, &nsw->ns_id);
+-		if (ret == 0)
+-			list_add_tail(&nsw->ns_node_item,
+-				      &nn->nn_status_list);
+-		spin_unlock(&nn->nn_lock);
+-	} while (ret == -EAGAIN);
++	int ret;
  
-+	idr_preload(GFP_KERNEL);
- 	spin_lock(&tiqn_lock);
--	ret = idr_get_new(&tiqn_idr, NULL, &tiqn->tiqn_index);
-+
-+	ret = idr_alloc(&tiqn_idr, NULL, 0, 0, GFP_NOWAIT);
- 	if (ret < 0) {
--		pr_err("idr_get_new() failed for tiqn->tiqn_index\n");
-+		pr_err("idr_alloc() failed for tiqn->tiqn_index\n");
- 		spin_unlock(&tiqn_lock);
-+		idr_preload_end();
- 		kfree(tiqn);
- 		return ERR_PTR(ret);
+-	if (ret == 0)  {
+-		init_waitqueue_head(&nsw->ns_wq);
+-		nsw->ns_sys_status = O2NET_ERR_NONE;
+-		nsw->ns_status = 0;
++	spin_lock(&nn->nn_lock);
++	ret = idr_alloc(&nn->nn_status_idr, nsw, 0, 0, GFP_ATOMIC);
++	if (ret >= 0) {
++		nsw->ns_id = ret;
++		list_add_tail(&nsw->ns_node_item, &nn->nn_status_list);
  	}
-+	tiqn->tiqn_index = ret;
- 	list_add_tail(&tiqn->tiqn_list, &g_tiqn_list);
-+
- 	spin_unlock(&tiqn_lock);
-+	idr_preload_end();
++	spin_unlock(&nn->nn_lock);
++	if (ret < 0)
++		return ret;
  
- 	pr_debug("CORE[0] - Added iSCSI Target IQN: %s\n", tiqn->tiqn);
+-	return ret;
++	init_waitqueue_head(&nsw->ns_wq);
++	nsw->ns_sys_status = O2NET_ERR_NONE;
++	nsw->ns_status = 0;
++	return 0;
+ }
  
-diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
-index fdb632f..2535d4d 100644
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -247,19 +247,16 @@ static int iscsi_login_zero_tsih_s1(
- 	spin_lock_init(&sess->session_usage_lock);
- 	spin_lock_init(&sess->ttt_lock);
- 
--	if (!idr_pre_get(&sess_idr, GFP_KERNEL)) {
--		pr_err("idr_pre_get() for sess_idr failed\n");
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
--		kfree(sess);
--		return -ENOMEM;
--	}
-+	idr_preload(GFP_KERNEL);
- 	spin_lock_bh(&sess_idr_lock);
--	ret = idr_get_new(&sess_idr, NULL, &sess->session_index);
-+	ret = idr_alloc(&sess_idr, NULL, 0, 0, GFP_NOWAIT);
-+	if (ret >= 0)
-+		sess->session_index = ret;
- 	spin_unlock_bh(&sess_idr_lock);
-+	idr_preload_end();
- 
- 	if (ret < 0) {
--		pr_err("idr_get_new() for sess_idr failed\n");
-+		pr_err("idr_alloc() for sess_idr failed\n");
- 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
- 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
- 		kfree(sess);
+ static void o2net_complete_nsw_locked(struct o2net_node *nn,
 -- 
 1.8.1
 
