@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab3BCO6K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:58:10 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34521 "EHLO
+	id S1755134Ab3BCPDd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:03:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34573 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754857Ab3BCO5y (ORCPT
+	by vger.kernel.org with ESMTP id S1754933Ab3BCO6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:57:54 -0500
-Message-Id: <20130203144653.425801193@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:10 -0500
+Message-Id: <20130203144654.273299109@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:30 +0100
+Date: Sun, 03 Feb 2013 15:48:40 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Matt Fleming <matt.fleming@intel.com>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Colin Ian King <colin.king@canonical.com>,
-        Steve Langasek <steve.langasek@canonical.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 106/128] samsung-laptop: Disable on EFI hardware
+Cc: akpm@linux-foundation.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Abdallah Chatila <abdallah.chatila@ericsson.com>
+Subject: [ 116/128] drm/i915: Implement WaDisableHiZPlanesWhenMSAAEnabled
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,55 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit e0094244e41c4d0c7ad69920681972fc45d8ce34 upstream.
+commit 4283908ef7f11a72c3b80dd4cf026f1a86429f82 upstream.
 
-It has been reported that running this driver on some Samsung laptops
-with EFI can cause those machines to become bricked as detailed in the
-following report,
+Quoting from Bspec, 3D_CHICKEN1, bit 10
 
-	https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
+This bit needs to be set always to "1", Project: DevSNB "
 
-There have also been reports of this driver causing Machine Check
-Exceptions on recent EFI-enabled Samsung laptops,
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=47121
-
-So disable it if booting from EFI since this driver relies on
-grovelling around in the BIOS memory map which isn't going to work.
-
-Cc: Corentin Chary <corentincj@iksaif.net>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Colin Ian King <colin.king@canonical.com>
-Cc: Steve Langasek <steve.langasek@canonical.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-[bwh: Backported to 3.2: adjust context]
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Abdallah Chatila <abdallah.chatila@ericsson.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/platform/x86/samsung-laptop.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/i915_reg.h      |    3 +++
+ drivers/gpu/drm/i915/intel_display.c |    4 ++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -22,6 +22,7 @@
- #include <linux/platform_device.h>
- #include <linux/rfkill.h>
- #include <linux/acpi.h>
-+#include <linux/efi.h>
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 8fa4f7b..5dc3b6d 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -27,6 +27,8 @@
  
- /*
-  * This driver is needed because a number of Samsung laptops do not hook
-@@ -603,6 +604,9 @@ static int __init samsung_init(void)
- 	int loca;
- 	int retval;
+ #define _PIPE(pipe, a, b) ((a) + (pipe)*((b)-(a)))
  
-+	if (efi_enabled(EFI_BOOT))
-+		return -ENODEV;
++#define _MASKED_BIT_ENABLE(a) (((a) << 16) | (a))
 +
- 	mutex_init(&sabi_mutex);
- 	handle_backlight = true;
+ /*
+  * The Bridge device's PCI config space has information about the
+  * fb aperture size and the amount of pre-reserved memory.
+@@ -354,6 +356,7 @@
+  * the enables for writing to the corresponding low bit.
+  */
+ #define _3D_CHICKEN	0x02084
++#define _3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB	(1 << 10)
+ #define _3D_CHICKEN2	0x0208c
+ /* Disables pipelining of read flushes past the SF-WIZ interface.
+  * Required on all Ironlake steppings according to the B-Spec, but the
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index d1dca92..b4f4d12 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7412,6 +7412,10 @@ static void gen6_init_clock_gating(struct drm_device *dev)
+ 		   I915_READ(ILK_DISPLAY_CHICKEN2) |
+ 		   ILK_ELPIN_409_SELECT);
  
++	/* WaDisableHiZPlanesWhenMSAAEnabled */
++	I915_WRITE(_3D_CHICKEN,
++		   _MASKED_BIT_ENABLE(_3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB));
++
+ 	I915_WRITE(WM3_LP_ILK, 0);
+ 	I915_WRITE(WM2_LP_ILK, 0);
+ 	I915_WRITE(WM1_LP_ILK, 0);
 
 
