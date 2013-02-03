@@ -1,165 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab3BCNfP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 08:35:15 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:55093 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258Ab3BCNfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 08:35:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: fli24 <fei.li@intel.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, chuansheng.liu@intel.com
-Subject: Re: [PATCH V4] suspend: enable freeze timeout configuration through sys
-Date: Sun, 03 Feb 2013 14:41:27 +0100
-Message-ID: <1919836.fQMoKOYYSd@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1359708963.7240.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <1359608132.7918.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <1359708963.7240.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+	id S1753267Ab3BCNgS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 08:36:18 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:31376 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752268Ab3BCNgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 08:36:17 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sun, 3 Feb 2013 21:36:24 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Brian Lilly <brian@crystalfontz.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: mxs: dts: Add gpio-keys for the rotary to the
+ CFA-10049
+Message-ID: <20130203133620.GA24081@S2101-09.ap.freescale.net>
+References: <1359626424-22546-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1359626424-22546-2-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1359626424-22546-2-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 01, 2013 04:56:03 PM fli24 wrote:
+On Thu, Jan 31, 2013 at 11:00:23AM +0100, Maxime Ripard wrote:
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-The code looks OK, but I'm still having a more fundamental problem with this
-change, because ->
+Applied both, thanks.
 
-> At present, the value of timeout for freezing is 20s, which is
-> meaningless in case that one thread is frozen with mutex locked
-> and another thread is trying to lock the mutex, as this time of
-> freezing will fail unavoidably.
-
--> the situation described above shouldn't happen and if it does, then there
-is a bug that needs to be fixed.
-
-The change you're proposing seems to be targeted at hiding those bugs rather
-than at fixing them.  I wonder why we should hide those bugs instead of fixing
-them?
-
-Rafael
-
-
-> And if there is no new wakeup event registered, the system will
-> waste at most 20s for such meaningless trying of freezing.
-> 
-> With this patch, the value of timeout can be configured to smaller
-> value, so such meaningless trying of freezing will be aborted in
-> earlier time, and later freezing can be also triggered in earlier
-> time. And more power will be saved.
-> In normal case on mobile phone, it costs real little time to freeze
-> processes. On some platform, it only costs about 20ms to freeze
-> user space processes and 10ms to freeze kernel freezable threads.
-> 
-> Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
-> Signed-off-by: Li Fei <fei.li@intel.com>
 > ---
->  Documentation/power/freezing-of-tasks.txt |    5 +++++
->  include/linux/freezer.h                   |    5 +++++
->  kernel/power/main.c                       |   27 +++++++++++++++++++++++++++
->  kernel/power/process.c                    |    4 ++--
->  4 files changed, 39 insertions(+), 2 deletions(-)
+>  arch/arm/boot/dts/imx28-cfa10049.dts |   14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
 > 
-> diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
-> index 6ec291e..85894d8 100644
-> --- a/Documentation/power/freezing-of-tasks.txt
-> +++ b/Documentation/power/freezing-of-tasks.txt
-> @@ -223,3 +223,8 @@ since they ask the freezer to skip freezing this task, since it is anyway
->  only after the entire suspend/hibernation sequence is complete.
->  So, to summarize, use [un]lock_system_sleep() instead of directly using
->  mutex_[un]lock(&pm_mutex). That would prevent freezing failures.
-> +
-> +V. Miscellaneous
-> +/sys/power/pm_freeze_timeout controls how long it will cost at most to freeze
-> +all user space processes or all freezable kernel threads, in unit of millisecond.
-> +The default value is 20000, with range of unsigned integer.
-> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> index e4238ce..e70df40 100644
-> --- a/include/linux/freezer.h
-> +++ b/include/linux/freezer.h
-> @@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect */
->  extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
+> diff --git a/arch/arm/boot/dts/imx28-cfa10049.dts b/arch/arm/boot/dts/imx28-cfa10049.dts
+> index cabc33a..5db3789 100644
+> --- a/arch/arm/boot/dts/imx28-cfa10049.dts
+> +++ b/arch/arm/boot/dts/imx28-cfa10049.dts
+> @@ -45,6 +45,7 @@
+>  					reg = <0>;
+>  					fsl,pinmux-ids = <
+>  						0x2133 /* MX28_PAD_SSP2_D3__GPIO_2_19 */
+> +						0x31a3 /* MX28_PAD_SAIF_SDATA0__GPIO_3_26 */
+>  						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
+>  					>;
+>  					fsl,drive-strength = <0>;
+> @@ -276,6 +277,19 @@
+>  		};
+>  	};
 >  
->  /*
-> + * Timeout for stopping processes
-> + */
-> +extern unsigned int freeze_timeout_msecs;
+> +	gpio_keys {
+> +		compatible = "gpio-keys";
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
 > +
-> +/*
->   * Check if a process has been frozen
->   */
->  static inline bool frozen(struct task_struct *p)
-> diff --git a/kernel/power/main.c b/kernel/power/main.c
-> index 1c16f91..3e1c9da 100644
-> --- a/kernel/power/main.c
-> +++ b/kernel/power/main.c
-> @@ -553,6 +553,30 @@ power_attr(pm_trace_dev_match);
->  
->  #endif /* CONFIG_PM_TRACE */
->  
-> +#ifdef CONFIG_FREEZER
-> +static ssize_t pm_freeze_timeout_show(struct kobject *kobj,
-> +				      struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "%u\n", freeze_timeout_msecs);
-> +}
+> +		rotary_button {
+> +			label = "rotary_button";
+> +			gpios = <&gpio3 26 1>;
+> +			debounce-interval = <10>;
+> +			linux,code = <28>;
+> +		};
+> +	};
 > +
-> +static ssize_t pm_freeze_timeout_store(struct kobject *kobj,
-> +				       struct kobj_attribute *attr,
-> +				       const char *buf, size_t n)
-> +{
-> +	unsigned long val;
-> +
-> +	if (kstrtoul(buf, 10, &val))
-> +		return -EINVAL;
-> +
-> +	freeze_timeout_msecs = val;
-> +	return n;
-> +}
-> +
-> +power_attr(pm_freeze_timeout);
-> +
-> +#endif	/* CONFIG_FREEZER*/
-> +
->  static struct attribute * g[] = {
->  	&state_attr.attr,
->  #ifdef CONFIG_PM_TRACE
-> @@ -576,6 +600,9 @@ static struct attribute * g[] = {
->  	&pm_print_times_attr.attr,
->  #endif
->  #endif
-> +#ifdef CONFIG_FREEZER
-> +	&pm_freeze_timeout_attr.attr,
-> +#endif
->  	NULL,
->  };
->  
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index d5a258b..98088e0 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -21,7 +21,7 @@
->  /* 
->   * Timeout for stopping processes
->   */
-> -#define TIMEOUT	(20 * HZ)
-> +unsigned int __read_mostly freeze_timeout_msecs = 20 * MSEC_PER_SEC;
->  
->  static int try_to_freeze_tasks(bool user_only)
->  {
-> @@ -36,7 +36,7 @@ static int try_to_freeze_tasks(bool user_only)
->  
->  	do_gettimeofday(&start);
->  
-> -	end_time = jiffies + TIMEOUT;
-> +	end_time = jiffies + msecs_to_jiffies(freeze_timeout_msecs);
->  
->  	if (!user_only)
->  		freeze_workqueues_begin();
+>  	backlight {
+>  		compatible = "pwm-backlight";
+>  		pwms = <&pwm 3 5000000>;
+> -- 
+> 1.7.10.4
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
