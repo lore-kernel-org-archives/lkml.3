@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab3BCOzK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:55:10 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34103 "EHLO
+	id S1754014Ab3BCPVy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:21:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34147 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753684Ab3BCOzA (ORCPT
+	by vger.kernel.org with ESMTP id S1753500Ab3BCOzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:55:00 -0500
-Message-Id: <20130203144645.815424964@decadent.org.uk>
+	Sun, 3 Feb 2013 09:55:11 -0500
+Message-Id: <20130203144646.179760100@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:04 +0100
+Date: Sun, 03 Feb 2013 15:47:08 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Larry Finger <Larry.Finger@lwfinger.net>,
-        Thomas Hartmann <hartmann@ict.tuwien.ac.at>,
+Cc: akpm@linux-foundation.org, Ian Abbott <abbotti@mev.co.uk>,
+        =?ISO-8859-15?q?=C3=89ric=20Piel?= <piel@delmic.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 020/128] staging: r8712u: Add new device ID
+Subject: [ 024/128] staging: comedi: comedi_test: fix race when cancelling command
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,34 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit da849a92d3bafaf24d770e971c2c9e5c3f60b5d1 upstream.
+commit c0729eeefdcd76db338f635162bf0739fd2c5f6f upstream.
 
-The ISY IWL 1000 USB WLAN stick with USB ID 050d:11f1 is a clone of
-the Belkin F7D1101 V1 device.
+Éric Piel reported a kernel oops in the "comedi_test" module.  It was a
+NULL pointer dereference within `waveform_ai_interrupt()` (actually a
+timer function) that sometimes occurred when a running asynchronous
+command is cancelled (either by the `COMEDI_CANCEL` ioctl or by closing
+the device file).
 
-Reported-by: Thomas Hartmann <hartmann@ict.tuwien.ac.at>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Thomas Hartmann <hartmann@ict.tuwien.ac.at>
+This seems to be a race between the caller of `waveform_ai_cancel()`
+which on return from that function goes and tears down the running
+command, and the timer function which uses the command.  In particular,
+`async->cmd.chanlist` gets freed (and the pointer set to NULL) by
+`do_become_nonbusy()` in "comedi_fops.c" but a previously scheduled
+`waveform_ai_interrupt()` timer function will dereference that pointer
+regardless, leading to the oops.
+
+Fix it by replacing the `del_timer()` call in `waveform_ai_cancel()`
+with `del_timer_sync()`.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Reported-by: Éric Piel <piel@delmic.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/rtl8712/usb_intf.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/comedi/drivers/comedi_test.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/rtl8712/usb_intf.c b/drivers/staging/rtl8712/usb_intf.c
-index 6b73843..a96cd06 100644
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -63,6 +63,8 @@ static struct usb_device_id rtl871x_usb_id_tbl[] = {
- 	{USB_DEVICE(0x0B05, 0x1791)}, /* 11n mode disable */
- 	/* Belkin */
- 	{USB_DEVICE(0x050D, 0x945A)},
-+	/* ISY IWL - Belkin clone */
-+	{USB_DEVICE(0x050D, 0x11F1)},
- 	/* Corega */
- 	{USB_DEVICE(0x07AA, 0x0047)},
- 	/* D-Link */
+--- a/drivers/staging/comedi/drivers/comedi_test.c
++++ b/drivers/staging/comedi/drivers/comedi_test.c
+@@ -461,7 +461,7 @@ static int waveform_ai_cancel(struct com
+ 			      struct comedi_subdevice *s)
+ {
+ 	devpriv->timer_running = 0;
+-	del_timer(&devpriv->timer);
++	del_timer_sync(&devpriv->timer);
+ 	return 0;
+ }
+ 
 
 
