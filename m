@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3BCPEW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:04:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34557 "EHLO
+	id S1755086Ab3BCPEU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:04:20 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34559 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754893Ab3BCO6D (ORCPT
+	by vger.kernel.org with ESMTP id S1754087Ab3BCO6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Feb 2013 09:58:03 -0500
-Message-Id: <20130203144652.718030359@decadent.org.uk>
+Message-Id: <20130203144653.768292235@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:22 +0100
+Date: Sun, 03 Feb 2013 15:48:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Olivier Sobrie <olivier@sobrie.be>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 098/128] can: pch_can: fix invalid error codes
+Cc: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Mathias Krause <minipli@googlemail.com>
+Subject: [ 110/128] x86/Sandy Bridge: mark arrays in __init functions as __initconst
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,32 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Sobrie <olivier@sobrie.be>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit ee50e135aeb048b90fab662e661c58b67341830b upstream.
+commit ab3cd8670e0b3fcde7f029e1503ed3c5138e9571 upstream.
 
-Errors in CAN protocol (location) are reported in data[3] of the can
-frame instead of data[2].
+Mark static arrays as __initconst so they get removed when the init
+sections are flushed.
 
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Reported-by: Mathias Krause <minipli@googlemail.com>
+Link: http://lkml.kernel.org/r/75F4BEE6-CB0E-4426-B40B-697451677738@googlemail.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/pch_can.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/setup.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 7d17485..5c314a9 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -560,7 +560,7 @@ static void pch_can_error(struct net_device *ndev, u32 status)
- 		stats->rx_errors++;
- 		break;
- 	case PCH_CRC_ERR:
--		cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
-+		cf->data[3] |= CAN_ERR_PROT_LOC_CRC_SEQ |
- 			       CAN_ERR_PROT_LOC_CRC_DEL;
- 		priv->can.can_stats.bus_error++;
- 		stats->rx_errors++;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 9dcb325..18182d1 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -614,7 +614,7 @@ static bool __init snb_gfx_workaround_needed(void)
+ {
+ 	int i;
+ 	u16 vendor, devid;
+-	static const u16 snb_ids[] = {
++	static const __initconst u16 snb_ids[] = {
+ 		0x0102,
+ 		0x0112,
+ 		0x0122,
+@@ -646,7 +646,7 @@ static bool __init snb_gfx_workaround_needed(void)
+  */
+ static void __init trim_snb_memory(void)
+ {
+-	static const unsigned long bad_pages[] = {
++	static const __initconst unsigned long bad_pages[] = {
+ 		0x20050000,
+ 		0x20110000,
+ 		0x20130000,
 
 
