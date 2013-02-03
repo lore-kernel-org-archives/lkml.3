@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab3BCPEx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:04:53 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34552 "EHLO
+	id S1755222Ab3BCPFP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:05:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34544 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754880Ab3BCO6B (ORCPT
+	by vger.kernel.org with ESMTP id S1754812Ab3BCO57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:58:01 -0500
-Message-Id: <20130203144652.974556624@decadent.org.uk>
+	Sun, 3 Feb 2013 09:57:59 -0500
+Message-Id: <20130203144652.545911853@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:25 +0100
+Date: Sun, 03 Feb 2013 15:48:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Borislav Petkov <bp@suse.de>, Joerg Roedel <joro@8bytes.org>
-Subject: [ 101/128] IOMMU, AMD Family15h Model10-1Fh erratum 746 Workaround
+Cc: akpm@linux-foundation.org, Olivier Sobrie <olivier@sobrie.be>,
+        Bhupesh Sharma <bhupesh.sharma@st.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 096/128] can: c_can: fix invalid error codes
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,78 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+From: Olivier Sobrie <olivier@sobrie.be>
 
-commit 318fe782539c4150d1b8e4e6c9dc3a896512cb8a upstream.
+commit 6ea45886865c1abb01bb861f7f6bdd5d0f398cb3 upstream.
 
-The IOMMU may stop processing page translations due to a perceived lack
-of credits for writing upstream peripheral page service request (PPR)
-or event logs. If the L2B miscellaneous clock gating feature is enabled
-the IOMMU does not properly register credits after the log request has
-completed, leading to a potential system hang.
+Errors in CAN protocol (location) are reported in data[3] of the can
+frame instead of data[2].
 
-BIOSes are supposed to disable L2B micellaneous clock gating by setting
-L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b. This
-patch corrects that for those which do not enable this workaround.
-
-Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-[bwh: Backported to 3.2: adjust context]
+Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
+Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/iommu/amd_iommu_init.c |   34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ drivers/net/can/c_can/c_can.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -916,6 +916,38 @@ static void __init free_iommu_all(void)
- }
- 
- /*
-+ * Family15h Model 10h-1fh erratum 746 (IOMMU Logging May Stall Translations)
-+ * Workaround:
-+ *     BIOS should disable L2B micellaneous clock gating by setting
-+ *     L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
-+ */
-+static void __init amd_iommu_erratum_746_workaround(struct amd_iommu *iommu)
-+{
-+	u32 value;
-+
-+	if ((boot_cpu_data.x86 != 0x15) ||
-+	    (boot_cpu_data.x86_model < 0x10) ||
-+	    (boot_cpu_data.x86_model > 0x1f))
-+		return;
-+
-+	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
-+	pci_read_config_dword(iommu->dev, 0xf4, &value);
-+
-+	if (value & BIT(2))
-+		return;
-+
-+	/* Select NB indirect register 0x90 and enable writing */
-+	pci_write_config_dword(iommu->dev, 0xf0, 0x90 | (1 << 8));
-+
-+	pci_write_config_dword(iommu->dev, 0xf4, value | 0x4);
-+	pr_info("AMD-Vi: Applying erratum 746 workaround for IOMMU at %s\n",
-+		dev_name(&iommu->dev->dev));
-+
-+	/* Clear the enable writing bit */
-+	pci_write_config_dword(iommu->dev, 0xf0, 0x90);
-+}
-+
-+/*
-  * This function clues the initialization function for one IOMMU
-  * together and also allocates the command buffer and programs the
-  * hardware. It does NOT enable the IOMMU. This is done afterwards.
-@@ -970,6 +1002,8 @@ static int __init init_iommu_one(struct
- 	if (iommu->cap & (1UL << IOMMU_CAP_NPCACHE))
- 		amd_iommu_np_cache = true;
- 
-+	amd_iommu_erratum_746_workaround(iommu);
-+
- 	return pci_enable_device(iommu->dev);
- }
- 
+diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+index 5233b8f..58607f1 100644
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -960,7 +960,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
+ 		break;
+ 	case LEC_ACK_ERROR:
+ 		netdev_dbg(dev, "ack error\n");
+-		cf->data[2] |= (CAN_ERR_PROT_LOC_ACK |
++		cf->data[3] |= (CAN_ERR_PROT_LOC_ACK |
+ 				CAN_ERR_PROT_LOC_ACK_DEL);
+ 		break;
+ 	case LEC_BIT1_ERROR:
+@@ -973,7 +973,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
+ 		break;
+ 	case LEC_CRC_ERROR:
+ 		netdev_dbg(dev, "CRC error\n");
+-		cf->data[2] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
++		cf->data[3] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
+ 				CAN_ERR_PROT_LOC_CRC_DEL);
+ 		break;
+ 	default:
 
 
