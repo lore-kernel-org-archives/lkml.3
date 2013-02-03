@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3BCB2C (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:28:02 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:44057 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718Ab3BCBWj (ORCPT
+	id S1753911Ab3BCBW3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:22:29 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:47430 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753748Ab3BCBWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:22:39 -0500
+	Sat, 2 Feb 2013 20:22:22 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 43/62] rpmsg: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:44 -0800
-Message-Id: <1359854463-2538-44-git-send-email-tj@kernel.org>
+        Arnd Bergmann <arnd@arndb.de>, Rodolfo Giometti <giometti@linux.it>
+Subject: [PATCH 34/62] misc/c2port: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:35 -0800
+Message-Id: <1359854463-2538-35-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -28,77 +28,71 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Rodolfo Giometti <giometti@linux.it>
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- drivers/rpmsg/virtio_rpmsg_bus.c | 30 ++++++++++++------------------
- 1 file changed, 12 insertions(+), 18 deletions(-)
+ drivers/misc/c2port/core.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
-index aa334b6..7ce2802 100644
---- a/drivers/rpmsg/virtio_rpmsg_bus.c
-+++ b/drivers/rpmsg/virtio_rpmsg_bus.c
-@@ -213,13 +213,10 @@ static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
- 		struct rpmsg_channel *rpdev, rpmsg_rx_cb_t cb,
- 		void *priv, u32 addr)
+diff --git a/drivers/misc/c2port/core.c b/drivers/misc/c2port/core.c
+index f428d86..f32550a 100644
+--- a/drivers/misc/c2port/core.c
++++ b/drivers/misc/c2port/core.c
+@@ -885,7 +885,7 @@ struct c2port_device *c2port_device_register(char *name,
+ 					struct c2port_ops *ops, void *devdata)
  {
--	int err, tmpaddr, request;
-+	int id_min, id_max, id;
- 	struct rpmsg_endpoint *ept;
- 	struct device *dev = rpdev ? &rpdev->dev : &vrp->vdev->dev;
+ 	struct c2port_device *c2dev;
+-	int id, ret;
++	int ret;
  
--	if (!idr_pre_get(&vrp->endpoints, GFP_KERNEL))
--		return NULL;
--
- 	ept = kzalloc(sizeof(*ept), GFP_KERNEL);
- 	if (!ept) {
- 		dev_err(dev, "failed to kzalloc a new ept\n");
-@@ -234,31 +231,28 @@ static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
- 	ept->priv = priv;
+ 	if (unlikely(!ops) || unlikely(!ops->access) || \
+ 		unlikely(!ops->c2d_dir) || unlikely(!ops->c2ck_set) || \
+@@ -897,22 +897,18 @@ struct c2port_device *c2port_device_register(char *name,
+ 	if (unlikely(!c2dev))
+ 		return ERR_PTR(-ENOMEM);
  
- 	/* do we need to allocate a local address ? */
--	request = addr == RPMSG_ADDR_ANY ? RPMSG_RESERVED_ADDRESSES : addr;
-+	if (addr == RPMSG_ADDR_ANY) {
-+		id_min = RPMSG_RESERVED_ADDRESSES;
-+		id_max = 0;
-+	} else {
-+		id_min = addr;
-+		id_max = addr + 1;
-+	}
- 
- 	mutex_lock(&vrp->endpoints_lock);
- 
- 	/* bind the endpoint to an rpmsg address (and allocate one if needed) */
--	err = idr_get_new_above(&vrp->endpoints, ept, request, &tmpaddr);
--	if (err) {
--		dev_err(dev, "idr_get_new_above failed: %d\n", err);
-+	id = idr_alloc(&vrp->endpoints, ept, id_min, id_max, GFP_KERNEL);
-+	if (id < 0) {
-+		dev_err(dev, "idr_alloc failed: %d\n", id);
- 		goto free_ept;
- 	}
--
--	/* make sure the user's address request is fulfilled, if relevant */
--	if (addr != RPMSG_ADDR_ANY && tmpaddr != addr) {
--		dev_err(dev, "address 0x%x already in use\n", addr);
--		goto rem_idr;
+-	ret = idr_pre_get(&c2port_idr, GFP_KERNEL);
+-	if (!ret) {
+-		ret = -ENOMEM;
+-		goto error_idr_get_new;
 -	}
 -
--	ept->addr = tmpaddr;
-+	ept->addr = id;
++	idr_preload(GFP_KERNEL);
+ 	spin_lock_irq(&c2port_idr_lock);
+-	ret = idr_get_new(&c2port_idr, c2dev, &id);
++	ret = idr_alloc(&c2port_idr, c2dev, 0, 0, GFP_NOWAIT);
+ 	spin_unlock_irq(&c2port_idr_lock);
++	idr_preload_end();
  
- 	mutex_unlock(&vrp->endpoints_lock);
+ 	if (ret < 0)
+-		goto error_idr_get_new;
+-	c2dev->id = id;
++		goto error_idr_alloc;
++	c2dev->id = ret;
  
- 	return ept;
+ 	c2dev->dev = device_create(c2port_class, NULL, 0, c2dev,
+-					"c2port%d", id);
++				   "c2port%d", c2dev->id);
+ 	if (unlikely(IS_ERR(c2dev->dev))) {
+ 		ret = PTR_ERR(c2dev->dev);
+ 		goto error_device_create;
+@@ -946,10 +942,10 @@ error_device_create_bin_file:
  
--rem_idr:
--	idr_remove(&vrp->endpoints, request);
- free_ept:
- 	mutex_unlock(&vrp->endpoints_lock);
- 	kref_put(&ept->refcount, __ept_release);
+ error_device_create:
+ 	spin_lock_irq(&c2port_idr_lock);
+-	idr_remove(&c2port_idr, id);
++	idr_remove(&c2port_idr, c2dev->id);
+ 	spin_unlock_irq(&c2port_idr_lock);
+ 
+-error_idr_get_new:
++error_idr_alloc:
+ 	kfree(c2dev);
+ 
+ 	return ERR_PTR(ret);
 -- 
 1.8.1
 
