@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab3BCNKV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 08:10:21 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33357 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752359Ab3BCNKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 08:10:19 -0500
-Message-ID: <1359896994.29976.2.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 26/89] mwifiex: update config_bands during infra association
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Amitkumar Karwar <akarwar@marvell.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sun, 03 Feb 2013 14:09:54 +0100
-In-Reply-To: <20130201130209.370951271@linuxfoundation.org>
-References: <20130201130207.444989281@linuxfoundation.org>
-	 <20130201130209.370951271@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-3Awv0dUYyhtH4YwzXvf/"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 151.216.67.5
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1753386Ab3BCNK7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 08:10:59 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33997 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752359Ab3BCNK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 08:10:57 -0500
+Message-ID: <510E61B7.6030904@ti.com>
+Date: Sun, 3 Feb 2013 18:40:15 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Rob Landley <rob@landley.net>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        LMML <linux-media@vger.kernel.org>
+Subject: Re: [PATCH RFC v2] media: tvp514x: add OF support
+References: <1359464832-8875-1-git-send-email-prabhakar.lad@ti.com> <510C43A0.7090906@gmail.com> <CA+V-a8u6VADw_HfbBN4ESGUXTSMKfVyKZaEf1bhVGACof6qZ8A@mail.gmail.com>
+In-Reply-To: <CA+V-a8u6VADw_HfbBN4ESGUXTSMKfVyKZaEf1bhVGACof6qZ8A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2/3/2013 3:43 PM, Prabhakar Lad wrote:
+> Hi Sylwester,
+> 
+> Thanks for the review.
+> 
+> On Sat, Feb 2, 2013 at 4:07 AM, Sylwester Nawrocki
+> <sylvester.nawrocki@gmail.com> wrote:
+>> Hi Prabhakar,
+>>
+>> On 01/29/2013 02:07 PM, Prabhakar Lad wrote:
+>> [...]
+>>
+>>> diff --git a/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+>>> b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+>>> new file mode 100644
+>>> index 0000000..55d3ffd
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+>>> @@ -0,0 +1,38 @@
+>>> +* Texas Instruments TVP514x video decoder
+>>> +
+>>> +The TVP5146/TVP5146m2/TVP5147/TVP5147m1 device is high quality,
+>>> single-chip
+>>> +digital video decoder that digitizes and decodes all popular baseband
+>>> analog
+>>> +video formats into digital video component. The tvp514x decoder supports
+>>> analog-
+>>> +to-digital (A/D) conversion of component RGB and YPbPr signals as well as
+>>> A/D
+>>> +conversion and decoding of NTSC, PAL and SECAM composite and S-video into
+>>> +component YCbCr.
+>>> +
+>>> +Required Properties :
+>>> +- compatible: Must be "ti,tvp514x-decoder"
+>>
+>>
+>> There are no significant differences among TVP514* devices as listed above,
+>> you would like to handle above ?
+>>
+>> I'm just wondering if you don't need ,for instance, two separate compatible
+>> properties, e.g. "ti,tvp5146-decoder" and "ti,tvp5147-decoder" ?
+>>
+> There are few differences in init/power sequence tough, I would still
+> like to have
+> single compatible property "ti,tvp514x-decoder", If you feel we need separate
+> property I will change it please let me know on this.
 
---=-3Awv0dUYyhtH4YwzXvf/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Compatible properties should not use generic part numbers. See one past
+discussion here: http://en.usenet.digipedia.org/thread/18472/20788/
 
-On Fri, 2013-02-01 at 14:07 +0100, Greg Kroah-Hartman wrote:
-> 3.7-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Amitkumar Karwar <akarwar@marvell.com>
->=20
-> commit d7b9c5204e9c6810a20d509ee47bc70419096e59 upstream.
->=20
-> Currently "adapter->config_bands" is updated during infra
-> association only if channel is provided by user in "iw connect"
-> command. config_bands is used while preparing association
-> request to calculate supported rates by intersecting our rates
-> with the rates advertised by AP.
->=20
-> There is corner case in which we include zero rates in
-> supported rates TLV based on previous IBSS network history,
-> which leads to association failure.
->=20
-> This patch fixes the problem by correctly updating config_bands.
->=20
-> Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-> Signed-off-by: Bing Zhao <bzhao@marvell.com>
-> Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[...]
-
-Is this fix needed for earlier kernel versions (3.0, 3.2, 3.4)?  If so,
-could you provide backports?
-
-Ben.
-
---=20
-Ben Hutchings
-Everything should be made as simple as possible, but not simpler.
-                                                           - Albert Einstei=
-n
-
---=-3Awv0dUYyhtH4YwzXvf/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUQ5houe/yOyVhhEJAQoHrBAAwAyM96GaWwdeun17DW+mU3g9gjihmj78
-QeoGBUZ434LMQBogohjMhmVLCGHDILYiJO/qJfSxMC2LEWuyW4C62QmdjrZ1Ci2O
-BpLfh4hJN4mwZhhldeY6VLjFNp2Fd4tLIPFwCgi4m7u/sEldOqCqY3lQbMOEUiuh
-MEVwl/tXbJk0Y/mWjmmfcWf/8x8O3PI7z4uS9ckednxlnVZEPZC+qrm+zivSry0B
-NqzkaCMr2EqL6aKdsJenyj7ouGfi6BGZmEFW2OUjfD3ss5G59MK4eJFgmB4YHxUS
-tcQN38xy+4LpUajTRtJ1m7Cov3v5xCO+1c25O6R25VhCs92mdO75O5+rHrUfhnNw
-ch9oeEyaagkJ70ACfHJyg0BOfT/Nre/CsjtKmiqC+Sv4OHTStJsrt338xYHwTk9v
-dv9jTM055lIwiF+C8mbPh9/UImcCvotJw9Rl3lDX4heAgHxFy12zkZKLUFuJw7mo
-CuXLu7HoOblj4Ukjw22i5wwfPS/4VNEsTQLABEKtw093kv0v3+9m1xprzirdHOIv
-sLAbLJcCP9pziT8HUAzJtGyy9/QAN4dOz0liaJ2xJgGIvtlkm0hYol+5JUJDuvuG
-Q2uOHBMU13kFVWTVsbuzBF4RY+ODvx0jgnGZSDVBdGoNLVRVYE6f4WyDAzVb5rT5
-bibMV3sgZZ4=
-=fg6K
------END PGP SIGNATURE-----
-
---=-3Awv0dUYyhtH4YwzXvf/--
+Thanks,
+Sekhar
