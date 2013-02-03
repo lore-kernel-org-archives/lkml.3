@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab3BCXZc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 18:25:32 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:60115 "EHLO hydra.sisk.pl"
+	id S1754054Ab3BCXbt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 18:31:49 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:60150 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815Ab3BCXZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 18:25:30 -0500
+	id S1753883Ab3BCXbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 18:31:45 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: David Airlie <airlied@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend finalization
-Date: Mon, 04 Feb 2013 00:31:45 +0100
-Message-ID: <2897697.mWlee59MAU@vostro.rjw.lan>
+To: Myron Stowe <mstowe@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [RFC PATCH v5 4/8] ACPI, PCI: avoid building pci_slot as module
+Date: Mon, 04 Feb 2013 00:38 +0100
+Message-ID: <2520964.6C1RTjdEJr@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1354083114.9797983.1359933595870.JavaMail.root@redhat.com>
-References: <1354083114.9797983.1359933595870.JavaMail.root@redhat.com>
+In-Reply-To: <1359931635.2426.98.camel@zim.stowe>
+References: <1358525267-14268-1-git-send-email-jiang.liu@huawei.com> <CAErSpo4fbNzFaBxH+eKD+BKVgghyCJEYLDMzc6_gdxABAPe3QQ@mail.gmail.com> <1359931635.2426.98.camel@zim.stowe>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,139 +29,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, February 03, 2013 06:19:55 PM David Airlie wrote:
-> 
-> ----- Original Message -----
-> > From: "Konstantin Khlebnikov" <khlebnikov@openvz.org>
-> > To: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > Cc: "Bjorn Helgaas" <bhelgaas@google.com>, linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-> > linux-pci@vger.kernel.org, "Dave Airlie" <airlied@redhat.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-> > Sent: Saturday, 2 February, 2013 10:12:03 PM
-> > Subject: Re: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend finalization
-> > 
-> > Rafael J. Wysocki wrote:
-> > > On Tuesday, January 29, 2013 12:55:15 PM Rafael J. Wysocki wrote:
-> > >> On Tuesday, January 29, 2013 11:04:57 AM Konstantin Khlebnikov
-> > >> wrote:
-> > >>> Rafael J. Wysocki wrote:
-> > >>>> On Monday, January 28, 2013 04:17:42 PM Bjorn Helgaas wrote:
-> > >>>>> [+cc Rafael]
-> > >>>>>
-> > >>>>> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
-> > >>>>> <khlebnikov@openvz.org>   wrote:
-> > >>>>>> This patch effectively reverts commit
-> > >>>>>> 42eca2302146fed51335b95128e949ee6f54478f
-> > >>>>>> ("PCI: Don't touch card regs after runtime suspend D3")
-> > >>>>>>
-> > >>>>>> | This patch checks whether the pci state is saved and doesn't
-> > >>>>>> | attempt to hit
-> > >>>>>> | any registers after that point if it is.
-> > >>>>>>
-> > >>>>>> This seems completely wrong. Yes, PCI configuration space has
-> > >>>>>> been saved by
-> > >>>>>> driver, but this doesn't means that all job is done and device
-> > >>>>>> has been
-> > >>>>>> suspended and ready for waking up in the future.
-> > >>>>>>
-> > >>>>>> For example driver e1000e for ethernet in my thinkpad x220
-> > >>>>>> saves pci-state
-> > >>>>>> but device cannot wakeup after that, because it needs some
-> > >>>>>> ACPI callbacks
-> > >>>>>> which usually called from pci_finish_runtime_suspend().
-> > >>>>>>
-> > >>>>>> | Optimus (dual-gpu) laptops seem to have their own form of
-> > >>>>>> | D3cold, but
-> > >>>>>> | unfortunately enter it on normal D3 transitions via the ACPI
-> > >>>>>> | callback.
-> > >>>>>>
-> > >>>>>> Hardware which disappears from the bus unexpectedly is
-> > >>>>>> exception, so let's
-> > >>>>>> handle it as an exception. Its driver should set device state
-> > >>>>>> to D3cold and
-> > >>>>>> the rest code will handle it properly.
-> > >>>>>
-> > >>>>> Functions in D3cold don't have power, so it's completely
-> > >>>>> expected that
-> > >>>>> they would disappear from the bus and not respond to config
-> > >>>>> accesses.
-> > >>>>> Maybe Dave was referring to D3hot, where functions *should*
-> > >>>>> respond to
-> > >>>>> config accesses.  I dunno.
-> > >>>>>
-> > >>>>> Just to be clear, it sounds like 42eca230 caused a regression
-> > >>>>> on your
-> > >>>>> e1000e device?  If so, I guess we should revert it unless you
-> > >>>>> and Dave
-> > >>>>> can figure out a better patch that fixes both your e1000e
-> > >>>>> device and
-> > >>>>> the Optimus issue.
-> > >>>>
-> > >>>> Yes, if there's a regression, let's revert it, but I'd like the
-> > >>>> regression
-> > >>>> to be described clearly.
-> > >>>
-> > >>> Yep, this is regression.
-> > >>>
-> > >>> commit 42eca2302146fed51335b95128e949ee6f54478f ("PCI: Don't
-> > >>> touch
-> > >>> card regs after runtime suspend D3") changes state convention
-> > >>> during
-> > >>> runtime-suspend transaction too much. If PCI configuration space
-> > >>> has been saved by driver that does not means that all job is done
-> > >>> and device has been suspended and ready for waking up in the
-> > >>> future.
-> > >>>
-> > >>> e1000e saves pci-config space itself, but it requires operations
-> > >>> which
-> > >>> pci_finish_runtime_suspend() does: preparing for wake (calling
-> > >>> particular
-> > >>> platform pm-callbacks) and switching to proper sleep state.
+On Sunday, February 03, 2013 03:47:15 PM Myron Stowe wrote:
+> On Mon, 2013-01-28 at 14:09 -0700, Bjorn Helgaas wrote:
+> > On Sun, Jan 20, 2013 at 5:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Saturday, January 19, 2013 12:07:42 AM Jiang Liu wrote:
+> > >> As discussed in thread at https://patchwork.kernel.org/patch/1946851/,
+> > >> there's no value in supporting CONFIG_ACPI_PCI_SLOT=m any more.
+> > >> So change Kconfig and code to only support building pci_slot as
+> > >> built-in driver.
 > > >>
-> > >> Well, I'd argue this is a bug in e1000e.  Why does it need to save
-> > >> the PCI
-> > >> config space even though pci_pm_runtime_suspend() will do that
-> > >> anyway?
+> > >> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 > > >
-> > > I honestly don't think we should revert 42eca2302146 because of
-> > > this.
-> > >
-> > > Yes, there is a requirement that drivers not save the PCI config
-> > > space by
-> > > themselves unless they want to do the whole power management by
-> > > themselves too
-> > > and e1000e is not following that.  So either we need to drop the
-> > > pci_save_state() from __e1000_shutdown() which I would prefer (I'm
-> > > not really
-> > > sure why it is there), or e1000_runtime_suspend() needs to call
-> > > pci_finish_runtime_suspend() by itself.
+> > > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > > 
-> > Yet another problem: some drivers calls pci_save_state() from
-> > ->probe() callback
-> > to use this saved state in pci_error_handlers->slot_reset().
-> > As result pdev->state_saved is true mostly all time.
-> > At least e1000e and drivers/pci/pcie/portdrv_pci.c are doing this.
+> > Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 > > 
-> > I think it will be safer to revert 42eca2302146 in v3.8
-> > 
+> > I think we should eventually get rid of acpi_pci_register_driver() and
+> > do this initialization directly from acpi_pci_root_add().  But
+> > removing the module option here is a good first step.
 > 
-> btw I've no problem reverting this for 3.8, though I'd like to get a fix in for 3.9 then,
-> the code relying on this change is still not completed, so a revert shouldn't break anything.
+> Bjorn, Rafael:
 > 
-> but definitely if a card goes into D3cold, we need to not poke any registers on it after it
-> returns.
+> If either of you are interested in that still let me know and I can
+> re-work any or all of the "PCI/ACPI: Remove "pci_root" sub-driver
+> support" series - https://lkml.org/lkml/2012/12/7/11
 
-Sure.
+I am.  However, I think it's better to wait with the rework until our trees
+are merged into the mainline, so that you can base the patchset on a common
+tree.
 
-As I said, I don't think it is necessary to revert 42eca2302146 and I've got a
-confirmation from Boris that the approach proposed so far works, so now it only
-is a matter of cutting final patches and testing them.
+> Note [PATCH 13/15] was effectively the same as below and continued on
+> with initializing directly from acpi_pci_root_add() in [PATCH 14/15].
+> There may have been worthwhile fixes in some of the earlier content such
+> as [PATCH 11/15] worth re-considering also.
 
-I'm not quite sure what Konstantin's plans in that respect are, though.
-Konstantin, care to tell us?
+Well, as I said.  All of the patches in the series making sense after v3.9-rc1
+will be interesting to me certainly.
 
+Thanks,
 Rafael
 
 
+> > Rafael, do you want to apply this (and [6/8]) via your tree?  If not,
+> > I can take it.
+> > 
+> > >> ---
+> > >>  drivers/acpi/Kconfig    |    5 +----
+> > >>  drivers/acpi/internal.h |    5 +++++
+> > >>  drivers/acpi/pci_slot.c |   13 +------------
+> > >>  drivers/acpi/scan.c     |    1 +
+> > >>  4 files changed, 8 insertions(+), 16 deletions(-)
+> > >>
+> > >> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> > >> index 0300bf6..7efd0d0 100644
+> > >> --- a/drivers/acpi/Kconfig
+> > >> +++ b/drivers/acpi/Kconfig
+> > >> @@ -299,7 +299,7 @@ config ACPI_DEBUG_FUNC_TRACE
+> > >>         is about half of the penalty and is rarely useful.
+> > >>
+> > >>  config ACPI_PCI_SLOT
+> > >> -     tristate "PCI slot detection driver"
+> > >> +     bool "PCI slot detection driver"
+> > >>       depends on SYSFS
+> > >>       default n
+> > >>       help
+> > >> @@ -308,9 +308,6 @@ config ACPI_PCI_SLOT
+> > >>         i.e., segment/bus/device/function tuples, with physical slots in
+> > >>         the system.  If you are unsure, say N.
+> > >>
+> > >> -       To compile this driver as a module, choose M here:
+> > >> -       the module will be called pci_slot.
+> > >> -
+> > >>  config X86_PM_TIMER
+> > >>       bool "Power Management Timer Support" if EXPERT
+> > >>       depends on X86
+> > >> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+> > >> index e050254..7374cfc 100644
+> > >> --- a/drivers/acpi/internal.h
+> > >> +++ b/drivers/acpi/internal.h
+> > >> @@ -67,6 +67,11 @@ struct acpi_ec {
+> > >>
+> > >>  extern struct acpi_ec *first_ec;
+> > >>
+> > >> +#ifdef       CONFIG_ACPI_PCI_SLOT
+> > >> +void acpi_pci_slot_init(void);
+> > >> +#else
+> > >> +static inline void acpi_pci_slot_init(void) { }
+> > >> +#endif
+> > >>  int acpi_pci_root_init(void);
+> > >>  int acpi_ec_init(void);
+> > >>  int acpi_ec_ecdt_probe(void);
+> > >> diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
+> > >> index d22585f..a7d7e77 100644
+> > >> --- a/drivers/acpi/pci_slot.c
+> > >> +++ b/drivers/acpi/pci_slot.c
+> > >> @@ -330,19 +330,8 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
+> > >>       {}
+> > >>  };
+> > >>
+> > >> -static int __init
+> > >> -acpi_pci_slot_init(void)
+> > >> +void __init acpi_pci_slot_init(void)
+> > >>  {
+> > >>       dmi_check_system(acpi_pci_slot_dmi_table);
+> > >>       acpi_pci_register_driver(&acpi_pci_slot_driver);
+> > >> -     return 0;
+> > >>  }
+> > >> -
+> > >> -static void __exit
+> > >> -acpi_pci_slot_exit(void)
+> > >> -{
+> > >> -     acpi_pci_unregister_driver(&acpi_pci_slot_driver);
+> > >> -}
+> > >> -
+> > >> -module_init(acpi_pci_slot_init);
+> > >> -module_exit(acpi_pci_slot_exit);
+> > >> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > >> index f8a0d0f..cb964ac 100644
+> > >> --- a/drivers/acpi/scan.c
+> > >> +++ b/drivers/acpi/scan.c
+> > >> @@ -1732,6 +1732,7 @@ int __init acpi_scan_init(void)
+> > >>
+> > >>       acpi_power_init();
+> > >>       acpi_pci_root_init();
+> > >> +     acpi_pci_slot_init();
+> > >>
+> > >>       /*
+> > >>        * Enumerate devices in the ACPI namespace.
+> > >>
+> > > --
+> > > I speak only for myself.
+> > > Rafael J. Wysocki, Intel Open Source Technology Center.
+> 
+> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
