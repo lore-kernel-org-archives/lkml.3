@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3BCPJM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:09:12 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34407 "EHLO
+	id S1754767Ab3BCPJP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:09:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34404 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754568Ab3BCO4x (ORCPT
+	by vger.kernel.org with ESMTP id S1754553Ab3BCO4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:56:53 -0500
-Message-Id: <20130203144650.434484793@decadent.org.uk>
+	Sun, 3 Feb 2013 09:56:52 -0500
+Message-Id: <20130203144650.812257819@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:56 +0100
+Date: Sun, 03 Feb 2013 15:48:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 072/128] evm: checking if removexattr is not a NULL
+Cc: akpm@linux-foundation.org, Steven Rostedt <srostedt@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 076/128] ftrace: Be first to run code modification on modules
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,71 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit a67adb997419fb53540d4a4f79c6471c60bc69b6 upstream.
+commit c1bf08ac26e92122faab9f6c32ea8aba94612dae upstream.
 
-The following lines of code produce a kernel oops.
+If some other kernel subsystem has a module notifier, and adds a kprobe
+to a ftrace mcount point (now that kprobes work on ftrace points),
+when the ftrace notifier runs it will fail and disable ftrace, as well
+as kprobes that are attached to ftrace points.
 
-fd = socket(PF_FILE, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0);
-fchmod(fd, 0666);
+Here's the error:
 
-[  139.922364] BUG: unable to handle kernel NULL pointer dereference at   (null)
-[  139.924982] IP: [<  (null)>]   (null)
-[  139.924982] *pde = 00000000
-[  139.924982] Oops: 0000 [#5] SMP
-[  139.924982] Modules linked in: fuse dm_crypt dm_mod i2c_piix4 serio_raw evdev binfmt_misc button
-[  139.924982] Pid: 3070, comm: acpid Tainted: G      D      3.8.0-rc2-kds+ #465 Bochs Bochs
-[  139.924982] EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 0
-[  139.924982] EIP is at 0x0
-[  139.924982] EAX: cf5ef000 EBX: cf5ef000 ECX: c143d600 EDX: c15225f2
-[  139.924982] ESI: cf4d2a1c EDI: cf4d2a1c EBP: cc02df10 ESP: cc02dee4
-[  139.924982]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  139.924982] CR0: 80050033 CR2: 00000000 CR3: 0c059000 CR4: 000006d0
-[  139.924982] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[  139.924982] DR6: ffff0ff0 DR7: 00000400
-[  139.924982] Process acpid (pid: 3070, ti=cc02c000 task=d7705340 task.ti=cc02c000)
-[  139.924982] Stack:
-[  139.924982]  c1203c88 00000000 cc02def4 cf4d2a1c ae21eefa 471b60d5 1083c1ba c26a5940
-[  139.924982]  e891fb5e 00000041 00000004 cc02df1c c1203964 00000000 cc02df4c c10e20c3
-[  139.924982]  00000002 00000000 00000000 22222222 c1ff2222 cf5ef000 00000000 d76efb08
-[  139.924982] Call Trace:
-[  139.924982]  [<c1203c88>] ? evm_update_evmxattr+0x5b/0x62
-[  139.924982]  [<c1203964>] evm_inode_post_setattr+0x22/0x26
-[  139.924982]  [<c10e20c3>] notify_change+0x25f/0x281
-[  139.924982]  [<c10cbf56>] chmod_common+0x59/0x76
-[  139.924982]  [<c10e27a1>] ? put_unused_fd+0x33/0x33
-[  139.924982]  [<c10cca09>] sys_fchmod+0x39/0x5c
-[  139.924982]  [<c13f4f30>] syscall_call+0x7/0xb
-[  139.924982] Code:  Bad EIP value.
+ WARNING: at kernel/trace/ftrace.c:1618 ftrace_bug+0x239/0x280()
+ Hardware name: Bochs
+ Modules linked in: fat(+) stap_56d28a51b3fe546293ca0700b10bcb29__8059(F) nfsv4 auth_rpcgss nfs dns_resolver fscache xt_nat iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack lockd sunrpc ppdev parport_pc parport microcode virtio_net i2c_piix4 drm_kms_helper ttm drm i2c_core [last unloaded: bid_shared]
+ Pid: 8068, comm: modprobe Tainted: GF            3.7.0-0.rc8.git0.1.fc19.x86_64 #1
+ Call Trace:
+  [<ffffffff8105e70f>] warn_slowpath_common+0x7f/0xc0
+  [<ffffffff81134106>] ? __probe_kernel_read+0x46/0x70
+  [<ffffffffa0180000>] ? 0xffffffffa017ffff
+  [<ffffffffa0180000>] ? 0xffffffffa017ffff
+  [<ffffffff8105e76a>] warn_slowpath_null+0x1a/0x20
+  [<ffffffff810fd189>] ftrace_bug+0x239/0x280
+  [<ffffffff810fd626>] ftrace_process_locs+0x376/0x520
+  [<ffffffff810fefb7>] ftrace_module_notify+0x47/0x50
+  [<ffffffff8163912d>] notifier_call_chain+0x4d/0x70
+  [<ffffffff810882f8>] __blocking_notifier_call_chain+0x58/0x80
+  [<ffffffff81088336>] blocking_notifier_call_chain+0x16/0x20
+  [<ffffffff810c2a23>] sys_init_module+0x73/0x220
+  [<ffffffff8163d719>] system_call_fastpath+0x16/0x1b
+ ---[ end trace 9ef46351e53bbf80 ]---
+ ftrace failed to modify [<ffffffffa0180000>] init_once+0x0/0x20 [fat]
+  actual: cc:bb:d2:4b:e1
 
-This happens because sockets do not define the removexattr operation.
-Before removing the xattr, verify the removexattr function pointer is
-not NULL.
+A kprobe was added to the init_once() function in the fat module on load.
+But this happened before ftrace could have touched the code. As ftrace
+didn't run yet, the kprobe system had no idea it was a ftrace point and
+simply added a breakpoint to the code (0xcc in the cc:bb:d2:4b:e1).
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Then when ftrace went to modify the location from a call to mcount/fentry
+into a nop, it didn't see a call op, but instead it saw the breakpoint op
+and not knowing what to do with it, ftrace shut itself down.
+
+The solution is to simply give the ftrace module notifier the max priority.
+This should have been done regardless, as the core code ftrace modification
+also happens very early on in boot up. This makes the module modification
+closer to core modification.
+
+Link: http://lkml.kernel.org/r/20130107140333.593683061@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Frank Ch. Eigler <fche@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- security/integrity/evm/evm_crypto.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
-index dfb2691..7dd538e 100644
---- a/security/integrity/evm/evm_crypto.c
-+++ b/security/integrity/evm/evm_crypto.c
-@@ -205,9 +205,9 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
- 		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
- 					   &xattr_data,
- 					   sizeof(xattr_data), 0);
--	}
--	else if (rc == -ENODATA)
-+	} else if (rc == -ENODATA && inode->i_op->removexattr) {
- 		rc = inode->i_op->removexattr(dentry, XATTR_NAME_EVM);
-+	}
- 	return rc;
- }
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 3ffe4c5..41473b4 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3998,7 +3998,7 @@ static int ftrace_module_notify(struct notifier_block *self,
  
+ struct notifier_block ftrace_module_nb = {
+ 	.notifier_call = ftrace_module_notify,
+-	.priority = 0,
++	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+ };
+ 
+ extern unsigned long __start_mcount_loc[];
 
 
