@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab3BCNBv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 08:01:51 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:41658 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab3BCNBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 08:01:49 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ah5lAIRfDlFV5qjOPGdsb2JhbABEhV+FILMvBIEAFwMBAQEBODSCHwEBBAEnExwjBQsIAyElDwUlChqIHgq/AxWNNoMmYQOWHoYAjU8
-X-IronPort-AV: E=Sophos;i="4.84,594,1355094000"; 
-   d="scan'208";a="275329901"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sun, 3 Feb 2013 14:07:31 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Support of Nexio 42" and new default class for
- hid-multitouch
-Message-ID: <20130203130731.GA2677@polaris.bitmath.org>
-References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
+	id S1753324Ab3BCNHm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 08:07:42 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:54808 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216Ab3BCNHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 08:07:39 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI / PM: Handle missing _PSC in acpi_bus_update_power()
+Date: Sun, 03 Feb 2013 14:13:54 +0100
+Message-ID: <1432840.s0A6LzWFfU@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-> so, this is the v2 of the support of win7/8 devices.
+If _PS0 is defined for an ACPI device node, but _PSC isn't and
+the device node doesn't use power resources for power management,
+acpi_bus_update_power() will fail to update the power state of it,
+because acpi_device_get_power() returns ACPI_STATE_UNKNOWN in that
+case.
 
-Looks like it is getting there, thanks.
+To handle that situation make acpi_bus_update_power() follow
+acpi_bus_init_power() and try to force the given device node into
+power state D0 if its actual power state cannot be determined.
 
-> changes since v1:
-> - removed the "optimization" patches, as the benefit was minimum
-> - introduce a new callback "report" in hid-core that drivers can use to treat the
->   report by having it entirely parsed
-> - rely on this new hook to support Nexio 42"
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-As noted in the patches comments, using raw_event() seems sufficient.
-
-> side notes:
-> - I've tested removing the heavy call to kzalloc in hid_input_field. The results
->   are disapointing -> the processing time remains the same.
-> - I've also tested not to rely on .event hook in hid-multitouch but only on .report.
->   Idem, I thought it would reduce the code of hid-multitouch and will enhance its
->   processing time, but the results are a roughly same number of lines for hid-multitouch
->   and the same processing time... :(
-> - these 2 tests helped in cleaning the patch set from the last time.
-> 
-> And again, finally, I've pass all the 40 regression tests of my db. \o/
-
-Nice. :-)
+On top of linux-pm.git/bleeding-edge.
 
 Thanks,
-Henrik
+Rafael
+
+---
+ drivers/acpi/device_pm.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-pm/drivers/acpi/device_pm.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -355,6 +355,9 @@ int acpi_bus_update_power(acpi_handle ha
+ 	if (result)
+ 		return result;
+ 
++	if (state == ACPI_STATE_UNKNOWN)
++		state = ACPI_STATE_D0;
++
+ 	result = acpi_device_set_power(device, state);
+ 	if (!result && state_p)
+ 		*state_p = state;
+
