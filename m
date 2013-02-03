@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab3BCBV3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:21:29 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:44819 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab3BCBVO (ORCPT
+	id S1753341Ab3BCBg3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:36:29 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:45987 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab3BCBV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:21:14 -0500
+	Sat, 2 Feb 2013 20:21:26 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/62] idr: cosmetic updates to struct / initializer definitions
-Date: Sat,  2 Feb 2013 17:20:02 -0800
-Message-Id: <1359854463-2538-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/62] block/loop: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:09 -0800
+Message-Id: <1359854463-2538-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -22,62 +22,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tab align fields like a normal person.
-
-* Drop the unnecessary 0 inits from IDR_INIT().
-
-This patch is purely cosmetic.
+Convert to the much saner new idr interface.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
 ---
- include/linux/idr.h | 28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
+This patch depends on an earlier idr changes and I think it would be
+best to route these together through -mm.  Please holler if there's
+any objection.  Thanks.
 
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index 1b932e7..c78c26d 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -49,28 +49,24 @@
- #define MAX_IDR_FREE (MAX_IDR_LEVEL * 2)
+ drivers/block/loop.c | 23 +++++------------------
+ 1 file changed, 5 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 3b9c32b..dafbfdb 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1624,30 +1624,17 @@ static int loop_add(struct loop_device **l, int i)
+ 	if (!lo)
+ 		goto out;
  
- struct idr_layer {
--	unsigned long		 bitmap; /* A zero bit means "space here" */
-+	unsigned long		bitmap;	/* A zero bit means "space here" */
- 	struct idr_layer __rcu	*ary[1<<IDR_BITS];
--	int			 count;	 /* When zero, we can release it */
--	int			 layer;	 /* distance from leaf */
--	struct rcu_head		 rcu_head;
-+	int			count;	/* When zero, we can release it */
-+	int			layer;	/* distance from leaf */
-+	struct rcu_head		rcu_head;
- };
+-	if (!idr_pre_get(&loop_index_idr, GFP_KERNEL))
+-		goto out_free_dev;
+-
++	/* allocate id, if @id >= 0, we're requesting that specific id */
+ 	if (i >= 0) {
+-		int m;
+-
+-		/* create specific i in the index */
+-		err = idr_get_new_above(&loop_index_idr, lo, i, &m);
+-		if (err >= 0 && i != m) {
+-			idr_remove(&loop_index_idr, m);
++		err = idr_alloc(&loop_index_idr, lo, i, i + 1, GFP_KERNEL);
++		if (err == -ENOSPC)
+ 			err = -EEXIST;
+-		}
+-	} else if (i == -1) {
+-		int m;
+-
+-		/* get next free nr */
+-		err = idr_get_new(&loop_index_idr, lo, &m);
+-		if (err >= 0)
+-			i = m;
+ 	} else {
+-		err = -EINVAL;
++		err = idr_alloc(&loop_index_idr, lo, 0, 0, GFP_KERNEL);
+ 	}
+ 	if (err < 0)
+ 		goto out_free_dev;
++	i = err;
  
- struct idr {
--	struct idr_layer __rcu *top;
--	struct idr_layer *id_free;
--	int		  layers; /* only valid without concurrent changes */
--	int		  id_free_cnt;
--	spinlock_t	  lock;
-+	struct idr_layer __rcu	*top;
-+	struct idr_layer	*id_free;
-+	int			layers;	/* only valid w/o concurrent changes */
-+	int			id_free_cnt;
-+	spinlock_t		lock;
- };
- 
--#define IDR_INIT(name)						\
--{								\
--	.top		= NULL,					\
--	.id_free	= NULL,					\
--	.layers 	= 0,					\
--	.id_free_cnt	= 0,					\
--	.lock		= __SPIN_LOCK_UNLOCKED(name.lock),	\
-+#define IDR_INIT(name)							\
-+{									\
-+	.lock			= __SPIN_LOCK_UNLOCKED(name.lock),	\
- }
- #define DEFINE_IDR(name)	struct idr name = IDR_INIT(name)
- 
+ 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
+ 	if (!lo->lo_queue)
 -- 
 1.8.1
 
