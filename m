@@ -1,100 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3BCPYX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:24:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34100 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753681Ab3BCOy7 (ORCPT
+	id S1754928Ab3BCPY3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:24:29 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:39225 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753760Ab3BCPYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:54:59 -0500
-Message-Id: <20130203144645.450407552@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:00 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Bing Zhao <bzhao@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 016/128] mwifiex: check wait_event_interruptible return value
-In-Reply-To: <20130203144644.035172954@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.216.67.5
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 3 Feb 2013 10:24:25 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
+        jmorris@namei.org, axboe@kernel.dk
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+	<87a9rltszn.fsf@xmission.com>
+	<CAOS58YPhSz4DQT5-hTkH-wW_P3b5LK1WuEbWiR8uyNZPZdf_Gw@mail.gmail.com>
+Date: Sun, 03 Feb 2013 07:24:11 -0800
+In-Reply-To: <CAOS58YPhSz4DQT5-hTkH-wW_P3b5LK1WuEbWiR8uyNZPZdf_Gw@mail.gmail.com>
+	(Tejun Heo's message of "Sun, 3 Feb 2013 06:13:53 -0800")
+Message-ID: <87ehgxo1yc.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/1e+jLPSqq37oLa4qNtK6Sb2RpQMogLiI=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0335]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Tejun Heo <tj@kernel.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Tejun Heo <tj@kernel.org> writes:
 
-------------------
+> Hey, Eric.
+>
+> On Sun, Feb 3, 2013 at 5:41 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> Why the deep percpu magic?
+>
+> Eh? What's magical about it?  You preload percpu buffer if you're
+> gonna be allocating an id from context which doesn't allow permissive
+> allocation.  This is the same technique used by radix tree preloading.
+>  The only reason idr did its own preloading was probably because it
+> got implemented before we had proper percpu techniques.
 
-From: Bing Zhao <bzhao@marvell.com>
+Maybe.  I haven't been in the parts of the kernel that use the radix
+tree preloading and I having just look at a bit of it I don't like it
+either.  There is the same strong disconnect between the pieces whose
+side effects are interacting.
 
-commit 9c969d8ccb1e17bd20742f4ac9f00c1a64487234 upstream.
+At least with the radix tree the pieces are core kernel pieces that get
+optimized like mad and you expect to have to think about.
 
-wait_event_interruptible function returns -ERESTARTSYS if it's
-interrupted by a signal. Driver should check the return value
-and handle this case properly.
+idr is a boring thing you use because don't want to think about the
+details.  Now you are asking people to really think about the details
+when the touch a piece of code using idr.  I think that is the wrong
+trade off.
 
-In mwifiex_wait_queue_complete() routine, as we are now checking
-wait_event_interruptible return value, the condition check is not
-required. Also, we have removed mwifiex_cancel_pending_ioctl()
-call to avoid a chance of sending second command to FW by other path
-as soon as we clear current command node. FW can not handle two
-commands simultaneously.
+>> Why don't associate idr_preload with an idr structure.
+>
+> Because then you end up with a lot more preloaded buffers which are
+> much less useful.  You can't guarantee your preload target is the only
+> one who's gonna use the preload buffer so you end up with this ugly
+> -EAGAIN retry loop.  It's inefficient & inconvenient.
 
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/wireless/mwifiex/sta_ioctl.c |   21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+That argument makes sense.
 
---- a/drivers/net/wireless/mwifiex/sta_ioctl.c
-+++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
-@@ -53,7 +53,6 @@ int mwifiex_copy_mcast_addr(struct mwifi
-  */
- int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter)
- {
--	bool cancel_flag = false;
- 	int status;
- 	struct cmd_ctrl_node *cmd_queued;
- 
-@@ -70,14 +69,11 @@ int mwifiex_wait_queue_complete(struct m
- 	queue_work(adapter->workqueue, &adapter->main_work);
- 
- 	/* Wait for completion */
--	wait_event_interruptible(adapter->cmd_wait_q.wait,
--					*(cmd_queued->condition));
--	if (!*(cmd_queued->condition))
--		cancel_flag = true;
--
--	if (cancel_flag) {
--		mwifiex_cancel_pending_ioctl(adapter);
--		dev_dbg(adapter->dev, "cmd cancel\n");
-+	status = wait_event_interruptible(adapter->cmd_wait_q.wait,
-+					  *(cmd_queued->condition));
-+	if (status) {
-+		dev_err(adapter->dev, "cmd_wait_q terminated: %d\n", status);
-+		return status;
- 	}
- 
- 	status = adapter->cmd_wait_q.status;
-@@ -427,8 +423,11 @@ int mwifiex_enable_hs(struct mwifiex_ada
- 		return false;
- 	}
- 
--	wait_event_interruptible(adapter->hs_activate_wait_q,
--			adapter->hs_activate_wait_q_woken);
-+	if (wait_event_interruptible(adapter->hs_activate_wait_q,
-+				     adapter->hs_activate_wait_q_woken)) {
-+		dev_err(adapter->dev, "hs_activate_wait_q terminated\n");
-+		return false;
-+	}
- 
- 	return true;
- }
+>> When reading code with idr_preload I get this deep down creepy feeling.
+>> What is this magic that is going on?
+>
+> Seriously, if this gives you deep creepy feeling, you need to get on
+> with time.  It's a basic percpu technique.
 
+But this isn't a basic percpu technique.  This is a basic percpu
+technique hidden behind the wall.
 
+Nothing about reading idr_preload() in a line of code says.  Hey look at
+me I am version of preempt disable() that puts things in percpu
+variables that you don't know about.
+
+Nothing about idr_preload says don't you dair forget to pair me with
+preload_end().
+
+>> Can't we just put the preload list_head into struct idr make
+>> idr_preload and idr_preload_end take an idr argument?
+>
+> Inefficient & inconvenient.
+
+>> Maybe we can have a special structure we put on the stack that has
+>> the list_head and the preload state instead.
+
+This suggestion you didn't address at all.
+
+If we can't put state in the structure because of the problem of
+multiple accesses why can't we take the state out of the structure
+entirely and put it into a stack local variable?
+
+That would reduce the cognitive load because it becomes clear how
+the pieces connect together.
+
+That would remove the need for disabling preemption and other behind
+the scenes magic.
+
+>> The way this works just weirds me out and I really really don't like it.
+>>
+>> I would rather continue to use the existing functions as problematic as
+>> they are as I don't need a course in deep magic to make sense of them.
+>
+> Heh, this is the weirdest review I got in quite a while.  Please sit
+> down and read it again.
+
+Please sit down and relook at your interface again.  People use idr
+where they need a unique number associatedand they really don't care.
+Having to think about hidden percpu variables and preemption being
+disabled in the background brings with it a lot of extra work to use the
+interface.
+
+For the sake of a saving few lines of code you are desiging an interface
+that is harder to use correctly, and harder to think about.
+
+I think you are making completely the wrong trade off.  I don't want the
+cognitive burden of having to think about percpu and preemption
+disabling when using a boring utitlity function like the idr code.
+
+Eric
