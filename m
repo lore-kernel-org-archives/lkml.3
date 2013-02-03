@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab3BCTo2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 14:44:28 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:53350 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3BCTo0 (ORCPT
+	id S1753547Ab3BCUCC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 15:02:02 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:56912 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450Ab3BCUB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 14:44:26 -0500
-Date: Sun, 3 Feb 2013 23:44:22 +0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Ingo Molnar <mingo@kernel.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asmlinkage tag for sys_iopl
-Message-ID: <20130203194422.GA3990@thinkpad.lan>
-References: <1359895582-5482-1-git-send-email-artem.savkov@gmail.com>
- <20130203185912.GA22895@gmail.com>
- <20130203190435.GS4503@ZenIV.linux.org.uk>
+	Sun, 3 Feb 2013 15:01:59 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Anton Vorontsov <anton@enomsg.org>
+Subject: Re: [PATCH] bq27x00_battery: Fix reporting battery temperature
+Date: Sun, 3 Feb 2013 21:01:54 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-23-generic; KDE/4.9.4; x86_64; ; )
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+References: <1359799569-5322-1-git-send-email-pali.rohar@gmail.com> <20130203034451.GH25016@lizard.sbx00618.mountca.wayport.net>
+In-Reply-To: <20130203034451.GH25016@lizard.sbx00618.mountca.wayport.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130203190435.GS4503@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1404671.A6SYlxvlcT";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302032101.54487@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 03, 2013 at 07:04:35PM +0000, Al Viro wrote:
-> On Sun, Feb 03, 2013 at 07:59:12PM +0100, Ingo Molnar wrote:
-> > 
-> > * Artem Savkov <artem.savkov@gmail.com> wrote:
-> > 
-> > > asmlinkage tag seems to be missing from sys_iopl prototype rendering iopl
-> > > syscalls unusable, i.e. every call returns -EINVAL. Most likely introduced in
-> > > 9e0b2428bc6a6c6df90bb701ca843820727cadf0.
-> > 
-> > What commit is 9e0b2428bc6a6c6df90bb701ca843820727cadf0? It's 
-> > certainly not upstream nor in the x86 tree.
-> 
-> It's in signal.git; proper fix is to use SYSCALL_DEFINE1().  I'll push it
-> tonight.
+--nextPart1404671.A6SYlxvlcT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-It is also in linux-next.git, so it would be nice to have a fix merged
-there too.
-Thanks.
+On Sunday 03 February 2013 04:44:51 Anton Vorontsov wrote:
+> On Sat, Feb 02, 2013 at 11:06:09AM +0100, Pali Roh=C3=A1r wrote:
+> > Reported temperature can be also negative, so cache value in
+> > non negative Kelvin degree.
+> >=20
+> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > ---
+>=20
+> Applied, thanks!
 
--- 
-Kind regards,
-Artem
+Now I looked at bq27x00_battery and rx51_battery drivers and I=20
+see that both drivers reporting temperature in different units.=20
+bq27x00_battery in 1/10 =C2=B0C and rx51_battery in 1/100 =C2=B0C. What is=
+=20
+correct degree for kernel power power supply API? Maybe other=20
+kernel drivers have different units too... Note that my above=20
+patch did not changed anything units, only fixed reporting=20
+(possible) negative temperature.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1404671.A6SYlxvlcT
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlEOwjIACgkQi/DJPQPkQ1IzugCeIeVhCYc8+dAj+h7kz0WuDvf8
+g34AoLZBFAnu1VvUGFBX/GoDMmpWlOV5
+=Zq7b
+-----END PGP SIGNATURE-----
+
+--nextPart1404671.A6SYlxvlcT--
