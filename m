@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab3BCVvc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 16:51:32 -0500
-Received: from mout.gmx.net ([212.227.15.18]:64580 "EHLO mout.gmx.net"
+	id S1753974Ab3BCVvi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 16:51:38 -0500
+Received: from mout.gmx.net ([212.227.17.20]:61167 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753872Ab3BCVv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 16:51:27 -0500
+	id S1753913Ab3BCVve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 16:51:34 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19iz1Zg1aNiOz2X+HgOa2v/vKD2xJSiqnP0ElWN1Z
-	tkbGJLY1EpTBZU
+X-Provags-ID: V01U2FsdGVkX19VDrYKExBVPprT/q7OguHk6/GOZf08mVrv83Ru0+
+	sjZQrMUvV/YE3t
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Arnaud Patard <arnaud.patard@rtp-net.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -16,9 +16,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
         Sam Hansen <solid.se7en@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 03/10] staging/xgifb: mttr must be (signed) int
-Date: Sun,  3 Feb 2013 22:54:32 +0100
-Message-Id: <1359928479-8484-3-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 06/10] staging/xgifb: rewrite XGIfb_get_cmap_len
+Date: Sun,  3 Feb 2013 22:54:35 +0100
+Message-Id: <1359928479-8484-6-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1359928479-8484-1-git-send-email-peterhuewe@gmx.de>
 References: <1359928479-8484-1-git-send-email-peterhuewe@gmx.de>
@@ -27,42 +27,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mttr field must be declared as signed int (as in every other fb
-driver) for the mttr functions to work properly.
-Moreover the value should be initialized with -1.
+We don't need to use this switch-case here for a simple two case
+if-else.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/xgifb/XGI_main_26.c |    2 +-
- drivers/staging/xgifb/XGIfb.h       |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |   16 ++--------------
+ 1 files changed, 2 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 83f8a6a..fa351f9 100644
+index 106abc8..840b497 100644
 --- a/drivers/staging/xgifb/XGI_main_26.c
 +++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -1802,7 +1802,7 @@ static int xgifb_probe(struct pci_dev *pdev,
- 	if (!XGIInitNew(pdev))
- 		dev_err(&pdev->dev, "XGIInitNew() failed!\n");
+@@ -1131,22 +1131,10 @@ static int XGIfb_release(struct fb_info *info, int user)
+ 	return 0;
+ }
  
--	xgifb_info->mtrr = (unsigned int) 0;
-+	xgifb_info->mtrr = -1;
++/* similar to sisfb_get_cmap_len */
+ static int XGIfb_get_cmap_len(const struct fb_var_screeninfo *var)
+ {
+-	int rc = 16;
+-
+-	switch (var->bits_per_pixel) {
+-	case 8:
+-		rc = 256;
+-		break;
+-	case 16:
+-		rc = 16;
+-		break;
+-	case 32:
+-		rc = 16;
+-		break;
+-	}
+-	return rc;
++	return (var->bits_per_pixel == 8) ? 256 : 16;
+ }
  
- 	xgifb_info->hasVB = HASVB_NONE;
- 	if ((xgifb_info->chip == XG20) ||
-diff --git a/drivers/staging/xgifb/XGIfb.h b/drivers/staging/xgifb/XGIfb.h
-index 8054798..af50362 100644
---- a/drivers/staging/xgifb/XGIfb.h
-+++ b/drivers/staging/xgifb/XGIfb.h
-@@ -67,7 +67,7 @@ struct xgifb_video_info {
- 	unsigned long mmio_size;
- 	void __iomem *mmio_vbase;
- 	unsigned long vga_base;
--	unsigned long mtrr;
-+	int mtrr;
- 
- 	int    video_bpp;
- 	int    video_cmap_len;
+ static int XGIfb_setcolreg(unsigned regno, unsigned red, unsigned green,
 -- 
 1.7.8.6
 
