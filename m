@@ -1,94 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3BCXDU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 18:03:20 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:38517 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab3BCXDS (ORCPT
+	id S1753986Ab3BCXEL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 18:04:11 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:50970 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858Ab3BCXEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 18:03:18 -0500
-Date: Sun, 3 Feb 2013 18:03:00 -0500 (EST)
-From: David Airlie <airlied@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Message-ID: <1702145791.9796585.1359932580460.JavaMail.root@redhat.com>
-In-Reply-To: <510D0293.8030509@openvz.org>
-Subject: Re: [PATCH 3/5] PCI: revert preparing for wakeup in runtime-suspend
- finalization
+	Sun, 3 Feb 2013 18:04:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.64.40.183]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+Reply-To: mtk.manpages@gmail.com
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Mon, 4 Feb 2013 00:03:48 +0100
+Message-ID: <CAKgNAkjXsA=ua+px05qNDWmtH=5OCZbpOAFyJCXF76wYSjFUmg@mail.gmail.com>
+Subject: man-pages-3.46 is released
+To: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Gidday,
 
-> Rafael J. Wysocki wrote:
-> > On Tuesday, January 29, 2013 12:55:15 PM Rafael J. Wysocki wrote:
-> >> On Tuesday, January 29, 2013 11:04:57 AM Konstantin Khlebnikov
-> >> wrote:
-> >>> Rafael J. Wysocki wrote:
-> >>>> On Monday, January 28, 2013 04:17:42 PM Bjorn Helgaas wrote:
-> >>>>> [+cc Rafael]
-> >>>>>
-> >>>>> On Fri, Jan 18, 2013 at 4:42 AM, Konstantin Khlebnikov
-> >>>>> <khlebnikov@openvz.org>   wrote:
-> >>>>>> This patch effectively reverts commit
-> >>>>>> 42eca2302146fed51335b95128e949ee6f54478f
-> >>>>>> ("PCI: Don't touch card regs after runtime suspend D3")
-> >>>>>>
-> >>>>>> | This patch checks whether the pci state is saved and doesn't
-> >>>>>> | attempt to hit
-> >>>>>> | any registers after that point if it is.
-> >>>>>>
-> >>>>>> This seems completely wrong. Yes, PCI configuration space has
-> >>>>>> been saved by
-> >>>>>> driver, but this doesn't means that all job is done and device
-> >>>>>> has been
-> >>>>>> suspended and ready for waking up in the future.
-> >>>>>>
-> >>>>>> For example driver e1000e for ethernet in my thinkpad x220
-> >>>>>> saves pci-state
-> >>>>>> but device cannot wakeup after that, because it needs some
-> >>>>>> ACPI callbacks
-> >>>>>> which usually called from pci_finish_runtime_suspend().
-> >>>>>>
-> >>>>>> | Optimus (dual-gpu) laptops seem to have their own form of
-> >>>>>> | D3cold, but
-> >>>>>> | unfortunately enter it on normal D3 transitions via the ACPI
-> >>>>>> | callback.
-> >>>>>>
-> >>>>>> Hardware which disappears from the bus unexpectedly is
-> >>>>>> exception, so let's
-> >>>>>> handle it as an exception. Its driver should set device state
-> >>>>>> to D3cold and
-> >>>>>> the rest code will handle it properly.
-> >>>>>
-> >>>>> Functions in D3cold don't have power, so it's completely
-> >>>>> expected that
-> >>>>> they would disappear from the bus and not respond to config
-> >>>>> accesses.
-> >>>>> Maybe Dave was referring to D3hot, where functions *should*
-> >>>>> respond to
-> >>>>> config accesses.  I dunno.
+I've released man-pages-3.46 - man pages for Linux.
 
-Just to clarify what is going on with optimus laptops:
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    http://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.46
 
-D3cold didn't exist as a real thing, so when you call the ACPI method
-to enter D3, it actually powers off the card completely, I've actually
-in my future work fixed it so that the driver then reports it being in
-D3cold when that happens.
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2013/02/man-pages-346-is-released.html
 
-The problem here was originally that the kernel didn't care if we hit
-D3hot or D3cold, it wanted to finish the dynamic suspend, however
-in this case there was no way it could.
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
 
-So I'm happy with any solution that means cards reporting being in D3cold,
-won't get touched again after they return.
+A few changes in this release that may be of interest to readers of
+this list are given below.
 
-Dave.
+Cheers,
+
+Michael
+
+==================== Changes in man-pages-3.46 ====================
+
+
+New and rewritten pages
+-----------------------
+
+kcmp.2
+    Cyrill Gorcunov, Michael Kerrisk
+        New page for kcmp(2)
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+init_module.2
+    Michael Kerrisk  [Kees Cook, Rusty Russell, Lucas De Marchi]
+        Document finit_module(2)
+    Rusty Russell  [Lucas De Marchi, Kees Cook]
+        Document finit_module() 'flags' argument
+            Document MODULE_INIT_IGNORE_MODVERSIONS and
+            MODULE_INIT_IGNORE_VERMAGIC. (Some edits by mtk.)
+
+
+Changes to individual pages
+---------------------------
+
+clone.2
+    Michael Kerrisk
+        CLONE_NEWIPC governs mechanisms that don't have filesystem pathnames
+    Michael Kerrisk
+        CLONE_NEWIPC doesn't mount the POSIX MQ file system
+    Michael Kerrisk
+        Add an example program (CLONE_NEWUTS)
+
+link.2
+prctl.2
+    Kees Cook
+        Document PR_SET_PTRACER
+            Document the Yama LSM's prctl handler that allows processes to
+            declare ptrace restriction exception relationships via
+            PR_SET_PTRACER.
+    Michael Kerrisk
+        Document PR_GET_TID_ADDRESS
+
+ptrace.2
+    Michael Kerrisk
+        Document PTRACE_O_EXITKILL
+
+recvmmsg.2
+    Elie De Brauwer
+        Add an example program
+
+setns.2
+    Michael Kerrisk
+        Add example program
+
+core.5
+proc.5
+    Kees Cook
+        Clarify suid_dumpable versus core_pattern
+            In Linux 3.6, additional requirements were placed on core_pattern
+            when suid_dumpable is set to 2. Document this and include commit
+            references.
+
+proc.5
+    Justin Lebar
+        statm's "shared" field refers to pages backed by files
+    Kees Cook
+        Document /proc/sys/kernel/dmesg_restrict
+    Kees Cook
+        Linux 3.4 changed permissions needed to change kptr_restrict
+    Michael Kerrisk
+        Document /proc/stat "cpu" "nice_guest" field
+            Info taken from commit ce0e7b28fb75cb003cfc8d0238613aaf1c55e797
+    Michael Kerrisk  [Peter Lekeynstein]
+        Document /prod/[pid]/oom_score_adj
+            Text taken directly from Documentation/filesystems/proc.txt,
+            with some light editing.
+
+capabilities.7
+    Michael Kerrisk
+        Add kcmp(2) under CAP_SYS_PTRACE
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
