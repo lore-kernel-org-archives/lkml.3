@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab3BCO5r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:57:47 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34508 "EHLO
+	id S1754898Ab3BCO6D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:58:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34523 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754780Ab3BCO5o (ORCPT
+	by vger.kernel.org with ESMTP id S1752099Ab3BCO5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:57:44 -0500
-Message-Id: <20130203144651.884220891@decadent.org.uk>
+	Sun, 3 Feb 2013 09:57:55 -0500
+Message-Id: <20130203144652.451455680@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:12 +0100
+Date: Sun, 03 Feb 2013 15:48:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Eric Anholt <eric@anholt.net>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 088/128] drm/i915: Remove the MI_FLUSH_ENABLE setting.
+Cc: akpm@linux-foundation.org, Alan Cox <alan@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 095/128] x86/msr: Add capabilities check
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,40 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Anholt <eric@anholt.net>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 8d79c3490aecfe6e51f0ba6f9780746fb1434954 upstream.
+commit c903f0456bc69176912dee6dd25c6a66ee1aed00 upstream.
 
-We have always been using the wrong bit -- it's bit 12.  However, the
-bit also doesn't do anything -- hardware has always accepted the
-MI_FLUSH command even when it was specced not to.
+At the moment the MSR driver only relies upon file system
+checks. This means that anything as root with any capability set
+can write to MSRs. Historically that wasn't very interesting but
+on modern processors the MSRs are such that writing to them
+provides several ways to execute arbitary code in kernel space.
+Sample code and documentation on doing this is circulating and
+MSR attacks are used on Windows 64bit rootkits already.
 
-Given that there is only one MI_FLUSH emitted in all of the driver
-stack on gen6+ (in i965_video.c of the 2d driver, and it should be
-using other code to do its flush instead), just remove the MI_FLUSH
-enable instead of trying to fix it.
+In the Linux case you still need to be able to open the device
+file so the impact is fairly limited and reduces the security of
+some capability and security model based systems down towards
+that of a generic "root owns the box" setup.
 
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Reviewed-by: Kenneth Graunke <kenneth@whitecape.org>
-Reviewed-by: Ben Widawsky <ben@bwidawsk.net>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Therefore they should require CAP_SYS_RAWIO to prevent an
+elevation of capabilities. The impact of this is fairly minimal
+on most setups because they don't have heavy use of
+capabilities. Those using SELinux, SMACK or AppArmor rules might
+want to consider if their rulesets on the MSR driver could be
+tighter.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/x86/kernel/msr.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 77e729d..b3da17a 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -399,8 +399,6 @@ static int init_render_ring(struct intel_ring_buffer *ring)
+diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
+index a7c5661..4929502 100644
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -174,6 +174,9 @@ static int msr_open(struct inode *inode, struct file *file)
+ 	unsigned int cpu;
+ 	struct cpuinfo_x86 *c;
  
- 	if (INTEL_INFO(dev)->gen > 3) {
- 		int mode = VS_TIMER_DISPATCH << 16 | VS_TIMER_DISPATCH;
--		if (IS_GEN6(dev) || IS_GEN7(dev))
--			mode |= MI_FLUSH_ENABLE << 16 | MI_FLUSH_ENABLE;
- 		I915_WRITE(MI_MODE, mode);
- 		if (IS_GEN7(dev))
- 			I915_WRITE(GFX_MODE_GEN7,
++	if (!capable(CAP_SYS_RAWIO))
++		return -EPERM;
++
+ 	cpu = iminor(file->f_path.dentry->d_inode);
+ 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
+ 		return -ENXIO;	/* No such CPU */
 
 
