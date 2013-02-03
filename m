@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3BCPLT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:11:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34807 "EHLO
+	id S1754736Ab3BCPLi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:11:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34372 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753743Ab3BCPLO (ORCPT
+	by vger.kernel.org with ESMTP id S1754068Ab3BCO4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 10:11:14 -0500
-Message-Id: <20130203144655.379237534@decadent.org.uk>
+	Sun, 3 Feb 2013 09:56:40 -0500
+Message-Id: <20130203144650.157779624@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:52 +0100
+Date: Sun, 03 Feb 2013 15:47:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
-Subject: [ 128/128] printk: fix buffer overflow when  calling log_prefix function from call_console_drivers
+Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 069/128] ACPI / cpuidle: Fix NULL pointer issues when cpuidle is disabled
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,83 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-This patch corrects a buffer overflow in kernels from 3.0 to 3.4 when calling
-log_prefix() function from call_console_drivers().
+commit b88a634a903d9670aa5f2f785aa890628ce0dece upstream.
 
-This bug existed in previous releases but has been revealed with commit
-162a7e7500f9664636e649ba59defe541b7c2c60 (2.6.39 => 3.0) that made changes
-about how to allocate memory for early printk buffer (use of memblock_alloc).
-It disappears with commit 7ff9554bb578ba02166071d2d487b7fc7d860d62 (3.4 => 3.5)
-that does a refactoring of printk buffer management.
+If cpuidle is disabled, that means that:
 
-In log_prefix(), the access to "p[0]", "p[1]", "p[2]" or
-"simple_strtoul(&p[1], &endp, 10)" may cause a buffer overflow as this
-function is called from call_console_drivers by passing "&LOG_BUF(cur_index)"
-where the index must be masked to do not exceed the buffer's boundary.
+	per_cpu(acpi_cpuidle_device, pr->id)
 
-The trick is to prepare in call_console_drivers() a buffer with the necessary
-data (PRI field of syslog message) to be safely evaluated in log_prefix().
+is set to NULL as the acpi_processor_power_init ends up failing at
 
-This patch can be applied to stable kernel branches 3.0.y, 3.2.y and 3.4.y.
+	 retval = cpuidle_register_driver(&acpi_idle_driver)
 
-Without this patch, one can freeze a server running this loop from shell :
-  $ export DUMMY=`cat /dev/urandom | tr -dc '12345AZERTYUIOPQSDFGHJKLMWXCVBNazertyuiopqsdfghjklmwxcvbn' | head -c255`
-  $ while true do ; echo $DUMMY > /dev/kmsg ; done
+(in acpi_processor_power_init) and never sets the per_cpu idle
+device.  So when acpi_processor_hotplug on CPU online notification
+tries to reference said device it crashes:
 
-The "server freeze" depends on where memblock_alloc does allocate printk buffer :
-if the buffer overflow is inside another kernel allocation the problem may not
-be revealed, else the server may hangs up.
+cpu 3 spinlock event irq 62
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+IP: [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
+PGD a259b067 PUD ab38b067 PMD 0
+Oops: 0002 [#1] SMP
+odules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi libcrc32c crc32c nouveau mxm_wmi wmi radeon ttm sg sr_mod sd_mod cdrom ata_generic ata_piix libata crc32c_intel scsi_mod atl1c i915 fbcon tileblit font bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
+CPU 1
+Pid: 3047, comm: bash Not tainted 3.8.0-rc3upstream-00250-g165c029 #1 MSI MS-7680/H61M-P23 (MS-7680)
+RIP: e030:[<ffffffff81381013>]  [<ffffffff81381013>] acpi_processor_setup_cpuidle_cx+0x3f/0x105
+RSP: e02b:ffff88001742dca8  EFLAGS: 00010202
+RAX: 0000000000010be9 RBX: ffff8800a0a61800 RCX: ffff880105380000
+RDX: 0000000000000003 RSI: 0000000000000200 RDI: ffff8800a0a61800
+RBP: ffff88001742dce8 R08: ffffffff81812360 R09: 0000000000000200
+R10: aaaaaaaaaaaaaaaa R11: 0000000000000001 R12: ffff8800a0a61800
+R13: 00000000ffffff01 R14: 0000000000000000 R15: ffffffff81a907a0
+FS:  00007fd6942f7700(0000) GS:ffff880105280000(0000) knlGS:0000000000000000
+CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000004 CR3: 00000000a6773000 CR4: 0000000000042660
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process bash (pid: 3047, threadinfo ffff88001742c000, task ffff880017944000)
+Stack:
+ 0000000000000150 ffff880100f59e00 ffff88001742dcd8 ffff8800a0a61800
+ 0000000000000000 00000000ffffff01 0000000000000000 ffffffff81a907a0
+ ffff88001742dd18 ffffffff813815b1 ffff88001742dd08 ffffffff810ae336
+Call Trace:
+ [<ffffffff813815b1>] acpi_processor_hotplug+0x7c/0x9f
+ [<ffffffff810ae336>] ? schedule_delayed_work_on+0x16/0x20
+ [<ffffffff8137ee8f>] acpi_cpu_soft_notify+0x90/0xca
+ [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
+ [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
+ [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
+ [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
+ [<ffffffff81652e18>] cpu_up+0xd9/0xec
+ [<ffffffff8164a254>] store_online+0x94/0xd0
+ [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
+ [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
 
-Signed-off-by: Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
+This patch fixes it.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/syslog.h |    6 ++++++
- kernel/printk.c        |   13 ++++++++++++-
- 2 files changed, 18 insertions(+), 1 deletion(-)
+ drivers/acpi/processor_idle.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-index 3891139..ce4c665 100644
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -47,6 +47,12 @@
- #define SYSLOG_FROM_CALL 0
- #define SYSLOG_FROM_FILE 1
-
-+/*
-+ * Syslog priority (PRI) maximum length in char : '<[0-9]{1,3}>'
-+ * See RFC5424 for details
-+*/
-+#define SYSLOG_PRI_MAX_LENGTH 5
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index f1a5da4..fea6f8d 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -958,6 +958,9 @@ static int acpi_processor_setup_cpuidle_cx(struct acpi_processor *pr)
+ 		return -EINVAL;
+ 	}
+ 
++	if (!dev)
++		return -EINVAL;
 +
- int do_syslog(int type, char __user *buf, int count, bool from_file);
-
- #endif /* _LINUX_SYSLOG_H */
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 3fc4708..6edc4e89 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -633,8 +633,19 @@ static void call_console_drivers(unsigned start, unsigned end)
- 	start_print = start;
- 	while (cur_index != end) {
- 		if (msg_level < 0 && ((end - cur_index) > 2)) {
-+			/*
-+			 * prepare buf_prefix, as a contiguous array,
-+			 * to be processed by log_prefix function
-+			 */
-+			char buf_prefix[SYSLOG_PRI_MAX_LENGTH+1];
-+			unsigned i;
-+			for (i = 0; i < ((end - cur_index)) && (i < SYSLOG_PRI_MAX_LENGTH); i++) {
-+				buf_prefix[i] = LOG_BUF(cur_index + i);
-+			}
-+			buf_prefix[i] = '\0'; /* force '\0' as last string character */
-+
- 			/* strip log prefix */
--			cur_index += log_prefix(&LOG_BUF(cur_index), &msg_level, NULL);
-+			cur_index += log_prefix((const char *)&buf_prefix, &msg_level, NULL);
- 			start_print = cur_index;
- 		}
- 		while (cur_index != end) {
+ 	dev->cpu = pr->id;
+ 
+ 	if (max_cstate == 0)
 
 
