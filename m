@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab3BCXqX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 18:46:23 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54201 "EHLO
+	id S1754149Ab3BCXqh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 18:46:37 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54061 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab3BCXqS (ORCPT
+	with ESMTP id S1753961Ab3BCXqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 18:46:18 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-01-510ef6c5f053
+	Sun, 3 Feb 2013 18:46:17 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-fb-510ef6c50207
 From: Minchan Kim <minchan@kernel.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
         Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v7 4/4] zram: get rid of lockdep warning
-Date: Mon,  4 Feb 2013 08:46:11 +0900
-Message-Id: <1359935171-12749-4-git-send-email-minchan@kernel.org>
+Subject: [PATCH v7 2/4] zram: force disksize setting before using zram
+Date: Mon,  4 Feb 2013 08:46:09 +0900
+Message-Id: <1359935171-12749-2-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359935171-12749-1-git-send-email-minchan@kernel.org>
 References: <1359935171-12749-1-git-send-email-minchan@kernel.org>
@@ -29,452 +29,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lockdep complains about recursive deadlock of zram->init_lock.
-[1] made it false positive because we can't request IO to zram
-before setting disksize. Anyway, we should shut lockdep up to
-avoid many reporting from user.
+Now zram document syas "set disksize is optional"
+but partly it's wrong. When you try to use zram firstly after
+booting, you must set disksize, otherwise zram can't work because
+zram gendisk's size is 0. But once you do it, you can use zram freely
+after reset because reset doesn't reset to zero paradoxically.
+So in this time, disksize setting is optional.:(
+It's inconsitent for user behavior and not straightforward.
 
-[1] : zram: force disksize setting before using zram
+This patch forces always setting disksize firstly before using zram.
+Yes. It changes current behavior so someone could complain when
+he upgrades zram. Apparently it could be a problem if zram is mainline
+but it still lives in staging so behavior could be changed for right
+way to go. Let them excuse.
 
 Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/staging/zram/zram_drv.c   |  189 +++++++++++++++++++------------------
- drivers/staging/zram/zram_drv.h   |   12 ++-
- drivers/staging/zram/zram_sysfs.c |   11 ++-
- 3 files changed, 116 insertions(+), 96 deletions(-)
+ drivers/staging/zram/zram.txt     |   27 ++++++++++----------
+ drivers/staging/zram/zram_drv.c   |   51 +++++++++++++------------------------
+ drivers/staging/zram/zram_drv.h   |    5 +---
+ drivers/staging/zram/zram_sysfs.c |    6 +----
+ 4 files changed, 34 insertions(+), 55 deletions(-)
 
+diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
+index 5f75d29..765d790 100644
+--- a/drivers/staging/zram/zram.txt
++++ b/drivers/staging/zram/zram.txt
+@@ -23,17 +23,17 @@ Following shows a typical sequence of steps for using zram.
+ 	This creates 4 devices: /dev/zram{0,1,2,3}
+ 	(num_devices parameter is optional. Default: 1)
+ 
+-2) Set Disksize (Optional):
+-	Set disk size by writing the value to sysfs node 'disksize'
+-	(in bytes). If disksize is not given, default value of 25%
+-	of RAM is used.
+-
+-	# Initialize /dev/zram0 with 50MB disksize
+-	echo $((50*1024*1024)) > /sys/block/zram0/disksize
+-
+-	NOTE: disksize cannot be changed if the disk contains any
+-	data. So, for such a disk, you need to issue 'reset' (see below)
+-	before you can change its disksize.
++2) Set Disksize
++        Set disk size by writing the value to sysfs node 'disksize'.
++        The value can be either in bytes or you can use mem suffixes.
++        Examples:
++            # Initialize /dev/zram0 with 50MB disksize
++            echo $((50*1024*1024)) > /sys/block/zram0/disksize
++
++            # Using mem suffixes
++            echo 256K > /sys/block/zram0/disksize
++            echo 512M > /sys/block/zram0/disksize
++            echo 1G > /sys/block/zram0/disksize
+ 
+ 3) Activate:
+ 	mkswap /dev/zram0
+@@ -65,8 +65,9 @@ Following shows a typical sequence of steps for using zram.
+ 	echo 1 > /sys/block/zram0/reset
+ 	echo 1 > /sys/block/zram1/reset
+ 
+-	(This frees all the memory allocated for the given device).
+-
++	This frees all the memory allocated for the given device and
++	resets the disksize to zero. You must set the disksize again
++	before reusing the device.
+ 
+ Please report any problems at:
+  - Mailing list: linux-mm-cc at laptop dot org
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 85055c4..56e3203 100644
+index 262265e..1114cad 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -61,22 +61,22 @@ static void zram_stat64_inc(struct zram *zram, u64 *v)
- 	zram_stat64_add(zram, v, 1);
+@@ -94,34 +94,6 @@ static int page_zero_filled(void *ptr)
+ 	return 1;
  }
  
--static int zram_test_flag(struct zram *zram, u32 index,
-+static int zram_test_flag(struct zram_meta *meta, u32 index,
- 			enum zram_pageflags flag)
- {
--	return zram->table[index].flags & BIT(flag);
-+	return meta->table[index].flags & BIT(flag);
- }
- 
--static void zram_set_flag(struct zram *zram, u32 index,
-+static void zram_set_flag(struct zram_meta *meta, u32 index,
- 			enum zram_pageflags flag)
- {
--	zram->table[index].flags |= BIT(flag);
-+	meta->table[index].flags |= BIT(flag);
- }
- 
--static void zram_clear_flag(struct zram *zram, u32 index,
-+static void zram_clear_flag(struct zram_meta *meta, u32 index,
- 			enum zram_pageflags flag)
- {
--	zram->table[index].flags &= ~BIT(flag);
-+	meta->table[index].flags &= ~BIT(flag);
- }
- 
- static int page_zero_filled(void *ptr)
-@@ -96,16 +96,17 @@ static int page_zero_filled(void *ptr)
- 
+-static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
+-{
+-	if (!zram->disksize) {
+-		pr_info(
+-		"disk size not provided. You can use disksize_kb module "
+-		"param to specify size.\nUsing default: (%u%% of RAM).\n",
+-		default_disksize_perc_ram
+-		);
+-		zram->disksize = default_disksize_perc_ram *
+-					(totalram_bytes / 100);
+-	}
+-
+-	if (zram->disksize > 2 * (totalram_bytes)) {
+-		pr_info(
+-		"There is little point creating a zram of greater than "
+-		"twice the size of memory since we expect a 2:1 compression "
+-		"ratio. Note that zram uses about 0.1%% of the size of "
+-		"the disk when not in use so a huge zram is "
+-		"wasteful.\n"
+-		"\tMemory Size: %zu kB\n"
+-		"\tSize you selected: %llu kB\n"
+-		"Continuing anyway ...\n",
+-		totalram_bytes >> 10, zram->disksize >> 10);
+-	}
+-
+-	zram->disksize &= PAGE_MASK;
+-}
+-
  static void zram_free_page(struct zram *zram, size_t index)
  {
--	unsigned long handle = zram->table[index].handle;
--	u16 size = zram->table[index].size;
-+	struct zram_meta *meta = zram->meta;
-+	unsigned long handle = meta->table[index].handle;
-+	u16 size = meta->table[index].size;
- 
- 	if (unlikely(!handle)) {
- 		/*
- 		 * No memory is allocated for zero filled pages.
- 		 * Simply clear zero page flag.
- 		 */
--		if (zram_test_flag(zram, index, ZRAM_ZERO)) {
--			zram_clear_flag(zram, index, ZRAM_ZERO);
-+		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
-+			zram_clear_flag(meta, index, ZRAM_ZERO);
- 			zram->stats.pages_zero--;
- 		}
- 		return;
-@@ -114,17 +115,17 @@ static void zram_free_page(struct zram *zram, size_t index)
- 	if (unlikely(size > max_zpage_size))
- 		zram->stats.bad_compress--;
- 
--	zs_free(zram->mem_pool, handle);
-+	zs_free(meta->mem_pool, handle);
- 
- 	if (size <= PAGE_SIZE / 2)
- 		zram->stats.good_compress--;
- 
- 	zram_stat64_sub(zram, &zram->stats.compr_size,
--			zram->table[index].size);
-+			meta->table[index].size);
- 	zram->stats.pages_stored--;
- 
--	zram->table[index].handle = 0;
--	zram->table[index].size = 0;
-+	meta->table[index].handle = 0;
-+	meta->table[index].size = 0;
- }
- 
- static void handle_zero_page(struct bio_vec *bvec)
-@@ -149,20 +150,21 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- 	int ret = LZO_E_OK;
- 	size_t clen = PAGE_SIZE;
- 	unsigned char *cmem;
--	unsigned long handle = zram->table[index].handle;
-+	struct zram_meta *meta = zram->meta;
-+	unsigned long handle = meta->table[index].handle;
- 
--	if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
-+	if (!handle || zram_test_flag(meta, index, ZRAM_ZERO)) {
- 		memset(mem, 0, PAGE_SIZE);
- 		return 0;
- 	}
- 
--	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
--	if (zram->table[index].size == PAGE_SIZE)
-+	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
-+	if (meta->table[index].size == PAGE_SIZE)
- 		memcpy(mem, cmem, PAGE_SIZE);
- 	else
--		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
-+		ret = lzo1x_decompress_safe(cmem, meta->table[index].size,
- 						mem, &clen);
--	zs_unmap_object(zram->mem_pool, handle);
-+	zs_unmap_object(meta->mem_pool, handle);
- 
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
-@@ -180,11 +182,11 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 	int ret;
- 	struct page *page;
- 	unsigned char *user_mem, *uncmem = NULL;
--
-+	struct zram_meta *meta = zram->meta;
- 	page = bvec->bv_page;
- 
--	if (unlikely(!zram->table[index].handle) ||
--			zram_test_flag(zram, index, ZRAM_ZERO)) {
-+	if (unlikely(!meta->table[index].handle) ||
-+			zram_test_flag(meta, index, ZRAM_ZERO)) {
- 		handle_zero_page(bvec);
- 		return 0;
- 	}
-@@ -232,9 +234,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	unsigned long handle;
- 	struct page *page;
- 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
-+	struct zram_meta *meta = zram->meta;
- 
- 	page = bvec->bv_page;
--	src = zram->compress_buffer;
-+	src = meta->compress_buffer;
- 
- 	if (is_partial_io(bvec)) {
- 		/*
-@@ -256,8 +259,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	 * System overwrites unused sectors. Free memory associated
- 	 * with this sector now.
- 	 */
--	if (zram->table[index].handle ||
--	    zram_test_flag(zram, index, ZRAM_ZERO))
-+	if (meta->table[index].handle ||
-+	    zram_test_flag(meta, index, ZRAM_ZERO))
- 		zram_free_page(zram, index);
- 
- 	user_mem = kmap_atomic(page);
-@@ -276,13 +279,13 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		if (is_partial_io(bvec))
- 			kfree(uncmem);
- 		zram->stats.pages_zero++;
--		zram_set_flag(zram, index, ZRAM_ZERO);
-+		zram_set_flag(meta, index, ZRAM_ZERO);
- 		ret = 0;
- 		goto out;
- 	}
- 
- 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
--			       zram->compress_workmem);
-+			       meta->compress_workmem);
- 
- 	if (!is_partial_io(bvec)) {
- 		kunmap_atomic(user_mem);
-@@ -303,14 +306,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			src = uncmem;
- 	}
- 
--	handle = zs_malloc(zram->mem_pool, clen);
-+	handle = zs_malloc(meta->mem_pool, clen);
- 	if (!handle) {
- 		pr_info("Error allocating memory for compressed "
- 			"page: %u, size=%zu\n", index, clen);
- 		ret = -ENOMEM;
- 		goto out;
- 	}
--	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
-+	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
- 
- 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
- 		src = kmap_atomic(page);
-@@ -318,10 +321,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
- 		kunmap_atomic(src);
- 
--	zs_unmap_object(zram->mem_pool, handle);
-+	zs_unmap_object(meta->mem_pool, handle);
- 
--	zram->table[index].handle = handle;
--	zram->table[index].size = clen;
-+	meta->table[index].handle = handle;
-+	meta->table[index].size = clen;
- 
- 	/* Update stats */
- 	zram_stat64_add(zram, &zram->stats.compr_size, clen);
-@@ -464,34 +467,25 @@ error:
- void __zram_reset_device(struct zram *zram)
+ 	unsigned long handle = zram->table[index].handle;
+@@ -497,6 +469,9 @@ void __zram_reset_device(struct zram *zram)
  {
  	size_t index;
-+	struct zram_meta *meta;
  
- 	if (!zram->init_done)
- 		return;
- 
-+	meta = zram->meta;
++	if (!zram->init_done)
++		return;
++
  	zram->init_done = 0;
  
--	/* Free various per-device buffers */
--	kfree(zram->compress_workmem);
--	free_pages((unsigned long)zram->compress_buffer, 1);
--
--	zram->compress_workmem = NULL;
--	zram->compress_buffer = NULL;
--
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
--		unsigned long handle = zram->table[index].handle;
-+		unsigned long handle = meta->table[index].handle;
- 		if (!handle)
- 			continue;
- 
--		zs_free(zram->mem_pool, handle);
-+		zs_free(meta->mem_pool, handle);
- 	}
- 
--	vfree(zram->table);
--	zram->table = NULL;
--
--	zs_destroy_pool(zram->mem_pool);
--	zram->mem_pool = NULL;
--
-+	zram_meta_free(zram->meta);
-+	zram->meta = NULL;
- 	/* Reset stats */
+ 	/* Free various per-device buffers */
+@@ -525,6 +500,7 @@ void __zram_reset_device(struct zram *zram)
  	memset(&zram->stats, 0, sizeof(zram->stats));
  
-@@ -506,12 +500,65 @@ void zram_reset_device(struct zram *zram)
- 	up_write(&zram->init_lock);
+ 	zram->disksize = 0;
++	set_capacity(zram->disk, 0);
  }
  
--/* zram->init_lock should be held */
--int zram_init_device(struct zram *zram)
-+void zram_meta_free(struct zram_meta *meta)
-+{
-+	zs_destroy_pool(meta->mem_pool);
-+	kfree(meta->compress_workmem);
-+	free_pages((unsigned long)meta->compress_buffer, 1);
-+	vfree(meta->table);
-+	kfree(meta);
-+}
-+
-+struct zram_meta *zram_meta_alloc(u64 disksize)
- {
--	int ret;
- 	size_t num_pages;
-+	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-+	if (!meta)
-+		goto out;
-+
-+	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-+	if (!meta->compress_workmem) {
-+		pr_err("Error allocating compressor working memory!\n");
-+		goto free_meta;
-+	}
-+
-+	meta->compress_buffer =
-+		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-+	if (!meta->compress_buffer) {
-+		pr_err("Error allocating compressor buffer space\n");
-+		goto free_workmem;
-+	}
-+
-+	num_pages = disksize >> PAGE_SHIFT;
-+	meta->table = vzalloc(num_pages * sizeof(*meta->table));
-+	if (!meta->table) {
-+		pr_err("Error allocating zram address table\n");
-+		goto free_buffer;
-+	}
-+
-+	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
-+	if (!meta->mem_pool) {
-+		pr_err("Error creating memory pool\n");
-+		goto free_table;
-+	}
-+
-+	return meta;
-+
-+free_table:
-+	vfree(meta->table);
-+free_buffer:
-+	free_pages((unsigned long)meta->compress_buffer, 1);
-+free_workmem:
-+	kfree(meta->compress_workmem);
-+free_meta:
-+	kfree(meta);
-+	meta = NULL;
-+out:
-+	return meta;
-+}
- 
-+void zram_init_device(struct zram *zram, struct zram_meta *meta)
-+{
- 	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
- 		pr_info(
- 		"There is little point creating a zram of greater than "
-@@ -526,51 +573,13 @@ int zram_init_device(struct zram *zram)
- 		);
+ void zram_reset_device(struct zram *zram)
+@@ -546,7 +522,19 @@ int zram_init_device(struct zram *zram)
+ 		return 0;
  	}
  
--	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
--	if (!zram->compress_workmem) {
--		pr_err("Error allocating compressor working memory!\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
--
--	zram->compress_buffer =
--		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
--	if (!zram->compress_buffer) {
--		pr_err("Error allocating compressor buffer space\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
--
--	num_pages = zram->disksize >> PAGE_SHIFT;
--	zram->table = vzalloc(num_pages * sizeof(*zram->table));
--	if (!zram->table) {
--		pr_err("Error allocating zram address table\n");
--		ret = -ENOMEM;
--		goto fail_no_table;
--	}
+-	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
++	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
++		pr_info(
++		"There is little point creating a zram of greater than "
++		"twice the size of memory since we expect a 2:1 compression "
++		"ratio. Note that zram uses about 0.1%% of the size of "
++		"the disk when not in use so a huge zram is "
++		"wasteful.\n"
++		"\tMemory Size: %zu kB\n"
++		"\tSize you selected: %llu kB\n"
++		"Continuing anyway ...\n",
++		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
++		);
++	}
+ 
+ 	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+ 	if (!zram->compress_workmem) {
+@@ -571,8 +559,6 @@ int zram_init_device(struct zram *zram)
+ 		goto fail_no_table;
+ 	}
+ 
+-	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
 -
  	/* zram devices sort of resembles non-rotational disks */
  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
  
--	zram->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
--	if (!zram->mem_pool) {
--		pr_err("Error creating memory pool\n");
--		ret = -ENOMEM;
--		goto fail;
--	}
--
-+	zram->meta = meta;
- 	zram->init_done = 1;
+@@ -751,8 +737,7 @@ static void __exit zram_exit(void)
+ 		zram = &zram_devices[i];
  
- 	pr_debug("Initialization done!\n");
--	return 0;
--
--fail_no_table:
--	/* To prevent accessing table entries during cleanup */
--	zram->disksize = 0;
--fail:
--	__zram_reset_device(zram);
--	pr_err("Initialization failed: err=%d\n", ret);
--	return ret;
- }
+ 		destroy_device(zram);
+-		if (zram->init_done)
+-			zram_reset_device(zram);
++		zram_reset_device(zram);
+ 	}
  
- static void zram_slot_free_notify(struct block_device *bdev,
+ 	unregister_blkdev(zram_major, "zram");
 diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 5b671d1..2d1a3f1 100644
+index df2eec4..5b671d1 100644
 --- a/drivers/staging/zram/zram_drv.h
 +++ b/drivers/staging/zram/zram_drv.h
-@@ -83,11 +83,15 @@ struct zram_stats {
- 	u32 bad_compress;	/* % of pages with compression ratio>=75% */
- };
+@@ -28,9 +28,6 @@ static const unsigned max_num_devices = 32;
  
--struct zram {
--	struct zs_pool *mem_pool;
-+struct zram_meta {
- 	void *compress_workmem;
- 	void *compress_buffer;
- 	struct table *table;
-+	struct zs_pool *mem_pool;
-+};
-+
-+struct zram {
-+	struct zram_meta *meta;
- 	spinlock_t stat64_lock;	/* protect 64-bit stats */
- 	struct rw_semaphore lock; /* protect compression buffers and table
- 				   * against concurrent read and writes */
-@@ -111,7 +115,9 @@ unsigned int zram_get_num_devices(void);
- extern struct attribute_group zram_disk_attr_group;
+ /*-- Configurable parameters */
+ 
+-/* Default zram disk size: 25% of total RAM */
+-static const unsigned default_disksize_perc_ram = 25;
+-
+ /*
+  * Pages that compress to size greater than this are stored
+  * uncompressed in memory.
+@@ -115,6 +112,6 @@ extern struct attribute_group zram_disk_attr_group;
  #endif
  
--extern int zram_init_device(struct zram *zram);
- extern void zram_reset_device(struct zram *zram);
-+extern struct zram_meta *zram_meta_alloc(u64 disksize);
-+extern void zram_meta_free(struct zram_meta *meta);
-+extern void zram_init_device(struct zram *zram, struct zram_meta *meta);
+ extern int zram_init_device(struct zram *zram);
+-extern void __zram_reset_device(struct zram *zram);
++extern void zram_reset_device(struct zram *zram);
  
  #endif
 diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index 369db12..e6a929d 100644
+index de1eacf..4143af9 100644
 --- a/drivers/staging/zram/zram_sysfs.c
 +++ b/drivers/staging/zram/zram_sysfs.c
-@@ -56,22 +56,26 @@ static ssize_t disksize_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t len)
- {
- 	u64 disksize;
-+	struct zram_meta *meta;
- 	struct zram *zram = dev_to_zram(dev);
+@@ -110,11 +110,7 @@ static ssize_t reset_store(struct device *dev,
+ 	if (bdev)
+ 		fsync_bdev(bdev);
  
- 	disksize = memparse(buf, NULL);
- 	if (!disksize)
- 		return -EINVAL;
- 
-+	disksize = PAGE_ALIGN(disksize);
-+	meta = zram_meta_alloc(disksize);
- 	down_write(&zram->init_lock);
- 	if (zram->init_done) {
- 		up_write(&zram->init_lock);
-+		zram_meta_free(meta);
- 		pr_info("Cannot change disksize for initialized device\n");
- 		return -EBUSY;
- 	}
- 
--	zram->disksize = PAGE_ALIGN(disksize);
-+	zram->disksize = disksize;
- 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
--	zram_init_device(zram);
-+	zram_init_device(zram, meta);
- 	up_write(&zram->init_lock);
- 
+-	down_write(&zram->init_lock);
+-	if (zram->init_done)
+-		__zram_reset_device(zram);
+-	up_write(&zram->init_lock);
+-
++	zram_reset_device(zram);
  	return len;
-@@ -182,9 +186,10 @@ static ssize_t mem_used_total_show(struct device *dev,
- {
- 	u64 val = 0;
- 	struct zram *zram = dev_to_zram(dev);
-+	struct zram_meta *meta = zram->meta;
- 
- 	if (zram->init_done)
--		val = zs_get_total_size_bytes(zram->mem_pool);
-+		val = zs_get_total_size_bytes(meta->mem_pool);
- 
- 	return sprintf(buf, "%llu\n", val);
  }
+ 
 -- 
 1.7.9.5
 
