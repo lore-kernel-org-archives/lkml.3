@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab3BCN7l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 08:59:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:28050 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698Ab3BCN7i (ORCPT
+	id S1753265Ab3BCON4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:13:56 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:46639 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011Ab3BCONy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 08:59:38 -0500
-Message-ID: <510E6D3F.2060200@oracle.com>
-Date: Sun, 03 Feb 2013 07:59:27 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	Sun, 3 Feb 2013 09:13:54 -0500
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Dave Kleikamp <shaggy@kernel.org>
-Subject: Re: [RFC] setxattr bugs
-References: <20130203043046.GR4503@ZenIV.linux.org.uk>
-In-Reply-To: <20130203043046.GR4503@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.5
+In-Reply-To: <87a9rltszn.fsf@xmission.com>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+	<87a9rltszn.fsf@xmission.com>
+Date: Sun, 3 Feb 2013 06:13:53 -0800
+X-Google-Sender-Auth: Y_YXh6UkpwieTPcWQG_nZvfM3YQ
+Message-ID: <CAOS58YPhSz4DQT5-hTkH-wW_P3b5LK1WuEbWiR8uyNZPZdf_Gw@mail.gmail.com>
+Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
+From: Tejun Heo <tj@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
+        jmorris@namei.org, axboe@kernel.dk
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2013 10:30 PM, Al Viro wrote:
-> 	* JFS, since 2005: setxattr(name, "system.posix_acl_access", NULL, 0, 0)
-> succeeds, creating an empty EA with "system.posix_acl_access" as name.
-> Validity checks should apply _after_
->         if (value == NULL) {    /* empty EA, do not remove */
->                 value = "";
->                 value_len = 0;
->         }
-> and not before it.
+Hey, Eric.
 
-This is probably a hold-over from weird OS/2 behavior that we really
-don't need to keep.
+On Sun, Feb 3, 2013 at 5:41 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Why the deep percpu magic?
 
-> 	* reiserfs, since 2009: setxattr(name, attr_name, NULL, 0, 0) is
-> treated as removexattr(name, attr_name), not as emptying given xattr.
-> 
-> 	The question is, does either of those cross into "established
-> weirdness in ABI" or are they still at the "bugs to be fixed" stage?
-> 
-> 	FWIW, I'm seriously tempted to stop passing NULL as the
-> third argument of ->setxattr(), essentially taking all those
-> if (!value) value = ""; pieces from individual ->setxattr() instances
-> to __vfs_setxattr_noperm() (all other callers of ->setxattr() never
-> pass NULL data or 0 size, so it's irrelevant for them).  Would fix
-> both jfs and reiserfs weirdness....
-> 
-> 	Objections?
+Eh? What's magical about it?  You preload percpu buffer if you're
+gonna be allocating an id from context which doesn't allow permissive
+allocation.  This is the same technique used by radix tree preloading.
+ The only reason idr did its own preloading was probably because it
+got implemented before we had proper percpu techniques.
 
-no objection from me. I can clean up the jfs code so that it no longer
-saves empty xattrs.
+> Why don't associate idr_preload with an idr structure.
 
-Thanks,
-Shaggy
+Because then you end up with a lot more preloaded buffers which are
+much less useful.  You can't guarantee your preload target is the only
+one who's gonna use the preload buffer so you end up with this ugly
+-EAGAIN retry loop.  It's inefficient & inconvenient.
+
+> When reading code with idr_preload I get this deep down creepy feeling.
+> What is this magic that is going on?
+
+Seriously, if this gives you deep creepy feeling, you need to get on
+with time.  It's a basic percpu technique.
+
+> Can't we just put the preload list_head into struct idr make
+> idr_preload and idr_preload_end take an idr argument?
+
+Inefficient & inconvenient.
+
+> Maybe we can have a special structure we put on the stack that has
+> the list_head and the preload state instead.
+>
+> The way this works just weirds me out and I really really don't like it.
+>
+> I would rather continue to use the existing functions as problematic as
+> they are as I don't need a course in deep magic to make sense of them.
+
+Heh, this is the weirdest review I got in quite a while.  Please sit
+down and read it again.
+
+Thanks.
+
+-- 
+tejun
