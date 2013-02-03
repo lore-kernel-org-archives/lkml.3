@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab3BCBYx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 20:24:53 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:50207 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205Ab3BCBXJ (ORCPT
+	id S1753647Ab3BCBZQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 20:25:16 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:47596 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab3BCBXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 20:23:09 -0500
+	Sat, 2 Feb 2013 20:23:07 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
         skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
         axboe@kernel.dk, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 57/62] posix-timers: convert to idr_alloc()
-Date: Sat,  2 Feb 2013 17:20:58 -0800
-Message-Id: <1359854463-2538-58-git-send-email-tj@kernel.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 56/62] events: convert to idr_alloc()
+Date: Sat,  2 Feb 2013 17:20:57 -0800
+Message-Id: <1359854463-2538-57-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359854463-2538-1-git-send-email-tj@kernel.org>
 References: <1359854463-2538-1-git-send-email-tj@kernel.org>
@@ -28,52 +30,39 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 ---
 This patch depends on an earlier idr changes and I think it would be
 best to route these together through -mm.  Please holler if there's
 any objection.  Thanks.
 
- kernel/posix-timers.c | 18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ kernel/events/core.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 69185ae..e897f66 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -552,24 +552,22 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 		return -EAGAIN;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 301079d..2ed1e98 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5956,13 +5956,9 @@ int perf_pmu_register(struct pmu *pmu, char *name, int type)
+ 	pmu->name = name;
  
- 	spin_lock_init(&new_timer->it_lock);
-- retry:
--	if (unlikely(!idr_pre_get(&posix_timers_id, GFP_KERNEL))) {
--		error = -EAGAIN;
--		goto out;
--	}
-+
-+	idr_preload(GFP_KERNEL);
- 	spin_lock_irq(&idr_lock);
--	error = idr_get_new(&posix_timers_id, new_timer, &new_timer_id);
-+	error = idr_alloc(&posix_timers_id, new_timer, 0, 0, GFP_NOWAIT);
- 	spin_unlock_irq(&idr_lock);
--	if (error) {
--		if (error == -EAGAIN)
--			goto retry;
-+	idr_preload_end();
-+	if (error < 0) {
- 		/*
- 		 * Weird looking, but we return EAGAIN if the IDR is
- 		 * full (proper POSIX return value for this)
- 		 */
--		error = -EAGAIN;
-+		if (error == -ENOSPC)
-+			error = -EAGAIN;
- 		goto out;
+ 	if (type < 0) {
+-		int err = idr_pre_get(&pmu_idr, GFP_KERNEL);
+-		if (!err)
+-			goto free_pdc;
+-
+-		err = idr_get_new_above(&pmu_idr, pmu, PERF_TYPE_MAX, &type);
+-		if (err) {
+-			ret = err;
++		type = idr_alloc(&pmu_idr, pmu, PERF_TYPE_MAX, 0, GFP_KERNEL);
++		if (type < 0) {
++			ret = type;
+ 			goto free_pdc;
+ 		}
  	}
-+	new_timer_id = error;
- 
- 	it_id_set = IT_ID_SET;
- 	new_timer->it_id = (timer_t) new_timer_id;
 -- 
 1.8.1
 
