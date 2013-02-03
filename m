@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab3BCPRN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:17:13 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34262 "EHLO
+	id S1754083Ab3BCOzt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:55:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34214 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753983Ab3BCOz4 (ORCPT
+	by vger.kernel.org with ESMTP id S1754011Ab3BCOzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:55:56 -0500
-Message-Id: <20130203144648.238906945@decadent.org.uk>
+	Sun, 3 Feb 2013 09:55:38 -0500
+Message-Id: <20130203144647.414311122@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:47:31 +0100
+Date: Sun, 03 Feb 2013 15:47:22 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Yijing Wang <wangyijing@huawei.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 047/128] PCI: pciehp: Use per-slot workqueues to avoid deadlock
+Cc: akpm@linux-foundation.org, =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        =?ISO-8859-15?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 038/128] USB: option: add Telekom Speedstick LTE II
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,189 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yijing Wang <wangyijing@huawei.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit c2be6f93b383c873a4f9d521afa49b1b67d06085 upstream.
+commit 5ec0085440ef8c2cf50002b34d5a504ee12aa2bf upstream.
 
-When we have a hotplug-capable PCIe port with a second hotplug-capable
-PCIe port below it, removing the device below the upstream port causes
-a deadlock.
+also known as Alcatel One Touch L100V LTE
 
-The deadlock happens because we use the pciehp_wq workqueue to run
-pciehp_power_thread(), which uses pciehp_disable_slot() to remove devices
-below the upstream port.  When we remove the downstream PCIe port, we call
-pciehp_remove(), the pciehp driver's .remove() method.  That calls
-flush_workqueue(pciehp_wq), which deadlocks because the
-pciehp_power_thread() work item is still running.
+The driver description files gives these names to the vendor specific
+functions on this modem:
 
-This patch avoids the deadlock by creating a workqueue for every PCIe port
-and removing the single shared workqueue.
+ Application1: VID_1BBB&PID_011E&MI_00
+ Application2: VID_1BBB&PID_011E&MI_01
+ Modem:        VID_1BBB&PID_011E&MI_03
+ Ethernet:     VID_1BBB&PID_011E&MI_04
 
-Here's the call path that leads to the deadlock:
-
-  pciehp_queue_pushbutton_work
-    queue_work(pciehp_wq)                   # queue pciehp_power_thread
-    ...
-
-  pciehp_power_thread
-    pciehp_disable_slot
-      remove_board
-	pciehp_unconfigure_device
-	  pci_stop_and_remove_bus_device
-	    ...
-	      pciehp_remove                 # pciehp driver .remove method
-		pciehp_release_ctrl
-		  pcie_cleanup_slot
-		    flush_workqueue(pciehp_wq)
-
-This is fairly urgent because it can be caused by simply unplugging a
-Thunderbolt adapter, as reported by Daniel below.
-
-[bhelgaas: changelog]
-Reference: http://lkml.kernel.org/r/CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com
-Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
-Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/hotplug/pciehp.h      |    2 +-
- drivers/pci/hotplug/pciehp_core.c |   11 ++---------
- drivers/pci/hotplug/pciehp_ctrl.c |    8 ++++----
- drivers/pci/hotplug/pciehp_hpc.c  |   11 ++++++++++-
- 4 files changed, 17 insertions(+), 15 deletions(-)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/pci/hotplug/pciehp.h
-+++ b/drivers/pci/hotplug/pciehp.h
-@@ -44,7 +44,6 @@ extern int pciehp_poll_mode;
- extern int pciehp_poll_time;
- extern int pciehp_debug;
- extern int pciehp_force;
--extern struct workqueue_struct *pciehp_wq;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 4d85330..2c75d50 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -288,6 +288,7 @@ static void option_instat_callback(struct urb *urb);
+ #define ALCATEL_VENDOR_ID			0x1bbb
+ #define ALCATEL_PRODUCT_X060S_X200		0x0000
+ #define ALCATEL_PRODUCT_X220_X500D		0x0017
++#define ALCATEL_PRODUCT_L100V			0x011e
  
- #define dbg(format, arg...)						\
- do {									\
-@@ -78,6 +77,7 @@ struct slot {
- 	struct hotplug_slot *hotplug_slot;
- 	struct delayed_work work;	/* work for button event */
- 	struct mutex lock;
-+	struct workqueue_struct *wq;
- };
- 
- struct event_info {
---- a/drivers/pci/hotplug/pciehp_core.c
-+++ b/drivers/pci/hotplug/pciehp_core.c
-@@ -42,7 +42,6 @@ int pciehp_debug;
- int pciehp_poll_mode;
- int pciehp_poll_time;
- int pciehp_force;
--struct workqueue_struct *pciehp_wq;
- 
- #define DRIVER_VERSION	"0.4"
- #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
-@@ -340,18 +339,13 @@ static int __init pcied_init(void)
- {
- 	int retval = 0;
- 
--	pciehp_wq = alloc_workqueue("pciehp", 0, 0);
--	if (!pciehp_wq)
--		return -ENOMEM;
--
- 	pciehp_firmware_init();
- 	retval = pcie_port_service_register(&hpdriver_portdrv);
-  	dbg("pcie_port_service_register = %d\n", retval);
-   	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
-- 	if (retval) {
--		destroy_workqueue(pciehp_wq);
-+	if (retval)
- 		dbg("Failure to register service\n");
--	}
-+
- 	return retval;
- }
- 
-@@ -359,7 +353,6 @@ static void __exit pcied_cleanup(void)
- {
- 	dbg("unload_pciehpd()\n");
- 	pcie_port_service_unregister(&hpdriver_portdrv);
--	destroy_workqueue(pciehp_wq);
- 	info(DRIVER_DESC " version: " DRIVER_VERSION " unloaded\n");
- }
- 
---- a/drivers/pci/hotplug/pciehp_ctrl.c
-+++ b/drivers/pci/hotplug/pciehp_ctrl.c
-@@ -49,7 +49,7 @@ static int queue_interrupt_event(struct
- 	info->p_slot = p_slot;
- 	INIT_WORK(&info->work, interrupt_event_handler);
- 
--	queue_work(pciehp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
- 
- 	return 0;
- }
-@@ -344,7 +344,7 @@ void pciehp_queue_pushbutton_work(struct
- 		kfree(info);
- 		goto out;
- 	}
--	queue_work(pciehp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
-  out:
- 	mutex_unlock(&p_slot->lock);
- }
-@@ -377,7 +377,7 @@ static void handle_button_press_event(st
- 		if (ATTN_LED(ctrl))
- 			pciehp_set_attention_status(p_slot, 0);
- 
--		queue_delayed_work(pciehp_wq, &p_slot->work, 5*HZ);
-+		queue_delayed_work(p_slot->wq, &p_slot->work, 5*HZ);
- 		break;
- 	case BLINKINGOFF_STATE:
- 	case BLINKINGON_STATE:
-@@ -439,7 +439,7 @@ static void handle_surprise_event(struct
- 	else
- 		p_slot->state = POWERON_STATE;
- 
--	queue_work(pciehp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
- }
- 
- static void interrupt_event_handler(struct work_struct *work)
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -789,23 +789,32 @@ static void pcie_shutdown_notification(s
- static int pcie_init_slot(struct controller *ctrl)
- {
- 	struct slot *slot;
-+	char name[32];
- 
- 	slot = kzalloc(sizeof(*slot), GFP_KERNEL);
- 	if (!slot)
- 		return -ENOMEM;
- 
-+	snprintf(name, sizeof(name), "pciehp-%u", PSN(ctrl));
-+	slot->wq = alloc_workqueue(name, 0, 0);
-+	if (!slot->wq)
-+		goto abort;
-+
- 	slot->ctrl = ctrl;
- 	mutex_init(&slot->lock);
- 	INIT_DELAYED_WORK(&slot->work, pciehp_queue_pushbutton_work);
- 	ctrl->slot = slot;
- 	return 0;
-+abort:
-+	kfree(slot);
-+	return -ENOMEM;
- }
- 
- static void pcie_cleanup_slot(struct controller *ctrl)
- {
- 	struct slot *slot = ctrl->slot;
- 	cancel_delayed_work(&slot->work);
--	flush_workqueue(pciehp_wq);
-+	destroy_workqueue(slot->wq);
- 	kfree(slot);
- }
- 
+ #define PIRELLI_VENDOR_ID			0x1266
+ #define PIRELLI_PRODUCT_C100_1			0x1002
+@@ -1194,6 +1195,8 @@ static const struct usb_device_id option_ids[] = {
+ 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
+ 	},
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
+ 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
 
 
