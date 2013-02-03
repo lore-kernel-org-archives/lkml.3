@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3BCPZz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:25:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34080 "EHLO
+	id S1753453Ab3BCOyq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:54:46 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34050 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752933Ab3BCOyt (ORCPT
+	by vger.kernel.org with ESMTP id S1751419Ab3BCOyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:54:49 -0500
-Message-Id: <20130203144644.660417656@decadent.org.uk>
+	Sun, 3 Feb 2013 09:54:40 -0500
+Message-Id: <20130203144644.159430779@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:46:51 +0100
+Date: Sun, 03 Feb 2013 15:46:45 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 007/128] USB: Ignore xHCI Reset Device status.
+Cc: akpm@linux-foundation.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
+Subject: [ 001/128] usb: gadget: dummy: fix enumeration with g_multi
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,68 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 8b8132bc3d1cc3d4c0687e4d638a482fa920d98a upstream.
+commit 1d16638e3b9cc195bac18a8fcbca748f33c1bc24 upstream.
 
-When the USB core finishes reseting a USB device, the xHCI driver sends
-a Reset Device command to the host.  The xHC then updates its internal
-representation of the USB device to the 'Default' device state.  If the
-device was already in the Default state, the xHC will complete the
-command with an error status.
+If we do have endpoints named like "ep-a" then bEndpointAddress is
+counted internally by the gadget framework.
 
-If a device needs to be reset several times during enumeration, the
-second reset will always fail because of the xHCI Reset Device command.
-This can cause issues during enumeration.
+If we do have endpoints named like "ep-1" then bEndpointAddress is
+assigned from the digit after "ep-".
 
-For example, usb_reset_and_verify_device calls into hub_port_init in a
-loop.  Say that on the first call into hub_port_init, the device is
-successfully reset, but doesn't respond to several set address control
-transfers.  Then the port will be disabled, but the udev will remain in
-tact.  usb_reset_and_verify_device will call into hub_port_init again.
+If we do have both, then it is likely that after we used up the
+"generic" endpoints we will use the digits and thus assign one
+bEndpointAddress to multiple endpoints.
 
-On the second call into hub_port_init, the device will be reset, and the
-xHCI driver will issue a Reset Device command.  This command will fail
-(because the device is already in the Default state), and
-usb_reset_and_verify_device will fail.  The port will be disabled, and
-the device won't be able to enumerate.
+This theory can be proofed by using the completely enabled g_multi.
+Without this patch, the mass storage won't enumerate and times out
+because it shares endpoints with RNDIS.
 
-Fix this by ignoring the return value of the HCD reset_device callback.
+This patch also adds fills up the endpoints list so we have in total
+endpoints 1 to 15 in + out available while some of them are restricted
+to certain types like BULK or ISO. Without this change the nokia gadget
+won't load because the system does not provide enough (BULK) endpoints
+but it did before ep-a - ep-f were removed.
 
-This commit should be backported to kernels as old as 3.2, that contain
-the commit 75d7cf72ab9fa01dc70877aa5c68e8ef477229dc "usbcore: refine
-warm reset logic".
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/hub.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/usb/gadget/dummy_hcd.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 7f8f10e..3bc50fc 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2565,14 +2565,11 @@ static void hub_port_finish_reset(struct usb_hub *hub, int port1,
- 			msleep(10 + 40);
- 			update_devnum(udev, 0);
- 			hcd = bus_to_hcd(udev->bus);
--			if (hcd->driver->reset_device) {
--				*status = hcd->driver->reset_device(hcd, udev);
--				if (*status < 0) {
--					dev_err(&udev->dev, "Cannot reset "
--							"HCD device state\n");
--					break;
--				}
--			}
-+			/* The xHC may think the device is already reset,
-+			 * so ignore the status.
-+			 */
-+			if (hcd->driver->reset_device)
-+				hcd->driver->reset_device(hcd, udev);
- 		}
- 		/* FALL THROUGH */
- 	case -ENOTCONN:
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -126,10 +126,7 @@ static const char ep0name [] = "ep0";
+ static const char *const ep_name [] = {
+ 	ep0name,				/* everyone has ep0 */
+ 
+-	/* act like a net2280: high speed, six configurable endpoints */
+-	"ep-a", "ep-b", "ep-c", "ep-d", "ep-e", "ep-f",
+-
+-	/* or like pxa250: fifteen fixed function endpoints */
++	/* act like a pxa250: fifteen fixed function endpoints */
+ 	"ep1in-bulk", "ep2out-bulk", "ep3in-iso", "ep4out-iso", "ep5in-int",
+ 	"ep6in-bulk", "ep7out-bulk", "ep8in-iso", "ep9out-iso", "ep10in-int",
+ 	"ep11in-bulk", "ep12out-bulk", "ep13in-iso", "ep14out-iso",
+@@ -137,6 +134,10 @@ static const char *const ep_name [] = {
+ 
+ 	/* or like sa1100: two fixed function endpoints */
+ 	"ep1out-bulk", "ep2in-bulk",
++
++	/* and now some generic EPs so we have enough in multi config */
++	"ep3out", "ep4in", "ep5out", "ep6out", "ep7in", "ep8out", "ep9in",
++	"ep10out", "ep11out", "ep12in", "ep13out", "ep14in", "ep15out",
+ };
+ #define DUMMY_ENDPOINTS	ARRAY_SIZE(ep_name)
+ 
 
 
