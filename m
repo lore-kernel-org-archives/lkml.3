@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab3BCPAt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:00:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34629 "EHLO
+	id S1755079Ab3BCO60 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:58:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34601 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755083Ab3BCO61 (ORCPT
+	by vger.kernel.org with ESMTP id S1755044Ab3BCO6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:58:27 -0500
-Message-Id: <20130203144654.995711811@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:22 -0500
+Message-Id: <20130203144654.541758403@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:48 +0100
+Date: Sun, 03 Feb 2013 15:48:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>
-Subject: [ 124/128] drbd: add missing part_round_stats to _drbd_start_io_acct
+Cc: akpm@linux-foundation.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        John Tapsell <johnflux@gmail.com>
+Subject: [ 119/128] Revert "drm/i915: no lvds quirk for Zotac ZDBOX SD ID12/ID13"
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,28 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 72585d2428fa3a0daab02ebad1f41e5ef517dbaa upstream.
+commit 48e858340dae43189a4e55647f6eac736766f828 upstream.
 
-Without this, iostat frequently sees bogus svctime and >= 100% "utilization".
+This reverts commit 9756fe38d10b2bf90c81dc4d2f17d5632e135364.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+The bogus lvds output is actually a lvds->hdmi bridge, which we don't
+really support. But unconditionally disabling it breaks some existing
+setups.
+
+Reported-by: John Tapsell <johnflux@gmail.com>
+References: http://permalink.gmane.org/gmane.comp.freedesktop.xorg.drivers.intel/17237
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/drbd/drbd_req.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/intel_lvds.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -37,6 +37,7 @@ static void _drbd_start_io_acct(struct d
- 	const int rw = bio_data_dir(bio);
- 	int cpu;
- 	cpu = part_stat_lock();
-+	part_round_stats(cpu, &mdev->vdisk->part0);
- 	part_stat_inc(cpu, &mdev->vdisk->part0, ios[rw]);
- 	part_stat_add(cpu, &mdev->vdisk->part0, sectors[rw], bio_sectors(bio));
- 	part_inc_in_flight(&mdev->vdisk->part0, rw);
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index b9a660a..17aee74 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -776,14 +776,6 @@ static const struct dmi_system_id intel_no_lvds[] = {
+ 	},
+ 	{
+ 		.callback = intel_no_lvds_dmi_callback,
+-		.ident = "ZOTAC ZBOXSD-ID12/ID13",
+-		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "ZOTAC"),
+-			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
+-		},
+-	},
+-	{
+-		.callback = intel_no_lvds_dmi_callback,
+ 		.ident = "Gigabyte GA-D525TUD",
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
 
 
