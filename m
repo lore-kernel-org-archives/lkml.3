@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab3BCPBl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:01:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34608 "EHLO
+	id S1755027Ab3BCPBj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:01:39 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34606 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754877Ab3BCO6X (ORCPT
+	by vger.kernel.org with ESMTP id S1755047Ab3BCO6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Feb 2013 09:58:23 -0500
-Message-Id: <20130203144654.820169604@decadent.org.uk>
+Message-Id: <20130203144655.196104219@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:46 +0100
+Date: Sun, 03 Feb 2013 15:48:50 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 122/128] ALSA: usb - fix race in creation of M-Audio Fast track pro driver
+Cc: akpm@linux-foundation.org, Bart Westgeest <bart@elbrys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 126/128] staging: usbip: changed function return type to void
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,51 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Bart Westgeest <bart@elbrys.com>
 
-commit b98ae2729dea161edc96c9d177459b6c28bcbba5 upstream.
+commit ac2b41acfa3efe4650102067a99251587a806d70 upstream.
 
-A patch in the 3.2 kernel caused regression with hotplugging the
-M-Audio Fast track pro, or sound after suspend. I don't have the
-device so I haven't done a full analysis, but it seems userspace
-(both udev and pulseaudio) got confused when a card was created,
-immediately destroyed, and then created again.
+The function usbip_pad_iso never returns anything but 0 (success).
 
-However, at least one person in the bug report (martin djfun)
-reports that this patch resolves the issue for him. It also leaves
-a message in the log:
-"snd-usb-audio: probe of 1-1.1:1.1 failed with error -5" which is
-a bit misleading. It is better than non-working audio, but maybe
-there's a more elegant solution?
-
-BugLink: https://bugs.launchpad.net/bugs/1095315
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Bart Westgeest <bart@elbrys.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/quirks.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/staging/usbip/usbip_common.c |   11 ++++-------
+ drivers/staging/usbip/usbip_common.h |    2 +-
+ drivers/staging/usbip/vhci_rx.c      |    3 +--
+ 3 files changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
-index acc12f0..e71fc8b 100644
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -387,11 +387,13 @@ static int snd_usb_fasttrackpro_boot_quirk(struct usb_device *dev)
- 		 * rules
- 		 */
- 		err = usb_driver_set_configuration(dev, 2);
--		if (err < 0) {
-+		if (err < 0)
- 			snd_printdd("error usb_driver_set_configuration: %d\n",
- 				    err);
--			return -ENODEV;
--		}
-+		/* Always return an error, so that we stop creating a device
-+		   that will just be destroyed and recreated with a new
-+		   configuration */
-+		return -ENODEV;
- 	} else
- 		snd_printk(KERN_INFO "usb-audio: Fast Track Pro config OK\n");
+diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
+index d93e7f1..70f23026 100644
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -735,26 +735,25 @@ EXPORT_SYMBOL_GPL(usbip_recv_iso);
+  * buffer and iso packets need to be stored and be in propeper endian in urb
+  * before calling this function
+  */
+-int usbip_pad_iso(struct usbip_device *ud, struct urb *urb)
++void usbip_pad_iso(struct usbip_device *ud, struct urb *urb)
+ {
+ 	int np = urb->number_of_packets;
+ 	int i;
+-	int ret;
+ 	int actualoffset = urb->actual_length;
  
+ 	if (!usb_pipeisoc(urb->pipe))
+-		return 0;
++		return;
+ 
+ 	/* if no packets or length of data is 0, then nothing to unpack */
+ 	if (np == 0 || urb->actual_length == 0)
+-		return 0;
++		return;
+ 
+ 	/*
+ 	 * if actual_length is transfer_buffer_length then no padding is
+ 	 * present.
+ 	*/
+ 	if (urb->actual_length == urb->transfer_buffer_length)
+-		return 0;
++		return;
+ 
+ 	/*
+ 	 * loop over all packets from last to first (to prevent overwritting
+@@ -766,8 +765,6 @@ int usbip_pad_iso(struct usbip_device *ud, struct urb *urb)
+ 			urb->transfer_buffer + actualoffset,
+ 			urb->iso_frame_desc[i].actual_length);
+ 	}
+-
+-	return ret;
+ }
+ EXPORT_SYMBOL_GPL(usbip_pad_iso);
+ 
+diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
+index b8f8c48..c7b888c 100644
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -306,7 +306,7 @@ void usbip_header_correct_endian(struct usbip_header *pdu, int send);
+ void *usbip_alloc_iso_desc_pdu(struct urb *urb, ssize_t *bufflen);
+ /* some members of urb must be substituted before. */
+ int usbip_recv_iso(struct usbip_device *ud, struct urb *urb);
+-int usbip_pad_iso(struct usbip_device *ud, struct urb *urb);
++void usbip_pad_iso(struct usbip_device *ud, struct urb *urb);
+ int usbip_recv_xbuff(struct usbip_device *ud, struct urb *urb);
+ 
+ /* usbip_event.c */
+diff --git a/drivers/staging/usbip/vhci_rx.c b/drivers/staging/usbip/vhci_rx.c
+index 3f511b4..f5fba732 100644
+--- a/drivers/staging/usbip/vhci_rx.c
++++ b/drivers/staging/usbip/vhci_rx.c
+@@ -94,8 +94,7 @@ static void vhci_recv_ret_submit(struct vhci_device *vdev,
+ 		return;
+ 
+ 	/* restore the padding in iso packets */
+-	if (usbip_pad_iso(ud, urb) < 0)
+-		return;
++	usbip_pad_iso(ud, urb);
+ 
+ 	if (usbip_dbg_flag_vhci_rx)
+ 		usbip_dump_urb(urb);
 
 
