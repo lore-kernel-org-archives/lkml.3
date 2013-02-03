@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab3BCLSs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 06:18:48 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:35776 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab3BCLSq (ORCPT
+	id S1753316Ab3BCLSj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 06:18:39 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:33686 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab3BCLSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 06:18:46 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 3 Feb 2013 12:18:09 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
-        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
-        linux1394-devel@lists.sourceforge.net
-Subject: Re: [PATCH 13/62] firewire: convert to idr_alloc()
-Message-ID: <20130203121809.2fb21a0c@stein>
-In-Reply-To: <20130203120344.2e31b500@stein>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
-	<1359854463-2538-14-git-send-email-tj@kernel.org>
-	<20130203120344.2e31b500@stein>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 3 Feb 2013 06:18:37 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Alejandro Mery <amery@geeks.cl>,
+        Stefan Roese <sr@denx.de>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] sunxi: dts: Report the pinctrl nodes as gpio-controllers
+Date: Sun,  3 Feb 2013 12:18:30 +0100
+Message-Id: <1359890311-10110-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359889813-10029-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1359889813-10029-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 03 Stefan Richter wrote:
-> On Feb 02 Tejun Heo wrote:
-> > --- a/drivers/firewire/core-device.c
-> > +++ b/drivers/firewire/core-device.c
-> > @@ -1017,13 +1017,12 @@ static void fw_device_init(struct work_struct *work)
-> >  
-> >  	fw_device_get(device);
-> >  	down_write(&fw_device_rwsem);
-> > -	ret = idr_pre_get(&fw_device_idr, GFP_KERNEL) ?
-> > -	      idr_get_new(&fw_device_idr, device, &minor) :
-> > -	      -ENOMEM;
-> > +	ret = idr_alloc(&fw_device_idr, device, 0, 0, GFP_KERNEL);
-> >  	up_write(&fw_device_rwsem);
-> >  
-> >  	if (ret < 0)
-> >  		goto error;
-> > +	minor = ret;
-> >  
-> >  	device->device.bus = &fw_bus_type;
-> >  	device->device.type = &fw_device_type;
-> 
-> This hunk is OK, of course.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/boot/dts/sun4i-a10.dtsi |    4 +++-
+ arch/arm/boot/dts/sun5i-a13.dtsi |    4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-Could be changed into
-
-	ret = idr_alloc(&fw_device_idr, device, 0, 1 << MINORBITS, GFP_KERNEL);
-
-though, which would be an additional bug fix.
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index f99f60d..03d2b53 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -18,11 +18,13 @@
+ 	};
+ 
+ 	soc {
+-		pinctrl@01c20800 {
++		pio: pinctrl@01c20800 {
+ 			compatible = "allwinner,sun4i-a10-pinctrl";
+ 			reg = <0x01c20800 0x400>;
++			gpio-controller;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			#gpio-cells = <3>;
+ 
+ 			uart0_pins_a: uart0@0 {
+ 				allwinner,pins = "PB22", "PB23";
+diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
+index e112189..945bfac 100644
+--- a/arch/arm/boot/dts/sun5i-a13.dtsi
++++ b/arch/arm/boot/dts/sun5i-a13.dtsi
+@@ -19,11 +19,13 @@
+ 	};
+ 
+ 	soc {
+-		pinctrl@01c20800 {
++		pio: pinctrl@01c20800 {
+ 			compatible = "allwinner,sun5i-a13-pinctrl";
+ 			reg = <0x01c20800 0x400>;
++			gpio-controller;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			#gpio-cells = <3>;
+ 
+ 			uart1_pins_a: uart1@0 {
+ 				allwinner,pins = "PE10", "PE11";
 -- 
-Stefan Richter
--=====-===-= --=- ---==
-http://arcgraph.de/sr/
+1.7.10.4
+
