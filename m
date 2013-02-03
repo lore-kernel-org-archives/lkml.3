@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab3BCPBM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:01:12 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34618 "EHLO
+	id S1755207Ab3BCPBl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:01:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34608 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755058Ab3BCO6Z (ORCPT
+	by vger.kernel.org with ESMTP id S1754877Ab3BCO6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:58:25 -0500
-Message-Id: <20130203144654.098873721@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:23 -0500
+Message-Id: <20130203144654.820169604@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:38 +0100
+Date: Sun, 03 Feb 2013 15:48:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>, Jean Delvare <khali@linux-fr.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 114/128] drivers/firmware/dmi_scan.c: check dmi version when get system uuid
+Cc: akpm@linux-foundation.org,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 122/128] ALSA: usb - fix race in creation of M-Audio Fast track pro driver
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,75 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit f1d8e614d74b09531b9a85e812485340f3df7b1c upstream.
+commit b98ae2729dea161edc96c9d177459b6c28bcbba5 upstream.
 
-As of version 2.6 of the SMBIOS specification, the first 3 fields of the
-UUID are supposed to be little-endian encoded.
+A patch in the 3.2 kernel caused regression with hotplugging the
+M-Audio Fast track pro, or sound after suspend. I don't have the
+device so I haven't done a full analysis, but it seems userspace
+(both udev and pulseaudio) got confused when a card was created,
+immediately destroyed, and then created again.
 
-Also a minor fix to match variable meaning and mute checkpatch.pl
+However, at least one person in the bug report (martin djfun)
+reports that this patch resolves the issue for him. It also leaves
+a message in the log:
+"snd-usb-audio: probe of 1-1.1:1.1 failed with error -5" which is
+a bit misleading. It is better than non-working audio, but maybe
+there's a more elegant solution?
 
-[akpm@linux-foundation.org: tweak code comment]
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: Feng Jin <joe.jin@oracle.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+BugLink: https://bugs.launchpad.net/bugs/1095315
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/firmware/dmi_scan.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ sound/usb/quirks.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index b298158..3714e3c 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -16,6 +16,7 @@
-  */
- static char dmi_empty_string[] = "        ";
- 
-+static u16 __initdata dmi_ver;
- /*
-  * Catch too early calls to dmi_check_system():
-  */
-@@ -161,8 +162,10 @@ static void __init dmi_save_uuid(const struct dmi_header *dm, int slot, int inde
- 		return;
- 
- 	for (i = 0; i < 16 && (is_ff || is_00); i++) {
--		if(d[i] != 0x00) is_ff = 0;
--		if(d[i] != 0xFF) is_00 = 0;
-+		if (d[i] != 0x00)
-+			is_00 = 0;
-+		if (d[i] != 0xFF)
-+			is_ff = 0;
- 	}
- 
- 	if (is_ff || is_00)
-@@ -172,7 +175,15 @@ static void __init dmi_save_uuid(const struct dmi_header *dm, int slot, int inde
- 	if (!s)
- 		return;
- 
--	sprintf(s, "%pUB", d);
-+	/*
-+	 * As of version 2.6 of the SMBIOS specification, the first 3 fields of
-+	 * the UUID are supposed to be little-endian encoded.  The specification
-+	 * says that this is the defacto standard.
-+	 */
-+	if (dmi_ver >= 0x0206)
-+		sprintf(s, "%pUL", d);
-+	else
-+		sprintf(s, "%pUB", d);
- 
-         dmi_ident[slot] = s;
- }
-@@ -414,6 +425,7 @@ static int __init dmi_present(const char __iomem *p)
- 		 * DMI version 0.0 means that the real version is taken from
- 		 * the SMBIOS version, which we don't know at this point.
+diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
+index acc12f0..e71fc8b 100644
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -387,11 +387,13 @@ static int snd_usb_fasttrackpro_boot_quirk(struct usb_device *dev)
+ 		 * rules
  		 */
-+		dmi_ver = (buf[14] & 0xf0) << 4 | (buf[14] & 0x0f);
- 		if (buf[14] != 0)
- 			printk(KERN_INFO "DMI %d.%d present.\n",
- 			       buf[14] >> 4, buf[14] & 0xF);
+ 		err = usb_driver_set_configuration(dev, 2);
+-		if (err < 0) {
++		if (err < 0)
+ 			snd_printdd("error usb_driver_set_configuration: %d\n",
+ 				    err);
+-			return -ENODEV;
+-		}
++		/* Always return an error, so that we stop creating a device
++		   that will just be destroyed and recreated with a new
++		   configuration */
++		return -ENODEV;
+ 	} else
+ 		snd_printk(KERN_INFO "usb-audio: Fast Track Pro config OK\n");
+ 
 
 
