@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3BCVwC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 16:52:02 -0500
-Received: from mout.gmx.net ([212.227.15.18]:61002 "EHLO mout.gmx.net"
+	id S1754011Ab3BCVw0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 16:52:26 -0500
+Received: from mout.gmx.net ([212.227.15.19]:63823 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754009Ab3BCVvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 16:51:48 -0500
+	id S1753985Ab3BCVvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 16:51:41 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX181nTkY+WE1ReHMKgO0+ulinhJvL3f+fFyzEzbUFO
-	fd/yDCkAJBXdZO
+X-Provags-ID: V01U2FsdGVkX1/F1X9RBjnFwdoB75Pfe+aXN+FV+khbhkd0VKcGHt
+	/9o4eJX8ahGJ1A
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Arnaud Patard <arnaud.patard@rtp-net.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -16,9 +16,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
         Sam Hansen <solid.se7en@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 10/10] staging/xgifb: Simplify XGISetModeNew
-Date: Sun,  3 Feb 2013 22:54:39 +0100
-Message-Id: <1359928479-8484-10-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 08/10] staging/xgifb: Remove unnecessary bitshifts in XGI_SetCRT1ModeRegs
+Date: Sun,  3 Feb 2013 22:54:37 +0100
+Message-Id: <1359928479-8484-8-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1359928479-8484-1-git-send-email-peterhuewe@gmx.de>
 References: <1359928479-8484-1-git-send-email-peterhuewe@gmx.de>
@@ -27,55 +27,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch simplifies the code of XGISetModeNew by reordering the
-if/else if/case conditions when both branches are doing exactly the
-same.
+Since data can only be 0x0000, 0x0035 or 0x0048 we can simply skip the
+bit shifting and masking as data & 0xFF is always equal to data and
+data & 0xFF00 is always 0.
+So we simply use data and 0 directly and save the assignment.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/xgifb/vb_setmode.c |   18 +++---------------
- 1 files changed, 3 insertions(+), 15 deletions(-)
+ drivers/staging/xgifb/vb_setmode.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index c5faa89..f44a254 100644
+index 6f366f4..1ff1178 100644
 --- a/drivers/staging/xgifb/vb_setmode.c
 +++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -5907,7 +5907,8 @@ unsigned char XGISetModeNew(struct xgifb_video_info *xgifb_info,
- 		XGI_GetLCDInfo(ModeNo, ModeIdIndex, pVBInfo);
- 		XGI_DisableBridge(xgifb_info, HwDeviceExtension, pVBInfo);
+@@ -1083,10 +1083,8 @@ static void XGI_SetCRT1ModeRegs(struct xgi_hw_device_info *HwDeviceExtension,
+ 			data = 0x0048;
+ 	}
  
--		if (pVBInfo->VBInfo & (SetSimuScanMode | XGI_SetCRT2ToLCDA)) {
-+		if (pVBInfo->VBInfo & (SetSimuScanMode | XGI_SetCRT2ToLCDA) ||
-+			(!(pVBInfo->VBInfo & SwitchCRT2))) {
- 			XGI_SetCRT1Group(xgifb_info, HwDeviceExtension, ModeNo,
- 					ModeIdIndex, pVBInfo);
+-	data2 = data & 0x00FF;
+-	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFF, data2);
+-	data2 = (data & 0xFF00) >> 8;
+-	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFC, data2);
++	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFF, data);
++	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFC, 0);
  
-@@ -5915,24 +5916,11 @@ unsigned char XGISetModeNew(struct xgifb_video_info *xgifb_info,
- 				XGI_SetLCDAGroup(ModeNo, ModeIdIndex,
- 						HwDeviceExtension, pVBInfo);
- 			}
--		} else if (!(pVBInfo->VBInfo & SwitchCRT2)) {
--			XGI_SetCRT1Group(xgifb_info,
--					HwDeviceExtension, ModeNo,
--					ModeIdIndex, pVBInfo);
--			if (pVBInfo->VBInfo & XGI_SetCRT2ToLCDA) {
--				XGI_SetLCDAGroup(ModeNo, ModeIdIndex,
--						HwDeviceExtension,
--						pVBInfo);
--			}
- 		}
- 
- 		if (pVBInfo->VBInfo & (SetSimuScanMode | SwitchCRT2)) {
- 			switch (HwDeviceExtension->ujVBChipID) {
--			case VB_CHIP_301:
--				XGI_SetCRT2Group301(ModeNo, HwDeviceExtension,
--						pVBInfo); /*add for CRT2 */
--				break;
--
-+			case VB_CHIP_301: /* fall through */
- 			case VB_CHIP_302:
- 				XGI_SetCRT2Group301(ModeNo, HwDeviceExtension,
- 						pVBInfo); /*add for CRT2 */
+ 	if (modeflag & HalfDCLK)
+ 		xgifb_reg_and_or(pVBInfo->P3c4, 0x01, 0xF7, 0x08);
 -- 
 1.7.8.6
 
