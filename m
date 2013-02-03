@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab3BCD1j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Feb 2013 22:27:39 -0500
-Received: from host171.canaca.com ([67.55.55.225]:46651 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3BCD1g (ORCPT
+	id S1753281Ab3BCDgh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Feb 2013 22:36:37 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:44403 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab3BCDge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Feb 2013 22:27:36 -0500
-Message-ID: <b81b48451e27b8f5c3ecdc121d749f59.squirrel@www.mungewell.org>
-In-Reply-To: <eda86cfd7fd3f5878ef00e3e8a9de1c6.squirrel@www.mungewell.org>
-References: <1359837925-6383-1-git-send-email-sbarra.paul@gmail.com>
-    <eda86cfd7fd3f5878ef00e3e8a9de1c6.squirrel@www.mungewell.org>
-Date: Sat, 2 Feb 2013 22:27:29 -0500
-Subject: Re: [PATCH 1/3] hid: Add report descriptor for Logitech Driving
- Force wheel
-From: simon@mungewell.org
-To: simon@mungewell.org
-Cc: "Paul Sbarra" <sbarra.paul@gmail.com>, jkosina@suse.cz,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	Sat, 2 Feb 2013 22:36:34 -0500
+Date: Sat, 2 Feb 2013 19:32:49 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [GIT PULL] power: ab8500-bm: Latest Mainline<->STE delta
+ reduction patch-set
+Message-ID: <20130203033249.GC25016@lizard.sbx00618.mountca.wayport.net>
+References: <20130123113854.GK15873@gmail.com>
+ <20130123144441.GN15873@gmail.com>
+ <20130131120833.GH5301@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130131120833.GH5301@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 31, 2013 at 12:08:33PM +0000, Lee Jones wrote:
+> > Okay, after Linus Walleij's diligent observaions, I have removed all
+> > new functionallity related to Deep Debug and will continue to
+> > investigate what I need to do in that regard.
+> > 
+> > In the mean-time, here's the fresh deep-debug:less pull-request:
+> > 
+> > ----------------------------------------------------------------
+> > 
+> > The following changes since commit 8fd526fd18233887ba652079a369f4eee0de9d9d:
+> > 
+> >   qnap-poweroff: Fix license string (2013-01-19 18:04:04 -0800)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.linaro.org/people/ljones/linux-3.0-ux500.git tb-power-2
+> > 
+> > for you to fetch changes up to 34c11a709e928090cf34ecd706f7d3170f4e5026:
+> > 
+> >   u8500-charger: Delay for USB enumeration (2013-01-23 14:39:22 +0000)
+> 
+> Did you pull this in the end?
 
-> Hi Paul,
-> I'm not following as to why you are patching the descriptor for the DFP,
-> my understanding is that this is fully supported at the moment (as
-> USB_DEVICE_ID_LOGITECH_DFP_WHEEL in the line after your patch).
+I was buried under my homework, sorry. :-) The changes look good, thanks a
+lot! Pulled now.
 
-Ah... you said 'Driving Force'.. not 'Driving Force Pro', but given the
-confusing naming schemes I think I can be excused :-)
-http://en.wikipedia.org/wiki/Gran_Turismo_official_steering_wheel#Model_comparison
-
-
-However I do remember that there's a quirk with the logitech wheels that
-they all pretend to be the same device, but some can be sent a magic
-command which makes them disconnect and re-connect with a different USB ID
-and with the larger steering range.
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=drivers/hid/hid-lg4ff.c;h=d7947c701f3063ac6c3683c29d3eca333b7ca1b0;hb=8b31849a113a8868eb2de692be5c9ecadae93ac9#l549
-
-
-So in summary we need to be careful with "046d:c294 Logitech, Inc. Driving
-Force"
-
-Personally I have a Driving Force Pro, Driving Force Wireless and a G27
-which all start with reporting this ID.
-
-So a couple of questions:
-1) Are you sure you have a "Driving Force"?
-2) Does the ForceFeedback work for you?
-
-Just for reference we moved the FF for the logitech wheels to hid-lg4ff
-back in Aug 2011, I'm not sure which mainline kernel that was...
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=history;f=drivers/hid/hid-lg4ff.c;h=d7947c701f3063ac6c3683c29d3eca333b7ca1b0;hb=8b31849a113a8868eb2de692be5c9ecadae93ac9
-
-Simon
-
+Anton
