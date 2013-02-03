@@ -1,69 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3BCUCC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 15:02:02 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:56912 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab3BCUB7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 15:01:59 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Subject: Re: [PATCH] bq27x00_battery: Fix reporting battery temperature
-Date: Sun, 3 Feb 2013 21:01:54 +0100
-User-Agent: KMail/1.13.7 (Linux/3.5.0-23-generic; KDE/4.9.4; x86_64; ; )
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-References: <1359799569-5322-1-git-send-email-pali.rohar@gmail.com> <20130203034451.GH25016@lizard.sbx00618.mountca.wayport.net>
-In-Reply-To: <20130203034451.GH25016@lizard.sbx00618.mountca.wayport.net>
+	id S1753552Ab3BCUJA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 15:09:00 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:58761 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753450Ab3BCUI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 15:08:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bhelgaas@google.com>,
+        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+Date: Sun, 03 Feb 2013 21:15:12 +0100
+Message-ID: <3199697.iYHk9DmIeE@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130203144656.GB5844@pd.tnic>
+References: <20130129202848.GE25415@pd.tnic> <2293454.v8QRHr8txR@vostro.rjw.lan> <20130203144656.GB5844@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1404671.A6SYlxvlcT";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302032101.54487@pali>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1404671.A6SYlxvlcT
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sunday, February 03, 2013 03:46:56 PM Borislav Petkov wrote:
+> On Sun, Feb 03, 2013 at 12:04:46AM +0100, Rafael J. Wysocki wrote:
+> > The [2/5] is at: https://patchwork.kernel.org/patch/2001211/
+> > 
+> > The other two are attached.  I suppose the ordering doesn't matter.
+> 
+> Ok, the eth link cable hotplugging issue seems fixed, plugging and
+> unplugging the cable works as expected.
 
-On Sunday 03 February 2013 04:44:51 Anton Vorontsov wrote:
-> On Sat, Feb 02, 2013 at 11:06:09AM +0100, Pali Roh=C3=A1r wrote:
-> > Reported temperature can be also negative, so cache value in
-> > non negative Kelvin degree.
-> >=20
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > ---
->=20
-> Applied, thanks!
+Cool, thanks.
 
-Now I looked at bq27x00_battery and rx51_battery drivers and I=20
-see that both drivers reporting temperature in different units.=20
-bq27x00_battery in 1/10 =C2=B0C and rx51_battery in 1/100 =C2=B0C. What is=
-=20
-correct degree for kernel power power supply API? Maybe other=20
-kernel drivers have different units too... Note that my above=20
-patch did not changed anything units, only fixed reporting=20
-(possible) negative temperature.
+> The issue I triggered earlier:
+> 
+> > BUT(!), if I start powertop and set all tunables in the "Tunables" tab
+> > to "Good", then suspend to disk, when I resume I get the NMI and this
+> > time the unknown reason is 0x3c.
+> 
+> ... still happens:
+> 
+> [  123.250870] PM: Creating hibernation image:
+> [  123.504940] PM: Need to copy 95667 pages						<--- suspend to disk
+> [  123.252841] Enabling non-boot CPUs ...						<--- resume
+> [  123.254021] SMP alternatives: lockdep: fixing up alternatives
+> [  123.254026] smpboot: Booting Node 0 Processor 1 APIC 0x1
+> [  123.275566] CPU1 is up
+> [  123.275697] SMP alternatives: lockdep: fixing up alternatives
+> [  123.275699] smpboot: Booting Node 0 Processor 2 APIC 0x2
+> [  123.297581] CPU2 is up
+> [  123.297699] SMP alternatives: lockdep: fixing up alternatives
+> [  123.297701] smpboot: Booting Node 0 Processor 3 APIC 0x3
+> [  123.319358] CPU3 is up
+> [  123.321928] i915 0000:00:02.0: power state changed by ACPI to D0
+> [  123.321992] xhci_hcd 0000:00:14.0: power state changed by ACPI to D0
+> [  123.333256] ehci-pci 0000:00:1a.0: power state changed by ACPI to D0
+> [  123.344541] ehci-pci 0000:00:1d.0: power state changed by ACPI to D0
+> [  123.345012] sdhci-pci 0000:02:00.0: MMC controller base frequency changed to 50Mhz.
+> [  123.345744] PM: noirq restore of devices complete after 24.061 msecs
+> [  123.346684] PM: early restore of devices complete after 0.836 msecs
+> [  123.389863] i915 0000:00:02.0: setting latency timer to 64
+> [  123.389870] xhci_hcd 0000:00:14.0: setting latency timer to 64
+> [  123.389887] ehci-pci 0000:00:1a.0: setting latency timer to 64
+> [  123.389907] usb usb3: root hub lost power or was reset
+> [  123.389908] usb usb1: root hub lost power or was reset
+> [  123.389909] usb usb2: root hub lost power or was reset
+> [  123.390034] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
+> [  123.390171] xhci_hcd 0000:00:14.0: irq 45 for MSI/MSI-X
+> [  123.390308] snd_hda_intel 0000:00:1b.0: irq 47 for MSI/MSI-X
+> [  123.391013] ehci-pci 0000:00:1d.0: setting latency timer to 64
+> [  123.391038] usb usb4: root hub lost power or was reset
+> [  123.393798] ehci-pci 0000:00:1a.0: cache line size of 64 is not supported
+> [  123.394115] ahci 0000:00:1f.2: setting latency timer to 64
+> [  123.394229] iwlwifi 0000:03:00.0: RF_KILL bit toggled to disable radio.
+> [  123.394923] ehci-pci 0000:00:1d.0: cache line size of 64 is not supported
+> [  123.697314] usb 3-1: reset high-speed USB device number 2 using ehci-pci
+> [  123.698252] ata2: SATA link down (SStatus 0 SControl 300)
+> [  123.699286] ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+> [  123.701259] ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [  123.701287] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+> [  123.701291] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+> [  123.702699] ata3.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+> [  123.702703] ata3.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+> [  123.703222] ata5: SATA link down (SStatus 0 SControl 300)
+> [  123.704603] ata3.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+> [  123.704606] ata3.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+> [  123.705938] ata3.00: configured for UDMA/100
+> [  123.706033] sd 2:0:0:0: [sdb] Starting disk
+> [  123.706041] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+> [  123.706045] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+> [  123.735336] ata1.00: configured for UDMA/133
+> [  123.735662] sd 0:0:0:0: [sda] Starting disk
+> [  123.912740] usb 4-1: reset high-speed USB device number 2 using ehci-pci
+> [  124.129520] PM: restore of devices complete after 741.589 msecs
+> [  124.174684] Restarting tasks ... done.
+> [  124.177521] video LNXVIDEO:00: Restoring backlight state
+> [  124.186033] xhci_hcd 0000:00:14.0: power state changed by ACPI to D3cold
+> [  124.214931] ehci-pci 0000:00:1a.0: power state changed by ACPI to D3cold
+> [  124.214970] ehci-pci 0000:00:1d.0: power state changed by ACPI to D3cold
+> [  124.394882] Uhhuh. NMI received for unknown reason 3c on CPU 0.				<--- FUN.
+> [  124.394890] Do you have a strange power saving mode enabled?
+> [  124.394892] Dazed and confused, but trying to continue
+> [  124.407438] [drm] Enabling RC6 states: RC6 on, RC6p on, RC6pp off
+> [  127.035581] ehci-pci 0000:00:1a.0: power state changed by ACPI to D0
+> [  127.135668] ehci-pci 0000:00:1a.0: setting latency timer to 64
+> [  127.135910] ehci-pci 0000:00:1d.0: power state changed by ACPI to D0
+> [  127.146500] ehci-pci 0000:00:1a.0: power state changed by ACPI to D3cold
+> [  127.236381] ehci-pci 0000:00:1d.0: setting latency timer to 64
+> [  127.236658] xhci_hcd 0000:00:14.0: power state changed by ACPI to D0
+> [  127.247244] ehci-pci 0000:00:1d.0: power state changed by ACPI to D3cold
+> [  127.337137] xhci_hcd 0000:00:14.0: setting latency timer to 64
+> [  127.348286] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
+> [  127.348975] xhci_hcd 0000:00:14.0: power state changed by ACPI to D3cold
+> [  129.255203] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
+> [  129.255215] e1000e 0000:00:19.0 eth0: 10/100 speed: disabling TSO
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Is suspend-to-RAM triggering that as too?
 
---nextPart1404671.A6SYlxvlcT
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Rafael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEABECAAYFAlEOwjIACgkQi/DJPQPkQ1IzugCeIeVhCYc8+dAj+h7kz0WuDvf8
-g34AoLZBFAnu1VvUGFBX/GoDMmpWlOV5
-=Zq7b
------END PGP SIGNATURE-----
-
---nextPart1404671.A6SYlxvlcT--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
