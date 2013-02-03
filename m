@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3BCRxt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 12:53:49 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:44041 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab3BCRxq (ORCPT
+	id S1753476Ab3BCSgu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 13:36:50 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:50009 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab3BCSgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 12:53:46 -0500
-Date: Sun, 3 Feb 2013 09:53:47 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Randy Dunlap <rdunlap@infradead.org>
-cc: Tejun Heo <tj@kernel.org>, David Teigland <teigland@redhat.com>,
-        akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        Christine Caulfield <ccaulfie@redhat.com>, cluster-devel@redhat.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        eric paris <eparis@redhat.com>
-Subject: Re: [PATCH] idr: fix a subtle bug in idr_get_next()
-In-Reply-To: <510DC830.70707@infradead.org>
-Message-ID: <alpine.LNX.2.00.1302030949280.1437@eggly.anvils>
-References: <1359163872-1949-1-git-send-email-tj@kernel.org> <1359163872-1949-11-git-send-email-tj@kernel.org> <20130128155723.GC16789@redhat.com> <20130129151317.GA11609@redhat.com> <20130130212417.GJ24014@redhat.com> <20130131235320.GN6824@mtj.dyndns.org>
- <20130201001841.GP6824@mtj.dyndns.org> <20130201174443.GC3812@redhat.com> <20130201180028.GC31863@mtj.dyndns.org> <20130202231048.GA3940@mtj.dyndns.org> <20130202231135.GB3940@mtj.dyndns.org> <510DC830.70707@infradead.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 3 Feb 2013 13:36:46 -0500
+Date: Sun, 3 Feb 2013 13:36:42 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [ 058/128] ARM: 7628/1: head.S: map one extra section for the
+ ATAG/DTB area
+In-Reply-To: <1359904668.1822.3.camel@deadeye.wl.decadent.org.uk>
+Message-ID: <alpine.LFD.2.02.1302031335590.6300@xanadu.home>
+References: <20130203144649.188471908@decadent.org.uk> <1359904668.1822.3.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Feb 2013, Randy Dunlap wrote:
-> On 02/02/13 15:11, Tejun Heo wrote:
-> > On Sat, Feb 02, 2013 at 03:10:48PM -0800, Tejun Heo wrote:
-> >> Fix it by ensuring proceeding to the next slot doesn't carry over the
-> >> unaligned offset - ie. use round_up(id + 1, slot_distance) instead of
-> >> id += slot_distance.
-> >>
-> >> Signed-off-by: Tejun Heo <tj@kernel.org>
-> >> Reported-by: David Teigland <teigland@redhat.com>
-> >> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Sun, 3 Feb 2013, Ben Hutchings wrote:
+
+> On Sun, 2013-02-03 at 15:47 +0100, Ben Hutchings wrote:
+> > 3.2-stable review patch.  If anyone has any objections, please let me know.
 > > 
-> > David, can you please test whether the patch makes the skipped
-> > deletion bug go away?
+> > ------------------
 > > 
-> > Thanks!
+> > From: Nicolas Pitre <nicolas.pitre@linaro.org>
+> > 
+> > commit 6f16f4998f98e42e3f2dedf663cfb691ff0324af upstream.
+> > 
+> > We currently use a temporary 1MB section aligned to a 1MB boundary for
+> > mapping the provided device tree until the final page table is created.
+> > However, if the device tree happens to cross that 1MB boundary, the end
+> > of it remains unmapped and the kernel crashes when it attempts to access
+> > it.  Given no restriction on the location of that DTB, it could end up
+> > with only a few bytes mapped at the end of a section.
+> > 
+> > Solve this issue by mapping two consecutive sections.
+> > 
+> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> > Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
+> > Tested-by: Tomasz Figa <t.figa@samsung.com>
+> > Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> > [bwh: Backported to 3.2:
+> >  - Adjust context
+> >  - The mapping is not conditional; drop the 'ne' suffixes]
+> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 > 
-> Hugh, did you update the idr test suite or the radix-tree test suite?
+> I haven't been able to test this and would really appreciate an expert
+> review.
 
-Sorry, not the answer you want: it was the radix-tree test harness, rtth,
-that I updated a year ago (but then lib/radix-tree.c changed again).
+Looks fine to me.
 
-Hugh
 
 > 
-> Is there an idr test suite or module?  I have a kernel module source file
-> named idr_test.c by Eric Paris.
+> Ben.
 > 
-> thanks,
+> > ---
+> >  arch/arm/kernel/head.S |    3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > --- a/arch/arm/kernel/head.S
+> > +++ b/arch/arm/kernel/head.S
+> > @@ -221,6 +221,7 @@ __create_page_tables:
+> >  	/*
+> >  	 * Then map boot params address in r2 or
+> >  	 * the first 1MB of ram if boot params address is not specified.
+> > +	 * We map 2 sections in case the ATAGs/DTB crosses a section boundary.
+> >  	 */
+> >  	mov	r0, r2, lsr #SECTION_SHIFT
+> >  	movs	r0, r0, lsl #SECTION_SHIFT
+> > @@ -229,6 +230,8 @@ __create_page_tables:
+> >  	add	r3, r3, #PAGE_OFFSET
+> >  	add	r3, r4, r3, lsr #(SECTION_SHIFT - PMD_ORDER)
+> >  	orr	r6, r7, r0
+> > +	str	r6, [r3], #1 << PMD_ORDER
+> > +	add	r6, r6, #1 << SECTION_SHIFT
+> >  	str	r6, [r3]
+> >  
+> >  #ifdef CONFIG_DEBUG_LL
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe stable" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
 > 
 > -- 
-> ~Randy
+> Ben Hutchings
+> Everything should be made as simple as possible, but not simpler.
+>                                                            - Albert Einstein
+> 
