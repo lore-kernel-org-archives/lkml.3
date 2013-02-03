@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab3BCIm0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 03:42:26 -0500
-Received: from kepler.killerwolves.net ([103.4.235.74]:44495 "EHLO
+	id S1752748Ab3BCImj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 03:42:39 -0500
+Received: from kepler.killerwolves.net ([103.4.235.74]:44496 "EHLO
 	kepler.killerwolves.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab3BCImY (ORCPT
+	with ESMTP id S1752268Ab3BCIm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 03:42:24 -0500
-X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Feb 2013 03:42:23 EST
+	Sun, 3 Feb 2013 03:42:26 -0500
 From: Ben Peddell <klightspeed@killerwolves.net>
 To: linux-kernel@vger.kernel.org
-Date: Sun, 3 Feb 2013 18:34:13 +1000
 References: <510E207F.1@killerwolves.net>
 In-Reply-To: <510E207F.1@killerwolves.net>
-Subject: [PATCH 2/2] 3.7.y target: Move dev->dev_link_magic check
-Message-Id: <20130203083423.5026AB6003@kepler.killerwolves.net>
+Date: Sun, 3 Feb 2013 18:33:27 +1000
+Subject: [PATCH 1/2] 3.4.y target: Move dev->dev_link_magic check
+Message-Id: <20130203083415.90F01B6002@kepler.killerwolves.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,10 +32,10 @@ Signed-off-by: Ben Peddell <klightspeed@killerwolves.net>
  1 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/target/target_core_fabric_configfs.c b/drivers/target/target_core_fabric_configfs.c
-index a55f91a..d7bb0c0 100644
+index b009b89..31de881 100644
 --- a/drivers/target/target_core_fabric_configfs.c
 +++ b/drivers/target/target_core_fabric_configfs.c
-@@ -751,12 +751,6 @@ static int target_fabric_port_link(
+@@ -752,12 +752,6 @@ static int target_fabric_port_link(
  	struct target_fabric_configfs *tf;
  	int ret;
  
@@ -49,7 +48,7 @@ index a55f91a..d7bb0c0 100644
  	tpg_ci = &lun_ci->ci_parent->ci_group->cg_item;
  	se_tpg = container_of(to_config_group(tpg_ci),
  				struct se_portal_group, tpg_group);
-@@ -775,6 +769,12 @@ static int target_fabric_port_link(
+@@ -776,6 +770,12 @@ static int target_fabric_port_link(
  		goto out;
  	}
  
@@ -59,9 +58,9 @@ index a55f91a..d7bb0c0 100644
 +		return -EFAULT;
 +	}
 +
- 	lun_p = core_dev_add_lun(se_tpg, dev, lun->unpacked_lun);
+ 	lun_p = core_dev_add_lun(se_tpg, dev->se_hba, dev,
+ 				lun->unpacked_lun);
  	if (IS_ERR(lun_p)) {
- 		pr_err("core_dev_add_lun() failed\n");
 -- 
 1.7.8.6
 
