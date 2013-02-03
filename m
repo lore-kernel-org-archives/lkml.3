@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab3BCLZG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 06:25:06 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:33721 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab3BCLZA (ORCPT
+	id S1753456Ab3BCL0O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 06:26:14 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:41940 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753070Ab3BCL0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 06:25:00 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: multiplatform: Sort the max gpio numbers.
-Date: Sun,  3 Feb 2013 12:24:48 +0100
-Message-Id: <1359890688-10336-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 3 Feb 2013 06:26:12 -0500
+Date: Sun, 3 Feb 2013 09:56:09 +0100
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] PM: make VT switching to the suspend console optional
+ v2
+Message-ID: <20130203095609.31867279@jbarnes-t420>
+In-Reply-To: <2424360.s1UolC1PMO@vostro.rjw.lan>
+References: <1359819248-3714-1-git-send-email-jbarnes@virtuousgeek.org>
+	<1359819248-3714-2-git-send-email-jbarnes@virtuousgeek.org>
+	<1933562.n2GhljaZKo@vostro.rjw.lan>
+	<2424360.s1UolC1PMO@vostro.rjw.lan>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 151.216.70.212 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building a multiplatform kernel, we could end up with a smaller
-number of GPIOs than the one required by the platform the kernel was
-running on.
+On Sat, 02 Feb 2013 21:50:35 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > > + * Drivers can indicate support for switchless suspend/resume, which can
+> > > + * save time and flicker, by using this routine and passing 'false' as
+> > > + * the argument.  If any loaded driver needs VT switching, or the
+> > > + * no_console_suspend argument has been passed on the command line, VT
+> > > + * switches will occur.
+> > > + */
+> > 
+> > It seems to me that we'll need a separate counter for the number of registered
+> > drivers and do the switch if that number is equal to the number of drivers that
+> > have passed false to this thing.
+> > 
+> > In which case we can simplify this slightly and introduce
+> > pm_vt_swtich_not_required(void)
+> 
+> Sorry, that won't be sufficient.  Rather something like pm_vt_switch_get()
+> (indicating "I'll do the switch, thanks") and pm_vt_switch_put() (indicating
+> "now you need to do the switch yourself").
 
-Sort the max GPIO number by descending order so that we always take the
-highest number required.
+I thought of both of your approaches before posting this one, but each
+have other problems.  And I found a bug in mine last night.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/Kconfig |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+So I think I need a separate count of drivers that need the switch, and
+ones that don't.  Then if either no driver has registered or if the
+need_switch count is nonzero, we'll do the switch.  Otherwise, if the
+dont_need_switch is nonzero, we can avoid the switch.  I think that'll
+handle all the cases I outlined.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 1e86fa9..852ae76 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1626,13 +1626,16 @@ config LOCAL_TIMERS
- 	  accounting to be spread across the timer interval, preventing a
- 	  "thundering herd" at every timer tick.
- 
-+# The GPIO number here must be sorted by descending number. In case of
-+# a multiplatform kernel, we just want the highest value required by the
-+# selected platforms.
- config ARCH_NR_GPIO
- 	int
- 	default 1024 if ARCH_SHMOBILE || ARCH_TEGRA
--	default 355 if ARCH_U8500
--	default 264 if MACH_H4700
- 	default 512 if SOC_OMAP5
-+	default 355 if ARCH_U8500
- 	default 288 if ARCH_VT8500 || ARCH_SUNXI
-+	default 264 if MACH_H4700
- 	default 0
- 	help
- 	  Maximum number of GPIOs in the system.
--- 
-1.7.10.4
+My code as posted will fail if one driver needs a switch but then two
+switch free drivers register.
 
+Jesse
