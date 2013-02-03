@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab3BCPFP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:05:15 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34544 "EHLO
+	id S1755272Ab3BCPFR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:05:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34530 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754812Ab3BCO57 (ORCPT
+	by vger.kernel.org with ESMTP id S1754860Ab3BCO54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:57:59 -0500
-Message-Id: <20130203144652.545911853@decadent.org.uk>
+	Sun, 3 Feb 2013 09:57:56 -0500
+Message-Id: <20130203144653.051945546@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:20 +0100
+Date: Sun, 03 Feb 2013 15:48:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Olivier Sobrie <olivier@sobrie.be>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 096/128] can: c_can: fix invalid error codes
+Cc: akpm@linux-foundation.org, Jan Kara <jack@suse.cz>,
+        Ben Myers <bpm@sgi.com>
+Subject: [ 102/128] xfs: Fix possible use-after-free with AIO
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Sobrie <olivier@sobrie.be>
+From: Jan Kara <jack@suse.cz>
 
-commit 6ea45886865c1abb01bb861f7f6bdd5d0f398cb3 upstream.
+commit 4b05d09c18d9aa62d2e7fb4b057f54e5a38963f5 upstream.
 
-Errors in CAN protocol (location) are reported in data[3] of the can
-frame instead of data[2].
+Running AIO is pinning inode in memory using file reference. Once AIO
+is completed using aio_complete(), file reference is put and inode can
+be freed from memory. So we have to be sure that calling aio_complete()
+is the last thing we do with the inode.
 
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: xfs@oss.sgi.com
+CC: Ben Myers <bpm@sgi.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/c_can/c_can.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/xfs/xfs_aops.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index 5233b8f..58607f1 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -960,7 +960,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
- 		break;
- 	case LEC_ACK_ERROR:
- 		netdev_dbg(dev, "ack error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_ACK |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_ACK |
- 				CAN_ERR_PROT_LOC_ACK_DEL);
- 		break;
- 	case LEC_BIT1_ERROR:
-@@ -973,7 +973,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
- 		break;
- 	case LEC_CRC_ERROR:
- 		netdev_dbg(dev, "CRC error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
- 				CAN_ERR_PROT_LOC_CRC_DEL);
- 		break;
- 	default:
+diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
+index 4111a40..5f707e5 100644
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -86,11 +86,11 @@ xfs_destroy_ioend(
+ 	}
+ 
+ 	if (ioend->io_iocb) {
++		inode_dio_done(ioend->io_inode);
+ 		if (ioend->io_isasync) {
+ 			aio_complete(ioend->io_iocb, ioend->io_error ?
+ 					ioend->io_error : ioend->io_result, 0);
+ 		}
+-		inode_dio_done(ioend->io_inode);
+ 	}
+ 
+ 	mempool_free(ioend, xfs_ioend_pool);
 
 
