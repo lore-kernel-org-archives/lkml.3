@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab3BCVxG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 16:53:06 -0500
-Received: from mout.gmx.net ([212.227.17.20]:63409 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815Ab3BCVva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 16:51:30 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19e5CsZPx1ePOstDDbFBhKdqr+mJROYcKlCmgGLmw
-	3ACoKOC3tvb0/n
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
-        Sam Hansen <solid.se7en@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 04/10] staging/xgifb: Fix return of uninitialized variable
-Date: Sun,  3 Feb 2013 22:54:33 +0100
-Message-Id: <1359928479-8484-4-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1359928479-8484-1-git-send-email-peterhuewe@gmx.de>
-References: <1359928479-8484-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1753874Ab3BCV6i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 16:58:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36174 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab3BCV6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 16:58:35 -0500
+Message-ID: <510EDD85.60909@canonical.com>
+Date: Sun, 03 Feb 2013 22:58:29 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Ben Skeggs <bskeggs@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>,
+        Christian Konig <deathsimple@vodafone.de>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm: fix compile failure by including <linux/swiotlb.h>
+References: <201302012045.r11KjctX014737@farm-0002.internal.tilera.com>
+In-Reply-To: <201302012045.r11KjctX014737@farm-0002.internal.tilera.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clang warning:
-drivers/staging/xgifb/XGI_main_26.c: warning: variable 'ret' is
-used uninitialized whenever 'if' condition:
-	if (xgifb_info->mode_idx < 0) {
-evaluates to true.
+Op 01-02-13 19:44, Chris Metcalf schreef:
+> On tile architecture (with "make allyesconfig") including
+> <linux/swiotlb.h> is required to call swiotlb_nr_tbl().
+I'll take your word for the need, since I lack the hardware to verify the failure. :-)
+Applying your patch doesn't seem to break compilation on x86 though, which is good enough for me.
 
-drivers/staging/xgifb/XGI_main_26.c:
-note: uninitialized use occurs here
-	return ret;
-
-This patch initializes the variable in this case.
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/xgifb/XGI_main_26.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index fa351f9..106abc8 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -1921,6 +1921,7 @@ static int xgifb_probe(struct pci_dev *pdev,
- 
- 	if (xgifb_info->mode_idx < 0) {
- 		dev_err(&pdev->dev, "No supported video mode found\n");
-+		ret = -EINVAL;
- 		goto error_1;
- 	}
- 
--- 
-1.7.8.6
-
+Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+>  drivers/gpu/drm/nouveau/nouveau_bo.c |    1 +
+>  drivers/gpu/drm/radeon/radeon_ttm.c  |    1 +
+>  2 files changed, 2 insertions(+)
+>
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> index 69d7b1d..1699a90 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_bo.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> @@ -28,6 +28,7 @@
+>   */
+>  
+>  #include <core/engine.h>
+> +#include <linux/swiotlb.h>
+>  
+>  #include <subdev/fb.h>
+>  #include <subdev/vm.h>
+> diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+> index 1d8ff2f..93f760e 100644
+> --- a/drivers/gpu/drm/radeon/radeon_ttm.c
+> +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+> @@ -38,6 +38,7 @@
+>  #include <drm/radeon_drm.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/slab.h>
+> +#include <linux/swiotlb.h>
+>  #include "radeon_reg.h"
+>  #include "radeon.h"
+>  
