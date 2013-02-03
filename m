@@ -1,29 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab3BCPSJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 10:18:09 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34888 "EHLO
+	id S1754032Ab3BCOzn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 09:55:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34217 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753873Ab3BCPSG (ORCPT
+	by vger.kernel.org with ESMTP id S1753462Ab3BCOzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 10:18:06 -0500
-Message-ID: <1359904668.1822.3.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 058/128] ARM: 7628/1: head.S: map one extra section for the
- ATAG/DTB area
+	Sun, 3 Feb 2013 09:55:39 -0500
+Message-Id: <20130203144646.508344097@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 03 Feb 2013 15:47:12 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, akpm@linux-foundation.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Date: Sun, 03 Feb 2013 16:17:48 +0100
-In-Reply-To: <20130203144649.188471908@decadent.org.uk>
-References: <20130203144649.188471908@decadent.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-FLi89OFVLG4s/Sz5KrKK"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Chris Perl <chris.perl@gmail.com>
+Subject: [ 028/128] SUNRPC: Ensure we release the socket write lock if the rpc_task
+ exits early
+In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
 X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
@@ -31,101 +24,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
---=-FLi89OFVLG4s/Sz5KrKK
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Sun, 2013-02-03 at 15:47 +0100, Ben Hutchings wrote:
-> 3.2-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Nicolas Pitre <nicolas.pitre@linaro.org>
->=20
-> commit 6f16f4998f98e42e3f2dedf663cfb691ff0324af upstream.
->=20
-> We currently use a temporary 1MB section aligned to a 1MB boundary for
-> mapping the provided device tree until the final page table is created.
-> However, if the device tree happens to cross that 1MB boundary, the end
-> of it remains unmapped and the kernel crashes when it attempts to access
-> it.  Given no restriction on the location of that DTB, it could end up
-> with only a few bytes mapped at the end of a section.
->=20
-> Solve this issue by mapping two consecutive sections.
->=20
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
-> Tested-by: Tomasz Figa <t.figa@samsung.com>
-> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> [bwh: Backported to 3.2:
->  - Adjust context
->  - The mapping is not conditional; drop the 'ne' suffixes]
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-I haven't been able to test this and would really appreciate an expert
-review.
+commit 87ed50036b866db2ec2ba16b2a7aec4a2b0b7c39 upstream.
 
-Ben.
+If the rpc_task exits while holding the socket write lock before it has
+allocated an rpc slot, then the usual mechanism for releasing the write
+lock in xprt_release() is defeated.
 
-> ---
->  arch/arm/kernel/head.S |    3 +++
->  1 file changed, 3 insertions(+)
->=20
-> --- a/arch/arm/kernel/head.S
-> +++ b/arch/arm/kernel/head.S
-> @@ -221,6 +221,7 @@ __create_page_tables:
->  	/*
->  	 * Then map boot params address in r2 or
->  	 * the first 1MB of ram if boot params address is not specified.
-> +	 * We map 2 sections in case the ATAGs/DTB crosses a section boundary.
->  	 */
->  	mov	r0, r2, lsr #SECTION_SHIFT
->  	movs	r0, r0, lsl #SECTION_SHIFT
-> @@ -229,6 +230,8 @@ __create_page_tables:
->  	add	r3, r3, #PAGE_OFFSET
->  	add	r3, r4, r3, lsr #(SECTION_SHIFT - PMD_ORDER)
->  	orr	r6, r7, r0
-> +	str	r6, [r3], #1 << PMD_ORDER
-> +	add	r6, r6, #1 << SECTION_SHIFT
->  	str	r6, [r3]
-> =20
->  #ifdef CONFIG_DEBUG_LL
->=20
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
+The problem occurs if the call to xprt_lock_write() initially fails, so
+that the rpc_task is put on the xprt->sending wait queue. If the task
+exits after being assigned the lock by __xprt_lock_write_func, but
+before it has retried the call to xprt_lock_and_alloc_slot(), then
+it calls xprt_release() while holding the write lock, but will
+immediately exit due to the test for task->tk_rqstp != NULL.
 
---=20
-Ben Hutchings
-Everything should be made as simple as possible, but not simpler.
-                                                           - Albert Einstei=
-n
+Reported-by: Chris Perl <chris.perl@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/sunrpc/sched.c |    3 +--
+ net/sunrpc/xprt.c  |   12 ++++++++++--
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
---=-FLi89OFVLG4s/Sz5KrKK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -918,8 +918,7 @@ static void rpc_async_release(struct wor
+ 
+ static void rpc_release_resources_task(struct rpc_task *task)
+ {
+-	if (task->tk_rqstp)
+-		xprt_release(task);
++	xprt_release(task);
+ 	if (task->tk_msg.rpc_cred) {
+ 		put_rpccred(task->tk_msg.rpc_cred);
+ 		task->tk_msg.rpc_cred = NULL;
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -1132,10 +1132,18 @@ static void xprt_request_init(struct rpc
+ void xprt_release(struct rpc_task *task)
+ {
+ 	struct rpc_xprt	*xprt;
+-	struct rpc_rqst	*req;
++	struct rpc_rqst	*req = task->tk_rqstp;
+ 
+-	if (!(req = task->tk_rqstp))
++	if (req == NULL) {
++		if (task->tk_client) {
++			rcu_read_lock();
++			xprt = rcu_dereference(task->tk_client->cl_xprt);
++			if (xprt->snd_task == task)
++				xprt_release_write(xprt, task);
++			rcu_read_unlock();
++		}
+ 		return;
++	}
+ 
+ 	xprt = req->rq_xprt;
+ 	rpc_count_iostats(task);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUQ5/nOe/yOyVhhEJAQoNoxAAsrM3n6f2Fe3o17Wa8tDZCu1Se3XCoqJZ
-g/j32CgtDmhnncuwsICNhLrPcG6SiS+TfIAtplMYPuyZW8Vh/Cr13VwrRfVoQU9L
-8NHG8bEkMUIqGn2TAJ5L1u0A88I1T6kh/OabGY6CPmXo2G2w6okPfmom5tYHmYF3
-UaVodWGwnjhqxDVZJO2xV+U5Za5yCtOfSQzyLvumYAQfuoAie/D+60DL3uWJgk0H
-Nw05N4f9DVmiYyTHhW/Ek6FUwvCJ/LGAwJlBlo7zHJXC1DxODDyGR5lJmpvmMcD0
-EJDwv0K9EIt7FZMn7/+hXHL4o71JGcOAoDESGSSMtiR1xYElTWnxXOqI48wqiOlp
-mOhxfwp5NcTwGaShVLMczKwPAXrkGSfN6QqYIWUJde2IoQen7vDzo9YavOMwV+6R
-UGiu2nvNO+q8igRxmQlQQvmFajZRPtWMz/O9Ap/ovCbKyrURrhED8TjmXGFFjykP
-2Ym9hhYo2+Zt5EdZFoF3P96JBtT0wU/PwepWxZ+kuRCQRtQ7/ASdCKZ/SP4Ekj5D
-fdN3VYcs0OQw6iudgxyA3QNjH6lCYuFpc5TKQGaZ5eK0s/rUubyLJQb78KqS5Fw8
-aXFNE+XesMuMHaUNFkhrZXqkzx9b1KYQDeNBBRiv5JJANnQ0Hvj6G3e4QVgYsgQL
-wq7iEBmjdJM=
-=kSVW
------END PGP SIGNATURE-----
-
---=-FLi89OFVLG4s/Sz5KrKK--
