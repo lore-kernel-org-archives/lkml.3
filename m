@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab3BCO6N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 09:58:13 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34528 "EHLO
+	id S1755017Ab3BCPDQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 10:03:16 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34576 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753072Ab3BCO5z (ORCPT
+	by vger.kernel.org with ESMTP id S1754947Ab3BCO6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 09:57:55 -0500
-Message-Id: <20130203144653.695109352@decadent.org.uk>
+	Sun, 3 Feb 2013 09:58:11 -0500
+Message-Id: <20130203144653.125738614@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 03 Feb 2013 15:48:33 +0100
+Date: Sun, 03 Feb 2013 15:48:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 109/128] x86/Sandy Bridge: reserve pages when integrated graphics is present
+Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
+Subject: [ 103/128] ALSA: hda - Fix non-snoop page handling
 In-Reply-To: <20130203144644.035172954@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.5
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,130 +26,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a9acc5365dbda29f7be2884efb63771dc24bd815 upstream.
+commit 9ddf1aeb2134e72275c97a2c6ff2e3eb04f2f27a upstream.
 
-SNB graphics devices have a bug that prevent them from accessing certain
-memory ranges, namely anything below 1M and in the pages listed in the
-table.  So reserve those at boot if set detect a SNB gfx device on the
-CPU to avoid GPU hangs.
+For non-snoop mode, we fiddle with the page attributes of CORB/RIRB
+and the position buffer, but also the ring buffers.  The problem is
+that the current code blindly assumes that the buffer is contiguous.
+However, the ring buffers may be SG-buffers, thus a wrong vmapped
+address is passed there, leading to Oops.
 
-Stephane Marchesin had a similar patch to the page allocator awhile
-back, but rather than reserving pages up front, it leaked them at
-allocation time.
+This patch fixes the handling for SG-buffers.
 
-[ hpa: made a number of stylistic changes, marked arrays as static
-  const, and made less verbose; use "memblock=debug" for full
-  verbosity. ]
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=800701
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[bwh: Backported to 3.2: open-code snd_pcm_get_dma_buf()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/setup.c |   78 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 78 insertions(+)
+ sound/pci/hda/hda_intel.c |   40 ++++++++++++++++++++++++++--------------
+ 1 file changed, 26 insertions(+), 14 deletions(-)
 
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -631,6 +631,81 @@ static __init void reserve_ibft_region(v
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -569,29 +569,43 @@ static char *driver_short_names[] __devi
+ #define get_azx_dev(substream) (substream->runtime->private_data)
  
- static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
- 
-+static bool __init snb_gfx_workaround_needed(void)
-+{
-+	int i;
-+	u16 vendor, devid;
-+	static const u16 snb_ids[] = {
-+		0x0102,
-+		0x0112,
-+		0x0122,
-+		0x0106,
-+		0x0116,
-+		0x0126,
-+		0x010a,
-+	};
+ #ifdef CONFIG_X86
+-static void __mark_pages_wc(struct azx *chip, void *addr, size_t size, bool on)
++static void __mark_pages_wc(struct azx *chip, struct snd_dma_buffer *dmab, bool on)
+ {
++	int pages;
 +
-+	/* Assume no if something weird is going on with PCI */
-+	if (!early_pci_allowed())
-+		return false;
-+
-+	vendor = read_pci_config_16(0, 2, 0, PCI_VENDOR_ID);
-+	if (vendor != 0x8086)
-+		return false;
-+
-+	devid = read_pci_config_16(0, 2, 0, PCI_DEVICE_ID);
-+	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
-+		if (devid == snb_ids[i])
-+			return true;
-+
-+	return false;
-+}
-+
-+/*
-+ * Sandy Bridge graphics has trouble with certain ranges, exclude
-+ * them from allocation.
-+ */
-+static void __init trim_snb_memory(void)
-+{
-+	static const unsigned long bad_pages[] = {
-+		0x20050000,
-+		0x20110000,
-+		0x20130000,
-+		0x20138000,
-+		0x40004000,
-+	};
-+	int i;
-+
-+	if (!snb_gfx_workaround_needed())
+ 	if (azx_snoop(chip))
+ 		return;
+-	if (addr && size) {
+-		int pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
++	if (!dmab || !dmab->area || !dmab->bytes)
 +		return;
 +
-+	printk(KERN_DEBUG "reserving inaccessible SNB gfx pages\n");
++#ifdef CONFIG_SND_DMA_SGBUF
++	if (dmab->dev.type == SNDRV_DMA_TYPE_DEV_SG) {
++		struct snd_sg_buf *sgbuf = dmab->private_data;
+ 		if (on)
+-			set_memory_wc((unsigned long)addr, pages);
++			set_pages_array_wc(sgbuf->page_table, sgbuf->pages);
+ 		else
+-			set_memory_wb((unsigned long)addr, pages);
++			set_pages_array_wb(sgbuf->page_table, sgbuf->pages);
++		return;
+ 	}
++#endif
 +
-+	/*
-+	 * Reserve all memory below the 1 MB mark that has not
-+	 * already been reserved.
-+	 */
-+	memblock_reserve(0, 1<<20);
-+	
-+	for (i = 0; i < ARRAY_SIZE(bad_pages); i++) {
-+		if (memblock_reserve(bad_pages[i], PAGE_SIZE))
-+			printk(KERN_WARNING "failed to reserve 0x%08lx\n",
-+			       bad_pages[i]);
-+	}
-+}
-+
-+/*
-+ * Here we put platform-specific memory range workarounds, i.e.
-+ * memory known to be corrupt or otherwise in need to be reserved on
-+ * specific platforms.
-+ *
-+ * If this gets used more widely it could use a real dispatch mechanism.
-+ */
-+static void __init trim_platform_memory_ranges(void)
-+{
-+	trim_snb_memory();
-+}
-+
- static void __init trim_bios_range(void)
- {
- 	/*
-@@ -651,6 +726,7 @@ static void __init trim_bios_range(void)
- 	 * take them out.
- 	 */
- 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
-+
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	pages = (dmab->bytes + PAGE_SIZE - 1) >> PAGE_SHIFT;
++	if (on)
++		set_memory_wc((unsigned long)dmab->area, pages);
++	else
++		set_memory_wb((unsigned long)dmab->area, pages);
  }
  
-@@ -930,6 +1006,8 @@ void __init setup_arch(char **cmdline_p)
+ static inline void mark_pages_wc(struct azx *chip, struct snd_dma_buffer *buf,
+ 				 bool on)
+ {
+-	__mark_pages_wc(chip, buf->area, buf->bytes, on);
++	__mark_pages_wc(chip, buf, on);
+ }
+ static inline void mark_runtime_wc(struct azx *chip, struct azx_dev *azx_dev,
+-				   struct snd_pcm_runtime *runtime, bool on)
++				   struct snd_pcm_substream *substream, bool on)
+ {
+ 	if (azx_dev->wc_marked != on) {
+-		__mark_pages_wc(chip, runtime->dma_area, runtime->dma_bytes, on);
++		__mark_pages_wc(chip, substream->runtime->dma_buffer_p, on);
+ 		azx_dev->wc_marked = on;
+ 	}
+ }
+@@ -602,7 +616,7 @@ static inline void mark_pages_wc(struct
+ {
+ }
+ static inline void mark_runtime_wc(struct azx *chip, struct azx_dev *azx_dev,
+-				   struct snd_pcm_runtime *runtime, bool on)
++				   struct snd_pcm_substream *substream, bool on)
+ {
+ }
+ #endif
+@@ -1776,11 +1790,10 @@ static int azx_pcm_hw_params(struct snd_
+ {
+ 	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
+ 	struct azx *chip = apcm->chip;
+-	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct azx_dev *azx_dev = get_azx_dev(substream);
+ 	int ret;
  
- 	setup_trampolines();
+-	mark_runtime_wc(chip, azx_dev, runtime, false);
++	mark_runtime_wc(chip, azx_dev, substream, false);
+ 	azx_dev->bufsize = 0;
+ 	azx_dev->period_bytes = 0;
+ 	azx_dev->format_val = 0;
+@@ -1788,7 +1801,7 @@ static int azx_pcm_hw_params(struct snd_
+ 					params_buffer_bytes(hw_params));
+ 	if (ret < 0)
+ 		return ret;
+-	mark_runtime_wc(chip, azx_dev, runtime, true);
++	mark_runtime_wc(chip, azx_dev, substream, true);
+ 	return ret;
+ }
  
-+	trim_platform_memory_ranges();
-+
- 	init_gbpages();
+@@ -1797,7 +1810,6 @@ static int azx_pcm_hw_free(struct snd_pc
+ 	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
+ 	struct azx_dev *azx_dev = get_azx_dev(substream);
+ 	struct azx *chip = apcm->chip;
+-	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct hda_pcm_stream *hinfo = apcm->hinfo[substream->stream];
  
- 	/* max_pfn_mapped is updated here */
+ 	/* reset BDL address */
+@@ -1810,7 +1822,7 @@ static int azx_pcm_hw_free(struct snd_pc
+ 
+ 	snd_hda_codec_cleanup(apcm->codec, hinfo, substream);
+ 
+-	mark_runtime_wc(chip, azx_dev, runtime, false);
++	mark_runtime_wc(chip, azx_dev, substream, false);
+ 	return snd_pcm_lib_free_pages(substream);
+ }
+ 
 
 
