@@ -1,65 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab3BDFMB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 00:12:01 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58744 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab3BDFMA (ORCPT
+	id S1753094Ab3BDFMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 00:12:53 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:35061 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab3BDFMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 00:12:00 -0500
-Date: Sun, 3 Feb 2013 21:12:05 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Shaohua Li <shli@kernel.org>
-cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shli@fusionio.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: boot warnings due to swap: make each swap partition have one
- address_space
-In-Reply-To: <20130130095944.GA11457@kernel.org>
-Message-ID: <alpine.LNX.2.00.1302032056550.4662@eggly.anvils>
-References: <5101FFF5.6030503@oracle.com> <20130125042512.GA32017@kernel.org> <alpine.LNX.2.00.1301261754530.7300@eggly.anvils> <20130127141253.GA27019@kernel.org> <alpine.LNX.2.00.1301271321500.16981@eggly.anvils> <20130130095944.GA11457@kernel.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 4 Feb 2013 00:12:52 -0500
+Date: Mon, 4 Feb 2013 16:12:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: linux-next: manual merge of the char-misc tree with the mfd tree
+Message-Id: <20130204161241.9ba53f0389122d30a2b32ed4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Feb_2013_16_12_41_+1100_WNuPnEP21ReJf88u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jan 2013, Shaohua Li wrote:
-> On Sun, Jan 27, 2013 at 01:40:40PM -0800, Hugh Dickins wrote:
-> > 
-> > I'm glad Minchan has now pointed you to Rik's posting of two years ago:
-> > I think there are more important changes to be made in that direction.
-> 
-> Not sure how others use multiple swaps, but current lock contention forces us
-> to use multiple swaps. I haven't carefully think about Rik's posting, but looks
-> it doesn't solve the lock contention problem.
+--Signature=_Mon__4_Feb_2013_16_12_41_+1100_WNuPnEP21ReJf88u
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Nobody had reported any swap lock contention problem before your patch,
-so no, Rik's posting wasn't directed at that.  I always thought swap
-writing patterns a much bigger problem.
+Hi all,
 
-But if lock contention there is, then I think it can be implemented
-with reducing that in mind.  There are two levels of allocation: one
-to allocate the tokens which we will insert in page tables, and one
-to allocate the final diskspace to which those tokens will point.
+Today's linux-next merge of the char-misc tree got a conflict in
+drivers/mfd/wm5102-tables.c between commit d078377faf5f ("mfd: wm5102:
+Refresh register defaults") from the mfd tree and commit 689557d3c704
+("mfd: wm5102: Add microphone clamp control registers") from the
+char-misc tree.
 
-(I may be using totally different language from Rik,
-it's the principles that I have in mind, not his actual posting.)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Allocating the tokens can very well be done with per-cpu batches,
-perhaps of SWAP_CLUSTER_MAX 32 to match vmscan.c's batching: there
-is no significance to their ordering.  And allocating the diskspace
-would want to be done in batches, to maximize contiguous writing.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-That may not solve all the swap_info_get() contention which you saw,
-but should help some.
+diff --cc drivers/mfd/wm5102-tables.c
+index c68727d,a396a3a..0000000
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@@ -315,13 -316,9 +321,13 @@@ static const struct reg_default wm5102_
+  	{ 0x00000218, 0x01A6 },   /* R536   - Mic Bias Ctrl 1 */=20
+  	{ 0x00000219, 0x01A6 },   /* R537   - Mic Bias Ctrl 2 */=20
+  	{ 0x0000021A, 0x01A6 },   /* R538   - Mic Bias Ctrl 3 */=20
+ +	{ 0x00000225, 0x0400 },   /* R549   - HP Ctrl 1L */
+ +	{ 0x00000226, 0x0400 },   /* R550   - HP Ctrl 1R */
+  	{ 0x00000293, 0x0000 },   /* R659   - Accessory Detect Mode 1 */=20
+  	{ 0x0000029B, 0x0020 },   /* R667   - Headphone Detect 1 */=20
+ +	{ 0x0000029C, 0x0000 },   /* R668   - Headphone Detect 2 */
+ +	{ 0x0000029F, 0x0000 },   /* R671   - Headphone Detect Test */
+- 	{ 0x000002A2, 0x0000 },   /* R674   - Micd Clamp control */
++ 	{ 0x000002A2, 0x0000 },   /* R674   - Micd clamp control */
+  	{ 0x000002A3, 0x1102 },   /* R675   - Mic Detect 1 */=20
+  	{ 0x000002A4, 0x009F },   /* R676   - Mic Detect 2 */=20
+  	{ 0x000002A5, 0x0000 },   /* R677   - Mic Detect 3 */=20
+@@@ -1854,11 -1883,8 +1862,12 @@@ static bool wm5102_volatile_register(st
+  	case ARIZONA_DSP1_STATUS_1:
+  	case ARIZONA_DSP1_STATUS_2:
+  	case ARIZONA_DSP1_STATUS_3:
+ +	case ARIZONA_DSP1_SCRATCH_0:
+ +	case ARIZONA_DSP1_SCRATCH_1:
+ +	case ARIZONA_DSP1_SCRATCH_2:
+ +	case ARIZONA_DSP1_SCRATCH_3:
+  	case ARIZONA_HEADPHONE_DETECT_2:
++ 	case ARIZONA_HP_DACVAL:
+  	case ARIZONA_MIC_DETECT_3:
+  		return true;
+  	default:
 
-I'm thinking that we go with your per-swapper-space locking for now;
-but I wouldn't mind taking it out again later, if we arrive at a
-better solution which benefits even those with a single swap area.
+--Signature=_Mon__4_Feb_2013_16_12_41_+1100_WNuPnEP21ReJf88u
+Content-Type: application/pgp-signature
 
-Hugh
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRD0NJAAoJEECxmPOUX5FE/R4QAKUcuI+Q+F2kXNUOE/3kF8R8
+BtOeUCTR34n+Q+7WdW9jnwaWBc4fuqIXvBape/dXj2lbEa3MB9wZOi3PIKX+j1M5
+EF8a+BiQ1xIdLRqbWM1dytYVyMW8ubl9IXsSDWMadWFIQ3MbwLYJMYC2xFhLJjXt
+uUmOoflAhzHT+vir823QkhZuh7FlWnG3j2uApzHXv8jwOrxtwkrh+K6jElZyu6MP
+M1OYSgRDy0sCpznZCdHbbheDcGzbbF5NzUGeXNiAimTF/rYuu/5zZRARNU1YUF/i
+tgtuQMsaaAE8oAUCrsWLEZFlWNyx5HZrt1bdo21hWReyOj1mHQKAWOvpdVUhtITz
+z9gIW01B6CJOIpBk62M3BvjPhlZJXxH8aAvMu7WD49ciF9mIn/kXsUfci6czx6CX
+us5eTe/FzhryXsDeA9FtDHTbCV1iRywHi1ICbEq53mxhzyDpa6K2Vpu4ybCu+Dsw
+6N5Xh1DpHP1kokweyXNpZlbpVHBSQJ+gUpt5vBl8/AvPbsMow4aW/seS75s6oGgR
+ZQ4RmNO9In4jsR7tVAjzUa0RmvZbZ2lV1QNApAIw5T2+bEsdSBoxj5yaTq33sHs7
+ZapuREA9/IzVRYAmgwpunsH0QrSR9eEnGeat/wXVu62kyJLmpp4dTeGr+Ckj6ZZ/
+OWuZl/b+RTdxp8jyilqS
+=ImRV
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Feb_2013_16_12_41_+1100_WNuPnEP21ReJf88u--
