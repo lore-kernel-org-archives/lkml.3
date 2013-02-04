@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab3BDIwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 03:52:38 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51410 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984Ab3BDIwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 03:52:36 -0500
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <santosh.shilimkar@ti.com>
-CC: Sourav Poddar <sourav.poddar@ti.com>
-Subject: [PATCHv2 2/2] arm: dts: omap5-evm: Add mcspi data
-Date: Mon, 4 Feb 2013 14:22:18 +0530
-Message-ID: <1359967938-26718-1-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754121Ab3BDIyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 03:54:07 -0500
+Received: from smtp4.epfl.ch ([128.178.224.219]:60665 "HELO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753961Ab3BDIyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 03:54:05 -0500
+Message-ID: <510F7727.1010307@epfl.ch>
+Date: Mon, 04 Feb 2013 09:53:59 +0100
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        Bryan Wu <cooloney@gmail.com>
+CC: Richard Purdie <rpurdie@rpsys.net>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        linux-leds@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can
+ sleep
+References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch> <1359381659-24454-4-git-send-email-florian.vaussard@epfl.ch> <20130130081728.GC13568@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130130081728.GC13568@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add mcspi node and pinmux data for omap5 mcspi controller.
+On 01/30/2013 09:17 AM, Thierry Reding wrote:
+> On Mon, Jan 28, 2013 at 03:00:59PM +0100, Florian Vaussard wrote:
+>> Call to led_pwm_set() can happen inside atomic context, like triggers.
+>> If the PWM call can sleep, defer using a worker.
+>>
+>> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+>> ---
+>>   drivers/leds/leds-pwm.c |   50 +++++++++++++++++++++++++++++++++++++++-------
+>>   1 files changed, 42 insertions(+), 8 deletions(-)
+>
+> Bryan, I assume that you'll be taking this? It doesn't apply cleanly to
+> my tree, probably because of Peter's recent changes that you took
+> through your tree and Florian based his patches on top of that. The
+> conflict resolution should be trivial, though.
+>
 
-Tested on omap5430 evm with 3.8-rc4 custom kernel.
+Thank you Thierry. Indeed, this patchset was based on linux-leds due to the
+dependancy with Peter's patches.
 
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
----
-v1->v2
-Pinctrl nodes were pointing to a different parent.
-Fixing the same.
- arch/arm/boot/dts/omap5-evm.dts |   46 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 46 insertions(+), 0 deletions(-)
+Bryan, can you take this patch?
 
-diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
-index 8722c15..3625c5c 100644
---- a/arch/arm/boot/dts/omap5-evm.dts
-+++ b/arch/arm/boot/dts/omap5-evm.dts
-@@ -80,6 +80,33 @@
- 			0x15a 0x100	/* abemcbsp2_clkx.abemcbsp2_clkx INPUT | MODE0 */
- 		>;
- 	};
-+
-+	mcspi2_pins: pinmux_mcspi2_pins {
-+		pinctrl-single,pins = <
-+			0xbc 0x100
-+			0xbe 0x100
-+			0xc0 0x118
-+			0xc2 0x0
-+		>;
-+	};
-+
-+	mcspi3_pins: pinmux_mcspi3_pins {
-+		pinctrl-single,pins = <
-+			0x78 0x101
-+			0x7a 0x101
-+			0x7c 0x101
-+			0x7e 0x101
-+		>;
-+	};
-+
-+	mcspi4_pins: pinmux_mcspi4_pins {
-+		pinctrl-single,pins = <
-+			0x164 0x101
-+			0x168 0x101
-+			0x16a 0x101
-+			0x16c 0x101
-+		>;
-+	};
- };
- 
- &mmc1 {
-@@ -151,3 +178,22 @@
- 	cs1-used;
- 	device-handle = <&samsung_K3PE0E000B>;
- };
-+
-+&mcspi1 {
-+
-+};
-+
-+&mcspi2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mcspi2_pins>;
-+};
-+
-+&mcspi3 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mcspi3_pins>;
-+};
-+
-+&mcspi4 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mcspi4_pins>;
-+};
--- 
-1.7.1
+Regards,
+
+Florian
 
