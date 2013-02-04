@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab3BDQ3V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:29:21 -0500
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:11589 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996Ab3BDQ3S (ORCPT
+	id S1756475Ab3BDQbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:31:48 -0500
+Received: from [1.9.68.9] ([1.9.68.9]:34008 "HELO mysmtp1.stec-inc.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
+	id S1754348Ab3BDQbq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:29:18 -0500
-Message-ID: <1359994749.23410.113.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device
- hotplug framework
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
-        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
-        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Mon, 04 Feb 2013 09:19:09 -0700
-In-Reply-To: <2048116.Qo8UgQ5hjb@vostro.rjw.lan>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
-	 <5876609.Ic1nhHW6N2@vostro.rjw.lan> <20130204124810.GB22096@kroah.com>
-	 <2048116.Qo8UgQ5hjb@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 11:31:46 -0500
+X-ASG-Debug-ID: 1359995502-053ea90dcf20f280001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Amit Kale <akale@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: "thornber@redhat.com" <thornber@redhat.com>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>
+CC: linux-bcache <linux-bcache@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Kent Overstreet <kent.overstreet@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jason Warr <jason@warr.net>
+Date: Tue, 5 Feb 2013 00:30:03 +0800
+Subject: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Topic: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+X-ASG-Orig-Subj: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Thread-Index: Ac4C5ZbzopoeJTLMS56bp7nneHE+NgADyu3A
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6542@MYMBX.MY.STEC-INC.AD>
+References: <20130202004459.GA4760@blackbox.djwong.org>
+ <20130204144016.GA2522@raspberrypi>
+In-Reply-To: <20130204144016.GA2522@raspberrypi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1359995502
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.121798
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-04 at 15:21 +0100, Rafael J. Wysocki wrote:
-> On Monday, February 04, 2013 04:48:10 AM Greg KH wrote:
-> > On Sun, Feb 03, 2013 at 09:44:39PM +0100, Rafael J. Wysocki wrote:
-> > > > Yes, but those are just remove events and we can only see how destructive they
-> > > > were after the removal.  The point is to be able to figure out whether or not
-> > > > we *want* to do the removal in the first place.
-> > > > 
-> > > > Say you have a computing node which signals a hardware problem in a processor
-> > > > package (the container with CPU cores, memory, PCI host bridge etc.).  You
-> > > > may want to eject that package, but you don't want to kill the system this
-> > > > way.  So if the eject is doable, it is very much desirable to do it, but if it
-> > > > is not doable, you'd rather shut the box down and do the replacement afterward.
-> > > > That may be costly, however (maybe weeks of computations), so it should be
-> > > > avoided if possible, but not at the expense of crashing the box if the eject
-> > > > doesn't work out.
-> > > 
-> > > It seems to me that we could handle that with the help of a new flag, say
-> > > "no_eject", in struct device, a global mutex, and a function that will walk
-> > > the given subtree of the device hierarchy and check if "no_eject" is set for
-> > > any devices in there.  Plus a global "no_eject" switch, perhaps.
-> > 
-> > I think this will always be racy, or at worst, slow things down on
-> > normal device operations as you will always be having to grab this flag
-> > whenever you want to do something new.
+> -----Original Message-----
+> From: thornber@redhat.com [mailto:thornber@redhat.com]
+> Sent: Monday, February 04, 2013 6:40 AM
+> To: Darrick J. Wong
+> Cc: Amit Kale; linux-bcache; device-mapper development; Kent
+> Overstreet; Mike Snitzer; LKML; Jason Warr
+> Subject: Re: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
+> caching software for Linux kernel
 > 
-> I don't see why this particular scheme should be racy, at least I don't see any
-> obvious races in it (although I'm not that good at races detection in general,
-> admittedly).
+> On Fri, Feb 01, 2013 at 04:44:59PM -0800, Darrick J. Wong wrote:
+> > I will start reviewing the code as soon as this patch posts.  Be
+> > warned that I haven't even compile tested this yet. :)
 > 
-> Also, I don't expect that flag to be used for everything, just for things known
-> to seriously break if forcible eject is done.  That may be not precise enough,
-> so that's a matter of defining its purpose more precisely.
+> Has the code been updated since I looked at it a couple of weeks ago?
+> For example addressing all the 'sparse' warnings?
+
+Yes. Several warning were fixed and one kernel bug was fixed. It's better in terms of sparse warning, but not there yet.
+
+-Amit
+
 > 
-> We can do something like that on the ACPI level (ie. introduce a no_eject flag
-> in struct acpi_device and provide an iterface for the layers above ACPI to
-> manipulate it) but then devices without ACPI namespace objects won't be
-> covered.  That may not be a big deal, though.
+> If you've not compiled or reviewed this code, what do you mean by the
+> 'signed-off by' tag?
+> 
+> - Joe
 
-I am afraid that bringing the device status management into the ACPI
-level would not a good idea.  acpi_device should only reflect ACPI
-device object information, not how its actual device is being used.
-
-I like your initiative of acpi_scan_driver and I think scanning /
-trimming of ACPI object info is what the ACPI drivers should do.
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
 
 
-Thanks,
--Toshi
 
-
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
