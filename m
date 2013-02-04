@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab3BDNCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 08:02:18 -0500
-Received: from 8bytes.org ([85.214.48.195]:33752 "EHLO mail.8bytes.org"
+	id S1754935Ab3BDNEP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 08:04:15 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53976 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754547Ab3BDNCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 08:02:17 -0500
-Date: Mon, 4 Feb 2013 14:02:14 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>
-Subject: Re: [PATCH 4/4] iommu: Add domain window handling functions
-Message-ID: <20130204130214.GN25591@8bytes.org>
-References: <1359582228-21552-1-git-send-email-joro@8bytes.org>
- <1359582228-21552-5-git-send-email-joro@8bytes.org>
- <C5ECD7A89D1DC44195F34B25E172658D3670ED@039-SN2MPN1-013.039d.mgd.msft.net>
+	id S1753996Ab3BDNEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 08:04:13 -0500
+Date: Mon, 4 Feb 2013 14:04:03 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
+Message-ID: <20130204130403.GD13909@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Viresh Kumar <viresh.kumar@linaro.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+	Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+References: <cover.1359976493.git.viresh.kumar@linaro.org>
+ <5808458.pvV2iHpBWm@vostro.rjw.lan>
+ <CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
+ <20130204123221.GA22340@pd.tnic>
+ <CAKohpomcrtV3i9fL4zV6Mt0uDza-9pHTOsqTe2=C1t6mE6cpCQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D3670ED@039-SN2MPN1-013.039d.mgd.msft.net>
+In-Reply-To: <CAKohpomcrtV3i9fL4zV6Mt0uDza-9pHTOsqTe2=C1t6mE6cpCQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon Feb  4 14:02:15 2013
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 510fb15722971699272620
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 09:32:26AM +0000, Sethi Varun-B16395 wrote:
-> We need a mechanism to determine the maximum number of subwindows supported by PAMU. How about representing it in the iommu_domain structure:
-> struct  iommu_domain {
-> 	struct iommu_ops *ops;
-> 	void *priv;
-> 	iommu_fault_handler_t handler;
-> 	void *handler_token;
-> 	struct iommu_domain_geometry geometry;
-> 	u32 max_sub_windows; -----> maximum number of sub windows supported by the hardware.
-> }
+On Mon, Feb 04, 2013 at 06:24:19PM +0530, Viresh Kumar wrote:
+> That's why i am highlighting it again and again. :)
 
-I`ll leave that flag to the private-data of the IOMMU domain. Instead I
-added a DOMAIN_ATTR_WINDOWS attribute to get/set the number of
-subwindows. I'll post the updated patch-set soon.
+Ah, see, someone caught up with it :).
 
+> What i believe is, the place where this directory was present earlier
+> (cpu/cpufreq/) wasn't the right place. Everything else was in cpu/cpu*/cpufreq,
+> then why this in cpu/cpufreq/ ?
 
-	Joerg
+For the simple reason that the "cpu*" stuff is per-cpu - the
+"cpu/cpufreq" is per system, i.e. one governor for the whole system.
 
+> I don't know how much of a pain it would be to fix userspace for it,
+> but i know it wouldn't be that small.
 
+I wouldn't fix userspace but simply not touch it. You can add your
+per-policy stuff in "cpu/cpu*" as new sysfs nodes and no need to
+change anything. And, also, as I suggested earlier, you should make it
+configurable since this code wouldn't make sense on x86, for example,
+where one system-wide governor should suffice.
+
+> I had another idea of doing this only for platforms where we have
+> multiple struct policy alive at the same time. But didn't wanted to
+> implement it before discussing this further.
+
+Simply put it behind a config option like
+CONFIG_CPU_IDLE_MULTIPLE_DRIVERS, call the whole menu
+"Multi-power-domain-policy" something and that should be modulary
+enough.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
