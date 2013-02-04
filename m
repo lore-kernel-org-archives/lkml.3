@@ -1,86 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab3BDFqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 00:46:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55753 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901Ab3BDFqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 00:46:21 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130204052725.GA13909@pd.tnic>
-References: <1359908079-10469-1-git-send-email-bp@alien8.de> <1359908079-10469-5-git-send-email-bp@alien8.de> <510EF65D.4020602@zytor.com> <20130204052725.GA13909@pd.tnic>
+	id S1752020Ab3BDFxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 00:53:15 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:62685 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab3BDFxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 00:53:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 4/4] x86, 32-bit: Drop new_cpu_data
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 03 Feb 2013 21:44:02 -0800
-To: Borislav Petkov <bp@alien8.de>
-CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Message-ID: <562c8dd4-6665-4365-8eb4-33e77e6f6798@email.android.com>
+In-Reply-To: <1359875271.1328.4.camel@kernel.cn.ibm.com>
+References: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
+	<1359750184-23408-3-git-send-email-konrad.wilk@oracle.com>
+	<1359875271.1328.4.camel@kernel.cn.ibm.com>
+Date: Mon, 4 Feb 2013 13:53:12 +0800
+Message-ID: <CAA_GA1fyUTzMDLVjuwVon-o6yL_kCY7RqQNQcAJgKX1QTYkBVA@mail.gmail.com>
+Subject: Re: [PATCH 02/15] mm: frontswap: lazy initialization to allow tmem
+ backends to build/run as modules
+From: Bob Liu <lliubbo@gmail.com>
+To: Ric Mason <ric.masonn@gmail.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, dan.magenheimer@oracle.com,
+        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
+        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        ngupta@vflare.org, rcj@linux.vnet.ibm.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Stefan Hengelein <ilendir@googlemail.com>,
+        Florian Schmaus <fschmaus@gmail.com>,
+        Andor Daam <andor.daam@googlemail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-boot_cpu_data is ok for things that are indeed universally valid across.  That does not include CPUID level, for one.
-
-Borislav Petkov <bp@alien8.de> wrote:
-
->On Sun, Feb 03, 2013 at 03:44:29PM -0800, H. Peter Anvin wrote:
->> On 02/03/2013 08:14 AM, Borislav Petkov wrote:
->> >From: Borislav Petkov <bp@suse.de>
->> >
->> >We copy it to boot_cpu_data anyway so use boot_cpu_data from the
->get-go.
->> >
->> 
->> Hmm... this is the only part of this patchset I feel skeptical
->> towards.  Overall, a lot of the early SMP code went way out of its
->> way to have zero impact on the !CONFIG_SMP case, but that was a long
->> time ago. Nowadays what we really should have is cpu_data being a
->> percpu variable separate from boot_cpu_data (which is really
->> "all_cpu_data") even on UP.
->
->Hmmkay.
->
->My thought vector here was to use boot_cpu_data to cache stuff
->here which is universally valid on the current system, i.e. like
->all_cpu_data. IOW, cache here family (model and stepping could differ,
->as we've come to realize over the years :)) vendor (btw, X86_VENDOR is
->unused) CPUID_EAX(0) level, capability, etc and use them later instead
->of querying them again.
->
->So, so early and in this case, we're saving CPU data which is valid for
->all CPUs on the system and thus it belongs into boot_cpu_data, right?
->
->And then, btw, that data could've been used in verify_cpu.S only if the
->damn thing wasn't being used in arch/x86/boot/...
->
->> Another cleanup desperately needed in this area is a bitvector for
->> bugs in addition to features.
->
->Yeah, c->x86_unfeatures! :-)
->
->> In fact, I kind of suspect we should make it the *same* bitvector
->> (different words) so we cpu_has(X) works on both without confusion
->> (just put the BUGS at the end; it means that if we add feature words
->> the bug numbers will shift but that is okay.)
+On Sun, Feb 3, 2013 at 3:07 PM, Ric Mason <ric.masonn@gmail.com> wrote:
+> Hi Konrad,
+> On Fri, 2013-02-01 at 15:22 -0500, Konrad Rzeszutek Wilk wrote:
+>> From: Dan Magenheimer <dan.magenheimer@oracle.com>
 >>
->> I actually mean to do this when I did the CPU feature vector stuff
->> over 10 years ago, but never got around to it... and it still has
->> never gotten done.
+>> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
+>> built/loaded as modules rather than built-in and enabled by a boot parameter,
+>> this patch provides "lazy initialization", allowing backends to register to
+>> frontswap even after swapon was run. Before a backend registers all calls
+>> to init are recorded and the creation of tmem_pools delayed until a backend
+>> registers or until a frontswap put is attempted.
+>
+> Do you mean __frontswap_store? It seems that just add fail count if
+> backend doesn't register, why you said that the creation of tmem_pools
+> will delay until this time?
+>
 >>
->> The difference between bugs and features, of course, is that the
->> former should be combined across CPUs with an OR whereas the latter
->> get combined with an AND.
+>> Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
+>> Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
+>> Signed-off-by: Andor Daam <andor.daam@googlemail.com>
+>> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+>> [v1: Fixes per Seth Jennings suggestions]
+>> [v2: Removed FRONTSWAP_HAS_.. ]
+>> [v3: Fix up per Bob Liu <lliubbo@gmail.com> recommendations]
+>> [v4: Fix up per Andrew's comments]
+>> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> ---
+>>  mm/frontswap.c | 95 +++++++++++++++++++++++++++++++++++++++++++++++++++-------
+>>  1 file changed, 85 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/mm/frontswap.c b/mm/frontswap.c
+>> index 2890e67..c05a9db 100644
+>> --- a/mm/frontswap.c
+>> +++ b/mm/frontswap.c
+>> @@ -80,6 +80,46 @@ static inline void inc_frontswap_succ_stores(void) { }
+>>  static inline void inc_frontswap_failed_stores(void) { }
+>>  static inline void inc_frontswap_invalidates(void) { }
+>>  #endif
+>> +
+>> +/*
+>> + * Due to the asynchronous nature of the backends loading potentially
+>> + * _after_ the swap system has been activated, we have chokepoints
+>> + * on all frontswap functions to not call the backend until the backend
+>> + * has registered.
+>> + *
+>> + * Specifically when no backend is registered (nobody called
+>> + * frontswap_register_ops) all calls to frontswap_init (which is done via
+>> + * swapon -> enable_swap_info -> frontswap_init) are registered and remembered
+>> + * (via the setting of need_init bitmap) but fail to create tmem_pools. When a
+>> + * backend registers with frontswap at some later point the previous
+>> + * calls to frontswap_init are executed (by iterating over the need_init
+>> + * bitmap) to create tmem_pools and set the respective poolids. All of that is
+>> + * guarded by us using atomic bit operations on the 'need_init' bitmap.
+>> + *
+>> + * This would not guards us against the user deciding to call swapoff right as
+>> + * we are calling the backend to initialize (so swapon is in action).
+>> + * Fortunatly for us, the swapon_mutex has been taked by the callee so we are
+>> + * OK. The other scenario where calls to frontswap_store (called via
+>> + * swap_writepage) is racing with frontswap_invalidate_area (called via
+>> + * swapoff) is again guarded by the swap subsystem.
+>> + *
+>> + * While no backend is registered all calls to frontswap_[store|load|
+>> + * invalidate_area|invalidate_page] are ignored or fail.
+>> + *
+>> + * The time between the backend being registered and the swap file system
+>> + * calling the backend (via the frontswap_* functions) is indeterminate as
+>> + * backend_registered is not atomic_t (or a value guarded by a spinlock).
+>> + * That is OK as we are comfortable missing some of these calls to the newly
+>> + * registered backend.
+>> + *
+>> + * Obviously the opposite (unloading the backend) must be done after all
+>> + * the frontswap_[store|load|invalidate_area|invalidate_page] start
+>> + * ignorning or failing the requests - at which point backend_registered
+>> + * would have to be made in some fashion atomic.
+>> + */
+>> +static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
+>> +static bool backend_registered __read_mostly;
+>> +
+>>  /*
+>>   * Register operations for frontswap, returning previous thus allowing
+>>   * detection of multiple backends and possible nesting.
+>> @@ -87,9 +127,22 @@ static inline void inc_frontswap_invalidates(void) { }
+>>  struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
+>>  {
+>>       struct frontswap_ops old = frontswap_ops;
+>> +     int i;
+>>
+>>       frontswap_ops = *ops;
+>>       frontswap_enabled = true;
+>> +
+>> +     for (i = 0; i < MAX_SWAPFILES; i++) {
+>> +             if (test_and_clear_bit(i, need_init))
+>> +                     (*frontswap_ops.init)(i);
+>> +     }
+>> +     /*
+>> +      * We MUST have backend_registered set _after_ the frontswap_init's
+>> +      * have been called. Otherwise __frontswap_store might fail. Hence
+>> +      * the barrier to make sure compiler does not re-order us.
+>> +      */
+>> +     barrier();
+>> +     backend_registered = true;
+>>       return old;
+>>  }
+>>  EXPORT_SYMBOL(frontswap_register_ops);
+>> @@ -119,10 +172,17 @@ void __frontswap_init(unsigned type)
+>>  {
+>>       struct swap_info_struct *sis = swap_info[type];
+>>
+>> -     BUG_ON(sis == NULL);
+>> -     if (sis->frontswap_map == NULL)
+>> -             return;
+>> -     frontswap_ops.init(type);
+>> +     if (backend_registered) {
+>> +             BUG_ON(sis == NULL);
+>> +             if (sis->frontswap_map == NULL)
+>> +                     return;
+>> +             (*frontswap_ops.init)(type);
+>> +     }
+>> +     else {
+>> +             BUG_ON(type > MAX_SWAPFILES);
+>> +             set_bit(type, need_init);
+>> +     }
+>> +
+>>  }
+>>  EXPORT_SYMBOL(__frontswap_init);
+>>
+>> @@ -147,6 +207,11 @@ int __frontswap_store(struct page *page)
+>>       struct swap_info_struct *sis = swap_info[type];
+>>       pgoff_t offset = swp_offset(entry);
+>>
+>> +     if (!backend_registered) {
+>> +             inc_frontswap_failed_stores();
+>> +             return ret;
+>> +     }
+>> +
+>>       BUG_ON(!PageLocked(page));
+>>       BUG_ON(sis == NULL);
+>>       if (frontswap_test(sis, offset))
+>> @@ -186,6 +251,9 @@ int __frontswap_load(struct page *page)
+>>       struct swap_info_struct *sis = swap_info[type];
+>>       pgoff_t offset = swp_offset(entry);
+>>
+>> +     if (!backend_registered)
+>> +             return ret;
+>> +
+>>       BUG_ON(!PageLocked(page));
+>>       BUG_ON(sis == NULL);
+>>       if (frontswap_test(sis, offset))
+>> @@ -209,6 +277,9 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
+>>  {
+>>       struct swap_info_struct *sis = swap_info[type];
+>>
+>> +     if (!backend_registered)
+>> +             return;
+>> +
+>>       BUG_ON(sis == NULL);
+>>       if (frontswap_test(sis, offset)) {
+>>               frontswap_ops.invalidate_page(type, offset);
+>> @@ -226,12 +297,15 @@ void __frontswap_invalidate_area(unsigned type)
+>>  {
+>>       struct swap_info_struct *sis = swap_info[type];
+>>
+>> -     BUG_ON(sis == NULL);
+>> -     if (sis->frontswap_map == NULL)
+>> -             return;
+>> -     frontswap_ops.invalidate_area(type);
+>> -     atomic_set(&sis->frontswap_pages, 0);
+>> -     memset(sis->frontswap_map, 0, sis->max / sizeof(long));
+>> +     if (backend_registered) {
+>> +             BUG_ON(sis == NULL);
+>> +             if (sis->frontswap_map == NULL)
+>> +                     return;
+>> +             (*frontswap_ops.invalidate_area)(type);
+>> +             atomic_set(&sis->frontswap_pages, 0);
+>> +             memset(sis->frontswap_map, 0, sis->max / sizeof(long));
+>> +     }
+>> +     clear_bit(type, need_init);
+>>  }
+>>  EXPORT_SYMBOL(__frontswap_invalidate_area);
+>>
+>> @@ -364,6 +438,7 @@ static int __init init_frontswap(void)
+>>       debugfs_create_u64("invalidates", S_IRUGO,
+>>                               root, &frontswap_invalidates);
+>>  #endif
+>> +     frontswap_enabled = 1;
 >
->Yeah, that should be pretty easy to do with the current machinery
->already in place. I'll take a look.
+> Why has this change?
 >
->Thanks.
+
+If don't set frontswap_enabled to 1,  frontswap_init() will return
+without record the swap type.
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Regards,
+--Bob
