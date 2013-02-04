@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab3BDVnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 16:43:52 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:49770 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448Ab3BDVnu (ORCPT
+	id S1755503Ab3BDVpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 16:45:31 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:54932 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754448Ab3BDVp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 16:43:50 -0500
-Date: Mon, 4 Feb 2013 13:43:44 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "skinsbursky@parallels.com" <skinsbursky@parallels.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "roland@kernel.org" <roland@kernel.org>
-Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
-Message-ID: <20130204214344.GI27963@mtj.dyndns.org>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
- <20130204191720.GW27963@mtj.dyndns.org>
- <32E1700B9017364D9B60AED9960492BC0D58DF86@FMSMSX108.amr.corp.intel.com>
+	Mon, 4 Feb 2013 16:45:29 -0500
+Date: Mon, 4 Feb 2013 16:41:12 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth 2013-02-01
+Message-ID: <20130204214112.GD2123@tuxdriver.com>
+References: <20130201173302.GC4733@joana>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <32E1700B9017364D9B60AED9960492BC0D58DF86@FMSMSX108.amr.corp.intel.com>
+In-Reply-To: <20130201173302.GC4733@joana>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 08:08:47PM +0000, Marciniszyn, Mike wrote:
-> > It looks like this kernel won't compile with CONFIG_HOTPLUG_MEMORY set to
-> > 'y'
+On Fri, Feb 01, 2013 at 03:33:02PM -0200, Gustavo Padovan wrote:
+> Hi John,
 > 
-> Turning off the CONFIG_HOTPLUG_MEMORY allowed the build to work.
+> Two simple fixes for 3.8. One of the patches fixes a situation where the
+> connection wasn't terminated if a timeout ocurrs for LE an SCO connections.
+> The other fixes prevent NULL dereference in the SMP code, it is a security fix
+> as well.
 > 
-> At least for me, basic IB functionality works with the latest repo.
+> Please pull, or let me know of any problems!
 > 
-> The ipath and qib patches look ok, but we usually use IB/<module> vs. infiniband/<module>.
+>         Gustavo
+> 
+> ---
+> The following changes since commit b7e98b5100aad9290d7f06fcb9d1e80f7f62f05f:
+> 
+>   Bluetooth: Check if the hci connection exists in SCO shutdown (2013-01-10 03:53:32 -0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth for-upstream
+> 
+> for you to fetch changes up to 4c02e2d444595200d0b18b889994aac3611cd288:
+> 
+>   Bluetooth: Fix hci_conn timeout routine (2013-01-31 15:38:02 -0200)
 
-Ok, renaming the patches.
-
-Thanks.
+Pulling now...
 
 -- 
-tejun
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
