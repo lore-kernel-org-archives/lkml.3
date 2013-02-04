@@ -1,109 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab3BDLg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:36:27 -0500
-Received: from smtprelay-b31.telenor.se ([213.150.131.20]:45600 "EHLO
-	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab3BDLgZ (ORCPT
+	id S1754209Ab3BDLjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:39:11 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:53405 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab3BDLjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:36:25 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArpkAHacD1FV5qjOPGdsb2JhbABEhV+FILBeglcEgQEXAwEBAQE4NIIfAQEEAScTHCMFCwgDISUPBSUKGogeCr1TFY02gyZhA5YehgCNT4FnJA
-X-IronPort-AV: E=Sophos;i="4.84,600,1355094000"; 
-   d="scan'208";a="198087389"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 4 Feb 2013 12:42:26 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/9] HID: multitouch: add support for Nexio 42" panel
-Message-ID: <20130204114226.GB4313@polaris.bitmath.org>
-References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
- <1359649351-11092-4-git-send-email-benjamin.tissoires@gmail.com>
- <20130203130013.GA2657@polaris.bitmath.org>
- <CAN+gG=FO7boJ7mQefL=JoggNiUS7ea6=W=+g=5fvMzpMB0x5+g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=FO7boJ7mQefL=JoggNiUS7ea6=W=+g=5fvMzpMB0x5+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Feb 2013 06:39:08 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
+Date: Mon,  4 Feb 2013 17:08:50 +0530
+Message-Id: <cover.1359976493.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+Currently, there can't be multiple instances of single governor_type. If we have
+a multi-package system, where we have multiple instances of struct policy (per
+package), we can't have multiple instances of same governor. i.e. We can't have
+multiple instances of ondemand governor for multiple packages.
 
-> > Why not an index here?
-> 
-> Just because an index is not sufficient. You need two things: an index
-> within the field, and the actual field (a pointer to a struct
-> hid_field). Each .value is local to a field, and even if in most of
-> the case, the contact count is alone in its field, it would mean to
-> take the risk that a new device does not follow this logic.
+Governors directory in sysfs is created at /sys/devices/system/cpu/cpufreq/
+governor-name/. Which again reflects that there can be only one instance of a
+governor_type in the system.
 
-The field value is passed to process_mt_event() in a fairly
-straight-forward fashion, I was imagining that behavior could be
-copied somehow.
+This is a bottleneck for multicluster system, where we want different packages
+to use same governor type, but with different tunables.
 
-> So the actual pointer to the contact count value seemed to be the
-> shortest way to do it. But it can be easily changed.
+This patchset is inclined towards fixing this issue.
 
-Keeping a pointer into the core structure creates unwanted
-dependencies to the scope of that value, making an eventual core
-refactoring even harder, not to mention trickier to debug. So even
-though it looks neat in the code, it pushes the problem forward.
+Viresh Kumar (4):
+  cpufreq: Don't check cpu_online(policy->cpu)
+  cpufreq: stats: Get rid of CPUFREQ_STATDEVICE_ATTR
+  cpufreq: Add per policy governor-init/exit infrastructure
+  cpufreq: governor: Implement per policy instances of governors
 
-> >> @@ -251,6 +257,9 @@ static ssize_t mt_set_quirks(struct device *dev,
-> >>
-> >>       td->mtclass.quirks = val;
-> >>
-> >> +     if (!td->contactcount)
-> >> +             td->mtclass.quirks &= ~MT_QUIRK_CONTACT_CNT_ACCURATE;
-> >> +
-> >
-> > Why override the overrider here?
-> 
-> This callback is called from the user-space through the sysfs
-> attribute. So, it is not called in the same time that the
-> mt_post_parse function. This is just to avoid a user setting this
-> quirk once the device is up and running leading to a potential oops.
+ drivers/cpufreq/cpufreq.c              |  41 ++++---
+ drivers/cpufreq/cpufreq_conservative.c | 142 +++++++++++++----------
+ drivers/cpufreq/cpufreq_governor.c     | 140 +++++++++++++---------
+ drivers/cpufreq/cpufreq_governor.h     |  42 ++++---
+ drivers/cpufreq/cpufreq_ondemand.c     | 205 +++++++++++++++++++--------------
+ drivers/cpufreq/cpufreq_stats.c        |  18 +--
+ drivers/cpufreq/cpufreq_userspace.c    |   2 -
+ drivers/cpufreq/freq_table.c           |   6 -
+ include/linux/cpufreq.h                |  26 +----
+ 9 files changed, 346 insertions(+), 276 deletions(-)
 
-Yes, but the quirk _is_ user modifiable. Hence, the problem lies in
-equating the user-modifiable quirk with the branch control of the
-program.
+-- 
+1.7.12.rc2.18.g61b472e
 
-> > An index into the the struct actually passed in mt_report() feels safer.
-> 
-> again, you need to store "field" and "usage->usage_index". Agree, it
-> would be safer but it will take more space... :)
-
-If you think the code change is not only correct, but also moves the
-whole code base in a good direction, by all means.
-
-> >> @@ -750,11 +765,15 @@ static void mt_post_parse_default_settings(struct mt_device *td)
-> >>  static void mt_post_parse(struct mt_device *td)
-> >>  {
-> >>       struct mt_fields *f = td->fields;
-> >> +     struct mt_class *cls = &td->mtclass;
-> >>
-> >>       if (td->touches_by_report > 0) {
-> >>               int field_count_per_touch = f->length / td->touches_by_report;
-> >>               td->last_slot_field = f->usages[field_count_per_touch - 1];
-> >>       }
-> >> +
-> >> +     if (!td->contactcount)
-> >> +             cls->quirks &= ~MT_QUIRK_CONTACT_CNT_ACCURATE;
-> >
-> > Since MT_QUIRK_CONTACT_CNT_ACCURATE is a quirk, modifiable by the
-> > user, it should probably not validate num_expected in the code. Better
-> > use the contact count index or something equivalent for that.
-> 
-> As when the user changes the quirk, we validate it, this is not required.
-
-True, barring the comments above.
-
-Thanks,
-Henrik
