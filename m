@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab3BDOwu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 09:52:50 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:37870 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab3BDOws (ORCPT
+	id S1755751Ab3BDO43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 09:56:29 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:58381 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab3BDO42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 09:52:48 -0500
+	Mon, 4 Feb 2013 09:56:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130201141211.1adadfe5.akpm@linux-foundation.org>
-References: <1358928657-15781-1-git-send-email-christian.gmeiner@gmail.com>
- <7AFBFD79B857054D97821A9BD3FBFA9744D05BD2@ATFKEX06.bachmann.at>
- <CAH9NwWdciqHSkkMSk4CW4XX+d6JSZBnvw52Svu8M4o-PGMQsDA@mail.gmail.com> <20130201141211.1adadfe5.akpm@linux-foundation.org>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Mon, 4 Feb 2013 15:46:34 +0100
-Message-ID: <CAH9NwWfRL3HpfhLW5FqmWJC+NYHagoQXMoavAzMYciHRDg6mdQ@mail.gmail.com>
-Subject: Re: [PATCH] leds-ot200: Fix error caused by shifted mask
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "GMEINER.Christian" <C.GMEINER@bachmann.info>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bryan Wu <cooloney@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <alpine.LFD.2.03.1302011328410.6240@gmail.com>
+References: <alpine.LFD.2.03.1302011328410.6240@gmail.com>
+Date: Mon, 4 Feb 2013 15:56:27 +0100
+Message-ID: <CAJfpegufyY_ZcvKgMVZsLA81ODJwKmStcxDTpObXHfBDRzLKog@mail.gmail.com>
+Subject: Re: User-triggerable WARNING with fuse
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Tero Roponen <tero.roponen@gmail.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=14dae93409c130416204d4e74c46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/1 Andrew Morton <akpm@linux-foundation.org>:
-> On Fri, 1 Feb 2013 16:08:15 +0100
-> Christian Gmeiner <christian.gmeiner@gmail.com> wrote:
+--14dae93409c130416204d4e74c46
+Content-Type: text/plain; charset=UTF-8
+
+On Fri, Feb 1, 2013 at 12:39 PM, Tero Roponen <tero.roponen@gmail.com> wrote:
 >
->> ping
+> Using the attached program I can trigger the following WARNING
+> reliably as a normal user. This happens at least both in 3.8-rc6
+> and 3.7.5.
 >
-> Bryan is handling LEDs patches (see ./MAINTAINERS).  Without a cc he
-> presumably missed this in the lkml flood.
-
-You are right...
-
-~/kernel/linux-3.7.6$ ./scripts/get_maintainer.pl -f drivers/leds/leds-ot200.c
-Bryan Wu <cooloney@gmail.com> (maintainer:LED SUBSYSTEM)
-Richard Purdie <rpurdie@rpsys.net> (maintainer:LED SUBSYSTEM)
-linux-leds@vger.kernel.org (open list:LED SUBSYSTEM)
-linux-kernel@vger.kernel.org (open list)
-
-Next time I will add Bryan to CC
-
+> The kernel is tainted by proprietary NVIDIA module, but I don't
+> thinks it matters in this case.
 >
->> 2013/1/23 GMEINER.Christian <C.GMEINER@bachmann.info>:
->> >> -----Urspr__ngliche Nachricht-----
->> >> Von: Christian Gmeiner [mailto:christian.gmeiner@gmail.com]
->> >> Gesendet: Mittwoch, 23. Januar 2013 09:11
->> >> An: linux-next@vger.kernel.org; akpm@linux-foundation.org;
->> >> rpurdie@rpsys.net; linux-kernel@vger.kernel.org; GMEINER.Christian
->> >> Cc: Christian Gmeiner
->> >> Betreff: [PATCH] leds-ot200: Fix error caused by shifted mask
->> >>
->> >> During the development of this driver an in-house register documentation
->> >> was used. The last weeks some integration tests were done and this problem
->> >> was found. It turned out that the released register documentation is wrong.
->> >>
->> >> The fix is very simple: shift all masks by one.
->> >>
->
-> The changelog failed to describe the effects of the bug it fixes.  This
-> is a grave (and all too common) omission; it makes it difficult for
-> others to determine whether the patch should be backported into earlier
-> kernels.
->
-> So, please tell us.  And feel free to explain whether you believe the
-> fix should be backported.
 
-Our customers can control LEDs from userspace via Java, C++ or what every. They
-have running/working applications where they want to control led_3 but
-led_2 get's
-used. I got a bug report in our in-house bug tracker so it would be
-great if this patch can make it into 3.7.x series.
+Thanks, the attached patch should fix it.
 
-thanks
---
-Christian Gmeiner, MSc
+Miklos
+
+--14dae93409c130416204d4e74c46
+Content-Type: application/octet-stream; 
+	name="fuse-dont-warn-when-nlink-is-zero.patch"
+Content-Disposition: attachment; 
+	filename="fuse-dont-warn-when-nlink-is-zero.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hcrqsm921
+
+RnJvbTogTWlrbG9zIFN6ZXJlZGkgPG1zemVyZWRpQHN1c2UuY3o+ClN1YmplY3Q6IGZ1c2U6IGRv
+bid0IFdBUk4gd2hlbiBubGluayBpcyB6ZXJvCgpkcm9wX25saW5rKCkgd2FybnMgaWYgbmxpbmsg
+aXMgYWxyZWFkeSB6ZXJvLiAgVGhpcyBpcyB0cmlnZ2VyYWJsZSBieSBhIGJ1Z2d5CnVzZXJzcGFj
+ZSBmaWxlc3lzdGVtLiAgVGhlIGN1cmUsIEkgdGhpbmssIGlzIHdvcnNlIHRoYW4gdGhlIGRpc2Vh
+c2Ugc28gZGlzYWJsZQp0aGUgd2FybmluZy4KClJlcG9ydGVkLWJ5OiBUZXJvIFJvcG9uZW4gPHRl
+cm8ucm9wb25lbkBnbWFpbC5jb20+ClNpZ25lZC1vZmYtYnk6IE1pa2xvcyBTemVyZWRpIDxtc3pl
+cmVkaUBzdXNlLmN6PgotLS0KIGZzL2Z1c2UvZGlyLmMgfCAgICA5ICsrKysrKysrLQogMSBmaWxl
+IGNoYW5nZWQsIDggaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQoKLS0tIGEvZnMvZnVzZS9k
+aXIuYworKysgYi9mcy9mdXNlL2Rpci5jCkBAIC03MDUsNyArNzA1LDE0IEBAIHN0YXRpYyBpbnQg
+ZnVzZV91bmxpbmsoc3RydWN0IGlub2RlICpkaXIKIAogCQlzcGluX2xvY2soJmZjLT5sb2NrKTsK
+IAkJZmktPmF0dHJfdmVyc2lvbiA9ICsrZmMtPmF0dHJfdmVyc2lvbjsKLQkJZHJvcF9ubGluayhp
+bm9kZSk7CisJCS8qCisJCSAqIElmIGlfbmxpbmsgPT0gMCB0aGVuIHVubGluayBkb2Vzbid0IG1h
+a2Ugc2Vuc2UsIHlldCB0aGlzIGNhbgorCQkgKiBoYXBwZW4gaWYgdXNlcnNwYWNlIGZpbGVzeXN0
+ZW0gaXMgY2FyZWxlc3MuICBJdCB3b3VsZCBiZQorCQkgKiBkaWZmaWN1bHQgdG8gZW5mb3JjZSBj
+b3JyZWN0IG5saW5rIHVzYWdlIHNvIGp1c3QgaWdub3JlIHRoaXMKKwkJICogY29uZGl0aW9uIGhl
+cmUKKwkJICovCisJCWlmIChpbm9kZS0+aV9ubGluayA+IDApCisJCQlkcm9wX25saW5rKGlub2Rl
+KTsKIAkJc3Bpbl91bmxvY2soJmZjLT5sb2NrKTsKIAkJZnVzZV9pbnZhbGlkYXRlX2F0dHIoaW5v
+ZGUpOwogCQlmdXNlX2ludmFsaWRhdGVfYXR0cihkaXIpOwo=
+--14dae93409c130416204d4e74c46--
