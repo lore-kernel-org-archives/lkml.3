@@ -1,63 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab3BDSHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:07:05 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:42892 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab3BDSHD (ORCPT
+	id S1755023Ab3BDSHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:07:40 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:44404 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753593Ab3BDSHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:07:03 -0500
-Date: Mon, 4 Feb 2013 13:06:40 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
-        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 09/62] atm/nicstar: convert to idr_alloc()
-Message-ID: <20130204130640.6a1795bb@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <20130204170624.GJ27963@mtj.dyndns.org>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
-	<1359854463-2538-10-git-send-email-tj@kernel.org>
-	<20130204090410.2942f8cc@thirdoffive.cmf.nrl.navy.mil>
-	<20130204170624.GJ27963@mtj.dyndns.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 13:07:39 -0500
+Date: Mon, 4 Feb 2013 19:07:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        rostedt@goodmis.org, rbraun@sceen.net, zhong@linux.vnet.ibm.com,
+        markus@trippelsdorf.de, sasha.levin@oracle.com,
+        cody@linux.vnet.ibm.com, dave@linux.vnet.ibm.com, fweisbec@gmail.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.9
+Message-ID: <20130204180734.GA10022@gmail.com>
+References: <20130204171817.GA18332@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130204171817.GA18332@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Feb 2013 09:06:24 -0800
-Tejun Heo <tj@kernel.org> wrote:
 
-> Hello, Chas.
-> 
-> On Mon, Feb 04, 2013 at 09:04:10AM -0500, chas williams - CONTRACTOR wrote:
-> > I don't quite understand your comment.  idr_pre_get() returns 0 in the
-> > case of failure.
-> 
-> So, if you do the following,
-> 
-> 	int id1 = 0, id2 = 0;
-> 
-> 	if (!id1)
-> 		err = idr_get_new_above(&card->idr, handle1, 0, &id1);
-> 	if (!id2 && err == 0)
-> 		err = idr_get_new_above(&card->idr, handle2, 0, &id2);
-> 	if (err)
-> 		goto out;
-> 									    
-> You have no way of telling whether id1/2 are allocated or not.  0 is
-> the special "not allocated" value but it also is a valid ID.  The
-> error path should be freeing id1/2 if either of them has been
-> allocated but it doesn't and can't with 0 as the non-allocated value.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-yeah, i see now.  it didn't understand what idr_get_new_above() was
-doing with the start id.  i assumed that it would return something
-greater than the start id.  i guess it never did return the starting id
-(atleast after some initial failure).
+> Hello, Ingo,
+> 
+> The major features of this series are:
+> 
+> 1.	Changes to rcutorture and to RCU documentation.  Posted to LKML at
+> 	https://lkml.org/lkml/2013/1/26/188.
+> 
+> 2.	Enhancements to uniprocessor handling in tiny RCU. Posted to LKML
+> 	at https://lkml.org/lkml/2013/1/27/2.
+> 
+> 3.	Tag RCU callbacks with grace-period number to simplify callback
+> 	advancement.  Posted to LKML at https://lkml.org/lkml/2013/1/26/203.
+> 
+> 4.	Miscellaneous fixes.  Posted to LKML at
+> 	https://lkml.org/lkml/2013/1/26/204.
+> 
+> All of these commits have been subject to -next testing.
+> 
+> These changes are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+> 
+> --------------------->
+> 
+> Cody P Schafer (1):
+>       rcu: Correct 'optimized' to 'optimize' in header comment
+> 
+> Dave Hansen (1):
+>       rcu: Consolidate debugging Kconfig options
+> 
+> Frederic Weisbecker (1):
+>       context_tracking: Add comments on interface and internals
+> 
+> Josh Triplett (1):
+>       rcu: Make rcu_is_cpu_rrupt_from_idle helper functions static
+> 
+> Li Zhong (2):
+>       rcu: Use new nesting value for rcu_dyntick trace in rcu_eqs_enter_common
+>       rcu: Remove unused code originally used for context tracking
+> 
+> Paul E. McKenney (11):
+>       tracing: Export trace_clock_local()
+>       rcu: Reduce rcutorture tracing
+>       rcu: Fix blimit type for trace_rcu_batch_start()
+>       rcu: Silence compiler array out-of-bounds false positive
+>       rcu: Tag callback lists with corresponding grace-period number
+>       rcu: Trace callback acceleration
+>       rcu: Remove obsolete Kconfig option from comment
+>       rcu: Provide RCU CPU stall warnings for tiny RCU
+>       rcu: Allow TREE_PREEMPT_RCU on UP systems
+>       rcu: Make rcutorture's shuffler task shuffle recently added tasks
+>       Merge branches 'doctorture.2013.01.29a', 'fixes.2013.01.26a', 'tagcb.2013.01.24a' and 'tiny.2013.01.29b' into HEAD
+> 
+> Richard Braun (1):
+>       Documentation: Memory barrier semantics of atomic_xchg()
+> 
+> Sasha Levin (1):
+>       rcutorture: Don't compare ptr with 0
+> 
+>  Documentation/atomic_ops.txt      |    2 +
+>  Documentation/memory-barriers.txt |    1 +
+>  include/linux/rcupdate.h          |   15 ++-
+>  include/trace/events/rcu.h        |   31 +++--
+>  init/Kconfig                      |   12 ++-
+>  kernel/context_tracking.c         |   75 +++++++++--
+>  kernel/rcu.h                      |    7 +
+>  kernel/rcupdate.c                 |   60 ++++++++-
+>  kernel/rcutiny.c                  |    8 +-
+>  kernel/rcutiny_plugin.h           |   56 ++++++++
+>  kernel/rcutorture.c               |   57 +++++++--
+>  kernel/rcutree.c                  |  260 ++++++++++++++++++++++++++-----------
+>  kernel/rcutree.h                  |   11 +--
+>  kernel/trace/trace_clock.c        |    1 +
+>  lib/Kconfig.debug                 |  117 +++++++++--------
+>  15 files changed, 528 insertions(+), 185 deletions(-)
 
-additionally, yes, cleaning up if the second allocation failed was never
-done.
+Pulled, thanks a lot Paul!
+
+	Ingo
