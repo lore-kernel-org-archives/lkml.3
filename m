@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab3BDTno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:43:44 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50903 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab3BDTnn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:43:43 -0500
+	id S1756055Ab3BDToG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:44:06 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:58832 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755979Ab3BDToD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:44:03 -0500
+X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Feb 2013 14:44:00 EST
+From: Bing Zhao <bzhao@marvell.com>
+To: Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Avinash Patil <patila@marvell.com>, Kiran Divekar <dkiran@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 4 Feb 2013 11:43:56 -0800
+Subject: RE: [ 014/128] mwifiex: wakeup and stop multiple tx queues in
+ net_device
+Thread-Topic: [ 014/128] mwifiex: wakeup and stop multiple tx queues in
+ net_device
+Thread-Index: Ac4CHnVhH3Myc481T7u52WDPVpNmmgA8Q4oA
+Message-ID: <477F20668A386D41ADCC57781B1F70430D1432F5B8@SC-VEXCH1.marvell.com>
+References: <20130203144644.035172954@decadent.org.uk>
+ <20130203144645.292616915@decadent.org.uk>
+In-Reply-To: <20130203144645.292616915@decadent.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <1358850393-23111-6-git-send-email-mika.westerberg@linux.intel.com>
-References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1358850393-23111-6-git-send-email-mika.westerberg@linux.intel.com>
-Date: Mon, 4 Feb 2013 20:43:42 +0100
-Message-ID: <CACRpkdZyH-1SfFFaj_YMt4dcN1c9Y6Uy1iZrzHqqqt8o_AgMLw@mail.gmail.com>
-Subject: Re: [PATCH v3 05/10] spi/pxa2xx: break out the private DMA API usage
- into a separate file
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
-        ytang5@marvell.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 11:26 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+Hi Ben,
 
-> The PXA SPI driver uses PXA platform specific private DMA implementation
-> which does not work on non-PXA platforms. In order to use this driver on
-> other platforms we break out the private DMA implementation into a separate
-> file that gets compiled only when CONFIG_SPI_PXA2XX_PXADMA is set. The DMA
-> functions are stubbed out if there is no DMA implementation selected (i.e
-> we are building on non-PXA platform).
->
-> While we are there we can kill the dummy DMA bits in pxa2xx_spi.h as they
-> are not needed anymore for CE4100.
->
-> Once this is done we can add the generic DMA engine support to the driver
-> that allows usage of any DMA controller that implements DMA engine API.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Avinash Patil <patila@marvell.com>
+> 
+> commit bbea3bc432dc5c08d09ca5c80afdd82515470688 upstream.
+
+This patch is not for stable kernel.
+
+Thanks,
+Bing
+
+> 
+> replace single queue function calls with equivalent multiple queue
+> functions. Wakeup queue and stop queue calls are guarded by spin lock.
+> 
+> Signed-off-by: Avinash Patil <patila@marvell.com>
+> Signed-off-by: Kiran Divekar <dkiran@marvell.com>
+> Signed-off-by: Bing Zhao <bzhao@marvell.com>
+> Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 > ---
-> This patch was already acked by Linus W but since I changed this by
-> breaking out the PXA private implementation into a separate file, I'm
-> hoping to get new ack from him ;-)
+>  drivers/net/wireless/mwifiex/init.c      |   40 ++++++++++++++++++++++++++++++
+>  drivers/net/wireless/mwifiex/main.c      |   11 ++++----
+>  drivers/net/wireless/mwifiex/main.h      |    9 +++++++
+>  drivers/net/wireless/mwifiex/sta_event.c |    6 ++---
+>  drivers/net/wireless/mwifiex/sta_ioctl.c |    4 +--
+>  drivers/net/wireless/mwifiex/txrx.c      |    5 ++--
+>  6 files changed, 63 insertions(+), 12 deletions(-)
 
-Sorry for the long delay. This is a nice and clean cut.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
