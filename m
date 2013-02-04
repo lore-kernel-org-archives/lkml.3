@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3BDNhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 08:37:41 -0500
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:44538 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754777Ab3BDNhd (ORCPT
+	id S1754599Ab3BDNlN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 08:41:13 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15059 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab3BDNlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 08:37:33 -0500
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: linux-kernel@vger.kernel.org
-Cc: intel-gfx@lists.freedesktop.org, linux-pm@vger.kernel.org, rjw@sisk.pl
-Subject: [PATCH 2/3] fb: add support for drivers not needing VT switch at suspend/resume time
-Date: Mon,  4 Feb 2013 13:37:21 +0000
-Message-Id: <1359985042-2610-2-git-send-email-jbarnes@virtuousgeek.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359985042-2610-1-git-send-email-jbarnes@virtuousgeek.org>
-References: <1359985042-2610-1-git-send-email-jbarnes@virtuousgeek.org>
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 83.217.123.106 authed with jbarnes@virtuousgeek.org}
+	Mon, 4 Feb 2013 08:41:11 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 04 Feb 2013 05:40:50 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clocksource: tegra: move to of_clk_get
+Date: Mon, 4 Feb 2013 15:40:30 +0200
+Message-ID: <1359985230-11506-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new PM routines to indicate whether we need to VT switch at suspend
-and resume time.  When a new driver is bound, set its flag accordingly,
-and when unbound, remove it from the PM's console tracking list.
+The new clockframework introduced DT IDs for each clock. To be able to remove
+the device registrations, this driver needs to be updated to use the DT IDs.
+Note that the actual removal of the clk_register_clkdev() calls will be done
+in a later series.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/video/fbmem.c |    7 +++++++
- include/linux/fb.h    |    2 ++
- 2 files changed, 9 insertions(+)
+ arch/arm/boot/dts/tegra20.dtsi      |    2 ++
+ arch/arm/boot/dts/tegra30.dtsi      |    2 ++
+ drivers/clocksource/tegra20_timer.c |    4 ++--
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index 3ff0105..240d783 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1643,6 +1643,11 @@ static int do_register_framebuffer(struct fb_info *fb_info)
- 	if (!fb_info->modelist.prev || !fb_info->modelist.next)
- 		INIT_LIST_HEAD(&fb_info->modelist);
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index 63b0d81..6e41a4f 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -144,6 +144,7 @@
+ 			      0 1 0x04
+ 			      0 41 0x04
+ 			      0 42 0x04>;
++		clocks = <&tegra_car 5>;
+ 	};
  
-+	if (fb_info->skip_vt_switch)
-+		pm_vt_switch_required(fb_info->dev, false);
-+	else
-+		pm_vt_switch_required(fb_info->dev, true);
-+
- 	fb_var_to_videomode(&mode, &fb_info->var);
- 	fb_add_videomode(&mode, &fb_info->modelist);
- 	registered_fb[i] = fb_info;
-@@ -1673,6 +1678,8 @@ static int do_unregister_framebuffer(struct fb_info *fb_info)
- 	if (ret)
- 		return -EINVAL;
+ 	tegra_car: clock {
+@@ -308,6 +309,7 @@
+ 		compatible = "nvidia,tegra20-rtc";
+ 		reg = <0x7000e000 0x100>;
+ 		interrupts = <0 2 0x04>;
++		clocks = <&tegra_car 4>;
+ 	};
  
-+	pm_vt_switch_unregister(fb_info->dev);
-+
- 	unlink_framebuffer(fb_info);
- 	if (fb_info->pixmap.addr &&
- 	    (fb_info->pixmap.flags & FB_PIXMAP_DEFAULT))
-diff --git a/include/linux/fb.h b/include/linux/fb.h
-index c7a9571..9a7538a 100644
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -499,6 +499,8 @@ struct fb_info {
- 			resource_size_t size;
- 		} ranges[0];
- 	} *apertures;
-+
-+	bool skip_vt_switch; /* no VT switch on suspend/resume required */
- };
+ 	i2c@7000c000 {
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index 313fa71..7bc07e6 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -147,6 +147,7 @@
+ 			      0 42 0x04
+ 			      0 121 0x04
+ 			      0 122 0x04>;
++		clocks = <&tegra_car 5>;
+ 	};
  
- static inline struct apertures_struct *alloc_apertures(unsigned int max_num) {
--- 
-1.7.9.5
+ 	tegra_car: clock {
+@@ -295,6 +296,7 @@
+ 		compatible = "nvidia,tegra30-rtc", "nvidia,tegra20-rtc";
+ 		reg = <0x7000e000 0x100>;
+ 		interrupts = <0 2 0x04>;
++		clocks = <&tegra_car 4>;
+ 	};
+ 
+ 	i2c@7000c000 {
+diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
+index 5bc1429..546c537 100644
+--- a/drivers/clocksource/tegra20_timer.c
++++ b/drivers/clocksource/tegra20_timer.c
+@@ -189,7 +189,7 @@ static void __init tegra20_init_timer(void)
+ 		BUG();
+ 	}
+ 
+-	clk = clk_get_sys("timer", NULL);
++	clk = of_clk_get(np, 0);
+ 	if (IS_ERR(clk)) {
+ 		pr_warn("Unable to get timer clock. Assuming 12Mhz input clock.\n");
+ 		rate = 12000000;
+@@ -216,7 +216,7 @@ static void __init tegra20_init_timer(void)
+ 	 * rtc registers are used by read_persistent_clock, keep the rtc clock
+ 	 * enabled
+ 	 */
+-	clk = clk_get_sys("rtc-tegra", NULL);
++	clk = of_clk_get(np, 0);
+ 	if (IS_ERR(clk))
+ 		pr_warn("Unable to get rtc-tegra clock\n");
+ 	else
 
