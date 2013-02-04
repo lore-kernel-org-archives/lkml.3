@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab3BDTzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:55:05 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:58915 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab3BDTzD (ORCPT
+	id S1754871Ab3BDT4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:56:36 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:13571 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab3BDT4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:55:03 -0500
-Date: Mon, 4 Feb 2013 11:54:58 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/13] workqueue: fix work_busy()
-Message-ID: <20130204195458.GA27963@mtj.dyndns.org>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
- <1359657696-2767-3-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359657696-2767-3-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Feb 2013 14:56:34 -0500
+Message-ID: <1360007184.23410.139.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device
+ hotplug framework
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
+        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
+        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 04 Feb 2013 12:46:24 -0700
+In-Reply-To: <1890597.vDojv7So7R@vostro.rjw.lan>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+	 <5192355.CsKHU8mj3W@vostro.rjw.lan>
+	 <1359993766.23410.105.camel@misato.fc.hp.com>
+	 <1890597.vDojv7So7R@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+On Mon, 2013-02-04 at 20:48 +0100, Rafael J. Wysocki wrote:
+> On Monday, February 04, 2013 09:02:46 AM Toshi Kani wrote:
+> > On Mon, 2013-02-04 at 14:41 +0100, Rafael J. Wysocki wrote:
+> > > On Sunday, February 03, 2013 07:23:49 PM Greg KH wrote:
+> > > > On Sat, Feb 02, 2013 at 09:15:37PM +0100, Rafael J. Wysocki wrote:
+> > > > > On Saturday, February 02, 2013 03:58:01 PM Greg KH wrote:
+> >   :
+> > > > > Yes, but those are just remove events and we can only see how destructive they
+> > > > > were after the removal.  The point is to be able to figure out whether or not
+> > > > > we *want* to do the removal in the first place.
+> > > > 
+> > > > Yes, but, you will always race if you try to test to see if you can shut
+> > > > down a device and then trying to do it.  So walking the bus ahead of
+> > > > time isn't a good idea.
+> > > >
+> > > > And, we really don't have a viable way to recover if disconnect() fails,
+> > > > do we.  What do we do in that situation, restore the other devices we
+> > > > disconnected successfully?  How do we remember/know what they were?
+> > > > 
+> > > > PCI hotplug almost had this same problem until the designers finally
+> > > > realized that they just had to accept the fact that removing a PCI
+> > > > device could either happen by:
+> > > > 	- a user yanking out the device, at which time the OS better
+> > > > 	  clean up properly no matter what happens
+> > > > 	- the user asked nicely to remove a device, and the OS can take
+> > > > 	  as long as it wants to complete that action, including
+> > > > 	  stalling for noticable amounts of time before eventually,
+> > > > 	  always letting the action succeed.
+> > > > 
+> > > > I think the second thing is what you have to do here.  If a user tells
+> > > > the OS it wants to remove these devices, you better do it.  If you
+> > > > can't, because memory is being used by someone else, either move them
+> > > > off, or just hope that nothing bad happens, before the user gets
+> > > > frustrated and yanks out the CPU/memory module themselves physically :)
+> > > 
+> > > Well, that we can't help, but sometimes users really *want* the OS to tell them
+> > > if it is safe to unplug something at this particualr time (think about the
+> > > Windows' "safe remove" feature for USB sticks, for example; that came out of
+> > > users' demand AFAIR).
+> > > 
+> > > So in my opinion it would be good to give them an option to do "safe eject" or
+> > > "forcible eject", whichever they prefer.
+> > 
+> > For system device hot-plug, it always needs to be "safe eject".  This
+> > feature will be implemented on mission critical servers, which are
+> > managed by professional IT folks.  Crashing a server causes serious
+> > money to the business.
+> 
+> Well, "always" is a bit too strong a word as far as human behavior is concerned
+> in my opinion.
+> 
+> That said I would be perfectly fine with not supporting the "forcible eject" to
+> start with and waiting for the first request to add support for it.  I also
+> would be fine with taking bets on how much time it's going to take for such a
+> request to appear. :-)
 
-On Fri, Feb 01, 2013 at 02:41:25AM +0800, Lai Jiangshan wrote:
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 973b290..d474a6c 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -3443,8 +3443,6 @@ EXPORT_SYMBOL_GPL(workqueue_congested);
->   * Test whether @work is currently pending or running.  There is no
->   * synchronization around this function and the test result is
->   * unreliable and only useful as advisory hints or for debugging.
-> - * Especially for reentrant wqs, the pending state might hide the
-> - * running state.
+Sounds good.  In my experience, though, it actually takes a LONG time to
+convince customers that "safe eject" is actually safe.  Enterprise
+customers are so afraid of doing anything risky that might cause the
+system to crash or hang due to some defect.  I would be very surprised
+to see a customer asking for a force operation when we do not guarantee
+its outcome.  I have not seen such enterprise customers yet.
 
-Yeap, this is no longer true.
+Thanks,
+-Toshi 
 
->   *
->   * RETURNS:
->   * OR'd bitmask of WORK_BUSY_* bits.
-> @@ -3453,15 +3451,13 @@ unsigned int work_busy(struct work_struct *work)
->  {
->  	struct worker_pool *pool = get_work_pool(work);
->  	unsigned long flags;
-> -	unsigned int ret = 0;
-> +	unsigned int ret = work_pending(work) ? WORK_BUSY_PENDING : 0;
 
-I'd prefer this as a if() statement.
-
->  	if (!pool)
-> -		return 0;
-> +		return ret;
-
-I'm a bit confused.  When can we be pending w/o pool?
-
-Thanks.
-
--- 
-tejun
