@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab3BDVam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 16:30:42 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:43356 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983Ab3BDVal (ORCPT
+	id S1755323Ab3BDVe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 16:34:28 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:43786 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755011Ab3BDVe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 16:30:41 -0500
-Date: Mon, 4 Feb 2013 22:30:41 +0100
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>, Daniel J Blueman <daniel@quora.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Arend van Spriel <arend@broadcom.com>
-Subject: [PATCH] drm/nouveau: add lockdep annotations
-Message-ID: <20130204213041.GA3433@joi.lan>
-References: <CAMVG2svkJruzveuozb8RFK_j1BxqDOwBco=Aida9S680_toNiQ@mail.gmail.com>
+	Mon, 4 Feb 2013 16:34:27 -0500
+Date: Mon, 4 Feb 2013 13:34:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/13] workqueue: add lock_pool_executing_work()
+Message-ID: <20130204213422.GD27963@mtj.dyndns.org>
+References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
+ <1359657696-2767-9-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMVG2svkJruzveuozb8RFK_j1BxqDOwBco=Aida9S680_toNiQ@mail.gmail.com>
+In-Reply-To: <1359657696-2767-9-git-send-email-laijs@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) Lockdep thinks all nouveau subdevs belong to the same class and can be
-locked in arbitrary order, which is not true (at least in general case).
-Tell it to distinguish subdevs by (o)class type.
-2) DRM client can be locked under user client lock - tell lockdep to put DRM
-client lock in a separate class.
+Hello,
 
-Reported-by: Arend van Spriel <arend@broadcom.com>
-Reported-by: Peter Hurley <peter@hurleysoftware.com>
-Reported-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Reported-by: Daniel J Blueman <daniel@quora.org>
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: stable@vger.kernel.org [3.7, but needs s/const ofuncs/ofuncs/ to build]
----
-Lightly tested, only on NV4B and NVC1.
----
- drivers/gpu/drm/nouveau/core/core/subdev.c         | 2 +-
- drivers/gpu/drm/nouveau/core/include/core/object.h | 7 +++++--
- drivers/gpu/drm/nouveau/nouveau_drm.c              | 3 +++
- 3 files changed, 9 insertions(+), 3 deletions(-)
+On Fri, Feb 01, 2013 at 02:41:31AM +0800, Lai Jiangshan wrote:
+> +static struct worker_pool *lock_pool_executing_work(struct work_struct *work,
+> +						    struct worker **worker)
+> +{
+> +	unsigned long pool_id = offq_work_pool_id(work);
+> +	struct worker_pool *pool;
+> +	struct worker *exec;
+> +
+> +	if (pool_id == WORK_OFFQ_POOL_NONE)
+> +		return NULL;
+> +
+> +	pool = worker_pool_by_id(pool_id);
+> +	if (!pool)
+> +		return NULL;
+> +
+> +	spin_lock(&pool->lock);
+> +	exec = find_worker_executing_work(pool, work);
+> +	if (exec) {
+> +		BUG_ON(pool != exec->pool);
+> +		*worker = exec;
+> +		return pool;
+> +	}
+> +	spin_unlock(&pool->lock);
+> +
+> +	return NULL;
+> +}
 
-diff --git a/drivers/gpu/drm/nouveau/core/core/subdev.c b/drivers/gpu/drm/nouveau/core/core/subdev.c
-index f74c30a..48f0637 100644
---- a/drivers/gpu/drm/nouveau/core/core/subdev.c
-+++ b/drivers/gpu/drm/nouveau/core/core/subdev.c
-@@ -99,7 +99,7 @@ nouveau_subdev_create_(struct nouveau_object *parent,
- 	if (ret)
- 		return ret;
- 
--	mutex_init(&subdev->mutex);
-+	__mutex_init(&subdev->mutex, subname, &oclass->lock_class_key);
- 	subdev->name = subname;
- 
- 	if (parent) {
-diff --git a/drivers/gpu/drm/nouveau/core/include/core/object.h b/drivers/gpu/drm/nouveau/core/include/core/object.h
-index 6a90267..62e68ba 100644
---- a/drivers/gpu/drm/nouveau/core/include/core/object.h
-+++ b/drivers/gpu/drm/nouveau/core/include/core/object.h
-@@ -50,10 +50,13 @@ int  nouveau_object_fini(struct nouveau_object *, bool suspend);
- 
- extern struct nouveau_ofuncs nouveau_object_ofuncs;
- 
-+/* Don't allocate dynamically, because lockdep needs lock_class_keys to be in
-+ * ".data". */
- struct nouveau_oclass {
- 	u32 handle;
--	struct nouveau_ofuncs *ofuncs;
--	struct nouveau_omthds *omthds;
-+	struct nouveau_ofuncs * const ofuncs;
-+	struct nouveau_omthds * const omthds;
-+	struct lock_class_key lock_class_key;
- };
- 
- #define nv_oclass(o)    nv_object(o)->oclass
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-index ef1ad21..bc00587 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -245,6 +245,8 @@ static int nouveau_drm_probe(struct pci_dev *pdev,
- 	return 0;
- }
- 
-+static struct lock_class_key drm_client_lock_class_key;
-+
- static int
- nouveau_drm_load(struct drm_device *dev, unsigned long flags)
- {
-@@ -256,6 +258,7 @@ nouveau_drm_load(struct drm_device *dev, unsigned long flags)
- 	ret = nouveau_cli_create(pdev, "DRM", sizeof(*drm), (void**)&drm);
- 	if (ret)
- 		return ret;
-+	lockdep_set_class(&drm->client.mutex, &drm_client_lock_class_key);
- 
- 	dev->dev_private = drm;
- 	drm->dev = dev;
+So, if a work item is queued on the same CPU and it isn't being
+executed, it will lock, look up the hash, unlock and then lock again?
+If this is something improved by later patch, please explain so.
+There gotta be a better way to do this, right?
+
+Thanks.
+
 -- 
-1.8.1
-
+tejun
