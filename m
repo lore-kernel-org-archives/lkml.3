@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab3BDS0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:26:14 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:64026 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322Ab3BDS0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755366Ab3BDS0K (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 4 Feb 2013 13:26:10 -0500
-Date: Mon, 4 Feb 2013 19:26:04 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20130204182604.GA12964@gmail.com>
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.50]:26714 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754067Ab3BDSZy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 13:25:54 -0500
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-131.messagelabs.com!1360002209!23385307!165
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Received: 
+X-StarScan-Version: 6.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>, Peter Huewe <peterhuewe@gmx.de>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Date: Mon, 4 Feb 2013 12:25:44 -0600
+Subject: RE: [PATCH 08/10] staging/xgifb: Remove unnecessary bitshifts in
+ XGI_SetCRT1ModeRegs
+Thread-Topic: [PATCH 08/10] staging/xgifb: Remove unnecessary bitshifts in
+ XGI_SetCRT1ModeRegs
+Thread-Index: Ac4C14ZvkSYl8lB/QJaYhMlgp5hHlwAHtkuQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00207D12B89AA@AUSP01VMBX24.collaborationhost.net>
+References: <1359928479-8484-1-git-send-email-peterhuewe@gmx.de>
+ <1359928479-8484-8-git-send-email-peterhuewe@gmx.de>
+ <20130204125901.GH4937@mwanda>
+In-Reply-To: <20130204125901.GH4937@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Monday, February 04, 2013 5:59 AM, Dan Carpenter wrote:
+> On Sun, Feb 03, 2013 at 10:54:37PM +0100, Peter Huewe wrote:
+>> Since data can only be 0x0000, 0x0035 or 0x0048 we can simply skip the
+>> bit shifting and masking as data & 0xFF is always equal to data and
+>> data & 0xFF00 is always 0.
+>> So we simply use data and 0 directly and save the assignment.
+>> 
+>> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+>> ---
+>>  drivers/staging/xgifb/vb_setmode.c |    6 ++----
+>>  1 files changed, 2 insertions(+), 4 deletions(-)
+>> 
+>> diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
+>> index 6f366f4..1ff1178 100644
+>> --- a/drivers/staging/xgifb/vb_setmode.c
+>> +++ b/drivers/staging/xgifb/vb_setmode.c
+>> @@ -1083,10 +1083,8 @@ static void XGI_SetCRT1ModeRegs(struct xgi_hw_device_info *HwDeviceExtension,
+>>  			data = 0x0048;
+>>  	}
+>>  
+>> -	data2 = data & 0x00FF;
+>> -	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFF, data2);
+>> -	data2 = (data & 0xFF00) >> 8;
+>> -	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFC, data2);
+>> +	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFF, data);
+>> +	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFC, 0);
+>
+> This patch is fine.
+>
+> This is a fairly common pattern where people do:
+>
+>	write_a_char(data & 0xff);
+>	write_a_char((data >> 8) & 0xff);
+>
+> It feels there should be a macro to do the shift and mask but I'm
+> not sure what it would look like.
 
-Please pull the latest sched-urgent-for-linus git tree from:
+How about...
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
+#define LOBYTE(x)	((x) & 0xff)
+#define HIBYTE(x)	(((x) >> 8) & 0xff)
 
-   HEAD: cff3c124a7e82ca0ea1d6864b27ef18c403c0773 sched/debug: Fix format string for 32-bit platforms
+And for completeness...
 
-Three small fixlets.
+#define LOWORD	((x) & 0xffff)
+#define HIWORD	(((x) >> 16) & 0xffff)
 
- Thanks,
+There are a couple uses of these defines in the kernel already.
+sound/synth/emux/emux_synth.c also has LO_BYTE and HI_BYTE
+that do the same thing.
 
-	Ingo
+Of course these are probably not endian safe.
 
------------------->
-Arnd Bergmann (2):
-      sched: Fix warning in kernel/sched/fair.c
-      sched/debug: Fix format string for 32-bit platforms
+Regards,
+Hartley
 
-Shawn Bohrer (1):
-      sched/rt: Use root_domain of rt_rq not current processor
-
-
- kernel/sched/debug.c | 4 ++--
- kernel/sched/fair.c  | 2 +-
- kernel/sched/rt.c    | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 2cd3c1b..7ae4c4c 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -222,8 +222,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 			cfs_rq->runnable_load_avg);
- 	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
- 			cfs_rq->blocked_load_avg);
--	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
--			atomic64_read(&cfs_rq->tg->load_avg));
-+	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
-+			(unsigned long long)atomic64_read(&cfs_rq->tg->load_avg));
- 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
- 			cfs_rq->tg_load_contrib);
- 	SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5eea870..81fa536 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2663,7 +2663,7 @@ static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- 	hrtimer_cancel(&cfs_b->slack_timer);
- }
- 
--static void unthrottle_offline_cfs_rqs(struct rq *rq)
-+static void __maybe_unused unthrottle_offline_cfs_rqs(struct rq *rq)
- {
- 	struct cfs_rq *cfs_rq;
- 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 418feb0..4f02b28 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -566,7 +566,7 @@ static inline struct rt_bandwidth *sched_rt_bandwidth(struct rt_rq *rt_rq)
- static int do_balance_runtime(struct rt_rq *rt_rq)
- {
- 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
--	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-+	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
- 	int i, weight, more = 0;
- 	u64 rt_period;
- 
