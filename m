@@ -1,134 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab3BDBey (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 20:34:54 -0500
-Received: from mga11.intel.com ([192.55.52.93]:9659 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753613Ab3BDBev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 20:34:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,596,1355126400"; 
-   d="scan'208";a="282308311"
-Message-ID: <510F1064.1060302@intel.com>
-Date: Mon, 04 Feb 2013 09:35:32 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753913Ab3BDBhg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 20:37:36 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:17218 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab3BDBhc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 20:37:32 -0500
+X-AuditID: cbfee61b-b7fb06d000000f28-43-510f10dab29a
+Message-id: <1359941761.2739.39.camel@lcm>
+Subject: Re: [PATCH 2/6] f2fs: move out f2fs_balance_fs from gc_thread_func
+From: Changman Lee <cm224.lee@samsung.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: jaegeuk.kim@samsung.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Date: Mon, 04 Feb 2013 10:36:01 +0900
+In-reply-to: <1359816733-16286-1-git-send-email-linkinjeon@gmail.com>
+References: <1359816733-16286-1-git-send-email-linkinjeon@gmail.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t8zfd1bAvyBBotnmlrs2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGU8XsJV0MBT8W7OftYGxnOcXYycHBICJhK3569gg7DF
+	JC7cWw9kc3EICSxjlHi4eg6QwwFWNH+DHkiNkMAiRonJj6Uhal4zSkzbcJgFJMEroCXx4ulm
+	sEHCAt4SLVu3MYHYbEDx9tNrWUDmiAioSUx4lgrSyyxwmVHi8/RDYPUsAqoSq5a2gtmcAq4S
+	7+Z9YAepFxJwkTjayQESZhZQl5g0bxEzxJ1KErvbO9kh4vISm9e8ZYY4QVDix+R7LCDzJQS6
+	2SV6rj9ghpgvIPFt8iEWiF9kJTYdgJojKXFwxQ2WCYxis5CsmIVk7CwkYxcwMq9iFE0tSC4o
+	TkrPNdIrTswtLs1L10vOz93ECIkL6R2MqxosDjEKcDAq8fAy/OILFGJNLCuuzD3EKMHBrCTC
+	e9UIKMSbklhZlVqUH19UmpNafIgxGejAicxSosn5wJjNK4k3NDY2MTMxNTG3NDU3JU1YSZyX
+	8dSTACGB9MSS1OzU1ILUIpgtTBycUg2MLpwqN0Wkek3Oiwu8+XDl9vtZm1VtXisvSH25eG55
+	eDJHr62rQ6S+7V6J/M4P/x2d3DdseZymLRplFB2//JGQ2G6f9qd8593yc3gOem5dZnxrq+3N
+	xONXJFtLW/rqTJS/cxffeuH2IXSbt62T5maukvYX5y8v2vQx7PcH/5taOqkOQZa/Et4rsRRn
+	JBpqMRcVJwIAQbrBn88CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jAd1bAvyBBi/m6Fvs2XuSxeLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmPF7CVdDAU/Fu
+	zn7WBsZznF2MHBwSAiYS8zfodTFyApliEhfurWcDsYUEFjFKTH4s3cXIBWS/ZpSYtuEwC0iC
+	V0BL4sXTzWBFwgLeEi1btzGB2GxA8fbTa1lAZooIqElMeJYK0ssscJlR4vP0Q2D1LAKqEquW
+	toLZnAKuEu/mfWAHqRcScJE42skBEmYWUJeYNG8RM8Q9ShK72zvZIeLyEpvXvGWGOEFQ4sfk
+	eywTGAVmIWmZhaRsFpKyBYzMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCo+6Z9A7GVQ0W
+	hxgFOBiVeHgZfvEFCrEmlhVX5h5ilOBgVhLhvWoEFOJNSaysSi3Kjy8qzUktPsSYDPTQRGYp
+	0eR8YELIK4k3NDYxM7I0MrMwMjE3J01YSZyX8dSTACGB9MSS1OzU1ILUIpgtTBycUg2MFr/S
+	/1m5yH9cuHBazbJ7kn9/bQwNnRbseL3LWdoxZ3XUhIedRXvC7arZHz/V5vzf5tn5pDfXaJv4
+	gde2LL7y60VqLGsTfHd7aZi0MSzffJdNIfPcjtX/Ny4Sna9vtedRsbeim9qCx893u+hM9t7x
+	o4YpuYLzbfD2vGCe8+nf1mbbal9mD6hVYinOSDTUYi4qTgQAAr456f4CAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2013 11:06 AM, Alex Shi wrote:
-> Since the runnable info needs 345ms to accumulate, balancing
-> doesn't do well for many tasks burst waking. After talking with Mike
-> Galbraith, we are agree to just use runnable avg in power friendly 
-> scheduling and keep current instant load in performance scheduling for 
-> low latency.
-> 
-> So the biggest change in this version is removing runnable load avg in
-> balance and just using runnable data in power balance.
-> 
-> The patchset bases on Linus' tree, includes 3 parts,
-> ** 1, bug fix and fork/wake balancing clean up. patch 1~5,
-> ----------------------
-> the first patch remove one domain level. patch 2~5 simplified fork/wake
-> balancing, it can increase 10+% hackbench performance on our 4 sockets
-> SNB EP machine.
-> 
-> V3 change:
-> a, added the first patch to remove one domain level on x86 platform.
-> b, some small changes according to Namhyung Kim's comments, thanks!
-> 
-> ** 2, bug fix of load avg and remove the CONFIG_FAIR_GROUP_SCHED limit
-> ----------------------
-> patch 6~8, That using runnable avg in load balancing, with
-> two initial runnable variables fix.
-> 
-> V4 change:
-> a, remove runnable log avg using in balancing.
-> 
-> V3 change:
-> a, use rq->cfs.runnable_load_avg as cpu load not
-> rq->avg.load_avg_contrib, since the latter need much time to accumulate
-> for new forked task,
-> b, a build issue fixed with Namhyung Kim's reminder.
-> 
-> ** 3, power awareness scheduling, patch 9~18.
-> ----------------------
-> The subset implement/consummate the rough power aware scheduling
-> proposal: https://lkml.org/lkml/2012/8/13/139.
-> It defines 2 new power aware policy 'balance' and 'powersaving' and then
-> try to spread or pack tasks on each sched groups level according the
-> different scheduler policy. That can save much power when task number in
-> system is no more then LCPU number.
-> 
-> As mentioned in the power aware scheduler proposal, Power aware
-> scheduling has 2 assumptions:
-> 1, race to idle is helpful for power saving
-> 2, pack tasks on less sched_groups will reduce power consumption
-> 
-> The first assumption make performance policy take over scheduling when
-> system busy.
-> The second assumption make power aware scheduling try to move
-> disperse tasks into fewer groups until that groups are full of tasks.
-> 
-> Some power testing data is in the last 2 patches.
-> 
-> V4 change:
-> a, fix few bugs and clean up code according to Morten Rasmussen, Mike
-> Galbraith and Namhyung Kim. Thanks!
-> b, take Morten's suggestion to set different criteria for different
-> policy in small task packing.
-> c, shorter latency in power aware scheduling.
-> 
-> V3 change:
-> a, engaged nr_running in max potential utils consideration in periodic
-> power balancing.
-> b, try exec/wake small tasks on running cpu not idle cpu.
-> 
-> V2 change:
-> a, add lazy power scheduling to deal with kbuild like benchmark.
-> 
-> 
-> Thanks Fengguang Wu for the build testing of this patchset!
+As you know, f2fs_balance_fs conducts gc if f2fs has not enough free
+sections. But, the purpose of background gc is to conduct gc during idle
+time without checking free sections so that f2fs can solve defragment
+condition.
+
+Could you review this?
+
+--> 8 --
+
+>From fbda3262dac81c4f0d7ae8b9b757c820da593120 Mon Sep 17 00:00:00 2001
+From: Changman Lee <cm224.lee@samsung.com>
+Date: Mon, 4 Feb 2013 10:05:09 +0900
+Subject: [PATCH] f2fs: remove unnecessary gc option check and balance_fs
+
+ 1. If f2fs is mounted with background_gc_off option, checking
+    BG_GC is not redundant.
+ 2. f2fs_balance_fs is checked in f2fs_gc, so this is also redundant.
+
+Signed-off-by: Changman Lee <cm224.lee@samsung.com>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ fs/f2fs/gc.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 8fe43f3..e5c47f6 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -49,11 +49,6 @@ static int gc_thread_func(void *data)
+ 			continue;
+ 		}
+ 
+-		f2fs_balance_fs(sbi);
+-
+-		if (!test_opt(sbi, BG_GC))
+-			continue;
+-
+ 		/*
+ 		 * [GC triggering condition]
+ 		 * 0. GC is not conducted currently.
+@@ -96,6 +91,8 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
+ {
+ 	struct f2fs_gc_kthread *gc_th;
+ 
++	if (!test_opt(sbi, BG_GC))
++		return 0;
+ 	gc_th = kmalloc(sizeof(struct f2fs_gc_kthread), GFP_KERNEL);
+ 	if (!gc_th)
+ 		return -ENOMEM;
+-- 
+1.7.10.4
 
 
-Add some testing report summary that were posted:
-Alex Shi tested the benchmarks: kbuild, specjbb2005, oltp, tbench, aim9, hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
-loopback netperf. on core2, nhm, wsm, snb, platforms: 
-	a, no clear performance change on performance balance
-	b, specjbb2005 drop 5~7% on balance/powersaving policy on SNB/NHM platforms; hackbench drop 30~70% SNB EP4S machine.
-	c, no other peformance change on balance/powersaving machine.
-
-test result from Mike Galbraith:
----------
-With aim7 compute on 4 node 40 core box, I see stable throughput
-improvement at tasks = nr_cores and below w. balance and powersaving. 
-
-         3.8.0-performance                  3.8.0-balance          3.8.0-powersaving
-Tasks    jobs/min/task       cpu   jobs/min/task       cpu    jobs/min/task         cpu
-    1         432.8571      3.99        433.4764      3.97         433.1665        3.98
-    5         480.1902     12.49        510.9612      7.55         497.5369        8.22
-   10         429.1785     40.14        533.4507     11.13         518.3918       12.15
-   20         424.3697     63.14        529.7203     23.72         528.7958       22.08
-   40         419.0871    171.42        500.8264     51.44         517.0648       42.45
-
-No deltas after that.  There were also no deltas between patched kernel
-using performance policy and virgin source.
-----------
-
-Ingo, I appreciate for any comments from you. :)
 
