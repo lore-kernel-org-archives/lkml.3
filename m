@@ -1,356 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab3BDN2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 08:28:47 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40418 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754460Ab3BDN2p convert rfc822-to-8bit (ORCPT
+	id S1754857Ab3BDN3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 08:29:50 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:63190 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab3BDN3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 08:28:45 -0500
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "Porter, Matt" <mporter@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "hs@denx.de" <hs@denx.de>, "ido@wizery.com" <ido@wizery.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 2/3] mmc: davinci_mmc: add DT support
-Thread-Topic: [PATCH 2/3] mmc: davinci_mmc: add DT support
-Thread-Index: AQHN/6AOnO46wGG8wEe+w9SUfqhxIphi7zeAgAGo6JA=
-Date: Mon, 4 Feb 2013 13:28:14 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC3EA46049@DBDE01.ent.ti.com>
-References: <1359628387-14437-1-git-send-email-prakash.pm@ti.com>
- <1359628387-14437-3-git-send-email-prakash.pm@ti.com>
- <20130131112303.GA7235@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130131112303.GA7235@e106331-lin.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: =?us-ascii?Q?JL3+_Q4gk_SEKB_cb5L_dS4j_gMZJ_0WUs_AFsmfQ=3D=3D_AGSXNg=3D=3D?=
- =?us-ascii?B?IEFIb2czUT09IEFOTlQ2Zz09IEFOdzVydz09IEFSQXp3dz09IEFSOEErZz09?=
- =?us-ascii?Q?_ASTinA=3D=3D_ASqqfw=3D=3D;13;YwBqAGIAQABsAGEAcAB0AG8AcAAuAG?=
- =?us-ascii?Q?8AcgBnADsAZABhAHYAaQBuAGMAaQAtAGwAaQBuAHUAeAAtAG8AcABlAG4ALQ?=
- =?us-ascii?Q?BzAG8AdQByAGMAZQBAAGwAaQBuAHUAeAAuAGQAYQB2AGkAbgBjAGkAZABzAH?=
- =?us-ascii?Q?AALgBjAG8AbQA7AGQAZQB2AGkAYwBlAHQAcgBlAGUALQBkAGkAcwBjAHUAcw?=
- =?us-ascii?Q?BzAEAAbABpAHMAdABzAC4AbwB6AGwAYQBiAHMALgBvAHIAZwA7AGcAcgBlAG?=
- =?us-ascii?Q?cAawBoAEAAbABpAG4AdQB4AGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZw?=
- =?us-ascii?Q?A7AGgAcwBAAGQAZQBuAHgALgBkAGUAOwBpAGQAbwBAAHcAaQB6AGUAcgB5AC?=
- =?us-ascii?Q?4AYwBvAG0AOwBsAGkAbgB1AHgALQBhAHIAbQAtAGsAZQByAG4AZQBsAEAAbA?=
- =?us-ascii?Q?BpAHMAdABzAC4AaQBuAGYAcgBhAGQAZQBhAGQALgBvAHIAZwA7AGwAaQBuAH?=
- =?us-ascii?Q?UAeAAtAGQAbwBjAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOw?=
- =?us-ascii?Q?BsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAG?=
- =?us-ascii?Q?UAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AbQBtAGMAQAB2AGcAZQByAC4Aaw?=
- =?us-ascii?Q?BlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeABAAGEAcgBtAC4AbABpAG?=
- =?us-ascii?Q?4AdQB4AC4AbwByAGcALgB1AGsAOwBtAGEAcgBrAC4AcgB1AHQAbABhAG4AZA?=
- =?us-ascii?Q?BAAGEAcgBtAC4AYwBvAG0AOwByAG8AYgAuAGgAZQByAHIAaQBuAGcAQABjAG?=
- =?us-ascii?Q?EAbAB4AGUAZABhAC4AYwBvAG0A;Sosha1=5Fv1;7;{9DF94E9E-F3DB-41B1?=
- =?us-ascii?Q?-BDE7-4746B8ABF279};cAByAGEAawBhAHMAaAAuAHAAbQBAAHQAaQAuAGMA?=
- =?us-ascii?Q?bwBtAA=3D=3D;Mon,_04_Feb_2013_13:27:36_GMT;UgBFADoAIABbAFAAQ?=
- =?us-ascii?Q?QBUAEMASAAgADIALwAzAF0AIABtAG0AYwA6ACAAZABhAHYAaQBuAGMAaQBfA?=
- =?us-ascii?Q?G0AbQBjADoAIABhAGQAZAAgAEQAVAAgAHMAdQBwAHAAbwByAHQA?=
-x-cr-puzzleid: {9DF94E9E-F3DB-41B1-BDE7-4746B8ABF279}
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Feb 2013 08:29:48 -0500
+Message-ID: <510FB7C5.3010805@openvz.org>
+Date: Mon, 04 Feb 2013 17:29:41 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
 MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: shmem: use new radix tree iterator
+References: <1359699238-7327-1-git-send-email-hannes@cmpxchg.org> <510CCD88.30200@openvz.org> <alpine.LNX.2.00.1302031802140.4120@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1302031802140.4120@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Thu, Jan 31, 2013 at 16:53:03, Mark Rutland wrote:
-> Hello,
-> 
-> I have a few comments on the devicetree binding and the way it's parsed.
-> 
+Hugh Dickins wrote:
+> On Sat, 2 Feb 2013, Konstantin Khlebnikov wrote:
+>> Johannes Weiner wrote:
+>>> In shmem_find_get_pages_and_swap, use the faster radix tree iterator
+>>> construct from 78c1d78 "radix-tree: introduce bit-optimized iterator".
+>>>
+>>> Signed-off-by: Johannes Weiner<hannes@cmpxchg.org>
+>>
+>> Hmm, ACK. shmem_unuse_inode() also can be redone in this way.
+>> I did something similar year ago: https://lkml.org/lkml/2012/2/10/388
+>> As result we can rid of radix_tree_locate_item() and
+>> shmem_find_get_pages_and_swap()
+>
+> Indeed you did, and never got more than a "I have some reservations"
+> response out of me; and already we had both moved on to much more
+> pressing lruvec and other concerns.
+>
+> My first reaction on seeing Johannes' patch was, not to ack it immediately,
+> but look back to your series of 6 (or 4): shmem_find_get_pages_and_swap()
+> doesn't get updated in yours, but vanishes in the last patch, which was
+> among the ones I was uneasy about.  Here's a belated account of my
+> reactions to your series.
 
 Thanks for review.
 
-> On Thu, Jan 31, 2013 at 10:33:06AM +0000, Manjunathappa, Prakash wrote:
-> > Adds device tree support for davinci_mmc. Also add
-> > binding documentation.
-> > Tested with non-dma PIO mode and without GPIO
-> > card_detect/write_protect option because of
-> > dependencies on EDMA and GPIO modules DT support.
-> > 
-> > Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-> > Cc: linux-mmc@vger.kernel.org
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: davinci-linux-open-source@linux.davincidsp.com
-> > Cc: devicetree-discuss@lists.ozlabs.org
-> > Cc: cjb@laptop.org
-> > Cc: Sekhar Nori <nsekhar@ti.com>
-> > Cc: mporter@ti.com
-> > ---
-> >  .../devicetree/bindings/mmc/davinci_mmc.txt        |   23 +++++++
-> >  drivers/mmc/host/davinci_mmc.c                     |   69 +++++++++++++++++++-
-> >  2 files changed, 91 insertions(+), 1 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/mmc/davinci_mmc.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/mmc/davinci_mmc.txt b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
-> > new file mode 100644
-> > index 0000000..144bee6
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/mmc/davinci_mmc.txt
-> > @@ -0,0 +1,23 @@
-> > +* TI Highspeed MMC host controller for DaVinci
-> > +
-> > +The Highspeed MMC Host Controller on TI DaVinci family
-> > +provides an interface for MMC, SD and SDIO types of memory cards.
-> > +
-> > +This file documents differences between the core properties described
-> > +by mmc.txt and the properties used by the davinci_mmc driver.
-> > +
-> > +Required properties:
-> > +- compatible:
-> > + Should be "ti,davinci_mmc", for davinci controllers
-> 
-> "ti,davinci-mmc" (with '-' rather than '_') would be preferable.
-> 
+I mentioned that patchset with hope that somebody get interested to
+continue that work. Recently there was many patches related to the swap.
 
-I agree, will correct it.
+Currently I'm working on replacing our homemade memory controller with
+something based on memcg. So I'll revisit 'lruvec/lru_lock' patchset soon.
 
-> > +
-> > +Optional properties:
-> > +- bus-width: Number of data lines, can be <1>, <4>, or <8>, default <1>
-> > +- max-frequency: maximum operating clock frequency.
-> 
-> You said you only described differences from mmc.txt, but this is listed in
-> mmc.txt.
-> 
+>
+> [PATCH 1/4] shmem: simplify shmem_unlock_mapping
+> Probably good, though should also update the "only reach" comment in
+> find_get_pages(); and probably not worthwhile unless shmem_find_get_
+> pages_and_swap() is to disappear entirely.
+>
+> [PATCH 2/4] shmem: tag swap entries in radix tree
+> Using a tag instead of and in addition to the swap exceptional entries
+> was certainly something I tried when I was updating shmem_unuse(): it
+> just didn't work as well as I'd hoped and needed, nothing worked as
+> "well" as the radix_tree_locate_item() thing I added, though I'd have
+> preferred to avoid adding it.  So I needed to test and understand why
+> you found tags worked where I had not: probably partly your intervening
+> radix_tree changes, and partly a difference in how we tested.  There
+> was also a little issue fo SHMEM_TAG_SWAP == PAGECACHE_TAG_DIRTY: you
+> were absolutely right not to enlarge the tagspace, but at that time
+> there was a weird issue of page migration putting a dirty tag into
+> the tmpfs radix_tree, which later I worked around in 752dc185.
+>
+> [PATCH 3/4] shmem: use radix-tree iterator in shmem_unuse_inode()
+> Removes lots of code which is great, but as I said, I'd need
+> to investigate why tagging worked for you but not for me.
+>
+> [PATCH 4/4] mm: use swap readahead at swapoff
+> I've tried that down the years from time to time, and never found
+> it useful (but I see you found it works better in a virtual machine).
+> I've no strong objection to the patch, but when I rewrote try_to_unuse()
+> twelve years ago, I was overly sensitive to readahead adding pressure in
+> the case where you're already swapping off under pressure, and preferred
+> to avoid the readahead if it didn't help.  The slowness of swapoff has
+> very little to do with readahead or not, or that's what I always found:
+> if swapoff while loaded, readahead increased the memory pressure; if
+> (usual case) swapoff while not loaded, apparently the disk's own
+> caching was good enough that kernel readahead made no difference.
+>
+> [PATCH 5/4] shmem: put shmem_delete_from_page_cache under CONFIG_SWAP
+> I'm completely schizophrenic about #fidef CONFIG_SWAPs, sometimes I
+> love to add them, and sometimes I think they're ugly.  You're probably
+> right that mm/shmem.c should have more of them, it helps document too.
+>
+> [PATCH 6/4] shmem: simplify shmem_truncate_range
+> Where shmem_find_get_pages_and_swap() goes away.  But
+> you replace (what was then) shmem_truncate_range() by two passes,
+> truncate_inode_pages_range() followed by shmem_truncate_swap_range().
+> That's not good enough, and part of what I was getting away from with
+> the radix_tree exceptional swap changes: there needs to be more, to
+> prevent pages moving to swap before the page pass finds them, then
+> swap moving to pages before the swap pass finds them.  The old code
+> used a flag to go back whenever that might happen, effective but not
+> pretty (and I'm not sure complete).  I ought to like your end result,
+> with so much code deleted; but somehow I did not, just too attached
+> to my own I suppose :) Intervening (fallocate) changes have moved this
+> code around, certainly your old patch would not apply, whether they've
+> made any material difficulty I've not considered.
+>
+> As usual, I'm busy with other things, so not actually in any hurry
+> for a resend; but thought I'd better let you know what I'd thought,
+> in case Johannes' patch prompted you towards a resend.
+>
+> Hugh
 
-Agreed, I will remove it from here.
-
-> > +- caps: Check for Host capabilities in <linux/mmc/host.h>
-> 
-> Is this a set of binary flags? Also, is this Linux-specific?
-> 
-> I really don't think this should be in the devicetree binding. Why do you need
-> this?
-> 
-
-I was using this to specify the below controller capabilities:
-MMC_CAP_MMC_HIGHSPEED and MMC_CAP_SD_HIGHSPEED,
-Found from discussion[1] that this can be derived from max-frequency,
-That is above capabilities are supported when max-frequency >= 50MHz.
-
-[1] https://lkml.org/lkml/2012/10/15/231
-
-> > +- version: version of controller.
-> 
-> This should be encoded as part of the compatible string.
-> 
-
-Agreed will make change accordingly to accommodate version info in compatible string.
-
-> > +Example:
-> > +	mmc1: mmc@0x4809c000 {
-> > +		compatible = "ti,omap4-hsmmc";
-> > +		reg = <0x4809c000 0x400>;
-> > +		bus-width = <4>;
-> > +	};
-> 
-> It would be nice if the example referred to this binding rather than another.
-> 
-
-Agreed, I will change.
-
-> > diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
-> > index 382b79d..ce6730d 100644
-> > --- a/drivers/mmc/host/davinci_mmc.c
-> > +++ b/drivers/mmc/host/davinci_mmc.c
-> > @@ -34,6 +34,7 @@
-> >  #include <linux/dma-mapping.h>
-> >  #include <linux/edma.h>
-> >  #include <linux/mmc/mmc.h>
-> > +#include <linux/of.h>
-> >  
-> >  #include <linux/platform_data/mmc-davinci.h>
-> >  
-> > @@ -1156,16 +1157,75 @@ static void __init init_mmcsd_host(struct mmc_davinci_host *host)
-> >  
-> >  	mmc_davinci_reset_ctrl(host, 0);
-> >  }
-> > +#ifdef CONFIG_OF
-> > +static struct davinci_mmc_config
-> > +	*mmc_of_get_pdata(struct platform_device *pdev)
-> > +{
-> > +	struct device_node *np;
-> > +	struct davinci_mmc_config *pdata = NULL;
-> > +	u32 data;
-> > +	int ret;
-> > +
-> > +	pdata = pdev->dev.platform_data;
-> > +	if (!pdata) {
-> > +		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> > +		if (!pdata) {
-> > +			dev_err(&pdev->dev, "Failed to allocate memory for struct davinci_mmc_config\n");
-> > +			goto nodata;
-> > +		}
-> > +	}
-> 
-> Why do you need to conditionally allocate this? This only seems to be called
-> once.
-> 
-
-This is common function for DT and non-DT kernel(will be removing #ifdef CONFIG_OF),
-So above check is necessary for to allocate pdata for DT kernel.
-
-> > +
-> > +	np = pdev->dev.of_node;
-> > +	if (!np)
-> > +		goto nodata;
-> 
-> Why not just return immediately here? You do nothing special at nodata.
-> 
-
-Following convention to not have more than 1 return from function and have
-Common exit point. May not be necessary now since we have devm_* calls now.
-Can I still prefer to keep this goto?
-
-> > +
-> > +	ret = of_property_read_u32(np, "bus-width", &data);
-> > +	if (ret)
-> > +		dev_info(&pdev->dev, "wires not specified, defaulting to 4 bit mode\n");
-> > +	pdata->wires = data;
-> 
-> That dev_info doesn't seem to match up with what the next line is doing (data
-> might not have been initialised). Also, unless I've misunderstood, it doesn't
-> match up with the default of 1 mentioned in the binding doc.
-> 
-
-Yes with missing bus-width property module comes in 1 bit mode, I will correct it.
-
-> > +
-> > +	ret = of_property_read_u32(np, "max-frequency", &data);
-> > +	if (ret)
-> > +		dev_info(&pdev->dev, "max-frequency not specified, defaulting to 25MHz\n");
-> > +	pdata->max_freq = data;
-> 
-> Again, the dev_info doesn't match up with the line below it. I notice
-> the default's not one specified in the binding. Is this frequency chosen
-> from the hardware docs, or is it an arbitrary choice. If not arbitrary,
-> it might be worth specifying in the binding.
-> 
-
-Agreed, I will make the changes for the default values.
-
-> 
-> > +
-> > +	ret = of_property_read_u32(np, "caps", &data);
-> > +	if (ret)
-> > +		dev_info(&pdev->dev, "card capability not specified\n");
-> > +	pdata->caps = data;
-> 
-> Again, you may be using garbage data.
-> 
-
-Ok I will correct it.
-
-> > +
-> > +	ret = of_property_read_u32(np, "version", &data);
-> > +	if (ret)
-> > +		dev_err(&pdev->dev, "version not specified\n");
-> > +	pdata->version = data;
-> 
-> And again, though I'd prefer to see this property go entirely.
-> 
-
-Yes this is going to go away.
-
-> > +
-> > +nodata:
-> > +	return pdata;
-> > +}
-> > +
-> > +#else
-> > +static struct davinci_mmc_config
-> > +	*mmc_of_get_pdata(struct platform_device *pdev)
-> > +{
-> > +	return pdev->dev.platform_data;
-> > +}
-> > +#endif
-> 
-> This is poorly named if it's required for !CONFIG_OF.
-> 
-> Why not change this to something like mmc_parse_pdata, returning an
-> error code. For !CONFIG_OF, it can simply return 0, which should be less
-> surprising for anyone else reading this code.
-> 
-
-I will remove #ifdef CONFIG_OF conditional compilation and consideration
-your suggestion to name function as mmc_parse_pdata.
-
-> >  
-> >  static int __init davinci_mmcsd_probe(struct platform_device *pdev)
-> >  {
-> > -	struct davinci_mmc_config *pdata = pdev->dev.platform_data;
-> > +	struct davinci_mmc_config *pdata = NULL;
-> >  	struct mmc_davinci_host *host = NULL;
-> >  	struct mmc_host *mmc = NULL;
-> >  	struct resource *r, *mem = NULL;
-> >  	int ret = 0, irq = 0;
-> >  	size_t mem_size;
-> >  
-> > +	pdata = mmc_of_get_pdata(pdev);
-> > +	if (pdata == NULL) {
-> > +		dev_err(&pdev->dev, "Can not get platform data\n");
-> > +		return -ENOENT;
-> > +	}
-> > +
-> >  	/* REVISIT:  when we're fully converted, fail if pdata is NULL */
-> >  
-> >  	ret = -ENODEV;
-> > @@ -1403,11 +1463,18 @@ static const struct dev_pm_ops davinci_mmcsd_pm = {
-> >  #define davinci_mmcsd_pm_ops NULL
-> >  #endif
-> >  
-> > +static const struct of_device_id davinci_mmc_of_match[] = {
-> > +	{.compatible = "ti,davinci_mmc", },
-> > +	{},
-> > +};
-> > +MODULE_DEVICE_TABLE(of, davinci_mmc_of_match);
-> 
-> For supporting multiple versions, you could either use some auxdata
-> here, or check each one in davince_mmcsd_probe.
-> 
-
-I will consider keeping auxdata via compatible field.
-
-> > +
-> >  static struct platform_driver davinci_mmcsd_driver = {
-> >  	.driver		= {
-> >  		.name	= "davinci_mmc",
-> >  		.owner	= THIS_MODULE,
-> >  		.pm	= davinci_mmcsd_pm_ops,
-> > +		.of_match_table = of_match_ptr(davinci_mmc_of_match),
-> >  	},
-> >  	.remove		= __exit_p(davinci_mmcsd_remove),
-> >  };
-> 
-> Where does davinci_mmcsd_probe get called from, and how is the
-> of_match_table used? Should it not be set as .probe on the driver?
-> 
-
-Driver probe is registered in module_init. 
-And are you suggesting me to use module_platform_driver? If yes can it not
-be taken separately as it is unrelated to DT support I am adding.
-
-of_match_table is used by device tree. (will point to NULL for !CONFIG_OF)
-
-Thanks,
-Prakash
