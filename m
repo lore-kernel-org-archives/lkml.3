@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3BDTmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:42:05 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33529 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755733Ab3BDTmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:42:00 -0500
-Date: Mon, 4 Feb 2013 11:41:57 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: liguang <lig.fnst@cn.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 2/5] acpi/numa: check if parsing acpi numa info disabled
- earlier
-In-Reply-To: <1359967426-32629-3-git-send-email-lig.fnst@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1302041133520.10378@chino.kir.corp.google.com>
-References: <1359967426-32629-1-git-send-email-lig.fnst@cn.fujitsu.com> <1359967426-32629-3-git-send-email-lig.fnst@cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755981Ab3BDTma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:42:30 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:39007 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755368Ab3BDTm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:42:28 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
+        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
+        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug framework
+Date: Mon, 04 Feb 2013 20:48:46 +0100
+Message-ID: <1890597.vDojv7So7R@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1359993766.23410.105.camel@misato.fc.hp.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <5192355.CsKHU8mj3W@vostro.rjw.lan> <1359993766.23410.105.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Feb 2013, liguang wrote:
-
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-
-Because there's no changelog, I have to read the patch to figure out what 
-it's doing since the title isn't that helpful either.  Please provide a 
-description of what problem you're trying to fix or what improvement 
-you're trying to make so it's clear.
-
-> ---
->  arch/x86/mm/srat.c  |    6 ------
->  drivers/acpi/numa.c |    2 ++
->  2 files changed, 2 insertions(+), 6 deletions(-)
+On Monday, February 04, 2013 09:02:46 AM Toshi Kani wrote:
+> On Mon, 2013-02-04 at 14:41 +0100, Rafael J. Wysocki wrote:
+> > On Sunday, February 03, 2013 07:23:49 PM Greg KH wrote:
+> > > On Sat, Feb 02, 2013 at 09:15:37PM +0100, Rafael J. Wysocki wrote:
+> > > > On Saturday, February 02, 2013 03:58:01 PM Greg KH wrote:
+>   :
+> > > > Yes, but those are just remove events and we can only see how destructive they
+> > > > were after the removal.  The point is to be able to figure out whether or not
+> > > > we *want* to do the removal in the first place.
+> > > 
+> > > Yes, but, you will always race if you try to test to see if you can shut
+> > > down a device and then trying to do it.  So walking the bus ahead of
+> > > time isn't a good idea.
+> > >
+> > > And, we really don't have a viable way to recover if disconnect() fails,
+> > > do we.  What do we do in that situation, restore the other devices we
+> > > disconnected successfully?  How do we remember/know what they were?
+> > > 
+> > > PCI hotplug almost had this same problem until the designers finally
+> > > realized that they just had to accept the fact that removing a PCI
+> > > device could either happen by:
+> > > 	- a user yanking out the device, at which time the OS better
+> > > 	  clean up properly no matter what happens
+> > > 	- the user asked nicely to remove a device, and the OS can take
+> > > 	  as long as it wants to complete that action, including
+> > > 	  stalling for noticable amounts of time before eventually,
+> > > 	  always letting the action succeed.
+> > > 
+> > > I think the second thing is what you have to do here.  If a user tells
+> > > the OS it wants to remove these devices, you better do it.  If you
+> > > can't, because memory is being used by someone else, either move them
+> > > off, or just hope that nothing bad happens, before the user gets
+> > > frustrated and yanks out the CPU/memory module themselves physically :)
+> > 
+> > Well, that we can't help, but sometimes users really *want* the OS to tell them
+> > if it is safe to unplug something at this particualr time (think about the
+> > Windows' "safe remove" feature for USB sticks, for example; that came out of
+> > users' demand AFAIR).
+> > 
+> > So in my opinion it would be good to give them an option to do "safe eject" or
+> > "forcible eject", whichever they prefer.
 > 
-> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-> index a837c95..78c67bd 100644
-> --- a/arch/x86/mm/srat.c
-> +++ b/arch/x86/mm/srat.c
-> @@ -60,8 +60,6 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
->  	int pxm, node;
->  	int apic_id;
->  
-> -	if (srat_disabled())
-> -		return;
->  	if (pa->header.length < sizeof(struct acpi_srat_x2apic_cpu_affinity)) {
->  		bad_srat();
->  		return;
-> @@ -100,8 +98,6 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
->  	int pxm, node;
->  	int apic_id;
->  
-> -	if (srat_disabled())
-> -		return;
->  	if (pa->header.length != sizeof(struct acpi_srat_cpu_affinity)) {
->  		bad_srat();
->  		return;
-> @@ -148,8 +144,6 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
->  	u64 start, end;
->  	int node, pxm;
->  
-> -	if (srat_disabled())
-> -		return -1;
->  	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity)) {
->  		bad_srat();
->  		return -1;
-> diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-> index cb31298..1f51222 100644
-> --- a/drivers/acpi/numa.c
-> +++ b/drivers/acpi/numa.c
-> @@ -262,6 +262,8 @@ static int __init acpi_parse_srat(struct acpi_table_header *table)
->  	struct acpi_table_srat *srat;
->  	if (!table)
->  		return -EINVAL;
-> +	if (srat_disabled())
-> +		return -EACCES;
->  
->  	srat = (struct acpi_table_srat *)table;
->  	acpi_srat_revision = srat->header.revision;
+> For system device hot-plug, it always needs to be "safe eject".  This
+> feature will be implemented on mission critical servers, which are
+> managed by professional IT folks.  Crashing a server causes serious
+> money to the business.
 
-Nack, this isn't helpful since SRAT is only for x86 and other 
-architectures use this code.  It would break the build on ia64 since it's 
-obviously not going to have a function called srat_disabled().
+Well, "always" is a bit too strong a word as far as human behavior is concerned
+in my opinion.
 
-And -EACCES would not be the appropriate return value, this has nothing to 
-do with permissions.
+That said I would be perfectly fine with not supporting the "forcible eject" to
+start with and waiting for the first request to add support for it.  I also
+would be fine with taking bets on how much time it's going to take for such a
+request to appear. :-)
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
