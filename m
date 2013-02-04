@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab3BDWKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 17:10:09 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:61391 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab3BDWKE (ORCPT
+	id S1755528Ab3BDWLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 17:11:47 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:58204 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab3BDWLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 17:10:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130204221356.29548.35746.stgit@dragon>
-References: <20130204214952.GJ27963@mtj.dyndns.org>
-	<20130204221356.29548.35746.stgit@dragon>
-Date: Mon, 4 Feb 2013 14:10:03 -0800
-X-Google-Sender-Auth: rPv1-KV4skoG1Mtny2JVSkS1KHU
-Message-ID: <CAOS58YO1VSsbisxSqzcW6n=a+XwcM4F0uHN40OKB9Ok6DSMW7A@mail.gmail.com>
-Subject: Re: [TRIVIAL PATCH V2] Doc: percpu_counter doc code for better readability
-From: Tejun Heo <tj@kernel.org>
-To: Jesper Dangaard Brouer <brouer@redhat.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, joe@perches.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Feb 2013 17:11:46 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] i2c: busses/i2c-pxa.c: fix potential null pointer dereference error
+Date: Mon,  4 Feb 2013 23:11:36 +0100
+Message-Id: <1360015899-13706-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 4, 2013 at 2:14 PM, Jesper Dangaard Brouer
-<brouer@redhat.com> wrote:
-> Help people reading the percpu_counter code, to notice the ifdef
-> else statement that seperates CONFIG_SMP.
->
-> Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
-> Acked-by: Tejun Heo <tj@kernel.org>
+If it goes to eclk through line 1107, the variable res would be NULL. It will
+cause a null pointer dereference error if we call release_mem_region.
 
-Jiri, can you please take this?
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/i2c/busses/i2c-pxa.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thank you.
-
+diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+index 1034d93..eadf1a4 100644
+--- a/drivers/i2c/busses/i2c-pxa.c
++++ b/drivers/i2c/busses/i2c-pxa.c
+@@ -1211,7 +1211,8 @@ eremap:
+ eclk:
+ 	kfree(i2c);
+ emalloc:
+-	release_mem_region(res->start, resource_size(res));
++	if (!res)
++		release_mem_region(res->start, resource_size(res));
+ 	return ret;
+ }
+ 
 -- 
-tejun
+1.7.9.5
+
