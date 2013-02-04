@@ -1,118 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab3BDTby (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:31:54 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:33774 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab3BDTbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:31:52 -0500
-Date: Mon, 4 Feb 2013 11:31:50 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: liguang <lig.fnst@cn.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 1/5] numa: avoid export acpi_numa variable
-In-Reply-To: <1359967426-32629-2-git-send-email-lig.fnst@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1302041127540.10378@chino.kir.corp.google.com>
-References: <1359967426-32629-1-git-send-email-lig.fnst@cn.fujitsu.com> <1359967426-32629-2-git-send-email-lig.fnst@cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755155Ab3BDTd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:33:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754689Ab3BDTdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:33:24 -0500
+Date: Mon, 4 Feb 2013 20:32:23 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tommi Rantala <tt.rantala@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: clock_nanosleep() task_struct leak
+Message-ID: <20130204193223.GA11910@redhat.com>
+References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com> <alpine.LFD.2.02.1302011450160.11905@ionos>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1302011450160.11905@ionos>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Feb 2013, liguang wrote:
+On 02/01, Thomas Gleixner wrote:
+>
+> B1;2601;0cOn Fri, 1 Feb 2013, Tommi Rantala wrote:
+>
+> > Hello,
+> >
+> > Trinity discovered a task_struct leak with clock_nanosleep(), reproducible with:
+> >
+> > -----8<-----8<-----8<-----
+> > #include <time.h>
+> >
+> > static const struct timespec req;
+> >
+> > int main(void) {
+> >         return clock_nanosleep(CLOCK_PROCESS_CPUTIME_ID,
+> >                         TIMER_ABSTIME, &req, NULL);
+> > }
+> > -----8<-----8<-----8<-----
 
-> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-> index 0c44630..c4e0875 100644
-> --- a/arch/x86/include/asm/acpi.h
-> +++ b/arch/x86/include/asm/acpi.h
-> @@ -181,7 +181,8 @@ static inline void disable_acpi(void) { }
->  #define ARCH_HAS_POWER_INIT	1
->  
->  #ifdef CONFIG_ACPI_NUMA
-> -extern int acpi_numa;
-> +extern void bad_srat(void);
-> +extern bool srat_disabled(void);
+posix_cpu_timer_create()->get_task_struct() I guess...
 
-So anything that wants to disable acpi_numa, such as xen, must call a 
-function named bad_srat()?  That seems a little misnamed itself.
+Cough. I am not sure I ever understood this code, but now it certainly
+looks as if I never saw it before.
 
->  extern int x86_acpi_numa_init(void);
->  #endif /* CONFIG_ACPI_NUMA */
->  
-> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> index 2d125be..92986d8 100644
-> --- a/arch/x86/mm/numa.c
-> +++ b/arch/x86/mm/numa.c
-> @@ -47,7 +47,7 @@ static __init int numa_setup(char *opt)
->  #endif
->  #ifdef CONFIG_ACPI_NUMA
->  	if (!strncmp(opt, "noacpi", 6))
-> -		acpi_numa = -1;
-> +		bad_srat();
+All I can say is: I'll try to take another look tomorrow :/
 
-This will print an error line saying "SRAT: SRAT not used." which wasn't 
-emitted before.  I don't think that's the desire.
+> Groan. That code probably has more than that leak burried inside.
 
->  #endif
->  	return 0;
->  }
-> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-> index 4ddf497..a837c95 100644
-> --- a/arch/x86/mm/srat.c
-> +++ b/arch/x86/mm/srat.c
-> @@ -24,22 +24,22 @@
->  #include <asm/apic.h>
->  #include <asm/uv/uv.h>
->  
-> -int acpi_numa __initdata;
-> +static bool acpi_numa __initdata;
->  
+Oh. yes... but if you meant something connected to this particular
+"test-case" please tell us ;)
 
-You've changed this to be type bool but didn't update the existing code 
-that still does "acpi_numa = 1".
+Oleg.
 
->  static __init int setup_node(int pxm)
->  {
->  	return acpi_map_pxm_to_node(pxm);
->  }
->  
-> -static __init void bad_srat(void)
-> +void __init bad_srat(void)
->  {
->  	printk(KERN_ERR "SRAT: SRAT not used.\n");
-> -	acpi_numa = -1;
-> +	acpi_numa = false;
->  }
->  
-> -static __init inline int srat_disabled(void)
-> +bool __init srat_disabled(void)
->  {
-> -	return acpi_numa < 0;
-> +	return acpi_numa;
->  }
->  
->  /* Callback for SLIT parsing */
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 138e566..94c8c70 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1415,7 +1415,7 @@ asmlinkage void __init xen_start_kernel(void)
->  	 * any NUMA information the kernel tries to get from ACPI will
->  	 * be meaningless.  Prevent it from trying.
->  	 */
-> -	acpi_numa = -1;
-> +	bad_srat();
-
-Same as before.  It seems like you want to introduce a new function 
-specifically to disable it:
-
-	void acpi_numa_disable(void)
-	{
-		acpi_numa = false;
-	}
-
-and then bad_srat() should call into it?
