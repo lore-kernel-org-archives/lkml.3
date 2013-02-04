@@ -1,67 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab3BDBeR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 20:34:17 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:34003 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753659Ab3BDBeO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 20:34:14 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ELK+JUl6r3MJfYsq7f48Fml13LglOqO8=
-Date: Sun, 3 Feb 2013 20:34:08 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Simon Baatz <gmbnomis@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/2] ARM: kirkwood: fix to retain gbe MAC addresses
- for DT kernels
-Message-ID: <20130204013408.GH14746@titan.lakedaemon.net>
-References: <20130130183049.GR7717@titan.lakedaemon.net>
- <1359577799-23351-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1753883Ab3BDBey (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 20:34:54 -0500
+Received: from mga11.intel.com ([192.55.52.93]:9659 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753613Ab3BDBev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 20:34:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,596,1355126400"; 
+   d="scan'208";a="282308311"
+Message-ID: <510F1064.1060302@intel.com>
+Date: Mon, 04 Feb 2013 09:35:32 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359577799-23351-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alex Shi <alex.shi@intel.com>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
+ power awareness scheduling
+References: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1358996820-23036-1-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 09:29:58PM +0100, Sebastian Hesselbarth wrote:
-> The ethernet controller used on kirkwood looses its MAC address
-> register contents when the corresponding clock is gated. As soon as
-> mv643xx_eth is built as module, the clock gets gated and when loading
-> the module, the MAC address is gone.
+On 01/24/2013 11:06 AM, Alex Shi wrote:
+> Since the runnable info needs 345ms to accumulate, balancing
+> doesn't do well for many tasks burst waking. After talking with Mike
+> Galbraith, we are agree to just use runnable avg in power friendly 
+> scheduling and keep current instant load in performance scheduling for 
+> low latency.
 > 
-> Proper DT support for the mv643xx_eth driver is expected soon, so we add
-> a workaround to always enable ge0/ge1 clocks on kirkwood. This workaround
-> is also already used on non-DT kirkwood kernels.
+> So the biggest change in this version is removing runnable load avg in
+> balance and just using runnable data in power balance.
 > 
-> Reported-by: Simon Baatz <gmbnomis@gmail.com>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog:
-> [v2]
-> - add note in patch description that MAC address is lost only when using
->   modular driver
-> - add note in patch description that the workaround will be removed soon
+> The patchset bases on Linus' tree, includes 3 parts,
+> ** 1, bug fix and fork/wake balancing clean up. patch 1~5,
+> ----------------------
+> the first patch remove one domain level. patch 2~5 simplified fork/wake
+> balancing, it can increase 10+% hackbench performance on our 4 sockets
+> SNB EP machine.
 > 
-> Cc: Simon Baatz <gmbnomis@gmail.com>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/mach-kirkwood/board-dt.c |   24 +++++++++++++++---------
->  1 file changed, 15 insertions(+), 9 deletions(-)
+> V3 change:
+> a, added the first patch to remove one domain level on x86 platform.
+> b, some small changes according to Namhyung Kim's comments, thanks!
+> 
+> ** 2, bug fix of load avg and remove the CONFIG_FAIR_GROUP_SCHED limit
+> ----------------------
+> patch 6~8, That using runnable avg in load balancing, with
+> two initial runnable variables fix.
+> 
+> V4 change:
+> a, remove runnable log avg using in balancing.
+> 
+> V3 change:
+> a, use rq->cfs.runnable_load_avg as cpu load not
+> rq->avg.load_avg_contrib, since the latter need much time to accumulate
+> for new forked task,
+> b, a build issue fixed with Namhyung Kim's reminder.
+> 
+> ** 3, power awareness scheduling, patch 9~18.
+> ----------------------
+> The subset implement/consummate the rough power aware scheduling
+> proposal: https://lkml.org/lkml/2012/8/13/139.
+> It defines 2 new power aware policy 'balance' and 'powersaving' and then
+> try to spread or pack tasks on each sched groups level according the
+> different scheduler policy. That can save much power when task number in
+> system is no more then LCPU number.
+> 
+> As mentioned in the power aware scheduler proposal, Power aware
+> scheduling has 2 assumptions:
+> 1, race to idle is helpful for power saving
+> 2, pack tasks on less sched_groups will reduce power consumption
+> 
+> The first assumption make performance policy take over scheduling when
+> system busy.
+> The second assumption make power aware scheduling try to move
+> disperse tasks into fewer groups until that groups are full of tasks.
+> 
+> Some power testing data is in the last 2 patches.
+> 
+> V4 change:
+> a, fix few bugs and clean up code according to Morten Rasmussen, Mike
+> Galbraith and Namhyung Kim. Thanks!
+> b, take Morten's suggestion to set different criteria for different
+> policy in small task packing.
+> c, shorter latency in power aware scheduling.
+> 
+> V3 change:
+> a, engaged nr_running in max potential utils consideration in periodic
+> power balancing.
+> b, try exec/wake small tasks on running cpu not idle cpu.
+> 
+> V2 change:
+> a, add lazy power scheduling to deal with kbuild like benchmark.
+> 
+> 
+> Thanks Fengguang Wu for the build testing of this patchset!
 
-Applied to mvebu/fixes with Simon's Tested-by:
 
-thx,
+Add some testing report summary that were posted:
+Alex Shi tested the benchmarks: kbuild, specjbb2005, oltp, tbench, aim9, hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
+loopback netperf. on core2, nhm, wsm, snb, platforms: 
+	a, no clear performance change on performance balance
+	b, specjbb2005 drop 5~7% on balance/powersaving policy on SNB/NHM platforms; hackbench drop 30~70% SNB EP4S machine.
+	c, no other peformance change on balance/powersaving machine.
 
-Jason.
+test result from Mike Galbraith:
+---------
+With aim7 compute on 4 node 40 core box, I see stable throughput
+improvement at tasks = nr_cores and below w. balance and powersaving. 
+
+         3.8.0-performance                  3.8.0-balance          3.8.0-powersaving
+Tasks    jobs/min/task       cpu   jobs/min/task       cpu    jobs/min/task         cpu
+    1         432.8571      3.99        433.4764      3.97         433.1665        3.98
+    5         480.1902     12.49        510.9612      7.55         497.5369        8.22
+   10         429.1785     40.14        533.4507     11.13         518.3918       12.15
+   20         424.3697     63.14        529.7203     23.72         528.7958       22.08
+   40         419.0871    171.42        500.8264     51.44         517.0648       42.45
+
+No deltas after that.  There were also no deltas between patched kernel
+using performance policy and virgin source.
+----------
+
+Ingo, I appreciate for any comments from you. :)
+
