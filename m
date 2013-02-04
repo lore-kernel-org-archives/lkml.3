@@ -1,219 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab3BDAz3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 19:55:29 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:47458
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623Ab3BDAzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 19:55:14 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-        JBeulich@suse.com, bp@alien8.de
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3/3] X86: Handle Hyper-V vmbus interrupts as special hypervisor interrupts
-Date: Sun,  3 Feb 2013 17:22:39 -0800
-Message-Id: <1359940959-32168-3-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1359940959-32168-1-git-send-email-kys@microsoft.com>
-References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-1-git-send-email-kys@microsoft.com>
+	id S1753865Ab3BDBDH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 20:03:07 -0500
+Received: from science.horizon.com ([71.41.210.146]:59087 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753623Ab3BDBDF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 20:03:05 -0500
+Date: 3 Feb 2013 20:03:03 -0500
+Message-ID: <20130204010303.24971.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: jslaby@suse.cz, linux-serial@vger.kernel.org
+Subject: 3.8-rc regression with pps-ldisc due to 70ece7a731
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting with win8, vmbus interrupts can be delivered on any VCPU in the guest
-and furthermore can be concurrently active on multiple VCPUs. Support this
-interrupt delivery model by setting up a separate IDT entry for Hyper-V vmbus.
-interrupts. I would like to thank Jan Beulich <JBeulich@suse.com> and
-Thomas Gleixner <tglx@linutronix.de>, for their help.
+"TTY: n_tty, add ldisc data to n_tty"
 
-In this version of the patch, based on the feedback, I have merged the IDT
-vector for Xen and Hyper-V and made the necessary adjustments. Furhermore,
-based on Jan's feedback I have added the necessary compilation switches.
+The PPS line discipline has incestuous relations with the n_tty line
+discipline, using some hooks to call internal routines.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- arch/x86/include/asm/irq_vectors.h |    4 +-
- arch/x86/include/asm/mshyperv.h    |    4 +++
- arch/x86/kernel/cpu/mshyperv.c     |   44 ++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/entry_32.S         |    9 ++++++-
- arch/x86/kernel/entry_64.S         |    7 +++++-
- drivers/xen/events.c               |    7 +++--
- 6 files changed, 68 insertions(+), 7 deletions(-)
+However, I started noticing violent kernel explosions when testing 3.8-rc,
+and after a bit of digging, I think it's due to the fact that the PPS code
+assumes that the ->ldisc pointer is available to hold a pointer to a "pps"
+structure, but this commit started using it in the core n_tty discipline.
 
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 1508e51..aac5fa6 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -109,8 +109,8 @@
- 
- #define UV_BAU_MESSAGE			0xf5
- 
--/* Xen vector callback to receive events in a HVM domain */
--#define XEN_HVM_EVTCHN_CALLBACK		0xf3
-+/* Vector on which hypervisor callbacks will be delivered */
-+#define HYPERVISOR_CALLBACK_VECTOR	0xf3
- 
- /*
-  * Local APIC timer IRQ vector is on a different priority level,
-diff --git a/arch/x86/include/asm/mshyperv.h b/arch/x86/include/asm/mshyperv.h
-index 79ce568..c2934be 100644
---- a/arch/x86/include/asm/mshyperv.h
-+++ b/arch/x86/include/asm/mshyperv.h
-@@ -11,4 +11,8 @@ struct ms_hyperv_info {
- 
- extern struct ms_hyperv_info ms_hyperv;
- 
-+void hyperv_callback_vector(void);
-+void hyperv_vector_handler(struct pt_regs *regs);
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler);
-+
- #endif
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 4dab317..a7d26d8 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -14,10 +14,15 @@
- #include <linux/time.h>
- #include <linux/clocksource.h>
- #include <linux/module.h>
-+#include <linux/hardirq.h>
-+#include <linux/interrupt.h>
- #include <asm/processor.h>
- #include <asm/hypervisor.h>
- #include <asm/hyperv.h>
- #include <asm/mshyperv.h>
-+#include <asm/desc.h>
-+#include <asm/idle.h>
-+#include <asm/irq_regs.h>
- 
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -77,6 +82,12 @@ static void __init ms_hyperv_init_platform(void)
- 
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+#if IS_ENABLED(CONFIG_HYPERV)
-+	/*
-+	 * Setup the IDT for hypervisor callback.
-+	 */
-+	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
-+#endif
- }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-@@ -85,3 +96,36 @@ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
- 	.init_platform		= ms_hyperv_init_platform,
- };
- EXPORT_SYMBOL(x86_hyper_ms_hyperv);
-+
-+#if IS_ENABLED(CONFIG_HYPERV)
-+static int vmbus_irq = -1;
-+static irq_handler_t vmbus_isr;
-+
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler)
-+{
-+	vmbus_irq = irq;
-+	vmbus_isr = handler;
-+}
-+
-+void hyperv_vector_handler(struct pt_regs *regs)
-+{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+	struct irq_desc *desc;
-+
-+	irq_enter();
-+	exit_idle();
-+
-+	desc = irq_to_desc(vmbus_irq);
-+
-+	if (desc)
-+		generic_handle_irq_desc(vmbus_irq, desc);
-+
-+	irq_exit();
-+	set_irq_regs(old_regs);
-+}
-+#else
-+void hv_register_vmbus_handler(int irq, irq_handler_t handler)
-+{
-+}
-+#endif
-+EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 352e5a9..8f3e2de 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1046,11 +1046,18 @@ ENTRY(xen_failsafe_callback)
- 	_ASM_EXTABLE(4b,9b)
- ENDPROC(xen_failsafe_callback)
- 
--BUILD_INTERRUPT3(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK,
-+BUILD_INTERRUPT3(xen_hvm_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
- 		xen_evtchn_do_upcall)
- 
- #endif	/* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+
-+BUILD_INTERRUPT3(hyperv_callback_vector, HYPERVISOR_CALLBACK_VECTOR,
-+	hyperv_vector_handler)
-+
-+#endif /* CONFIG_HYPERV */
-+
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index d5113c3..c1d01e6 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1446,11 +1446,16 @@ ENTRY(xen_failsafe_callback)
- 	CFI_ENDPROC
- END(xen_failsafe_callback)
- 
--apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
-+apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
- 	xen_hvm_callback_vector xen_evtchn_do_upcall
- 
- #endif /* CONFIG_XEN */
- 
-+#if IS_ENABLED(CONFIG_HYPERV)
-+apicinterrupt HYPERVISOR_CALLBACK_VECTOR \
-+	hyperv_callback_vector hyperv_vector_handler
-+#endif /* CONFIG_HYPERV */
-+
- /*
-  * Some functions should be protected against kprobes
-  */
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4293c57..a54401e 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1787,7 +1787,7 @@ void xen_callback_vector(void)
- 	int rc;
- 	uint64_t callback_via;
- 	if (xen_have_vector_callback) {
--		callback_via = HVM_CALLBACK_VECTOR(XEN_HVM_EVTCHN_CALLBACK);
-+		callback_via = HVM_CALLBACK_VECTOR(HYPERVISOR_CALLBACK_VECTOR);
- 		rc = xen_set_callback_via(callback_via);
- 		if (rc) {
- 			printk(KERN_ERR "Request for Xen HVM callback vector"
-@@ -1798,8 +1798,9 @@ void xen_callback_vector(void)
- 		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
- 				"enabled\n");
- 		/* in the restore case the vector has already been allocated */
--		if (!test_bit(XEN_HVM_EVTCHN_CALLBACK, used_vectors))
--			alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);
-+		if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
-+			alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
-+					xen_hvm_callback_vector);
- 	}
- }
- #else
--- 
-1.7.4.1
+If you look at pps_tty_open in drivers/pps/clients/pps-ldisc.c, you can
+see it does:
 
+	pps = pps_register_source(&info, PPS_CAPTUREBOTH | \
+				PPS_OFFSETASSERT | PPS_OFFSETCLEAR);
+	if (pps == NULL) {
+		pr_err("cannot register PPS source \"%s\"\n", info.path);
+		return -ENOMEM;
+	}
+	tty->disc_data = pps;
+
+        /* Should open N_TTY ldisc too */
+        ret = alias_n_tty_open(tty);
+
+Where "alias_n_tty_open" is filled in by n_tty_inherit_ops() to be
+n_tty_open().  However, in this commit, n_tty_open() now allocates
+its own structure and overwrites the disc_data pointer, leading to an
+earth-shattering kaboom as NULL pointers are dereferenced in interrupt
+handlers.
+
+
+My first thought is to reserve a pointer in n_tty_data for the
+pps structure and update the pps code to chase pointers one more
+level.  But I wanted to solicit opinions.
