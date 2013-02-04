@@ -1,200 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab3BDTkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:40:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42588 "EHLO mx1.redhat.com"
+	id S1755727Ab3BDTkW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:40:22 -0500
+Received: from mout.gmx.net ([212.227.15.18]:54220 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755056Ab3BDTj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:39:59 -0500
-Message-ID: <1360006795.11144.529.camel@bling.home>
-Subject: Re: [PATCH] intel_irq_remapping: Clean up x2apic optout security
- warning mess
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Gleb Natapov <gleb@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Prarit Bhargava <prarit@redhat.com>
-Date: Mon, 04 Feb 2013 12:39:55 -0700
-In-Reply-To: <CALCETrVv0NXQACT=nrRZfN+9JbRmGKZWZvP7wWDveBtJt7E8zQ@mail.gmail.com>
-References: <510C3AF0.6050109@amacapital.net>
-	 <2011b943a886fd7c46079eb10bc24fc130587503.1359759303.git.luto@amacapital.net>
-	 <1360004651.11144.511.camel@bling.home>
-	 <CALCETrVv0NXQACT=nrRZfN+9JbRmGKZWZvP7wWDveBtJt7E8zQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755215Ab3BDTkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:40:00 -0500
+X-Authenticated: #1045983
+X-Provags-ID: V01U2FsdGVkX19pKNNI20Bp3NGAVm1+YKWuUvKpSHVh9WGOlUS62z
+	uWRIqgR83njfJT
+Date: Mon, 4 Feb 2013 20:39:52 +0100
+From: Helge Deller <deller@gmx.de>
+To: "H. Peter Anvin" <hpa@zytor.com>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        John David Anglin <dave.anglin@bell.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>, Ian Kent <raven@themaw.net>,
+        autofs@vger.kernel.org
+Subject: [PATCH] unbreak automounter support on 64-bit kernel with 32-bit
+ userspace (v2)
+Message-ID: <20130204193952.GA5785@p100.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510AE21D.2090002@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-04 at 11:19 -0800, Andy Lutomirski wrote:
-> On Mon, Feb 4, 2013 at 11:04 AM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > On Fri, 2013-02-01 at 14:57 -0800, Andy Lutomirski wrote:
-> >> Current kernels print this on my Dell server:
-> >>
-> >>    ------------[ cut here ]------------
-> >>    WARNING: at drivers/iommu/intel_irq_remapping.c:542
-> >>    intel_enable_irq_remapping+0x7b/0x27e()
-> >>    Hardware name: PowerEdge R620
-> >>    Your BIOS is broken and requested that x2apic be disabled
-> >>    This will leave your machine vulnerable to irq-injection attacks
-> >>    Use 'intremap=no_x2apic_optout' to override BIOS request
-> >>    [...]
-> >>    Enabled IRQ remapping in xapic mode
-> >>    x2apic not enabled, IRQ remapping is in xapic mode
-> >>
-> >> This is inconsistent with itself -- interrupt remapping is *on*.
-> >>
-> >> Fix the mess by making the warnings say what they mean and my making
-> >> sure that compatibility format interrupts (the dangerous ones) are
-> >> disabled if x2apic is present regardless of BIOS settings.
-> >>
-> >> With this patch applied, the output is:
-> >>
-> >>   Your BIOS is broken and requested that x2apic be disabled.
-> >>   This will slightly decrease performance.
-> >>   Use 'intremap=no_x2apic_optout' to override BIOS request.
-> >>   Enabled IRQ remapping in xapic mode
-> >>   x2apic not enabled, IRQ remapping is in xapic mode
-> >>
-> >> This should make us as or more secure than we are now and replace
-> >> a rather scary warning with a much less scary warning on silly
-> >> but functional systems.
-> >>
-> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> >> ---
-> >>  drivers/iommu/intel_irq_remapping.c | 36 ++++++++++++++++++++++++++++--------
-> >>  1 file changed, 28 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-> >> index af8904d..eca8832 100644
-> >> --- a/drivers/iommu/intel_irq_remapping.c
-> >> +++ b/drivers/iommu/intel_irq_remapping.c
-> >> @@ -425,11 +425,22 @@ static void iommu_set_irq_remapping(struct intel_iommu *iommu, int mode)
-> >>
-> >>       /* Enable interrupt-remapping */
-> >>       iommu->gcmd |= DMA_GCMD_IRE;
-> >> +     iommu->gcmd &= ~DMA_GCMD_CFI;  /* Block compatibility-format MSIs */
-> >>       writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
-> >>
-> >>       IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
-> >>                     readl, (sts & DMA_GSTS_IRES), sts);
-> >>
-> >> +     /*
-> >> +      * With CFI clear in the Global Command register, we should be
-> >> +      * protected from dangerous (i.e. compatibility) interrupts
-> >> +      * regardless of x2apic status.  Check just to be sure.
-> >> +      */
-> >> +     if (sts & DMA_GSTS_CFIS)
-> >> +             WARN(1, KERN_WARNING
-> >> +                     "Compatibility-format IRQs enabled despite intr remapping;\n"
-> >> +                     "you are vulnerable to IRQ injection.\n");
-> >> +
-> >>       raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
-> >>  }
-> >>
-> >> @@ -526,20 +537,24 @@ static int __init intel_irq_remapping_supported(void)
-> >>  static int __init intel_enable_irq_remapping(void)
-> >>  {
-> >>       struct dmar_drhd_unit *drhd;
-> >> +     bool x2apic_present;
-> >>       int setup = 0;
-> >>       int eim = 0;
-> >>
-> >> +     x2apic_present = x2apic_supported();
-> >> +
-> >>       if (parse_ioapics_under_ir() != 1) {
-> >>               printk(KERN_INFO "Not enable interrupt remapping\n");
-> >> -             return -1;
-> >> +             goto error;
-> >>       }
-> >>
-> >> -     if (x2apic_supported()) {
-> >> +     if (x2apic_present) {
-> >>               eim = !dmar_x2apic_optout();
-> >> -             WARN(!eim, KERN_WARNING
-> >> -                        "Your BIOS is broken and requested that x2apic be disabled\n"
-> >> -                        "This will leave your machine vulnerable to irq-injection attacks\n"
-> >> -                        "Use 'intremap=no_x2apic_optout' to override BIOS request\n");
-> >> +             if (!eim)
-> >> +                     printk(KERN_WARNING
-> >> +                             "Your BIOS is broken and requested that x2apic be disabled.\n"
-> >> +                             "This will slightly decrease performance.\n"
-> >> +                             "Use 'intremap=no_x2apic_optout' to override BIOS request.\n");
-> >>       }
-> >>
-> >>       for_each_drhd_unit(drhd) {
-> >> @@ -578,7 +593,7 @@ static int __init intel_enable_irq_remapping(void)
-> >>               if (eim && !ecap_eim_support(iommu->ecap)) {
-> >>                       printk(KERN_INFO "DRHD %Lx: EIM not supported by DRHD, "
-> >>                              " ecap %Lx\n", drhd->reg_base_addr, iommu->ecap);
-> >> -                     return -1;
-> >> +                     goto error;
-> >>               }
-> >>       }
-> >>
-> >> @@ -594,7 +609,7 @@ static int __init intel_enable_irq_remapping(void)
-> >>                       printk(KERN_ERR "DRHD %Lx: failed to enable queued, "
-> >>                              " invalidation, ecap %Lx, ret %d\n",
-> >>                              drhd->reg_base_addr, iommu->ecap, ret);
-> >> -                     return -1;
-> >> +                     goto error;
-> >>               }
-> >>       }
-> >>
-> >> @@ -625,6 +640,11 @@ error:
-> >>       /*
-> >>        * handle error condition gracefully here!
-> >>        */
-> >> +
-> >> +     if (x2apic_present)
-> >> +             WARN(1, KERN_WARNING
-> >> +                     "Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
-> >
-> > How so?  Without interrupt remapping, neither KVM assignment or vfio
-> > work unless the user explicitly opts-in to insecure interrupts via
-> > module options.  Are there other attack vectors?  Also, I really like
-> > the code above that forces CFI clear, but I don't think that warning is
-> > correct yet.  According to the paper the vulnerability is enabled if
-> > both x2apic is not enabled and CFI is enabled.  When x2apic is enabled,
-> > does it matter if CFI is enabled?  My understand is no.  Should a
-> > warning only occur if the interrupt remapper is enabled and x2apic is
-> > not enabled and we're not able to clear CFI?  Thanks,
-> 
-> That's x2apic *present*, not enabled.  The idea is that, on a system
-> that has x2apic (which AFAIK is the same set of systems that support
-> interrupt remapping)
+automount-support is broken on the parisc architecture, because the existing
+#if list does not include a check for defined(__hppa__). The HPPA (parisc)
+architecture is similiar to other 64bit Linux targets where we have to define
+autofs_wqt_t (which is passed back and forth to user space) as int type which
+has a size of 32bit across 32 and 64bit kernels.
 
-I don't know that those are entirely overlapping sets.
+During the discussion on the mailing list, H. Peter Anvin suggested to invert
+the #if list since only specific platforms (specifically those who do not have
+a 32bit userspace, like IA64 and Alpha) should have autofs_wqt_t as unsigned
+long type.
 
-> , then you expect interrupt remapping to work,
-> whether in x2apic mode or xapic mode.  This warning should never
-> trigger on any hardware I know of (which, admittedly, doesn't mean
-> much).
+This suggestion is probably the best way to go, since Arm64 (and maybe others?)
+seems to have a non-working automounter. So in the long run even for other new
+upcoming architectures this inverted check seem to be the best solution, since
+it will not require them to change this #if again (unless they are 64bit only).
 
-Sure, you expect it to work, otherwise the interrupt remapping
-supported() callback should have failed.  If we get here, regardless of
-x2apic, we might want to print something about failing to enable it.
+Signed-off-by: Helge Deller <deller@gmx.de>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>
+CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: Ian Kent <raven@themaw.net>
 
-> I have no objection to rewording the warning, if you have any better
-> ideas.  I guess the vfio code (and hence the kvm code?) is more
-> careful than I realized.
 
-As above, I think we're only vulnerable if we enable irq remapping,
-disable x2apic, and can't disable CFI.  Even then, I'm not sure what
-good it is to print scary warnings about vulnerabilities when the
-majority of the user base isn't actually doing anything that makes them
-vulnerable.
-
-Should we even put the user in a state where they can be vulnerable?
-Rather than print a warning we could disable interrupt remapping if
-either x2apic isn't enabled or CFI cannot be disabled.  This could be
-noted with a pr_info/pr_debug warning and enabled with an iommu= option.
-Then, like doing device assignment w/o interrupt remapping, the user has
-to opt-in for interrupt remapping that is vulnerable to MSI injection.
-Thanks,
-
-Alex
-
+diff --git a/include/uapi/linux/auto_fs.h b/include/uapi/linux/auto_fs.h
+index 77cdba9..bb991df 100644
+--- a/include/uapi/linux/auto_fs.h
++++ b/include/uapi/linux/auto_fs.h
+@@ -28,25 +28,16 @@
+ #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
+ 
+ /*
+- * Architectures where both 32- and 64-bit binaries can be executed
+- * on 64-bit kernels need this.  This keeps the structure format
+- * uniform, and makes sure the wait_queue_token isn't too big to be
+- * passed back down to the kernel.
+- *
+- * This assumes that on these architectures:
+- * mode     32 bit    64 bit
+- * -------------------------
+- * int      32 bit    32 bit
+- * long     32 bit    64 bit
+- *
+- * If so, 32-bit user-space code should be backwards compatible.
++ * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
++ * back to the kernel via ioctl from userspace. On architectures where 32- and
++ * 64-bit userspace binaries can be executed it's important that the size of
++ * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
++ * do not break the binary ABI interface by changing the structure size.
+  */
+-
+-#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
+- || defined(__powerpc__) || defined(__s390__)
+-typedef unsigned int autofs_wqt_t;
+-#else
++#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
+ typedef unsigned long autofs_wqt_t;
++#else
++typedef unsigned int autofs_wqt_t;
+ #endif
+ 
+ /* Packet types */
