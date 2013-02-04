@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab3BDOIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 09:08:17 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15382 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab3BDOIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 09:08:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 04 Feb 2013 06:07:33 -0800
-Date: Mon, 4 Feb 2013 16:07:55 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 09/10] clk: tegra: Implement clocks for Tegra114
-Message-ID: <20130204140755.GU2364@tbergstrom-lnx.Nvidia.com>
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
- <1359713962-16822-10-git-send-email-pdeschrijver@nvidia.com>
- <510F5E87.90801@nvidia.com>
- <20130204104531.GQ2364@tbergstrom-lnx.Nvidia.com>
+	id S1755498Ab3BDOJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 09:09:20 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48793 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753311Ab3BDOJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 09:09:18 -0500
+Date: Mon, 4 Feb 2013 15:09:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
+Message-ID: <20130204140908.GC15452@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Viresh Kumar <viresh.kumar@linaro.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+	Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+References: <cover.1359976493.git.viresh.kumar@linaro.org>
+ <5808458.pvV2iHpBWm@vostro.rjw.lan>
+ <CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
+ <20130204123221.GA22340@pd.tnic>
+ <CAKohpomcrtV3i9fL4zV6Mt0uDza-9pHTOsqTe2=C1t6mE6cpCQ@mail.gmail.com>
+ <20130204130403.GD13909@pd.tnic>
+ <CAKohpokuFC5gnTFcD3+RH3p5XaW8vBtyfq+Kej=d2J8tERdmoQ@mail.gmail.com>
+ <20130204133648.GE13909@pd.tnic>
+ <CAKohpo=aLnhM0Op_32ohWZK5eG5nT7iK0OktBe+8ygOQW7zUqQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130204104531.GQ2364@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAKohpo=aLnhM0Op_32ohWZK5eG5nT7iK0OktBe+8ygOQW7zUqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 11:45:31AM +0100, Peter De Schrijver wrote:
-> On Mon, Feb 04, 2013 at 08:08:55AM +0100, Prashant Gaikwad wrote:
+On Mon, Feb 04, 2013 at 07:28:16PM +0530, Viresh Kumar wrote:
+> All files which are directly present in cpu/cpu*/cpufreq/ folder. I am
+> not talking about governor tunables but policy tunables. Things like
+> scaling_[min]max_freq are policy tunables.
 
-...
+No, on x86 those are the P-states frequencies. They're defined by the
+hardware.
 
-> > > +
-> > > +       /* dsia */
-> > > +       clk = clk_register_mux(NULL, "dsia_mux", mux_plld_out0_plld2_out0,
-> > > +                              ARRAY_SIZE(mux_plld_out0_plld2_out0), 0,
-> > > +                              clk_base + PLLD_BASE, 25, 1, 0, &pll_d_lock);
-> > > +       clks[dsia_mux] = clk;
-> > > +       clk = tegra_clk_register_periph_gate("dsia", "dsia_mux", 0, clk_base,
-> > > +                                   0, 48, &periph_h_regs,
-> > > +                                   periph_clk_enb_refcnt);
-> > > +       clk_register_clkdev(clk, "dsia", "tegradc.0");
-> > > +       clks[dsia] = clk;
-> > > +
-> > > +       /* dsib */
-> > > +       clk = clk_register_mux(NULL, "dsib_mux", mux_plld_out0_plld2_out0,
-> > > +                              ARRAY_SIZE(mux_plld_out0_plld2_out0), 0,
-> > > +                              clk_base + PLLD2_BASE, 25, 1, 0, &pll_d2_lock);
-> > > +       clks[dsib_mux] = clk;
-> > > +       clk = tegra_clk_register_periph_gate("dsib", "dsib_mux", 0, clk_base,
-> > > +                                   0, 82, &periph_u_regs,
-> > > +                                   periph_clk_enb_refcnt);
-> > > +       clk_register_clkdev(clk, "dsib", "tegradc.1");
-> > > +       clks[dsib] = clk;
-> > > +
-> > 
-> > Can we use periph no div clock here for dsia and dsib?
-> > 
-> 
-> Will check.
-> 
+> Policies don't have a name associated with them and so
+> cpu/cpufreq/policies doesn't make any sense. Rather one policy is
+> related to multiple cpus and its tunables are linked in all the cpus
+> that belong to it, like scaling_[min]max_freq.
 
-Not as such. As you can see the muxes need a lock to protect access to the
-PLLD_BASE and PLLD2_BASE registers respectively. The periph no div clock
-doesn't provide for these locks though. Do you think it makes sense to add
-the lock support for these 2 clocks?
+Then do the following:
 
-Cheers,
+cpu/cpufreq/policies/
+|-> policy0
+    |-> min_freq
+    |-> max_freq
+    |-> affected_cpus
+    ...
 
-Peter.
+or whatever needs to be a flexible interface for multi-policy cpufreq
+support.
+
+Remember: once you do those, they're more or less cast in stone so take
+your time and do the design right, do not hurry those.
+
+> Don't have examples of these, but there can be few. Over that it is a
+> must for multicluster systems as clusters normally have separate clock
+> control.
+
+Yeah, nice try. We only support real hardware in the kernel, not what
+could there be.
+
+> But then we will get governors tunables in cpu/cpu*/cpufreq/ instead
+> of cpu/cpufreq/ . Will that not break userspace for other systems?
+
+What's wrong with having both? The cpu/cpufreq/ governor will set the
+system-wide governor and the cpu/cpu*/cpufreq/ will add the different
+policies.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
