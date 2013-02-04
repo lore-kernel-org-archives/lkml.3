@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab3BDR0A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 12:26:00 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:52311 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab3BDRZ7 (ORCPT
+	id S1754446Ab3BDRba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 12:31:30 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14516 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176Ab3BDRb2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 12:25:59 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: [GIT PULL] drbd build fix in case CONFIG_CRYPTO_HMAC is not set
-Date: Mon, 04 Feb 2013 18:25:56 +0100
-Message-ID: <2148524.Qc3kYa9ye0@fat-tyre>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-36-lowlatency; KDE/4.8.5; x86_64; ; )
+	Mon, 4 Feb 2013 12:31:28 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 04 Feb 2013 09:31:12 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Sami Liedes <sliedes@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 4 Feb 2013 18:31:08 +0100
+Subject: Re: [PATCH 1/2] ARM: tegra: Fix build error for gic update
+Thread-Topic: [PATCH 1/2] ARM: tegra: Fix build error for gic update
+Thread-Index: Ac4C/WuGgTbsYU+hRwSzY6CeH/JByQ==
+Message-ID: <20130204.193108.1174796447728622419.hdoyu@nvidia.com>
+References: <1359976100-28871-1-git-send-email-hdoyu@nvidia.com><510FE95B.20207@wwwdotorg.org>
+In-Reply-To: <510FE95B.20207@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d88c3ab963d4cce09b25ef661b871bd7af6dad0d:
+Stephen Warren <swarren@wwwdotorg.org> wrote @ Mon, 4 Feb 2013 18:01:15 +0100:
 
-  drbd: only fail empty flushes if no good data is reachable (2013-01-30 10:40:33 +0100)
+> On 02/04/2013 04:08 AM, Hiroshi Doyu wrote:
+> > Fix build error in board-dt-tegra114.c(next-20130204)
+> 
+> Hiroshi, which tree should this patch be applied to? I assume it needs
+> to go through arm-soc since that's where the Tegra and GIC patches meet?
 
-are available in the git repository at:
-
-  git://git.drbd.org/linux-drbd.git for-jens-3.8-fix
-
-for you to fetch changes up to 78aa7987a223e8542f2735dace439690c6171ac5:
-
-  drbd: Fix build error when CONFIG_CRYPTO_HMAC is not set (2013-02-04 18:14:03 +0100)
-
-----------------------------------------------------------------
-Philipp Reisner (1):
-      drbd: Fix build error when CONFIG_CRYPTO_HMAC is not set
-
- drivers/block/drbd/drbd_receiver.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index a9eccfc..6e27dde 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -4659,8 +4659,8 @@ static int drbd_do_features(struct drbd_tconn *tconn)
- #if !defined(CONFIG_CRYPTO_HMAC) && !defined(CONFIG_CRYPTO_HMAC_MODULE)
- static int drbd_do_auth(struct drbd_tconn *tconn)
- {
--	dev_err(DEV, "This kernel was build without CONFIG_CRYPTO_HMAC.\n");
--	dev_err(DEV, "You need to disable 'cram-hmac-alg' in drbd.conf.\n");
-+	conn_err(tconn, "This kernel was build without CONFIG_CRYPTO_HMAC.\n");
-+	conn_err(tconn, "You need to disable 'cram-hmac-alg' in drbd.conf.\n");
- 	return -1;
- }
- #else
-
+"arm-soc" would be the place. Can you take care of this?
