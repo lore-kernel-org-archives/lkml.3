@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3BDXbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 18:31:53 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:52179 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab3BDXbv (ORCPT
+	id S1755383Ab3BDXed (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 18:34:33 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51405 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab3BDXec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 18:31:51 -0500
+	Mon, 4 Feb 2013 18:34:32 -0500
+X-AuditID: 9c930179-b7c24ae00000119c-34-51104586db81
+Date: Tue, 5 Feb 2013 08:34:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, kyungmin.park@samsung.com
+Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high
+ memory
+Message-ID: <20130204233430.GA2610@blaptop>
+References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20130204185650.GP25591@8bytes.org>
-References: <1359983924-28952-1-git-send-email-joro@8bytes.org>
-	<1359983924-28952-5-git-send-email-joro@8bytes.org>
-	<CALRxmdCiSZgoqd8tp90kPCdA=s7SWZCTwKsFnWu7S5=U7+eRLQ@mail.gmail.com>
-	<20130204185650.GP25591@8bytes.org>
-Date: Mon, 4 Feb 2013 17:31:51 -0600
-Message-ID: <CALRxmdD9Ock04AoUtF9FT_uY5C5Eb7cSPmtCM6WK=StNB_iYkQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] iommu: Add domain window handling functions
-From: Stuart Yoder <b08248@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Sethi Varun-B16395 <B16395@freescale.com>,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 4, 2013 at 12:56 PM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Mon, Feb 04, 2013 at 12:10:51PM -0600, Stuart Yoder wrote:
->> On Mon, Feb 4, 2013 at 7:18 AM, Joerg Roedel <joro@8bytes.org> wrote:
->> > +static inline int iommu_domain_window_enable(struct iommu_domain *domain,
->> > +                                            u32 wnd_nr, phys_addr_t paddr,
->> > +                                            size_t size)
->> > +{
->> > +       return -ENODEV;
->> > +}
->> > +
->> > +static inline void iommu_domain_window_disable(struct iommu_domain *domain,
->> > +                                              u32 wnd_nr)
->> > +{
->> > +}
->> > +
->> >  static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
->> >                                              unsigned long iova)
->> >  {
->>
->> This API looks workable.   The one change we need is that the size argument in
->> the enable API needs to be 64 bits.   Our window sizes can exceed 4GB.
->
-> Okay. So if your architecture supports sizes over 2^32 then size_t
-> probably is already 64bits, right?
+On Mon, Feb 04, 2013 at 11:27:05AM +0100, Marek Szyprowski wrote:
+> The total number of low memory pages is determined as
+> totalram_pages - totalhigh_pages, so without this patch all CMA
+> pageblocks placed in highmem were accounted to low memory.
 
-No, on a 32-bit platform size_t would generally be 32-bits.  But the PAMU
-is independent of that.   I think we should just make it a u64.
+So what's the end user effect? With the effect, we have to decide
+routing it on stable.
 
-Stuart
+> 
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  mm/page_alloc.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index f5bab0a..6415d93 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -773,6 +773,10 @@ void __init init_cma_reserved_pageblock(struct page *page)
+>  	set_pageblock_migratetype(page, MIGRATE_CMA);
+>  	__free_pages(page, pageblock_order);
+>  	totalram_pages += pageblock_nr_pages;
+> +#ifdef CONFIG_HIGHMEM
+
+We don't need #ifdef/#endif.
+
+> +	if (PageHighMem(page))
+> +		totalhigh_pages += pageblock_nr_pages;
+> +#endif
+>  }
+>  #endif
+>  
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
