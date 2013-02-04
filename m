@@ -1,50 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab3BDUmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 15:42:39 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:34258 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931Ab3BDUmi (ORCPT
+	id S1754602Ab3BDUoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 15:44:30 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:3690 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282Ab3BDUo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 15:42:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAN1soZxOX24QCYOTXmVOmNGu-+ShUPaBScxh38C=p7-v_2OZnw@mail.gmail.com>
-References: <1359816246-3979-1-git-send-email-acourbot@nvidia.com>
-	<1359816246-3979-2-git-send-email-acourbot@nvidia.com>
-	<CAN1soZxOX24QCYOTXmVOmNGu-+ShUPaBScxh38C=p7-v_2OZnw@mail.gmail.com>
-Date: Mon, 4 Feb 2013 21:42:37 +0100
-Message-ID: <CACRpkdY83TqF5zzKrD1LNQ1reL5Z+HPKHAWwLxLWj4fYr3SSZw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] arm: pxa: tosa: do not use gpiochip_reserve()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Dirk Opfer <dirk@opfer-online.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arch@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        gnurou@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Feb 2013 15:44:27 -0500
+Message-ID: <1360010058.23410.169.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device
+ hotplug framework
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
+        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
+        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 04 Feb 2013 13:34:18 -0700
+In-Reply-To: <23473445.t1DSaBm58X@vostro.rjw.lan>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
+	 <1890597.vDojv7So7R@vostro.rjw.lan>
+	 <1360007184.23410.139.camel@misato.fc.hp.com>
+	 <23473445.t1DSaBm58X@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 3, 2013 at 1:29 AM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
+On Mon, 2013-02-04 at 21:12 +0100, Rafael J. Wysocki wrote:
+> On Monday, February 04, 2013 12:46:24 PM Toshi Kani wrote:
+> > On Mon, 2013-02-04 at 20:48 +0100, Rafael J. Wysocki wrote:
+> > > On Monday, February 04, 2013 09:02:46 AM Toshi Kani wrote:
+> > > > On Mon, 2013-02-04 at 14:41 +0100, Rafael J. Wysocki wrote:
+> > > > > On Sunday, February 03, 2013 07:23:49 PM Greg KH wrote:
+> > > > > > On Sat, Feb 02, 2013 at 09:15:37PM +0100, Rafael J. Wysocki wrote:
+> > > > > > > On Saturday, February 02, 2013 03:58:01 PM Greg KH wrote:
+> > > >   :
+> > > > > > > Yes, but those are just remove events and we can only see how destructive they
+> > > > > > > were after the removal.  The point is to be able to figure out whether or not
+> > > > > > > we *want* to do the removal in the first place.
+> > > > > > 
+> > > > > > Yes, but, you will always race if you try to test to see if you can shut
+> > > > > > down a device and then trying to do it.  So walking the bus ahead of
+> > > > > > time isn't a good idea.
+> > > > > >
+> > > > > > And, we really don't have a viable way to recover if disconnect() fails,
+> > > > > > do we.  What do we do in that situation, restore the other devices we
+> > > > > > disconnected successfully?  How do we remember/know what they were?
+> > > > > > 
+> > > > > > PCI hotplug almost had this same problem until the designers finally
+> > > > > > realized that they just had to accept the fact that removing a PCI
+> > > > > > device could either happen by:
+> > > > > > 	- a user yanking out the device, at which time the OS better
+> > > > > > 	  clean up properly no matter what happens
+> > > > > > 	- the user asked nicely to remove a device, and the OS can take
+> > > > > > 	  as long as it wants to complete that action, including
+> > > > > > 	  stalling for noticable amounts of time before eventually,
+> > > > > > 	  always letting the action succeed.
+> > > > > > 
+> > > > > > I think the second thing is what you have to do here.  If a user tells
+> > > > > > the OS it wants to remove these devices, you better do it.  If you
+> > > > > > can't, because memory is being used by someone else, either move them
+> > > > > > off, or just hope that nothing bad happens, before the user gets
+> > > > > > frustrated and yanks out the CPU/memory module themselves physically :)
+> > > > > 
+> > > > > Well, that we can't help, but sometimes users really *want* the OS to tell them
+> > > > > if it is safe to unplug something at this particualr time (think about the
+> > > > > Windows' "safe remove" feature for USB sticks, for example; that came out of
+> > > > > users' demand AFAIR).
+> > > > > 
+> > > > > So in my opinion it would be good to give them an option to do "safe eject" or
+> > > > > "forcible eject", whichever they prefer.
+> > > > 
+> > > > For system device hot-plug, it always needs to be "safe eject".  This
+> > > > feature will be implemented on mission critical servers, which are
+> > > > managed by professional IT folks.  Crashing a server causes serious
+> > > > money to the business.
+> > > 
+> > > Well, "always" is a bit too strong a word as far as human behavior is concerned
+> > > in my opinion.
+> > > 
+> > > That said I would be perfectly fine with not supporting the "forcible eject" to
+> > > start with and waiting for the first request to add support for it.  I also
+> > > would be fine with taking bets on how much time it's going to take for such a
+> > > request to appear. :-)
+> > 
+> > Sounds good.  In my experience, though, it actually takes a LONG time to
+> > convince customers that "safe eject" is actually safe.  Enterprise
+> > customers are so afraid of doing anything risky that might cause the
+> > system to crash or hang due to some defect.  I would be very surprised
+> > to see a customer asking for a force operation when we do not guarantee
+> > its outcome.  I have not seen such enterprise customers yet.
+> 
+> But we're talking about a kernel that is supposed to run on mobile phones too,
+> among other things.
 
-> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+I think using this feature for RAS i.e. replacing a faulty device
+on-line, will continue to be limited for high-end systems.  For low-end
+systems, it does not make sense for customers to pay much $$ for this
+feature.  They can just shut the system down for replacement, or they
+can simply buy a new system instead of repairing.
 
-Thanks!
+That said, using this feature on VM for workload balancing does not
+require any special hardware.  So, I can see someone willing to try out
+to see how it goes with a force option on VM for personal use.   
 
-> Linus,
->
-> Could you help to merge this patch into your gpio git tree? I think
-> that both of them should go through one git tree.
+Thanks,
+-Toshi
 
-Yep, already merged it.
 
-Yours,
-Linus Walleij
+ 
+
