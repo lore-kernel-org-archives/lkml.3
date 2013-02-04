@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab3BDPpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 10:45:50 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34837 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab3BDPps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 10:45:48 -0500
-Date: Mon, 4 Feb 2013 15:45:02 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, Matt Porter <mporter@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
-	arm/common
-Message-ID: <20130204154502.GD2637@n2100.arm.linux.org.uk>
-References: <1359742975-10421-1-git-send-email-mporter@ti.com> <1359742975-10421-2-git-send-email-mporter@ti.com> <5022f635a527470dbd0be932063e9cd2@DFLE72.ent.ti.com> <20130201184915.GP2244@beef> <510C1D0E.6030401@mvista.com> <20130201185820.GE29898@arwen.pp.htv.fi> <510C2A47.1090607@mvista.com> <20130201205600.GA31762@arwen.pp.htv.fi> <20130201213003.GW2637@n2100.arm.linux.org.uk> <20130204154153.GA18237@arwen.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130204154153.GA18237@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756146Ab3BDPtr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 10:49:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754185Ab3BDPtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 10:49:45 -0500
+Message-ID: <1359992968.11144.414.camel@bling.home>
+Subject: Re: DMAR faults from unrelated device when vfio is used
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Gstir <david@sigma-star.at>
+Cc: kvm@vger.kernel.org, dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, daniel.vetter@ffwll.ch,
+        richard@sigma-star.at
+Date: Mon, 04 Feb 2013 08:49:28 -0700
+In-Reply-To: <1359972630.2498.21.camel@riven-lux.site>
+References: <1359972630.2498.21.camel@riven-lux.site>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 05:41:53PM +0200, Felipe Balbi wrote:
-> Hi,
+On Mon, 2013-02-04 at 11:10 +0100, David Gstir wrote:
+> Hi!
 > 
-> On Fri, Feb 01, 2013 at 09:30:03PM +0000, Russell King - ARM Linux wrote:
-> > > > > I guess to make the MUSB side simpler we would need musb-dma-engine glue
-> > > > > to map dmaengine to the private MUSB API. Then we would have some
-> > > > > starting point to also move inventra (and anybody else) to dmaengine
-> > > > > API.
-> > > > 
-> > > >    Why? Inventra is a dedicated device's private DMA controller, why make
-> > > > universal DMA driver for it?
-> > > 
-> > > because it doesn't make sense to support multiple DMA APIs. We can check
-> > > from MUSB's registers if it was configured with Inventra DMA support and
-> > > based on that we can register MUSB's own DMA Engine to dmaengine API.
-> > 
-> > Hang on.  This is one of the DMA implementations which is closely
-> > coupled with the USB and only the USB?  If it is...
-> > 
-> > I thought this had been discussed _extensively_ before.  I thought the
-> > resolution on it was:
-> > 1. It would not use the DMA engine API.
-> > 2. It would not live in arch/arm.
-> > 3. It would be placed nearby the USB driver it's associated with.
-> > 
-> > (1) because we don't use APIs just for the hell of it - think.  Do we
-> > use the DMA engine API for PCI bus mastering ethernet controllers?  No.
-> > Do we use it for PCI bus mastering SCSI controllers?  No.  Because the
-> > DMA is integral to the rest of the device.
+> I get the following error messages over and over again when using vfio
+> in qemu-kvm:
 > 
-> that's not really a fair comparison, however. MUSB is used with several
-> DMA engines.
+> [ 1692.021403] dmar: DMAR:[DMA Read] Request device [00:02.0] fault addr 1a45aa9000 
+> [ 1692.021403] DMAR:[fault reason 12] non-zero reserved fields in PTE
+> [ 1692.021416] dmar: DRHD: handling fault status reg 2
+> 
+> This pci device is the graphics card, which I did not assign to qemu!
+> I did assign the following devices:
+> 00:1a.0, 00:1b.0, 00:1c.0, 00:1c.6, 00:1d.0, 03:00.0.
 
-I only mentioned it because it _was_ brought up as an argument against
-using the DMA engine API in the previous discussions.  I'm just reminding
-people what was discussed.
+Piecing together your logs:
 
-> Considering all of the above, it's far better to use DMA engine and get
-> rid of all the mess.
+iommu_group 5
+00:1a.0 USB controller [0c03]: Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced Host Controller #2 [8086:1c2d] (rev 04)
+iommu_group 6
+00:1b.0 Audio device [0403]: Intel Corporation 6 Series/C200 Series Chipset Family High Definition Audio Controller [8086:1c20] (rev 04)
+iommu_group 7
+00:1c.0 PCI bridge [0604]: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 1 [8086:1c10] (rev b4)
+00:1c.6 PCI bridge [0604]: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 7 [8086:1c1c] (rev b4)
+03:00.0 USB controller [0c03]: NEC Corporation uPD720200 USB 3.0 Host Controller [1033:0194] (rev ff)
+iommu_group 8
+00:1d.0 USB controller [0c03]: Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced Host Controller #1 [8086:1c26] (rev 04)
 
-Which is what both you and I have been saying for the last 3 or so years
-on this subject...
+Can you clarify what you mean by assign?  Are you actually assigning the
+root ports to the qemu guest (1c.0 & 1c.6)?  vfio will require they be
+owned by vfio-pci to make use of 3:00.0, but assigning them to the guest
+is not recommended.  Can you provided your qemu command line?  We need
+to re-visit how to handle pcieport devices with vfio-pci, perhaps
+white-listing it as a vfio "compatible" driver, but this still should
+not interfere with devices external to the group.
+
+The DMAR fault address looks pretty bogus unless you happen to have
+100GB+ of ram in the system.
+
+> The error occurs at random and is not reproducible every time. It
+> happens about every third reboot. 
+> I'm running qemu-kvm 1.3.0 (kvm-1.3.0-187.3), kernel 3.8.0-rc5 and
+> windows 7 as guest OS. The hardware uses an Intel IOMMU. See
+> attachments for output of lspci, and details on iommu groups
+> 
+> I'm not sure if this problem originates from qemu, kvm, vfio or the
+> GPU driver.
+> Do you have any hints how to debug this further?
+
+vfio makes use of the IOMMU API for programming DMA translations, so an
+reserved fields would have to be programmed by intel-iommu itself.  We
+could of course be passing some kind of bogus data that intel-iommu
+isn't catching.  If you're assigning the root ports to the guest, I'd
+start with that, don't do it.  Attach them to vfio, but don't give them
+to the guest.  Maybe that'll give us a hint.  I also notice that your
+USB 3 controller is dead:
+
+03:00.0 USB controller: NEC Corporation uPD720200 USB 3.0 Host Controller (rev ff) (prog-if ff)
+	!!! Unknown header type 7f
+
+We only see unknown header type 7f when the read from the device returns
+-1.  This might have something to do with the root port above it (1c.6)
+being in state D3.  Windows likes to put unused devices in D3, which
+leads me to suspect you are giving it to the guest.  Let's see what
+happens without that.  Thanks,
+
+Alex
+
