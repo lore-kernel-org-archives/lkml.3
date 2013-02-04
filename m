@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab3BDR4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 12:56:48 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:22735 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab3BDR4r (ORCPT
+	id S1754941Ab3BDSHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:07:05 -0500
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:42892 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab3BDSHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 12:56:47 -0500
-Message-ID: <510FF659.8030905@tilera.com>
-Date: Mon, 4 Feb 2013 12:56:41 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: <linux-kernel@vger.kernel.org>, David Dillow <dillowda@ornl.gov>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        <linux-rdma@vger.kernel.org>
-Subject: Re: [PATCH] tile: revert pr_info to printk in <asm/io.h>
-References: <201302012043.r11KhFXi024365@farm-0021.internal.tilera.com> <1359758038.17807.18.camel@joe-AO722>
-In-Reply-To: <1359758038.17807.18.camel@joe-AO722>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	Mon, 4 Feb 2013 13:07:03 -0500
+Date: Mon, 4 Feb 2013 13:06:40 -0500
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
+        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 09/62] atm/nicstar: convert to idr_alloc()
+Message-ID: <20130204130640.6a1795bb@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <20130204170624.GJ27963@mtj.dyndns.org>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+	<1359854463-2538-10-git-send-email-tj@kernel.org>
+	<20130204090410.2942f8cc@thirdoffive.cmf.nrl.navy.mil>
+	<20130204170624.GJ27963@mtj.dyndns.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/1/2013 5:33 PM, Joe Perches wrote:
-> On Fri, 2013-02-01 at 12:34 -0500, Chris Metcalf wrote:
->> Using pr_info in a header exposes us to potential trouble from
->> subsystems that define pr_fmt.  This change fixes:
->>
->>   In file included from include/linux/scatterlist.h:10,
->>                    from include/scsi/scsi.h:12,
->>                    from drivers/infiniband/ulp/srp/ib_srp.c:46:
->>   arch/tile/include/asm/io.h: In function ‘ioport_map’:
->>   arch/tile/include/asm/io.h:296: error: expected ‘)’ before ‘PFX’
-> Interesting.
->
->> diff --git a/arch/tile/include/asm/io.h b/arch/tile/include/asm/io.h
-> []
->> @@ -292,7 +292,7 @@ static inline long ioport_panic(void)
->>  
->>  static inline void __iomem *ioport_map(unsigned long port, unsigned int len)
->>  {
->> -	pr_info("ioport_map: mapping IO resources is unsupported on tile.\n");
->> +	printk("ioport_map: mapping IO resources is unsupported on tile.\n");
-> It'd be nicer to add an appropriate KERN_<LEVEL> here.
->
-> My preference would be to change ib_srp.c (and ib_srpt) like:
-> ---
->  drivers/infiniband/ulp/srp/ib_srp.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-> index d5088ce..59bf409 100644
-> --- a/drivers/infiniband/ulp/srp/ib_srp.c
-> +++ b/drivers/infiniband/ulp/srp/ib_srp.c
-> @@ -30,7 +30,7 @@
->   * SOFTWARE.
->   */
->  
-> -#define pr_fmt(fmt) PFX fmt
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
->  #include <linux/module.h>
->  #include <linux/init.h>
->
+On Mon, 4 Feb 2013 09:06:24 -0800
+Tejun Heo <tj@kernel.org> wrote:
 
-Makes sense to me, and it does fix the compile failure.  I've pulled my original change from my tree and instead, for the change above (assuming Joe is implicitly providing a Signed-off-by on this patch):
+> Hello, Chas.
+> 
+> On Mon, Feb 04, 2013 at 09:04:10AM -0500, chas williams - CONTRACTOR wrote:
+> > I don't quite understand your comment.  idr_pre_get() returns 0 in the
+> > case of failure.
+> 
+> So, if you do the following,
+> 
+> 	int id1 = 0, id2 = 0;
+> 
+> 	if (!id1)
+> 		err = idr_get_new_above(&card->idr, handle1, 0, &id1);
+> 	if (!id2 && err == 0)
+> 		err = idr_get_new_above(&card->idr, handle2, 0, &id2);
+> 	if (err)
+> 		goto out;
+> 									    
+> You have no way of telling whether id1/2 are allocated or not.  0 is
+> the special "not allocated" value but it also is a valid ID.  The
+> error path should be freeing id1/2 if either of them has been
+> allocated but it doesn't and can't with 0 as the non-allocated value.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+yeah, i see now.  it didn't understand what idr_get_new_above() was
+doing with the start id.  i assumed that it would return something
+greater than the start id.  i guess it never did return the starting id
+(atleast after some initial failure).
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+additionally, yes, cleaning up if the second allocation failed was never
+done.
