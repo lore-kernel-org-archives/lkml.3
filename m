@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3BDHRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 02:17:19 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:38344 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab3BDHRS (ORCPT
+	id S1753985Ab3BDHR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 02:17:28 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:60593 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176Ab3BDHRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 02:17:18 -0500
+	Mon, 4 Feb 2013 02:17:22 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] fix mm: use long type for page counts in mm_populate() and get_user_pages()
-Date: Sun,  3 Feb 2013 23:17:10 -0800
-Message-Id: <1359962232-20811-2-git-send-email-walken@google.com>
+Subject: [PATCH v2 3/3] mm: accelerate munlock() treatment of THP pages
+Date: Sun,  3 Feb 2013 23:17:12 -0800
+Message-Id: <1359962232-20811-4-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1359962232-20811-1-git-send-email-walken@google.com>
 References: <1359962232-20811-1-git-send-email-walken@google.com>
@@ -22,134 +22,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew suggested I make the nr_pages argument an unsigned long rather
-than just a long. I was initially worried that nr_pages would be compared
-with signed longs, but this isn't the case, so his suggestion is perfectly
-valid.
+munlock_vma_pages_range() was always incrementing addresses by PAGE_SIZE
+at a time. When munlocking THP pages (or the huge zero page), this resulted
+in taking the mm->page_table_lock 512 times in a row.
 
-Sending as a 'fix' change, to be collapsed with the original in -mm.
+We can do better by making use of the page_mask returned by follow_page_mask
+(for the huge zero page case), or the size of the page munlock_vma_page()
+operated on (for the true THP page case).
+
+Note - I am sending this as RFC only for now as I can't currently put
+my finger on what if anything prevents split_huge_page() from operating
+concurrently on the same page as munlock_vma_page(), which would mess
+up our NR_MLOCK statistics. Is this a latent bug or is there a subtle
+point I missed here ?
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 
 ---
- include/linux/hugetlb.h |  2 +-
- include/linux/mm.h      | 11 ++++++-----
- mm/hugetlb.c            |  8 ++++----
- mm/memory.c             | 12 ++++++------
- mm/mlock.c              |  2 +-
- 5 files changed, 18 insertions(+), 17 deletions(-)
+ mm/internal.h |  2 +-
+ mm/mlock.c    | 32 +++++++++++++++++++++-----------
+ 2 files changed, 22 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index fc6ed17cfd17..eedc334fb6f5 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -45,7 +45,7 @@ int hugetlb_mempolicy_sysctl_handler(struct ctl_table *, int,
- int copy_hugetlb_page_range(struct mm_struct *, struct mm_struct *, struct vm_area_struct *);
- long follow_hugetlb_page(struct mm_struct *, struct vm_area_struct *,
- 			 struct page **, struct vm_area_struct **,
--			 unsigned long *, long *, long, unsigned int flags);
-+			 unsigned long *, unsigned long *, long, unsigned int);
- void unmap_hugepage_range(struct vm_area_struct *,
- 			  unsigned long, unsigned long, struct page *);
- void __unmap_hugepage_range_final(struct mmu_gather *tlb,
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d5716094f191..3d9fbcf9fa94 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1041,12 +1041,13 @@ extern int access_remote_vm(struct mm_struct *mm, unsigned long addr,
- 		void *buf, int len, int write);
- 
- long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
--		      unsigned long start, long len, unsigned int foll_flags,
--		      struct page **pages, struct vm_area_struct **vmas,
--		      int *nonblocking);
-+		      unsigned long start, unsigned long nr_pages,
-+		      unsigned int foll_flags, struct page **pages,
-+		      struct vm_area_struct **vmas, int *nonblocking);
- long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
--		    unsigned long start, long nr_pages, int write, int force,
--		    struct page **pages, struct vm_area_struct **vmas);
-+		    unsigned long start, unsigned long nr_pages,
-+		    int write, int force, struct page **pages,
-+		    struct vm_area_struct **vmas);
- int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 			struct page **pages);
- struct kvec;
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 4ad07221ce60..951873c8f57e 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2926,12 +2926,12 @@ follow_huge_pud(struct mm_struct *mm, unsigned long address,
- 
- long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			 struct page **pages, struct vm_area_struct **vmas,
--			 unsigned long *position, long *length, long i,
--			 unsigned int flags)
-+			 unsigned long *position, unsigned long *nr_pages,
-+			 long i, unsigned int flags)
- {
- 	unsigned long pfn_offset;
- 	unsigned long vaddr = *position;
--	long remainder = *length;
-+	unsigned long remainder = *nr_pages;
- 	struct hstate *h = hstate_vma(vma);
- 
- 	spin_lock(&mm->page_table_lock);
-@@ -3001,7 +3001,7 @@ same_page:
- 		}
- 	}
- 	spin_unlock(&mm->page_table_lock);
--	*length = remainder;
-+	*nr_pages = remainder;
- 	*position = vaddr;
- 
- 	return i ? i : -EFAULT;
-diff --git a/mm/memory.c b/mm/memory.c
-index 381b78c20d84..f0b6b2b798c4 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1674,14 +1674,14 @@ static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long add
-  * you need some special @gup_flags.
+diff --git a/mm/internal.h b/mm/internal.h
+index 1c0c4cc0fcf7..8562de0a5197 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -195,7 +195,7 @@ static inline int mlocked_vma_newpage(struct vm_area_struct *vma,
+  * must be called with vma's mmap_sem held for read or write, and page locked.
   */
- long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
--		unsigned long start, long nr_pages, unsigned int gup_flags,
--		struct page **pages, struct vm_area_struct **vmas,
--		int *nonblocking)
-+		unsigned long start, unsigned long nr_pages,
-+		unsigned int gup_flags, struct page **pages,
-+		struct vm_area_struct **vmas, int *nonblocking)
- {
- 	long i;
- 	unsigned long vm_flags;
+ extern void mlock_vma_page(struct page *page);
+-extern void munlock_vma_page(struct page *page);
++extern unsigned int munlock_vma_page(struct page *page);
  
--	if (nr_pages <= 0)
-+	if (!nr_pages)
- 		return 0;
- 
- 	VM_BUG_ON(!!pages != !!(gup_flags & FOLL_GET));
-@@ -1978,8 +1978,8 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
-  * See also get_user_pages_fast, for performance critical applications.
-  */
- long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
--		unsigned long start, long nr_pages, int write, int force,
--		struct page **pages, struct vm_area_struct **vmas)
-+		unsigned long start, unsigned long nr_pages, int write,
-+		int force, struct page **pages, struct vm_area_struct **vmas)
- {
- 	int flags = FOLL_TOUCH;
- 
+ /*
+  * Clear the page's PageMlocked().  This can be useful in a situation where
 diff --git a/mm/mlock.c b/mm/mlock.c
-index e1fa9e4b0a66..6baaf4b0e591 100644
+index 6baaf4b0e591..486702edee35 100644
 --- a/mm/mlock.c
 +++ b/mm/mlock.c
-@@ -160,7 +160,7 @@ long __mlock_vma_pages_range(struct vm_area_struct *vma,
+@@ -102,13 +102,14 @@ void mlock_vma_page(struct page *page)
+  * can't isolate the page, we leave it for putback_lru_page() and vmscan
+  * [page_referenced()/try_to_unmap()] to deal with.
+  */
+-void munlock_vma_page(struct page *page)
++unsigned int munlock_vma_page(struct page *page)
+ {
++	unsigned int nr_pages = hpage_nr_pages(page);
++
+ 	BUG_ON(!PageLocked(page));
+ 
+ 	if (TestClearPageMlocked(page)) {
+-		mod_zone_page_state(page_zone(page), NR_MLOCK,
+-				    -hpage_nr_pages(page));
++		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
+ 		if (!isolate_lru_page(page)) {
+ 			int ret = SWAP_AGAIN;
+ 
+@@ -141,6 +142,8 @@ void munlock_vma_page(struct page *page)
+ 				count_vm_event(UNEVICTABLE_PGMUNLOCKED);
+ 		}
+ 	}
++
++	return nr_pages;
+ }
+ 
+ /**
+@@ -159,7 +162,6 @@ long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 		unsigned long start, unsigned long end, int *nonblocking)
  {
  	struct mm_struct *mm = vma->vm_mm;
- 	unsigned long addr = start;
--	long nr_pages = (end - start) / PAGE_SIZE;
-+	unsigned long nr_pages = (end - start) / PAGE_SIZE;
+-	unsigned long addr = start;
+ 	unsigned long nr_pages = (end - start) / PAGE_SIZE;
  	int gup_flags;
  
- 	VM_BUG_ON(start & ~PAGE_MASK);
+@@ -185,7 +187,7 @@ long __mlock_vma_pages_range(struct vm_area_struct *vma,
+ 	if (vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC))
+ 		gup_flags |= FOLL_FORCE;
+ 
+-	return __get_user_pages(current, mm, addr, nr_pages, gup_flags,
++	return __get_user_pages(current, mm, start, nr_pages, gup_flags,
+ 				NULL, NULL, nonblocking);
+ }
+ 
+@@ -222,13 +224,12 @@ static int __mlock_posix_error_return(long retval)
+ void munlock_vma_pages_range(struct vm_area_struct *vma,
+ 			     unsigned long start, unsigned long end)
+ {
+-	unsigned long addr;
+-
+-	lru_add_drain();
+ 	vma->vm_flags &= ~VM_LOCKED;
+ 
+-	for (addr = start; addr < end; addr += PAGE_SIZE) {
++	while (start < end) {
+ 		struct page *page;
++		unsigned int page_mask, page_increm;
++
+ 		/*
+ 		 * Although FOLL_DUMP is intended for get_dump_page(),
+ 		 * it just so happens that its special treatment of the
+@@ -236,13 +237,22 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
+ 		 * suits munlock very well (and if somehow an abnormal page
+ 		 * has sneaked into the range, we won't oops here: great).
+ 		 */
+-		page = follow_page(vma, addr, FOLL_GET | FOLL_DUMP);
++		page = follow_page_mask(vma, start, FOLL_GET | FOLL_DUMP,
++					&page_mask);
+ 		if (page && !IS_ERR(page)) {
+ 			lock_page(page);
+-			munlock_vma_page(page);
++			lru_add_drain();
++			/*
++			 * Any THP page found by follow_page_mask() may have
++			 * gotten split before reaching munlock_vma_page(),
++			 * so we need to recompute the page_mask here.
++			 */
++			page_mask = munlock_vma_page(page);
+ 			unlock_page(page);
+ 			put_page(page);
+ 		}
++		page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
++		start += page_increm * PAGE_SIZE;
+ 		cond_resched();
+ 	}
+ }
 -- 
 1.8.1
