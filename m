@@ -1,277 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab3BDCUP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 21:20:15 -0500
-Received: from mga03.intel.com ([143.182.124.21]:8748 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753785Ab3BDCUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 21:20:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,596,1355126400"; 
-   d="scan'208";a="252139277"
-Message-ID: <1359944402.2250.44.camel@rzhang1-mobl4>
-Subject: Re: [PATCH V3 1/2] thermal: sysfs: Add a new sysfs node emul_temp
- for thermal emulation
-From: Zhang Rui <rui.zhang@intel.com>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-pm@vger.kernel.org, jonghwa3.lee@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        durgadoss.r@intel.com, kgene.kim@samsung.com
-Date: Mon, 04 Feb 2013 10:20:02 +0800
-In-Reply-To: <1359937815-29851-1-git-send-email-amit.daniel@samsung.com>
-References: <1359343700-30190-1-git-send-email-amit.daniel@samsung.com>
-	 <1359937815-29851-1-git-send-email-amit.daniel@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753931Ab3BDChG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 21:37:06 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:63367 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab3BDChD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 21:37:03 -0500
+Date: Mon, 4 Feb 2013 10:36:46 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Shaohua Li <shli@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Joseph Lo <josephl@nvidia.com>
+Subject: Re: CPU hotplug hang due to "swap: make each swap partition have one
+ address_space"
+Message-ID: <20130204023646.GA321@kernel.org>
+References: <510C9DE9.9040207@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510C9DE9.9040207@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-02-03 at 16:30 -0800, Amit Daniel Kachhap wrote:
-> This patch adds support to set the emulated temperature method in
-> thermal zone (sensor). After setting this feature thermal zone may
-> report this temperature and not the actual temperature. The emulation
-> implementation may be based on sensor capability through platform
-> specific handler or pure software emulation if no platform handler defined.
+On Fri, Feb 01, 2013 at 10:02:33PM -0700, Stephen Warren wrote:
+> Shaohua,
 > 
-> This is useful in debugging different temperature threshold and its
-> associated cooling action. Critical threshold's cannot be emulated.
-> Writing 0 on this node should disable emulation.
-> 
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> In next-20130128, commit 174f064 "swap: make each swap partition have
+> one address_space" (from the mm/akpm tree) appears causes a hang/RCU
+> stall for me when hot-unplugging a CPU.
 
-applied to thermal -next.
+does this one work for you?
+http://marc.info/?l=linux-mm&m=135929599505624&w=2
+Or try a more recent linux-next. The patch is in akpm's tree.
 
-thanks,
-rui
-> ---
-> Changes in V3:
-> * Removed the un-necessary get_temp pointer check.
-> * Added the read temp code in #ifdef EMULATION macros
-> 
-> Changes in V2:
-> * Added config option for enabling emulation support.
-> * Added s/w emulation if no platform handler registered.
-> * skip the critical trip point emulation
-> 
-> This patchset is based on thermal maintainer next tree.
-> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next 
-> 
->  Documentation/thermal/sysfs-api.txt |   13 ++++++
->  drivers/thermal/Kconfig             |    8 ++++
->  drivers/thermal/thermal_sys.c       |   79 ++++++++++++++++++++++++++++++-----
->  include/linux/thermal.h             |    2 +
->  4 files changed, 91 insertions(+), 11 deletions(-)
-> 
-> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-> index 526d4b9..6859661 100644
-> --- a/Documentation/thermal/sysfs-api.txt
-> +++ b/Documentation/thermal/sysfs-api.txt
-> @@ -55,6 +55,8 @@ temperature) and throttle appropriate devices.
->  	.get_trip_type: get the type of certain trip point.
->  	.get_trip_temp: get the temperature above which the certain trip point
->  			will be fired.
-> +	.set_emul_temp: set the emulation temperature which helps in debugging
-> +			different threshold temperature points.
->  
->  1.1.2 void thermal_zone_device_unregister(struct thermal_zone_device *tz)
->  
-> @@ -153,6 +155,7 @@ Thermal zone device sys I/F, created once it's registered:
->      |---trip_point_[0-*]_temp:	Trip point temperature
->      |---trip_point_[0-*]_type:	Trip point type
->      |---trip_point_[0-*]_hyst:	Hysteresis value for this trip point
-> +    |---emul_temp:		Emulated temperature set node
->  
->  Thermal cooling device sys I/F, created once it's registered:
->  /sys/class/thermal/cooling_device[0-*]:
-> @@ -252,6 +255,16 @@ passive
->  	Valid values: 0 (disabled) or greater than 1000
->  	RW, Optional
->  
-> +emul_temp
-> +	Interface to set the emulated temperature method in thermal zone
-> +	(sensor). After setting this temperature, the thermal zone may pass
-> +	this temperature to platform emulation function if registered or
-> +	cache it locally. This is useful in debugging different temperature
-> +	threshold and its associated cooling action. This is write only node
-> +	and writing 0 on this node should disable emulation.
-> +	Unit: millidegree Celsius
-> +	WO, Optional
-> +
->  *****************************
->  * Cooling device attributes *
->  *****************************
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index faf38c5..e4cf7fb 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -78,6 +78,14 @@ config CPU_THERMAL
->  	  and not the ACPI interface.
->  	  If you want this support, you should say Y here.
->  
-> +config THERMAL_EMULATION
-> +	bool "Thermal emulation mode support"
-> +	help
-> +	  Enable this option to make a emul_temp sysfs node in thermal zone
-> +	  directory to support temperature emulation. With emulation sysfs node,
-> +	  user can manually input temperature and test the different trip
-> +	  threshold behaviour for simulation purpose.
-> +
->  config SPEAR_THERMAL
->  	bool "SPEAr thermal sensor driver"
->  	depends on PLAT_SPEAR
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index 0a1bf6b..0675687 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -378,24 +378,54 @@ static void handle_thermal_trip(struct thermal_zone_device *tz, int trip)
->  	monitor_thermal_zone(tz);
->  }
->  
-> +static int thermal_zone_get_temp(struct thermal_zone_device *tz,
-> +				unsigned long *temp)
-> +{
-> +	int ret = 0, count;
-> +	unsigned long crit_temp = -1UL;
-> +	enum thermal_trip_type type;
-> +
-> +	mutex_lock(&tz->lock);
-> +
-> +	ret = tz->ops->get_temp(tz, temp);
-> +#ifdef CONFIG_THERMAL_EMULATION
-> +	if (!tz->emul_temperature)
-> +		goto skip_emul;
-> +
-> +	for (count = 0; count < tz->trips; count++) {
-> +		ret = tz->ops->get_trip_type(tz, count, &type);
-> +		if (!ret && type == THERMAL_TRIP_CRITICAL) {
-> +			ret = tz->ops->get_trip_temp(tz, count, &crit_temp);
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (ret)
-> +		goto skip_emul;
-> +
-> +	if (*temp < crit_temp)
-> +		*temp = tz->emul_temperature;
-> +skip_emul:
-> +#endif
-> +	mutex_unlock(&tz->lock);
-> +	return ret;
-> +}
-> +
->  static void update_temperature(struct thermal_zone_device *tz)
->  {
->  	long temp;
->  	int ret;
->  
-> -	mutex_lock(&tz->lock);
-> -
-> -	ret = tz->ops->get_temp(tz, &temp);
-> +	ret = thermal_zone_get_temp(tz, &temp);
->  	if (ret) {
->  		dev_warn(&tz->device, "failed to read out thermal zone %d\n",
->  			 tz->id);
-> -		goto exit;
-> +		return;
->  	}
->  
-> +	mutex_lock(&tz->lock);
->  	tz->last_temperature = tz->temperature;
->  	tz->temperature = temp;
-> -
-> -exit:
->  	mutex_unlock(&tz->lock);
->  }
->  
-> @@ -438,10 +468,7 @@ temp_show(struct device *dev, struct device_attribute *attr, char *buf)
->  	long temperature;
->  	int ret;
->  
-> -	if (!tz->ops->get_temp)
-> -		return -EPERM;
-> -
-> -	ret = tz->ops->get_temp(tz, &temperature);
-> +	ret = thermal_zone_get_temp(tz, &temperature);
->  
->  	if (ret)
->  		return ret;
-> @@ -701,6 +728,31 @@ policy_show(struct device *dev, struct device_attribute *devattr, char *buf)
->  	return sprintf(buf, "%s\n", tz->governor->name);
->  }
->  
-> +#ifdef CONFIG_THERMAL_EMULATION
-> +static ssize_t
-> +emul_temp_store(struct device *dev, struct device_attribute *attr,
-> +		     const char *buf, size_t count)
-> +{
-> +	struct thermal_zone_device *tz = to_thermal_zone(dev);
-> +	int ret = 0;
-> +	unsigned long temperature;
-> +
-> +	if (kstrtoul(buf, 10, &temperature))
-> +		return -EINVAL;
-> +
-> +	if (!tz->ops->set_emul_temp) {
-> +		mutex_lock(&tz->lock);
-> +		tz->emul_temperature = temperature;
-> +		mutex_unlock(&tz->lock);
-> +	} else {
-> +		ret = tz->ops->set_emul_temp(tz, temperature);
-> +	}
-> +
-> +	return ret ? ret : count;
-> +}
-> +static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
-> +#endif/*CONFIG_THERMAL_EMULATION*/
-> +
->  static DEVICE_ATTR(type, 0444, type_show, NULL);
->  static DEVICE_ATTR(temp, 0444, temp_show, NULL);
->  static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
-> @@ -843,7 +895,7 @@ temp_input_show(struct device *dev, struct device_attribute *attr, char *buf)
->  				       temp_input);
->  	struct thermal_zone_device *tz = temp->tz;
->  
-> -	ret = tz->ops->get_temp(tz, &temperature);
-> +	ret = thermal_zone_get_temp(tz, &temperature);
->  
->  	if (ret)
->  		return ret;
-> @@ -1596,6 +1648,11 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
->  			goto unregister;
->  	}
->  
-> +#ifdef CONFIG_THERMAL_EMULATION
-> +	result = device_create_file(&tz->device, &dev_attr_emul_temp);
-> +	if (result)
-> +		goto unregister;
-> +#endif
->  	/* Create policy attribute */
->  	result = device_create_file(&tz->device, &dev_attr_policy);
->  	if (result)
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 9b78f8c..f0bd7f9 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -123,6 +123,7 @@ struct thermal_zone_device_ops {
->  	int (*set_trip_hyst) (struct thermal_zone_device *, int,
->  			      unsigned long);
->  	int (*get_crit_temp) (struct thermal_zone_device *, unsigned long *);
-> +	int (*set_emul_temp) (struct thermal_zone_device *, unsigned long);
->  	int (*get_trend) (struct thermal_zone_device *, int,
->  			  enum thermal_trend *);
->  	int (*notify) (struct thermal_zone_device *, int,
-> @@ -165,6 +166,7 @@ struct thermal_zone_device {
->  	int polling_delay;
->  	int temperature;
->  	int last_temperature;
-> +	int emul_temperature;
->  	int passive;
->  	unsigned int forced_passive;
->  	const struct thermal_zone_device_ops *ops;
+Thanks,
+Shaohua 
 
-
+> I'm running on a quad-core ARM system, and hot-unplugging a CPU using:
+> 
+> echo 0 > /sys/devices/system/cpu/cpu2/online
+> 
+> CONFIG_SWAP is enabled, but I don't have any swap devices activated.
+> 
+> If I either disable CONFIG_SWAP, or revert commit 174f064, then CPU
+> hotplug works fine for me.
+> 
+> I read through the patch and didn't see anything obvious, but I'm not
+> remotely familiar with the code in question.
+> 
+> Do you have any idea what might be wrong? Thanks.
+> 
+> The RCU stall kernel log is:
+> 
+> > [   36.152471] CPU2: shutdown
+> > [   57.151682] INFO: rcu_sched self-detected stall on CPU { 1}  (t=2100 jiffies g=4294966997 c=4294966996 q=1)
+> > [   57.164730] [<c0014658>] (unwind_backtrace+0x0/0xf8) from [<c0080c4c>] (rcu_check_callbacks+0x360/0x81c)
+> > [   57.177468] [<c0080c4c>] (rcu_check_callbacks+0x360/0x81c) from [<c002f4b0>] (update_process_times+0x38/0x64)
+> > [   57.182152] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 3, t=2103 jiffies, g=4294966997, c=4294966996, q=1)
+> > [   57.182154] Task dump for CPU 1:
+> > [   57.182162] sh              R running      0   569    568 0x00000002
+> > [   57.182200] [<c04d9bdc>] (__schedule+0x33c/0x6ac) from [<c000df40>] (__irq_svc+0x40/0x70)
+> > [   57.182211] [<c000df40>] (__irq_svc+0x40/0x70) from [<c04dae04>] (_raw_spin_unlock_irqrestore+0x28/0x50)
+> > [   57.182221] [<c04dae04>] (_raw_spin_unlock_irqrestore+0x28/0x50) from [<c04d4660>] (percpu_counter_hotcpu_callback+0x68/0x9c)
+> > [   57.182235] [<c04d4660>] (percpu_counter_hotcpu_callback+0x68/0x9c) from [<c00430f8>] (notifier_call_chain+0x44/0x84)
+> > [   57.182246] [<c00430f8>] (notifier_call_chain+0x44/0x84) from [<c0025fa8>] (__cpu_notify+0x28/0x44)
+> > [   57.182255] [<c0025fa8>] (__cpu_notify+0x28/0x44) from [<c0026104>] (cpu_notify_nofail+0x8/0x14)
+> > [   57.182276] [<c0026104>] (cpu_notify_nofail+0x8/0x14) from [<c04cf134>] (_cpu_down+0xf8/0x25c)
+> > [   57.182286] [<c04cf134>] (_cpu_down+0xf8/0x25c) from [<c04cf2bc>] (cpu_down+0x24/0x40)
+> > [   57.182296] [<c04cf2bc>] (cpu_down+0x24/0x40) from [<c04d0958>] (store_online+0x30/0x78)
+> > [   57.182317] [<c04d0958>] (store_online+0x30/0x78) from [<c027367c>] (dev_attr_store+0x18/0x24)
+> > [   57.182332] [<c027367c>] (dev_attr_store+0x18/0x24) from [<c0115770>] (sysfs_write_file+0x168/0x198)
+> > [   57.182354] [<c0115770>] (sysfs_write_file+0x168/0x198) from [<c00c4414>] (vfs_write+0x9c/0x140)
+> > [   57.182364] [<c00c4414>] (vfs_write+0x9c/0x140) from [<c00c46a0>] (sys_write+0x3c/0x70)
+> > [   57.182374] [<c00c46a0>] (sys_write+0x3c/0x70) from [<c000e2c0>] (ret_fast_syscall+0x0/0x30)
+> > [   57.404633] [<c002f4b0>] (update_process_times+0x38/0x64) from [<c0064798>] (tick_sched_timer+0x44/0x74)
+> > [   57.418340] [<c0064798>] (tick_sched_timer+0x44/0x74) from [<c0041440>] (__run_hrtimer.isra.15+0x58/0x114)
+> > [   57.432362] [<c0041440>] (__run_hrtimer.isra.15+0x58/0x114) from [<c0041d94>] (hrtimer_interrupt+0x100/0x290)
+> > [   57.446620] [<c0041d94>] (hrtimer_interrupt+0x100/0x290) from [<c0013bfc>] (twd_handler+0x2c/0x40)
+> > [   57.459981] [<c0013bfc>] (twd_handler+0x2c/0x40) from [<c007bdb4>] (handle_percpu_devid_irq+0x64/0x80)
+> > [   57.473749] [<c007bdb4>] (handle_percpu_devid_irq+0x64/0x80) from [<c007887c>] (generic_handle_irq+0x20/0x30)
+> > [   57.488197] [<c007887c>] (generic_handle_irq+0x20/0x30) from [<c000eb74>] (handle_IRQ+0x38/0x94)
+> > [   57.501559] [<c000eb74>] (handle_IRQ+0x38/0x94) from [<c00086d8>] (gic_handle_irq+0x28/0x5c)
+> > [   57.514610] [<c00086d8>] (gic_handle_irq+0x28/0x5c) from [<c000df40>] (__irq_svc+0x40/0x70)
+> > [   57.527606] Exception stack(0xed57be58 to 0xed57bea0)
+> > [   57.537292] be40:                                                       c06e5c50 20000113
+> > [   57.550216] be60: 00000000 55ec55ec 00000000 00000000 00000002 c06ea074 c06daf08 c06e5c50
+> > [   57.563134] be80: 00000000 00015ef8 00000000 ed57bea0 c04d4660 c04dae04 40000113 ffffffff
+> > [   57.576119] [<c000df40>] (__irq_svc+0x40/0x70) from [<c04dae04>] (_raw_spin_unlock_irqrestore+0x28/0x50)
+> > [   57.590515] [<c04dae04>] (_raw_spin_unlock_irqrestore+0x28/0x50) from [<c04d4660>] (percpu_counter_hotcpu_callback+0x68/0x9c)
+> > [   57.606765] [<c04d4660>] (percpu_counter_hotcpu_callback+0x68/0x9c) from [<c00430f8>] (notifier_call_chain+0x44/0x84)
+> > [   57.622320] [<c00430f8>] (notifier_call_chain+0x44/0x84) from [<c0025fa8>] (__cpu_notify+0x28/0x44)
+> > [   57.636338] [<c0025fa8>] (__cpu_notify+0x28/0x44) from [<c0026104>] (cpu_notify_nofail+0x8/0x14)
+> > [   57.650161] [<c0026104>] (cpu_notify_nofail+0x8/0x14) from [<c04cf134>] (_cpu_down+0xf8/0x25c)
+> > [   57.663859] [<c04cf134>] (_cpu_down+0xf8/0x25c) from [<c04cf2bc>] (cpu_down+0x24/0x40)
+> > [   57.676850] [<c04cf2bc>] (cpu_down+0x24/0x40) from [<c04d0958>] (store_online+0x30/0x78)
+> > [   57.690010] [<c04d0958>] (store_online+0x30/0x78) from [<c027367c>] (dev_attr_store+0x18/0x24)
+> > [   57.703767] [<c027367c>] (dev_attr_store+0x18/0x24) from [<c0115770>] (sysfs_write_file+0x168/0x198)
+> > [   57.717948] [<c0115770>] (sysfs_write_file+0x168/0x198) from [<c00c4414>] (vfs_write+0x9c/0x140)
+> > [   57.731866] [<c00c4414>] (vfs_write+0x9c/0x140) from [<c00c46a0>] (sys_write+0x3c/0x70)
+> > [   57.744841] [<c00c46a0>] (sys_write+0x3c/0x70) from [<c000e2c0>] (ret_fast_syscall+0x0/0x30)
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
