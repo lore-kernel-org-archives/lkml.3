@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3BDDaU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 22:30:20 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:58217 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754066Ab3BDDaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 22:30:17 -0500
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: Joerg Reuter <jreuter@yaina.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-hams@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 8/8] drivers:net:misc: Remove unnecessary alloc/OOM messages
-Date: Sun,  3 Feb 2013 19:28:15 -0800
-Message-Id: <a729555c8acf2cc3ef4c80531757b37a948c4e55.1359939013.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1359939012.git.joe@perches.com>
-References: <cover.1359939012.git.joe@perches.com>
+	id S1754011Ab3BDDcq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 22:32:46 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:52434 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab3BDDco (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 22:32:44 -0500
+Date: Sun, 3 Feb 2013 19:32:49 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: shmem: use new radix tree iterator
+In-Reply-To: <510CCD88.30200@openvz.org>
+Message-ID: <alpine.LNX.2.00.1302031802140.4120@eggly.anvils>
+References: <1359699238-7327-1-git-send-email-hannes@cmpxchg.org> <510CCD88.30200@openvz.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc failures already get standardized OOM
-messages and a dump_stack.
+On Sat, 2 Feb 2013, Konstantin Khlebnikov wrote:
+> Johannes Weiner wrote:
+> > In shmem_find_get_pages_and_swap, use the faster radix tree iterator
+> > construct from 78c1d78 "radix-tree: introduce bit-optimized iterator".
+> > 
+> > Signed-off-by: Johannes Weiner<hannes@cmpxchg.org>
+> 
+> Hmm, ACK. shmem_unuse_inode() also can be redone in this way.
+> I did something similar year ago: https://lkml.org/lkml/2012/2/10/388
+> As result we can rid of radix_tree_locate_item() and
+> shmem_find_get_pages_and_swap()
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/hamradio/dmascc.c | 7 +------
- drivers/net/phy/spi_ks8995.c  | 4 +---
- drivers/net/virtio_net.c      | 4 +---
- 3 files changed, 3 insertions(+), 12 deletions(-)
+Indeed you did, and never got more than a "I have some reservations"
+response out of me; and already we had both moved on to much more
+pressing lruvec and other concerns.
 
-diff --git a/drivers/net/hamradio/dmascc.c b/drivers/net/hamradio/dmascc.c
-index ce555d9..6636022 100644
---- a/drivers/net/hamradio/dmascc.c
-+++ b/drivers/net/hamradio/dmascc.c
-@@ -463,13 +463,8 @@ static int __init setup_adapter(int card_base, int type, int n)
- 
- 	/* Initialize what is necessary for write_scc and write_scc_data */
- 	info = kzalloc(sizeof(struct scc_info), GFP_KERNEL | GFP_DMA);
--	if (!info) {
--		printk(KERN_ERR "dmascc: "
--		       "could not allocate memory for %s at %#3x\n",
--		       hw[type].name, card_base);
-+	if (!info)
- 		goto out;
--	}
--
- 
- 	info->dev[0] = alloc_netdev(0, "", dev_setup);
- 	if (!info->dev[0]) {
-diff --git a/drivers/net/phy/spi_ks8995.c b/drivers/net/phy/spi_ks8995.c
-index 41eb8ff..5c87eef 100644
---- a/drivers/net/phy/spi_ks8995.c
-+++ b/drivers/net/phy/spi_ks8995.c
-@@ -275,10 +275,8 @@ static int ks8995_probe(struct spi_device *spi)
- 	pdata = spi->dev.platform_data;
- 
- 	ks = kzalloc(sizeof(*ks), GFP_KERNEL);
--	if (!ks) {
--		dev_err(&spi->dev, "no memory for private data\n");
-+	if (!ks)
- 		return -ENOMEM;
--	}
- 
- 	mutex_init(&ks->lock);
- 	ks->pdata = pdata;
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index eda2042..381a2d8 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -976,10 +976,8 @@ static void virtnet_set_rx_mode(struct net_device *dev)
- 	buf = kzalloc(((uc_count + mc_count) * ETH_ALEN) +
- 		      (2 * sizeof(mac_data->entries)), GFP_ATOMIC);
- 	mac_data = buf;
--	if (!buf) {
--		dev_warn(&dev->dev, "No memory for MAC address buffer\n");
-+	if (!buf)
- 		return;
--	}
- 
- 	sg_init_table(sg, 2);
- 
--- 
-1.8.0.dirty
+My first reaction on seeing Johannes' patch was, not to ack it immediately,
+but look back to your series of 6 (or 4): shmem_find_get_pages_and_swap()
+doesn't get updated in yours, but vanishes in the last patch, which was
+among the ones I was uneasy about.  Here's a belated account of my
+reactions to your series.
 
+[PATCH 1/4] shmem: simplify shmem_unlock_mapping
+Probably good, though should also update the "only reach" comment in
+find_get_pages(); and probably not worthwhile unless shmem_find_get_
+pages_and_swap() is to disappear entirely.
+
+[PATCH 2/4] shmem: tag swap entries in radix tree
+Using a tag instead of and in addition to the swap exceptional entries
+was certainly something I tried when I was updating shmem_unuse(): it
+just didn't work as well as I'd hoped and needed, nothing worked as
+"well" as the radix_tree_locate_item() thing I added, though I'd have
+preferred to avoid adding it.  So I needed to test and understand why
+you found tags worked where I had not: probably partly your intervening
+radix_tree changes, and partly a difference in how we tested.  There
+was also a little issue fo SHMEM_TAG_SWAP == PAGECACHE_TAG_DIRTY: you
+were absolutely right not to enlarge the tagspace, but at that time
+there was a weird issue of page migration putting a dirty tag into
+the tmpfs radix_tree, which later I worked around in 752dc185.
+
+[PATCH 3/4] shmem: use radix-tree iterator in shmem_unuse_inode()
+Removes lots of code which is great, but as I said, I'd need
+to investigate why tagging worked for you but not for me.
+
+[PATCH 4/4] mm: use swap readahead at swapoff
+I've tried that down the years from time to time, and never found
+it useful (but I see you found it works better in a virtual machine).
+I've no strong objection to the patch, but when I rewrote try_to_unuse()
+twelve years ago, I was overly sensitive to readahead adding pressure in
+the case where you're already swapping off under pressure, and preferred
+to avoid the readahead if it didn't help.  The slowness of swapoff has
+very little to do with readahead or not, or that's what I always found:
+if swapoff while loaded, readahead increased the memory pressure; if
+(usual case) swapoff while not loaded, apparently the disk's own
+caching was good enough that kernel readahead made no difference.
+
+[PATCH 5/4] shmem: put shmem_delete_from_page_cache under CONFIG_SWAP
+I'm completely schizophrenic about #fidef CONFIG_SWAPs, sometimes I
+love to add them, and sometimes I think they're ugly.  You're probably
+right that mm/shmem.c should have more of them, it helps document too.
+
+[PATCH 6/4] shmem: simplify shmem_truncate_range
+Where shmem_find_get_pages_and_swap() goes away.  But
+you replace (what was then) shmem_truncate_range() by two passes,
+truncate_inode_pages_range() followed by shmem_truncate_swap_range().
+That's not good enough, and part of what I was getting away from with
+the radix_tree exceptional swap changes: there needs to be more, to
+prevent pages moving to swap before the page pass finds them, then
+swap moving to pages before the swap pass finds them.  The old code
+used a flag to go back whenever that might happen, effective but not
+pretty (and I'm not sure complete).  I ought to like your end result,
+with so much code deleted; but somehow I did not, just too attached
+to my own I suppose :) Intervening (fallocate) changes have moved this
+code around, certainly your old patch would not apply, whether they've
+made any material difficulty I've not considered.
+
+As usual, I'm busy with other things, so not actually in any hurry
+for a resend; but thought I'd better let you know what I'd thought,
+in case Johannes' patch prompted you towards a resend.
+
+Hugh
