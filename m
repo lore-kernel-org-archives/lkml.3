@@ -1,1293 +1,781 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3BDMGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:06:52 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:63945 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168Ab3BDL5F (ORCPT
+	id S1753712Ab3BDMH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:07:28 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:56562 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800Ab3BDMHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:57:05 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Subject: [PATCH 40/73] regulator: ab8500: Add AB8505 register initialization
-Date: Mon,  4 Feb 2013 11:53:55 +0000
-Message-Id: <1359978868-28736-41-git-send-email-lee.jones@linaro.org>
+	Mon, 4 Feb 2013 07:07:23 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-20-510fa4790c13
+From: Abhilash Kesavan <a.kesavan@samsung.com>
+To: myungjoo.ham@samsung.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Abhilash Kesavan <a.kesavan@samsung.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH v5 4/4] PM: Devfreq: Add Exynos5-bus devfreq driver for
+ Exynos5250
+Date: Mon, 04 Feb 2013 17:44:48 +0530
+Message-id: <1359980088-20799-1-git-send-email-a.kesavan@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
-References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+In-reply-to: <1358515490-7565-1-git-send-email-a.kesavan@samsung.com>
+References: <1358515490-7565-1-git-send-email-a.kesavan@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsWyRsSkSrdyCX+gweK/mhaXd81hs/jce4TR
+	gcnj8ya5AMYoLpuU1JzMstQifbsEroyNDRuZCibOYaz4fvMbcwNjYwNjFyMnh4SAicSFq29Z
+	IWwxiQv31rN1MXJxCAksZZT4s+IEG0zR67YmZojEIkaJ60u3s0A4fUwSe9YdAKtiE9CTWPDv
+	KzOILSIQJrFs/3L2LkYODmaBaolPHx1BTGGBEInpTyxAKlgEVCUu93SDLeYVcJVY+mIeE0iJ
+	hICCxJxJNiBhTqDw9bW/wIYLCbhIzLl7kAlkq4TAfTaJpx0zWCHmCEh8m3yIBaJXVmLTAWaI
+	kyUlDq64wTKBUXgBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjMBgPP3vmdQOxpUNFocY
+	BTgYlXh4GX7xBQqxJpYVV+YeYpTgYFYS4S2azB8oxJuSWFmVWpQfX1Sak1p8iDEZaPlEZinR
+	5HxgpOSVxBsam5ibGptaGhmZmZqSJqwkzst46kmAkEB6YklqdmpqQWoRzBYmDk6pBsbVq6el
+	JoVcbGTpuq6sKCsp32Gm2uW6/Mm20HnMCZJH52VIXfshobL+fb2dt9Umu2Wlm+wF048pXFLK
+	XvvVOTq8SqK1a7V2pm0T7+E/v/dPZ241+ihw59/Ck9dPrE8oXmn2XPHu+kNvXk3RKtn58Ufw
+	Ih9niZQTfpGrV4k73Sy4E2QTq/ErfakSS3FGoqEWc1FxIgBvasliigIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsVy+t9jAd3KJfyBBh/nyFpc3jWHzeJz7xFG
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzNjZsZCqYOIex
+	4vvNb8wNjI0NjF2MnBwSAiYSr9uamCFsMYkL99azdTFycQgJLGKUuL50OwuE08cksWfdATaQ
+	KjYBPYkF/76CdYgIhEks27+cvYuRg4NZoFri00dHEFNYIERi+hMLkAoWAVWJyz3drCA2r4Cr
+	xNIX85hASiQEFCTmTLIBCXMCha+v/QU2XEjARWLO3YNMExh5FzAyrGIUTS1ILihOSs811CtO
+	zC0uzUvXS87P3cQIDvVnUjsYVzZYHGIU4GBU4uFl+MUXKMSaWFZcmXuIUYKDWUmEt2gyf6AQ
+	b0piZVVqUX58UWlOavEhxmSgoyYyS4km5wPjMK8k3tDYxNzU2NTSxMLEzJI0YSVxXsZTTwKE
+	BNITS1KzU1MLUotgtjBxcEo1MBrkyejKbJ1h/LA1Z/GGnl2v67V0G2JrOB1ey3erefWHs1yo
+	7LrwLFD6iGgoN8++68dfLOnd/fW9Ll/l0knzhGMWumoVvZBv4d5slJLRMGfvYfm/3bGaK+qr
+	TMWTzwXufie4u3/pNq28o9z6VqGsrrFfJKxd2V4LrsriVphWpOzextxdb2arxFKckWioxVxU
+	nAgAlSyzY7kCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ab8505 specific regulators, e.g. Vaux4/5/6 and
-removes ExtSupplies from ab8505. Finally it adapts register
-names to new naming convention.
+Exynos5-bus device devfreq driver monitors PPMU counters and
+adjusts operating frequencies and voltages with OPP. ASV should
+be used to provide appropriate voltages as per the speed group
+of the SoC rather than using a constant 1.025V.
 
-Signed-off-by: Daniel WILLERUD <daniel.willerud@stericsson.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
-Reviewed-by: Mattias WALLIN <mattias.wallin@stericsson.com>
-Reviewed-by: Rickard ANDERSSON <rickard.andersson@stericsson.com>
+Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |  374 ++++++++++++++--
- drivers/regulator/ab8500.c                    |  597 ++++++++++++++++++++++++-
- include/linux/regulator/ab8500.h              |   74 ++-
- 3 files changed, 1013 insertions(+), 32 deletions(-)
+Changes since RFC v1:
+* Moved the Exynos5 PPMU driver to machine specific directory
+* Migrated to the PM QOS framework
+Changes since v2:
+* Moved the PPMU driver to drivers/devfreq/exynos
+* Fixed whitespace, commenting, empty lines in PPMU driver
+Changes since v3:
+* Removed the custom devfreq monitor and PPMU polling function
+* Moved exynos5 PPMU access functions to the devfreq driver
+Changes since v4:
+* Fixed compilation errors due to presence of devinit/devexit
+* Moved exynos ppmu header to the drivers/devfreq/exynos directory
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 8e0679e..1b51f6d 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -5,6 +5,7 @@
-  *
-  * Authors: Sundar Iyer <sundar.iyer@stericsson.com>
-  *          Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-+ *          Daniel Willerud <daniel.willerud@stericsson.com>
-  *
-  * MOP500 board specific initialization for regulators
-  */
-@@ -102,6 +103,19 @@ static struct regulator_consumer_supply ab8500_vaux3_consumers[] = {
- static struct regulator_consumer_supply ab8505_vaux4_consumers[] = {
- };
+ drivers/devfreq/Kconfig              |   10 +
+ drivers/devfreq/Makefile             |    1 +
+ drivers/devfreq/exynos/Makefile      |    1 +
+ drivers/devfreq/exynos/exynos5_bus.c |  503 ++++++++++++++++++++++++++++++++++
+ drivers/devfreq/exynos/exynos_ppmu.c |   56 ++++
+ drivers/devfreq/exynos/exynos_ppmu.h |   79 ++++++
+ 6 files changed, 650 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/devfreq/exynos/exynos5_bus.c
+ create mode 100644 drivers/devfreq/exynos/exynos_ppmu.c
+ create mode 100644 drivers/devfreq/exynos/exynos_ppmu.h
+
+diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
+index 0f079be..1560d0d 100644
+--- a/drivers/devfreq/Kconfig
++++ b/drivers/devfreq/Kconfig
+@@ -78,4 +78,14 @@ config ARM_EXYNOS4_BUS_DEVFREQ
+ 	  To operate with optimal voltages, ASV support is required
+ 	  (CONFIG_EXYNOS_ASV).
  
-+static struct regulator_consumer_supply ab8505_vaux5_consumers[] = {
++config ARM_EXYNOS5_BUS_DEVFREQ
++	bool "ARM Exynos5250 Bus DEVFREQ Driver"
++	depends on SOC_EXYNOS5250
++	select ARCH_HAS_OPP
++	select DEVFREQ_GOV_SIMPLE_ONDEMAND
++	help
++	  This adds the DEVFREQ driver for Exynos5250 bus interface (vdd_int).
++	  It reads PPMU counters of memory controllers and adjusts the
++	  operating frequencies and voltages with OPP support.
++
+ endif # PM_DEVFREQ
+diff --git a/drivers/devfreq/Makefile b/drivers/devfreq/Makefile
+index 3bc1fef..16138c9 100644
+--- a/drivers/devfreq/Makefile
++++ b/drivers/devfreq/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_DEVFREQ_GOV_USERSPACE)	+= governor_userspace.o
+ 
+ # DEVFREQ Drivers
+ obj-$(CONFIG_ARM_EXYNOS4_BUS_DEVFREQ)	+= exynos/
++obj-$(CONFIG_ARM_EXYNOS5_BUS_DEVFREQ)	+= exynos/
+diff --git a/drivers/devfreq/exynos/Makefile b/drivers/devfreq/exynos/Makefile
+index 1498823..bfaaf5b 100644
+--- a/drivers/devfreq/exynos/Makefile
++++ b/drivers/devfreq/exynos/Makefile
+@@ -1,2 +1,3 @@
+ # Exynos DEVFREQ Drivers
+ obj-$(CONFIG_ARM_EXYNOS4_BUS_DEVFREQ)	+= exynos4_bus.o
++obj-$(CONFIG_ARM_EXYNOS5_BUS_DEVFREQ)	+= exynos_ppmu.o exynos5_bus.o
+diff --git a/drivers/devfreq/exynos/exynos5_bus.c b/drivers/devfreq/exynos/exynos5_bus.c
+new file mode 100644
+index 0000000..574b16b
+--- /dev/null
++++ b/drivers/devfreq/exynos/exynos5_bus.c
+@@ -0,0 +1,503 @@
++/*
++ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com/
++ *
++ * EXYNOS5 INT clock frequency scaling support using DEVFREQ framework
++ * Based on work done by Jonghwan Choi <jhbird.choi@samsung.com>
++ * Support for only EXYNOS5250 is present.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/devfreq.h>
++#include <linux/io.h>
++#include <linux/opp.h>
++#include <linux/slab.h>
++#include <linux/suspend.h>
++#include <linux/opp.h>
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/pm_qos.h>
++#include <linux/regulator/consumer.h>
++#include <linux/of_address.h>
++#include <linux/of_platform.h>
++
++#include "exynos_ppmu.h"
++
++#define MAX_SAFEVOLT			1100000 /* 1.10V */
++/* Assume that the bus is saturated if the utilization is 25% */
++#define INT_BUS_SATURATION_RATIO	25
++
++enum int_level_idx {
++	LV_0,
++	LV_1,
++	LV_2,
++	LV_3,
++	LV_4,
++	_LV_END
 +};
 +
-+static struct regulator_consumer_supply ab8505_vaux6_consumers[] = {
++enum exynos_ppmu_list {
++	PPMU_RIGHT,
++	PPMU_END,
 +};
 +
-+static struct regulator_consumer_supply ab8505_vadc_consumers[] = {
-+	/* Internal general-purpose ADC */
-+	REGULATOR_SUPPLY("vddadc", "ab8500-gpadc.0"),
-+	/* ADC for charger */
-+	REGULATOR_SUPPLY("vddadc", "ab8500-charger.0"),
++struct busfreq_data_int {
++	struct device *dev;
++	struct devfreq *devfreq;
++	struct regulator *vdd_int;
++	struct exynos_ppmu ppmu[PPMU_END];
++	unsigned long curr_freq;
++	bool disabled;
++
++	struct notifier_block pm_notifier;
++	struct mutex lock;
++	struct pm_qos_request int_req;
++	struct clk *int_clk;
 +};
 +
- static struct regulator_consumer_supply ab8500_vtvout_consumers[] = {
- 	/* TV-out DENC supply */
- 	REGULATOR_SUPPLY("vtvout", "ab8500-denc.0"),
-@@ -475,9 +489,271 @@ static struct regulator_init_data ab8500_ext_regulators[] = {
- 	},
- };
- 
--struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
-+/* ab8505 regulator register initialization */
-+static struct ab8500_regulator_reg_init ab8505_reg_init[] = {
-+	/*
-+	 * VarmRequestCtrl
-+	 * VsmpsCRequestCtrl
-+	 * VsmpsARequestCtrl
-+	 * VsmpsBRequestCtrl
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUREQUESTCTRL1,       0x00, 0x00),
-+	/*
-+	 * VsafeRequestCtrl
-+	 * VpllRequestCtrl
-+	 * VanaRequestCtrl          = HP/LP depending on VxRequest
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUREQUESTCTRL2,       0x30, 0x00),
-+	/*
-+	 * Vaux1RequestCtrl         = HP/LP depending on VxRequest
-+	 * Vaux2RequestCtrl         = HP/LP depending on VxRequest
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUREQUESTCTRL3,       0xf0, 0x00),
-+	/*
-+	 * Vaux3RequestCtrl         = HP/LP depending on VxRequest
-+	 * SwHPReq                  = Control through SWValid disabled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUREQUESTCTRL4,       0x07, 0x00),
-+	/*
-+	 * VsmpsASysClkReq1HPValid
-+	 * VsmpsBSysClkReq1HPValid
-+	 * VsafeSysClkReq1HPValid
-+	 * VanaSysClkReq1HPValid    = disabled
-+	 * VpllSysClkReq1HPValid
-+	 * Vaux1SysClkReq1HPValid   = disabled
-+	 * Vaux2SysClkReq1HPValid   = disabled
-+	 * Vaux3SysClkReq1HPValid   = disabled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUSYSCLKREQ1HPVALID1, 0xe8, 0x00),
-+	/*
-+	 * VsmpsCSysClkReq1HPValid
-+	 * VarmSysClkReq1HPValid
-+	 * VbbSysClkReq1HPValid
-+	 * VsmpsMSysClkReq1HPValid
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUSYSCLKREQ1HPVALID2, 0x00, 0x00),
-+	/*
-+	 * VsmpsAHwHPReq1Valid
-+	 * VsmpsBHwHPReq1Valid
-+	 * VsafeHwHPReq1Valid
-+	 * VanaHwHPReq1Valid        = disabled
-+	 * VpllHwHPReq1Valid
-+	 * Vaux1HwHPreq1Valid       = disabled
-+	 * Vaux2HwHPReq1Valid       = disabled
-+	 * Vaux3HwHPReqValid        = disabled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUHWHPREQ1VALID1,     0xe8, 0x00),
-+	/*
-+	 * VsmpsMHwHPReq1Valid
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUHWHPREQ1VALID2,     0x00, 0x00),
-+	/*
-+	 * VsmpsAHwHPReq2Valid
-+	 * VsmpsBHwHPReq2Valid
-+	 * VsafeHwHPReq2Valid
-+	 * VanaHwHPReq2Valid        = disabled
-+	 * VpllHwHPReq2Valid
-+	 * Vaux1HwHPReq2Valid       = disabled
-+	 * Vaux2HwHPReq2Valid       = disabled
-+	 * Vaux3HwHPReq2Valid       = disabled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUHWHPREQ2VALID1,     0xe8, 0x00),
-+	/*
-+	 * VsmpsMHwHPReq2Valid
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUHWHPREQ2VALID2,     0x00, 0x00),
-+	/**
-+	 * VsmpsCSwHPReqValid
-+	 * VarmSwHPReqValid
-+	 * VsmpsASwHPReqValid
-+	 * VsmpsBSwHPReqValid
-+	 * VsafeSwHPReqValid
-+	 * VanaSwHPReqValid
-+	 * VanaSwHPReqValid         = disabled
-+	 * VpllSwHPReqValid
-+	 * Vaux1SwHPReqValid        = disabled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUSWHPREQVALID1,      0xa0, 0x00),
-+	/*
-+	 * Vaux2SwHPReqValid        = disabled
-+	 * Vaux3SwHPReqValid        = disabled
-+	 * VsmpsMSwHPReqValid
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUSWHPREQVALID2,      0x03, 0x00),
-+	/*
-+	 * SysClkReq2Valid1         = SysClkReq2 controlled
-+	 * SysClkReq3Valid1         = disabled
-+	 * SysClkReq4Valid1         = SysClkReq4 controlled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUSYSCLKREQVALID1,    0x0e, 0x0a),
-+	/*
-+	 * SysClkReq2Valid2         = disabled
-+	 * SysClkReq3Valid2         = disabled
-+	 * SysClkReq4Valid2         = disabled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUSYSCLKREQVALID2,    0x0e, 0x00),
-+	/*
-+	 * Vaux4SwHPReqValid
-+	 * Vaux4HwHPReq2Valid
-+	 * Vaux4HwHPReq1Valid
-+	 * Vaux4SysClkReq1HPValid
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUVAUX4REQVALID,    0x00, 0x00),
-+	/*
-+	 * VadcEna                  = disabled
-+	 * VintCore12Ena            = disabled
-+	 * VintCore12Sel            = 1.25 V
-+	 * VintCore12LP             = inactive (HP)
-+	 * VadcLP                   = inactive (HP)
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUMISC1,              0xfe, 0x10),
-+	/*
-+	 * VaudioEna                = disabled
-+	 * VdmicEna                 = disabled
-+	 * Vamic1Ena                = disabled
-+	 * Vamic2Ena                = disabled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VAUDIOSUPPLY,           0x1e, 0x00),
-+	/*
-+	 * Vamic1_dzout             = high-Z when Vamic1 is disabled
-+	 * Vamic2_dzout             = high-Z when Vamic2 is disabled
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUCTRL1VAMIC,         0x03, 0x00),
-+	/*
-+	 * VsmpsARegu
-+	 * VsmpsASelCtrl
-+	 * VsmpsAAutoMode
-+	 * VsmpsAPWMMode
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSMPSAREGU,    0x00, 0x00),
-+	/*
-+	 * VsmpsBRegu
-+	 * VsmpsBSelCtrl
-+	 * VsmpsBAutoMode
-+	 * VsmpsBPWMMode
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSMPSBREGU,    0x00, 0x00),
-+	/*
-+	 * VsafeRegu
-+	 * VsafeSelCtrl
-+	 * VsafeAutoMode
-+	 * VsafePWMMode
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSAFEREGU,    0x00, 0x00),
-+	/*
-+	 * VPll                     = Hw controlled (NOTE! PRCMU bits)
-+	 * VanaRegu                 = force off
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VPLLVANAREGU,           0x0f, 0x02),
-+	/*
-+	 * Vaux1Regu                = force HP
-+	 * Vaux2Regu                = force off
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VAUX12REGU,             0x0f, 0x01),
-+	/*
-+	 * Vaux3Regu                = force off
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VRF1VAUX3REGU,          0x03, 0x00),
-+	/*
-+	 * VsmpsASel1
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSMPSASEL1,    0x00, 0x00),
-+	/*
-+	 * VsmpsASel2
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSMPSASEL2,    0x00, 0x00),
-+	/*
-+	 * VsmpsASel3
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSMPSASEL3,    0x00, 0x00),
-+	/*
-+	 * VsmpsBSel1
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSMPSBSEL1,    0x00, 0x00),
-+	/*
-+	 * VsmpsBSel2
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSMPSBSEL2,    0x00, 0x00),
-+	/*
-+	 * VsmpsBSel3
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSMPSBSEL3,    0x00, 0x00),
-+	/*
-+	 * VsafeSel1
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSAFESEL1,    0x00, 0x00),
-+	/*
-+	 * VsafeSel2
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSAFESEL2,    0x00, 0x00),
-+	/*
-+	 * VsafeSel3
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VSAFESEL3,    0x00, 0x00),
-+	/*
-+	 * Vaux1Sel                 = 2.8 V
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VAUX1SEL,               0x0f, 0x0C),
-+	/*
-+	 * Vaux2Sel                 = 2.9 V
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VAUX2SEL,               0x0f, 0x0d),
-+	/*
-+	 * Vaux3Sel                 = 2.91 V
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VRF1VAUX3SEL,           0x07, 0x07),
-+	/*
-+	 * Vaux4RequestCtrl
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VAUX4REQCTRL,    0x00, 0x00),
-+	/*
-+	 * Vaux4Regu
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VAUX4REGU,    0x00, 0x00),
-+	/*
-+	 * Vaux4Sel
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_VAUX4SEL,    0x00, 0x00),
-+	/*
-+	 * Vaux1Disch               = short discharge time
-+	 * Vaux2Disch               = short discharge time
-+	 * Vaux3Disch               = short discharge time
-+	 * Vintcore12Disch          = short discharge time
-+	 * VTVoutDisch              = short discharge time
-+	 * VaudioDisch              = short discharge time
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUCTRLDISCH,          0xfc, 0x00),
-+	/*
-+	 * VanaDisch                = short discharge time
-+	 * VdmicPullDownEna         = pulldown disabled when Vdmic is disabled
-+	 * VdmicDisch               = short discharge time
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUCTRLDISCH2,         0x16, 0x00),
-+	/*
-+	 * Vaux4Disch               = short discharge time
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_REGUCTRLDISCH3,         0x01, 0x00),
-+	/*
-+	 * Vaux5Sel
-+	 * Vaux5LP
-+	 * Vaux5Ena
-+	 * Vaux5Disch
-+	 * Vaux5DisSfst
-+	 * Vaux5DisPulld
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_CTRLVAUX5,              0x00, 0x00),
-+	/*
-+	 * Vaux6Sel
-+	 * Vaux6LP
-+	 * Vaux6Ena
-+	 * Vaux6DisPulld
-+	 */
-+	INIT_REGULATOR_REGISTER(AB8505_CTRLVAUX6,              0x00, 0x00),
++struct int_bus_opp_table {
++	unsigned int idx;
++	unsigned long clk;
++	unsigned long volt;
 +};
 +
-+struct regulator_init_data ab8505_regulators[AB8505_NUM_REGULATORS] = {
- 	/* supplies to the display/camera */
--	[AB9540_LDO_AUX1] = {
-+	[AB8505_LDO_AUX1] = {
- 		.supply_regulator = "ab8500-ext-supply3",
- 		.constraints = {
- 			.name = "V-DISPLAY",
-@@ -491,7 +767,7 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vaux1_consumers,
- 	},
- 	/* supplies to the on-board eMMC */
--	[AB9540_LDO_AUX2] = {
-+	[AB8505_LDO_AUX2] = {
- 		.supply_regulator = "ab8500-ext-supply3",
- 		.constraints = {
- 			.name = "V-eMMC1",
-@@ -507,7 +783,7 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vaux2_consumers,
- 	},
- 	/* supply for VAUX3, supplies to SDcard slots */
--	[AB9540_LDO_AUX3] = {
-+	[AB8505_LDO_AUX3] = {
- 		.supply_regulator = "ab8500-ext-supply3",
- 		.constraints = {
- 			.name = "V-MMC-SD",
-@@ -523,7 +799,7 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vaux3_consumers,
- 	},
- 	/* supply for VAUX4, supplies to NFC and standalone secure element */
--	[AB9540_LDO_AUX4] = {
-+	[AB8505_LDO_AUX4] = {
- 		.constraints = {
- 			.name = "V-NFC-SE",
- 			.min_uV = 1100000,
-@@ -537,17 +813,47 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.num_consumer_supplies = ARRAY_SIZE(ab8505_vaux4_consumers),
- 		.consumer_supplies = ab8505_vaux4_consumers,
- 	},
--	/* supply for tvout, gpadc, TVOUT LDO */
--	[AB9540_LDO_TVOUT] = {
-+	/* supply for VAUX5, supplies to TBD */
-+	[AB8505_LDO_AUX5] = {
- 		.constraints = {
--			.name = "V-TVOUT",
-+			.name = "V-AUX5",
-+			.min_uV = 1050000,
-+			.max_uV = 2790000,
-+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-+					  REGULATOR_CHANGE_STATUS |
-+					  REGULATOR_CHANGE_MODE,
-+			.valid_modes_mask = REGULATOR_MODE_NORMAL |
-+					    REGULATOR_MODE_IDLE,
-+		},
-+		.num_consumer_supplies = ARRAY_SIZE(ab8505_vaux5_consumers),
-+		.consumer_supplies = ab8505_vaux5_consumers,
-+	},
-+	/* supply for VAUX6, supplies to TBD */
-+	[AB8505_LDO_AUX6] = {
-+		.constraints = {
-+			.name = "V-AUX6",
-+			.min_uV = 1050000,
-+			.max_uV = 2790000,
-+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-+					  REGULATOR_CHANGE_STATUS |
-+					  REGULATOR_CHANGE_MODE,
-+			.valid_modes_mask = REGULATOR_MODE_NORMAL |
-+					    REGULATOR_MODE_IDLE,
-+		},
-+		.num_consumer_supplies = ARRAY_SIZE(ab8505_vaux6_consumers),
-+		.consumer_supplies = ab8505_vaux6_consumers,
-+	},
-+	/* supply for gpadc, ADC LDO */
-+	[AB8505_LDO_ADC] = {
-+		.constraints = {
-+			.name = "V-ADC",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
- 		},
--		.num_consumer_supplies = ARRAY_SIZE(ab8500_vtvout_consumers),
--		.consumer_supplies = ab8500_vtvout_consumers,
-+		.num_consumer_supplies = ARRAY_SIZE(ab8505_vadc_consumers),
-+		.consumer_supplies = ab8505_vadc_consumers,
- 	},
- 	/* supply for ab8500-vaudio, VAUDIO LDO */
--	[AB9540_LDO_AUDIO] = {
-+	[AB8505_LDO_AUDIO] = {
- 		.constraints = {
- 			.name = "V-AUD",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -556,7 +862,7 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vaud_consumers,
- 	},
- 	/* supply for v-anamic1 VAMic1-LDO */
--	[AB9540_LDO_ANAMIC1] = {
-+	[AB8505_LDO_ANAMIC1] = {
- 		.constraints = {
- 			.name = "V-AMIC1",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -565,7 +871,7 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vamic1_consumers,
- 	},
- 	/* supply for v-amic2, VAMIC2 LDO, reuse constants for AMIC1 */
--	[AB9540_LDO_ANAMIC2] = {
-+	[AB8505_LDO_ANAMIC2] = {
- 		.constraints = {
- 			.name = "V-AMIC2",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -574,7 +880,7 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vamic2_consumers,
- 	},
- 	/* supply for v-dmic, VDMIC LDO */
--	[AB9540_LDO_DMIC] = {
-+	[AB8505_LDO_DMIC] = {
- 		.constraints = {
- 			.name = "V-DMIC",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -583,7 +889,7 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vdmic_consumers,
- 	},
- 	/* supply for v-intcore12, VINTCORE12 LDO */
--	[AB9540_LDO_INTCORE] = {
-+	[AB8505_LDO_INTCORE] = {
- 		.constraints = {
- 			.name = "V-INTCORE",
- 			.min_uV = 1250000,
-@@ -600,7 +906,7 @@ struct regulator_init_data ab8505_regulators[AB9540_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vintcore_consumers,
- 	},
- 	/* supply for U8500 CSI-DSI, VANA LDO */
--	[AB9540_LDO_ANA] = {
-+	[AB8505_LDO_ANA] = {
- 		.constraints = {
- 			.name = "V-CSI-DSI",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -621,8 +927,8 @@ struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
- 
- /* Use the AB8500 init settings for AB8505 as they are the same right now */
- struct ab8500_regulator_platform_data ab8505_regulator_plat_data = {
--	.reg_init               = ab8500_reg_init,
--	.num_reg_init           = ARRAY_SIZE(ab8500_reg_init),
-+	.reg_init               = ab8505_reg_init,
-+	.num_reg_init           = ARRAY_SIZE(ab8505_reg_init),
- 	.regulator              = ab8505_regulators,
- 	.num_regulator          = ARRAY_SIZE(ab8505_regulators),
- 	.ext_regulator          = ab8500_ext_regulators,
-@@ -633,14 +939,27 @@ static void ab8500_modify_reg_init(int id, u8 mask, u8 value)
- {
- 	int i;
- 
--	for (i = ARRAY_SIZE(ab8500_reg_init) - 1; i >= 0; i--) {
--		if (ab8500_reg_init[i].id == id) {
--			u8 initval = ab8500_reg_init[i].value;
--			initval = (initval & ~mask) | (value & mask);
--			ab8500_reg_init[i].value = initval;
-+	if (cpu_is_u8520()) {
-+		for (i = ARRAY_SIZE(ab8505_reg_init) - 1; i >= 0; i--) {
-+			if (ab8505_reg_init[i].id == id) {
-+				u8 initval = ab8505_reg_init[i].value;
-+				initval = (initval & ~mask) | (value & mask);
-+				ab8505_reg_init[i].value = initval;
- 
--			BUG_ON(mask & ~ab8500_reg_init[i].mask);
--			return;
-+				BUG_ON(mask & ~ab8505_reg_init[i].mask);
-+				return;
-+			}
++static struct int_bus_opp_table exynos5_int_opp_table[] = {
++	{LV_0, 266000, 1025000},
++	{LV_1, 200000, 1025000},
++	{LV_2, 160000, 1025000},
++	{LV_3, 133000, 1025000},
++	{LV_4, 100000, 1025000},
++	{0, 0, 0},
++};
++
++static void busfreq_mon_reset(struct busfreq_data_int *data)
++{
++	unsigned int i;
++
++	for (i = PPMU_RIGHT; i < PPMU_END; i++) {
++		void __iomem *ppmu_base = data->ppmu[i].hw_base;
++
++		/* Reset the performance and cycle counters */
++		exynos_ppmu_reset(ppmu_base);
++
++		/* Setup count registers to monitor read/write transactions */
++		data->ppmu[i].event[PPMU_PMNCNT3] = RDWR_DATA_COUNT;
++		exynos_ppmu_setevent(ppmu_base, PPMU_PMNCNT3,
++					data->ppmu[i].event[PPMU_PMNCNT3]);
++
++		exynos_ppmu_start(ppmu_base);
++	}
++}
++
++static void exynos5_read_ppmu(struct busfreq_data_int *data)
++{
++	int i, j;
++
++	for (i = PPMU_RIGHT; i < PPMU_END; i++) {
++		void __iomem *ppmu_base = data->ppmu[i].hw_base;
++
++		exynos_ppmu_stop(ppmu_base);
++
++		/* Update local data from PPMU */
++		data->ppmu[i].ccnt = __raw_readl(ppmu_base + PPMU_CCNT);
++
++		for (j = PPMU_PMNCNT0; j < PPMU_PMNCNT_MAX; j++) {
++			if (data->ppmu[i].event[j] == 0)
++				data->ppmu[i].count[j] = 0;
++			else
++				data->ppmu[i].count[j] =
++					exynos_ppmu_read(ppmu_base, j);
 +		}
-+	} else {
-+		for (i = ARRAY_SIZE(ab8500_reg_init) - 1; i >= 0; i--) {
-+			if (ab8500_reg_init[i].id == id) {
-+				u8 initval = ab8500_reg_init[i].value;
-+				initval = (initval & ~mask) | (value & mask);
-+				ab8500_reg_init[i].value = initval;
-+
-+				BUG_ON(mask & ~ab8500_reg_init[i].mask);
-+				return;
-+			}
- 		}
- 	}
- 
-@@ -662,6 +981,11 @@ void mop500_regulator_init(void)
- 		regulator->constraints.state_standby.disabled = 1;
- 	}
- 
-+	if (cpu_is_u8520()) {
-+		/* Vaux2 initialized to be on */
-+		ab8500_modify_reg_init(AB8505_VAUX12REGU, 0x0f, 0x05);
 +	}
 +
- 	/*
- 	 * Handle AB8500_EXT_SUPPLY2 on HREFP_V20_V50 boards (do it for
- 	 * all HREFP_V20 boards)
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index a3d8e76..2fc23c6 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -5,11 +5,15 @@
-  *
-  * Authors: Sundar Iyer <sundar.iyer@stericsson.com> for ST-Ericsson
-  *          Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
-+ *          Daniel Willerud <daniel.willerud@stericsson.com> for ST-Ericsson
-  *
-  * AB8500 peripheral regulators
-  *
-  * AB8500 supports the following regulators:
-  *   VAUX1/2/3, VINTCORE, VTVOUT, VUSB, VAUDIO, VAMIC1/2, VDMIC, VANA
++	busfreq_mon_reset(data);
++}
++
++static int exynos5_int_setvolt(struct busfreq_data_int *data,
++				unsigned long volt)
++{
++	return regulator_set_voltage(data->vdd_int, volt, MAX_SAFEVOLT);
++}
++
++static int exynos5_busfreq_int_target(struct device *dev, unsigned long *_freq,
++			      u32 flags)
++{
++	int err = 0;
++	struct platform_device *pdev = container_of(dev, struct platform_device,
++						    dev);
++	struct busfreq_data_int *data = platform_get_drvdata(pdev);
++	struct opp *opp;
++	unsigned long old_freq, freq;
++	unsigned long volt;
++
++	rcu_read_lock();
++	opp = devfreq_recommended_opp(dev, _freq, flags);
++	if (IS_ERR(opp)) {
++		rcu_read_unlock();
++		dev_err(dev, "%s: Invalid OPP.\n", __func__);
++		return PTR_ERR(opp);
++	}
++
++	freq = opp_get_freq(opp);
++	volt = opp_get_voltage(opp);
++	rcu_read_unlock();
++
++	old_freq = data->curr_freq;
++
++	if (old_freq == freq)
++		return 0;
++
++	dev_dbg(dev, "targetting %lukHz %luuV\n", freq, volt);
++
++	mutex_lock(&data->lock);
++
++	if (data->disabled)
++		goto out;
++
++	if (freq > exynos5_int_opp_table[0].clk)
++		pm_qos_update_request(&data->int_req, freq * 16 / 1000);
++	else
++		pm_qos_update_request(&data->int_req, -1);
++
++	if (old_freq < freq)
++		err = exynos5_int_setvolt(data, volt);
++	if (err)
++		goto out;
++
++	err = clk_set_rate(data->int_clk, freq * 1000);
++
++	if (err)
++		goto out;
++
++	if (old_freq > freq)
++		err = exynos5_int_setvolt(data, volt);
++	if (err)
++		goto out;
++
++	data->curr_freq = freq;
++out:
++	mutex_unlock(&data->lock);
++	return err;
++}
++
++static int exynos5_get_busier_dmc(struct busfreq_data_int *data)
++{
++	int i, j;
++	int busy = 0;
++	unsigned int temp = 0;
++
++	for (i = PPMU_RIGHT; i < PPMU_END; i++) {
++		for (j = PPMU_PMNCNT0; j < PPMU_PMNCNT_MAX; j++) {
++			if (data->ppmu[i].count[j] > temp) {
++				temp = data->ppmu[i].count[j];
++				busy = i;
++			}
++		}
++	}
++
++	return busy;
++}
++
++static int exynos5_int_get_dev_status(struct device *dev,
++				      struct devfreq_dev_status *stat)
++{
++	struct platform_device *pdev = container_of(dev, struct platform_device,
++						    dev);
++	struct busfreq_data_int *data = platform_get_drvdata(pdev);
++	int busier_dmc;
++
++	exynos5_read_ppmu(data);
++	busier_dmc = exynos5_get_busier_dmc(data);
++
++	stat->current_frequency = data->curr_freq;
++
++	/* Number of cycles spent on memory access */
++	stat->busy_time = data->ppmu[busier_dmc].count[PPMU_PMNCNT3];
++	stat->busy_time *= 100 / INT_BUS_SATURATION_RATIO;
++	stat->total_time = data->ppmu[busier_dmc].ccnt;
++
++	return 0;
++}
++static void exynos5_int_exit(struct device *dev)
++{
++	struct platform_device *pdev = container_of(dev, struct platform_device,
++						    dev);
++	struct busfreq_data_int *data = platform_get_drvdata(pdev);
++
++	devfreq_unregister_opp_notifier(dev, data->devfreq);
++}
++
++static struct devfreq_dev_profile exynos5_devfreq_int_profile = {
++	.initial_freq		= 160000,
++	.polling_ms		= 100,
++	.target			= exynos5_busfreq_int_target,
++	.get_dev_status		= exynos5_int_get_dev_status,
++	.exit			= exynos5_int_exit,
++};
++
++static int exynos5250_init_int_tables(struct busfreq_data_int *data)
++{
++	int i, err = 0;
++
++	for (i = LV_0; i < _LV_END; i++) {
++		err = opp_add(data->dev, exynos5_int_opp_table[i].clk,
++				exynos5_int_opp_table[i].volt);
++		if (err) {
++			dev_err(data->dev, "Cannot add opp entries.\n");
++			return err;
++		}
++	}
++
++	return 0;
++}
++
++static int exynos5_busfreq_int_pm_notifier_event(struct notifier_block *this,
++		unsigned long event, void *ptr)
++{
++	struct busfreq_data_int *data = container_of(this,
++					struct busfreq_data_int, pm_notifier);
++	struct opp *opp;
++	unsigned long maxfreq = ULONG_MAX;
++	unsigned long freq;
++	unsigned long volt;
++	int err = 0;
++
++	switch (event) {
++	case PM_SUSPEND_PREPARE:
++		/* Set Fastest and Deactivate DVFS */
++		mutex_lock(&data->lock);
++
++		data->disabled = true;
++
++		rcu_read_lock();
++		opp = opp_find_freq_floor(data->dev, &maxfreq);
++		if (IS_ERR(opp)) {
++			rcu_read_unlock();
++			err = PTR_ERR(opp);
++			goto unlock;
++		}
++		freq = opp_get_freq(opp);
++		volt = opp_get_voltage(opp);
++		rcu_read_unlock();
++
++		err = exynos5_int_setvolt(data, volt);
++		if (err)
++			goto unlock;
++
++		err = clk_set_rate(data->int_clk, freq * 1000);
++
++		if (err)
++			goto unlock;
++
++		data->curr_freq = freq;
++unlock:
++		mutex_unlock(&data->lock);
++		if (err)
++			return NOTIFY_BAD;
++		return NOTIFY_OK;
++	case PM_POST_RESTORE:
++	case PM_POST_SUSPEND:
++		/* Reactivate */
++		mutex_lock(&data->lock);
++		data->disabled = false;
++		mutex_unlock(&data->lock);
++		return NOTIFY_OK;
++	}
++
++	return NOTIFY_DONE;
++}
++
++static int exynos5_busfreq_int_probe(struct platform_device *pdev)
++{
++	struct busfreq_data_int *data;
++	struct opp *opp;
++	struct device *dev = &pdev->dev;
++	struct device_node *np;
++	unsigned long initial_freq;
++	unsigned long initial_volt;
++	int err = 0;
++	int i;
++
++	data = devm_kzalloc(&pdev->dev, sizeof(struct busfreq_data_int),
++				GFP_KERNEL);
++	if (data == NULL) {
++		dev_err(dev, "Cannot allocate memory.\n");
++		return -ENOMEM;
++	}
++
++	np = of_find_compatible_node(NULL, NULL, "samsung,exynos5250-ppmu");
++	if (np == NULL) {
++		pr_err("Unable to find PPMU node\n");
++		return -ENOENT;
++	}
++
++	for (i = PPMU_RIGHT; i < PPMU_END; i++) {
++		/* map PPMU memory region */
++		data->ppmu[i].hw_base = of_iomap(np, i);
++		if (data->ppmu[i].hw_base == NULL) {
++			dev_err(&pdev->dev, "failed to map memory region\n");
++			return -ENOMEM;
++		}
++	}
++	data->pm_notifier.notifier_call = exynos5_busfreq_int_pm_notifier_event;
++	data->dev = dev;
++	mutex_init(&data->lock);
++
++	err = exynos5250_init_int_tables(data);
++	if (err)
++		goto err_regulator;
++
++	data->vdd_int = regulator_get(dev, "vdd_int");
++	if (IS_ERR(data->vdd_int)) {
++		dev_err(dev, "Cannot get the regulator \"vdd_int\"\n");
++		err = PTR_ERR(data->vdd_int);
++		goto err_regulator;
++	}
++
++	data->int_clk = clk_get(dev, "int_clk");
++	if (IS_ERR(data->int_clk)) {
++		dev_err(dev, "Cannot get clock \"int_clk\"\n");
++		err = PTR_ERR(data->int_clk);
++		goto err_clock;
++	}
++
++	rcu_read_lock();
++	opp = opp_find_freq_floor(dev,
++			&exynos5_devfreq_int_profile.initial_freq);
++	if (IS_ERR(opp)) {
++		rcu_read_unlock();
++		dev_err(dev, "Invalid initial frequency %lu kHz.\n",
++		       exynos5_devfreq_int_profile.initial_freq);
++		err = PTR_ERR(opp);
++		goto err_opp_add;
++	}
++	initial_freq = opp_get_freq(opp);
++	initial_volt = opp_get_voltage(opp);
++	rcu_read_unlock();
++	data->curr_freq = initial_freq;
++
++	err = clk_set_rate(data->int_clk, initial_freq * 1000);
++	if (err) {
++		dev_err(dev, "Failed to set initial frequency\n");
++		goto err_opp_add;
++	}
++
++	err = exynos5_int_setvolt(data, initial_volt);
++	if (err)
++		goto err_opp_add;
++
++	platform_set_drvdata(pdev, data);
++
++	busfreq_mon_reset(data);
++
++	data->devfreq = devfreq_add_device(dev, &exynos5_devfreq_int_profile,
++					   "simple_ondemand", NULL);
++
++	if (IS_ERR(data->devfreq)) {
++		err = PTR_ERR(data->devfreq);
++		goto err_devfreq_add;
++	}
++
++	devfreq_register_opp_notifier(dev, data->devfreq);
++
++	err = register_pm_notifier(&data->pm_notifier);
++	if (err) {
++		dev_err(dev, "Failed to setup pm notifier\n");
++		goto err_devfreq_add;
++	}
++
++	/* TODO: Add a new QOS class for int/mif bus */
++	pm_qos_add_request(&data->int_req, PM_QOS_NETWORK_THROUGHPUT, -1);
++
++	return 0;
++
++err_devfreq_add:
++	devfreq_remove_device(data->devfreq);
++	platform_set_drvdata(pdev, NULL);
++err_opp_add:
++	clk_put(data->int_clk);
++err_clock:
++	regulator_put(data->vdd_int);
++err_regulator:
++	return err;
++}
++
++static int exynos5_busfreq_int_remove(struct platform_device *pdev)
++{
++	struct busfreq_data_int *data = platform_get_drvdata(pdev);
++
++	pm_qos_remove_request(&data->int_req);
++	unregister_pm_notifier(&data->pm_notifier);
++	devfreq_remove_device(data->devfreq);
++	regulator_put(data->vdd_int);
++	clk_put(data->int_clk);
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++static int exynos5_busfreq_int_resume(struct device *dev)
++{
++	struct platform_device *pdev = container_of(dev, struct platform_device,
++						    dev);
++	struct busfreq_data_int *data = platform_get_drvdata(pdev);
++
++	busfreq_mon_reset(data);
++	return 0;
++}
++
++static const struct dev_pm_ops exynos5_busfreq_int_pm = {
++	.resume	= exynos5_busfreq_int_resume,
++};
++
++/* platform device pointer for exynos5 devfreq device. */
++static struct platform_device *exynos5_devfreq_pdev;
++
++static struct platform_driver exynos5_busfreq_int_driver = {
++	.probe		= exynos5_busfreq_int_probe,
++	.remove		= exynos5_busfreq_int_remove,
++	.driver		= {
++		.name		= "exynos5-bus-int",
++		.owner		= THIS_MODULE,
++		.pm		= &exynos5_busfreq_int_pm,
++	},
++};
++
++static int __init exynos5_busfreq_int_init(void)
++{
++	int ret;
++
++	ret = platform_driver_register(&exynos5_busfreq_int_driver);
++	if (ret < 0)
++		goto out;
++
++	exynos5_devfreq_pdev =
++		platform_device_register_simple("exynos5-bus-int", -1, NULL, 0);
++	if (IS_ERR_OR_NULL(exynos5_devfreq_pdev)) {
++		ret = PTR_ERR(exynos5_devfreq_pdev);
++		goto out1;
++	}
++
++	return 0;
++out1:
++	platform_driver_unregister(&exynos5_busfreq_int_driver);
++out:
++	return ret;
++}
++late_initcall(exynos5_busfreq_int_init);
++
++static void __exit exynos5_busfreq_int_exit(void)
++{
++	platform_device_unregister(exynos5_devfreq_pdev);
++	platform_driver_unregister(&exynos5_busfreq_int_driver);
++}
++module_exit(exynos5_busfreq_int_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("EXYNOS5 busfreq driver with devfreq framework");
+diff --git a/drivers/devfreq/exynos/exynos_ppmu.c b/drivers/devfreq/exynos/exynos_ppmu.c
+new file mode 100644
+index 0000000..85fc5ac
+--- /dev/null
++++ b/drivers/devfreq/exynos/exynos_ppmu.c
+@@ -0,0 +1,56 @@
++/*
++ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com/
 + *
-+ * AB8505 supports the following regulators:
-+ *   VAUX1/2/3/4/5/6, VINTCORE, VADC, VUSB, VAUDIO, VAMIC1/2, VDMIC, VANA
-  */
- #include <linux/init.h>
- #include <linux/kernel.h>
-@@ -95,6 +99,17 @@ static const unsigned int ldo_vaux3_voltages[] = {
- 	2910000,
- };
- 
-+static const int ldo_vaux56_voltages[] = {
-+	1800000,
-+	1050000,
-+	1100000,
-+	1200000,
-+	1500000,
-+	2200000,
-+	2500000,
-+	2790000,
++ * EXYNOS - PPMU support
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/io.h>
++
++#include "exynos_ppmu.h"
++
++void exynos_ppmu_reset(void __iomem *ppmu_base)
++{
++	__raw_writel(PPMU_CYCLE_RESET | PPMU_COUNTER_RESET, ppmu_base);
++	__raw_writel(PPMU_ENABLE_CYCLE  |
++		     PPMU_ENABLE_COUNT0 |
++		     PPMU_ENABLE_COUNT1 |
++		     PPMU_ENABLE_COUNT2 |
++		     PPMU_ENABLE_COUNT3,
++		     ppmu_base + PPMU_CNTENS);
++}
++
++void exynos_ppmu_setevent(void __iomem *ppmu_base, unsigned int ch,
++			unsigned int evt)
++{
++	__raw_writel(evt, ppmu_base + PPMU_BEVTSEL(ch));
++}
++
++void exynos_ppmu_start(void __iomem *ppmu_base)
++{
++	__raw_writel(PPMU_ENABLE, ppmu_base);
++}
++
++void exynos_ppmu_stop(void __iomem *ppmu_base)
++{
++	__raw_writel(PPMU_DISABLE, ppmu_base);
++}
++
++unsigned int exynos_ppmu_read(void __iomem *ppmu_base, unsigned int ch)
++{
++	unsigned int total;
++
++	if (ch == PPMU_PMNCNT3)
++		total = ((__raw_readl(ppmu_base + PMCNT_OFFSET(ch)) << 8) |
++			  __raw_readl(ppmu_base + PMCNT_OFFSET(ch + 1)));
++	else
++		total = __raw_readl(ppmu_base + PMCNT_OFFSET(ch));
++
++	return total;
++}
+diff --git a/drivers/devfreq/exynos/exynos_ppmu.h b/drivers/devfreq/exynos/exynos_ppmu.h
+new file mode 100644
+index 0000000..b46d31b
+--- /dev/null
++++ b/drivers/devfreq/exynos/exynos_ppmu.h
+@@ -0,0 +1,79 @@
++/*
++ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com/
++ *
++ * EXYNOS PPMU header
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++
++#ifndef __DEVFREQ_EXYNOS_PPMU_H
++#define __DEVFREQ_EXYNOS_PPMU_H __FILE__
++
++#include <linux/ktime.h>
++
++/* For PPMU Control */
++#define PPMU_ENABLE             BIT(0)
++#define PPMU_DISABLE            0x0
++#define PPMU_CYCLE_RESET        BIT(1)
++#define PPMU_COUNTER_RESET      BIT(2)
++
++#define PPMU_ENABLE_COUNT0      BIT(0)
++#define PPMU_ENABLE_COUNT1      BIT(1)
++#define PPMU_ENABLE_COUNT2      BIT(2)
++#define PPMU_ENABLE_COUNT3      BIT(3)
++#define PPMU_ENABLE_CYCLE       BIT(31)
++
++#define PPMU_CNTENS		0x10
++#define PPMU_FLAG		0x50
++#define PPMU_CCNT_OVERFLOW	BIT(31)
++#define PPMU_CCNT		0x100
++
++#define PPMU_PMCNT0		0x110
++#define PPMU_PMCNT_OFFSET	0x10
++#define PMCNT_OFFSET(x)		(PPMU_PMCNT0 + (PPMU_PMCNT_OFFSET * x))
++
++#define PPMU_BEVT0SEL		0x1000
++#define PPMU_BEVTSEL_OFFSET	0x100
++#define PPMU_BEVTSEL(x)		(PPMU_BEVT0SEL + (ch * PPMU_BEVTSEL_OFFSET))
++
++/* For Event Selection */
++#define RD_DATA_COUNT		0x5
++#define WR_DATA_COUNT		0x6
++#define RDWR_DATA_COUNT		0x7
++
++enum ppmu_counter {
++	PPMU_PMNCNT0,
++	PPMU_PMCCNT1,
++	PPMU_PMNCNT2,
++	PPMU_PMNCNT3,
++	PPMU_PMNCNT_MAX,
 +};
 +
- static const unsigned int ldo_vintcore_voltages[] = {
- 	1200000,
- 	1225000,
-@@ -580,6 +595,312 @@ static struct ab8500_regulator_info
- 	},
- };
- 
-+/* AB8505 regulator information */
-+static struct ab8500_regulator_info
-+		ab8505_regulator_info[AB8505_NUM_REGULATORS] = {
-+	/*
-+	 * Variable Voltage Regulators
-+	 *   name, min mV, max mV,
-+	 *   update bank, reg, mask, enable val
-+	 *   volt bank, reg, mask, table, table length
-+	 */
-+	[AB8505_LDO_AUX1] = {
-+		.desc = {
-+			.name		= "LDO-AUX1",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_AUX1,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
-+		},
-+		.min_uV			= 1100000,
-+		.max_uV			= 3300000,
-+		.load_lp_uA		= 5000,
-+		.update_bank		= 0x04,
-+		.update_reg		= 0x09,
-+		.update_mask		= 0x03,
-+		.update_val		= 0x01,
-+		.update_val_idle	= 0x03,
-+		.update_val_normal	= 0x01,
-+		.voltage_bank		= 0x04,
-+		.voltage_reg		= 0x1f,
-+		.voltage_mask		= 0x0f,
-+		.voltages		= ldo_vauxn_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vauxn_voltages),
-+	},
-+	[AB8505_LDO_AUX2] = {
-+		.desc = {
-+			.name		= "LDO-AUX2",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_AUX2,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
-+		},
-+		.min_uV			= 1100000,
-+		.max_uV			= 3300000,
-+		.load_lp_uA		= 5000,
-+		.update_bank		= 0x04,
-+		.update_reg		= 0x09,
-+		.update_mask		= 0x0c,
-+		.update_val		= 0x04,
-+		.update_val_idle	= 0x0c,
-+		.update_val_normal	= 0x04,
-+		.voltage_bank		= 0x04,
-+		.voltage_reg		= 0x20,
-+		.voltage_mask		= 0x0f,
-+		.voltages		= ldo_vauxn_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vauxn_voltages),
-+	},
-+	[AB8505_LDO_AUX3] = {
-+		.desc = {
-+			.name		= "LDO-AUX3",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_AUX3,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vaux3_voltages),
-+		},
-+		.min_uV			= 1100000,
-+		.max_uV			= 3300000,
-+		.load_lp_uA		= 5000,
-+		.update_bank		= 0x04,
-+		.update_reg		= 0x0a,
-+		.update_mask		= 0x03,
-+		.update_val		= 0x01,
-+		.update_val_idle	= 0x03,
-+		.update_val_normal	= 0x01,
-+		.voltage_bank		= 0x04,
-+		.voltage_reg		= 0x21,
-+		.voltage_mask		= 0x07,
-+		.voltages		= ldo_vaux3_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vaux3_voltages),
-+	},
-+	[AB8505_LDO_AUX4] = {
-+		.desc = {
-+			.name		= "LDO-AUX4",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB9540_LDO_AUX4,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
-+		},
-+		.min_uV			= 1100000,
-+		.max_uV			= 3300000,
-+		.load_lp_uA		= 5000,
-+		/* values for Vaux4Regu register */
-+		.update_bank		= 0x04,
-+		.update_reg		= 0x2e,
-+		.update_mask		= 0x03,
-+		.update_val		= 0x01,
-+		.update_val_idle	= 0x03,
-+		.update_val_normal	= 0x01,
-+		/* values for Vaux4SEL register */
-+		.voltage_bank		= 0x04,
-+		.voltage_reg		= 0x2f,
-+		.voltage_mask		= 0x0f,
-+		.voltages		= ldo_vauxn_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vauxn_voltages),
-+	},
-+	[AB8505_LDO_AUX5] = {
-+		.desc = {
-+			.name		= "LDO-AUX5",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8505_LDO_AUX5,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vaux56_voltages),
-+		},
-+		.min_uV			= 1050000,
-+		.max_uV			= 2790000,
-+		.load_lp_uA		= 2000,
-+		/* values for CtrlVaux5 register */
-+		.update_bank		= 0x01,
-+		.update_reg		= 0x55,
-+		.update_mask		= 0x08,
-+		.update_val		= 0x00,
-+		.update_val_idle	= 0x01,
-+		.update_val_normal	= 0x00,
-+		.voltage_bank		= 0x01,
-+		.voltage_reg		= 0x55,
-+		.voltage_mask		= 0x07,
-+		.voltages		= ldo_vaux56_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vaux56_voltages),
-+	},
-+	[AB8505_LDO_AUX6] = {
-+		.desc = {
-+			.name		= "LDO-AUX6",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8505_LDO_AUX6,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vaux56_voltages),
-+		},
-+		.min_uV			= 1050000,
-+		.max_uV			= 2790000,
-+		.load_lp_uA		= 2000,
-+		/* values for CtrlVaux6 register */
-+		.update_bank		= 0x01,
-+		.update_reg		= 0x56,
-+		.update_mask		= 0x08,
-+		.update_val		= 0x00,
-+		.update_val_idle	= 0x01,
-+		.update_val_normal	= 0x00,
-+		.voltage_bank		= 0x01,
-+		.voltage_reg		= 0x56,
-+		.voltage_mask		= 0x07,
-+		.voltages		= ldo_vaux56_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vaux56_voltages),
-+	},
-+	[AB8505_LDO_INTCORE] = {
-+		.desc = {
-+			.name		= "LDO-INTCORE",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_INTCORE,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vintcore_voltages),
-+		},
-+		.min_uV			= 1100000,
-+		.max_uV			= 3300000,
-+		.load_lp_uA		= 5000,
-+		.update_bank		= 0x03,
-+		.update_reg		= 0x80,
-+		.update_mask		= 0x44,
-+		.update_val		= 0x44,
-+		.update_val_idle	= 0x44,
-+		.update_val_normal	= 0x04,
-+		.voltage_bank		= 0x03,
-+		.voltage_reg		= 0x80,
-+		.voltage_mask		= 0x38,
-+		.voltages		= ldo_vintcore_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vintcore_voltages),
-+	},
-+
-+	/*
-+	 * Fixed Voltage Regulators
-+	 *   name, fixed mV,
-+	 *   update bank, reg, mask, enable val
-+	 */
-+	[AB8505_LDO_ADC] = {
-+		.desc = {
-+			.name		= "LDO-ADC",
-+			.ops		= &ab8500_regulator_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8505_LDO_ADC,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= 1,
-+		},
-+		.delay			= 10000,
-+		.fixed_uV		= 2000000,
-+		.load_lp_uA		= 1000,
-+		.update_bank		= 0x03,
-+		.update_reg		= 0x80,
-+		.update_mask		= 0x82,
-+		.update_val		= 0x02,
-+		.update_val_idle	= 0x82,
-+		.update_val_normal	= 0x02,
-+	},
-+	[AB8505_LDO_USB] = {
-+		.desc = {
-+			.name           = "LDO-USB",
-+			.ops            = &ab8500_regulator_ops,
-+			.type           = REGULATOR_VOLTAGE,
-+			.id             = AB9540_LDO_USB,
-+			.owner          = THIS_MODULE,
-+			.n_voltages     = 1,
-+		},
-+		.fixed_uV               = 3300000,
-+		.update_bank            = 0x03,
-+		.update_reg             = 0x82,
-+		.update_mask            = 0x03,
-+		.update_val		= 0x01,
-+		.update_val_idle	= 0x03,
-+		.update_val_normal	= 0x01,
-+	},
-+	[AB8505_LDO_AUDIO] = {
-+		.desc = {
-+			.name		= "LDO-AUDIO",
-+			.ops		= &ab8500_regulator_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_AUDIO,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= 1,
-+		},
-+		.fixed_uV		= 2000000,
-+		.update_bank		= 0x03,
-+		.update_reg		= 0x83,
-+		.update_mask		= 0x02,
-+		.update_val		= 0x02,
-+	},
-+	[AB8505_LDO_ANAMIC1] = {
-+		.desc = {
-+			.name		= "LDO-ANAMIC1",
-+			.ops		= &ab8500_regulator_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_ANAMIC1,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= 1,
-+		},
-+		.fixed_uV		= 2050000,
-+		.update_bank		= 0x03,
-+		.update_reg		= 0x83,
-+		.update_mask		= 0x08,
-+		.update_val		= 0x08,
-+	},
-+	[AB8505_LDO_ANAMIC2] = {
-+		.desc = {
-+			.name		= "LDO-ANAMIC2",
-+			.ops		= &ab8500_regulator_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_ANAMIC2,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= 1,
-+		},
-+		.fixed_uV		= 2050000,
-+		.update_bank		= 0x03,
-+		.update_reg		= 0x83,
-+		.update_mask		= 0x10,
-+		.update_val		= 0x10,
-+	},
-+	[AB8505_LDO_DMIC] = {
-+		.desc = {
-+			.name		= "LDO-DMIC",
-+			.ops		= &ab8500_regulator_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_DMIC,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= 1,
-+		},
-+		.fixed_uV		= 1800000,
-+		.update_bank		= 0x03,
-+		.update_reg		= 0x83,
-+		.update_mask		= 0x04,
-+		.update_val		= 0x04,
-+	},
-+	/*
-+	 * Regulators with fixed voltage and normal/idle modes
-+	 */
-+	[AB8505_LDO_ANA] = {
-+		.desc = {
-+			.name		= "LDO-ANA",
-+			.ops		= &ab8500_regulator_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8500_LDO_ANA,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= 1,
-+		},
-+		.fixed_uV		= 1200000,
-+		.load_lp_uA		= 1000,
-+		.update_bank		= 0x04,
-+		.update_reg		= 0x06,
-+		.update_mask		= 0x0c,
-+		.update_val		= 0x04,
-+		.update_val_idle	= 0x0c,
-+		.update_val_normal	= 0x04,
-+	},
++struct bus_opp_table {
++	unsigned int idx;
++	unsigned long clk;
++	unsigned long volt;
 +};
 +
- /* AB9540 regulator information */
- static struct ab8500_regulator_info
- 		ab9540_regulator_info[AB9540_NUM_REGULATORS] = {
-@@ -1021,6 +1342,268 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
- 	REG_INIT(AB8500_REGUCTRLDISCH2,		0x04, 0x44, 0x16),
- };
- 
-+/* AB8505 register init */
-+static struct ab8500_reg_init ab8505_reg_init[] = {
-+	/*
-+	 * 0x03, VarmRequestCtrl
-+	 * 0x0c, VsmpsCRequestCtrl
-+	 * 0x30, VsmpsARequestCtrl
-+	 * 0xc0, VsmpsBRequestCtrl
-+	 */
-+	REG_INIT(AB8505_REGUREQUESTCTRL1,	0x03, 0x03, 0xff),
-+	/*
-+	 * 0x03, VsafeRequestCtrl
-+	 * 0x0c, VpllRequestCtrl
-+	 * 0x30, VanaRequestCtrl
-+	 */
-+	REG_INIT(AB8505_REGUREQUESTCTRL2,	0x03, 0x04, 0x3f),
-+	/*
-+	 * 0x30, Vaux1RequestCtrl
-+	 * 0xc0, Vaux2RequestCtrl
-+	 */
-+	REG_INIT(AB8505_REGUREQUESTCTRL3,	0x03, 0x05, 0xf0),
-+	/*
-+	 * 0x03, Vaux3RequestCtrl
-+	 * 0x04, SwHPReq
-+	 */
-+	REG_INIT(AB8505_REGUREQUESTCTRL4,	0x03, 0x06, 0x07),
-+	/*
-+	 * 0x01, VsmpsASysClkReq1HPValid
-+	 * 0x02, VsmpsBSysClkReq1HPValid
-+	 * 0x04, VsafeSysClkReq1HPValid
-+	 * 0x08, VanaSysClkReq1HPValid
-+	 * 0x10, VpllSysClkReq1HPValid
-+	 * 0x20, Vaux1SysClkReq1HPValid
-+	 * 0x40, Vaux2SysClkReq1HPValid
-+	 * 0x80, Vaux3SysClkReq1HPValid
-+	 */
-+	REG_INIT(AB8505_REGUSYSCLKREQ1HPVALID1,	0x03, 0x07, 0xff),
-+	/*
-+	 * 0x01, VsmpsCSysClkReq1HPValid
-+	 * 0x02, VarmSysClkReq1HPValid
-+	 * 0x04, VbbSysClkReq1HPValid
-+	 * 0x08, VsmpsMSysClkReq1HPValid
-+	 */
-+	REG_INIT(AB8505_REGUSYSCLKREQ1HPVALID2,	0x03, 0x08, 0x0f),
-+	/*
-+	 * 0x01, VsmpsAHwHPReq1Valid
-+	 * 0x02, VsmpsBHwHPReq1Valid
-+	 * 0x04, VsafeHwHPReq1Valid
-+	 * 0x08, VanaHwHPReq1Valid
-+	 * 0x10, VpllHwHPReq1Valid
-+	 * 0x20, Vaux1HwHPReq1Valid
-+	 * 0x40, Vaux2HwHPReq1Valid
-+	 * 0x80, Vaux3HwHPReq1Valid
-+	 */
-+	REG_INIT(AB8505_REGUHWHPREQ1VALID1,	0x03, 0x09, 0xff),
-+	/*
-+	 * 0x08, VsmpsMHwHPReq1Valid
-+	 */
-+	REG_INIT(AB8505_REGUHWHPREQ1VALID2,	0x03, 0x0a, 0x08),
-+	/*
-+	 * 0x01, VsmpsAHwHPReq2Valid
-+	 * 0x02, VsmpsBHwHPReq2Valid
-+	 * 0x04, VsafeHwHPReq2Valid
-+	 * 0x08, VanaHwHPReq2Valid
-+	 * 0x10, VpllHwHPReq2Valid
-+	 * 0x20, Vaux1HwHPReq2Valid
-+	 * 0x40, Vaux2HwHPReq2Valid
-+	 * 0x80, Vaux3HwHPReq2Valid
-+	 */
-+	REG_INIT(AB8505_REGUHWHPREQ2VALID1,	0x03, 0x0b, 0xff),
-+	/*
-+	 * 0x08, VsmpsMHwHPReq2Valid
-+	 */
-+	REG_INIT(AB8505_REGUHWHPREQ2VALID2,	0x03, 0x0c, 0x08),
-+	/*
-+	 * 0x01, VsmpsCSwHPReqValid
-+	 * 0x02, VarmSwHPReqValid
-+	 * 0x04, VsmpsASwHPReqValid
-+	 * 0x08, VsmpsBSwHPReqValid
-+	 * 0x10, VsafeSwHPReqValid
-+	 * 0x20, VanaSwHPReqValid
-+	 * 0x40, VpllSwHPReqValid
-+	 * 0x80, Vaux1SwHPReqValid
-+	 */
-+	REG_INIT(AB8505_REGUSWHPREQVALID1,	0x03, 0x0d, 0xff),
-+	/*
-+	 * 0x01, Vaux2SwHPReqValid
-+	 * 0x02, Vaux3SwHPReqValid
-+	 * 0x20, VsmpsMSwHPReqValid
-+	 */
-+	REG_INIT(AB8505_REGUSWHPREQVALID2,	0x03, 0x0e, 0x23),
-+	/*
-+	 * 0x02, SysClkReq2Valid1
-+	 * 0x04, SysClkReq3Valid1
-+	 * 0x08, SysClkReq4Valid1
-+	 */
-+	REG_INIT(AB8505_REGUSYSCLKREQVALID1,	0x03, 0x0f, 0x0e),
-+	/*
-+	 * 0x02, SysClkReq2Valid2
-+	 * 0x04, SysClkReq3Valid2
-+	 * 0x08, SysClkReq4Valid2
-+	 */
-+	REG_INIT(AB8505_REGUSYSCLKREQVALID2,	0x03, 0x10, 0x0e),
-+	/*
-+	 * 0x01, Vaux4SwHPReqValid
-+	 * 0x02, Vaux4HwHPReq2Valid
-+	 * 0x04, Vaux4HwHPReq1Valid
-+	 * 0x08, Vaux4SysClkReq1HPValid
-+	 */
-+	REG_INIT(AB8505_REGUVAUX4REQVALID,	0x03, 0x11, 0x0f),
-+	/*
-+	 * 0x02, VadcEna
-+	 * 0x04, VintCore12Ena
-+	 * 0x38, VintCore12Sel
-+	 * 0x40, VintCore12LP
-+	 * 0x80, VadcLP
-+	 */
-+	REG_INIT(AB8505_REGUMISC1,		0x03, 0x80, 0xfe),
-+	/*
-+	 * 0x02, VaudioEna
-+	 * 0x04, VdmicEna
-+	 * 0x08, Vamic1Ena
-+	 * 0x10, Vamic2Ena
-+	 */
-+	REG_INIT(AB8505_VAUDIOSUPPLY,		0x03, 0x83, 0x1e),
-+	/*
-+	 * 0x01, Vamic1_dzout
-+	 * 0x02, Vamic2_dzout
-+	 */
-+	REG_INIT(AB8505_REGUCTRL1VAMIC,		0x03, 0x84, 0x03),
-+	/*
-+	 * 0x03, VsmpsARegu
-+	 * 0x0c, VsmpsASelCtrl
-+	 * 0x10, VsmpsAAutoMode
-+	 * 0x20, VsmpsAPWMMode
-+	 */
-+	REG_INIT(AB8505_VSMPSAREGU,		0x04, 0x03, 0x3f),
-+	/*
-+	 * 0x03, VsmpsBRegu
-+	 * 0x0c, VsmpsBSelCtrl
-+	 * 0x10, VsmpsBAutoMode
-+	 * 0x20, VsmpsBPWMMode
-+	 */
-+	REG_INIT(AB8505_VSMPSBREGU,		0x04, 0x04, 0x3f),
-+	/*
-+	 * 0x03, VsafeRegu
-+	 * 0x0c, VsafeSelCtrl
-+	 * 0x10, VsafeAutoMode
-+	 * 0x20, VsafePWMMode
-+	 */
-+	REG_INIT(AB8505_VSAFEREGU,		0x04, 0x05, 0x3f),
-+	/*
-+	 * 0x03, VpllRegu (NOTE! PRCMU register bits)
-+	 * 0x0c, VanaRegu
-+	 */
-+	REG_INIT(AB8505_VPLLVANAREGU,		0x04, 0x06, 0x0f),
-+	/*
-+	 * 0x03, Vaux1Regu
-+	 * 0x0c, Vaux2Regu
-+	 */
-+	REG_INIT(AB8505_VAUX12REGU,		0x04, 0x09, 0x0f),
-+	/*
-+	 * 0x0f, Vaux3Regu
-+	 */
-+	REG_INIT(AB8505_VRF1VAUX3REGU,		0x04, 0x0a, 0x0f),
-+	/*
-+	 * 0x3f, VsmpsASel1
-+	 */
-+	REG_INIT(AB8505_VSMPSASEL1,		0x04, 0x13, 0x3f),
-+	/*
-+	 * 0x3f, VsmpsASel2
-+	 */
-+	REG_INIT(AB8505_VSMPSASEL2,		0x04, 0x14, 0x3f),
-+	/*
-+	 * 0x3f, VsmpsASel3
-+	 */
-+	REG_INIT(AB8505_VSMPSASEL3,		0x04, 0x15, 0x3f),
-+	/*
-+	 * 0x3f, VsmpsBSel1
-+	 */
-+	REG_INIT(AB8505_VSMPSBSEL1,		0x04, 0x17, 0x3f),
-+	/*
-+	 * 0x3f, VsmpsBSel2
-+	 */
-+	REG_INIT(AB8505_VSMPSBSEL2,		0x04, 0x18, 0x3f),
-+	/*
-+	 * 0x3f, VsmpsBSel3
-+	 */
-+	REG_INIT(AB8505_VSMPSBSEL3,		0x04, 0x19, 0x3f),
-+	/*
-+	 * 0x7f, VsafeSel1
-+	 */
-+	REG_INIT(AB8505_VSAFESEL1,		0x04, 0x1b, 0x7f),
-+	/*
-+	 * 0x3f, VsafeSel2
-+	 */
-+	REG_INIT(AB8505_VSAFESEL2,		0x04, 0x1c, 0x7f),
-+	/*
-+	 * 0x3f, VsafeSel3
-+	 */
-+	REG_INIT(AB8505_VSAFESEL3,		0x04, 0x1d, 0x7f),
-+	/*
-+	 * 0x0f, Vaux1Sel
-+	 */
-+	REG_INIT(AB8505_VAUX1SEL,		0x04, 0x1f, 0x0f),
-+	/*
-+	 * 0x0f, Vaux2Sel
-+	 */
-+	REG_INIT(AB8505_VAUX2SEL,		0x04, 0x20, 0x0f),
-+	/*
-+	 * 0x07, Vaux3Sel
-+	 * 0x30, VRF1Sel
-+	 */
-+	REG_INIT(AB8505_VRF1VAUX3SEL,		0x04, 0x21, 0x37),
-+	/*
-+	 * 0x03, Vaux4RequestCtrl
-+	 */
-+	REG_INIT(AB8505_VAUX4REQCTRL,		0x04, 0x2d, 0x03),
-+	/*
-+	 * 0x03, Vaux4Regu
-+	 */
-+	REG_INIT(AB8505_VAUX4REGU,		0x04, 0x2e, 0x03),
-+	/*
-+	 * 0x0f, Vaux4Sel
-+	 */
-+	REG_INIT(AB8505_VAUX4SEL,		0x04, 0x2f, 0x0f),
-+	/*
-+	 * 0x04, Vaux1Disch
-+	 * 0x08, Vaux2Disch
-+	 * 0x10, Vaux3Disch
-+	 * 0x20, Vintcore12Disch
-+	 * 0x40, VTVoutDisch
-+	 * 0x80, VaudioDisch
-+	 */
-+	REG_INIT(AB8505_REGUCTRLDISCH,		0x04, 0x43, 0xfc),
-+	/*
-+	 * 0x02, VanaDisch
-+	 * 0x04, VdmicPullDownEna
-+	 * 0x10, VdmicDisch
-+	 */
-+	REG_INIT(AB8505_REGUCTRLDISCH2,		0x04, 0x44, 0x16),
-+	/*
-+	 * 0x01, Vaux4Disch
-+	 */
-+	REG_INIT(AB8505_REGUCTRLDISCH3,		0x04, 0x48, 0x01),
-+	/*
-+	 * 0x07, Vaux5Sel
-+	 * 0x08, Vaux5LP
-+	 * 0x10, Vaux5Ena
-+	 * 0x20, Vaux5Disch
-+	 * 0x40, Vaux5DisSfst
-+	 * 0x80, Vaux5DisPulld
-+	 */
-+	REG_INIT(AB8505_CTRLVAUX5,		0x01, 0x55, 0xff),
-+	/*
-+	 * 0x07, Vaux6Sel
-+	 * 0x08, Vaux6LP
-+	 * 0x10, Vaux6Ena
-+	 * 0x80, Vaux6DisPulld
-+	 */
-+	REG_INIT(AB8505_CTRLVAUX6,		0x01, 0x56, 0x9f),
++struct exynos_ppmu {
++	void __iomem *hw_base;
++	unsigned int ccnt;
++	unsigned int event[PPMU_PMNCNT_MAX];
++	unsigned int count[PPMU_PMNCNT_MAX];
++	unsigned long long ns;
++	ktime_t reset_time;
++	bool ccnt_overflow;
++	bool count_overflow[PPMU_PMNCNT_MAX];
 +};
 +
- /* AB9540 register init */
- static struct ab8500_reg_init ab9540_reg_init[] = {
- 	/*
-@@ -1442,10 +2025,10 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
- 		match = ab9540_regulator_matches;
- 		match_size = ARRAY_SIZE(ab9540_regulator_matches)
- 	} else if (is_ab8505(ab8500)) {
--		regulator_info = ab9540_regulator_info;
--		regulator_info_size = ARRAY_SIZE(ab9540_regulator_info);
--		reg_init = ab8500_reg_init;
--		reg_init_size = AB8500_NUM_REGULATOR_REGISTERS;
-+		regulator_info = ab8505_regulator_info;
-+		regulator_info_size = ARRAY_SIZE(ab8505_regulator_info);
-+		reg_init = ab8505_reg_init;
-+		reg_init_size = AB8505_NUM_REGULATOR_REGISTERS;
- 	} else {
- 		regulator_info = ab8500_regulator_info;
- 		regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
-@@ -1536,9 +2119,12 @@ static int ab8500_regulator_remove(struct platform_device *pdev)
- 	int regulator_info_size;
- 
- 
--	if (is_ab9540(ab8500) || is_ab8505(ab8500)) {
-+	if (is_ab9540(ab8500)) {
- 		regulator_info = ab9540_regulator_info;
- 		regulator_info_size = ARRAY_SIZE(ab9540_regulator_info);
-+	} else if (is_ab8505(ab8500)) {
-+		regulator_info = ab8505_regulator_info;
-+		regulator_info_size = ARRAY_SIZE(ab8505_regulator_info);
- 	} else {
- 		regulator_info = ab8500_regulator_info;
- 		regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
-@@ -1597,5 +2183,6 @@ module_exit(ab8500_regulator_exit);
- MODULE_LICENSE("GPL v2");
- MODULE_AUTHOR("Sundar Iyer <sundar.iyer@stericsson.com>");
- MODULE_AUTHOR("Bengt Jonsson <bengt.g.jonsson@stericsson.com>");
-+MODULE_AUTHOR("Daniel Willerud <daniel.willerud@stericsson.com>");
- MODULE_DESCRIPTION("Regulator Driver for ST-Ericsson AB8500 Mixed-Sig PMIC");
- MODULE_ALIAS("platform:ab8500-regulator");
-diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
-index 592a3f3..f17e91e 100644
---- a/include/linux/regulator/ab8500.h
-+++ b/include/linux/regulator/ab8500.h
-@@ -5,6 +5,7 @@
-  *
-  * Authors: Sundar Iyer <sundar.iyer@stericsson.com> for ST-Ericsson
-  *          Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
-+ *          Daniel Willerud <daniel.willerud@stericsson.com> for ST-Ericsson
-  */
- 
- #ifndef __LINUX_MFD_AB8500_REGULATOR_H
-@@ -27,7 +28,28 @@ enum ab8500_regulator_id {
- 	AB8500_NUM_REGULATORS,
- };
- 
--/* AB9450 regulators */
-+/* AB8505 regulators */
-+enum ab8505_regulator_id {
-+	AB8505_LDO_AUX1,
-+	AB8505_LDO_AUX2,
-+	AB8505_LDO_AUX3,
-+	AB8505_LDO_AUX4,
-+	AB8505_LDO_AUX5,
-+	AB8505_LDO_AUX6,
-+	AB8505_LDO_INTCORE,
-+	AB8505_LDO_ADC,
-+	AB8505_LDO_USB,
-+	AB8505_LDO_AUDIO,
-+	AB8505_LDO_ANAMIC1,
-+	AB8505_LDO_ANAMIC2,
-+	AB8505_LDO_DMIC,
-+	AB8505_LDO_ANA,
-+	AB8505_SYSCLKREQ_2,
-+	AB8505_SYSCLKREQ_4,
-+	AB8505_NUM_REGULATORS,
-+};
++void exynos_ppmu_reset(void __iomem *ppmu_base);
++void exynos_ppmu_setevent(void __iomem *ppmu_base, unsigned int ch,
++			unsigned int evt);
++void exynos_ppmu_start(void __iomem *ppmu_base);
++void exynos_ppmu_stop(void __iomem *ppmu_base);
++unsigned int exynos_ppmu_read(void __iomem *ppmu_base, unsigned int ch);
++#endif /* __DEVFREQ_EXYNOS_PPMU_H */
 +
-+/* AB9540 regulators */
- enum ab9540_regulator_id {
- 	AB9540_LDO_AUX1,
- 	AB9540_LDO_AUX2,
-@@ -46,7 +68,7 @@ enum ab9540_regulator_id {
- 	AB9540_NUM_REGULATORS,
- };
- 
--/* AB8500 and AB9540 register initialization */
-+/* AB8500, AB8505, and AB9540 register initialization */
- struct ab8500_regulator_reg_init {
- 	int id;
- 	u8 mask;
-@@ -92,6 +114,54 @@ enum ab8500_regulator_reg {
- 	AB8500_NUM_REGULATOR_REGISTERS,
- };
- 
-+/* AB8505 registers */
-+enum ab8505_regulator_reg {
-+	AB8505_REGUREQUESTCTRL1,
-+	AB8505_REGUREQUESTCTRL2,
-+	AB8505_REGUREQUESTCTRL3,
-+	AB8505_REGUREQUESTCTRL4,
-+	AB8505_REGUSYSCLKREQ1HPVALID1,
-+	AB8505_REGUSYSCLKREQ1HPVALID2,
-+	AB8505_REGUHWHPREQ1VALID1,
-+	AB8505_REGUHWHPREQ1VALID2,
-+	AB8505_REGUHWHPREQ2VALID1,
-+	AB8505_REGUHWHPREQ2VALID2,
-+	AB8505_REGUSWHPREQVALID1,
-+	AB8505_REGUSWHPREQVALID2,
-+	AB8505_REGUSYSCLKREQVALID1,
-+	AB8505_REGUSYSCLKREQVALID2,
-+	AB8505_REGUVAUX4REQVALID,
-+	AB8505_REGUMISC1,
-+	AB8505_VAUDIOSUPPLY,
-+	AB8505_REGUCTRL1VAMIC,
-+	AB8505_VSMPSAREGU,
-+	AB8505_VSMPSBREGU,
-+	AB8505_VSAFEREGU, /* NOTE! PRCMU register */
-+	AB8505_VPLLVANAREGU,
-+	AB8505_VAUX12REGU,
-+	AB8505_VRF1VAUX3REGU,
-+	AB8505_VSMPSASEL1,
-+	AB8505_VSMPSASEL2,
-+	AB8505_VSMPSASEL3,
-+	AB8505_VSMPSBSEL1,
-+	AB8505_VSMPSBSEL2,
-+	AB8505_VSMPSBSEL3,
-+	AB8505_VSAFESEL1, /* NOTE! PRCMU register */
-+	AB8505_VSAFESEL2, /* NOTE! PRCMU register */
-+	AB8505_VSAFESEL3, /* NOTE! PRCMU register */
-+	AB8505_VAUX1SEL,
-+	AB8505_VAUX2SEL,
-+	AB8505_VRF1VAUX3SEL,
-+	AB8505_VAUX4REQCTRL,
-+	AB8505_VAUX4REGU,
-+	AB8505_VAUX4SEL,
-+	AB8505_REGUCTRLDISCH,
-+	AB8505_REGUCTRLDISCH2,
-+	AB8505_REGUCTRLDISCH3,
-+	AB8505_CTRLVAUX5,
-+	AB8505_CTRLVAUX6,
-+	AB8505_NUM_REGULATOR_REGISTERS,
-+};
- 
- /* AB9540 registers */
- enum ab9540_regulator_reg {
 -- 
-1.7.9.5
+1.7.8.6
 
