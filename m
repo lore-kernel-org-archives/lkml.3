@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab3BDKdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 05:33:08 -0500
-Received: from mga03.intel.com ([143.182.124.21]:24798 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab3BDKdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 05:33:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,598,1355126400"; 
-   d="asc'?scan'208";a="252266662"
-Message-ID: <1359973956.13791.36.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: map: BUG() in non handled cases
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Mon, 04 Feb 2013 12:32:36 +0200
-In-Reply-To: <1359651994-27363-1-git-send-email-dmitry_eremin@mentor.com>
-References: <1359651994-27363-1-git-send-email-dmitry_eremin@mentor.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-uLvg00JGLWJcrwwWsYmf"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1753557Ab3BDKii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 05:38:38 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3104 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab3BDKig (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 05:38:36 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 04 Feb 2013 02:37:59 -0800
+Date: Mon, 4 Feb 2013 12:37:56 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: Rhyland Klein <rklein@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, "Rob Landley" <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        Simon Glass <sjg@chromium.org>, Mike Turquette <mturquette@linaro.org>,
+        Joseph Lo <josephl@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 04/10] clk: tegra: Add new fields and PLL types for
+ Tegra114
+Message-ID: <20130204103756.GP2364@tbergstrom-lnx.Nvidia.com>
+References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
+ <1359713962-16822-5-git-send-email-pdeschrijver@nvidia.com>
+ <510C1A2E.5010408@nvidia.com>
+ <510F56B1.5060409@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <510F56B1.5060409@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 04, 2013 at 07:35:29AM +0100, Prashant Gaikwad wrote:
+> On Saturday 02 February 2013 01:10 AM, Rhyland Klein wrote:
+> > On 2/1/2013 5:18 AM, Peter De Schrijver wrote:
+> >> Tegra114 introduces new PLL types. This requires new clocktypes as well
+> >> as some new fields in the pll structure.
+> >>
+> >> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> >> ---
+> >>    drivers/clk/tegra/clk-pll.c |  719 +++++++++++++++++++++++++++++++++++++++++++
+> >>    drivers/clk/tegra/clk.h     |   47 +++
+> >>    2 files changed, 766 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+> >> index 87d2f34..50114b7 100644
+> >> --- a/drivers/clk/tegra/clk-pll.c
+> >> +++ b/drivers/clk/tegra/clk-pll.c
+> >> [snip]
+> >> +struct clk *tegra_clk_register_pllxc(const char *name, const char *parent_name,
+> >> +                         void __iomem *clk_base, void __iomem *pmc,
+> >> +                         unsigned long flags, unsigned long fixed_rate,
+> >> +                         struct tegra_clk_pll_params *pll_params,
+> >> +                         u32 pll_flags,
+> >> +                         struct tegra_clk_pll_freq_table *freq_table,
+> >> +                         spinlock_t *lock)
+> >> +{
+> >> +       if (!pll_params->pdiv_tohw)
+> >> +               return -EINVAL;
+> >> +
+> > This will cause the following warning:
+> > warning: return makes pointer from integer without a cast
+> >
+> > Same with occurrences in tegra_clk_register_pllm and
+> > tegra_clk_register_pllc.
+> >
+> > Should this instead be returning NULL?
+> 
+> return ERR_PTR(-EINVAL)
+> 
 
---=-uLvg00JGLWJcrwwWsYmf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Indeed. I noticed that only after I sent this patchset. Already fixed in
+my own tree.
 
-On Thu, 2013-01-31 at 21:06 +0400, Dmitry Eremin-Solenikov wrote:
-> Several map-related functions look like a serie of ifs, checking
-> widths of map. Those functions do not have any handling for default
-> case. Instead of fiddling with uninitialized_var in those functions,
-> let's just add a (correct) BUG() to the default case on those maps. This
-> will also allow us to catch potential errors in maps setup in future.
->=20
-> Signed-off-by: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+Cheers,
 
-Pushed to l2-mtd.git, thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-uLvg00JGLWJcrwwWsYmf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAABAgAGBQJRD45EAAoJECmIfjd9wqK0mHoQAKJWUlwGdyM7dzvBE8ddudj+
-6OXcXzAWb6GStgXLZ7KDimbllxgiykGx8/SmmC3nmWlsCnJcB4xr7XDrLlbJlGV/
-l92jFuABYzAnGtdE7TN9LBD3F8SD8Nw+YSIv0NFRB713lLJ9DW+PyHB7dYEAyTD4
-rU4eEq0RXk6AByR604ic5jWJvq4r6WU8wC7/6ZWi1jetUC9POssZ6D4ESVNorWmO
-N34T2ZNArvgMyrUXqiGU3A5gkXLM03wxSGd5FmPv9zL73M6ug4OLxsmTnQoiAR+i
-SjAe7jQ5bURMTO1MKO0+z7SajtzMXMTKGGfFXPxBvwoJwab7ksdaNZ4jYPJoXKNJ
-+Rz1SqKIZqskYF21BaTsgA+yWW02NnsRmrHRaCscjs07w2NQEQxGIgx/DARtN9Ms
-OV3ttW2kJ3Z9g7byaS7fSCKqfplhdy6C+2rdqI0pqhsUGnaoD1wSVQPofo+rF4ar
-cCqUR7YhIOMGNRabJZyxrHg7CTMOAXgQhrH1F0JqTHMxViRNkkm1DH61BQQCrdE2
-R4tEXNIU+HZwXUvB7aYRV4aNaP0tMF64d6N8gVC84htKAbyHpOxse1Xz+U8jBQRm
-eodsM/tp3V/hL27WiaD4GAeH15t2c4r6DQaZuUcixdkklJkvKxGgd5yNIsRCMOjF
-ceW8t5+wBbIjVB+OI4er
-=ti/m
------END PGP SIGNATURE-----
-
---=-uLvg00JGLWJcrwwWsYmf--
-
+Peter.
