@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3BDFfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 00:35:43 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:58379 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab3BDFfl (ORCPT
+	id S1752298Ab3BDFj5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 00:39:57 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3253 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab3BDFjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 00:35:41 -0500
+	Mon, 4 Feb 2013 00:39:55 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 03 Feb 2013 21:37:46 -0800
+Message-ID: <510F49A2.4080701@nvidia.com>
+Date: Mon, 4 Feb 2013 13:39:46 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Originating-IP: [50.196.179.26]
-In-Reply-To: <20130204050550.GA4503@ZenIV.linux.org.uk>
-References: <1359291015-4544-1-git-send-email-matthias.bgg@gmail.com>
-	<20130127195714.GA11224@samfundet.no>
-	<20130127203009.GG4503@ZenIV.linux.org.uk>
-	<20130127203954.GA22063@samfundet.no>
-	<20130204001055.GV4503@ZenIV.linux.org.uk>
-	<20130204003047.GW4503@ZenIV.linux.org.uk>
-	<20130204013111.GX4503@ZenIV.linux.org.uk>
-	<20130204030221.GY4503@ZenIV.linux.org.uk>
-	<CACiLriQbrKvo128hhH4Cd3U+qZwgXPGFEAs4b3=SsK59=4Kkkw@mail.gmail.com>
-	<20130204050550.GA4503@ZenIV.linux.org.uk>
-Date: Sun, 3 Feb 2013 21:35:39 -0800
-X-Google-Sender-Auth: Mcp12qNiv6DhtpTq7Frl9YrtI_M
-Message-ID: <CACiLriSguKWSfFfFGK99q1h+GLrfCSyh55xW8o67kOao3g5sWg@mail.gmail.com>
-Subject: Re: [PATCH] arch: avr32: add dummy syscalls
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Durgadoss R <durgadoss.r@intel.com>
+CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>
+Subject: Re: [PATCHv2 0/9] Thermal Framework Enhancements
+References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+In-Reply-To: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 3, 2013 at 9:05 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sun, Feb 03, 2013 at 08:52:18PM -0800, H?vard Skinnemoen wrote:
->
->> You're right on -- in this case, the compiler will skip r10, and do
->> (r12, r11, r8:r9, stack). We pass the syscall number in r8, but we
->> also unconditionally move r7 to r8 in the syscall path, so it
->> shouldn't matter (libc does the opposite when necessary).
->>
->> I remember some talk about having the compiler reuse r10 for the next
->> 32-bit argument in cases like this, but I don't think it ever
->> happened.
->
-> Umm...  In case of fallocate() the next argument is 64bit one, though;
-> sys_fallocate() will be looking for two 32bit words on stack, so no
-> matter how do we pass them to syscall, we'd better push two words in
-> the wrapper.
+On 01/07/2013 03:13 PM, Durgadoss R wrote:
+> This patch set is a v2 of the previous versions submitted here:
+> [v1]:  https://lkml.org/lkml/2012/12/18/108 
+> [RFC]: https://patchwork.kernel.org/patch/1758921/
+> 
+> This patch set is based on Rui's -thermal tree, and is
+> tested on a Core-i5 and an Atom netbook.
+> 
+> Changes Since v1:
+>  * Removed kobject creation for thermal_trip and thermal_map
+>    nodes as per Greg-KH's comments.
+>  * Added ABI Documentation under 'testing'.
+>  * Modified the GET_INDEX macro to be more linux-like, thanks
+>    to Joe Perches.
+>  * Added get_[sensor/cdev]_by_name APIs to thermal.h
 
-Right.
+Hi, Durgadoss and Rui
+Will these patches be merged to next branch? or will you send out next
+version?
+I wish to use this new framework, could I send out patches for RFC based
+on this serial patches?
 
-> But yes, 32bit/32bit/64bit/32bit is another interesting case -
-> fanotify_mark is 32/32/64/32/32.  From what ABI says it would seem to
-> be r12/r11/r8:r9/r10/stack, but if I understand you correctly, we'll
-> end up wanting *two* arguments on stack...
+Thanks.
+Wei.
 
-Yes, I think there may be a difference between the IAR and gcc ABI
-here. But I could be wrong.
+> 
+> This series contains 9 patches:
+> Patch 1/9: Creates new sensor level APIs
+> Patch 2/9: Creates new zone level APIs. The existing tzd structure is
+>            kept as such for clarity and compatibility purposes.
+> Patch 3/9: Creates functions to add/remove a cdev to/from a zone. The
+>            existing tcd structure need not be modified.
+> Patch 4/9: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
+> 	   under /sys/class/thermal/zoneY/. This exposes various trip
+>            points for sensorX present in zoneY.
+> Patch 5/9: Adds mapX sysfs node. It is a compact representation
+>            of the binding relationship between a sensor and a cdev,
+>            within a zone.
+> Patch 6/9: Creates Documentation for the new APIs. A new file is
+>            created for clarity. Final goal is to merge with the existing
+>            file or refactor the files, as whatever seems appropriate.
+> Patch 7/9: Make PER ZONE values configurable through Kconfig
+> Patch 8/9: Add ABI documentation for sysfs interfaces introduced in this patch.
+> Patch 9/9: A dummy driver that can be used for testing. This is not for merge.
+> 
+> Thanks to Greg-KH, Hongbo Zhang and Joe Perches for their comments on v1.
+> 
+> Durgadoss R (9):
+>   Thermal: Create sensor level APIs
+>   Thermal: Create zone level APIs
+>   Thermal: Add APIs to bind cdev to new zone structure
+>   Thermal: Add trip point sysfs nodes for sensor
+>   Thermal: Create 'mapX' sysfs node for a zone
+>   Thermal: Add Documentation to new APIs
+>   Thermal: Make PER_ZONE values configurable
+>   Thermal: Add ABI Documentation for sysfs interfaces
+>   Thermal: Dummy driver used for testing
+> 
+>  Documentation/ABI/testing/sysfs-class-thermal |   93 +++
+>  Documentation/thermal/sysfs-api2.txt          |  248 +++++++
+>  drivers/thermal/Kconfig                       |   19 +
+>  drivers/thermal/Makefile                      |    3 +
+>  drivers/thermal/thermal_sys.c                 |  881 +++++++++++++++++++++++++
+>  drivers/thermal/thermal_test.c                |  315 +++++++++
+>  include/linux/thermal.h                       |  117 +++-
+>  7 files changed, 1675 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
+>  create mode 100644 Documentation/thermal/sysfs-api2.txt
+>  create mode 100644 drivers/thermal/thermal_test.c
+> 
 
-Havard
