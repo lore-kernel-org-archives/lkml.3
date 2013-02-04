@@ -1,210 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037Ab3BDTsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:48:16 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:41548 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab3BDTsP (ORCPT
+	id S1754599Ab3BDTtP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:49:15 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:35529 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754180Ab3BDTtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:48:15 -0500
+	Mon, 4 Feb 2013 14:49:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360006795.11144.529.camel@bling.home>
-References: <510C3AF0.6050109@amacapital.net> <2011b943a886fd7c46079eb10bc24fc130587503.1359759303.git.luto@amacapital.net>
- <1360004651.11144.511.camel@bling.home> <CALCETrVv0NXQACT=nrRZfN+9JbRmGKZWZvP7wWDveBtJt7E8zQ@mail.gmail.com>
- <1360006795.11144.529.camel@bling.home>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 4 Feb 2013 11:47:53 -0800
-Message-ID: <CALCETrVnQqiozr8Kj5bPHF+KEauma3q-2AQx27fkcj630duSOg@mail.gmail.com>
-Subject: Re: [PATCH] intel_irq_remapping: Clean up x2apic optout security
- warning mess
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Prarit Bhargava <prarit@redhat.com>
+In-Reply-To: <1359705569.2241.107.camel@rzhang1-mobl4>
+References: <1359041045-24341-1-git-send-email-gu1@aeroxteam.fr>
+	<1359705569.2241.107.camel@rzhang1-mobl4>
+Date: Mon, 4 Feb 2013 11:49:11 -0800
+X-Google-Sender-Auth: V_ZI70v85C6z2zM_7W7L9A2IKyw
+Message-ID: <CADGdYn4iw3X-+LrYgqYQgVpXiCUnBAK7x8VM2M9G5bLULV+3nQ@mail.gmail.com>
+Subject: Re: [PATCH] Thermal: fix iteration over CPU frequency list
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Gu1 <gu1@aeroxteam.fr>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 4, 2013 at 11:39 AM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Mon, 2013-02-04 at 11:19 -0800, Andy Lutomirski wrote:
->> On Mon, Feb 4, 2013 at 11:04 AM, Alex Williamson
->> <alex.williamson@redhat.com> wrote:
->> > On Fri, 2013-02-01 at 14:57 -0800, Andy Lutomirski wrote:
->> >> Current kernels print this on my Dell server:
->> >>
->> >>    ------------[ cut here ]------------
->> >>    WARNING: at drivers/iommu/intel_irq_remapping.c:542
->> >>    intel_enable_irq_remapping+0x7b/0x27e()
->> >>    Hardware name: PowerEdge R620
->> >>    Your BIOS is broken and requested that x2apic be disabled
->> >>    This will leave your machine vulnerable to irq-injection attacks
->> >>    Use 'intremap=no_x2apic_optout' to override BIOS request
->> >>    [...]
->> >>    Enabled IRQ remapping in xapic mode
->> >>    x2apic not enabled, IRQ remapping is in xapic mode
->> >>
->> >> This is inconsistent with itself -- interrupt remapping is *on*.
->> >>
->> >> Fix the mess by making the warnings say what they mean and my making
->> >> sure that compatibility format interrupts (the dangerous ones) are
->> >> disabled if x2apic is present regardless of BIOS settings.
->> >>
->> >> With this patch applied, the output is:
->> >>
->> >>   Your BIOS is broken and requested that x2apic be disabled.
->> >>   This will slightly decrease performance.
->> >>   Use 'intremap=no_x2apic_optout' to override BIOS request.
->> >>   Enabled IRQ remapping in xapic mode
->> >>   x2apic not enabled, IRQ remapping is in xapic mode
->> >>
->> >> This should make us as or more secure than we are now and replace
->> >> a rather scary warning with a much less scary warning on silly
->> >> but functional systems.
->> >>
->> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> >> ---
->> >>  drivers/iommu/intel_irq_remapping.c | 36 ++++++++++++++++++++++++++++--------
->> >>  1 file changed, 28 insertions(+), 8 deletions(-)
->> >>
->> >> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
->> >> index af8904d..eca8832 100644
->> >> --- a/drivers/iommu/intel_irq_remapping.c
->> >> +++ b/drivers/iommu/intel_irq_remapping.c
->> >> @@ -425,11 +425,22 @@ static void iommu_set_irq_remapping(struct intel_iommu *iommu, int mode)
->> >>
->> >>       /* Enable interrupt-remapping */
->> >>       iommu->gcmd |= DMA_GCMD_IRE;
->> >> +     iommu->gcmd &= ~DMA_GCMD_CFI;  /* Block compatibility-format MSIs */
->> >>       writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
->> >>
->> >>       IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
->> >>                     readl, (sts & DMA_GSTS_IRES), sts);
->> >>
->> >> +     /*
->> >> +      * With CFI clear in the Global Command register, we should be
->> >> +      * protected from dangerous (i.e. compatibility) interrupts
->> >> +      * regardless of x2apic status.  Check just to be sure.
->> >> +      */
->> >> +     if (sts & DMA_GSTS_CFIS)
->> >> +             WARN(1, KERN_WARNING
->> >> +                     "Compatibility-format IRQs enabled despite intr remapping;\n"
->> >> +                     "you are vulnerable to IRQ injection.\n");
->> >> +
->> >>       raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
->> >>  }
->> >>
->> >> @@ -526,20 +537,24 @@ static int __init intel_irq_remapping_supported(void)
->> >>  static int __init intel_enable_irq_remapping(void)
->> >>  {
->> >>       struct dmar_drhd_unit *drhd;
->> >> +     bool x2apic_present;
->> >>       int setup = 0;
->> >>       int eim = 0;
->> >>
->> >> +     x2apic_present = x2apic_supported();
->> >> +
->> >>       if (parse_ioapics_under_ir() != 1) {
->> >>               printk(KERN_INFO "Not enable interrupt remapping\n");
->> >> -             return -1;
->> >> +             goto error;
->> >>       }
->> >>
->> >> -     if (x2apic_supported()) {
->> >> +     if (x2apic_present) {
->> >>               eim = !dmar_x2apic_optout();
->> >> -             WARN(!eim, KERN_WARNING
->> >> -                        "Your BIOS is broken and requested that x2apic be disabled\n"
->> >> -                        "This will leave your machine vulnerable to irq-injection attacks\n"
->> >> -                        "Use 'intremap=no_x2apic_optout' to override BIOS request\n");
->> >> +             if (!eim)
->> >> +                     printk(KERN_WARNING
->> >> +                             "Your BIOS is broken and requested that x2apic be disabled.\n"
->> >> +                             "This will slightly decrease performance.\n"
->> >> +                             "Use 'intremap=no_x2apic_optout' to override BIOS request.\n");
->> >>       }
->> >>
->> >>       for_each_drhd_unit(drhd) {
->> >> @@ -578,7 +593,7 @@ static int __init intel_enable_irq_remapping(void)
->> >>               if (eim && !ecap_eim_support(iommu->ecap)) {
->> >>                       printk(KERN_INFO "DRHD %Lx: EIM not supported by DRHD, "
->> >>                              " ecap %Lx\n", drhd->reg_base_addr, iommu->ecap);
->> >> -                     return -1;
->> >> +                     goto error;
->> >>               }
->> >>       }
->> >>
->> >> @@ -594,7 +609,7 @@ static int __init intel_enable_irq_remapping(void)
->> >>                       printk(KERN_ERR "DRHD %Lx: failed to enable queued, "
->> >>                              " invalidation, ecap %Lx, ret %d\n",
->> >>                              drhd->reg_base_addr, iommu->ecap, ret);
->> >> -                     return -1;
->> >> +                     goto error;
->> >>               }
->> >>       }
->> >>
->> >> @@ -625,6 +640,11 @@ error:
->> >>       /*
->> >>        * handle error condition gracefully here!
->> >>        */
->> >> +
->> >> +     if (x2apic_present)
->> >> +             WARN(1, KERN_WARNING
->> >> +                     "Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
->> >
->> > How so?  Without interrupt remapping, neither KVM assignment or vfio
->> > work unless the user explicitly opts-in to insecure interrupts via
->> > module options.  Are there other attack vectors?  Also, I really like
->> > the code above that forces CFI clear, but I don't think that warning is
->> > correct yet.  According to the paper the vulnerability is enabled if
->> > both x2apic is not enabled and CFI is enabled.  When x2apic is enabled,
->> > does it matter if CFI is enabled?  My understand is no.  Should a
->> > warning only occur if the interrupt remapper is enabled and x2apic is
->> > not enabled and we're not able to clear CFI?  Thanks,
+On Thu, Jan 31, 2013 at 11:59 PM, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Thu, 2013-01-24 at 16:24 +0100, Gu1 wrote:
+>> In different places in the Thermal code, the CPU frequency list is iterated
+>> in an incorrect way, leading to endless loops when the frequency list contains
+>> a CPUFREQ_TABLE_INVALID entry, which is the case by default in the the Exynos
+>> 4x12 cpufreq driver, for example.
 >>
->> That's x2apic *present*, not enabled.  The idea is that, on a system
->> that has x2apic (which AFAIK is the same set of systems that support
->> interrupt remapping)
+>> The frequency list is iterated with a while loop, and when a
+>> CPUFREQ_TABLE_INVALID entry is encountered, the continue; statement is used to
+>> skip it, but the index is not incremented, causing an endless loop.
+>>
+>> A similar bug was fixed by hongbo.zhang in commit:
+>>   Thermal: fix bug of counting cpu frequencies
+>>
+>> Signed-off-by: Gu1 <gu1@aeroxteam.fr>
+>> ---
+>>  drivers/thermal/cpu_cooling.c    | 8 +++-----
+>>  drivers/thermal/exynos_thermal.c | 9 +++++----
+>>  2 files changed, 8 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+>> index 836828e..51acd26 100644
+>> --- a/drivers/thermal/cpu_cooling.c
+>> +++ b/drivers/thermal/cpu_cooling.c
+>> @@ -123,7 +123,7 @@ static int is_cpufreq_valid(int cpu)
+>>   */
+>>  static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+>>  {
+>> -     int ret = 0, i = 0;
+>> +     int ret = 0, i;
+>>       unsigned long level_index;
+>>       bool descend = false;
+>>       struct cpufreq_frequency_table *table =
+>> @@ -131,7 +131,7 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+>>       if (!table)
+>>               return ret;
+>>
+>> -     while (table[i].frequency != CPUFREQ_TABLE_END) {
+>> +     for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+>>               if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>>                       continue;
+>>
+>> @@ -145,7 +145,6 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+>>               /*return if level matched and table in descending order*/
+>>               if (descend && i == level)
+>>                       return table[i].frequency;
+>> -             i++;
+>>       }
+>>       i--;
+>>
+>> @@ -154,13 +153,12 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+>>       level_index = i - level;
+>>
+>>       /*Scan the table in reverse order and match the level*/
+>> -     while (i >= 0) {
+>> +     for (; i >= 0; i--) {
+>>               if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>>                       continue;
+>>               /*return if level matched*/
+>>               if (i == level_index)
+>>                       return table[i].frequency;
+>> -             i--;
+>>       }
+>>       return ret;
+>>  }
 >
-> I don't know that those are entirely overlapping sets.
+> so the "level" parameter is the index in the frequency table, right?
 >
->> , then you expect interrupt remapping to work,
->> whether in x2apic mode or xapic mode.  This warning should never
->> trigger on any hardware I know of (which, admittedly, doesn't mean
->> much).
+>> diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+>> index 224751e..fa9e1d7 100644
+>> --- a/drivers/thermal/exynos_thermal.c
+>> +++ b/drivers/thermal/exynos_thermal.c
+>> @@ -233,7 +233,8 @@ static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
+>>
+>>  static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+>>  {
+>> -     int i = 0, ret = -EINVAL;
+>> +     int i, ret = -EINVAL;
+>> +     unsigned int count = 0;
+>>       struct cpufreq_frequency_table *table = NULL;
+>>  #ifdef CONFIG_CPU_FREQ
+>>       table = cpufreq_frequency_get_table(cpu);
+>> @@ -241,12 +242,12 @@ static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+>>       if (!table)
+>>               return ret;
+>>
+>> -     while (table[i].frequency != CPUFREQ_TABLE_END) {
+>> +     for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+>>               if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>>                       continue;
+>>               if (table[i].frequency == freq)
+>> -                     return i;
+>> -             i++;
+>> +                     return count;
+>> +             count++;
+>>       }
+>>       return ret;
+>>  }
 >
-> Sure, you expect it to work, otherwise the interrupt remapping
-> supported() callback should have failed.  If we get here, regardless of
-> x2apic, we might want to print something about failing to enable it.
+> but we ignore the invalid entry here.
+>
+> take the following cpufreq table for example, with your patch,
+> entry  frequency
+>  0     2.4G
+>  1     invalid
+>  2     2G
+>  3     invalid
+>  4     1.6G
+>  5     end
+>
+> in exynos_get_frequency_level(), freq 1.6G is translated to level 2,
+> because count is increased only twice, for entry 0 and entry 2, right?
 
-Fair enough.
+Hi Rui,
+
+Gui fixes looks fine for infinite loop issue. After Gui's fixes 1.6G
+in translated to level 4 which is fine.
+
+Thanks,
+Amit Daniel
 
 >
->> I have no objection to rewording the warning, if you have any better
->> ideas.  I guess the vfio code (and hence the kvm code?) is more
->> careful than I realized.
+> but then, in get_cpu_frequency(), level 2 is translated to 2G HZ, which
+> I do not think is what we want.
 >
-> As above, I think we're only vulnerable if we enable irq remapping,
-> disable x2apic, and can't disable CFI.  Even then, I'm not sure what
-> good it is to print scary warnings about vulnerabilities when the
-> majority of the user base isn't actually doing anything that makes them
-> vulnerable.
+> I think we are doing something wrong here, and here is a cleanup patch I made
+> to fix this issue, please review.
 >
-> Should we even put the user in a state where they can be vulnerable?
-> Rather than print a warning we could disable interrupt remapping if
-> either x2apic isn't enabled or CFI cannot be disabled.  This could be
-> noted with a pr_info/pr_debug warning and enabled with an iommu= option.
-> Then, like doing device assignment w/o interrupt remapping, the user has
-> to opt-in for interrupt remapping that is vulnerable to MSI injection.
-> Thanks,
-
-Hmm.  It may be too late to cleanly disable interrupt remapping at
-this point without writing a bunch of code to back out whatever setup
-we did.  I'd rather set a flag and then pretend that interrupt
-remapping is off for purposes of iommu caps.
-
-I'll send a followup patch later today.
-
---Andy
+> From a868d68fdcd94a29ac9d3998283119a453decb4b Mon Sep 17 00:00:00 2001
+> From: Zhang Rui <rui.zhang@intel.com>
+> Date: Fri, 1 Feb 2013 15:41:47 +0800
+> Subject: [PATCH] Thermal cpu_cooling: fix inconsistent use of CPU frequency
+>  table
+>
+> there are three kinds of entries in CPU frequency table.
+> 1. invalid entry, its frequency is CPUFREQ_ENTRY_INVALID.
+> 2. duplicate entry, two entry may share the same frequency,
+>    And we should treat it as on valid entry.
+> 3. valid entry with a proper frequency.
+>
+> And when talking about cpufreq cooling device cooling state,
+> it should be the same thing, in both cpu_cooling.c and its users,
+> AKA, max_cooling_state of a cpufreq cooling device equals the
+> number of VALID entries (type #3 above) in CPU frequency table.
+> And when setting a cpufreq cooling device to state X, it means set
+> the cpufreq cooling device to Xth maximum frequency in the
+> cpufreq frequency table.
+>
+> This patch does a cleanup in both drivers/thermal/cpu_cooling.c
+> and drivers/thermal/exynos_thermal.c to make them be consistent
+> in using cpu level/cpufreq cooling state.
+>
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> ---
+>  drivers/thermal/cpu_cooling.c    |  122 ++++++++++++++++++++++++--------------
+>  drivers/thermal/exynos_thermal.c |   17 +-----
+>  include/linux/cpu_cooling.h      |   12 ++++
+>  3 files changed, 91 insertions(+), 60 deletions(-)
+>
+> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+> index 836828e..c16795b 100644
+> --- a/drivers/thermal/cpu_cooling.c
+> +++ b/drivers/thermal/cpu_cooling.c
+> @@ -116,6 +116,40 @@ static int is_cpufreq_valid(int cpu)
+>  }
+>
+>  /**
+> + * cpufreq_cooling_get_max_level - function to get max valid cpufreq levels
+> + * @cpu: cpu for which frequency is fetched.
+> + */
+> +int cpufreq_cooling_get_max_level(unsigned int cpu)
+> +{
+> +       int i, level;
+> +       unsigned int freq = CPUFREQ_ENTRY_INVALID;
+> +       struct cpufreq_frequency_table *table =
+> +                                       cpufreq_frequency_get_table(cpu);
+> +
+> +       if (!table)
+> +               return -EINVAL;
+> +
+> +       for (i = 0, level = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+> +               /* Invalid entry */
+> +               if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+> +                       continue;
+> +
+> +               /* Duplicate entry */
+> +               if (freq == table[i].frequency)
+> +                       continue;
+> +
+> +               /* First valid entry */
+> +               if (freq == CPUFREQ_ENTRY_INVALID)
+> +                       freq = table[i].frequency;
+> +
+> +               level++;
+> +       }
+> +
+> +       return level;
+> +}
+> +EXPORT_SYMBOL(cpufreq_cooling_get_max_level);
+> +
+> +/**
+>   * get_cpu_frequency - get the absolute value of frequency from level.
+>   * @cpu: cpu for which frequency is fetched.
+>   * @level: level of frequency of the CPU
+> @@ -123,46 +157,58 @@ static int is_cpufreq_valid(int cpu)
+>   */
+>  static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+>  {
+> -       int ret = 0, i = 0;
+> -       unsigned long level_index;
+> +       int i, count;
+> +       int max_level;
+> +       unsigned int freq = CPUFREQ_ENTRY_INVALID;
+>         bool descend = false;
+>         struct cpufreq_frequency_table *table =
+>                                         cpufreq_frequency_get_table(cpu);
+> -       if (!table)
+> -               return ret;
+>
+> -       while (table[i].frequency != CPUFREQ_TABLE_END) {
+> +       max_level = cpufreq_cooling_get_max_level(cpu);
+> +
+> +       if (max_level < 0)
+> +               return max_level;
+> +
+> +       if (level > max_level)
+> +               return -EINVAL;
+> +
+> +       for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+>                 if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>                         continue;
+>
+> -               /*check if table in ascending or descending order*/
+> -               if ((table[i + 1].frequency != CPUFREQ_TABLE_END) &&
+> -                       (table[i + 1].frequency < table[i].frequency)
+> -                       && !descend) {
+> -                       descend = true;
+> +               if (freq == CPUFREQ_ENTRY_INVALID)
+> +                       /* first valid entry */
+> +                       freq = table[i].frequency;
+> +               else if (freq == table[i].frequency)
+> +                       /* duplicate entry */
+> +                       continue;
+> +               else {
+> +                       /* two valid entries, check frequency order */
+> +                       descend = !!(freq > table[i].frequency);
+> +                       break;
+>                 }
+> -
+> -               /*return if level matched and table in descending order*/
+> -               if (descend && i == level)
+> -                       return table[i].frequency;
+> -               i++;
+>         }
+> -       i--;
+>
+> -       if (level > i || descend)
+> -               return ret;
+> -       level_index = i - level;
+> +       /* level equals "the index of valid entries" in cpufreq table */
+> +       level = descend ? level : max_level - level + 1;
+>
+> -       /*Scan the table in reverse order and match the level*/
+> -       while (i >= 0) {
+> +       freq = CPUFREQ_ENTRY_INVALID;
+> +       for (i = 0, count = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+> +               /* ignore invalid entry */
+>                 if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>                         continue;
+> -               /*return if level matched*/
+> -               if (i == level_index)
+> +
+> +               if (freq == CPUFREQ_ENTRY_INVALID)
+> +                       /* first valid entry */
+> +                       freq = table[i].frequency;
+> +               else if (freq == table[i].frequency)
+> +                       /* ignore duplicate entry */
+> +                       continue;
+> +               count++;
+> +               if (level == count)
+>                         return table[i].frequency;
+> -               i--;
+>         }
+> -       return ret;
+> +       return -ENODEV;
+>  }
+>
+>  /**
+> @@ -244,29 +290,17 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
+>         struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+>         struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
+>         unsigned int cpu;
+> -       struct cpufreq_frequency_table *table;
+> -       unsigned long count = 0;
+> -       int i = 0;
+> +       int max_level;
+>
+>         cpu = cpumask_any(maskPtr);
+> -       table = cpufreq_frequency_get_table(cpu);
+> -       if (!table) {
+> -               *state = 0;
+> -               return 0;
+> -       }
+> -
+> -       for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+> -               if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+> -                       continue;
+> -               count++;
+> -       }
+>
+> -       if (count > 0) {
+> -               *state = --count;
+> -               return 0;
+> -       }
+> +       max_level = cpufreq_cooling_get_max_level(cpu);
+>
+> -       return -EINVAL;
+> +       if (max_level < 0)
+> +               return max_level;
+> +       else
+> +               *state = max_level;
+> +       return 0;
+>  }
+>
+>  /**
+> diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+> index cd71e24..5ac2de1 100644
+> --- a/drivers/thermal/exynos_thermal.c
+> +++ b/drivers/thermal/exynos_thermal.c
+> @@ -241,22 +241,7 @@ static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
+>
+>  static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+>  {
+> -       int i = 0, ret = -EINVAL;
+> -       struct cpufreq_frequency_table *table = NULL;
+> -#ifdef CONFIG_CPU_FREQ
+> -       table = cpufreq_frequency_get_table(cpu);
+> -#endif
+> -       if (!table)
+> -               return ret;
+> -
+> -       while (table[i].frequency != CPUFREQ_TABLE_END) {
+> -               if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+> -                       continue;
+> -               if (table[i].frequency == freq)
+> -                       return i;
+> -               i++;
+> -       }
+> -       return ret;
+> +       return cpufreq_cooling_get_max_level(cpu);
+This is not correct as it always gives the highest level.
+>  }
+>
+>  /* Bind callback functions for thermal zone */
+> diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
+> index 40b4ef5..2de9319 100644
+> --- a/include/linux/cpu_cooling.h
+> +++ b/include/linux/cpu_cooling.h
+> @@ -42,6 +42,14 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+>   * @cdev: thermal cooling device pointer.
+>   */
+>  void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
+> +
+> +/**
+> + * cpufreq_cooling_get_max_level - function to get maxinum cooling state
+> + *                                of a cpufreq cooling device
+> + * @cpu: cpu of which frequency is fetched.
+> + */
+> +int cpufreq_cooling_get_max_level(unsigned int cpu);
+> +
+>  #else /* !CONFIG_CPU_THERMAL */
+>  static inline struct thermal_cooling_device *cpufreq_cooling_register(
+>         const struct cpumask *clip_cpus)
+> @@ -53,6 +61,10 @@ static inline void cpufreq_cooling_unregister(
+>  {
+>         return;
+>  }
+> +static inline int cpufreq_cooling_get_max_level(unsigned int cpu)
+> +{
+> +       return -ENODEV;
+> +}
+>  #endif /* CONFIG_CPU_THERMAL */
+>
+>  #endif /* __CPU_COOLING_H__ */
+> --
+> 1.7.9.5
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
