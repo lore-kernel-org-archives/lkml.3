@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab3BDL4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:56:45 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:46928 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754895Ab3BDL4n (ORCPT
+	id S1754896Ab3BDL4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:56:32 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:43594 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3BDL43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:56:43 -0500
+	Mon, 4 Feb 2013 06:56:29 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
 Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 30/73] regulator: ab8500: Remove Vsafe voltage settings
-Date: Mon,  4 Feb 2013 11:53:45 +0000
-Message-Id: <1359978868-28736-31-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 22/73] regulator: ab8500: Remove USB regulator
+Date: Mon,  4 Feb 2013 11:53:37 +0000
+Message-Id: <1359978868-28736-23-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
 References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
@@ -23,84 +23,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 
-The Vsafe regulator should not be handled by the kernel, it
-should be setup before the kernel starts. This patch removes
-the voltage settings.
-
-Current consumption will increase slightly (rough estimate 25
-uA) when the platform is in the low power state because SoC
-sets a voltage of 0.95 V where the kernel set a voltage of
-0.925 V.
+The USB regulator is controlled by hardware. The software support
+was only needed for early hardware (ED) which is no longer supported.
 
 Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |   10 ----------
- drivers/regulator/ab8500.c                    |   10 ----------
- include/linux/regulator/ab8500.h              |    2 --
- 3 files changed, 22 deletions(-)
+ drivers/regulator/ab8500.c       |   20 --------------------
+ include/linux/regulator/ab8500.h |    1 -
+ 2 files changed, 21 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 8473ee1..f9f3fc3 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -265,22 +265,12 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
- 	 */
- 	INIT_REGULATOR_REGISTER(AB8500_VSMPS2REGU,             0x0f, 0x06),
- 	/*
--	 * Vsmps3Sel2               = 1.2125 V
--	 * NOTE! PRCMU register
--	 */
--	INIT_REGULATOR_REGISTER(AB8500_VSMPS3SEL2,             0x7f, 0x29),
--	/*
- 	 * Vsmps3Regu               = HW control
- 	 * Vsmps3SelCtrl            = Vsmps3 voltage defined by Vsmps3Sel2
- 	 * NOTE! PRCMU register
- 	 */
- 	INIT_REGULATOR_REGISTER(AB8500_VSMPS3REGU,             0x0f, 0x06),
- 	/*
--	 * Vsmps3Sel1               = 0.9 V
--	 * NOTE! PRCMU register
--	 */
--	INIT_REGULATOR_REGISTER(AB8500_VSMPS3SEL1,             0x7f, 0x10),
--	/*
- 	 * VPll                     = Hw controlled
- 	 * VanaRegu                 = force off
- 	 */
 diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 406c561..3f5db96 100644
+index f36a407..0e3dd64 100644
 --- a/drivers/regulator/ab8500.c
 +++ b/drivers/regulator/ab8500.c
-@@ -802,16 +802,6 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
- 	 */
- 	REG_INIT(AB8500_VSMPS2SEL3,		0x04, 0x19, 0x3f),
- 	/*
--	 * 0x7f, Vsmps3Sel1
--	 * NOTE! PRCMU register
--	 */
--	REG_INIT(AB8500_VSMPS3SEL1,             0x04, 0x1b, 0x7f),
+@@ -494,25 +494,6 @@ static struct ab8500_regulator_info
+ 		.update_val_idle	= 0x82,
+ 		.update_val_normal	= 0x02,
+ 	},
+-	[AB8500_LDO_USB] = {
+-		.desc = {
+-			.name           = "LDO-USB",
+-			.ops            = &ab8500_regulator_fixed_ops,
+-			.type           = REGULATOR_VOLTAGE,
+-			.id             = AB8500_LDO_USB,
+-			.owner          = THIS_MODULE,
+-			.n_voltages     = 1,
+-			.min_uV		= 3300000,
+-		},
+-		.update_bank            = 0x03,
+-		.update_reg             = 0x82,
+-		.update_mask            = 0x03,
+-		.update_val_enable      = 0x01,
+-	},
+-
 -	/*
--	 * 0x7f, Vsmps3Sel2
--	 * NOTE! PRCMU register
+-	 * Regulators with fixed voltage and normal mode
 -	 */
--	REG_INIT(AB8500_VSMPS3SEL2,             0x04, 0x1c, 0x7f),
--	/*
- 	 * 0x0f, Vaux1Sel
- 	 */
- 	REG_INIT(AB8500_VAUX1SEL,		0x04, 0x1f, 0x0f),
+ 	[AB8500_LDO_AUDIO] = {
+ 		.desc = {
+ 			.name		= "LDO-AUDIO",
+@@ -949,7 +930,6 @@ static struct of_regulator_match ab8500_regulator_matches[] = {
+ 	{ .name	= "ab8500_ldo_aux3",    .driver_data = (void *) AB8500_LDO_AUX3, },
+ 	{ .name	= "ab8500_ldo_intcore", .driver_data = (void *) AB8500_LDO_INTCORE, },
+ 	{ .name	= "ab8500_ldo_tvout",   .driver_data = (void *) AB8500_LDO_TVOUT, },
+-	{ .name = "ab8500_ldo_usb",     .driver_data = (void *) AB8500_LDO_USB, },
+ 	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB8500_LDO_AUDIO, },
+ 	{ .name	= "ab8500_ldo_anamic1", .driver_data = (void *) AB8500_LDO_ANAMIC1, },
+ 	{ .name	= "ab8500_ldo_amamic2", .driver_data = (void *) AB8500_LDO_ANAMIC2, },
 diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
-index 094d24c..74955db 100644
+index 0a58db2..9a2da6a 100644
 --- a/include/linux/regulator/ab8500.h
 +++ b/include/linux/regulator/ab8500.h
-@@ -93,8 +93,6 @@ enum ab8500_regulator_reg {
- 	AB8500_VSMPS2SEL1,
- 	AB8500_VSMPS2SEL2,
- 	AB8500_VSMPS2SEL3,
--	AB8500_VSMPS3SEL1, /* NOTE! PRCMU register */
--	AB8500_VSMPS3SEL2, /* NOTE! PRCMU register */
- 	AB8500_VAUX1SEL,
- 	AB8500_VAUX2SEL,
- 	AB8500_VRF1VAUX3SEL,
+@@ -19,7 +19,6 @@ enum ab8500_regulator_id {
+ 	AB8500_LDO_AUX3,
+ 	AB8500_LDO_INTCORE,
+ 	AB8500_LDO_TVOUT,
+-	AB8500_LDO_USB,
+ 	AB8500_LDO_AUDIO,
+ 	AB8500_LDO_ANAMIC1,
+ 	AB8500_LDO_ANAMIC2,
 -- 
 1.7.9.5
 
