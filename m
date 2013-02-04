@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab3BDJlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 04:41:13 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:41304 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab3BDJlM (ORCPT
+	id S1753933Ab3BDJpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 04:45:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52523 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753308Ab3BDJpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 04:41:12 -0500
+	Mon, 4 Feb 2013 04:45:53 -0500
+Date: Mon, 4 Feb 2013 17:45:49 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: zergmk2 <zergmk2@gmail.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, chao.bi@intel.com,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>, cxie4@marvell.com,
+        ytang5@marvell.com
+Subject: Re: [PATCH v3 00/10] spi/pxa2xx: add Intel Lynxpoint SPI controller
+ support
+Message-ID: <20130204094548.GA4720@opensource.wolfsonmicro.com>
+References: <1358850393-23111-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACb1VKtD+pc5cAJAqBg82uCXH_icm9fk1yLB_UnwmEq4Lq-NVQ@mail.gmail.com>
+ <20130201102247.GM869@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1302041033500.26996@pobox.suse.cz>
-References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1359649351-11092-2-git-send-email-benjamin.tissoires@gmail.com>
-	<20130203122748.GA2513@polaris.bitmath.org>
-	<alpine.LNX.2.00.1302041033500.26996@pobox.suse.cz>
-Date: Mon, 4 Feb 2013 10:41:10 +0100
-Message-ID: <CAN+gG=H-wsD=RhvxttoAkWTtR2-1H1fJ8EAhpZfs9xEqSO0t7A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/9] HID: core: add "report" hook, called once the
- report has been parsed
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <20130201102247.GM869@intel.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 4, 2013 at 10:34 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Sun, 3 Feb 2013, Henrik Rydberg wrote:
->
->> > This callback is called when the parsing of the report has been done
->> > by hid-core (so after the calls to .event). The hid drivers can now
->> > have access to the whole report by relying on the values stored in
->> > the different fields.
->> >
->> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
->> > ---
->> >  drivers/hid/hid-core.c | 4 ++++
->> >  include/linux/hid.h    | 2 ++
->> >  2 files changed, 6 insertions(+)
->> >
->> > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
->> > index 5ae2cb1..b671e4e 100644
->> > --- a/drivers/hid/hid-core.c
->> > +++ b/drivers/hid/hid-core.c
->> > @@ -1195,6 +1195,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->> >  {
->> >     struct hid_report_enum *report_enum = hid->report_enum + type;
->> >     struct hid_report *report;
->> > +   struct hid_driver *hdrv;
->> >     unsigned int a;
->> >     int rsize, csize = size;
->> >     u8 *cdata = data;
->> > @@ -1231,6 +1232,9 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->> >     if (hid->claimed != HID_CLAIMED_HIDRAW) {
->> >             for (a = 0; a < report->maxfield; a++)
->> >                     hid_input_field(hid, report->field[a], cdata, interrupt);
->> > +           hdrv = hid->driver;
->> > +           if (hdrv && hdrv->report)
->> > +                   hdrv->report(hid, report);
->>
->> I think this is more useful if called before the individual fields. In
->> fact, it seems raw_event() is already doing exactly that. No need for
->> a new callback, in other words.
->
-> raw_event() doesn't provide equivalent functionality though; namely, the
-> report is not parsed.
->
-> Or have I missed your point?
 
-No, you perfectly understood the purpose of the patch. raw_event() and
-report() are not the same kind of callbacks at all.
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> Thanks for the extensive review, Henrik, it's really helpful.
+On Fri, Feb 01, 2013 at 12:22:47PM +0200, Mika Westerberg wrote:
 
-Yep, thanks Henrik, and thanks Jiri for having a look at it.
+> Mark, thank you for applying patches 1-4/10. Is there anything you want me
+> to do for the rest of the patches in order to get those merged?
 
-Cheers,
-Benjamin
+I stopped at patch 4 mostly because it's very large but also because you
+said you were hoping for an ack from Linus.
+
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRD4GgAAoJELSic+t+oim9xYQP/Aq7/qwoaF1NJPmycShsoNz0
+hO35H9XXmzTlHalZ6ayxy8dIUx4zpu+3YPNJhh/6D75/VpxizZNCvHRp39tIJgBf
+KEEJMKAX0JN+v9J3zmfxwCnISxRp1CgNq88C5smZ15JvV2LvfGs3P40x5hBZuSyX
+6b+lLDFrGclo3Js4+fByFU3wUD6sQ6sub5GWBxHcA8z7jWQVEH4QjGmAP4CgYd5D
++wKbuBwsA4EreaKT5+W5jcpHir7kad1vbJs1w21N0LalryAadmeurz5Y+xfMhT7u
+Xi7F/YCWItjmGJtVV5BxNudzH3xXH0wDZUv/MWjNRQ12yxYFmEecVhsRszDp2NEH
+kCQbo8sGl+Zwjm43TmL1ngGx5p5rNbhRnLr+aVoqyRG7C5bfube6aUf1OeCycWaP
+EJ5SYEgR+YfLfAl7YFq3gJiuNL07+M9JXa7V0FKjqDRcW57ctylU9tTUqzWLJt5f
+EwxlRbPFl9PrzVer3SmEwNDzPugxrMq2c1zS06zcTwOkSVn1BPgkSU3Wsv0gvVqt
+372940wi8YjJHdRUK6bPCp6GAyNDtMKfoDD5/w7V6o0w29D3D921RQt2KXndnibY
+vvfmfvS0bgnWZXkT17spKkEDp2TpH6l6RfK1llwPdIKttfcoJn7arFtDG9zgkcJm
+ebNo+YrpFS52Kc6Mq1mo
+=bkg2
+-----END PGP SIGNATURE-----
+
+--fdj2RfSjLxBAspz7--
