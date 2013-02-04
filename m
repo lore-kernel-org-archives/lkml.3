@@ -1,157 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3BDKKN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 05:10:13 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:57578 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114Ab3BDKKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 05:10:10 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <uclinux-dist-devel@blackfin.uclinux.org>, <linux-hexagon@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>, <linux-mips@linux-mips.org>,
-        <linux-parisc@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-sh@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        Mike Frysinger <vapier@gentoo.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH RESEND 1/1] arch Kconfig: remove references to IRQ_PER_CPU
-Date: Mon, 4 Feb 2013 10:09:43 +0000
-Message-ID: <1359972583-17134-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1753772Ab3BDKLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 05:11:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44360 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751215Ab3BDKLV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 05:11:21 -0500
+Date: Mon, 4 Feb 2013 10:11:17 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: fix compilation error
+Message-ID: <20130204101117.GC4720@opensource.wolfsonmicro.com>
+References: <1359967442-23672-1-git-send-email-vbyravarasu@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_02_04_10_10_00
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s9fJI615cBHmzTOP"
+Content-Disposition: inline
+In-Reply-To: <1359967442-23672-1-git-send-email-vbyravarasu@nvidia.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IRQ_PER_CPU Kconfig symbol was removed in the following commit:
 
-Commit 6a58fb3bad099076f36f0f30f44507bc3275cdb6 ("genirq: Remove
-CONFIG_IRQ_PER_CPU") merged in v2.6.39-rc1.
+--s9fJI615cBHmzTOP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-But IRQ_PER_CPU wasn't removed from any of the architecture Kconfig
-files where it was defined or selected. It's completely unused so remove
-the remaining references.
+On Mon, Feb 04, 2013 at 02:14:02PM +0530, Venu Byravarasu wrote:
+> As a compilation error is seen due to missing header file
+> in next-20130204, fixing it.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Acked-by: Tony Luck <tony.luck@intel.com>
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
----
+Already fixed.
 
-Does anybody want to pick this patch up?
+--s9fJI615cBHmzTOP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- arch/blackfin/Kconfig |    1 -
- arch/hexagon/Kconfig  |    1 -
- arch/ia64/Kconfig     |    1 -
- arch/mips/Kconfig     |    1 -
- arch/parisc/Kconfig   |    1 -
- arch/powerpc/Kconfig  |    1 -
- arch/sh/Kconfig       |    3 ---
- 7 files changed, 0 insertions(+), 9 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index b6f3ad5..c709715 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -38,7 +38,6 @@ config BLACKFIN
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_ATOMIC64
- 	select GENERIC_IRQ_PROBE
--	select IRQ_PER_CPU if SMP
- 	select USE_GENERIC_SMP_HELPERS if SMP
- 	select HAVE_NMI_WATCHDOG if NMI_WATCHDOG
- 	select GENERIC_SMP_IDLE_THREAD
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index 0744f7d..800dd9c 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -12,7 +12,6 @@ config HEXAGON
- 	# select ARCH_WANT_OPTIONAL_GPIOLIB
- 	# select ARCH_REQUIRE_GPIOLIB
- 	# select HAVE_CLK
--	# select IRQ_PER_CPU
- 	# select GENERIC_PENDING_IRQ if SMP
- 	select HAVE_IRQ_WORK
- 	select GENERIC_ATOMIC64
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 3279646..00c2e88 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -29,7 +29,6 @@ config IA64
- 	select ARCH_DISCARD_MEMBLOCK
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
--	select IRQ_PER_CPU
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 2ac626a..451c2e7 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -2161,7 +2161,6 @@ source "mm/Kconfig"
- config SMP
- 	bool "Multi-Processing support"
- 	depends on SYS_SUPPORTS_SMP
--	select IRQ_PER_CPU
- 	select USE_GENERIC_SMP_HELPERS
- 	help
- 	  This enables support for systems with more than one CPU. If you have
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index b77feff..8525be4 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -16,7 +16,6 @@ config PARISC
- 	select BROKEN_RODATA
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PCI_IOMAP
--	select IRQ_PER_CPU
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_SMP_IDLE_THREAD
- 	select GENERIC_STRNCPY_FROM_USER
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 17903f1..f3d7090a 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -125,7 +125,6 @@ config PPC
- 	select HAVE_GENERIC_HARDIRQS
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select SPARSE_IRQ
--	select IRQ_PER_CPU
- 	select IRQ_DOMAIN
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_IRQ_SHOW_LEVEL
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index babc2b8..6f799ec 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -91,9 +91,6 @@ config GENERIC_CSUM
- config GENERIC_HWEIGHT
- 	def_bool y
- 
--config IRQ_PER_CPU
--	def_bool y
--
- config GENERIC_GPIO
- 	def_bool n
- 
--- 
-1.7.7.6
+iQIcBAEBAgAGBQJRD4k5AAoJELSic+t+oim9dPkP/1H0cf/xnFq8RcPzireC3Pff
+BijYDcIK9ixtM9/SsJjeLu8FYiuuXgaRqIGgF12gG7zCMecVQpwMvN/AQ0ucdoEx
+EE7fAOSDgy6C+hZxxNjXkBk+lxV/guDl4RztXZiRrW4EmII+4UXoueUX2h1E6zrh
+6PTAqeV26CawTGmLGsbqrdKSP69mVrmk3ZvbdUF1YDLdrbO8t3v46lUleZ1xpRzb
+lvYS4KeoIb3aESXIxVJRURmoYDv41urx0iMGf4PSIzKUY4lezXxcuHn1eLIWtyNw
+4XnA8SRvjb8WxBm9nxhhsU21rrgc6+7N1Q4egSfnqHEhy3hcbMOO43nolWQdJdRs
+PkINDzLCsszIyG6B47oWaxH3w/FE4K0sc7RTV1RKa8ryeS68FtVTjKYbQSpDoNf7
+i5smnOxuGfD66laPMEbrlJVfd3qPYiDaRQLlAjjnHuDqrUNubY+5LnpVPcoAcnOq
+NGjUZOctsVzP4213aAY6cVrKfPq773owk41d1cfZ5DB6rXlqEwt+ukh25uUPO0hb
+Cot/69qj97tMzW7JHrd1Yc2Am/G2gJ+vdXxxtDpKPQyCaSJqLIlmqvhklbm1b7XZ
+bNFwy8+wmjfRzeOumEWqs+3XxqTwywLpnLGoXdgvRtgj6nXh3rrUW23LYPoGlEzX
+V+/d5toVdSEDkijhzv+a
+=hESW
+-----END PGP SIGNATURE-----
 
-
+--s9fJI615cBHmzTOP--
