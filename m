@@ -1,114 +1,386 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab3BDSbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:31:11 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:50213 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab3BDSbJ (ORCPT
+	id S1754325Ab3BDScU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:32:20 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:48504 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab3BDScT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:31:09 -0500
-Date: Mon, 4 Feb 2013 19:31:03 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20130204183103.GA13132@gmail.com>
+	Mon, 4 Feb 2013 13:32:19 -0500
+Date: Mon, 4 Feb 2013 10:32:12 -0800
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
+        skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
+        axboe@kernel.dk
+Subject: [PATCH v2 05/62] idr: implement idr_preload[_end]() and idr_alloc()
+Message-ID: <20130204183212.GT27963@mtj.dyndns.org>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+ <1359854463-2538-6-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1359854463-2538-6-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+The current idr interface is very cumbersome.
 
-Please pull the latest x86-urgent-for-linus git tree from:
+* For all allocations, two function calls - idr_pre_get() and
+  idr_get_new*() - should be made.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+* idr_pre_get() doesn't guarantee that the following idr_get_new*()
+  will not fail from memory shortage.  If idr_get_new*() returns
+  -EAGAIN, the caller is expected to retry pre_get and allocation.
 
-   HEAD: f76e39c531304b114e27c3dd3e0036f56cd33df1 x86/intel/cacheinfo: Shut up annoying warning
+* idr_get_new*() can't enforce upper limit.  Upper limit can only be
+  enforced by allocating and then freeing if above limit.
 
-Three small fixlets.
+* idr_layer buffer is unnecessarily per-idr.  Each idr ends up keeping
+  around MAX_IDR_FREE idr_layers.  The memory consumed per idr is
+  under two pages but it makes it difficult to make idr_layer larger.
 
- Thanks,
+This patch implements the following new set of allocation functions.
 
-	Ingo
+* idr_preload[_end]() - Similar to radix preload but doesn't fail.
+  The first idr_alloc() inside preload section can be treated as if it
+  were called with @gfp_mask used for idr_preload().
 
-------------------> Borislav Petkov (1):
+* idr_alloc() - Allocate an ID w/ lower and upper limits.  Takes
+  @gfp_flags and can be used w/o preloading.  When used inside
+  preloaded section, the allocation mask of preloading can be assumed.
 
-H. Peter Anvin (1):
-      x86, doc: Boot protocol 2.12 is in 3.8
+If idr_alloc() can be called from a context which allows sufficiently
+relaxed @gfp_mask, it can be used by itself.  If, for example,
+idr_alloc() is called inside spinlock protected region, preloading can
+be used like the following.
 
-Jan Beulich (1):
-      x86-64: Replace left over sti/cli in ia32 audit exit code
+	idr_preload(GFP_KERNEL);
+	spin_lock(lock);
 
+	id = idr_alloc(idr, ptr, start, end, GFP_NOWAIT);
 
- Documentation/x86/boot.txt            | 2 +-
- arch/x86/ia32/ia32entry.S             | 4 ++--
- arch/x86/kernel/cpu/intel_cacheinfo.c | 7 +++----
- 3 files changed, 6 insertions(+), 7 deletions(-)
+	spin_unlock(lock);
+	idr_preload_end();
+	if (id < 0)
+		error;
 
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index 3edb4c2..e540fd6 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -57,7 +57,7 @@ Protocol 2.10:	(Kernel 2.6.31) Added a protocol for relaxed alignment
- Protocol 2.11:	(Kernel 3.6) Added a field for offset of EFI handover
- 		protocol entry point.
+which is much simpler and less error-prone than idr_pre_get and
+idr_get_new*() loop.
+
+The new interface uses per-pcu idr_layer buffer and thus the number of
+idr's in the system doesn't affect the amount of memory used for
+preloading.
+
+idr_layer_alloc() is introduced to handle idr_layer allocations for
+both old and new ID allocation paths.  This is a bit hairy now but the
+new interface is expected to replace the old and the internal
+implementation eventually will become simpler.
+
+v2: Improve idr_preload() comment a bit so that it's clear that
+    preemption is disabled while preloaded.  Make idr_layer_alloc()
+    try kmem_cache first and then fall back to per-cpu buffer;
+    otherwise, non-preloading idr_alloc()s empty per-cpu buffers
+    makeing preloaders fill them, which, while not incorrect, still is
+    a bit unfair.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+---
+ include/linux/idr.h |   14 ++++
+ lib/idr.c           |  171 +++++++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 177 insertions(+), 8 deletions(-)
+
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -94,15 +94,29 @@ struct idr {
+ void *idr_find(struct idr *idp, int id);
+ int idr_pre_get(struct idr *idp, gfp_t gfp_mask);
+ int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id);
++void idr_preload(gfp_t gfp_mask);
++int idr_alloc(struct idr *idp, void *ptr, int start, int end, gfp_t gfp_mask);
+ int idr_for_each(struct idr *idp,
+ 		 int (*fn)(int id, void *p, void *data), void *data);
+ void *idr_get_next(struct idr *idp, int *nextid);
+ void *idr_replace(struct idr *idp, void *ptr, int id);
+ void idr_remove(struct idr *idp, int id);
++void idr_free(struct idr *idp, int id);
+ void idr_destroy(struct idr *idp);
+ void idr_init(struct idr *idp);
  
--Protocol 2.12:	(Kernel 3.9) Added the xloadflags field and extension fields
-+Protocol 2.12:	(Kernel 3.8) Added the xloadflags field and extension fields
- 	 	to struct boot_params for for loading bzImage and ramdisk
- 		above 4G in 64bit.
+ /**
++ * idr_preload_end - end preload section started with idr_preload()
++ *
++ * Each idr_preload() should be matched with an invocation of this
++ * function.  See idr_preload() for details.
++ */
++static inline void idr_preload_end(void)
++{
++	preempt_enable();
++}
++
++/**
+  * idr_get_new - allocate new idr entry
+  * @idp: idr handle
+  * @ptr: pointer you want associated with the id
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -35,8 +35,12 @@
+ #include <linux/string.h>
+ #include <linux/idr.h>
+ #include <linux/spinlock.h>
++#include <linux/percpu.h>
++#include <linux/hardirq.h>
  
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 102ff7c..142c4ce 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -207,7 +207,7 @@ sysexit_from_sys_call:
- 	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz ia32_ret_from_sys_call
- 	TRACE_IRQS_ON
--	sti
-+	ENABLE_INTERRUPTS(CLBR_NONE)
- 	movl %eax,%esi		/* second arg, syscall return value */
- 	cmpl $-MAX_ERRNO,%eax	/* is it an error ? */
- 	jbe 1f
-@@ -217,7 +217,7 @@ sysexit_from_sys_call:
- 	call __audit_syscall_exit
- 	movq RAX-ARGOFFSET(%rsp),%rax	/* reload syscall return value */
- 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
--	cli
-+	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
- 	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz \exit
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index fe9edec..84c1309 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -298,8 +298,7 @@ struct _cache_attr {
- 			 unsigned int);
- };
+ static struct kmem_cache *idr_layer_cache;
++static DEFINE_PER_CPU(struct idr_layer *, idr_preload_head);
++static DEFINE_PER_CPU(int, idr_preload_cnt);
+ static DEFINE_SPINLOCK(simple_ida_lock);
  
--#ifdef CONFIG_AMD_NB
--
-+#if defined(CONFIG_AMD_NB) && defined(CONFIG_SYSFS)
- /*
-  * L3 cache descriptors
+ static struct idr_layer *get_from_free_list(struct idr *idp)
+@@ -54,6 +58,50 @@ static struct idr_layer *get_from_free_l
+ 	return(p);
+ }
+ 
++/**
++ * idr_layer_alloc - allocate a new idr_layer
++ * @gfp_mask: allocation mask
++ * @layer_idr: optional idr to allocate from
++ *
++ * If @layer_idr is %NULL, directly allocate one using @gfp_mask or fetch
++ * one from the per-cpu preload buffer.  If @layer_idr is not %NULL, fetch
++ * an idr_layer from @idr->id_free.
++ *
++ * @layer_idr is to maintain backward compatibility with the old alloc
++ * interface - idr_pre_get() and idr_get_new*() - and will be removed
++ * together with per-pool preload buffer.
++ */
++static struct idr_layer *idr_layer_alloc(gfp_t gfp_mask, struct idr *layer_idr)
++{
++	struct idr_layer *new;
++
++	/* this is the old path, bypass to get_from_free_list() */
++	if (layer_idr)
++		return get_from_free_list(layer_idr);
++
++	/* try to allocate directly from kmem_cache */
++	new = kmem_cache_zalloc(idr_layer_cache, gfp_mask);
++	if (new)
++		return new;
++
++	/*
++	 * Try to fetch one from the per-cpu preload buffer if in process
++	 * context.  See idr_preload() for details.
++	 */
++	if (in_interrupt())
++		return NULL;
++
++	preempt_disable();
++	new = __this_cpu_read(idr_preload_head);
++	if (new) {
++		__this_cpu_write(idr_preload_head, new->ary[0]);
++		__this_cpu_dec(idr_preload_cnt);
++		new->ary[0] = NULL;
++	}
++	preempt_enable();
++	return new;
++}
++
+ static void idr_layer_rcu_free(struct rcu_head *head)
+ {
+ 	struct idr_layer *layer;
+@@ -139,6 +187,8 @@ EXPORT_SYMBOL(idr_pre_get);
+  * @starting_id: id to start search at
+  * @id: pointer to the allocated handle
+  * @pa: idr_layer[MAX_IDR_LEVEL] used as backtrack buffer
++ * @gfp_mask: allocation mask for idr_layer_alloc()
++ * @layer_idr: optional idr passed to idr_layer_alloc()
+  *
+  * Allocate an id in range [@starting_id, INT_MAX] from @idp without
+  * growing its depth.  Returns
+@@ -148,7 +198,8 @@ EXPORT_SYMBOL(idr_pre_get);
+  *  -ENOSPC if the id space is exhausted,
+  *  -ENOMEM if more idr_layers need to be allocated.
   */
-@@ -524,9 +523,9 @@ store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
- static struct _cache_attr subcaches =
- 	__ATTR(subcaches, 0644, show_subcaches, store_subcaches);
+-static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa)
++static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa,
++		     gfp_t gfp_mask, struct idr *layer_idr)
+ {
+ 	int n, m, sh;
+ 	struct idr_layer *p, *new;
+@@ -202,7 +253,7 @@ static int sub_alloc(struct idr *idp, in
+ 		 * Create the layer below if it is missing.
+ 		 */
+ 		if (!p->ary[m]) {
+-			new = get_from_free_list(idp);
++			new = idr_layer_alloc(gfp_mask, layer_idr);
+ 			if (!new)
+ 				return -ENOMEM;
+ 			new->layer = l-1;
+@@ -218,7 +269,8 @@ static int sub_alloc(struct idr *idp, in
+ }
  
--#else	/* CONFIG_AMD_NB */
-+#else
- #define amd_init_l3_cache(x, y)
--#endif /* CONFIG_AMD_NB */
-+#endif  /* CONFIG_AMD_NB && CONFIG_SYSFS */
+ static int idr_get_empty_slot(struct idr *idp, int starting_id,
+-			      struct idr_layer **pa)
++			      struct idr_layer **pa, gfp_t gfp_mask,
++			      struct idr *layer_idr)
+ {
+ 	struct idr_layer *p, *new;
+ 	int layers, v, id;
+@@ -229,7 +281,7 @@ build_up:
+ 	p = idp->top;
+ 	layers = idp->layers;
+ 	if (unlikely(!p)) {
+-		if (!(p = get_from_free_list(idp)))
++		if (!(p = idr_layer_alloc(gfp_mask, layer_idr)))
+ 			return -ENOMEM;
+ 		p->layer = 0;
+ 		layers = 1;
+@@ -248,7 +300,7 @@ build_up:
+ 			p->layer++;
+ 			continue;
+ 		}
+-		if (!(new = get_from_free_list(idp))) {
++		if (!(new = idr_layer_alloc(gfp_mask, layer_idr))) {
+ 			/*
+ 			 * The allocation failed.  If we built part of
+ 			 * the structure tear it down.
+@@ -272,7 +324,7 @@ build_up:
+ 	}
+ 	rcu_assign_pointer(idp->top, p);
+ 	idp->layers = layers;
+-	v = sub_alloc(idp, &id, pa);
++	v = sub_alloc(idp, &id, pa, gfp_mask, layer_idr);
+ 	if (v == -EAGAIN)
+ 		goto build_up;
+ 	return(v);
+@@ -312,7 +364,7 @@ int idr_get_new_above(struct idr *idp, v
+ 	struct idr_layer *pa[MAX_IDR_LEVEL];
+ 	int rv;
  
- static int
- __cpuinit cpuid4_cache_lookup_regs(int index,
+-	rv = idr_get_empty_slot(idp, starting_id, pa);
++	rv = idr_get_empty_slot(idp, starting_id, pa, 0, idp);
+ 	if (rv < 0)
+ 		return rv == -ENOMEM ? -EAGAIN : rv;
+ 
+@@ -322,6 +374,109 @@ int idr_get_new_above(struct idr *idp, v
+ }
+ EXPORT_SYMBOL(idr_get_new_above);
+ 
++/**
++ * idr_preload - preload for idr_alloc()
++ * @gfp_mask: allocation mask to use for preloading
++ *
++ * Preload per-cpu layer buffer for idr_alloc().  Can only be used from
++ * process context and each idr_preload() invocation should be matched with
++ * idr_preload_end().  Note that preemption is disabled while preloaded.
++ *
++ * The first idr_alloc() in the preloaded section can be treated as if it
++ * were invoked with @gfp_mask used for preloading.  This allows using more
++ * permissive allocation masks for idrs protected by spinlocks.
++ *
++ * For example, if idr_alloc() below fails, the failure can be treated as
++ * if idr_alloc() were called with GFP_KERNEL rather than GFP_NOWAIT.
++ *
++ *	idr_preload(GFP_KERNEL);
++ *	spin_lock(lock);
++ *
++ *	id = idr_alloc(idr, ptr, start, end, GFP_NOWAIT);
++ *
++ *	spin_unlock(lock);
++ *	idr_preload_end();
++ *	if (id < 0)
++ *		error;
++ */
++void idr_preload(gfp_t gfp_mask)
++{
++	/*
++	 * Consuming preload buffer from non-process context breaks preload
++	 * allocation guarantee.  Disallow usage from those contexts.
++	 */
++	WARN_ON_ONCE(in_interrupt());
++	might_sleep_if(gfp_mask & __GFP_WAIT);
++
++	preempt_disable();
++
++	/*
++	 * idr_alloc() is likely to succeed w/o full idr_layer buffer and
++	 * return value from idr_alloc() needs to be checked for failure
++	 * anyway.  Silently give up if allocation fails.  The caller can
++	 * treat failures from idr_alloc() as if idr_alloc() were called
++	 * with @gfp_mask which should be enough.
++	 */
++	while (__this_cpu_read(idr_preload_cnt) < MAX_IDR_FREE) {
++		struct idr_layer *new;
++
++		preempt_enable();
++		new = kmem_cache_zalloc(idr_layer_cache, gfp_mask);
++		preempt_disable();
++		if (!new)
++			break;
++
++		/* link the new one to per-cpu preload list */
++		new->ary[0] = __this_cpu_read(idr_preload_head);
++		__this_cpu_write(idr_preload_head, new);
++		__this_cpu_inc(idr_preload_cnt);
++	}
++}
++EXPORT_SYMBOL(idr_preload);
++
++/**
++ * idr_alloc - allocate new idr entry
++ * @idr: the (initialized) idr
++ * @ptr: pointer to be associated with the new id
++ * @start: the minimum id (inclusive)
++ * @end: the maximum id (exclusive, 0 for max)
++ * @gfp_mask: memory allocation flags
++ *
++ * Allocate an id in [start, end) and associate it with @ptr.  If no ID is
++ * available in the specified range, returns -ENOSPC.  On memory allocation
++ * failure, returns -ENOMEM.
++ *
++ * The user is responsible for exclusively synchronizing all operations
++ * which may modify @idr.  However, read-only accesses such as idr_find()
++ * or iteration can be performed under RCU read lock provided the user
++ * destroys @ptr in RCU-safe way after removal from idr.
++ */
++int idr_alloc(struct idr *idr, void *ptr, int start, int end, gfp_t gfp_mask)
++{
++	int max = end ? end - 1 : INT_MAX;	/* inclusive upper limit */
++	struct idr_layer *pa[MAX_IDR_LEVEL];
++	int id;
++
++	might_sleep_if(gfp_mask & __GFP_WAIT);
++
++	/* sanity checks */
++	if (WARN_ON_ONCE(start < 0 || end < 0))
++		return -EINVAL;
++	if (unlikely(max < start))
++		return -ENOSPC;
++
++	/* allocate id */
++	id = idr_get_empty_slot(idr, start, pa, gfp_mask, NULL);
++	if (unlikely(id < 0))
++		return id;
++	if (unlikely(id > max))
++		return -ENOSPC;
++
++	idr_fill_slot(ptr, id, pa);
++	return id;
++}
++EXPORT_SYMBOL_GPL(idr_alloc);
++
+ static void idr_remove_warning(int id)
+ {
+ 	printk(KERN_WARNING
+@@ -769,7 +924,7 @@ int ida_get_new_above(struct ida *ida, i
+ 
+  restart:
+ 	/* get vacant slot */
+-	t = idr_get_empty_slot(&ida->idr, idr_id, pa);
++	t = idr_get_empty_slot(&ida->idr, idr_id, pa, 0, &ida->idr);
+ 	if (t < 0)
+ 		return t == -ENOMEM ? -EAGAIN : t;
+ 
