@@ -1,110 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab3BDSKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:10:42 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:42902 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab3BDSKl (ORCPT
+	id S1755041Ab3BDSKy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:10:54 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:63252 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab3BDSKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:10:41 -0500
-Date: Mon, 4 Feb 2013 13:10:34 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 02/14] atm/nicstar: don't use idr_remove_all()
-Message-ID: <20130204131034.5bea17c4@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <20130204175210.GQ27963@mtj.dyndns.org>
-References: <1359163872-1949-1-git-send-email-tj@kernel.org>
-	<1359163872-1949-3-git-send-email-tj@kernel.org>
-	<20130204175210.GQ27963@mtj.dyndns.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 13:10:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <1359983924-28952-5-git-send-email-joro@8bytes.org>
+References: <1359983924-28952-1-git-send-email-joro@8bytes.org>
+	<1359983924-28952-5-git-send-email-joro@8bytes.org>
+Date: Mon, 4 Feb 2013 12:10:51 -0600
+Message-ID: <CALRxmdCiSZgoqd8tp90kPCdA=s7SWZCTwKsFnWu7S5=U7+eRLQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] iommu: Add domain window handling functions
+From: Stuart Yoder <b08248@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Sethi Varun-B16395 <B16395@freescale.com>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Feb 2013 09:52:10 -0800
-Tejun Heo <tj@kernel.org> wrote:
-
-> Subject: atm/nicstar: convert to idr_alloc()
-> 
-> Convert to the much saner new idr interface.  The existing code looks
-> buggy to me - ID 0 is treated as no-ID but allocation specifies 0 as
-> lower limit and there's no error handling after partial success.  This
-> conversion keeps the bugs unchanged.
-> 
-> Only compile tested.
-> 
-> v2: id1 and id2 are now directly used for -errno return and thus
->     should be signed.  Make them int instead of u32.  This was spotted
->     by kbuild test robot.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Acked-by: Chas Williams <chas@cmf.nrl.navy.mil>
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Cc: netdev@vger.kernel.org
+On Mon, Feb 4, 2013 at 7:18 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> Add the iommu_domain_window_enable() and iommu_domain_window_disable()
+> functions to the IOMMU-API. These functions will be used to setup
+> domains that are based on subwindows and not on paging.
+>
+> Signed-off-by: Joerg Roedel <joro@8bytes.org>
 > ---
->  drivers/atm/nicstar.c |   29 +++++++++++++----------------
->  1 file changed, 13 insertions(+), 16 deletions(-)
-> 
-> --- a/drivers/atm/nicstar.c
-> +++ b/drivers/atm/nicstar.c
-> @@ -949,7 +949,7 @@ static void free_scq(ns_dev *card, scq_i
->  static void push_rxbufs(ns_dev * card, struct sk_buff *skb)
+>  drivers/iommu/iommu.c |   20 ++++++++++++++++++++
+>  include/linux/iommu.h |   22 ++++++++++++++++++++++
+>  2 files changed, 42 insertions(+)
+>
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+> index ab9dafd..0fdb7db 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -852,6 +852,26 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_unmap);
+>
+> +
+> +int iommu_domain_window_enable(struct iommu_domain *domain, u32 wnd_nr,
+> +                              phys_addr_t paddr, size_t size)
+> +{
+> +       if (unlikely(domain->ops->domain_window_enable == NULL))
+> +               return -ENODEV;
+> +
+> +       return domain->ops->domain_window_enable(domain, wnd_nr, paddr, size);
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_domain_window_enable);
+> +
+> +void iommu_domain_window_disable(struct iommu_domain *domain, u32 wnd_nr)
+> +{
+> +       if (unlikely(domain->ops->domain_window_disable == NULL))
+> +               return;
+> +
+> +       return domain->ops->domain_window_disable(domain, wnd_nr);
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_domain_window_disable);
+> +
+>  static int __init iommu_init(void)
 >  {
->  	struct sk_buff *handle1, *handle2;
-> -	u32 id1 = 0, id2 = 0;
-> +	int id1 = 0, id2 = 0;
->  	u32 addr1, addr2;
->  	u32 stat;
->  	unsigned long flags;
-> @@ -1026,24 +1026,21 @@ static void push_rxbufs(ns_dev * card, s
->  				card->lbfqc += 2;
->  		}
->  
-> -		do {
-> -			if (!idr_pre_get(&card->idr, GFP_ATOMIC)) {
-> -				printk(KERN_ERR
-> -				       "nicstar%d: no free memory for idr\n",
-> -				       card->index);
-> +		if (id1 < 0) {
+>         iommu_group_kset = kset_create_and_add("iommu_groups",
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index 26066f5..0cba2d8 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -101,6 +101,12 @@ struct iommu_ops {
+>                                enum iommu_attr attr, void *data);
+>         int (*domain_set_attr)(struct iommu_domain *domain,
+>                                enum iommu_attr attr, void *data);
+> +
+> +       /* Window handling functions */
+> +       int (*domain_window_enable)(struct iommu_domain *domain, u32 wnd_nr,
+> +                                   phys_addr_t paddr, size_t size);
+> +       void (*domain_window_disable)(struct iommu_domain *domain, u32 wnd_nr);
+> +
+>         unsigned long pgsize_bitmap;
+>  };
+>
+> @@ -158,6 +164,10 @@ extern int iommu_domain_get_attr(struct iommu_domain *domain, enum iommu_attr,
+>  extern int iommu_domain_set_attr(struct iommu_domain *domain, enum iommu_attr,
+>                                  void *data);
+>
+> +/* Window handling function prototypes */
+> +extern int iommu_domain_window_enable(struct iommu_domain *domain, u32 wnd_nr,
+> +                                     phys_addr_t offset, size_t size);
+> +extern void iommu_domain_window_disable(struct iommu_domain *domain, u32 wnd_nr);
+>  /**
+>   * report_iommu_fault() - report about an IOMMU fault to the IOMMU framework
+>   * @domain: the iommu domain where the fault has happened
+> @@ -240,6 +250,18 @@ static inline int iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+>         return -ENODEV;
+>  }
+>
+> +static inline int iommu_domain_window_enable(struct iommu_domain *domain,
+> +                                            u32 wnd_nr, phys_addr_t paddr,
+> +                                            size_t size)
+> +{
+> +       return -ENODEV;
+> +}
+> +
+> +static inline void iommu_domain_window_disable(struct iommu_domain *domain,
+> +                                              u32 wnd_nr)
+> +{
+> +}
+> +
+>  static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+>                                              unsigned long iova)
+>  {
 
-you assign id1 to 0, so this never happens i think.  i don't think the
-reason to preassign id1/id2 exists anymore once the do loop is removed.
+This API looks workable.   The one change we need is that the size argument in
+the enable API needs to be 64 bits.   Our window sizes can exceed 4GB.
 
-> +			id1 = idr_alloc(&card->idr, handle1, 0, 0, GFP_ATOMIC);
-> +			if (id1 < 0) {
-> +				err = id1;
-
-you dont need to assign err since it isn't returned.
-
->  				goto out;
->  			}
-> +		}
->  
-> -			if (!id1)
-> -				err = idr_get_new_above(&card->idr, handle1, 0, &id1);
-> -
-> -			if (!id2 && err == 0)
-> -				err = idr_get_new_above(&card->idr, handle2, 0, &id2);
-> -
-> -		} while (err == -EAGAIN);
-> -
-> -		if (err)
-> -			goto out;
-> +		if (id2 < 0) {
-
-same as above.
-
-> +			id2 = idr_alloc(&card->idr, handle2, 0, 0, GFP_ATOMIC);
-> +			if (id2 < 0) {
-> +				err = id2;
-> +				goto out;
-> +			}
-> +		}
->  
->  		spin_lock_irqsave(&card->res_lock, flags);
->  		while (CMD_BUSY(card)) ;
+Stuart
