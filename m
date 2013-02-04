@@ -1,134 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3BDIdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 03:33:39 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:42976 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab3BDIdh (ORCPT
+	id S1754014Ab3BDIhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 03:37:05 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:51679 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab3BDIhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 03:33:37 -0500
+	Mon, 4 Feb 2013 03:37:03 -0500
+Date: Mon, 4 Feb 2013 09:36:58 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Lord Glauber Costa of Sealand <glommer@parallels.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: stop warning on memcg_propagate_kmem
+Message-ID: <20130204083658.GB2556@dhcp22.suse.cz>
+References: <alpine.LNX.2.00.1302032023280.4611@eggly.anvils>
+ <20130204075732.GA2556@dhcp22.suse.cz>
+ <510F6B76.3080605@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+Z25wVnFMkXvSOvetipBEFkZgSKe2Qjn1wYf-x5i7skGQ-XSA@mail.gmail.com>
-References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
-	<CAJ0PZbTAOdQrUjefOpc2MDam1hHLjSEDLHw3VrP+9=OAbgQ8ug@mail.gmail.com>
-	<CA+Z25wVnFMkXvSOvetipBEFkZgSKe2Qjn1wYf-x5i7skGQ-XSA@mail.gmail.com>
-Date: Mon, 4 Feb 2013 14:03:36 +0530
-Message-ID: <CA+Z25wWCvSNb0pBaGcnj2k1J-Z9+UUhSTRsXsQYAA2eFzoO1ZA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / devfreq: set min/max freq limit from freq table
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: myungjoo.ham@gmail.com
-Cc: kyungmin.park@samsung.com, mturquette@linaro.org, rjw@sisk.pl,
-        patches@linaro.org, linaro-dev@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510F6B76.3080605@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MyungJoo, Ping.
+On Mon 04-02-13 12:04:06, Glauber Costa wrote:
+> On 02/04/2013 11:57 AM, Michal Hocko wrote:
+> > On Sun 03-02-13 20:29:01, Hugh Dickins wrote:
+> >> Whilst I run the risk of a flogging for disloyalty to the Lord of Sealand,
+> >> I do have CONFIG_MEMCG=y CONFIG_MEMCG_KMEM not set, and grow tired of the
+> >> "mm/memcontrol.c:4972:12: warning: `memcg_propagate_kmem' defined but not
+> >> used [-Wunused-function]" seen in 3.8-rc: move the #ifdef outwards.
+> >>
+> >> Signed-off-by: Hugh Dickins <hughd@google.com>
+> > 
+> > Acked-by: Michal Hocko <mhocko@suse.cz>
+> > 
+> > Hmm, if you are not too tired then moving the function downwards to
+> > where it is called (memcg_init_kmem) will reduce the number of ifdefs.
+> > But this can wait for a bigger clean up which is getting due:
+> > git grep "def.*CONFIG_MEMCG_KMEM" mm/memcontrol.c | wc -l
+> > 12
+> > 
+> 
+> The problem is that I was usually keeping things in clearly separated
+> blocks, like this :
+> 
+> #if defined(CONFIG_MEMCG_KMEM) && defined(CONFIG_INET)
+>         struct tcp_memcontrol tcp_mem;
+> #endif
+> #if defined(CONFIG_MEMCG_KMEM)
+>         /* analogous to slab_common's slab_caches list. per-memcg */
+>         struct list_head memcg_slab_caches;
+>         /* Not a spinlock, we can take a lot of time walking the list */
+>         struct mutex slab_caches_mutex;
+>         /* Index in the kmem_cache->memcg_params->memcg_caches array */
+>         int kmemcg_id;
+> #endif
+> 
+> If it would be preferable to everybody, this could be easily rewritten as:
+> 
+> #if defined(CONFIG_MEMCG_KMEM)
+> #if defined(CONFIG_INET)
+>         struct tcp_memcontrol tcp_mem;
+> #endif
+>         /* analogous to slab_common's slab_caches list. per-memcg */
+>         struct list_head memcg_slab_caches;
+>         /* Not a spinlock, we can take a lot of time walking the list */
+>         struct mutex slab_caches_mutex;
+>         /* Index in the kmem_cache->memcg_params->memcg_caches array */
+>         int kmemcg_id;
+> #endif
 
-On 15 January 2013 16:51, Rajagopal Venkat <rajagopal.venkat@linaro.org> wrote:
-> On 14 January 2013 20:06, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
->> On Tue, Jan 8, 2013 at 2:50 PM, Rajagopal Venkat
->> <rajagopal.venkat@linaro.org> wrote:
->>> Set devfreq device min and max frequency limits when device
->>> is added to devfreq, provided frequency table is supplied.
->>> This helps governors to suggest target frequency with in
->>> limits.
->>>
->>> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
->>
->> Could you please elaborate the benefit of the patch?
->>
->
-> When freq table is supplied, it's unreasonable to suggest the target frequency
-> which is - target_freq < min_freq and target_freq > max_freq. It avoids
-> unnecessary checks at devfreq drivers.
->
->> The devfreq device drivers are required to choose proper frequencies
->> anyway regardless which values the governors may give (hopefully by
->> choosing the closest value that can support the required performance).
->>
->
-> Yes. but then each driver needs to have conditional checks for choosing
-> closet value even though freq table is provided.
->
->> Besides, the min/max values are to be set by userspace. Users may
->> enter 0 in order to express that they do not want to limit the
->> behaviors of governors.
->>
->>
->> Cheers,
->> MyungJoo.
->>
->>> ---
->>>  drivers/devfreq/devfreq.c |   24 ++++++++++++++++++++++++
->>>  1 file changed, 24 insertions(+)
->>>
->>> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
->>> index a8f0173..5782c9b 100644
->>> --- a/drivers/devfreq/devfreq.c
->>> +++ b/drivers/devfreq/devfreq.c
->>> @@ -69,6 +69,29 @@ static struct devfreq *find_device_devfreq(struct device *dev)
->>>  }
->>>
->>>  /**
->>> + * devfreq_set_freq_limits() - Set min and max frequency from freq_table
->>> + * @devfreq:   the devfreq instance
->>> + */
->>> +static void devfreq_set_freq_limits(struct devfreq *devfreq)
->>> +{
->>> +       int idx;
->>> +       unsigned long min = ~0, max = 0;
->>> +
->>> +       if (!devfreq->profile->freq_table)
->>> +               return;
->>> +
->>> +       for (idx = 0; idx < devfreq->profile->max_state; idx++) {
->>> +               if (min > devfreq->profile->freq_table[idx])
->>> +                       min = devfreq->profile->freq_table[idx];
->>> +               if (max < devfreq->profile->freq_table[idx])
->>> +                       max = devfreq->profile->freq_table[idx];
->>> +       }
->>> +
->>> +       devfreq->min_freq = min;
->>> +       devfreq->max_freq = max;
->>> +}
->>> +
->>> +/**
->>>   * devfreq_get_freq_level() - Lookup freq_table for the frequency
->>>   * @devfreq:   the devfreq instance
->>>   * @freq:      the target frequency
->>> @@ -476,6 +499,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
->>>                                                 devfreq->profile->max_state,
->>>                                                 GFP_KERNEL);
->>>         devfreq->last_stat_updated = jiffies;
->>> +       devfreq_set_freq_limits(devfreq);
->>>
->>>         dev_set_name(&devfreq->dev, dev_name(dev));
->>>         err = device_register(&devfreq->dev);
->>> --
->>> 1.7.10.4
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->>
->> --
->> MyungJoo Ham, Ph.D.
->> Mobile Software Platform Lab, DMC Business, Samsung Electronics
->
->
->
-> --
-> Regards,
-> Rajagopal
+I was rather interested in reducing CONFIG_KMEM block, the above example
+doesn't bother me that much.
+ 
+> This would allow us to collapse some blocks a bit down as well.
+> 
+> It doesn't bother me *that* much, though.
 
-
-
+Yes and a quick attempt shows that a clean up would bring a lot of
+churn.
 -- 
-Regards,
-Rajagopal
+Michal Hocko
+SUSE Labs
