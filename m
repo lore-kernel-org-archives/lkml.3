@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab3BDTd0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:33:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21123 "EHLO mx1.redhat.com"
+	id S1754988Ab3BDThI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:37:08 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38941 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754689Ab3BDTdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:33:24 -0500
-Date: Mon, 4 Feb 2013 20:32:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tommi Rantala <tt.rantala@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: Re: clock_nanosleep() task_struct leak
-Message-ID: <20130204193223.GA11910@redhat.com>
-References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com> <alpine.LFD.2.02.1302011450160.11905@ionos>
+	id S1753576Ab3BDThF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:37:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
+        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
+        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug framework
+Date: Mon, 04 Feb 2013 20:43:19 +0100
+Message-ID: <3771593.0Hh61SLxJL@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1359994749.23410.113.camel@misato.fc.hp.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <2048116.Qo8UgQ5hjb@vostro.rjw.lan> <1359994749.23410.113.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1302011450160.11905@ionos>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01, Thomas Gleixner wrote:
->
-> B1;2601;0cOn Fri, 1 Feb 2013, Tommi Rantala wrote:
->
-> > Hello,
-> >
-> > Trinity discovered a task_struct leak with clock_nanosleep(), reproducible with:
-> >
-> > -----8<-----8<-----8<-----
-> > #include <time.h>
-> >
-> > static const struct timespec req;
-> >
-> > int main(void) {
-> >         return clock_nanosleep(CLOCK_PROCESS_CPUTIME_ID,
-> >                         TIMER_ABSTIME, &req, NULL);
-> > }
-> > -----8<-----8<-----8<-----
+On Monday, February 04, 2013 09:19:09 AM Toshi Kani wrote:
+> On Mon, 2013-02-04 at 15:21 +0100, Rafael J. Wysocki wrote:
+> > On Monday, February 04, 2013 04:48:10 AM Greg KH wrote:
+> > > On Sun, Feb 03, 2013 at 09:44:39PM +0100, Rafael J. Wysocki wrote:
+> > > > > Yes, but those are just remove events and we can only see how destructive they
+> > > > > were after the removal.  The point is to be able to figure out whether or not
+> > > > > we *want* to do the removal in the first place.
+> > > > > 
+> > > > > Say you have a computing node which signals a hardware problem in a processor
+> > > > > package (the container with CPU cores, memory, PCI host bridge etc.).  You
+> > > > > may want to eject that package, but you don't want to kill the system this
+> > > > > way.  So if the eject is doable, it is very much desirable to do it, but if it
+> > > > > is not doable, you'd rather shut the box down and do the replacement afterward.
+> > > > > That may be costly, however (maybe weeks of computations), so it should be
+> > > > > avoided if possible, but not at the expense of crashing the box if the eject
+> > > > > doesn't work out.
+> > > > 
+> > > > It seems to me that we could handle that with the help of a new flag, say
+> > > > "no_eject", in struct device, a global mutex, and a function that will walk
+> > > > the given subtree of the device hierarchy and check if "no_eject" is set for
+> > > > any devices in there.  Plus a global "no_eject" switch, perhaps.
+> > > 
+> > > I think this will always be racy, or at worst, slow things down on
+> > > normal device operations as you will always be having to grab this flag
+> > > whenever you want to do something new.
+> > 
+> > I don't see why this particular scheme should be racy, at least I don't see any
+> > obvious races in it (although I'm not that good at races detection in general,
+> > admittedly).
+> > 
+> > Also, I don't expect that flag to be used for everything, just for things known
+> > to seriously break if forcible eject is done.  That may be not precise enough,
+> > so that's a matter of defining its purpose more precisely.
+> > 
+> > We can do something like that on the ACPI level (ie. introduce a no_eject flag
+> > in struct acpi_device and provide an iterface for the layers above ACPI to
+> > manipulate it) but then devices without ACPI namespace objects won't be
+> > covered.  That may not be a big deal, though.
+> 
+> I am afraid that bringing the device status management into the ACPI
+> level would not a good idea.  acpi_device should only reflect ACPI
+> device object information, not how its actual device is being used.
+> 
+> I like your initiative of acpi_scan_driver and I think scanning /
+> trimming of ACPI object info is what the ACPI drivers should do.
 
-posix_cpu_timer_create()->get_task_struct() I guess...
+ACPI drivers, yes, but the users of ACPI already rely on information
+in struct acpi_device.  Like ACPI device power states, for example.
 
-Cough. I am not sure I ever understood this code, but now it certainly
-looks as if I never saw it before.
+So platform_no_eject(dev) is not much different in that respect from
+platform_pci_set_power_state(pci_dev).
 
-All I can say is: I'll try to take another look tomorrow :/
+The whole "eject" concept is somewhat ACPI-specific, though, and the eject
+notifications come from ACPI, so I don't have a problem with limiting it to
+ACPI-backed devices for the time being.
 
-> Groan. That code probably has more than that leak burried inside.
+If it turns out the be useful outside of ACPI, then we can move it up to the
+driver core.  For now I don't see a compelling reason to do that.
 
-Oh. yes... but if you meant something connected to this particular
-"test-case" please tell us ;)
+Thanks,
+Rafael
 
-Oleg.
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
