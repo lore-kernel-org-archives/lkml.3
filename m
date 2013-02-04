@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3BDIju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 03:39:50 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:43804 "EHLO mx2.parallels.com"
+	id S1754042Ab3BDIlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 03:41:06 -0500
+Received: from mga03.intel.com ([143.182.124.21]:57313 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691Ab3BDIjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 03:39:49 -0500
-Message-ID: <510F73E8.50201@parallels.com>
-Date: Mon, 4 Feb 2013 12:40:08 +0400
-From: Lord Glauber Costa of Sealand <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH] memcg: stop warning on memcg_propagate_kmem
-References: <alpine.LNX.2.00.1302032023280.4611@eggly.anvils> <20130204075732.GA2556@dhcp22.suse.cz> <510F6B76.3080605@parallels.com> <20130204083658.GB2556@dhcp22.suse.cz>
-In-Reply-To: <20130204083658.GB2556@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753691Ab3BDIlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 03:41:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,597,1355126400"; 
+   d="asc'?scan'208";a="252229965"
+Message-ID: <1359967368.13791.22.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2 1/3] mtd: add new fields to nand_flash_dev{}
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Huang Shijie <b32955@freescale.com>
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
+        shmulik.ladkani@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Feb 2013 10:42:48 +0200
+In-Reply-To: <5105DD0E.1010500@freescale.com>
+References: <1359007901-26464-1-git-send-email-b32955@freescale.com>
+	 <1359007901-26464-2-git-send-email-b32955@freescale.com>
+	 <5105DD0E.1010500@freescale.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-4CWMzGYPcj9eIFzh/fDF"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2013 12:36 PM, Michal Hocko wrote:
-> On Mon 04-02-13 12:04:06, Glauber Costa wrote:
->> On 02/04/2013 11:57 AM, Michal Hocko wrote:
->>> On Sun 03-02-13 20:29:01, Hugh Dickins wrote:
->>>> Whilst I run the risk of a flogging for disloyalty to the Lord of Sealand,
->>>> I do have CONFIG_MEMCG=y CONFIG_MEMCG_KMEM not set, and grow tired of the
->>>> "mm/memcontrol.c:4972:12: warning: `memcg_propagate_kmem' defined but not
->>>> used [-Wunused-function]" seen in 3.8-rc: move the #ifdef outwards.
->>>>
->>>> Signed-off-by: Hugh Dickins <hughd@google.com>
->>>
->>> Acked-by: Michal Hocko <mhocko@suse.cz>
->>>
->>> Hmm, if you are not too tired then moving the function downwards to
->>> where it is called (memcg_init_kmem) will reduce the number of ifdefs.
->>> But this can wait for a bigger clean up which is getting due:
->>> git grep "def.*CONFIG_MEMCG_KMEM" mm/memcontrol.c | wc -l
->>> 12
->>>
->>
->> The problem is that I was usually keeping things in clearly separated
->> blocks, like this :
->>
->> #if defined(CONFIG_MEMCG_KMEM) && defined(CONFIG_INET)
->>         struct tcp_memcontrol tcp_mem;
->> #endif
->> #if defined(CONFIG_MEMCG_KMEM)
->>         /* analogous to slab_common's slab_caches list. per-memcg */
->>         struct list_head memcg_slab_caches;
->>         /* Not a spinlock, we can take a lot of time walking the list */
->>         struct mutex slab_caches_mutex;
->>         /* Index in the kmem_cache->memcg_params->memcg_caches array */
->>         int kmemcg_id;
->> #endif
->>
->> If it would be preferable to everybody, this could be easily rewritten as:
->>
->> #if defined(CONFIG_MEMCG_KMEM)
->> #if defined(CONFIG_INET)
->>         struct tcp_memcontrol tcp_mem;
->> #endif
->>         /* analogous to slab_common's slab_caches list. per-memcg */
->>         struct list_head memcg_slab_caches;
->>         /* Not a spinlock, we can take a lot of time walking the list */
->>         struct mutex slab_caches_mutex;
->>         /* Index in the kmem_cache->memcg_params->memcg_caches array */
->>         int kmemcg_id;
->> #endif
-> 
-> I was rather interested in reducing CONFIG_KMEM block, the above example
-> doesn't bother me that much.
->  
->> This would allow us to collapse some blocks a bit down as well.
->>
->> It doesn't bother me *that* much, though.
-> 
-> Yes and a quick attempt shows that a clean up would bring a lot of
-> churn.
-> 
-And some of it, because there are circular dependencies. So we would
-have to start adding forward declarations here and there to make it all
-work. That is part of the reason why I kept the blocks separate.
+
+--=-4CWMzGYPcj9eIFzh/fDF
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, 2013-01-28 at 10:06 +0800, Huang Shijie wrote:
+> > +     unsigned int id_len;
+> > +     unsigned long oobsize;
+> > +     unsigned long ecc_len;
+> I think it's better to submit another patch set to solve the ECC
+> problem.
+
+Would you please strip the cited text when bottom-posting - this would
+be a lot mailing-list-friendly.
+>=20
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-4CWMzGYPcj9eIFzh/fDF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAABAgAGBQJRD3SIAAoJECmIfjd9wqK04V0QAIe0aP4NYMF7c0tQpkfxBLC9
+pi5h4JCrH+zAO/wlWbwCk2r315l/1Pir7OvYvGRU5ygobGYxX1nomL/XHYYxSeoA
+D9F2fVr3vYrlCrS43ujw7MEt9ya9mLNyOs2DZESDiL57ikfx2cWfi2qxSSwbQ4zd
+7KvP6tGADueRas8LL9TegBSijLD1NgAw2alb0kAFGoRlpSzOp8zHJxOaSSD8K63u
+UMMEeP1b7fiLRK5m9xEAoWoZwlSd1VxgT7UBkzZJD7B99kAhq1uuIvwChq7NjFOQ
+h2PC2l3NKeyUaF+CdGjI2oJZA5VgzhzpThVQ40h7jtRz/2gxgAcXpndsb42EJPTb
+iUHhRG4LdcEuRBZaahwzEmpp2Wo1bc2SqQ47IrvrwTWOnLsOaXwyVEw5vz3avwKb
+bnP6gUwYo1P0R+dn1/QrqM4gBJ1lR8RuUOwjtW4WoR6QHAicTLnJem/q+0Eelv61
+djpynJMPNsgMDICGr8Ti5KpUXYbkSTDT+VpyLse4IgWuCCcxdFYJSRiwy96f273I
+qDoNXfx3H/DF8yGXESq+NW1OElRKaTu7UO1/5Sxm4r5mkLZ6hX4CvgSt+2zStbyk
+yjf65BMvtM0NfOw88XXUcmu1nivVi51pn585PHax3JPb5Jhjopl7UQEA9J8MJK4A
+Vg5VTGmsNSxJn+LzwiPC
+=C/Es
+-----END PGP SIGNATURE-----
+
+--=-4CWMzGYPcj9eIFzh/fDF--
+
