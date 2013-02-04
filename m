@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab3BDWSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 17:18:09 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:60981 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab3BDWSH (ORCPT
+	id S1755985Ab3BDWST (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 17:18:19 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:61029 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab3BDWSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 17:18:07 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] infiniband: hw/cxgb3/iwch_provider.c: fix uninitialized variable issue
-Date: Mon,  4 Feb 2013 23:18:06 +0100
-Message-Id: <1360016286-15343-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 4 Feb 2013 17:18:16 -0500
+From: Grant Coady <gcoady.lk@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: 3.7.5: Kernel panic on halt
+Date: Tue, 05 Feb 2013 09:18:01 +1100
+Organization: scattered
+Message-ID: <l2c0h896p2of3i8l6ivc6di7n7s72sbve3@4ax.com>
+User-Agent: ForteAgent/7.00.32.1200
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable npages might be used uninitialized in line 594.
+Hi there,
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- drivers/infiniband/hw/cxgb3/iwch_provider.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I was running machine overnight on 12V battery test, with this simple 
+kernel compile loop:
 
-diff --git a/drivers/infiniband/hw/cxgb3/iwch_provider.c b/drivers/infiniband/hw/cxgb3/iwch_provider.c
-index 145d82a..90ce483 100644
---- a/drivers/infiniband/hw/cxgb3/iwch_provider.c
-+++ b/drivers/infiniband/hw/cxgb3/iwch_provider.c
-@@ -559,7 +559,7 @@ static int iwch_reregister_phys_mem(struct ib_mr *mr,
- 	__be64 *page_list = NULL;
- 	int shift = 0;
- 	u64 total_size;
--	int npages;
-+	int npages = 0;
- 	int ret;
- 
- 	PDBG("%s ib_mr %p ib_pd %p\n", __func__, mr, pd);
--- 
-1.7.9.5
+  grant@itxmini:~/linux/linux-3.7.5a$ while :; do make clean; make -j5; done
 
+Today it was time to shutdown the box ('halt' command) and recharge the battery.
+
+Snapshot of screen:
+
+  http://bugsplatter.id.au/misc/image/IMG_5627-kernel-panic-itxmini-2013-01-05.jpg
+
+Kernel .config and dmesg:
+
+  http://bugsplatter.id.au/kernel/boxen/itxmini/config-3.7.5a.gz
+  http://bugsplatter.id.au/kernel/boxen/itxmini/dmesg-3.7.5a.gz
+
+Box is Intel D510MO mobo with dual core HT Atom CPU with 2GB memory, 2GB 
+swap (unused), Intel pro/100 NIC (disconnected), onboard PS/2 keyboard, 
+ps/2 mouse, 1Gbps NIC, VGA monitor connected.
+
+What next?  Box rebooted normally.  Ha
+
+Thanks,
+Grant.
