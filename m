@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab3BDUkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 15:40:49 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:57775 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176Ab3BDUks (ORCPT
+	id S1754547Ab3BDUmj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 15:42:39 -0500
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:34258 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931Ab3BDUmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 15:40:48 -0500
+	Mon, 4 Feb 2013 15:42:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359834211.2831.5.camel@joe-AO722>
-References: <CALF0-+XX27u4rmpe8RHiy5DsbHvoYP9DWQts+rTRfEvPQG4s8Q@mail.gmail.com>
-	<CALF0-+V-8m1TwnM0MUbNCncnECF_r_FVcyu_Duu0tqcsPoFR5A@mail.gmail.com>
-	<1359834211.2831.5.camel@joe-AO722>
-Date: Mon, 4 Feb 2013 17:40:47 -0300
-Message-ID: <CALF0-+X_L-wJs9TSsotEDrJ-jbQ9+JBLxqyRDWBdNqgXujthOA@mail.gmail.com>
-Subject: Re: Question about printking
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: gregkh <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        kernelnewbies <kernelnewbies@kernelnewbies.org>,
-        kernel-janitors@vger.kernel.org,
-        linux-media <linux-media@vger.kernel.org>, devel@driverdev.osuosl.org
+In-Reply-To: <CAN1soZxOX24QCYOTXmVOmNGu-+ShUPaBScxh38C=p7-v_2OZnw@mail.gmail.com>
+References: <1359816246-3979-1-git-send-email-acourbot@nvidia.com>
+	<1359816246-3979-2-git-send-email-acourbot@nvidia.com>
+	<CAN1soZxOX24QCYOTXmVOmNGu-+ShUPaBScxh38C=p7-v_2OZnw@mail.gmail.com>
+Date: Mon, 4 Feb 2013 21:42:37 +0100
+Message-ID: <CACRpkdY83TqF5zzKrD1LNQ1reL5Z+HPKHAWwLxLWj4fYr3SSZw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] arm: pxa: tosa: do not use gpiochip_reserve()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Dirk Opfer <dirk@opfer-online.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arch@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        gnurou@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On Sun, Feb 3, 2013 at 1:29 AM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
 
-On Sat, Feb 2, 2013 at 4:43 PM, Joe Perches <joe@perches.com> wrote:
-> On Sat, 2013-02-02 at 16:30 -0300, Ezequiel Garcia wrote:
->> ptr = kmalloc(sizeof(foo));
->> if (!ptr) {
->>         pr_err("Cannot allocate memory for foo\n");
->>         return -ENOMEM;
->> }
->> His argue against it was that kmalloc already takes care of reporting/printking
->> a good deal of interesting information when this happens.
->
->> Can someone expand a bit on this whole idea? (of abuse of printing,
->> or futility of printing).
->
-> k.alloc() takes a GFP_ flag as an arg.
->
-> One of those GFP flags is __GFP_NOWARN.
->
-> For all failed allocs without GFP_NOWARN
-> a message is emitted and a dump_stack is
-> done.
->
-> (see: mm/page_alloc.c warn_alloc_failed())
->
-> So, most all of these printks after
-> k.alloc()'s are not necessary.
->
->
+> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 
-Thanks for the explanation.
+Thanks!
 
-BTW, I see you've made some patches to fix exactly this.
-Nice job.
+> Linus,
+>
+> Could you help to merge this patch into your gpio git tree? I think
+> that both of them should go through one git tree.
 
-Regards,
+Yep, already merged it.
 
--- 
-    Ezequiel
+Yours,
+Linus Walleij
