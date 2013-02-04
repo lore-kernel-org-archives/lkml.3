@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab3BDTiP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:38:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37646 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753711Ab3BDTiN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:38:13 -0500
-Date: Mon, 4 Feb 2013 19:38:11 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH 07/73] regulator: ab8500: Fix for regulator_set_mode
- functionality
-Message-ID: <20130204193810.GV4720@opensource.wolfsonmicro.com>
-References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
- <1359978868-28736-8-git-send-email-lee.jones@linaro.org>
+	id S1755613Ab3BDTi5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:38:57 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:38995 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753653Ab3BDTix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:38:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, "lenb@kernel.org" <lenb@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "guohanjun@huawei.com" <guohanjun@huawei.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug framework
+Date: Mon, 04 Feb 2013 20:45:11 +0100
+Message-ID: <3007489.fG0fDZGHrB@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1359996378.23410.130.camel@misato.fc.hp.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <20130204124612.GA22096@kroah.com> <1359996378.23410.130.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FZIkiClxIZ9JeWSb"
-Content-Disposition: inline
-In-Reply-To: <1359978868-28736-8-git-send-email-lee.jones@linaro.org>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, February 04, 2013 09:46:18 AM Toshi Kani wrote:
+> On Mon, 2013-02-04 at 04:46 -0800, Greg KH wrote:
+> > On Sun, Feb 03, 2013 at 05:28:09PM -0700, Toshi Kani wrote:
+> > > On Sat, 2013-02-02 at 16:01 +0100, Greg KH wrote:
+> > > > On Fri, Feb 01, 2013 at 01:40:10PM -0700, Toshi Kani wrote:
+> > > > > On Fri, 2013-02-01 at 07:30 +0000, Greg KH wrote:
+> > > > > > On Thu, Jan 31, 2013 at 06:32:18PM -0700, Toshi Kani wrote:
+> > > > > >  > This is already done for PCI host bridges and platform devices and I don't
+> > > > > > > > see why we can't do that for the other types of devices too.
+> > > > > > > > 
+> > > > > > > > The only missing piece I see is a way to handle the "eject" problem, i.e.
+> > > > > > > > when we try do eject a device at the top of a subtree and need to tear down
+> > > > > > > > the entire subtree below it, but if that's going to lead to a system crash,
+> > > > > > > > for example, we want to cancel the eject.  It seems to me that we'll need some
+> > > > > > > > help from the driver core here.
+> > > > > > > 
+> > > > > > > There are three different approaches suggested for system device
+> > > > > > > hot-plug:
+> > > > > > >  A. Proceed within system device bus scan.
+> > > > > > >  B. Proceed within ACPI bus scan.
+> > > > > > >  C. Proceed with a sequence (as a mini-boot).
+> > > > > > > 
+> > > > > > > Option A uses system devices as tokens, option B uses acpi devices as
+> > > > > > > tokens, and option C uses resource tables as tokens, for their handlers.
+> > > > > > > 
+> > > > > > > Here is summary of key questions & answers so far.  I hope this
+> > > > > > > clarifies why I am suggesting option 3.
+> > > > > > > 
+> > > > > > > 1. What are the system devices?
+> > > > > > > System devices provide system-wide core computing resources, which are
+> > > > > > > essential to compose a computer system.  System devices are not
+> > > > > > > connected to any particular standard buses.
+> > > > > > 
+> > > > > > Not a problem, lots of devices are not connected to any "particular
+> > > > > > standard busses".  All this means is that system devices are connected
+> > > > > > to the "system" bus, nothing more.
+> > > > > 
+> > > > > Can you give me a few examples of other devices that support hotplug and
+> > > > > are not connected to any particular buses?  I will investigate them to
+> > > > > see how they are managed to support hotplug.
+> > > > 
+> > > > Any device that is attached to any bus in the driver model can be
+> > > > hotunplugged from userspace by telling it to be "unbound" from the
+> > > > driver controlling it.  Try it for any platform device in your system to
+> > > > see how it happens.
+> > > 
+> > > The unbind operation, as I understand from you, is to detach a driver
+> > > from a device.  Yes, unbinding can be done for any devices.  It is
+> > > however different from hot-plug operation, which unplugs a device.
+> > 
+> > Physically, yes, but to the driver involved, and the driver core, there
+> > is no difference.  That was one of the primary goals of the driver core
+> > creation so many years ago.
+> > 
+> > > Today, the unbind operation to an ACPI cpu/memory devices causes
+> > > hot-unplug (offline) operation to them, which is one of the major issues
+> > > for us since unbind cannot fail.  This patchset addresses this issue by
+> > > making the unbind operation of ACPI cpu/memory devices to do the
+> > > unbinding only.  ACPI drivers no longer control cpu and memory as they
+> > > are supposed to be controlled by their drivers, cpu and memory modules.
+> > 
+> > I think that's the problem right there, solve that, please.
+> 
+> We cannot eliminate the ACPI drivers since we have to scan ACPI.  But we
+> can limit the ACPI drivers to do the scanning stuff only.   This is
+> precisely the intend of this patchset.  The real stuff, removing actual
+> devices, is done by the system device drivers/modules.
 
---FZIkiClxIZ9JeWSb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In case you haven't realized that yet, the $subject patchset has no future.
 
-On Mon, Feb 04, 2013 at 11:53:22AM +0000, Lee Jones wrote:
-> From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
->=20
-> Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> Reviewed-by: Mattias WALLIN <mattias.wallin@stericsson.com>
-> Reviewed-by: Emeric VIGIER <emeric.vigier@stericsson.com>
-> Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+Let's just talk about how we can get what we need in more general terms.
 
-regulator_set_mode() was only added in the previous patch...
+Thanks,
+Rafael
 
---FZIkiClxIZ9JeWSb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREA4cAAoJELSic+t+oim9KBQP/jF0OTeNmHuaoR/1HsekLc7h
-26sBeoqlikjhlSCKIOsIsupeNE4RxXI12wK0XCTBW+rg8Vwt4Ye3BIt016RDn+jV
-GWBt+Xh0xAEZgAQ2rjGINz4duai8gs9I3BJrRrvxiKGAkjFnmiiTMNRUsuI5e9Ag
-YuhS/hrmvJNuxbmXw44TjDOZvoyF2NBdxL/VhMgXiYMQ92oArHj+4+rVLPM37wRK
-oU9MULNZwCEYKKNtVfABJCW6B90GInnqLCbYXCetOVj/yj4T63fqniJzuMOoyMxK
-bj9e3qLHz+BfQlrtyZWBIuKfFzCr6Ma2V967f4ziIIeEOFWPYxW94diHgO0Fn5/a
-YbTFRw24qq6FuKGzun+ePMnzX6Uaye3DXAKkPhxnGJwJB/kCs48nXOVNEHuPYZLh
-W/Qx96NuaN27Oc6mxByyUDF1IoVcD9a/qox7CW4eAgqWpZKewnyp21q+BFldSiTn
-lDmo73+h22IClOYq+vTAh3eaRCzZ9viXxBKZaLU8Z7fmtyEoqwT0juD2RqBfrmsV
-02gvOQr2PWxSCjXw6uC1ZtOUj9ocLB2sx//D1lWfqpweuK81u506YLIwm7ZindtJ
-8TCG71SmGtwjV+1VRnhtfNwkR3hneKJXvQbEpR804uE9C2zY2jKpOb5m+asg0yQu
-hUXHoraP8thP9YcnJJlw
-=JRtO
------END PGP SIGNATURE-----
-
---FZIkiClxIZ9JeWSb--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
