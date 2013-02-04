@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab3BDQHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:07:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2107 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755613Ab3BDQG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:06:59 -0500
-Message-ID: <1359993993.11144.416.camel@bling.home>
-Subject: Re: [PATCH 50/62] vfio: convert to idr_alloc()
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
-        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
-        kvm@vger.kernel.org
-Date: Mon, 04 Feb 2013 09:06:33 -0700
-In-Reply-To: <1359854463-2538-51-git-send-email-tj@kernel.org>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
-	 <1359854463-2538-51-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1756275Ab3BDQK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:10:28 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53371 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab3BDQK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 11:10:27 -0500
+Message-ID: <510FDD7B.7060903@windriver.com>
+Date: Mon, 4 Feb 2013 11:10:35 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-rt-users@vger.kernel.org>
+Subject: Re: [PATCH] OF: Fixup resursive locking code paths
+References: <1359138107-14159-1-git-send-email-paul.gortmaker@windriver.com> <alpine.LFD.2.02.1302041147420.11905@ionos>
+In-Reply-To: <alpine.LFD.2.02.1302041147420.11905@ionos>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-02-02 at 17:20 -0800, Tejun Heo wrote:
-> Convert to the much saner new idr interface.
+On 13-02-04 05:48 AM, Thomas Gleixner wrote:
+> On Fri, 25 Jan 2013, Paul Gortmaker wrote:
 > 
-> Only compile tested.
+>> From: Thomas Gleixner <tglx@linutronix.de>
+>>
+>> There is no real reason to use a rwlock for devtree_lock. It even
+>> could be a mutex, but unfortunately it's locked from cpu hotplug
+>> paths which can't schedule :(
+>>
+>> So it needs to become a raw lock on rt as well.  The devtree_lock would
+>> be the only user of a raw_rw_lock, so we are better off cleaning up the
+>> recursive locking paths which allows us to convert devtree_lock to a
+>> read_lock.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Alex Williamson <alex.williamson@redhat.com>
-> Cc: kvm@vger.kernel.org
-> ---
-> This patch depends on an earlier idr changes and I think it would be
-> best to route these together through -mm.  Please holler if there's
-> any objection.  Thanks.
+> Hmm. It's already a rw_lock. For RT we want to change that thing to a
+> raw_spinlock.
+
+Thanks for the reminder.  Part 2 sent now that the cleanup got OK'd.
+
+Paul.
+--
+
 > 
->  drivers/vfio/vfio.c | 18 +-----------------
->  1 file changed, 1 insertion(+), 17 deletions(-)
+> Thanks,
 > 
-> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-> index 12c264d..0132846 100644
-> --- a/drivers/vfio/vfio.c
-> +++ b/drivers/vfio/vfio.c
-> @@ -139,23 +139,7 @@ EXPORT_SYMBOL_GPL(vfio_unregister_iommu_driver);
->   */
->  static int vfio_alloc_group_minor(struct vfio_group *group)
->  {
-> -	int ret, minor;
-> -
-> -again:
-> -	if (unlikely(idr_pre_get(&vfio.group_idr, GFP_KERNEL) == 0))
-> -		return -ENOMEM;
-> -
-> -	/* index 0 is used by /dev/vfio/vfio */
-
-I'd have preferred to keep this comment.  If you do a v2, please keep
-it, otherwise I'll add it back later.
-
-Acked-by: Alex Williamson <alex.williamson@redhat.com>
-
-> -	ret = idr_get_new_above(&vfio.group_idr, group, 1, &minor);
-> -	if (ret == -EAGAIN)
-> -		goto again;
-> -	if (ret || minor > MINORMASK) {
-> -		if (minor > MINORMASK)
-> -			idr_remove(&vfio.group_idr, minor);
-> -		return -ENOSPC;
-> -	}
-> -
-> -	return minor;
-> +	return idr_alloc(&vfio.group_idr, group, 1, MINORMASK + 1, GFP_KERNEL);
->  }
->  
->  static void vfio_free_group_minor(int minor)
-
-
-
+> 	tglx
+> 
