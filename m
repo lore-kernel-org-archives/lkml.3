@@ -1,141 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3BDEie (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 23:38:34 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46588 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab3BDEid (ORCPT
+	id S1753960Ab3BDEqM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 23:46:12 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19737 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab3BDEqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 23:38:33 -0500
-Date: Mon, 4 Feb 2013 15:38:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: linux-next: manual merge of the driver-core tree with the net-next
- tree
-Message-Id: <20130204153831.083f30730888d66d4f83acd3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Feb_2013_15_38_31_+1100_B35XGCSYcm7h/yOr"
+	Sun, 3 Feb 2013 23:46:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 03 Feb 2013 20:43:57 -0800
+Subject: Re: CPU hotplug hang due to "swap: make each swap partition have
+ one address_space"
+From: Joseph Lo <josephl@nvidia.com>
+To: Shaohua Li <shli@kernel.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Shaohua Li <shli@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>
+In-Reply-To: <20130204023646.GA321@kernel.org>
+References: <510C9DE9.9040207@wwwdotorg.org>
+	 <20130204023646.GA321@kernel.org>
+Date: Mon, 4 Feb 2013 12:45:44 +0800
+Message-ID: <1359953144.5542.2.camel@jlo-ubuntu-64.nvidia.com>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Feb_2013_15_38_31_+1100_B35XGCSYcm7h/yOr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-02-04 at 10:36 +0800, Shaohua Li wrote:
+> On Fri, Feb 01, 2013 at 10:02:33PM -0700, Stephen Warren wrote:
+> > Shaohua,
+> > 
+> > In next-20130128, commit 174f064 "swap: make each swap partition have
+> > one address_space" (from the mm/akpm tree) appears causes a hang/RCU
+> > stall for me when hot-unplugging a CPU.
+> 
+> does this one work for you?
+> http://marc.info/?l=linux-mm&m=135929599505624&w=2
+> Or try a more recent linux-next. The patch is in akpm's tree.
+> 
+Hi Shaohua,
 
-Hi Greg,
+The patch you pointed out did fix the issue. Just verified on Tegra
+device.
 
-Today's linux-next merge of the driver-core tree got a conflict in drivers/=
-net/wan/Kconfig between commit a786a7c0ad44 ("wanrouter: completely decoupl=
-e obsolete code from kernel") from the net-next tree and commit c9f1b39aee7=
-4 ("drivers/net/wan: remove depends on CONFIG_EXPERIMENTAL") from the drive=
-r-core tree.
+Thanks,
+Joseph
 
-The former removed part of the text changed by the latter, so I just did
-that (see below) and can carry the fix as necessary (no action is
-required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wan/Kconfig
-index 0c077b0,c0cd88d..0000000
---- a/drivers/net/wan/Kconfig
-+++ b/drivers/net/wan/Kconfig
-@@@ -356,9 -356,63 +356,9 @@@ config SDL
-  	  To compile this driver as a module, choose M here: the
-  	  module will be called sdla.
- =20
- -# Wan router core.
- -config WAN_ROUTER_DRIVERS
- -	tristate "WAN router drivers"
- -	depends on WAN_ROUTER
- -	---help---
- -	  Connect LAN to WAN via Linux box.
- -
- -	  Select driver your card and remember to say Y to "Wan Router."
- -	  You will need the wan-tools package which is available from
- -	  <ftp://ftp.sangoma.com/>.
- -
- -	  Note that the answer to this question won't directly affect the
- -	  kernel except for how subordinate drivers may be built:
- -	  saying N will just cause the configurator to skip all
- -	  the questions about WAN router drivers.
- -
- -	  If unsure, say N.
- -
- -config CYCLADES_SYNC
- -	tristate "Cyclom 2X(tm) cards"
- -	depends on WAN_ROUTER_DRIVERS && (PCI || ISA)
- -	---help---
- -	  Cyclom 2X from Cyclades Corporation <http://www.avocent.com/> is an
- -	  intelligent multiprotocol WAN adapter with data transfer rates up to
- -	  512 Kbps. These cards support the X.25 and SNA related protocols.
- -
- -	  While no documentation is available at this time please grab the
- -	  wanconfig tarball in
- -	  <http://www.conectiva.com.br/~acme/cycsyn-devel/> (with minor changes
- -	  to make it compile with the current wanrouter include files; efforts
- -	  are being made to use the original package available at
- -	  <ftp://ftp.sangoma.com/>).
- -
- -	  Feel free to contact me or the cycsyn-devel mailing list at
- -	  <acme@conectiva.com.br> and <cycsyn-devel@bazar.conectiva.com.br> for
- -	  additional details, I hope to have documentation available as soon as
- -	  possible. (Cyclades Brazil is writing the Documentation).
- -
- -	  The next questions will ask you about the protocols you want the
- -	  driver to support (for now only X.25 is supported).
- -
- -	  If you have one or more of these cards, say Y to this option.
- -
- -	  To compile this driver as a module, choose M here: the
- -	  module will be called cyclomx.
- -
- -config CYCLOMX_X25
- -	bool "Cyclom 2X X.25 support"
- -	depends on CYCLADES_SYNC
- -	help
- -	  Connect a Cyclom 2X card to an X.25 network.
- -
- -	  Enabling X.25 support will enlarge your kernel by about 11 kB.
- -
-  # X.25 network drivers
-  config LAPBETHER
-- 	tristate "LAPB over Ethernet driver (EXPERIMENTAL)"
-+ 	tristate "LAPB over Ethernet driver"
-  	depends on LAPB && X25
-  	---help---
-  	  Driver for a pseudo device (typically called /dev/lapb0) which allows
-
---Signature=_Mon__4_Feb_2013_15_38_31_+1100_B35XGCSYcm7h/yOr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRDztHAAoJEECxmPOUX5FE07QP/iqOaxPaDb/dr6BVA2VNTeqN
-/huW3Y7+UljY2ZlWQc8g4s1nONH7x6JbSAhA5017Zn95f4uy5kmR3eBTPpJ5O5pA
-4gZBKhqWz7gnzHMDiVwwMZdrPz3EyrnLgzkaeOmu0SUvhZHKA5Zgc6NqzSkC7ybs
-UoEXI4XNeg9M7DQQSg8/AQJMN8Uh5oVw42S4yO7F2aUyIXwASBR4qftjmxtkIXBv
-6C1rB0ZbblhCjN/Hj29eT5BjcFjb9HRqmE+nkMXlmcR++vTGnQ3JvqnsXPcAiCdV
-OVWfwO5SssuCzOF5H2h5mImhx32mED/8VxMb/09vzkDIWxQdS6kYrbHRBL94sneN
-kriRJ/OV16oyGAO9yC6LgjCHHYcdv5xquLhUmxOYp03CZ7g5GVwPvlFFAt2kVUMN
-ZzFgSZJ/iircMXT/tkrKviXr2XVbAZ3pXI/CZSpWcEkLAzl4tpOIZkdKBFub2nWl
-ZFdxRst7h2uJp9z2LlMpkYrLH1HwMIZSy1+DEYGCeeITgDrZbLfXI/h/l9P8t0iK
-ssxa7CMH5CSqhWbkgYD0SA3DgnBrt6UGqXvV9r8IkmJhxLqj/0mJSEjeAKBxL/tF
-pdeYTsWAx6LopdT2644RsMU3oPmSr4pqyvd1G03nwHpH2X/BPWJWgS9i77X0DVYS
-e2S3EBuckTp2Mq5qtlQv
-=KB4L
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Feb_2013_15_38_31_+1100_B35XGCSYcm7h/yOr--
