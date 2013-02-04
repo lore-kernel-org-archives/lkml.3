@@ -1,66 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab3BDHbG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 02:31:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56501 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab3BDHbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 02:31:04 -0500
-Date: Mon, 4 Feb 2013 08:30:27 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/8] perf tools: Add '.' as part of the event 'name' token
-Message-ID: <20130204073027.GA15987@krava.redhat.com>
-References: <1359230650-10415-1-git-send-email-jolsa@redhat.com>
- <1359230650-10415-2-git-send-email-jolsa@redhat.com>
- <CABPqkBSH=67hG8VRwHPU3byEancpVqsyetHkSjb4nOScPvcnFA@mail.gmail.com>
- <CABPqkBTPHKf+XTmeyA8PrWReG8Ak6ow9gSwfh4ozK+gvJMze1w@mail.gmail.com>
- <20130129080305.GB594@gmail.com>
- <CABPqkBSVnbt1pthyW2au1Wnpvvf+8Acf2MjCwNLf8Hvw88j4Aw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSVnbt1pthyW2au1Wnpvvf+8Acf2MjCwNLf8Hvw88j4Aw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753125Ab3BDHdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 02:33:20 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:57632 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab3BDHdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 02:33:18 -0500
+Message-ID: <1359963195.29377.0.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH v7 2/4] zram: force disksize setting before using zram
+From: Ric Mason <ric.masonn@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 04 Feb 2013 01:33:15 -0600
+In-Reply-To: <1359935171-12749-2-git-send-email-minchan@kernel.org>
+References: <1359935171-12749-1-git-send-email-minchan@kernel.org>
+	 <1359935171-12749-2-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 03, 2013 at 09:37:16PM +0100, Stephane Eranian wrote:
-> On Tue, Jan 29, 2013 at 9:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Stephane Eranian <eranian@google.com> wrote:
-> >
-> >> On Mon, Jan 28, 2013 at 9:52 PM, Stephane Eranian <eranian@google.com> wrote:
-
-SNIP
-
-> Adding the option for users to link with libpfm4 was no big
-> deal in my mind. You are opposed to that. That's your
-> choice. I don't buy your arguments for this patch series
-> and will continue to provide a patch to link perf and libpfm4
-> for users who are interested.
+Hi Minchan,
+On Mon, 2013-02-04 at 08:46 +0900, Minchan Kim wrote:
+> Now zram document syas "set disksize is optional"
+> but partly it's wrong. When you try to use zram firstly after
+> booting, you must set disksize, otherwise zram can't work because
+> zram gendisk's size is 0. But once you do it, you can use zram freely
+> after reset because reset doesn't reset to zero paradoxically.
+> So in this time, disksize setting is optional.:(
+> It's inconsitent for user behavior and not straightforward.
 > 
-> I would have appreciated some discussion on this instead, once
-> again, work was done behind closed door and thrown at my face.
+> This patch forces always setting disksize firstly before using zram.
+> Yes. It changes current behavior so someone could complain when
+> he upgrades zram. Apparently it could be a problem if zram is mainline
+> but it still lives in staging so behavior could be changed for right
+> way to go. Let them excuse.
+> 
+> Acked-by: Jerome Marchand <jmarchan@redhat.com>
+> Acked-by: Nitin Gupta <ngupta@vflare.org>
+> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram.txt     |   27 ++++++++++----------
+>  drivers/staging/zram/zram_drv.c   |   51 +++++++++++++------------------------
+>  drivers/staging/zram/zram_drv.h   |    5 +---
+>  drivers/staging/zram/zram_sysfs.c |    6 +----
+>  4 files changed, 34 insertions(+), 55 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
+> index 5f75d29..765d790 100644
+> --- a/drivers/staging/zram/zram.txt
+> +++ b/drivers/staging/zram/zram.txt
+> @@ -23,17 +23,17 @@ Following shows a typical sequence of steps for using zram.
+>  	This creates 4 devices: /dev/zram{0,1,2,3}
+>  	(num_devices parameter is optional. Default: 1)
+>  
+> -2) Set Disksize (Optional):
+> -	Set disk size by writing the value to sysfs node 'disksize'
+> -	(in bytes). If disksize is not given, default value of 25%
+> -	of RAM is used.
+> -
+> -	# Initialize /dev/zram0 with 50MB disksize
+> -	echo $((50*1024*1024)) > /sys/block/zram0/disksize
+> -
+> -	NOTE: disksize cannot be changed if the disk contains any
+> -	data. So, for such a disk, you need to issue 'reset' (see below)
+> -	before you can change its disksize.
+> +2) Set Disksize
+> +        Set disk size by writing the value to sysfs node 'disksize'.
+> +        The value can be either in bytes or you can use mem suffixes.
+> +        Examples:
+> +            # Initialize /dev/zram0 with 50MB disksize
+> +            echo $((50*1024*1024)) > /sys/block/zram0/disksize
+> +
+> +            # Using mem suffixes
+> +            echo 256K > /sys/block/zram0/disksize
+> +            echo 512M > /sys/block/zram0/disksize
+> +            echo 1G > /sys/block/zram0/disksize
+>  
+>  3) Activate:
+>  	mkswap /dev/zram0
+> @@ -65,8 +65,9 @@ Following shows a typical sequence of steps for using zram.
+>  	echo 1 > /sys/block/zram0/reset
+>  	echo 1 > /sys/block/zram1/reset
+>  
+> -	(This frees all the memory allocated for the given device).
+> -
+> +	This frees all the memory allocated for the given device and
+> +	resets the disksize to zero. You must set the disksize again
+> +	before reusing the device.
+>  
+>  Please report any problems at:
+>   - Mailing list: linux-mm-cc at laptop dot org
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 262265e..1114cad 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -94,34 +94,6 @@ static int page_zero_filled(void *ptr)
+>  	return 1;
+>  }
+>  
+> -static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
+> -{
+> -	if (!zram->disksize) {
+> -		pr_info(
+> -		"disk size not provided. You can use disksize_kb module "
+> -		"param to specify size.\nUsing default: (%u%% of RAM).\n",
+> -		default_disksize_perc_ram
+> -		);
+> -		zram->disksize = default_disksize_perc_ram *
+> -					(totalram_bytes / 100);
+> -	}
+> -
+> -	if (zram->disksize > 2 * (totalram_bytes)) {
+> -		pr_info(
+> -		"There is little point creating a zram of greater than "
+> -		"twice the size of memory since we expect a 2:1 compression "
+> -		"ratio. Note that zram uses about 0.1%% of the size of "
+> -		"the disk when not in use so a huge zram is "
+> -		"wasteful.\n"
+> -		"\tMemory Size: %zu kB\n"
+> -		"\tSize you selected: %llu kB\n"
+> -		"Continuing anyway ...\n",
+> -		totalram_bytes >> 10, zram->disksize >> 10);
+> -	}
+> -
+> -	zram->disksize &= PAGE_MASK;
+> -}
+> -
+>  static void zram_free_page(struct zram *zram, size_t index)
+>  {
+>  	unsigned long handle = zram->table[index].handle;
+> @@ -497,6 +469,9 @@ void __zram_reset_device(struct zram *zram)
+>  {
+>  	size_t index;
+>  
+> +	if (!zram->init_done)
+> +		return;
+> +
+>  	zram->init_done = 0;
+>  
+>  	/* Free various per-device buffers */
+> @@ -525,6 +500,7 @@ void __zram_reset_device(struct zram *zram)
+>  	memset(&zram->stats, 0, sizeof(zram->stats));
+>  
+>  	zram->disksize = 0;
+> +	set_capacity(zram->disk, 0);
+>  }
+>  
+>  void zram_reset_device(struct zram *zram)
+> @@ -546,7 +522,19 @@ int zram_init_device(struct zram *zram)
+>  		return 0;
+>  	}
+>  
+> -	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
+> +	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+> +		pr_info(
+> +		"There is little point creating a zram of greater than "
+> +		"twice the size of memory since we expect a 2:1 compression "
+> +		"ratio. Note that zram uses about 0.1%% of the size of "
+> +		"the disk when not in use so a huge zram is "
+> +		"wasteful.\n"
+> +		"\tMemory Size: %zu kB\n"
+> +		"\tSize you selected: %llu kB\n"
+> +		"Continuing anyway ...\n",
+> +		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
+> +		);
+> +	}
+>  
+>  	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
 
-Not sure why you think it was 'closed door'.. I needed some way to
-access those events and sent RFC for it with you being on CC list.
+zram->compress_workmem is used for what?
 
-> The worst being that as far I can see in the patches, no proper
-> credits to libpfm4 contributors is even given for providing the raw
-> information that allowed you to  build your event tables without too
+>  	if (!zram->compress_workmem) {
+> @@ -571,8 +559,6 @@ int zram_init_device(struct zram *zram)
+>  		goto fail_no_table;
+>  	}
+>  
+> -	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> -
+>  	/* zram devices sort of resembles non-rotational disks */
+>  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+>  
+> @@ -751,8 +737,7 @@ static void __exit zram_exit(void)
+>  		zram = &zram_devices[i];
+>  
+>  		destroy_device(zram);
+> -		if (zram->init_done)
+> -			zram_reset_device(zram);
+> +		zram_reset_device(zram);
+>  	}
+>  
+>  	unregister_blkdev(zram_major, "zram");
+> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+> index df2eec4..5b671d1 100644
+> --- a/drivers/staging/zram/zram_drv.h
+> +++ b/drivers/staging/zram/zram_drv.h
+> @@ -28,9 +28,6 @@ static const unsigned max_num_devices = 32;
+>  
+>  /*-- Configurable parameters */
+>  
+> -/* Default zram disk size: 25% of total RAM */
+> -static const unsigned default_disksize_perc_ram = 25;
+> -
+>  /*
+>   * Pages that compress to size greater than this are stored
+>   * uncompressed in memory.
+> @@ -115,6 +112,6 @@ extern struct attribute_group zram_disk_attr_group;
+>  #endif
+>  
+>  extern int zram_init_device(struct zram *zram);
+> -extern void __zram_reset_device(struct zram *zram);
+> +extern void zram_reset_device(struct zram *zram);
+>  
+>  #endif
+> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+> index de1eacf..4143af9 100644
+> --- a/drivers/staging/zram/zram_sysfs.c
+> +++ b/drivers/staging/zram/zram_sysfs.c
+> @@ -110,11 +110,7 @@ static ssize_t reset_store(struct device *dev,
+>  	if (bdev)
+>  		fsync_bdev(bdev);
+>  
+> -	down_write(&zram->init_lock);
+> -	if (zram->init_done)
+> -		__zram_reset_device(zram);
+> -	up_write(&zram->init_lock);
+> -
+> +	zram_reset_device(zram);
+>  	return len;
+>  }
+>  
 
-Right, sorry for that.. I'll add it.
 
-> much sweat! Building electronic event tables from vendor specs is
-> a lot harder than it seems, but you may not know this.
-
-jirka
