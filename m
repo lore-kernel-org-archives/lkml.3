@@ -1,386 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab3BDEcX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 23:32:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50538 "EHLO mail.kernel.org"
+	id S1754031Ab3BDEcz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 23:32:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50653 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752355Ab3BDEcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 23:32:20 -0500
-Date: Sun, 3 Feb 2013 20:34:30 -0800
+	id S1753771Ab3BDEcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 23:32:54 -0500
+Date: Sun, 3 Feb 2013 20:35:00 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.62
-Message-ID: <20130204043430.GB14790@kroah.com>
-References: <20130204043417.GA14790@kroah.com>
+Subject: Linux 3.4.29
+Message-ID: <20130204043500.GA14912@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
 Content-Disposition: inline
-In-Reply-To: <20130204043417.GA14790@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index 2d64957..20f4902 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 61
-+SUBLEVEL = 62
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index f96d2c7..5663650 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -467,25 +467,27 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
- 	size_t size, enum dma_data_direction dir,
- 	void (*op)(const void *, size_t, int))
- {
-+	unsigned long pfn;
-+	size_t left = size;
-+
-+	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
-+	offset %= PAGE_SIZE;
-+
- 	/*
- 	 * A single sg entry may refer to multiple physically contiguous
- 	 * pages.  But we still need to process highmem pages individually.
- 	 * If highmem is not configured then the bulk of this loop gets
- 	 * optimized out.
- 	 */
--	size_t left = size;
- 	do {
- 		size_t len = left;
- 		void *vaddr;
- 
-+		page = pfn_to_page(pfn);
-+
- 		if (PageHighMem(page)) {
--			if (len + offset > PAGE_SIZE) {
--				if (offset >= PAGE_SIZE) {
--					page += offset / PAGE_SIZE;
--					offset %= PAGE_SIZE;
--				}
-+			if (len + offset > PAGE_SIZE)
- 				len = PAGE_SIZE - offset;
--			}
- 			vaddr = kmap_high_get(page);
- 			if (vaddr) {
- 				vaddr += offset;
-@@ -502,7 +504,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
- 			op(vaddr, len, dir);
- 		}
- 		offset = 0;
--		page++;
-+		pfn++;
- 		left -= len;
- 	} while (left);
- }
-diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index 12fcbe2..f7d1a64 100644
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -175,6 +175,9 @@ static int msr_open(struct inode *inode, struct file *file)
- 	unsigned int cpu;
- 	struct cpuinfo_x86 *c;
- 
-+	if (!capable(CAP_SYS_RAWIO))
-+		return -EPERM;
-+
- 	cpu = iminor(file->f_path.dentry->d_inode);
- 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
- 		return -ENXIO;	/* No such CPU */
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index eb9eb8b..6c4e9ff 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -633,6 +633,7 @@ static unsigned reserve_low = CONFIG_X86_RESERVE_LOW << 10;
- 
- static bool __init snb_gfx_workaround_needed(void)
- {
-+#ifdef CONFIG_PCI
- 	int i;
- 	u16 vendor, devid;
- 	static const u16 snb_ids[] = {
-@@ -657,6 +658,7 @@ static bool __init snb_gfx_workaround_needed(void)
- 	for (i = 0; i < ARRAY_SIZE(snb_ids); i++)
- 		if (devid == snb_ids[i])
- 			return true;
-+#endif
- 
- 	return false;
- }
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index ac3aa54..0fba86d 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -38,7 +38,7 @@
- #include <asm/cacheflush.h>
- #include <asm/fixmap.h>
- 
--static pgd_t save_pgd __initdata;
-+static pgd_t *save_pgd __initdata;
- static unsigned long efi_flags __initdata;
- 
- static void __init early_code_mapping_set_exec(int executable)
-@@ -61,12 +61,20 @@ static void __init early_code_mapping_set_exec(int executable)
- void __init efi_call_phys_prelog(void)
- {
- 	unsigned long vaddress;
-+	int pgd;
-+	int n_pgds;
- 
- 	early_code_mapping_set_exec(1);
- 	local_irq_save(efi_flags);
--	vaddress = (unsigned long)__va(0x0UL);
--	save_pgd = *pgd_offset_k(0x0UL);
--	set_pgd(pgd_offset_k(0x0UL), *pgd_offset_k(vaddress));
-+
-+	n_pgds = DIV_ROUND_UP((max_pfn << PAGE_SHIFT), PGDIR_SIZE);
-+	save_pgd = kmalloc(n_pgds * sizeof(pgd_t), GFP_KERNEL);
-+
-+	for (pgd = 0; pgd < n_pgds; pgd++) {
-+		save_pgd[pgd] = *pgd_offset_k(pgd * PGDIR_SIZE);
-+		vaddress = (unsigned long)__va(pgd * PGDIR_SIZE);
-+		set_pgd(pgd_offset_k(pgd * PGDIR_SIZE), *pgd_offset_k(vaddress));
-+	}
- 	__flush_tlb_all();
- }
- 
-@@ -75,7 +83,11 @@ void __init efi_call_phys_epilog(void)
- 	/*
- 	 * After the lock is released, the original page table is restored.
- 	 */
--	set_pgd(pgd_offset_k(0x0UL), save_pgd);
-+	int pgd;
-+	int n_pgds = DIV_ROUND_UP((max_pfn << PAGE_SHIFT) , PGDIR_SIZE);
-+	for (pgd = 0; pgd < n_pgds; pgd++)
-+		set_pgd(pgd_offset_k(pgd * PGDIR_SIZE), save_pgd[pgd]);
-+	kfree(save_pgd);
- 	__flush_tlb_all();
- 	local_irq_restore(efi_flags);
- 	early_code_mapping_set_exec(0);
-diff --git a/drivers/edac/edac_pci_sysfs.c b/drivers/edac/edac_pci_sysfs.c
-index 495198a..8cc8676 100644
---- a/drivers/edac/edac_pci_sysfs.c
-+++ b/drivers/edac/edac_pci_sysfs.c
-@@ -257,7 +257,7 @@ static ssize_t edac_pci_dev_store(struct kobject *kobj,
- 	struct edac_pci_dev_attribute *edac_pci_dev;
- 	edac_pci_dev = (struct edac_pci_dev_attribute *)attr;
- 
--	if (edac_pci_dev->show)
-+	if (edac_pci_dev->store)
- 		return edac_pci_dev->store(edac_pci_dev->value, buffer, count);
- 	return -EIO;
- }
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index 1bf8032..6195868 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -916,7 +916,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
- 		break;
- 	case LEC_ACK_ERROR:
- 		netdev_dbg(dev, "ack error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_ACK |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_ACK |
- 				CAN_ERR_PROT_LOC_ACK_DEL);
- 		break;
- 	case LEC_BIT1_ERROR:
-@@ -929,7 +929,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
- 		break;
- 	case LEC_CRC_ERROR:
- 		netdev_dbg(dev, "CRC error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
- 				CAN_ERR_PROT_LOC_CRC_DEL);
- 		break;
- 	default:
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index d11fbb2..b508a63 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -559,7 +559,7 @@ static void pch_can_error(struct net_device *ndev, u32 status)
- 		stats->rx_errors++;
- 		break;
- 	case PCH_CRC_ERR:
--		cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
-+		cf->data[3] |= CAN_ERR_PROT_LOC_CRC_SEQ |
- 			       CAN_ERR_PROT_LOC_CRC_DEL;
- 		priv->can.can_stats.bus_error++;
- 		stats->rx_errors++;
-diff --git a/drivers/net/can/ti_hecc.c b/drivers/net/can/ti_hecc.c
-index 6ea2c09..10b2394 100644
---- a/drivers/net/can/ti_hecc.c
-+++ b/drivers/net/can/ti_hecc.c
-@@ -734,12 +734,12 @@ static int ti_hecc_error(struct net_device *ndev, int int_status,
- 		}
- 		if (err_status & HECC_CANES_CRCE) {
- 			hecc_set_bit(priv, HECC_CANES, HECC_CANES_CRCE);
--			cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
-+			cf->data[3] |= CAN_ERR_PROT_LOC_CRC_SEQ |
- 					CAN_ERR_PROT_LOC_CRC_DEL;
- 		}
- 		if (err_status & HECC_CANES_ACKE) {
- 			hecc_set_bit(priv, HECC_CANES, HECC_CANES_ACKE);
--			cf->data[2] |= CAN_ERR_PROT_LOC_ACK |
-+			cf->data[3] |= CAN_ERR_PROT_LOC_ACK |
- 					CAN_ERR_PROT_LOC_ACK_DEL;
- 		}
- 	}
-diff --git a/drivers/net/wireless/ath/ath9k/beacon.c b/drivers/net/wireless/ath/ath9k/beacon.c
-index d4d8cec..b109c47 100644
---- a/drivers/net/wireless/ath/ath9k/beacon.c
-+++ b/drivers/net/wireless/ath/ath9k/beacon.c
-@@ -159,6 +159,7 @@ static struct ath_buf *ath_beacon_generate(struct ieee80211_hw *hw,
- 				 skb->len, DMA_TO_DEVICE);
- 		dev_kfree_skb_any(skb);
- 		bf->bf_buf_addr = 0;
-+		bf->bf_mpdu = NULL;
- 	}
- 
- 	/* Get a new beacon from mac80211 */
-diff --git a/drivers/net/wireless/ath/ath9k/htc_hst.c b/drivers/net/wireless/ath/ath9k/htc_hst.c
-index 1b90ed8..4f7843a 100644
---- a/drivers/net/wireless/ath/ath9k/htc_hst.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_hst.c
-@@ -342,6 +342,8 @@ void ath9k_htc_txcompletion_cb(struct htc_target *htc_handle,
- 			endpoint->ep_callbacks.tx(endpoint->ep_callbacks.priv,
- 						  skb, htc_hdr->endpoint_id,
- 						  txok);
-+		} else {
-+			kfree_skb(skb);
- 		}
- 	}
- 
-diff --git a/fs/cifs/cifs_dfs_ref.c b/fs/cifs/cifs_dfs_ref.c
-index 8d8f28c..51feb1a 100644
---- a/fs/cifs/cifs_dfs_ref.c
-+++ b/fs/cifs/cifs_dfs_ref.c
-@@ -225,6 +225,8 @@ compose_mount_options_out:
- compose_mount_options_err:
- 	kfree(mountdata);
- 	mountdata = ERR_PTR(rc);
-+	kfree(*devname);
-+	*devname = NULL;
- 	goto compose_mount_options_out;
- }
- 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index fb67dfa..38d9e03 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -31,6 +31,7 @@ struct call_function_data {
- 	struct call_single_data	csd;
- 	atomic_t		refs;
- 	cpumask_var_t		cpumask;
-+	cpumask_var_t		cpumask_ipi;
- };
- 
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
-@@ -54,6 +55,9 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
- 				cpu_to_node(cpu)))
- 			return notifier_from_errno(-ENOMEM);
-+		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
-+				cpu_to_node(cpu)))
-+			return notifier_from_errno(-ENOMEM);
- 		break;
- 
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -63,6 +67,7 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		free_cpumask_var(cfd->cpumask);
-+		free_cpumask_var(cfd->cpumask_ipi);
- 		break;
- #endif
- 	};
-@@ -524,6 +529,12 @@ void smp_call_function_many(const struct cpumask *mask,
- 		return;
- 	}
- 
-+	/*
-+	 * After we put an entry into the list, data->cpumask
-+	 * may be cleared again when another CPU sends another IPI for
-+	 * a SMP function call, so data->cpumask will be zero.
-+	 */
-+	cpumask_copy(data->cpumask_ipi, data->cpumask);
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
- 	 * Place entry at the _HEAD_ of the list, so that any cpu still
-@@ -547,7 +558,7 @@ void smp_call_function_many(const struct cpumask *mask,
- 	smp_mb();
- 
- 	/* Send a message to all CPUs in the map */
--	arch_send_call_function_ipi_mask(data->cpumask);
-+	arch_send_call_function_ipi_mask(data->cpumask_ipi);
- 
- 	/* Optionally wait for the CPUs to complete */
- 	if (wait)
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 01aa7e7..47a3080 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -1823,7 +1823,7 @@ static inline void hci_cmd_complete_evt(struct hci_dev *hdev, struct sk_buff *sk
- 	if (ev->opcode != HCI_OP_NOP)
- 		del_timer(&hdev->cmd_timer);
- 
--	if (ev->ncmd) {
-+	if (ev->ncmd && !test_bit(HCI_RESET, &hdev->flags)) {
- 		atomic_set(&hdev->cmd_cnt, 1);
- 		if (!skb_queue_empty(&hdev->cmd_q))
- 			tasklet_schedule(&hdev->cmd_task);
-diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-index 43b4c2d..6ce85b6 100644
---- a/net/bluetooth/hidp/core.c
-+++ b/net/bluetooth/hidp/core.c
-@@ -934,7 +934,7 @@ static int hidp_setup_hid(struct hidp_session *session,
- 	hid->version = req->version;
- 	hid->country = req->country;
- 
--	strncpy(hid->name, req->name, 128);
-+	strncpy(hid->name, req->name, sizeof(req->name) - 1);
- 	strncpy(hid->phys, batostr(&bt_sk(session->ctrl_sock->sk)->src), 64);
- 	strncpy(hid->uniq, batostr(&bt_sk(session->ctrl_sock->sk)->dst), 64);
- 
-diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
-index 1d369e2..4d68f90 100644
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -1238,16 +1238,23 @@ static int parse_audio_feature_unit(struct mixer_build *state, int unitid, void
- 		}
- 		channels = (hdr->bLength - 7) / csize - 1;
- 		bmaControls = hdr->bmaControls;
-+		if (hdr->bLength < 7 + csize) {
-+			snd_printk(KERN_ERR "usbaudio: unit %u: "
-+				   "invalid UAC_FEATURE_UNIT descriptor\n",
-+				   unitid);
-+			return -EINVAL;
-+		}
- 	} else {
- 		struct uac2_feature_unit_descriptor *ftr = _ftr;
- 		csize = 4;
- 		channels = (hdr->bLength - 6) / 4 - 1;
- 		bmaControls = ftr->bmaControls;
--	}
--
--	if (hdr->bLength < 7 || !csize || hdr->bLength < 7 + csize) {
--		snd_printk(KERN_ERR "usbaudio: unit %u: invalid UAC_FEATURE_UNIT descriptor\n", unitid);
--		return -EINVAL;
-+		if (hdr->bLength < 6 + csize) {
-+			snd_printk(KERN_ERR "usbaudio: unit %u: "
-+				   "invalid UAC_FEATURE_UNIT descriptor\n",
-+				   unitid);
-+			return -EINVAL;
-+		}
- 	}
- 
- 	/* parse the source unit */
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.4.29 kernel.
+
+All users of the 3.4 kernel series must upgrade.
+
+The updated 3.4.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                              |    2 -
+ arch/arm/mach-at91/setup.c                            |    2 +
+ arch/arm/mm/dma-mapping.c                             |   18 +++++----
+ arch/arm/vfp/entry.S                                  |    6 +--
+ arch/arm/vfp/vfphw.S                                  |    4 +-
+ arch/x86/kernel/msr.c                                 |    3 +
+ arch/x86/kernel/setup.c                               |    2 +
+ arch/x86/platform/efi/efi.c                           |    2 -
+ arch/x86/platform/efi/efi_64.c                        |   22 ++++++++---
+ drivers/edac/edac_pci_sysfs.c                         |    2 -
+ drivers/gpu/drm/radeon/radeon_cursor.c                |    3 +
+ drivers/gpu/drm/radeon/radeon_display.c               |    2 -
+ drivers/iommu/amd_iommu_init.c                        |   34 +++++++++++++=
+++++
+ drivers/iommu/intel-iommu.c                           |   21 +++++++---
+ drivers/net/can/c_can/c_can.c                         |    4 +-
+ drivers/net/can/pch_can.c                             |    2 -
+ drivers/net/can/ti_hecc.c                             |    4 +-
+ drivers/net/wireless/ath/ath9k/beacon.c               |    1=20
+ drivers/net/wireless/ath/ath9k/htc_hst.c              |    2 +
+ drivers/net/wireless/ath/ath9k/recv.c                 |   10 +++--
+ drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c |    7 ++-
+ drivers/net/wireless/iwlegacy/common.c                |   35 +++++++------=
+-----
+ drivers/net/wireless/mwifiex/pcie.c                   |    2 -
+ drivers/target/target_core_fabric_configfs.c          |   11 ++---
+ fs/cifs/cifs_dfs_ref.c                                |    2 +
+ fs/nfs/namespace.c                                    |   20 ++++++++++
+ fs/xfs/xfs_aops.c                                     |    2 -
+ kernel/smp.c                                          |   13 ++++++
+ net/bluetooth/hci_event.c                             |    2 -
+ net/bluetooth/hidp/core.c                             |    2 -
+ net/mac80211/cfg.c                                    |   12 +++++-
+ net/mac80211/ieee80211_i.h                            |    6 +--
+ net/mac80211/offchannel.c                             |   17 +++-----
+ net/mac80211/scan.c                                   |   15 ++-----
+ net/mac80211/work.c                                   |    4 +-
+ sound/pci/hda/patch_realtek.c                         |    1=20
+ sound/soc/codecs/wm2200.c                             |    3 -
+ sound/usb/mixer.c                                     |   17 ++++++--
+ 38 files changed, 208 insertions(+), 109 deletions(-)
+
+Alan Cox (1):
+      x86/msr: Add capabilities check
+
+Anderson Lizardo (1):
+      Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
+
+Avinash Patil (1):
+      mwifiex: fix typo in PCIe adapter NULL check
+
+Chris Rattray (1):
+      ASoC: wm2200: correct mixer values and text
+
+Clemens Ladisch (1):
+      ALSA: usb-audio: fix invalid length check for RME and other UAC 2 dev=
+ices
+
+Cong Ding (1):
+      fs/cifs/cifs_dfs_ref.c: fix potential memory leakage
+
+Dan Carpenter (1):
+      EDAC: Test correct variable in ->store function
+
+Daniel Vetter (1):
+      iommu/intel: disable DMAR for g4x integrated gfx
+
+Felix Fietkau (2):
+      ath9k: do not link receive buffers during flush
+      ath9k: fix double-free bug on beacon generate failure
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.29
+
+H. Peter Anvin (1):
+      x86/Sandy Bridge: Sandy Bridge workaround depends on CONFIG_PCI
+
+Jan Kara (1):
+      xfs: Fix possible use-after-free with AIO
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: rm9200: remake the BGA as default version
+
+Jerome Glisse (1):
+      drm/radeon: fix cursor corruption on DCE6 and newer
+
+Johannes Berg (1):
+      mac80211: fix FT roaming
+
+Matt Fleming (1):
+      x86, efi: Set runtime_version to the EFI spec revision
+
+Nathan Zimmer (1):
+      efi, x86: Pass a proper identity mapping in efi_call_phys_prelog
+
+Nicholas Bellinger (1):
+      target: fix regression with dev_link_magic in target_fabric_port_link
+
+Olivier Sobrie (3):
+      can: c_can: fix invalid error codes
+      can: ti_hecc: fix invalid error codes
+      can: pch_can: fix invalid error codes
+
+Piotr Haber (1):
+      brcmsmac: increase timer reference count for new timers only
+
+Russell King (1):
+      ARM: DMA: Fix struct page iterator in dma_cache_maint() to work with =
+sparsemem
+
+Stanislaw Gruszka (2):
+      iwlegacy: fix IBSS cleanup
+      mac80211: synchronize scan off/on-channel and PS states
+
+Stephen Boyd (1):
+      ARM: 7627/1: Predicate preempt logic on PREEMP_COUNT not PREEMPT alone
+
+Sujith Manoharan (1):
+      ath9k_htc: Fix memory leak
+
+Suravee Suthikulpanit (1):
+      IOMMU, AMD Family15h Model10-1Fh erratum 746 Workaround
+
+Szymon Janc (1):
+      Bluetooth: Fix sending HCI commands after reset
+
+Takashi Iwai (1):
+      ALSA: hda - Add a fixup for Packard-Bell desktop with ALC880
+
+Trond Myklebust (1):
+      NFS: Don't silently fail setattr() requests on mountpoints
+
+Wang YanQing (1):
+      smp: Fix SMP function call empty cpu mask race
+
+xueminsu (1):
+      radeon_display: Use pointer return error codes
+
+
+--xHFwDpU9dbj6ez1V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRDzp0AAoJEDjbvchgkmk+9d4QAJUIcT557fkrQSSxk9WUfcq3
+8p8YqfWX0n5sAqLGrBP5E+XaWMtgSpr60dj0NTj74ljaq5qPzChb0OOCJC1B1ViY
+RjAiWvX036mFXA3zQntamObWCqte4buFpVkexmiEJ53Th70j7vVLqe2eEOiRci1M
+RppPW5eSNBbDBk1dyxww/+8aqdPSyUBaoTIX7rGK0ounNUHptozShWeNWLaprLWp
+POGF/xDwlV6yOMhOacZjBaF+46tg4zS0MlAh/BAVDWs0XrSpJRQ7r6AJft9r/tOr
+X4HrNqM6+excT80oQlAhj2BANuM0qGuXqFOWfRq7rsa9iHzMx8PDBZyETObJ+yKv
+kQ3qAp1I3zewQmq4e6r2vf5wKzrTGhEYmVvlsCPJqXdZBd4Sy08q9/QfeMzQyf4h
+FJZ3/h1OCqfnOMsmk9NflnboVJlgPhiSJHTOxwJNrJnjhvNggaSuUAYlvyqESuIM
+WXFv4k96XSAFL0uvcSvp1GXxcMGmueGnbe4mvvKp8onfq1OQzWdjZHtYBq9yHRFQ
+TTVxexrveFRJfIoVtdUgPLhkJ5EaAxqxTAHieoVjjOIBF8HTvWOQz39/jvpgLx3Z
+uJx7EVwItNfBq4edQ7yOdIqb7ob0tHJ7rsYlNTUjCY//sLnx0UBlGFKIm7XFo1s/
+fuD6EsRDD+C6RYD0JBnf
+=imr3
+-----END PGP SIGNATURE-----
+
+--xHFwDpU9dbj6ez1V--
