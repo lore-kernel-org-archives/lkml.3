@@ -1,114 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab3BDIDr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 03:03:47 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:42953 "EHLO mx2.parallels.com"
+	id S1753914Ab3BDIE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 03:04:26 -0500
+Received: from mga03.intel.com ([143.182.124.21]:31317 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3BDIDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 03:03:46 -0500
-Message-ID: <510F6B76.3080605@parallels.com>
-Date: Mon, 4 Feb 2013 12:04:06 +0400
-From: Lord Glauber Costa of Sealand <glommer@parallels.com>
+	id S1751825Ab3BDIEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 03:04:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,597,1355126400"; 
+   d="scan'208";a="252217192"
+Message-ID: <510F6BA9.1050701@intel.com>
+Date: Mon, 04 Feb 2013 16:04:57 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH] memcg: stop warning on memcg_propagate_kmem
-References: <alpine.LNX.2.00.1302032023280.4611@eggly.anvils> <20130204075732.GA2556@dhcp22.suse.cz>
-In-Reply-To: <20130204075732.GA2556@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Derek Basehore <dbasehore@chromium.org>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
+References: <Pine.LNX.4.44L0.1302021003390.25931-100000@netrider.rowland.org> <510E025A.9000103@intel.com>
+In-Reply-To: <510E025A.9000103@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2013 11:57 AM, Michal Hocko wrote:
-> On Sun 03-02-13 20:29:01, Hugh Dickins wrote:
->> Whilst I run the risk of a flogging for disloyalty to the Lord of Sealand,
->> I do have CONFIG_MEMCG=y CONFIG_MEMCG_KMEM not set, and grow tired of the
->> "mm/memcontrol.c:4972:12: warning: `memcg_propagate_kmem' defined but not
->> used [-Wunused-function]" seen in 3.8-rc: move the #ifdef outwards.
->>
->> Signed-off-by: Hugh Dickins <hughd@google.com>
+On 02/03/2013 02:23 PM, Aaron Lu wrote:
+> No, the modification is actually for disk.
+> With v8 of block layer runtime PM, it is no longer the case runtime
+> suspend is the same as system suspend for hard disk that utilize block
+> layer runtime PM: we quiesce the device and run its suspend callback for
+> the device during system suspend but we didn't touch the queue's
+> rpm_status as we do in runtime_suspend callback. So I did some
+> modifications to scsi_pm.c to make runtime suspend and system suspend do
+> exactly the same thing for disk type scsi device, no matter if they are
+> using block layer runtime PM or not.
 > 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Probably I had better post code here, this is a replacement for the
+> patch 4 of v8 block layer runtime PM patchset(I omit the sd part, since
+> it is irrevelant), please kindly review, see if you like it :-)
 > 
-> Hmm, if you are not too tired then moving the function downwards to
-> where it is called (memcg_init_kmem) will reduce the number of ifdefs.
-> But this can wait for a bigger clean up which is getting due:
-> git grep "def.*CONFIG_MEMCG_KMEM" mm/memcontrol.c | wc -l
-> 12
-> 
+> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> index 8f6b12c..d9956b6 100644
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -16,17 +16,44 @@
+>  
+>  #include "scsi_priv.h"
+>  
+> +static int sdev_blk_suspend(struct scsi_device *sdev)
+> +{
+> +	int err;
+> +
+> +	err = blk_pre_runtime_suspend(sdev->request_queue);
+> +	if (err)
+> +		return err;
+> +	err = pm_generic_runtime_suspend(&sdev->sdev_gendev);
+> +	blk_post_runtime_suspend(sdev->request_queue, err);
+> +
+> +	return err;
+> +}
+> +
+>  static int scsi_dev_type_suspend(struct device *dev, int (*cb)(struct device *))
+>  {
+> +	struct scsi_device *sdev = to_scsi_device(dev);
+>  	int err;
+>  
+> -	err = scsi_device_quiesce(to_scsi_device(dev));
+> +	err = scsi_device_quiesce(sdev);
+>  	if (err == 0) {
+> -		if (cb) {
+> +		if (sdev->request_queue->dev)
+> +			err = sdev_blk_suspend(sdev);
+> +		else if (cb)
+>  			err = cb(dev);
+> -			if (err)
+> -				scsi_device_resume(to_scsi_device(dev));
+> -		}
+> +
+> +		if (err)
+> +			scsi_device_resume(sdev);
+>  	}
+>  	dev_dbg(dev, "scsi suspend: %d\n", err);
+>  	return err;
 
-The problem is that I was usually keeping things in clearly separated
-blocks, like this :
+I just realized that this will not work, as we can't request that there
+is no request pending in the device's request queue when doing system
+suspend. And if we can't request this, we will not be able to runtime
+resume the device due to nr_pending may not be zero when new request
+comes after system resumed, though this can be solved if we modify the
+runtime resume policy.
 
-#if defined(CONFIG_MEMCG_KMEM) && defined(CONFIG_INET)
-        struct tcp_memcontrol tcp_mem;
-#endif
-#if defined(CONFIG_MEMCG_KMEM)
-        /* analogous to slab_common's slab_caches list. per-memcg */
-        struct list_head memcg_slab_caches;
-        /* Not a spinlock, we can take a lot of time walking the list */
-        struct mutex slab_caches_mutex;
-        /* Index in the kmem_cache->memcg_params->memcg_caches array */
-        int kmemcg_id;
-#endif
+During my test, I'm not doing any IO when suspend, so the nr_pending is
+zero and it worked...
 
-If it would be preferable to everybody, this could be easily rewritten as:
+Please ignore my suggestion for this thread, sorry for the noise.
 
-#if defined(CONFIG_MEMCG_KMEM)
-#if defined(CONFIG_INET)
-        struct tcp_memcontrol tcp_mem;
-#endif
-        /* analogous to slab_common's slab_caches list. per-memcg */
-        struct list_head memcg_slab_caches;
-        /* Not a spinlock, we can take a lot of time walking the list */
-        struct mutex slab_caches_mutex;
-        /* Index in the kmem_cache->memcg_params->memcg_caches array */
-        int kmemcg_id;
-#endif
-
-This would allow us to collapse some blocks a bit down as well.
-
-It doesn't bother me *that* much, though.
-
-> Thanks
->> ---
->>
->>  mm/memcontrol.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> --- 3.8-rc6/mm/memcontrol.c	2012-12-22 09:43:27.628015582 -0800
->> +++ linux/mm/memcontrol.c	2013-02-02 16:56:06.188325771 -0800
->> @@ -4969,6 +4969,7 @@ out:
->>  	return ret;
->>  }
->>  
->> +#ifdef CONFIG_MEMCG_KMEM
->>  static int memcg_propagate_kmem(struct mem_cgroup *memcg)
->>  {
->>  	int ret = 0;
->> @@ -4977,7 +4978,6 @@ static int memcg_propagate_kmem(struct m
->>  		goto out;
->>  
->>  	memcg->kmem_account_flags = parent->kmem_account_flags;
->> -#ifdef CONFIG_MEMCG_KMEM
->>  	/*
->>  	 * When that happen, we need to disable the static branch only on those
->>  	 * memcgs that enabled it. To achieve this, we would be forced to
->> @@ -5003,10 +5003,10 @@ static int memcg_propagate_kmem(struct m
->>  	mutex_lock(&set_limit_mutex);
->>  	ret = memcg_update_cache_sizes(memcg);
->>  	mutex_unlock(&set_limit_mutex);
->> -#endif
->>  out:
->>  	return ret;
->>  }
->> +#endif /* CONFIG_MEMCG_KMEM */
->>  
->>  /*
->>   * The user of this function is...
-> 
+-Aaron
 
