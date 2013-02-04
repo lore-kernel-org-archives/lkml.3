@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab3BDQbs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:31:48 -0500
-Received: from [1.9.68.9] ([1.9.68.9]:34008 "HELO mysmtp1.stec-inc.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
-	id S1754348Ab3BDQbq convert rfc822-to-8bit (ORCPT
+	id S1756496Ab3BDQcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:32:54 -0500
+Received: from mga05.intel.com ([192.55.52.89]:53765 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756391Ab3BDQcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:31:46 -0500
-X-ASG-Debug-ID: 1359995502-053ea90dcf20f280001-xx1T2L
-X-Barracuda-Envelope-From: akale@stec-inc.com
-X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
-From: Amit Kale <akale@stec-inc.com>
-X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
-X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
-To: "thornber@redhat.com" <thornber@redhat.com>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>
-CC: linux-bcache <linux-bcache@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kent Overstreet <kent.overstreet@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jason Warr <jason@warr.net>
-Date: Tue, 5 Feb 2013 00:30:03 +0800
-Subject: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
- caching software for Linux kernel
-Thread-Topic: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
- caching software for Linux kernel
-X-ASG-Orig-Subj: RE: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
- caching software for Linux kernel
-Thread-Index: Ac4C5ZbzopoeJTLMS56bp7nneHE+NgADyu3A
-Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6542@MYMBX.MY.STEC-INC.AD>
-References: <20130202004459.GA4760@blackbox.djwong.org>
- <20130204144016.GA2522@raspberrypi>
-In-Reply-To: <20130204144016.GA2522@raspberrypi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
-X-Barracuda-Start-Time: 1359995502
-X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.121798
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
+	Mon, 4 Feb 2013 11:32:52 -0500
+Message-ID: <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] ia64/mm: fix a bad_page bug when crash kernel booting
+From: Matt Fleming <matt.fleming@intel.com>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, fenghua.yu@intel.com,
+        Liujiang <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Mon, 04 Feb 2013 16:32:45 +0000
+In-Reply-To: <51074786.5030007@huawei.com>
+References: <51074786.5030007@huawei.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: thornber@redhat.com [mailto:thornber@redhat.com]
-> Sent: Monday, February 04, 2013 6:40 AM
-> To: Darrick J. Wong
-> Cc: Amit Kale; linux-bcache; device-mapper development; Kent
-> Overstreet; Mike Snitzer; LKML; Jason Warr
-> Subject: Re: [RFC] [DONOTAPPLY] [PATCH] enhanceio: STEC EnhanceIO SSD
-> caching software for Linux kernel
+On Tue, 2013-01-29 at 11:52 +0800, Xishi Qiu wrote:
+> On ia64 platform, I set "crashkernel=1024M-:600M", and dmesg shows 128M-728M
+> memory is reserved for crash kernel. Then "echo c > /proc/sysrq-trigger" to
+> test kdump.
 > 
-> On Fri, Feb 01, 2013 at 04:44:59PM -0800, Darrick J. Wong wrote:
-> > I will start reviewing the code as soon as this patch posts.  Be
-> > warned that I haven't even compile tested this yet. :)
+> When crash kernel booting, efi_init() will aligns the memory address in
+> IA64_GRANULE_SIZE(16M), so 720M-728M memory will be dropped, It means
+> crash kernel only manage 128M-720M memory.
 > 
-> Has the code been updated since I looked at it a couple of weeks ago?
-> For example addressing all the 'sparse' warnings?
+> But initrd start and end are fixed in boot loader, it is before efi_init(),
+> so initrd size maybe overflow when free_initrd_mem().
 
-Yes. Several warning were fixed and one kernel bug was fixed. It's better in terms of sparse warning, but not there yet.
+[...]
 
--Amit
-
+> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+> index b755ea9..cfdb1eb 100644
+> --- a/arch/ia64/mm/init.c
+> +++ b/arch/ia64/mm/init.c
+> @@ -207,6 +207,17 @@ free_initrd_mem (unsigned long start, unsigned long end)
+>  	start = PAGE_ALIGN(start);
+>  	end = end & PAGE_MASK;
 > 
-> If you've not compiled or reviewed this code, what do you mean by the
-> 'signed-off by' tag?
-> 
-> - Joe
+> +	/*
+> +	 * Initrd size is fixed in boot loader, but kernel parameter max_addr
+> +	 * which aligns in granules is fixed after boot loader, so initrd size
+> +	 * maybe overflow.
+> +	 */
+> +	if (max_addr != ~0UL) {
+> +		end = GRANULEROUNDDOWN(end);
+> +		if (start > end)
+> +			start = end;
+> +	}
+> +
+>  	if (start < end)
+>  		printk(KERN_INFO "Freeing initrd memory: %ldkB freed\n", (end - start) >> 10);
 
-PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+I don't think this is the correct fix.
+
+Now, my ia64-fu is weak, but could it be that there's actually a bug in
+efi_init() and that the following patch would be the best way to fix
+this?
+
+---
+
+diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
+index f034563..8d579f1 100644
+--- a/arch/ia64/kernel/efi.c
++++ b/arch/ia64/kernel/efi.c
+@@ -482,7 +482,7 @@ efi_init (void)
+ 		if (memcmp(cp, "mem=", 4) == 0) {
+ 			mem_limit = memparse(cp + 4, &cp);
+ 		} else if (memcmp(cp, "max_addr=", 9) == 0) {
+-			max_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
++			max_addr = GRANULEROUNDUP(memparse(cp + 9, &cp));
+ 		} else if (memcmp(cp, "min_addr=", 9) == 0) {
+ 			min_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
+ 		} else {
 
 
-
-This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
