@@ -1,129 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab3BDEcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 23:32:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50520 "EHLO mail.kernel.org"
+	id S1753994Ab3BDEcT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 23:32:19 -0500
+Received: from mga02.intel.com ([134.134.136.20]:8127 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752355Ab3BDEcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 23:32:07 -0500
-Date: Sun, 3 Feb 2013 20:34:17 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.0.62
-Message-ID: <20130204043417.GA14790@kroah.com>
+	id S1752355Ab3BDEcP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 23:32:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,596,1355126400"; 
+   d="scan'208";a="257199561"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>, "Li, Fei" <fei.li@intel.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: RE: [PATCH V4] suspend: enable freeze timeout configuration through
+ sys
+Thread-Topic: [PATCH V4] suspend: enable freeze timeout configuration
+ through sys
+Thread-Index: AQHOAoX+KKFbUnxzdEm6tz8PxYnYSZhpGhuA
+Date: Mon, 4 Feb 2013 04:32:11 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A222AEB@SHSMSX101.ccr.corp.intel.com>
+References: <BEC9F67575FA1E429CA7CF5AE9BE36343F154E@SHSMSX102.ccr.corp.intel.com>
+ <Pine.LNX.4.44L0.1302032213410.28934-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1302032213410.28934-100000@netrider.rowland.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-I'm announcing the release of the 3.0.62 kernel.
+> -----Original Message-----
+> From: Alan Stern [mailto:stern@rowland.harvard.edu]
+> Sent: Monday, February 04, 2013 11:16 AM
+> To: Li, Fei
+> Cc: Rafael J. Wysocki; akpm@linux-foundation.org;
+> linux-kernel@vger.kernel.org; linux-pm@vger.kernel.org; Liu, Chuansheng
+> Subject: RE: [PATCH V4] suspend: enable freeze timeout configuration through
+> sys
+> 
+> On Mon, 4 Feb 2013, Li, Fei wrote:
+> 
+> > > -> the situation described above shouldn't happen and if it does, then there
+> > > is a bug that needs to be fixed.
+> >
+> > Yes, we agree with that it's a bug that needs to be fixed, and we are already
+> done
+> > for some cases.
+> > During the process, we realize that tuning the timeout value to smaller value
+> will help
+> > to expose freezing failure for some cases.
+> 
+> Besides, the underlying bug is well known (fuse filesystems hanging
+> because the fuse daemon gets frozen before the process doing file I/O,
+> or something like that) and so far nobody has a good idea of how to
+> fix it.
+Indeed, we have some well-known deadlock issues existed there.
+And once there is deadlock case, this patch is helpful to the user experience,
+because 20s is pointless for those deadlock case.
 
-All users of the 3.0 kernel series must upgrade.
+Also even adjusting the 20s to 2s, we still can get to know the process stack who rejecting the freezing,
+so this freezing configuration is really helpful to avoid 20s waiting for that deadlock case.
+Alan and Rafael, could you consider this patch? Thanks.
+> 
+> Alan Stern
 
-The updated 3.0.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                 |    2 +-
- arch/arm/mm/dma-mapping.c                |   18 ++++++++++--------
- arch/x86/kernel/msr.c                    |    3 +++
- arch/x86/kernel/setup.c                  |    2 ++
- arch/x86/platform/efi/efi_64.c           |   22 +++++++++++++++++-----
- drivers/edac/edac_pci_sysfs.c            |    2 +-
- drivers/net/can/c_can/c_can.c            |    4 ++--
- drivers/net/can/pch_can.c                |    2 +-
- drivers/net/can/ti_hecc.c                |    4 ++--
- drivers/net/wireless/ath/ath9k/beacon.c  |    1 +
- drivers/net/wireless/ath/ath9k/htc_hst.c |    2 ++
- fs/cifs/cifs_dfs_ref.c                   |    2 ++
- kernel/smp.c                             |   13 ++++++++++++-
- net/bluetooth/hci_event.c                |    2 +-
- net/bluetooth/hidp/core.c                |    2 +-
- sound/usb/mixer.c                        |   17 ++++++++++++-----
- 16 files changed, 70 insertions(+), 28 deletions(-)
-
-Alan Cox (1):
-      x86/msr: Add capabilities check
-
-Anderson Lizardo (1):
-      Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
-
-Clemens Ladisch (1):
-      ALSA: usb-audio: fix invalid length check for RME and other UAC 2 devices
-
-Cong Ding (1):
-      fs/cifs/cifs_dfs_ref.c: fix potential memory leakage
-
-Dan Carpenter (1):
-      EDAC: Test correct variable in ->store function
-
-Felix Fietkau (1):
-      ath9k: fix double-free bug on beacon generate failure
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.62
-
-H. Peter Anvin (1):
-      x86/Sandy Bridge: Sandy Bridge workaround depends on CONFIG_PCI
-
-Nathan Zimmer (1):
-      efi, x86: Pass a proper identity mapping in efi_call_phys_prelog
-
-Olivier Sobrie (3):
-      can: c_can: fix invalid error codes
-      can: ti_hecc: fix invalid error codes
-      can: pch_can: fix invalid error codes
-
-Russell King (1):
-      ARM: DMA: Fix struct page iterator in dma_cache_maint() to work with sparsemem
-
-Sujith Manoharan (1):
-      ath9k_htc: Fix memory leak
-
-Szymon Janc (1):
-      Bluetooth: Fix sending HCI commands after reset
-
-Wang YanQing (1):
-      smp: Fix SMP function call empty cpu mask race
-
-
---mP3DRpeJDSE+ciuQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRDzpJAAoJEDjbvchgkmk++XkP/RwLwjYpwR87co23ZGkSwAzk
-ZVb9BakMPD9QWFbTEBDIEejifgImJkKOmulc51BwFHaD9Zjlb0+c8lTohDFRVyDq
-PK0t4y8cV0N0SrDrzDQW28kJMfrbmqsosXJYYqFAkRicJn7lEM4cSPZT+wUu3OCX
-gEOyBTkAjMAQfs9O4Ay/sfcY148+RrLxls4LPtVPZxKB31w6WDHG/a3Bi3rvseBy
-4rY8lP7FUJx1/mKyMIwtEj6AXj4Hb61iIzb/A38bLwaEGqEQtkN73dMsWaelosBo
-SSircT0TiJH7neSRMZyY0r3ske5e1w4iHrwvXsIIGhDvVlW7GxS4rcdSjdDqaB2L
-B0mvYzTOd5h5KYbs+NbamVoZddMA31Ige89rTvp2EkIU9YBaFnk7tTkqptI76RAp
-DHHGfg00hlMpwYqG17ZFCfrB5IrZdYAuxowUav/6QxbF0mlOzR/qWaBQC4BRVv63
-MtyfMN4ik2NWwSMLhfCJua6KyYt54UyHzv1vuTaZbLEwiJhLFqYFVebkeTHohknX
-iWqsWxYvUGRS4ha49TQcp92foxJvY1x29HLoAe7qZz2FDH2tnqJXolZAvL/rstAQ
-RYCLmDcHoaa2XmsbsD1jgvvm1R0EXFVDunhLlQMl+2TrYvKMm0iY962fQ49nqUJ4
-SmPQQdfWxBUqPea5Um+9
-=HkXy
------END PGP SIGNATURE-----
-
---mP3DRpeJDSE+ciuQ--
