@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab3BDPJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 10:09:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55251 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755854Ab3BDPJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 10:09:34 -0500
-Date: Mon, 4 Feb 2013 10:09:30 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v5 9/9] devcg: propagate local changes down the hierarchy
-Message-ID: <20130204150930.GR17632@redhat.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
- <20130201190958.GP17632@redhat.com>
- <20130202162052.GB11284@mail.hallyn.com>
+	id S1756012Ab3BDPQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 10:16:00 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33074 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755925Ab3BDPP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 10:15:59 -0500
+Message-ID: <510FD073.1060307@linux.vnet.ibm.com>
+Date: Mon, 04 Feb 2013 09:14:59 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130202162052.GB11284@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ric Mason <ric.masonn@gmail.com>
+CC: Konrad Rzeszutek Wilk <konrad@kernel.org>, dan.magenheimer@oracle.com,
+        konrad.wilk@oracle.com, gregkh@linuxfoundation.org,
+        akpm@linux-foundation.org, ngupta@vflare.org, rcj@linux.vnet.ibm.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH v2] Make frontswap+cleancache and its friend be modularized.
+References: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com> <1359881520.1328.14.camel@kernel.cn.ibm.com>
+In-Reply-To: <1359881520.1328.14.camel@kernel.cn.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020415-7606-0000-0000-00000805A204
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 02, 2013 at 04:20:52PM +0000, Serge E. Hallyn wrote:
-> Quoting Aristeu Rozanski (aris@redhat.com):
-> > +static int propagate_exception(struct dev_cgroup *devcg_root)
-> > +{
-> > +	struct cgroup *root = devcg_root->css.cgroup;
-> > +	struct dev_cgroup *devcg, *parent, *tmp;
-> > +	int rc = 0;
-> > +	LIST_HEAD(pending);
-> > +
-> > +	get_online_devcg(root, &pending);
-> > +
-> > +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-> > +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-> > +
-> > +		dev_exception_clean(&devcg->exceptions);
-> > +		if (devcg->behavior == parent->behavior) {
-> > +			rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
+On 02/03/2013 02:52 AM, Ric Mason wrote:
+> Hi Konrad,
+> On Fri, 2013-02-01 at 15:22 -0500, Konrad Rzeszutek Wilk wrote:
 > 
-> Let's say parent A and child B both have DEFAULT_DENY, with a set of let's
-> say 5 whitelist exceptions.  Now the parent adds two more whitelist
-> exceptions.  As you say, we don't propagate those.
-> 
-> Now the parent removes one of it's whitelist exceptions.
-> devcgroup_update_access() calls dev_exception_rm() followed by
-> propagate_exception(), which comes here and copies the parent's
-> whitelist - including the two new whitelist rules - to the
-> child.
+> I have already enable frontswap,cleancache,zcache,
+>  FRONTSWAP [=y]  
+>  CLEANCACHE [=y]
+>  ZCACHE [=y]
+> But all of knode under /sys/kernel/debug/frontswap and cleancache still
+> zero, my swap device is enable, where I miss?
 
-ugh, I see your point. This gonna be trickier to fix.
+Did you pass "zcache" in the kernel boot parameters?
 
--- 
-Aristeu
+Seth
 
