@@ -1,72 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3BDSfq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:35:46 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49625 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753975Ab3BDSfo (ORCPT
+	id S1755219Ab3BDSgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:36:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22600 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab3BDSgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:35:44 -0500
-Date: Mon, 4 Feb 2013 18:35:42 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: alsa-devel@alsa-project.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com,
-        lgirdwood@gmail.com, perex@perex.cz, nsekhar@ti.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, rob@landley.net, grant.likely@secretlab.ca
-Subject: Re: [PATCH v4 1/3] ASoC: tlv320aic3x: Convert mic bias to a supply
- widget
-Message-ID: <20130204183542.GS4720@opensource.wolfsonmicro.com>
-References: <1359636786-7056-1-git-send-email-gururaja.hebbar@ti.com>
- <1359636786-7056-2-git-send-email-gururaja.hebbar@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QHhm1I6mwQR20oIa"
-Content-Disposition: inline
-In-Reply-To: <1359636786-7056-2-git-send-email-gururaja.hebbar@ti.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Feb 2013 13:36:15 -0500
+X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=4A6_XDq7Hi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=04ct_mqUnDIA:10 a=VnNF1IyMAAAA:8 a=HcK8BPdSa1V2uxgnAtUA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360002973.5642.66.camel@gandalf.local.home>
+Subject: Re: [PATCH] rcu: Have rcu torture test select trace_clock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 04 Feb 2013 13:36:13 -0500
+In-Reply-To: <20130204165932.GW2632@linux.vnet.ibm.com>
+References: <1359993141.5642.61.camel@gandalf.local.home>
+	 <20130204165932.GW2632@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-02-04 at 08:59 -0800, Paul E. McKenney wrote:
+> On Mon, Feb 04, 2013 at 10:52:21AM -0500, Steven Rostedt wrote:
+> > The rcu torture test uses trace_clock, and requires that it be built
+> > into the kernel. If it is not, then we get the following build error:
+> > 
+> > ERROR: "trace_clock_local" [kernel/rcutorture.ko] undefined!
+> > 
+> > Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> This would work, but would unnecessarily force trace_clock_local()
+> to be defined when RCU tracing is disabled.  So, would the alternative
+> patch I posted work for you?
+> 
 
---QHhm1I6mwQR20oIa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Unfortunately the other patch wasn't Cc'd to LKML (I hate private
+emails).
 
-On Thu, Jan 31, 2013 at 06:23:04PM +0530, Hebbar Gururaja wrote:
-> Convert MicBias widgets to supply widget.
->=20
-> On tlv320aic3x, Mic bias power on/off shares the same register bits
-> with output mic bias voltage.  So, when power on mic bias, we need
-> reclaim it to voltage value.
+I would suggest the following to be complete, why keep that extra divide
+around?
 
-Applied, thanks.
+-- Steve
 
---QHhm1I6mwQR20oIa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I started with your patch:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRD/92AAoJELSic+t+oim918AP/3bN7+tsV2XR+Vsun5TsEEVO
-3TJNYN4+rp6GmK+6zrvRaeRG/DueKGcLyPKx5N/SdWtncb1Cb708/lyYobz6RjmU
-APSI0h4v7xCJXYrSACzM5g06EkAgpnlRD/BoS8um5jc25BDlfmtwLKO1ztE03ml2
-vcTIEqfw9GLnYIse6P+3aiHeKYujQxZ9OY05MFAU1546/wzkCBxWdcePC9aGNFt/
-fyxGMF1n3T5GlB9K45Ns42TFUKO/nTC0NbIV4gpEiMzXSgaz7/JQCXB//MJ+e9QM
-NyiWhJEUGlh163S9de24WjR1XZfZ4qjxnocifnqssykQ6kmN0utUe5QAZzi04Ee4
-tOYOLCJAZaz8/a7WlO4F9vIFOuWE5vHl4nytDq2ah7bL03ZwyIT74H/N+YaEBB1f
-Uf6dwQRUCLgSyV+qWDdquatuCSME9JN8FH9JNE4+m5k+7T0yaIaCVjujqg34JZvJ
-C0YFVxWYrDaJ+xPzCfTfq869+Xg8mCPypjeMUNvdbawUA0lxLWFETBuHgVm48txo
-OEo3pmSJjMSprcwIyZPs4KgupjQGAbK5hFOVtxTtbOn847nga3FbbncHaZU36x6N
-5xHKCYORQ3k4izByWTeMlJfV2C/YI1/ileBegt7M0+lPYZx9bBE1WTwOrmsBL9yi
-H6JUyE1nwofq0of77aVq
-=Ko0U
------END PGP SIGNATURE-----
+rcu: Allow rcutorture to be built at low optimization levels
 
---QHhm1I6mwQR20oIa--
+The uses of trace_clock_local() are dead code when CONFIG_RCU_TRACE=n,
+but some compilers might nevertheless generate code calling this function.
+This commit therefore ensures that trace_clock_local() is invoked only
+when CONFIG_RCU_TRACE=y.
+
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Index: linux-trace.git/kernel/rcutorture.c
+===================================================================
+--- linux-trace.git.orig/kernel/rcutorture.c
++++ linux-trace.git/kernel/rcutorture.c
+@@ -208,6 +208,20 @@ MODULE_PARM_DESC(rcutorture_runnable, "S
+ #define rcu_can_boost() 0
+ #endif /* #else #if defined(CONFIG_RCU_BOOST) && !defined(CONFIG_HOTPLUG_CPU) */
+ 
++#ifdef CONFIG_RCU_TRACE
++static u64 notrace rcu_trace_clock_local(void)
++{
++	u64 ts = trace_clock_local();
++	unsigned long __maybe_unused ts_rem = do_div(ts, NSEC_PER_USEC);
++	return ts;
++}
++#else /* #ifdef CONFIG_RCU_TRACE */
++static u64 notrace rcu_trace_clock_local(void)
++{
++	return 0ULL;
++}
++#endif /* #else #ifdef CONFIG_RCU_TRACE */
++
+ static unsigned long shutdown_time;	/* jiffies to system shutdown. */
+ static unsigned long boost_starttime;	/* jiffies of next boost test start. */
+ DEFINE_MUTEX(boost_mutex);		/* protect setting boost_starttime */
+@@ -1051,7 +1065,7 @@ static void rcu_torture_timer(unsigned l
+ 
+ 	idx = cur_ops->readlock();
+ 	completed = cur_ops->completed();
+-	ts = trace_clock_local();
++	ts = rcu_trace_clock_local();
+ 	p = rcu_dereference_check(rcu_torture_current,
+ 				  rcu_read_lock_bh_held() ||
+ 				  rcu_read_lock_sched_held() ||
+@@ -1075,8 +1089,6 @@ static void rcu_torture_timer(unsigned l
+ 	}
+ 	completed_end = cur_ops->completed();
+ 	if (pipe_count > 1) {
+-		unsigned long __maybe_unused ts_rem = do_div(ts, NSEC_PER_USEC);
+-
+ 		do_trace_rcu_torture_read(cur_ops->name, &p->rtort_rcu, ts,
+ 					  completed, completed_end);
+ 		rcutorture_trace_dump();
+@@ -1122,7 +1134,7 @@ rcu_torture_reader(void *arg)
+ 		}
+ 		idx = cur_ops->readlock();
+ 		completed = cur_ops->completed();
+-		ts = trace_clock_local();
++		ts = rcu_trace_clock_local();
+ 		p = rcu_dereference_check(rcu_torture_current,
+ 					  rcu_read_lock_bh_held() ||
+ 					  rcu_read_lock_sched_held() ||
+@@ -1144,9 +1156,6 @@ rcu_torture_reader(void *arg)
+ 		}
+ 		completed_end = cur_ops->completed();
+ 		if (pipe_count > 1) {
+-			unsigned long __maybe_unused ts_rem =
+-					do_div(ts, NSEC_PER_USEC);
+-
+ 			do_trace_rcu_torture_read(cur_ops->name, &p->rtort_rcu,
+ 						  ts, completed, completed_end);
+ 			rcutorture_trace_dump();
+
+
