@@ -1,154 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab3BDQ6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:58:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61073 "EHLO mx1.redhat.com"
+	id S1754204Ab3BDQ7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:59:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50662 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176Ab3BDQ6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:58:15 -0500
-Message-ID: <1359997090.11144.448.camel@bling.home>
-Subject: Re: [PATCH v3 1/3] VFIO: Wrapper for getting reference to
- vfio_device from device
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Blue Swirl <blauwirbel@gmail.com>,
-        "Ortiz, Lance E" <lance.oritz@hp.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 04 Feb 2013 09:58:10 -0700
-In-Reply-To: <F9E001219150CB45BEDC82A650F360C9014AAEFD@G9W0717.americas.hpqcorp.net>
-References: <F9E001219150CB45BEDC82A650F360C9014AAEFD@G9W0717.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753125Ab3BDQ7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 11:59:11 -0500
+Date: Mon, 4 Feb 2013 10:59:00 -0600
+From: Clark Williams <williams@redhat.com>
+To: Clark Williams <williams@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.6.11-rt26
+Message-ID: <20130204105900.63bd5fae@riff.lan>
+In-Reply-To: <20130204095438.41376edb@riff.lan>
+References: <alpine.LFD.2.02.1302041537230.11905@ionos>
+	<20130204095438.41376edb@riff.lan>
+Organization: Red Hat, Inc
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/cq0ZRXcIpeT5GqH6d+g0XAr"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-02-03 at 14:10 +0000, Pandarathil, Vijaymohan R wrote:
-> 	- Added vfio_device_get_from_dev() as wrapper to get
->           reference to vfio_device from struct device.
-> 
-> 	- Added vfio_device_data() as a wrapper to get device_data from
->           vfio_device.
-> 
-> Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-> ---
->  drivers/vfio/vfio.c  | 41 ++++++++++++++++++++++++++++++++---------
->  include/linux/vfio.h |  3 +++
->  2 files changed, 35 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-> index 12c264d..f0a78a2 100644
-> --- a/drivers/vfio/vfio.c
-> +++ b/drivers/vfio/vfio.c
-> @@ -407,12 +407,13 @@ static void vfio_device_release(struct kref *kref)
->  }
->  
->  /* Device reference always implies a group reference */
-> -static void vfio_device_put(struct vfio_device *device)
-> +void vfio_device_put(struct vfio_device *device)
->  {
->  	struct vfio_group *group = device->group;
->  	kref_put_mutex(&device->kref, vfio_device_release, &group->device_lock);
->  	vfio_group_put(group);
->  }
-> +EXPORT_SYMBOL_GPL(vfio_device_put);
->  
->  static void vfio_device_get(struct vfio_device *device)
->  {
-> @@ -642,8 +643,12 @@ int vfio_add_group_dev(struct device *dev,
->  }
->  EXPORT_SYMBOL_GPL(vfio_add_group_dev);
->  
-> -/* Test whether a struct device is present in our tracking */
-> -static bool vfio_dev_present(struct device *dev)
-> +/**
-> + * This does a get on the vfio_device from device.
-> + * Callers of this function will have to call vfio_put_device() to
-> + * remove the reference.
-> + */
-> +struct vfio_device *vfio_device_get_from_dev(struct device *dev)
->  {
->  	struct iommu_group *iommu_group;
->  	struct vfio_group *group;
-> @@ -651,25 +656,43 @@ static bool vfio_dev_present(struct device *dev)
->  
->  	iommu_group = iommu_group_get(dev);
->  	if (!iommu_group)
-> -		return false;
-> +		return NULL;
->  
->  	group = vfio_group_get_from_iommu(iommu_group);
->  	if (!group) {
->  		iommu_group_put(iommu_group);
-> -		return false;
-> +		return NULL;
->  	}
->  
->  	device = vfio_group_get_device(group, dev);
->  	if (!device) {
->  		vfio_group_put(group);
->  		iommu_group_put(iommu_group);
-> -		return false;
-> +		return NULL;
+--Sig_/cq0ZRXcIpeT5GqH6d+g0XAr
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-nit, this test isn't necesary, skipping the whole if block and falling
-through to the return below is functionally the same.
+On Mon, 4 Feb 2013 09:54:38 -0600
+Clark Williams <williams@redhat.com> wrote:
 
->  	}
-> -
-> -	vfio_device_put(device);
->  	vfio_group_put(group);
->  	iommu_group_put(iommu_group);
-> -	return true;
-> +	return device;
-> +}
-> +EXPORT_SYMBOL_GPL(vfio_device_get_from_dev);
-> +
-
-Let's add a comment here that the caller must hold a reference to the
-vfio_device.  Thanks,
-
-Alex
-
-> +void *vfio_device_data(struct vfio_device *device)
-> +{
-> +	return device->device_data;
-> +}
-> +EXPORT_SYMBOL_GPL(vfio_device_data);
-> +
-> +/* Test whether a struct device is present in our tracking */
-> +static bool vfio_dev_present(struct device *dev)
-> +{
-> +	struct vfio_device *device;
-> +
-> +	device = vfio_device_get_from_dev(dev);
-> +	if (device) {
-> +		vfio_device_put(device);
-> +		return true;
-> +	} else
-> +		return false;
->  }
->  
->  /*
-> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-> index ab9e862..ac8d488 100644
-> --- a/include/linux/vfio.h
-> +++ b/include/linux/vfio.h
-> @@ -45,6 +45,9 @@ extern int vfio_add_group_dev(struct device *dev,
->  			      void *device_data);
->  
->  extern void *vfio_del_group_dev(struct device *dev);
-> +extern struct vfio_device *vfio_device_get_from_dev(struct device *dev);
-> +extern void vfio_device_put(struct vfio_device *device);
-> +extern void *vfio_device_data(struct vfio_device *device);
->  
->  /**
->   * struct vfio_iommu_driver_ops - VFIO IOMMU driver callbacks
+> On Mon, 4 Feb 2013 15:58:26 +0100 (CET)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+>=20
+> > Dear RT Folks,
+> >=20
+> > I'm pleased to announce the 3.6.11-rt26 release.
+> >=20
+> > Changes since 3.6.11-rt25:
+> >=20
+> >    1) Fix the RT highmem implementation on x86
+> >=20
+> >    2) Support highmem + RT on ARM
+> >=20
+> >    3) Fix an one off error in the generic highmem code (upstream fix
+> >       did not make it into 3.6.stable)
+> >=20
+> >    4) Upstream SLUB fixes (Christoph Lameter)
+> >=20
+> >    5) Fix a few RT issues in mmc and amba drivers
+> >=20
+> >    6) Initialize local locks in mm/swap.c early
+> >=20
+> >    7) Use simple wait queues for completions. This is a performance
+> >       improvement.
+> >=20
+> >       Completions do not have complex callbacks and the wakeup path is
+> >       disabling interrupts anyway. So using simple wait locks with the
+> >       raw spinlock is not a latency problem, but the "sleeping lock"
+> >       in the normal waitqueue is a source for lock bouncing:
+> >=20
+> >       T1  	 	   T2
+> >       lock(WQ)
+> >       wakeup(T2)
+> >       ---> preemption
+> > 			   lock(WQ)
+> > 			   pi_boost(T1)
+> > 			   wait_for_lock(WQ)
+> >       unlock(WQ)
+> >       deboost(T1)
+> >       ---> preemption
+> > 			   ....
+> >=20
+> >       The simple waitqueue reduces this to:
+> > 		  =20
+> >       T1  	 	   T2
+> >       raw_lock(WQ)
+> >       wakeup(T2)
+> >       raw_unlock(WQ)
+> >       ---> preemption
+> > 			   raw_lock(WQ)=09
+> > 			   ....
+> >=20
+> > @Steven: Sorry, I forgot the stable tags on:
+> > 	 drivers-tty-pl011-irq-disable-madness.patch
+> > 	 mmci-remove-bogus-irq-save.patch
+> > 	 idle-state.patch
+> > 	 might-sleep-check-for-idle.patch
+> > 	 mm-swap-fix-initialization.patch
+> >=20
+> > I'm still digging through my mail backlog, so I have not yet decided
+> > whether this is the last RT release for 3.6.
+> >=20
+> >=20
+> > The delta patch against 3.6.11-rt25 is appended below and can be found
+> > here:
+> >=20
+> >   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6=
+.11-rt25-rt26.patch.xz
+> >=20
+> > The RT patch against 3.6.11 can be found here:
+> >=20
+> >   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11-r=
+t26.patch.xz
+> >=20
+> > The split quilt queue is available at:
+> >=20
+> >   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.11=
+-rt26.tar.xz
+> >=20
+> > Enjoy,
+> >=20
+> > 	tglx
+> >=20
+>=20
+>=20
+> Thomas,
+>=20
+> I needed this change to build:
+>=20
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index efe4b33..3d5231f 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -26,6 +26,7 @@
+> =20
+>  #include <linux/errno.h>
+>  #include <linux/rbtree.h>
+> +#include <linux/wait.h>
+> =20
+>  struct vm_area_struct;
+>  struct mm_struct;
+>=20
+>=20
+> Clark
 
 
+More changes; I was running into a collision with the name kmap_prot.
 
+This is not stacked on the above patch, it supercedes it.
+
+Clark
+
+diff --git a/arch/x86/include/asm/highmem.h b/arch/x86/include/asm/highmem.h
+index dc7b47e..1004f7d 100644
+--- a/arch/x86/include/asm/highmem.h
++++ b/arch/x86/include/asm/highmem.h
+@@ -69,7 +69,7 @@ void *kmap_atomic_pfn(unsigned long pfn);
+ void *kmap_atomic_prot_pfn(unsigned long pfn, pgprot_t prot);
+ struct page *kmap_atomic_to_page(void *ptr);
+ #else
+-void *kmap_prot(struct page *page, pgprot_t prot);
++void *__kmap_prot(struct page *page, pgprot_t prot);
+ # define kmap_atomic(page)                     \
+        ({ pagefault_disable(); kmap(page); })
+=20
+@@ -80,10 +80,10 @@ void *kmap_prot(struct page *page, pgprot_t prot);
+        do { kunmap(kmap_to_page(kvaddr)); pagefault_enable(); } while(0)
+=20
+ # define kmap_atomic_prot(page, prot)          \
+-       ({ pagefault_disable(); kmap_prot(page, prot); })
++       ({ pagefault_disable(); __kmap_prot(page, prot); })
+=20
+ # define kmap_atomic_prot_pfn(pfn, prot)       \
+-       ({ pagefault_disable(); kmap_prot(pfn_to_page(pfn), prot); })
++       ({ pagefault_disable(); __kmap_prot(pfn_to_page(pfn), prot); })
+=20
+ # define kmap_atomic_to_page(kvaddr)           \
+        kmap_to_page(kvaddr)
+diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+index 98f84e2..9a85340 100644
+--- a/include/linux/highmem.h
++++ b/include/linux/highmem.h
+@@ -59,7 +59,7 @@ static inline void *kmap(struct page *page)
+        return page_address(page);
+ }
+=20
+-#define kmap_prot(page, prot)  kmap(page)
++#define __kmap_prot(page, prot)        kmap(page)
+=20
+ static inline void kunmap(struct page *page)
+ {
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index efe4b33..3d5231f 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -26,6 +26,7 @@
+=20
+ #include <linux/errno.h>
+ #include <linux/rbtree.h>
++#include <linux/wait.h>
+=20
+ struct vm_area_struct;
+ struct mm_struct;
+
+--Sig_/cq0ZRXcIpeT5GqH6d+g0XAr
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlEP6NQACgkQHyuj/+TTEp3PeACdH4pds5Yvx4RpHVU8Bd0GZCit
+hxQAoJMkFQ9jkWmWSXoLFLt7SjBO7T0D
+=qYYN
+-----END PGP SIGNATURE-----
+
+--Sig_/cq0ZRXcIpeT5GqH6d+g0XAr--
