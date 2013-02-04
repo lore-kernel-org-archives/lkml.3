@@ -1,129 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab3BDTjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:39:42 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60605 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab3BDTjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:39:41 -0500
-Message-ID: <51100E79.9080101@wwwdotorg.org>
-Date: Mon, 04 Feb 2013 12:39:37 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: James Hogan <james.hogan@imgtec.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org
-Subject: Re: next-20130204 - bisected slab problem to "slab: Common constants
- for kmalloc boundaries"
-References: <510FE051.7080107@imgtec.com>
-In-Reply-To: <510FE051.7080107@imgtec.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755865Ab3BDTkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:40:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755056Ab3BDTj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:39:59 -0500
+Message-ID: <1360006795.11144.529.camel@bling.home>
+Subject: Re: [PATCH] intel_irq_remapping: Clean up x2apic optout security
+ warning mess
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Gleb Natapov <gleb@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Prarit Bhargava <prarit@redhat.com>
+Date: Mon, 04 Feb 2013 12:39:55 -0700
+In-Reply-To: <CALCETrVv0NXQACT=nrRZfN+9JbRmGKZWZvP7wWDveBtJt7E8zQ@mail.gmail.com>
+References: <510C3AF0.6050109@amacapital.net>
+	 <2011b943a886fd7c46079eb10bc24fc130587503.1359759303.git.luto@amacapital.net>
+	 <1360004651.11144.511.camel@bling.home>
+	 <CALCETrVv0NXQACT=nrRZfN+9JbRmGKZWZvP7wWDveBtJt7E8zQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2013 09:22 AM, James Hogan wrote:
-> Hi,
+On Mon, 2013-02-04 at 11:19 -0800, Andy Lutomirski wrote:
+> On Mon, Feb 4, 2013 at 11:04 AM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > On Fri, 2013-02-01 at 14:57 -0800, Andy Lutomirski wrote:
+> >> Current kernels print this on my Dell server:
+> >>
+> >>    ------------[ cut here ]------------
+> >>    WARNING: at drivers/iommu/intel_irq_remapping.c:542
+> >>    intel_enable_irq_remapping+0x7b/0x27e()
+> >>    Hardware name: PowerEdge R620
+> >>    Your BIOS is broken and requested that x2apic be disabled
+> >>    This will leave your machine vulnerable to irq-injection attacks
+> >>    Use 'intremap=no_x2apic_optout' to override BIOS request
+> >>    [...]
+> >>    Enabled IRQ remapping in xapic mode
+> >>    x2apic not enabled, IRQ remapping is in xapic mode
+> >>
+> >> This is inconsistent with itself -- interrupt remapping is *on*.
+> >>
+> >> Fix the mess by making the warnings say what they mean and my making
+> >> sure that compatibility format interrupts (the dangerous ones) are
+> >> disabled if x2apic is present regardless of BIOS settings.
+> >>
+> >> With this patch applied, the output is:
+> >>
+> >>   Your BIOS is broken and requested that x2apic be disabled.
+> >>   This will slightly decrease performance.
+> >>   Use 'intremap=no_x2apic_optout' to override BIOS request.
+> >>   Enabled IRQ remapping in xapic mode
+> >>   x2apic not enabled, IRQ remapping is in xapic mode
+> >>
+> >> This should make us as or more secure than we are now and replace
+> >> a rather scary warning with a much less scary warning on silly
+> >> but functional systems.
+> >>
+> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> ---
+> >>  drivers/iommu/intel_irq_remapping.c | 36 ++++++++++++++++++++++++++++--------
+> >>  1 file changed, 28 insertions(+), 8 deletions(-)
+> >>
+> >> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+> >> index af8904d..eca8832 100644
+> >> --- a/drivers/iommu/intel_irq_remapping.c
+> >> +++ b/drivers/iommu/intel_irq_remapping.c
+> >> @@ -425,11 +425,22 @@ static void iommu_set_irq_remapping(struct intel_iommu *iommu, int mode)
+> >>
+> >>       /* Enable interrupt-remapping */
+> >>       iommu->gcmd |= DMA_GCMD_IRE;
+> >> +     iommu->gcmd &= ~DMA_GCMD_CFI;  /* Block compatibility-format MSIs */
+> >>       writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
+> >>
+> >>       IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+> >>                     readl, (sts & DMA_GSTS_IRES), sts);
+> >>
+> >> +     /*
+> >> +      * With CFI clear in the Global Command register, we should be
+> >> +      * protected from dangerous (i.e. compatibility) interrupts
+> >> +      * regardless of x2apic status.  Check just to be sure.
+> >> +      */
+> >> +     if (sts & DMA_GSTS_CFIS)
+> >> +             WARN(1, KERN_WARNING
+> >> +                     "Compatibility-format IRQs enabled despite intr remapping;\n"
+> >> +                     "you are vulnerable to IRQ injection.\n");
+> >> +
+> >>       raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+> >>  }
+> >>
+> >> @@ -526,20 +537,24 @@ static int __init intel_irq_remapping_supported(void)
+> >>  static int __init intel_enable_irq_remapping(void)
+> >>  {
+> >>       struct dmar_drhd_unit *drhd;
+> >> +     bool x2apic_present;
+> >>       int setup = 0;
+> >>       int eim = 0;
+> >>
+> >> +     x2apic_present = x2apic_supported();
+> >> +
+> >>       if (parse_ioapics_under_ir() != 1) {
+> >>               printk(KERN_INFO "Not enable interrupt remapping\n");
+> >> -             return -1;
+> >> +             goto error;
+> >>       }
+> >>
+> >> -     if (x2apic_supported()) {
+> >> +     if (x2apic_present) {
+> >>               eim = !dmar_x2apic_optout();
+> >> -             WARN(!eim, KERN_WARNING
+> >> -                        "Your BIOS is broken and requested that x2apic be disabled\n"
+> >> -                        "This will leave your machine vulnerable to irq-injection attacks\n"
+> >> -                        "Use 'intremap=no_x2apic_optout' to override BIOS request\n");
+> >> +             if (!eim)
+> >> +                     printk(KERN_WARNING
+> >> +                             "Your BIOS is broken and requested that x2apic be disabled.\n"
+> >> +                             "This will slightly decrease performance.\n"
+> >> +                             "Use 'intremap=no_x2apic_optout' to override BIOS request.\n");
+> >>       }
+> >>
+> >>       for_each_drhd_unit(drhd) {
+> >> @@ -578,7 +593,7 @@ static int __init intel_enable_irq_remapping(void)
+> >>               if (eim && !ecap_eim_support(iommu->ecap)) {
+> >>                       printk(KERN_INFO "DRHD %Lx: EIM not supported by DRHD, "
+> >>                              " ecap %Lx\n", drhd->reg_base_addr, iommu->ecap);
+> >> -                     return -1;
+> >> +                     goto error;
+> >>               }
+> >>       }
+> >>
+> >> @@ -594,7 +609,7 @@ static int __init intel_enable_irq_remapping(void)
+> >>                       printk(KERN_ERR "DRHD %Lx: failed to enable queued, "
+> >>                              " invalidation, ecap %Lx, ret %d\n",
+> >>                              drhd->reg_base_addr, iommu->ecap, ret);
+> >> -                     return -1;
+> >> +                     goto error;
+> >>               }
+> >>       }
+> >>
+> >> @@ -625,6 +640,11 @@ error:
+> >>       /*
+> >>        * handle error condition gracefully here!
+> >>        */
+> >> +
+> >> +     if (x2apic_present)
+> >> +             WARN(1, KERN_WARNING
+> >> +                     "Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
+> >
+> > How so?  Without interrupt remapping, neither KVM assignment or vfio
+> > work unless the user explicitly opts-in to insecure interrupts via
+> > module options.  Are there other attack vectors?  Also, I really like
+> > the code above that forces CFI clear, but I don't think that warning is
+> > correct yet.  According to the paper the vulnerability is enabled if
+> > both x2apic is not enabled and CFI is enabled.  When x2apic is enabled,
+> > does it matter if CFI is enabled?  My understand is no.  Should a
+> > warning only occur if the interrupt remapper is enabled and x2apic is
+> > not enabled and we're not able to clear CFI?  Thanks,
 > 
-> I've hit boot problems in next-20130204 on Meta:
-> 
-> META213-Thread0 DSP [LogF] kobject (4fc03980): tried to init an initialized object, something is seriously wrong.
-> META213-Thread0 DSP [LogF] 
-> META213-Thread0 DSP [LogF] Call trace: 
-> META213-Thread0 DSP [LogF] [<4000888c>] _show_stack+0x68/0x7c
-> META213-Thread0 DSP [LogF] [<400088b4>] _dump_stack+0x14/0x28
-> META213-Thread0 DSP [LogF] [<40103794>] _kobject_init+0x58/0x9c
-> META213-Thread0 DSP [LogF] [<40103810>] _kobject_create+0x38/0x64
-> META213-Thread0 DSP [LogF] [<40103eac>] _kobject_create_and_add+0x14/0x8c
-> META213-Thread0 DSP [LogF] [<40190ac4>] _mnt_init+0xd8/0x220
-> META213-Thread0 DSP [LogF] [<40190508>] _vfs_caches_init+0xb0/0x160
-...
-> I've bisected it to the following commit:
-> 
-> commit 95a05b428cc675694321c8f762591984f3fd2b1e
-> Author: Christoph Lameter <cl@linux.com>
-> Date:   Thu Jan 10 19:14:19 2013 +0000
-> 
->     slab: Common constants for kmalloc boundaries
->     
->     Standardize the constants that describe the smallest and largest
->     object kept in the kmalloc arrays for SLAB and SLUB.
->     
->     Differentiate between the maximum size for which a slab cache is used
->     (KMALLOC_MAX_CACHE_SIZE) and the maximum allocatable size
->     (KMALLOC_MAX_SIZE, KMALLOC_MAX_ORDER).
->     
->     Signed-off-by: Christoph Lameter <cl@linux.com>
->     Signed-off-by: Pekka Enberg <penberg@kernel.org>
+> That's x2apic *present*, not enabled.  The idea is that, on a system
+> that has x2apic (which AFAIK is the same set of systems that support
+> interrupt remapping)
 
-I see the same problem on ARM. I believe it's because of the changes to
-the calculation of MALLOC_SHIFT_LOW.
+I don't know that those are entirely overlapping sets.
 
-The old code was:
+> , then you expect interrupt remapping to work,
+> whether in x2apic mode or xapic mode.  This warning should never
+> trigger on any hardware I know of (which, admittedly, doesn't mean
+> much).
 
-#if defined(ARCH_DMA_MINALIGN) && ARCH_DMA_MINALIGN > 8
-#define KMALLOC_MIN_SIZE ARCH_DMA_MINALIGN
-#else
-#ifdef CONFIG_SLAB
-#define KMALLOC_MIN_SIZE 32
-#else
-#define KMALLOC_MIN_SIZE 8
-#endif
-#endif
+Sure, you expect it to work, otherwise the interrupt remapping
+supported() callback should have failed.  If we get here, regardless of
+x2apic, we might want to print something about failing to enable it.
 
-#define KMALLOC_SHIFT_LOW ilog2(KMALLOC_MIN_SIZE)
+> I have no objection to rewording the warning, if you have any better
+> ideas.  I guess the vfio code (and hence the kvm code?) is more
+> careful than I realized.
 
-Here, KMALLOC_SHIFT_LOW and KMALLOC_MIN_SIZE are always consistent/related.
+As above, I think we're only vulnerable if we enable irq remapping,
+disable x2apic, and can't disable CFI.  Even then, I'm not sure what
+good it is to print scary warnings about vulnerabilities when the
+majority of the user base isn't actually doing anything that makes them
+vulnerable.
 
-The new code is:
+Should we even put the user in a state where they can be vulnerable?
+Rather than print a warning we could disable interrupt remapping if
+either x2apic isn't enabled or CFI cannot be disabled.  This could be
+noted with a pr_info/pr_debug warning and enabled with an iommu= option.
+Then, like doing device assignment w/o interrupt remapping, the user has
+to opt-in for interrupt remapping that is vulnerable to MSI injection.
+Thanks,
 
-#define KMALLOC_SHIFT_LOW	5
-...
-#if defined(ARCH_DMA_MINALIGN) && ARCH_DMA_MINALIGN > 8
-#define KMALLOC_MIN_SIZE ARCH_DMA_MINALIGN
-#else
-#define KMALLOC_MIN_SIZE (1 << KMALLOC_SHIFT_LOW)
-#endif
+Alex
 
-Here, if defined(ARCH_DMA_MINALIGN), then KMALLOC_MIN_SIZE isn't
-relative-to/derived-from KMALLOC_SHIFT_LOW, so the two may become
-inconsistent.
-
-On my ARM system at least, CONFIG_ARM_L1_CACHE_SHIFT_6 is set since I
-have an ARMv7 CPU (see arch/arm/mm/Kconfig), which causes
-CONFIG_ARM_L1_CACHE_SHIFT=6, then:
-
-> arch/arm/include/asm/cache.h:7:#define L1_CACHE_SHIFT		CONFIG_ARM_L1_CACHE_SHIFT
-> arch/arm/include/asm/cache.h:8:#define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
-> arch/arm/include/asm/cache.h:17:#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
-
-... hence that case triggers.
-
-I also see that in most parts of the patch, SLUB_PAGE_SHIFT was replaced
-with (KMALLOC_SHIFT_HIGH + 1), or equivalently tests were changed from <
-to <=:
-
-> -		size <= SLUB_MAX_SIZE && !(flags & SLUB_DMA)) {
-> +		size <= KMALLOC_MAX_CACHE_SIZE && !(flags & SLUB_DMA)) {
-
-However, the following doesn't seem to have that adjustment:
-
-> diff --git a/mm/slub.c b/mm/slub.c
-> index ba2ca53..d0f72ee 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2775,7 +2775,7 @@ init_kmem_cache_node(struct kmem_cache_node *n)
->  static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
->  {
->  	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
-> -			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
-> +			KMALLOC_SHIFT_HIGH * sizeof(struct kmem_cache_cpu));
-
-Should that also be (KMALLOC_SHIFT_HIGH + 1)?
