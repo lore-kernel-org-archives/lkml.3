@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab3BDL4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:56:38 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:40977 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3BDL4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:56:36 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 26/73] ARM: ux500: Add supply for the Ambient light sensor device
-Date: Mon,  4 Feb 2013 11:53:41 +0000
-Message-Id: <1359978868-28736-27-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
-References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+	id S1755135Ab3BDMKv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:10:51 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36171 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755014Ab3BDMKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 07:10:48 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
+Date: Mon, 04 Feb 2013 13:17:04 +0100
+Message-ID: <5808458.pvV2iHpBWm@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <cover.1359976493.git.viresh.kumar@linaro.org>
+References: <cover.1359976493.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch lists the Ambient light sensor device as a consumer
-of the AB8500 VAUX1 regulator.
+On Monday, February 04, 2013 05:08:50 PM Viresh Kumar wrote:
+> Currently, there can't be multiple instances of single governor_type. If we have
+> a multi-package system, where we have multiple instances of struct policy (per
+> package), we can't have multiple instances of same governor. i.e. We can't have
+> multiple instances of ondemand governor for multiple packages.
+> 
+> Governors directory in sysfs is created at /sys/devices/system/cpu/cpufreq/
+> governor-name/. Which again reflects that there can be only one instance of a
+> governor_type in the system.
+> 
+> This is a bottleneck for multicluster system, where we want different packages
+> to use same governor type, but with different tunables.
+> 
+> This patchset is inclined towards fixing this issue.
+> 
+> Viresh Kumar (4):
+>   cpufreq: Don't check cpu_online(policy->cpu)
+>   cpufreq: stats: Get rid of CPUFREQ_STATDEVICE_ATTR
+>   cpufreq: Add per policy governor-init/exit infrastructure
+>   cpufreq: governor: Implement per policy instances of governors
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/board-mop500-regulators.c |    2 ++
- 1 file changed, 2 insertions(+)
+Well, [1-2/4] are things I can take for v3.9 no problem.  The other two I'd
+wait for the next cycle to be honest.  We already have 30+ cpufreq patches
+scheduled for v3.9 and some of them quite subtle for that matter.
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index afcf889..80992a0 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -77,6 +77,8 @@ static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
- 	REGULATOR_SUPPLY("vdd", "l3g4200d"),
- 	/* Proximity and Hal sensor device */
- 	REGULATOR_SUPPLY("vdd", "sensor1p.0"),
-+	/* Ambient light sensor device */
-+	REGULATOR_SUPPLY("vdd", "3-0029"),
- };
- 
- static struct regulator_consumer_supply ab8500_vaux2_consumers[] = {
+Thanks,
+Rafael
+
+
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
