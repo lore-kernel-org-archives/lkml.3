@@ -1,191 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab3BDHRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 02:17:23 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:55007 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932Ab3BDHRU (ORCPT
+	id S1754024Ab3BDHRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 02:17:35 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:38227 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab3BDHRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 02:17:20 -0500
-From: Michel Lespinasse <walken@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] mm: accelerate mm_populate() treatment of THP pages
-Date: Sun,  3 Feb 2013 23:17:11 -0800
-Message-Id: <1359962232-20811-3-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1359962232-20811-1-git-send-email-walken@google.com>
-References: <1359962232-20811-1-git-send-email-walken@google.com>
+	Mon, 4 Feb 2013 02:17:33 -0500
+Date: Mon, 4 Feb 2013 18:17:24 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Wen Congyang <wency@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20130204181724.4f55ae04b00b458ebb5abba4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Feb_2013_18_17_24_+1100_FGorheZfVQeoij.w"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change adds a follow_page_mask function which is equivalent to
-follow_page, but with an extra page_mask argument.
+--Signature=_Mon__4_Feb_2013_18_17_24_+1100_FGorheZfVQeoij.w
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-follow_page_mask sets *page_mask to HPAGE_PMD_NR - 1 when it encounters a
-THP page, and to 0 in other cases.
+Hi Andrew,
 
-__get_user_pages() makes use of this in order to accelerate populating
-THP ranges - that is, when both the pages and vmas arrays are NULL,
-we don't need to iterate HPAGE_PMD_NR times to cover a single THP page
-(and we also avoid taking mm->page_table_lock that many times).
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
+arch/x86/mm/init_64.c: In function 'remove_pmd_table':
+arch/x86/mm/init_64.c:921:3: error: implicit declaration of function 'map_l=
+ow_page' [-Werror=3Dimplicit-function-declaration]
+arch/x86/mm/init_64.c:921:14: warning: cast to pointer from integer of diff=
+erent size [-Wint-to-pointer-cast]
+arch/x86/mm/init_64.c:924:3: error: implicit declaration of function 'unmap=
+_low_page' [-Werror=3Dimplicit-function-declaration]
+arch/x86/mm/init_64.c: In function 'remove_pud_table':
+arch/x86/mm/init_64.c:978:14: warning: cast to pointer from integer of diff=
+erent size [-Wint-to-pointer-cast]
+arch/x86/mm/init_64.c: In function 'remove_pagetable':
+arch/x86/mm/init_64.c:1004:9: warning: cast to pointer from integer of diff=
+erent size [-Wint-to-pointer-cast]
 
+Caused by commit "memory-hotplug: common APIs to support page tables
+hot-remove" from the akpm tree interacting with commit 973dc4f3fad5
+("x86, mm: Remove early_memremap workaround for page table accessing on
+64bit") from the tip tree.
+
+I applied the following merge fix patch:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 4 Feb 2013 18:12:17 +1100
+Subject: [PATCH] memory-hotplug: common APIs to support page tables hot-rem=
+ove fix fix
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- include/linux/mm.h | 13 +++++++++++--
- mm/memory.c        | 31 +++++++++++++++++++++++--------
- mm/nommu.c         |  6 ++++--
- 3 files changed, 38 insertions(+), 12 deletions(-)
+ arch/x86/mm/init_64.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 3d9fbcf9fa94..31e4d42002ee 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1636,8 +1636,17 @@ int vm_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
- int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
- 			unsigned long pfn);
- 
--struct page *follow_page(struct vm_area_struct *, unsigned long address,
--			unsigned int foll_flags);
-+struct page *follow_page_mask(struct vm_area_struct *vma,
-+			      unsigned long address, unsigned int foll_flags,
-+			      unsigned int *page_mask);
-+
-+static inline struct page *follow_page(struct vm_area_struct *vma,
-+		unsigned long address, unsigned int foll_flags)
-+{
-+	unsigned int unused_page_mask;
-+	return follow_page_mask(vma, address, foll_flags, &unused_page_mask);
-+}
-+
- #define FOLL_WRITE	0x01	/* check pte is writable */
- #define FOLL_TOUCH	0x02	/* mark page accessed */
- #define FOLL_GET	0x04	/* do get_page on page */
-diff --git a/mm/memory.c b/mm/memory.c
-index f0b6b2b798c4..52c8599e7fe4 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1458,10 +1458,11 @@ int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
- EXPORT_SYMBOL_GPL(zap_vma_ptes);
- 
- /**
-- * follow_page - look up a page descriptor from a user-virtual address
-+ * follow_page_mask - look up a page descriptor from a user-virtual address
-  * @vma: vm_area_struct mapping @address
-  * @address: virtual address to look up
-  * @flags: flags modifying lookup behaviour
-+ * @page_mask: on output, *page_mask is set according to the size of the page
-  *
-  * @flags can have FOLL_ flags set, defined in <linux/mm.h>
-  *
-@@ -1469,8 +1470,9 @@ EXPORT_SYMBOL_GPL(zap_vma_ptes);
-  * an error pointer if there is a mapping to something not represented
-  * by a page descriptor (see also vm_normal_page()).
-  */
--struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
--			unsigned int flags)
-+struct page *follow_page_mask(struct vm_area_struct *vma,
-+			      unsigned long address, unsigned int flags,
-+			      unsigned int *page_mask)
- {
- 	pgd_t *pgd;
- 	pud_t *pud;
-@@ -1480,6 +1482,8 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 	struct page *page;
- 	struct mm_struct *mm = vma->vm_mm;
- 
-+	*page_mask = 0;
-+
- 	page = follow_huge_addr(mm, address, flags & FOLL_WRITE);
- 	if (!IS_ERR(page)) {
- 		BUG_ON(flags & FOLL_GET);
-@@ -1526,6 +1530,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 				page = follow_trans_huge_pmd(vma, address,
- 							     pmd, flags);
- 				spin_unlock(&mm->page_table_lock);
-+				*page_mask = HPAGE_PMD_NR - 1;
- 				goto out;
- 			}
- 		} else
-@@ -1680,6 +1685,7 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- {
- 	long i;
- 	unsigned long vm_flags;
-+	unsigned int page_mask;
- 
- 	if (!nr_pages)
- 		return 0;
-@@ -1757,6 +1763,7 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 				get_page(page);
- 			}
- 			pte_unmap(pte);
-+			page_mask = 0;
- 			goto next_page;
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 951cc1e..67bad4b 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -918,10 +918,9 @@ remove_pmd_table(pmd_t *pmd_start, unsigned long addr,=
+ unsigned long end,
+ 			continue;
  		}
- 
-@@ -1774,6 +1781,7 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 		do {
- 			struct page *page;
- 			unsigned int foll_flags = gup_flags;
-+			unsigned int page_increm;
- 
- 			/*
- 			 * If we have a pending SIGKILL, don't keep faulting
-@@ -1783,7 +1791,8 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 				return i ? i : -ERESTARTSYS;
- 
- 			cond_resched();
--			while (!(page = follow_page(vma, start, foll_flags))) {
-+			while (!(page = follow_page_mask(vma, start,
-+						foll_flags, &page_mask))) {
- 				int ret;
- 				unsigned int fault_flags = 0;
- 
-@@ -1857,13 +1866,19 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 
- 				flush_anon_page(vma, page, start);
- 				flush_dcache_page(page);
-+				page_mask = 0;
- 			}
- next_page:
--			if (vmas)
-+			if (vmas) {
- 				vmas[i] = vma;
--			i++;
--			start += PAGE_SIZE;
--			nr_pages--;
-+				page_mask = 0;
-+			}
-+			page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
-+			if (page_increm > nr_pages)
-+				page_increm = nr_pages;
-+			i += page_increm;
-+			start += page_increm * PAGE_SIZE;
-+			nr_pages -= page_increm;
- 		} while (nr_pages && start < vma->vm_end);
- 	} while (nr_pages);
- 	return i;
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 429a3d5217fa..9a6a25181267 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1817,9 +1817,11 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
- 	return ret;
- }
- 
--struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
--			unsigned int foll_flags)
-+struct page *follow_page_mask(struct vm_area_struct *vma,
-+			      unsigned long address, unsigned int flags,
-+			      unsigned int *page_mask)
- {
-+	*page_mask = 0;
- 	return NULL;
- }
- 
--- 
+=20
+-		pte_base =3D (pte_t *)map_low_page((pte_t *)pmd_page_vaddr(*pmd));
++		pte_base =3D (pte_t *)pmd_page_vaddr(*pmd);
+ 		remove_pte_table(pte_base, addr, next, direct);
+ 		free_pte_table(pte_base, pmd);
+-		unmap_low_page(pte_base);
+ 	}
+=20
+ 	/* Call free_pmd_table() in remove_pud_table(). */
+@@ -975,10 +974,9 @@ remove_pud_table(pud_t *pud_start, unsigned long addr,=
+ unsigned long end,
+ 			continue;
+ 		}
+=20
+-		pmd_base =3D (pmd_t *)map_low_page((pmd_t *)pud_page_vaddr(*pud));
++		pmd_base =3D (pmd_t *)pud_page_vaddr(*pud);
+ 		remove_pmd_table(pmd_base, addr, next, direct);
+ 		free_pmd_table(pmd_base, pud);
+-		unmap_low_page(pmd_base);
+ 	}
+=20
+ 	if (direct)
+@@ -1001,11 +999,10 @@ remove_pagetable(unsigned long start, unsigned long =
+end, bool direct)
+=20
+ 		next =3D pgd_addr_end(start, end);
+=20
+-		pud =3D (pud_t *)map_low_page((pud_t *)pgd_page_vaddr(*pgd));
++		pud =3D (pud_t *)pgd_page_vaddr(*pgd);
+ 		remove_pud_table(pud, start, next, direct);
+ 		if (free_pud_table(pud, pgd))
+ 			pgd_changed =3D true;
+-		unmap_low_page(pud);
+ 	}
+=20
+ 	if (pgd_changed)
+--=20
 1.8.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__4_Feb_2013_18_17_24_+1100_FGorheZfVQeoij.w
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRD2CEAAoJEECxmPOUX5FE06oP/3gyYb/Lx/ZdqnNU4cmfCyUK
+hlNucU7sk4QKNqH1SlhSrLhD28TWh1i1ZcRnYEqtvg3ucFX5IIS7rfXaS0wnC6Rm
+rRq9nh2gBHk9z2ts2Ai7WGW6+YCnVT7WABCHxZN/zMnQHiky6q54+LxaixL+X8PD
+1aEu5PPfh/dqm34qTRQtnPmWuzIQGJbZ6cb+K+t3Sos5kSwMEUQ00nuK+4fE4DZC
+B73318XvwZbF9vf3JXMu1KRfjrPqiYm7dj/EjJwabLSAjiV1mH42J6IOvv9uwmNU
+JSQyb88d1eGdh2pvw35+wtAK3BW9siwnkZiP9Mx0GLpji3cI0g3E+VsOEwUb7xcm
+Gk9tsghWqCzTIrwVC1hqILzFDFe5BLyc7y3J15kiMkceROEbyahXTFJFnKryINsC
+JGOFdiZrFuwRJtVW4DgKARoRGgB4LSma/7MLokkKNXY+pmVit9y9nFRLy1rRYOgr
+eAFEsJmDEiSApmiz2TTWveyTZjb/7ch+q4YxuC/UpLdgorlIZKILwFQeGszdkNnD
+3RHGmw28r+BXqxMlim9C32SuXAVcyabZCry42+NL/XQkfO7p5exEs5p0kjDJP5qv
+d0MwcKEQFfKlqQHdVXfjC0tPskw0FTeAil+rT+aps4wFg65/Cnr9xuK8iwYFa89x
+zsX4GPlqIW9058Ga3IPP
+=QIBg
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Feb_2013_18_17_24_+1100_FGorheZfVQeoij.w--
