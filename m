@@ -1,194 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab3BDKGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 05:06:02 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:3871 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751055Ab3BDKFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 05:05:34 -0500
-X-IronPort-AV: E=Sophos;i="4.84,599,1355068800"; 
-   d="scan'208";a="6687005"
-From: Lin Feng <linfeng@cn.fujitsu.com>
-To: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk
-Cc: khlebnikov@openvz.org, walken@google.com, kamezawa.hiroyu@jp.fujitsu.com,
-        minchan@kernel.org, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, linux-mm@kvack.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lin Feng <linfeng@cn.fujitsu.com>
-Subject: [PATCH 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable()
-Date: Mon, 4 Feb 2013 18:04:07 +0800
-Message-Id: <1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/04 18:04:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/04 18:04:16,
-	Serialize complete at 2013/02/04 18:04:16
+	id S1753712Ab3BDKKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 05:10:13 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:57578 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114Ab3BDKKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 05:10:10 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <uclinux-dist-devel@blackfin.uclinux.org>, <linux-hexagon@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <linux-mips@linux-mips.org>,
+        <linux-parisc@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-sh@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH RESEND 1/1] arch Kconfig: remove references to IRQ_PER_CPU
+Date: Mon, 4 Feb 2013 10:09:43 +0000
+Message-ID: <1359972583-17134-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.7.7.6
+MIME-Version: 1.0
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_02_04_10_10_00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_user_pages() always tries to allocate pages from movable zone, which is not
- reliable to memory hotremove framework in some case.
+The IRQ_PER_CPU Kconfig symbol was removed in the following commit:
 
-This patch introduces a new library function called get_user_pages_non_movable()
- to pin pages only from zone non-movable in memory.
-It's a wrapper of get_user_pages() but it makes sure that all pages come from
-non-movable zone via additional page migration.
+Commit 6a58fb3bad099076f36f0f30f44507bc3275cdb6 ("genirq: Remove
+CONFIG_IRQ_PER_CPU") merged in v2.6.39-rc1.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+But IRQ_PER_CPU wasn't removed from any of the architecture Kconfig
+files where it was defined or selected. It's completely unused so remove
+the remaining references.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
 ---
- include/linux/mm.h     |  5 ++++
- include/linux/mmzone.h |  4 ++++
- mm/memory.c            | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/page_isolation.c    |  5 ++++
- 4 files changed, 77 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 66e2f7c..2a25d0e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1049,6 +1049,11 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			struct page **pages, struct vm_area_struct **vmas);
- int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 			struct page **pages);
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
-+		unsigned long start, int nr_pages, int write, int force,
-+		struct page **pages, struct vm_area_struct **vmas);
-+#endif
- struct kvec;
- int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
- 			struct page **pages);
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 73b64a3..5db811e 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -838,6 +838,10 @@ static inline int is_normal_idx(enum zone_type idx)
- 	return (idx == ZONE_NORMAL);
- }
+Does anybody want to pick this patch up?
+
+ arch/blackfin/Kconfig |    1 -
+ arch/hexagon/Kconfig  |    1 -
+ arch/ia64/Kconfig     |    1 -
+ arch/mips/Kconfig     |    1 -
+ arch/parisc/Kconfig   |    1 -
+ arch/powerpc/Kconfig  |    1 -
+ arch/sh/Kconfig       |    3 ---
+ 7 files changed, 0 insertions(+), 9 deletions(-)
+
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index b6f3ad5..c709715 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -38,7 +38,6 @@ config BLACKFIN
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_ATOMIC64
+ 	select GENERIC_IRQ_PROBE
+-	select IRQ_PER_CPU if SMP
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+ 	select HAVE_NMI_WATCHDOG if NMI_WATCHDOG
+ 	select GENERIC_SMP_IDLE_THREAD
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index 0744f7d..800dd9c 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -12,7 +12,6 @@ config HEXAGON
+ 	# select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	# select ARCH_REQUIRE_GPIOLIB
+ 	# select HAVE_CLK
+-	# select IRQ_PER_CPU
+ 	# select GENERIC_PENDING_IRQ if SMP
+ 	select HAVE_IRQ_WORK
+ 	select GENERIC_ATOMIC64
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 3279646..00c2e88 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -29,7 +29,6 @@ config IA64
+ 	select ARCH_DISCARD_MEMBLOCK
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PENDING_IRQ if SMP
+-	select IRQ_PER_CPU
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 2ac626a..451c2e7 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -2161,7 +2161,6 @@ source "mm/Kconfig"
+ config SMP
+ 	bool "Multi-Processing support"
+ 	depends on SYS_SUPPORTS_SMP
+-	select IRQ_PER_CPU
+ 	select USE_GENERIC_SMP_HELPERS
+ 	help
+ 	  This enables support for systems with more than one CPU. If you have
+diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
+index b77feff..8525be4 100644
+--- a/arch/parisc/Kconfig
++++ b/arch/parisc/Kconfig
+@@ -16,7 +16,6 @@ config PARISC
+ 	select BROKEN_RODATA
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PCI_IOMAP
+-	select IRQ_PER_CPU
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_STRNCPY_FROM_USER
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 17903f1..f3d7090a 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -125,7 +125,6 @@ config PPC
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select SPARSE_IRQ
+-	select IRQ_PER_CPU
+ 	select IRQ_DOMAIN
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_IRQ_SHOW_LEVEL
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index babc2b8..6f799ec 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -91,9 +91,6 @@ config GENERIC_CSUM
+ config GENERIC_HWEIGHT
+ 	def_bool y
  
-+static inline int is_movable(struct zone *zone)
-+{
-+	return zone == zone->zone_pgdat->node_zones + ZONE_MOVABLE;
-+}
- /**
-  * is_highmem - helper function to quickly check if a struct zone is a 
-  *              highmem zone or not.  This is an attempt to keep references
-diff --git a/mm/memory.c b/mm/memory.c
-index bb1369f..e3b8e19 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -58,6 +58,8 @@
- #include <linux/elf.h>
- #include <linux/gfp.h>
- #include <linux/migrate.h>
-+#include <linux/page-isolation.h>
-+#include <linux/mm_inline.h>
- #include <linux/string.h>
+-config IRQ_PER_CPU
+-	def_bool y
+-
+ config GENERIC_GPIO
+ 	def_bool n
  
- #include <asm/io.h>
-@@ -1995,6 +1997,67 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- }
- EXPORT_SYMBOL(get_user_pages);
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+/**
-+ * It's a wrapper of get_user_pages() but it makes sure that all pages come from
-+ * non-movable zone via additional page migration.
-+ */
-+int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
-+		unsigned long start, int nr_pages, int write, int force,
-+		struct page **pages, struct vm_area_struct **vmas)
-+{
-+	int ret, i, isolate_err, migrate_pre_flag;
-+	LIST_HEAD(pagelist);
-+
-+retry:
-+	ret = get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
-+				vmas);
-+
-+	isolate_err = 0;
-+	migrate_pre_flag = 0;
-+
-+	for (i = 0; i < ret; i++) {
-+		if (is_movable(page_zone(pages[i]))) {
-+			if (!migrate_pre_flag) {
-+				if (migrate_prep())
-+					goto put_page;
-+				migrate_pre_flag = 1;
-+			}
-+
-+			if (!isolate_lru_page(pages[i])) {
-+				inc_zone_page_state(pages[i], NR_ISOLATED_ANON +
-+						 page_is_file_cache(pages[i]));
-+				list_add_tail(&pages[i]->lru, &pagelist);
-+			} else {
-+				isolate_err = 1;
-+				goto put_page;
-+			}
-+		}
-+	}
-+
-+	/* All pages are non movable, we are done :) */
-+	if (i == ret && list_empty(&pagelist))
-+		return ret;
-+
-+put_page:
-+	/* Undo the effects of former get_user_pages(), we won't pin anything */
-+	for (i = 0; i < ret; i++)
-+		put_page(pages[i]);
-+
-+	if (migrate_pre_flag && !isolate_err) {
-+		ret = migrate_pages(&pagelist, alloc_migrate_target, 1,
-+					false, MIGRATE_SYNC, MR_SYSCALL);
-+		/* Steal pages from non-movable zone successfully? */
-+		if (!ret)
-+			goto retry;
-+	}
-+
-+	putback_lru_pages(&pagelist);
-+	return 0;
-+}
-+EXPORT_SYMBOL(get_user_pages_non_movable);
-+#endif
-+
- /**
-  * get_dump_page() - pin user page in memory while writing it to core dump
-  * @addr: user address
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 383bdbb..1b7bd17 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -247,6 +247,9 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
- 	return ret ? 0 : -EBUSY;
- }
- 
-+/**
-+ * @private: 0 means page can be alloced from movable zone, otherwise forbidden
-+ */
- struct page *alloc_migrate_target(struct page *page, unsigned long private,
- 				  int **resultp)
- {
-@@ -254,6 +257,8 @@ struct page *alloc_migrate_target(struct page *page, unsigned long private,
- 
- 	if (PageHighMem(page))
- 		gfp_mask |= __GFP_HIGHMEM;
-+	if (unlikely(private != 0))
-+		gfp_mask &= ~__GFP_MOVABLE;
- 
- 	return alloc_page(gfp_mask);
- }
 -- 
-1.7.11.7
+1.7.7.6
+
 
