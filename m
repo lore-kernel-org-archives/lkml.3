@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3BDNmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 08:42:44 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:37377 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab3BDNmn (ORCPT
+	id S1754777Ab3BDNsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 08:48:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60845 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab3BDNso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 08:42:43 -0500
+	Mon, 4 Feb 2013 08:48:44 -0500
+Date: Mon, 4 Feb 2013 05:47:42 -0800
+From: tip-bot for Borislav Petkov <bp@suse.de>
+Message-ID: <tip-f76e39c531304b114e27c3dd3e0036f56cd33df1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        andreas.herrmann3@amd.com, tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andreas.herrmann3@amd.com, tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1359969195-27362-1-git-send-email-bp@alien8.de>
+References: <1359969195-27362-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/intel/cacheinfo: Shut up annoying warning
+Git-Commit-ID: f76e39c531304b114e27c3dd3e0036f56cd33df1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1359291524.11083.5.camel@phoenix>
-References: <1359291524.11083.5.camel@phoenix>
-Date: Mon, 4 Feb 2013 21:42:42 +0800
-Message-ID: <CAN1soZxoUTt_aLB70camxXHQb2oVutsnDLF-ki6NekoWQqbt+A@mail.gmail.com>
-Subject: Re: [RFT][PATCH v2] backlight: 88pm860x_bl: Add missing of_node_put()
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 04 Feb 2013 05:47:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 27, 2013 at 8:58 PM, Axel Lin <axel.lin@ingics.com> wrote:
-> of_find_node_by_name() returns a node pointer with refcount incremented, use
-> of_node_put() on it when done.
->
-> of_find_node_by_name() will call of_node_put() against the node pass to from
-> parameter, thus we also need to call of_node_get(from) before calling
-> of_find_node_by_name().
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> v2:
-> need to call of_node_get(pdev->dev.parent->of_node) before calling
-> of_find_node_by_name().
->
->  drivers/video/backlight/88pm860x_bl.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/video/backlight/88pm860x_bl.c b/drivers/video/backlight/88pm860x_bl.c
-> index c072ed9..2cd6350 100644
-> --- a/drivers/video/backlight/88pm860x_bl.c
-> +++ b/drivers/video/backlight/88pm860x_bl.c
-> @@ -165,8 +165,10 @@ static int pm860x_backlight_dt_init(struct platform_device *pdev,
->                                     struct pm860x_backlight_data *data,
->                                     char *name)
->  {
-> -       struct device_node *nproot = pdev->dev.parent->of_node, *np;
-> +       struct device_node *nproot, *np;
->         int iset = 0;
-> +
-> +       nproot = of_node_get(pdev->dev.parent->of_node);
->         if (!nproot)
->                 return -ENODEV;
->         nproot = of_find_node_by_name(nproot, "backlights");
-> @@ -184,6 +186,7 @@ static int pm860x_backlight_dt_init(struct platform_device *pdev,
->                         break;
->                 }
->         }
-> +       of_node_put(nproot);
->         return 0;
->  }
->  #else
+Commit-ID:  f76e39c531304b114e27c3dd3e0036f56cd33df1
+Gitweb:     http://git.kernel.org/tip/f76e39c531304b114e27c3dd3e0036f56cd33df1
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 4 Feb 2013 10:13:15 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 4 Feb 2013 11:29:52 +0100
 
-Don't agree on this. If we want to protect it, we should use the logic in below.
-1. of_node_get() in parent 88pm860x-core driver.
-2. of_node_put() in child backlight driver or anything else.
+x86/intel/cacheinfo: Shut up annoying warning
 
-The reference is used to prevent of_node releasing before some usage.
-At here, we need
-to prevent parent driver to release of_node. I can't see any benefit
-from of_node_get()
-in the child backlight driver.
+I've been getting the following warning when doing randbuilds
+since forever. Now it finally pissed me off just the perfect
+amount so that I can fix it.
 
-Regards
-Haojian
+  arch/x86/kernel/cpu/intel_cacheinfo.c:489:27: warning: ‘cache_disable_0’ defined but not used [-Wunused-variable]
+  arch/x86/kernel/cpu/intel_cacheinfo.c:491:27: warning: ‘cache_disable_1’ defined but not used [-Wunused-variable] arch/x86/kernel/cpu/intel_cacheinfo.c:524:27: warning: ‘subcaches’ defined but not used [-Wunused-variable]
+
+It happens because in randconfigs where CONFIG_SYSFS is not set,
+the whole sysfs-interface to L3 cache index disabling is
+remaining unused and gcc correctly warns about it. Make it
+optional, depending on CONFIG_SYSFS too, as is the case with
+other sysfs-related machinery in this file.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+Link: http://lkml.kernel.org/r/1359969195-27362-1-git-send-email-bp@alien8.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/intel_cacheinfo.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index fe9edec..84c1309 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -298,8 +298,7 @@ struct _cache_attr {
+ 			 unsigned int);
+ };
+ 
+-#ifdef CONFIG_AMD_NB
+-
++#if defined(CONFIG_AMD_NB) && defined(CONFIG_SYSFS)
+ /*
+  * L3 cache descriptors
+  */
+@@ -524,9 +523,9 @@ store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
+ static struct _cache_attr subcaches =
+ 	__ATTR(subcaches, 0644, show_subcaches, store_subcaches);
+ 
+-#else	/* CONFIG_AMD_NB */
++#else
+ #define amd_init_l3_cache(x, y)
+-#endif /* CONFIG_AMD_NB */
++#endif  /* CONFIG_AMD_NB && CONFIG_SYSFS */
+ 
+ static int
+ __cpuinit cpuid4_cache_lookup_regs(int index,
