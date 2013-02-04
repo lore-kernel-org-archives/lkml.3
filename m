@@ -1,139 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab3BDGhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 01:37:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54530 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557Ab3BDGhh convert rfc822-to-8bit (ORCPT
+	id S1752611Ab3BDGkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 01:40:06 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8609 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3BDGkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 01:37:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,597,1355126400"; 
-   d="scan'208";a="280522717"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Wei Ni <wni@nvidia.com>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>
-Subject: RE: [PATCHv2 0/9] Thermal Framework Enhancements
-Thread-Topic: [PATCHv2 0/9] Thermal Framework Enhancements
-Thread-Index: AQHN7KcvHTPdBgTj/0Kde8zE8LSCGJho/pIAgABr8lA=
-Date: Mon, 4 Feb 2013 06:37:27 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59275C20@BGSMSX101.gar.corp.intel.com>
-References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
- <510F49A2.4080701@nvidia.com>
-In-Reply-To: <510F49A2.4080701@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Feb 2013 01:40:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 03 Feb 2013 22:39:29 -0800
+Message-ID: <510F57B1.1050906@nvidia.com>
+Date: Mon, 4 Feb 2013 12:09:45 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 06/10] clk: tegra: Workaround for Tegra114 MSENC problem
+References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com> <1359713962-16822-7-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1359713962-16822-7-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
+On Friday 01 February 2013 03:48 PM, Peter De Schrijver wrote:
+> Workaround a hardware bug in MSENC during clock enable.
+>
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> ---
+>   drivers/clk/tegra/clk-periph-gate.c |    9 +++++++++
+>   drivers/clk/tegra/clk.h             |    1 +
+>   2 files changed, 10 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/clk/tegra/clk-periph-gate.c b/drivers/clk/tegra/clk-periph-gate.c
+> index 6dd5332..c9083fb 100644
+> --- a/drivers/clk/tegra/clk-periph-gate.c
+> +++ b/drivers/clk/tegra/clk-periph-gate.c
+> @@ -43,6 +43,8 @@ static DEFINE_SPINLOCK(periph_ref_lock);
+>   
+>   #define periph_clk_to_bit(periph) (1 << (gate->clk_num % 32))
+>   
+> +#define LVL2_CLK_GATE_OVRE 0x554
+> +
+>   /* Peripheral gate clock ops */
+>   static int clk_periph_is_enabled(struct clk_hw *hw)
+>   {
+> @@ -83,6 +85,13 @@ static int clk_periph_enable(struct clk_hw *hw)
+>   		}
+>   	}
+>   
+> +	if (gate->flags & TEGRA_PERIPH_WAR_1005168) {
+> +		writel_relaxed(0, gate->clk_base + LVL2_CLK_GATE_OVRE);
+> +		writel_relaxed(BIT(22), gate->clk_base + LVL2_CLK_GATE_OVRE);
+> +		udelay(1);
+> +		writel_relaxed(0, gate->clk_base + LVL2_CLK_GATE_OVRE);
+> +	}
+> +
+>   	spin_unlock_irqrestore(&periph_ref_lock, flags);
+>   
+>   	return 0;
+> diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+> index 79f5e2a..8756d9f 100644
+> --- a/drivers/clk/tegra/clk.h
+> +++ b/drivers/clk/tegra/clk.h
+> @@ -371,6 +371,7 @@ struct tegra_clk_periph_gate {
+>   #define TEGRA_PERIPH_NO_RESET BIT(0)
+>   #define TEGRA_PERIPH_MANUAL_RESET BIT(1)
+>   #define TEGRA_PERIPH_ON_APB BIT(2)
+> +#define TEGRA_PERIPH_WAR_1005168 BIT(3)
+>   
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Wei Ni
-> Sent: Monday, February 04, 2013 11:10 AM
-> To: R, Durgadoss
-> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> eduardo.valentin@ti.com; hongbo.zhang@linaro.org
-> Subject: Re: [PATCHv2 0/9] Thermal Framework Enhancements
-> 
-> On 01/07/2013 03:13 PM, Durgadoss R wrote:
-> > This patch set is a v2 of the previous versions submitted here:
-> > [v1]:  https://lkml.org/lkml/2012/12/18/108
-> > [RFC]: https://patchwork.kernel.org/patch/1758921/
-> >
-> > This patch set is based on Rui's -thermal tree, and is
-> > tested on a Core-i5 and an Atom netbook.
-> >
-> > Changes Since v1:
-> >  * Removed kobject creation for thermal_trip and thermal_map
-> >    nodes as per Greg-KH's comments.
-> >  * Added ABI Documentation under 'testing'.
-> >  * Modified the GET_INDEX macro to be more linux-like, thanks
-> >    to Joe Perches.
-> >  * Added get_[sensor/cdev]_by_name APIs to thermal.h
-> 
-> Hi, Durgadoss and Rui
-> Will these patches be merged to next branch? or will you send out next
-> version?
+Comment for this flag, otherwise
 
-Yes, I have to send the v3, with some small changes on the patch 5/9
-(map sysfs node..) and others won't have any changes.
+Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-> I wish to use this new framework, could I send out patches for RFC based
-> on this serial patches?
+>   void tegra_periph_reset(struct tegra_clk_periph_gate *gate, bool assert);
+>   extern const struct clk_ops tegra_clk_periph_gate_ops;
+>
 
-So, if your patch set does not need 5/9, you can send your RFC.
-
-Thanks,
-Durga
-
-> 
-> Thanks.
-> Wei.
-> 
-> >
-> > This series contains 9 patches:
-> > Patch 1/9: Creates new sensor level APIs
-> > Patch 2/9: Creates new zone level APIs. The existing tzd structure is
-> >            kept as such for clarity and compatibility purposes.
-> > Patch 3/9: Creates functions to add/remove a cdev to/from a zone. The
-> >            existing tcd structure need not be modified.
-> > Patch 4/9: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
-> > 	   under /sys/class/thermal/zoneY/. This exposes various trip
-> >            points for sensorX present in zoneY.
-> > Patch 5/9: Adds mapX sysfs node. It is a compact representation
-> >            of the binding relationship between a sensor and a cdev,
-> >            within a zone.
-> > Patch 6/9: Creates Documentation for the new APIs. A new file is
-> >            created for clarity. Final goal is to merge with the existing
-> >            file or refactor the files, as whatever seems appropriate.
-> > Patch 7/9: Make PER ZONE values configurable through Kconfig
-> > Patch 8/9: Add ABI documentation for sysfs interfaces introduced in this
-> patch.
-> > Patch 9/9: A dummy driver that can be used for testing. This is not for
-> merge.
-> >
-> > Thanks to Greg-KH, Hongbo Zhang and Joe Perches for their comments on
-> v1.
-> >
-> > Durgadoss R (9):
-> >   Thermal: Create sensor level APIs
-> >   Thermal: Create zone level APIs
-> >   Thermal: Add APIs to bind cdev to new zone structure
-> >   Thermal: Add trip point sysfs nodes for sensor
-> >   Thermal: Create 'mapX' sysfs node for a zone
-> >   Thermal: Add Documentation to new APIs
-> >   Thermal: Make PER_ZONE values configurable
-> >   Thermal: Add ABI Documentation for sysfs interfaces
-> >   Thermal: Dummy driver used for testing
-> >
-> >  Documentation/ABI/testing/sysfs-class-thermal |   93 +++
-> >  Documentation/thermal/sysfs-api2.txt          |  248 +++++++
-> >  drivers/thermal/Kconfig                       |   19 +
-> >  drivers/thermal/Makefile                      |    3 +
-> >  drivers/thermal/thermal_sys.c                 |  881
-> +++++++++++++++++++++++++
-> >  drivers/thermal/thermal_test.c                |  315 +++++++++
-> >  include/linux/thermal.h                       |  117 +++-
-> >  7 files changed, 1675 insertions(+), 1 deletion(-)
-> >  create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
-> >  create mode 100644 Documentation/thermal/sysfs-api2.txt
-> >  create mode 100644 drivers/thermal/thermal_test.c
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
