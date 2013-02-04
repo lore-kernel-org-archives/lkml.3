@@ -1,152 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab3BDCtz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 21:49:55 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61811 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761Ab3BDCtx (ORCPT
+	id S1753940Ab3BDCup (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 21:50:45 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:47888 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab3BDCun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 21:49:53 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-14-510f21cf1bbb
-Date: Mon, 4 Feb 2013 11:49:50 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Questin about swap_slot free and invalidate page
-Message-ID: <20130204024950.GD2688@blaptop>
-References: <20130131051140.GB23548@blaptop>
- <alpine.LNX.2.00.1302031732520.4050@eggly.anvils>
+	Sun, 3 Feb 2013 21:50:43 -0500
+Message-ID: <510F21B9.4000604@huawei.com>
+Date: Mon, 4 Feb 2013 10:49:29 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1302031732520.4050@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Tejun Heo <tj@kernel.org>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <rusty@rustcorp.com.au>, <bfields@fieldses.org>,
+        <skinsbursky@parallels.com>, <ebiederm@xmission.com>,
+        <jmorris@namei.org>, <axboe@kernel.dk>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 55/62] cgroup: convert to idr_alloc()
+References: <1359854463-2538-1-git-send-email-tj@kernel.org> <1359854463-2538-56-git-send-email-tj@kernel.org>
+In-Reply-To: <1359854463-2538-56-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+On 2013/2/3 9:20, Tejun Heo wrote:
+> Convert to the much saner new idr interface.
+> 
+> Only compile tested.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-On Sun, Feb 03, 2013 at 05:51:14PM -0800, Hugh Dickins wrote:
-> On Thu, 31 Jan 2013, Minchan Kim wrote:
-> 
-> > When I reviewed zswap, I was curious about frontswap_store.
-> > It said following as.
-> > 
-> >  * If frontswap already contains a page with matching swaptype and
-> >  * offset, the frontswap implementation may either overwrite the data and
-> >  * return success or invalidate the page from frontswap and return failure.
-> > 
-> > It didn't say why it happens. we already have __frontswap_invalidate_page
-> > and call it whenever swap_slot frees. If we don't free swap slot,
-> > scan_swap_map can't find the slot for swap out so I thought overwriting of
-> > data shouldn't happen in frontswap.
-> > 
-> > As I looked the code, the curplit is reuse_swap_page. It couldn't free swap
-> > slot if the page founded is PG_writeback but miss calling frontswap_invalidate_page
-> > so data overwriting on frontswap can happen. I'm not sure frontswap guys
-> > already discussed it long time ago.
-> > 
-> > If we can fix it, we can remove duplication entry handling logic
-> > in all of backend of frontswap. All of backend should handle it although
-> > it's pretty rare. Of course, zram could be fixed. It might be trivial now
-> > but more there are many backend of frontswap, more it would be a headache.
-> > 
-> > If we are trying to fix it in swap layer,  we might fix it following as
-> > 
-> > int reuse_swap_page(struct page *page)
-> > {
-> >         ..
-> >         ..
-> >         if (count == 1) {
-> >                 if (!PageWriteback(page)) {
-> >                         delete_from_swap_cache(page);
-> >                         SetPageDirty(page);
-> >                 } else {
-> >                         frontswap_invalidate_page();
-> >                         swap_slot_free_notify();
-> >                 }
-> >         }
-> > }
-> > 
-> > But not sure, it is worth at the moment and there might be other places
-> > to be fixed.(I hope Hugh can point out if we are missing something if he
-> > has a time)
-> 
-> I expect you are right that reuse_swap_page() is the only way it would
-> happen for frontswap; but I'm too unfamiliar with frontswap to promise
-> you that - it's better that you insert WARN_ONs in your testing to verify.
-> 
-> But I think it's a general tmem property, isn't it?  To define what
-> happens if you do give it the same key again.  So I doubt it's something
+Looks good to me.
 
-I am too unfamiliar with tmem property but thing I am seeing is
-EXPORT_SYMBOL(__frontswap_store). It's a one of frontend and is tighly very
-coupled with swap subsystem.
+Acked-by: Li Zefan <lizefan@huawei.com>
 
-> that has to be fixed; but if you do find it helpful to fix it, bear in
-> mind that reuse_swap_page() is an odd corner, which may one day give the
-> "stable pages" DIF/DIX people trouble, though they've not yet complained.
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: containers@lists.linux-foundation.org
+> Cc: cgroups@vger.kernel.org
+> ---
+> This patch depends on an earlier idr changes and I think it would be
+> best to route these together through -mm.  Please holler if there's
+> any objection.  Thanks.
 > 
-> I'd prefer a patch not specific to frontswap, but along the lines below:
-> I think that's the most robust way to express it, though I don't think
-> the (count == 0) case can actually occur inside that block (whereas
-> count == 0 certainly can occur in the !PageSwapCache case).
+>  kernel/cgroup.c | 27 ++++++++-------------------
+>  1 file changed, 8 insertions(+), 19 deletions(-)
 > 
-> I believe that I once upon a time took statistics of how often the
-> PageWriteback case happens here, and concluded that it wasn't often
-> enough that refusing to reuse in this case would be likely to slow
-> anyone down noticeably.
 
-I agree. I had a test about that with zram and that case wasn't common.
-so your patch looks good to me.
-
-I am waiting Dan's reply(He will come in this week) and then, judge what's
-the best.
-
-Thanks!
-
-> 
-> > 
-> > If we are reluctant to it, at least, we should write out comment above
-> > frontswap_store about that to notice curious guys who spend many
-> > time to know WHY and smart guys who are going to fix it with nice way.
-> > 
-> > Mr. Frontswap, What do you think about it?
-> 
-> He's not me of course :)
-> 
-> Hugh
-> 
-> --- 3.8-rc6/mm/swapfile.c	2012-12-22 09:43:27.668015583 -0800
-> +++ linux/mm/swapfile.c	2013-02-03 17:31:04.148181857 -0800
-> @@ -637,8 +637,11 @@ int reuse_swap_page(struct page *page)
->  		return 0;
->  	count = page_mapcount(page);
->  	if (count <= 1 && PageSwapCache(page)) {
-> -		count += page_swapcount(page);
-> -		if (count == 1 && !PageWriteback(page)) {
-> +		if (PageWriteback(page))
-> +			count = 2;	/* not safe yet to free its swap */
-> +		else
-> +			count += page_swapcount(page);
-> +		if (count <= 1) {
->  			delete_from_swap_cache(page);
->  			SetPageDirty(page);
->  		}
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
