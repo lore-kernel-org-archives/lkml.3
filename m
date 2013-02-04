@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3BDEwW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 23:52:22 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:50622 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771Ab3BDEwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 23:52:20 -0500
+	id S1754011Ab3BDEwz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 23:52:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55420 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753771Ab3BDEwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 23:52:54 -0500
+Message-ID: <510F3E93.9080708@zytor.com>
+Date: Sun, 03 Feb 2013 20:52:35 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Originating-IP: [50.196.179.26]
-In-Reply-To: <20130204030221.GY4503@ZenIV.linux.org.uk>
-References: <1359291015-4544-1-git-send-email-matthias.bgg@gmail.com>
-	<20130127195714.GA11224@samfundet.no>
-	<20130127203009.GG4503@ZenIV.linux.org.uk>
-	<20130127203954.GA22063@samfundet.no>
-	<20130204001055.GV4503@ZenIV.linux.org.uk>
-	<20130204003047.GW4503@ZenIV.linux.org.uk>
-	<20130204013111.GX4503@ZenIV.linux.org.uk>
-	<20130204030221.GY4503@ZenIV.linux.org.uk>
-Date: Sun, 3 Feb 2013 20:52:18 -0800
-X-Google-Sender-Auth: kHy8NbgEqvjak7fz36y-lCTzmFU
-Message-ID: <CACiLriQbrKvo128hhH4Cd3U+qZwgXPGFEAs4b3=SsK59=4Kkkw@mail.gmail.com>
-Subject: Re: [PATCH] arch: avr32: add dummy syscalls
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Cliff Wickman <cpw@sgi.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH] kdump: do not drop entire e820 in crash kernel
+References: <E1U2DId-0001E4-Df@eag09.americas.sgi.com>
+In-Reply-To: <E1U2DId-0001E4-Df@eag09.americas.sgi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 3, 2013 at 7:02 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Feb 04, 2013 at 01:31:11AM +0000, Al Viro wrote:
+On 02/03/2013 08:04 PM, Cliff Wickman wrote:
+> From: Cliff Wickman <cpw@sgi.com>
 >
->> Unless I'm misreading ocavr32.pdf, that should be (R12, R10:R11, R9, R8) and
->> (R12, R10:R11, R9:R8, stack) resp., so fadvise64 doesn't need a wrapper, but
->> fadvise64_64 does.  And something like (s32, s32, s64, s64) would turn into
->> (R12, R11, R9:R8, stack, stack); AFAICS, we don't have anything that ugly...
+> The crash kernel is not able to find its root device if that device is not
+> on PCI 0.
 >
-> Oh, yes, we do - fallocate(2).  int fd, int mode, loff_t offset, loff_t len.
-> On something like mips or sparc32 it packs nicely; on avr32 it doesn't.
-> Could you confirm that I haven't misparsed the ABI?
+> This is because it is booted with the command line option memmap=exactmap
+> which currently clears the e820 table.  So ACPI processing does not
+> find reserved i/o spaces.
+>
+> This works for a device on PCI 0 because ACPI falls back to a legacy mode.
+> But the error message " [Firmware Bug]: PCI: MMCONFIG at
+>   [mem 0x80000000-0x80cfffff] not reserved in ACPI motherboard resources"
+> is written to the log even in this functioning case.
+>
+> It fails for some devices on UV2, and only for UV2, because SGI seems to
+> be the only manufacturer currently using the extended PCI(>0).
+>
+> The fix is to not drop the entire e820 table on a memmap=exactmap, but
+> to preserve all the non-E820_RAM reservations that the BIOS has made.
+>
 
-You're right on -- in this case, the compiler will skip r10, and do
-(r12, r11, r8:r9, stack). We pass the syscall number in r8, but we
-also unconditionally move r7 to r8 in the syscall path, so it
-shouldn't matter (libc does the opposite when necessary).
+NAK.  This is a fundamntal semantic change to  something that isn't just 
+affecting kexec.
 
-I remember some talk about having the compiler reuse r10 for the next
-32-bit argument in cases like this, but I don't think it ever
-happened.
+This ultimately is the result of the very bad design decision to use the 
+command line to muck with the target kernel memory map.
 
-Havard
+The work is underway to fix this, but this is not the right fix.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
