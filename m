@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab3BDOeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 09:34:20 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19159 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab3BDOeS (ORCPT
+	id S1755626Ab3BDOfj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 09:35:39 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57329 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab3BDOfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 09:34:18 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 04 Feb 2013 06:33:39 -0800
-Date: Mon, 4 Feb 2013 16:34:01 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 09/10] clk: tegra: Implement clocks for Tegra114
-Message-ID: <20130204143401.GW2364@tbergstrom-lnx.Nvidia.com>
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com>
- <1359713962-16822-10-git-send-email-pdeschrijver@nvidia.com>
- <510F5E87.90801@nvidia.com>
+	Mon, 4 Feb 2013 09:35:37 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <stern@rowland.harvard.edu>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 09/31] USB: ehci-omap: Use devm_ioremap_resource()
+Date: Mon, 4 Feb 2013 16:35:20 +0200
+Message-ID: <1359988520-11996-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <510F5E87.90801@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 08:08:55AM +0100, Prashant Gaikwad wrote:
-> On Friday 01 February 2013 03:48 PM, Peter De Schrijver wrote:
+Make use of devm_ioremap_resource() and correct comment.
 
-...
+CC: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ drivers/usb/host/ehci-omap.c |   21 ++++++---------------
+ 1 files changed, 6 insertions(+), 15 deletions(-)
 
-> > +       /* xusb_hs_src */
-> > +       val = readl(clk_base + CLK_SOURCE_XUSB_SS_SRC);
-> > +       val |= BIT(25); /* always select PLLU_60M */
-> > +       writel(val, clk_base + CLK_SOURCE_XUSB_SS_SRC);
-> > +
-> > +       clk = clk_register_fixed_factor(NULL, "xusb_hs_src", "pll_u_60M", 0,
-> > +                                       1, 1);
-> > +       clks[xusb_hs_src] = clk;
-> > +
-> 
-> With device tree we can directly use pll_u_60M, no need to register 
-> clock with fixed factor 1.
-> Same comment for dis1-fixed, dsi2-fixed and mipi-cal-fast clocks.
-> 
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 30fc482..6b088a4 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -216,23 +216,17 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 
+ 	res =  platform_get_resource_byname(pdev,
+ 				IORESOURCE_MEM, "ehci");
+-	if (!res) {
+-		dev_err(dev, "UHH EHCI get resource failed\n");
+-		return -ENODEV;
+-	}
+-
+-	regs = ioremap(res->start, resource_size(res));
+-	if (!regs) {
+-		dev_err(dev, "UHH EHCI ioremap failed\n");
+-		return -ENOMEM;
++	regs = devm_ioremap_resource(dev, res);
++	if (IS_ERR(regs)) {
++		dev_err(dev, "Resource request/ioremap failed\n");
++		return PTR_ERR(regs);
+ 	}
+ 
+ 	hcd = usb_create_hcd(&ehci_omap_hc_driver, dev,
+ 			dev_name(dev));
+ 	if (!hcd) {
+-		dev_err(dev, "failed to create hcd with err %d\n", ret);
+-		ret = -ENOMEM;
+-		goto err_io;
++		dev_err(dev, "Failed to create HCD\n");
++		return -ENOMEM;
+ 	}
+ 
+ 	hcd->rsrc_start = res->start;
+@@ -285,8 +279,6 @@ err_pm_runtime:
+ 	pm_runtime_put_sync(dev);
+ 	usb_put_hcd(hcd);
+ 
+-err_io:
+-	iounmap(regs);
+ 	return ret;
+ }
+ 
+@@ -306,7 +298,6 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+ 
+ 	usb_remove_hcd(hcd);
+ 	disable_put_regulator(dev->platform_data);
+-	iounmap(hcd->regs);
+ 	usb_put_hcd(hcd);
+ 
+ 	pm_runtime_put_sync(dev);
+-- 
+1.7.4.1
 
-Does it make sense to have separate DT IDs at all then?
-
-Cheers,
-
-Peter.
