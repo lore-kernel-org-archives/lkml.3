@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab3BDLTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:19:17 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55121 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962Ab3BDLTQ (ORCPT
+	id S1754209Ab3BDLYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:24:05 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:61631 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab3BDLYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:19:16 -0500
-Date: Mon, 4 Feb 2013 16:47:11 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] uprobes/perf: Always increment trace_uprobe->nhit
-Message-ID: <20130204111711.GB12900@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20130131191752.GA30410@redhat.com>
- <20130131191832.GA30457@redhat.com>
+	Mon, 4 Feb 2013 06:24:02 -0500
+Date: Mon, 4 Feb 2013 12:23:48 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Terje Bergstrom <tbergstrom@nvidia.com>
+Cc: amerilainen@nvidia.com, airlied@linux.ie, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5,RESEND 6/8] gpu: host1x: Remove second host1x driver
+Message-ID: <20130204112348.GB595@avionic-0098.mockup.avionic-design.de>
+References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
+ <1358250244-9678-7-git-send-email-tbergstrom@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Yylu36WmvOXNoKYn"
 Content-Disposition: inline
-In-Reply-To: <20130131191832.GA30457@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020411-5140-0000-0000-000002B66CA5
+In-Reply-To: <1358250244-9678-7-git-send-email-tbergstrom@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:TL02M5LcCAwmacIzbddYReV2CHgFXGQ4wxGtZJRBwWj
+ cXLCZ+ul/CpbtXF+45WLzQ0cCVQu+5f2UPQNZRL/lMbLzM1IcC
+ BLP0v44kuzhZ69+kh4664SKEEEL4/8u4yU0GhfsksIMkNOEs9/
+ goEk7zrbgyybGYrljLz6WxD5rrCOpstQcHQbHAa96orz5m51GV
+ z6Bon5XO7NTWtrNlJ5BzHQyJK8miE7qxnyM9de5iGC0j72gqX0
+ 8t1NtyOX5ZNmG1GdeouLFGnTYBRILkyFaDGXi20IGgtGTllSgy
+ 01H+AeGOmq59S3w+q+NCMkt2+klIXdCQdd19lff2RTQs6J0PW7
+ +nYRUCsZWn3d13lzjmM0RyFJOPzo+shPe/psnQwzW+F8YmGWAw
+ bLDXs2HFRMdxQNEaLZoM+iMKk60CizPFMQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-01-31 20:18:32]:
 
-> Move tu->nhit++ from uprobe_trace_func() to uprobe_dispatcher().
-> 
-> ->nhit counts how many time we hit the breakpoint inserted by this
-> uprobe, we do not want to loose this info if uprobe was enabled by
-> sys_perf_event_open().
-> 
+--Yylu36WmvOXNoKYn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Though I dont see a problem with this change, It seems unnecessary for
-me.
+On Tue, Jan 15, 2013 at 01:44:02PM +0200, Terje Bergstrom wrote:
+[...]
+> +void host1x_set_drm_data(struct platform_device *pdev, void *data)
+> +{
+> +	struct host1x *host1x = platform_get_drvdata(pdev);
+> +	host1x->drm_data = data;
+> +}
+> +
+> +void *host1x_get_drm_data(struct platform_device *pdev)
+> +{
+> +	struct host1x *host1x = platform_get_drvdata(pdev);
+> +	return host1x->drm_data;
+> +}
 
-Info from nhits is mostly for /sys/kernel/debug/tracing/uprobe_profile
+Passing around struct device * should be enough and avoids the need for
+the explicit cast to struct platform_device.
 
-I am not sure how sys_perf_event_open() is making use of this?
+It is a bit unfortunate that we have now have two structures called
+host1x, but I think we can live with it for now. We can clean that up
+once the code has been merged.
 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/trace/trace_uprobe.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 55cdc14..0a9a8de 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -473,8 +473,6 @@ static void uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  	unsigned long irq_flags;
->  	struct ftrace_event_call *call = &tu->call;
-> 
-> -	tu->nhit++;
-> -
->  	local_save_flags(irq_flags);
->  	pc = preempt_count();
-> 
-> @@ -698,6 +696,7 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
->  	struct trace_uprobe *tu;
-> 
->  	tu = container_of(con, struct trace_uprobe, consumer);
-> +	tu->nhit++;
-> 
->  	if (tu->flags & TP_FLAG_TRACE)
->  		uprobe_trace_func(tu, regs);
-> -- 
-> 1.5.5.1
-> 
+Thierry
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+--Yylu36WmvOXNoKYn
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRD5pEAAoJEN0jrNd/PrOhD1gP/08Yf8YdNq2HNCTORy/oVRt7
+yZpxzmEq6gtYBzQAz9gDLQPEEAxfBveZSYjgbb/SSMDIhd14IH7xbFlpz0xi4aCk
+UsrrxMt1CKCsUZ22mMXt7IByNVwINmUfQ7qlK2I1Nk165zsOreb5cWcoH40oMwf8
+IyylVpp/smtym8ctDjmx9S/BXFUCuChyR1dagD1y52OV4947ma/nT5HjoeE1aQE4
+bIngbnwZdYXxiMX6lijDC2lmGFdAFe8sSVuUUlgdXFxRllxDOKDun/VaotoU7aps
+HGDW/ib9dQG2o14hWYSmcM8WPZlBLu8lnXnhiv+g2iBrSvcggLXa1p+he5qh2A6T
+k0DNztD0cHZ1CEo1+vDkizEJj4HB3HAnPuxwcRODJOqruEyV9yCF4waaiQLxBynV
+9NMvqp5Ef3tif5sWkfjM39eUq2dAMwERmkUuY2ie8VsvmzaRqQ6dqEtEV+DIfGrA
+YBJAx5HJEMr/4nf1E6GNghXimy7UfWfKQ443beLdMdlJa7oU0GJ8/XG00DqC+4Oa
+i0S8ztNC2uVa3RxDIJNdGwxp+7AlVD6WNDZayq9y0JHZdZy5Dx/jZDH5OhfeWb/J
++LrmhFvhEHzblEcX4j2+H6KDN73dbLKUb1Y4DxU+Rhg1NZgkVBpRhmJ53SSZ+3Ne
+KYsSgmr7DTsVDMMbi9Gs
+=vRt2
+-----END PGP SIGNATURE-----
+
+--Yylu36WmvOXNoKYn--
