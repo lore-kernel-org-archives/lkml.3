@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab3BDOoD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 09:44:03 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:58470 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753637Ab3BDOoA (ORCPT
+	id S1755795Ab3BDOq6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 09:46:58 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:58693 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab3BDOq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 09:44:00 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>
-Subject: [PATCH v2] fat: eliminate iterations in fat_search_long and __fat_readdir in case of EOD
-Date: Mon,  4 Feb 2013 23:43:47 +0900
-Message-Id: <1359989028-7457-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 4 Feb 2013 09:46:57 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <stern@rowland.harvard.edu>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 31/31] USB: ehci-omap: Select NOP USB transceiver driver
+Date: Mon, 4 Feb 2013 16:46:45 +0200
+Message-ID: <1359989205-12879-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+In PHY mode we need to have the nop-usb-xceiv transceiver
+driver to operate, so select it in Kconfig.
 
-When doing lookups via fat_search_long(), we can stop checking for
-further entries if we detect End of Directory, i.e. if (de->name[0] ==
-0x00).The current code traverses the cluster chain of a directory until a hit
-is found or till the last cluster for that directory, ignoring the EOD
-mark. Fix this.
-
-Likewise,when readdir(3) is called, we can stop checking for further
-entries in __fat_readdir() when we hit EOD.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
+CC: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- fs/fat/dir.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/host/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/fs/fat/dir.c b/fs/fat/dir.c
-index 58bf744..78dabf00 100644
---- a/fs/fat/dir.c
-+++ b/fs/fat/dir.c
-@@ -484,10 +484,10 @@ parse_record:
- 		nr_slots = 0;
- 		if (de->name[0] == DELETED_FLAG)
- 			continue;
-+		if (!de->name[0])
-+			goto end_of_dir;
- 		if (de->attr != ATTR_EXT && (de->attr & ATTR_VOLUME))
- 			continue;
--		if (de->attr != ATTR_EXT && IS_FREE(de->name))
--			continue;
- 		if (de->attr == ATTR_EXT) {
- 			int status = fat_parse_long(inode, &cpos, &bh, &de,
- 						    &unicode, &nr_slots);
-@@ -608,8 +608,8 @@ parse_record:
- 			goto record_end;
- 		if (de->attr != ATTR_EXT && (de->attr & ATTR_VOLUME))
- 			goto record_end;
--		if (de->attr != ATTR_EXT && IS_FREE(de->name))
--			goto record_end;
-+		if (!de->name[0])
-+			goto end_of_dir;
- 	} else {
- 		if ((de->attr & ATTR_VOLUME) || IS_FREE(de->name))
- 			goto record_end;
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 11e102e..2d2975d 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -157,6 +157,7 @@ config USB_EHCI_MXC
+ config USB_EHCI_HCD_OMAP
+ 	tristate "EHCI support for OMAP3 and later chips"
+ 	depends on USB_EHCI_HCD && ARCH_OMAP
++	select NOP_USB_XCEIV
+ 	default y
+ 	---help---
+ 	  Enables support for the on-chip EHCI controller on
 -- 
-1.7.9.5
+1.7.4.1
 
