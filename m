@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3BDL7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:59:05 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:37980 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674Ab3BDL6K (ORCPT
+	id S1755638Ab3BDL6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:58:03 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:61805 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab3BDL6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:58:10 -0500
+	Mon, 4 Feb 2013 06:58:00 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 70/73] regulator: ab8500: Set enable enable_time in regulator_desc
-Date: Mon,  4 Feb 2013 11:54:25 +0000
-Message-Id: <1359978868-28736-71-git-send-email-lee.jones@linaro.org>
+Cc: David Paris <david.paris@stericsson.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 65/73] regulator: ab8500: Update VAna supply management for the AB9540
+Date: Mon,  4 Feb 2013 11:54:20 +0000
+Message-Id: <1359978868-28736-66-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
 References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
@@ -20,44 +20,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow the regulator framework to directly access the time it takes
-any given regulator to settle. This saves time and code because
-without it we would have to implement a dedication function to read
-the value from elsewhere.
+From: David Paris <david.paris@stericsson.com>
 
+Workaround to switch off VAna when going to suspend. In combination
+with workaround that makes VAna always ON in running mode.
+
+Signed-off-by: David Paris <david.paris@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Yvon CORRE <yvon.corre@stericsson.com>
+Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
 ---
- drivers/regulator/ab8500.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/regulator/ab8500.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 6a96618..8ec5c4f 100644
+index f31669e..fa0979a 100644
 --- a/drivers/regulator/ab8500.c
 +++ b/drivers/regulator/ab8500.c
-@@ -1097,6 +1097,7 @@ static struct ab8500_regulator_info
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2000000_voltage,
-+			.enable_time    = 10000,
- 		},
- 		.delay			= 10000,
- 		.load_lp_uA		= 1000,
-@@ -1361,6 +1362,7 @@ static struct ab8500_regulator_info
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2000000_voltage,
-+			.enable_time    = 10000,
- 		},
- 		.delay			= 10000,
- 		.load_lp_uA		= 1000,
-@@ -1657,6 +1659,7 @@ static struct ab8500_regulator_info
- 			.id		= AB8540_LDO_TVOUT,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
-+			.enable_time    = 10000,
- 		},
- 		.delay			= 10000,
- 		.load_lp_uA		= 1000,
+@@ -1451,9 +1451,9 @@ static struct ab8500_regulator_info
+ 		.update_bank		= 0x04,
+ 		.update_reg		= 0x06,
+ 		.update_mask		= 0x0c,
+-		.update_val		= 0x04,
++		.update_val		= 0x08,
+ 		.update_val_idle	= 0x0c,
+-		.update_val_normal	= 0x04,
++		.update_val_normal	= 0x08,
+ 	},
+ };
+ 
 -- 
 1.7.9.5
 
