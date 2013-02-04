@@ -1,104 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab3BDGpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 01:45:32 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9034 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3BDGpa (ORCPT
+	id S1753429Ab3BDGqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 01:46:08 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:55682 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab3BDGqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 01:45:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 03 Feb 2013 22:42:33 -0800
-Message-ID: <510F58FA.5000101@nvidia.com>
-Date: Mon, 4 Feb 2013 12:15:14 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 4 Feb 2013 01:46:06 -0500
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 08/10] ARM: dt: Add references to tegra_car clocks
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com> <1359713962-16822-9-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1359713962-16822-9-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1359935387-19065-1-git-send-email-amit.daniel@samsung.com>
+References: <1359935387-19065-1-git-send-email-amit.daniel@samsung.com>
+Date: Mon, 4 Feb 2013 12:16:05 +0530
+Message-ID: <CAK9yfHx+9uu_aJTaFC2jLuFej_SvggWGDddDm-qKoetVfdfLYg@mail.gmail.com>
+Subject: Re: [PATCH V3] regulator: add device tree support for s5m8767
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        amit.kachhap@gmail.com, Thomas Abraham <thomas.abraham@linaro.org>,
+        kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 February 2013 03:48 PM, Peter De Schrijver wrote:
-> Add references to tegra_car clocks for the basic device nodes.
+On 4 February 2013 05:19, Amit Daniel Kachhap <amit.daniel@samsung.com> wrote:
+> This device tree support is added for PMIC block of S5m8767 multi
+> function driver. The usage detail is added in the device tree
+> documentation section. This change is tested on exynos5250 based
+> arndale platform by regulator voltage set/get API's.
 >
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
+> Reviewed-by: Thomas Abraham <thomas.abraham@linaro.org>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+Tested this patch using [1] on Exynos4412 based Origen board and it works fine.
+Feel free to add Tested-by: Sachin Kamat <sachin.kamat@linaro.org> if needed.
 
->   arch/arm/boot/dts/tegra114.dtsi |    7 ++++++-
->   1 files changed, 6 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-> index 96a8235..1dec620 100644
-> --- a/arch/arm/boot/dts/tegra114.dtsi
-> +++ b/arch/arm/boot/dts/tegra114.dtsi
-> @@ -27,7 +27,7 @@
->   	};
->   
->   	tegra_car: clock {
-> -		compatible = "nvidia,tegra114-car, nvidia,tegra30-car";
-> +		compatible = "nvidia,tegra114-car";
->   		reg = <0x60006000 0x1000>;
->   		#clock-cells = <1>;
->   	};
-> @@ -43,6 +43,7 @@
->   		reg-shift = <2>;
->   		interrupts = <0 36 0x04>;
->   		status = "disabled";
-> +		clocks = <&tegra_car 6>;
->   	};
->   
->   	serial@70006040 {
-> @@ -51,6 +52,7 @@
->   		reg-shift = <2>;
->   		interrupts = <0 37 0x04>;
->   		status = "disabled";
-> +		clocks = <&tegra_car 192>;
->   	};
->   
->   	serial@70006200 {
-> @@ -59,6 +61,7 @@
->   		reg-shift = <2>;
->   		interrupts = <0 46 0x04>;
->   		status = "disabled";
-> +		clocks = <&tegra_car 55>;
->   	};
->   
->   	serial@70006300 {
-> @@ -67,12 +70,14 @@
->   		reg-shift = <2>;
->   		interrupts = <0 90 0x04>;
->   		status = "disabled";
-> +		clocks = <&tegra_car 65>;
->   	};
->   
->   	rtc {
->   		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
->   		reg = <0x7000e000 0x100>;
->   		interrupts = <0 2 0x04>;
-> +		clocks = <&tegra_car 4>;
->   	};
->   
->   	pmc {
->
+[1] http://patches.linaro.org/14445/
 
+-- 
+With warm regards,
+Sachin
