@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab3BDKyr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 05:54:47 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:46808 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab3BDKyo convert rfc822-to-8bit (ORCPT
+	id S1754062Ab3BDK5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 05:57:43 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34606 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab3BDK5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 05:54:44 -0500
-Message-ID: <510F9371.1060704@arm.com>
-Date: Mon, 04 Feb 2013 10:54:41 +0000
-From: Serban Constantinescu <Serban.Constantinescu@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 4 Feb 2013 05:57:42 -0500
+Date: Mon, 4 Feb 2013 10:50:52 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Cc: Johannes Stezenbach <js@sig21.net>, Nicolas Pitre <nico@fluxnic.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>, hyojun.im@lge.com,
+        chan.jeong@lge.com, gunho.lee@lge.com, minchan.kim@lge.com,
+        namhyung.kim@lge.com, raphael.andy.lee@gmail.com,
+        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>
+Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
+Message-ID: <20130204105052.GA17786@n2100.arm.linux.org.uk>
+References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com> <20130128142510.68092e10.akpm@linux-foundation.org> <alpine.LFD.2.02.1301282320430.6300@xanadu.home> <20130130102353.GA8925@sig21.net> <510F16C9.2060901@oberhumer.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-team@android.com" <kernel-team@android.com>,
-        "arve@android.com" <arve@android.com>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Subject: Re: [PATCH 1/2] staging: android: ashmem: fix ashmem pin/unpin interface
-References: <1359734881-15093-1-git-send-email-serban.constantinescu@arm.com> <1359734881-15093-2-git-send-email-serban.constantinescu@arm.com> <20130201161836.GA29021@kroah.com> <510BF365.2010609@arm.com> <20130204014114.GA14058@kroah.com>
-In-Reply-To: <20130204014114.GA14058@kroah.com>
-X-OriginalArrivalTime: 04 Feb 2013 10:54:41.0718 (UTC) FILETIME=[08F1FD60:01CE02C6]
-X-MC-Unique: 113020410544300201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510F16C9.2060901@oberhumer.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/13 01:41, Greg KH wrote:
-> On Fri, Feb 01, 2013 at 04:55:01PM +0000, Serban Constantinescu wrote:
->> Hi Greg,
->>
->> On 01/02/13 16:18, Greg KH wrote:
->>> On Fri, Feb 01, 2013 at 04:08:00PM +0000, Serban Constantinescu wrote:
->>>> The values exchanged between kernel and userspace through struct
->>>> ashmem_pin should be of type size_t. This change won't affect the
->>>> existing interface but will stand as the basis of 64bit compat layer.
->>>
->>> How do you define size_t with a 64bit kernel and a 32bit userspace
->>> properly?  Doesn't this change open up a bunch of problems?
->>
->> The current ashmem pin/unpin kernel interface uses __u32 to specify
->> the memory region and length in bytes. However these values  should
->> be of type size_t so that they are able to represent the whole range
->> of possible values when compiled for a 64bit platform.
->
-> Yes, the issue is, what size is size_t on the system if you have a 32bit
-> userspace and a 64bit kernel?  :)
->
-> That's why we have specific types for when we cross the user/kernel
-> boundry.  Why not use them instead here so that you know it will work
-> properly in the future?
+On Mon, Feb 04, 2013 at 03:02:49AM +0100, Markus F.X.J. Oberhumer wrote:
+> At least akpm did approve the LZO update for inclusion into 3.7, but the code
+> still has not been merged into the main tree.
+>   > On 2012-10-09 21:26, Andrew Morton wrote:
+>   > [...]
+>   > The changes look OK to me.  Please ask Stephen to include the tree in
+>   > linux-next, for a 3.7 merge.
+> 
+> Well, this probably means I have done a rather poor marketing.
 
-The patch set was developed using size_t to avoid the use of a #ifdef
-statement that would split the use for 64bit platforms using u64 and
-32bit using u32. On a 64/32 system you will have a 32bit size_t in the
-user space and a 64bit size_t in the kernel. However in the kernel entry 
-- compat_ashmem_ioctl we explicitly cast from compat_size_t (32bit - 
-same as the userspace) to size_t (64bit used by the kernel).
+I assume this code is sitting in *your* tree?  How do you think it gets
+into mainline?
 
- > 695                 pin.offset = (size_t)c_pin.offset;
- > 696                 pin.len = (size_t)c_pin.len;
-
-Same logic was applied for existing size_t ioctls:
-
- > 46 #define ASHMEM_SET_SIZE         _IOW(__ASHMEMIOC, 3, size_t)
-
-where on a 64/32 system you are using:
-
- > 57 #define COMPAT_ASHMEM_SET_SIZE          _IOW(__ASHMEMIOC, 3, 
-compat_size_t)
-
-This kernel header is not intended to be exported for current Android
-userspace (even though we have tested this with success on one of the
-latest Android revisions).
-
->> Android API uses ashmem driver through libcutils, from where I
->> attach the following snippet:
->>
->> <aosp>/system/core/libcutils/ashmem-dev.c
->>
->>    75 int ashmem_pin_region(int fd, size_t offset, size_t len)
->>    76 {
->>    77         struct ashmem_pin pin = { offset, len };
->>    78         return ioctl(fd, ASHMEM_PIN, &pin);
->>    79 }
->
-> Again, the 32/64 bit issue is to blame.
->
->> The kernel changes inline with the userspace usage and do not affect
->> existing 32bit Android (we have exported the new kernel header,
->> rebuilt and tested the interface with success).
->>
->> However this change will affect any 64bit userspace using the
->> current faulty interface, but there is none that we know of.
->
-> I'd like the Android developers to give some feedback on this, before
-> I'll do anything.  I still think you need to change this to use the
-> proper kernel types.
-
-If you or the Android developers consider the use of #ifdef u64/u32 is 
-better I will rework the patch accordingly.
-
-
-Thanks,
-Serban Constantinescu
-
+There is no automatic way that code from linux-next gets merged into
+mainline.  That is up to the tree owner to make happen, either by getting
+their tree into a parent maintainers tree, or if there is none, asking
+Linus to pull your tree at the appropriate time.
