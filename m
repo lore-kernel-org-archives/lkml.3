@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab3BDPFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 10:05:33 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52222 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755853Ab3BDPFa (ORCPT
+	id S1755976Ab3BDPGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 10:06:50 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:43678 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853Ab3BDPGs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 10:05:30 -0500
-Date: Mon, 4 Feb 2013 15:05:27 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "J, KEERTHY" <j-keerthy@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>
-Subject: Re: [PATCH] Regulator: Reorder the min max assignment in the
- sequence of regulator_set_voltage function
-Message-ID: <20130204150527.GN4720@opensource.wolfsonmicro.com>
-References: <1359695098-3630-1-git-send-email-j-keerthy@ti.com>
- <DC88CAD03C0052499C1907B327FC63229B84BD@DBDE01.ent.ti.com>
+	Mon, 4 Feb 2013 10:06:48 -0500
+Date: Mon, 04 Feb 2013 09:06:44 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [docs] /proc/irq/
+To: Oleg <lego12239@yandex.ru>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20130130094432.GA30556@localhost> (from lego12239@yandex.ru on
+	Wed Jan 30 03:44:32 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1359990404.12062.9@driftwood>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="o+ZCuNqY+dEAKBWl"
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <DC88CAD03C0052499C1907B327FC63229B84BD@DBDE01.ent.ti.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/30/2013 03:44:32 AM, Oleg wrote:
+>   Hello.
+> 
+>   Where can i find an info about /proc/irq/*/affinity_hint ?
+>   Documentation/filesystems/proc.txt says nothing about it (3.2.37  
+> kernel).
 
---o+ZCuNqY+dEAKBWl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The general procedure is to look for the git commit, which may have a  
+good commit comment, and also gives you an idea when it went in so you  
+can look in the mailing list archives:
 
-On Mon, Feb 04, 2013 at 11:53:20AM +0000, J, KEERTHY wrote:
-> Hi Mark/Liam,
->=20
-> Any comments in this?
+cd linux
+find . -name '"affinity_hint"'
+git annotate kernel/proc/irq.c
+(search for "affinity_hint" in quotes, line 331 here, the bit on the  
+left edge is the commit hash.)
 
-Don't top post and a reasonable amount of time for a reply.
+commit e7a297b0d7d6049bd4e423ac1e17da31e4c401b8
+Author: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Date:   Fri Apr 30 14:44:50 2010 -0700
 
---o+ZCuNqY+dEAKBWl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+     genirq: Add CPU mask affinity hint
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+     This patch adds a cpumask affinity hint to the irq_desc structure,
+     along with a registration function and a read-only proc entry for  
+each
+     interrupt.
 
-iQIcBAEBAgAGBQJRD84bAAoJELSic+t+oim9F5QP/RpE+AlO+VlQTxxT54RCq5by
-MXFp5qGO5x2r0x0FNSjnJEZfb5g5p0gJYd66JgOQNehPVRefiY36lSg3ok0/C2V3
-/Bt696TzTNyj2K2J8xYR09ep7I6+SL7Y3tRBmhn/CBdj5GdDNJzOBSJvpEtU7Nbd
-dp3oSNDle4hxDK3FZAIWsW+00G9HgRqDFDevjPML3zsBFEtUZP98fj2MgXipJ7Bd
-pYwl0eInpDWC45ggFnLFf9BatUI97td5HxO4qXriYjllHj8Vi6h9L2dGFdKu6DhC
-k422SO318eMTTJO4XJzniRiXy/FgzdEXZCNKLS9dLG8hT4m0AWwpkKXS6mBun9xL
-TGGxkD1FPjm5CR1UiPqzOaeFeXnH7vChSpOkp/GFG6PWqc2RzbYwC+A3aBtxTdX7
-bL9RA7B8qj2kEVkO+20VYFkCQLwijpJ/vrfaYaeBOCzdr6thLm2WIx2Sfku9sr0V
-/Xfche/TILnSqAs4zxpPyfrYtvtwC0Xnw9U8mYO9ECmMLpGww5yYvMQ7WTFo5CK7
-Wk/rdc1s+CANebIMWvmMfvvEiLyz097OcQtkKt/An679roolCVTnZkJL2UiYlig+
-zdr3ltLCXvH48H82+0RokAEzR4+sAVMHiXhWfb7mLBdMTUjKtdM2ffNAnqxQGxOs
-aCE1aLPIXk6siKyxTEiE
-=79MF
------END PGP SIGNATURE-----
+     This affinity_hint handle for each interrupt can be used by  
+underlying
+     drivers that need a better mechanism to control interrupt affinity.
+     The underlying driver can register a cpumask for the interrupt,  
+which
+     will allow the driver to provide the CPU mask for the interrupt to
+     anything that requests it.  The intent is to extend the userspace
+     daemon, irqbalance, to help hint to it a preferred CPU mask to  
+balance
+     the interrupt into.
 
---o+ZCuNqY+dEAKBWl--
+     [ tglx: Fixed compile warnings, added WARN_ON, made SMP only ]
+
+     Signed-off-by: Peter P Waskiewicz Jr  
+<peter.p.waskiewicz.jr@intel.com>
+
+That doesn't clarifiy much. Grepping the source for irq_affinity it  
+looks like the kernel treats this as a write-only property, and never  
+does anything with the info. However, include/linux/irqdesc.h has  
+documentation for the structure containing the property, and it says  
+this about that field:
+
+  * @affinity_hint:      hint to user space for preferred irq affinity
+
+So this "irqbalance" daemon you're probably not running (unless it got  
+sucked into the systemd hairball, in which case you don't know you're  
+running it and can't stop it) reads this process and tells the kernel  
+to move the irq worker thread to this CPU while load balancing.
+
+It sounds like you're saying Documentation/filesystems/proc.txt should  
+be updated to include this information?
+
+Rob
