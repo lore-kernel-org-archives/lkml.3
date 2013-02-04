@@ -1,149 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab3BDDQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 22:16:56 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:35865 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753759Ab3BDDQy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 22:16:54 -0500
-Message-ID: <510F27DD.8090508@huawei.com>
-Date: Mon, 4 Feb 2013 11:15:41 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1753874Ab3BDDVw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 22:21:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54612 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753759Ab3BDDVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 22:21:50 -0500
+Message-ID: <510F2933.6010807@zytor.com>
+Date: Sun, 03 Feb 2013 19:21:23 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Aaron Durbin <adurbin@google.com>, Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH 3/4] eventfd: make operations on eventfd return -EIDRM
- if it's hung up
-References: <510CB733.2080904@huawei.com> <510CB772.80908@huawei.com> <20130202161229.GB12939@shutemov.name>
-In-Reply-To: <20130202161229.GB12939@shutemov.name>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: avr32: add dummy syscalls
+References: <1359291015-4544-1-git-send-email-matthias.bgg@gmail.com> <20130127195714.GA11224@samfundet.no> <20130127203009.GG4503@ZenIV.linux.org.uk> <20130127203954.GA22063@samfundet.no> <20130204001055.GV4503@ZenIV.linux.org.uk> <20130204003047.GW4503@ZenIV.linux.org.uk> <20130204013111.GX4503@ZenIV.linux.org.uk>
+In-Reply-To: <20130204013111.GX4503@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/3 0:12, Kirill A. Shutemov wrote:
-> On Sat, Feb 02, 2013 at 02:51:30PM +0800, Li Zefan wrote:
->> Currently when a cgroup is removed, it calls eventfd_signal() for
->> each registered cgroup event, so userspace can be notified and blocked
->> reads can be unblocked.
->>
->> The problem is, if we have multiple threads blocked on the same eventfd,
->> only one of them will be unlocked.
->>
->> This patch makes sure all operations on the same eventfd can be unbocked.
->>
->> There's another problem, a new cgroup event can be registered while we
->> are removing the cgroup, and then reading the eventfd will be blocked
->> until the thread is killed. This patch also fixes this issue.
->>
->> Signed-off-by: Li Zefan <lizefan@huawei.com>
->> ---
->>  fs/eventfd.c    | 23 +++++++++++++++++++++--
->>  kernel/cgroup.c |  1 -
->>  2 files changed, 21 insertions(+), 3 deletions(-)
->>
->> diff --git a/fs/eventfd.c b/fs/eventfd.c
->> index acf15e3..48de15a 100644
->> --- a/fs/eventfd.c
->> +++ b/fs/eventfd.c
->> @@ -35,6 +35,7 @@ struct eventfd_ctx {
->>  	 */
->>  	__u64 count;
->>  	unsigned int flags;
->> +	bool hung_up;
->>  };
->>  
->>  /**
->> @@ -71,11 +72,19 @@ EXPORT_SYMBOL_GPL(eventfd_signal);
->>   * eventfd_signal_hangup - Notify that this eventfd is hung up.
->>   * @ctx: [in] Pointer to the eventfd context.
->>   *
->> - * Issue a POLLHUP wakeup.
->> + * Issue a POLLHUP wakeup. All current blocked reads, writes and polls on
->> + * this eventfd will return with -EIDRM. Future operations on it will also
->> + * return with -EDIRM.
->>   */
->>  void eventfd_signal_hangup(struct eventfd_ctx *ctx)
->>  {
->> -	wake_up_poll(&ctx->wqh, POLLHUP);
->> +	unsigned long flags;
->> +
->> +	spin_lock_irqsave(&ctx->wqh.lock, flags);
->> +	ctx->hung_up = true;
->> +	if (waitqueue_active(&ctx->wqh))
->> +		wake_up_locked_poll(&ctx->wqh, POLLHUP);
->> +	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
->>  }
->>  
->>  static void eventfd_free_ctx(struct eventfd_ctx *ctx)
->> @@ -140,6 +149,8 @@ static unsigned int eventfd_poll(struct file *file, poll_table *wait)
->>  		events |= POLLERR;
->>  	if (ULLONG_MAX - 1 > ctx->count)
->>  		events |= POLLOUT;
->> +	if (ctx->hung_up)
->> +		events |= POLLHUP;
->>  	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
->>  
->>  	return events;
->> @@ -208,6 +219,10 @@ ssize_t eventfd_ctx_read(struct eventfd_ctx *ctx, int no_wait, __u64 *cnt)
->>  		__add_wait_queue(&ctx->wqh, &wait);
->>  		for (;;) {
->>  			set_current_state(TASK_INTERRUPTIBLE);
->> +			if (ctx->hung_up) {
->> +				res = -EIDRM;
->> +				break;
->> +			}
-> 
-> Shouldn't we just return indicate end-of-file if ctx->hung_up?
-> 
+On 02/03/2013 05:31 PM, Al Viro wrote:
+>
+> Unless I'm misreading ocavr32.pdf, that should be (R12, R10:R11, R9, R8) and
+> (R12, R10:R11, R9:R8, stack) resp., so fadvise64 doesn't need a wrapper, but
+> fadvise64_64 does.  And something like (s32, s32, s64, s64) would turn into
+> (R12, R11, R9:R8, stack, stack); AFAICS, we don't have anything that ugly...
+>
+> Automating *that* is going to be interesting...  I've not given up, but it's
+> not going to be fun ;-/
+>
 
-makes sense
+Feel free to steal machinery from klibc... it has scripts to 
+autogenerate stubs for arbitrary ABIs.
 
->>  			if (ctx->count > 0) {
->>  				res = 0;
->>  				break;
->> @@ -272,6 +287,10 @@ static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t c
->>  		__add_wait_queue(&ctx->wqh, &wait);
->>  		for (res = 0;;) {
->>  			set_current_state(TASK_INTERRUPTIBLE);
->> +			if (ctx->hung_up) {
->> +				res = -EIDRM;
-> 
-> -EPIPE?
-> 
+	-hpa
 
-I wan't sure which errno is most appropriate, but EPIPE seems better.
-
->> +				break;
->> +			}
->>  			if (ULLONG_MAX - ctx->count > ucnt) {
->>  				res = sizeof(ucnt);
->>  				break;
->> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
->> index a3d361b..fcb1ab6 100644
->> --- a/kernel/cgroup.c
->> +++ b/kernel/cgroup.c
->> @@ -4373,7 +4373,6 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
->>  		ctx = eventfd_ctx_get(event->eventfd);
->>  		spin_unlock(&cgrp->event_list_lock);
->>  
->> -		eventfd_signal(ctx, 1);
->>  		eventfd_signal_hangup(ctx);
->>  		eventfd_ctx_put(ctx);
->>  
->> -- 
->> 1.8.0.2
->> --
->> To unsubscribe from this list: send the line "unsubscribe cgroups" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
