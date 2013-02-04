@@ -1,95 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab3BDTkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:40:22 -0500
-Received: from mout.gmx.net ([212.227.15.18]:54220 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215Ab3BDTkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:40:00 -0500
-X-Authenticated: #1045983
-X-Provags-ID: V01U2FsdGVkX19pKNNI20Bp3NGAVm1+YKWuUvKpSHVh9WGOlUS62z
-	uWRIqgR83njfJT
-Date: Mon, 4 Feb 2013 20:39:52 +0100
-From: Helge Deller <deller@gmx.de>
-To: "H. Peter Anvin" <hpa@zytor.com>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>, Ian Kent <raven@themaw.net>,
-        autofs@vger.kernel.org
-Subject: [PATCH] unbreak automounter support on 64-bit kernel with 32-bit
- userspace (v2)
-Message-ID: <20130204193952.GA5785@p100.box>
+	id S1755676Ab3BDTl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:41:28 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37669 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754833Ab3BDTl1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:41:27 -0500
+Date: Mon, 4 Feb 2013 19:41:26 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/73] regulator: core: Show consumers that hold a
+ regulator in Sysfs
+Message-ID: <20130204194125.GW4720@opensource.wolfsonmicro.com>
+References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+ <1359978868-28736-13-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1Wg5Vd7si6EhrIHA"
 Content-Disposition: inline
-In-Reply-To: <510AE21D.2090002@zytor.com>
+In-Reply-To: <1359978868-28736-13-git-send-email-lee.jones@linaro.org>
+X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-automount-support is broken on the parisc architecture, because the existing
-#if list does not include a check for defined(__hppa__). The HPPA (parisc)
-architecture is similiar to other 64bit Linux targets where we have to define
-autofs_wqt_t (which is passed back and forth to user space) as int type which
-has a size of 32bit across 32 and 64bit kernels.
 
-During the discussion on the mailing list, H. Peter Anvin suggested to invert
-the #if list since only specific platforms (specifically those who do not have
-a 32bit userspace, like IA64 and Alpha) should have autofs_wqt_t as unsigned
-long type.
+--1Wg5Vd7si6EhrIHA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This suggestion is probably the best way to go, since Arm64 (and maybe others?)
-seems to have a non-working automounter. So in the long run even for other new
-upcoming architectures this inverted check seem to be the best solution, since
-it will not require them to change this #if again (unless they are 64bit only).
+On Mon, Feb 04, 2013 at 11:53:27AM +0000, Lee Jones wrote:
 
-Signed-off-by: Helge Deller <deller@gmx.de>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>
-CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
-CC: H. Peter Anvin <hpa@zytor.com>
-CC: Ian Kent <raven@themaw.net>
+> +	int use;
 
+Better to call it use_count like the other use_count.
 
-diff --git a/include/uapi/linux/auto_fs.h b/include/uapi/linux/auto_fs.h
-index 77cdba9..bb991df 100644
---- a/include/uapi/linux/auto_fs.h
-+++ b/include/uapi/linux/auto_fs.h
-@@ -28,25 +28,16 @@
- #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
- 
- /*
-- * Architectures where both 32- and 64-bit binaries can be executed
-- * on 64-bit kernels need this.  This keeps the structure format
-- * uniform, and makes sure the wait_queue_token isn't too big to be
-- * passed back down to the kernel.
-- *
-- * This assumes that on these architectures:
-- * mode     32 bit    64 bit
-- * -------------------------
-- * int      32 bit    32 bit
-- * long     32 bit    64 bit
-- *
-- * If so, 32-bit user-space code should be backwards compatible.
-+ * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
-+ * back to the kernel via ioctl from userspace. On architectures where 32- and
-+ * 64-bit userspace binaries can be executed it's important that the size of
-+ * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
-+ * do not break the binary ABI interface by changing the structure size.
-  */
--
--#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
-- || defined(__powerpc__) || defined(__s390__)
--typedef unsigned int autofs_wqt_t;
--#else
-+#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
- typedef unsigned long autofs_wqt_t;
-+#else
-+typedef unsigned int autofs_wqt_t;
- #endif
- 
- /* Packet types */
+> +	list_for_each_entry(reg, &rdev->consumer_list, list) {
+> +		if (!reg->use)
+> +			continue;
+> +
+> +		if (reg->dev != NULL)
+> +			size += sprintf((buf + size), "%s (%d) ",
+> +					dev_name(reg->dev), reg->use);
+> +		else
+> +			size += sprintf((buf + size), "unknown (%d) ",
+> +					reg->use);
+
+Should really check we don't go over PAGE_SIZE, and since this isn't a
+simple value it should go in debugfs (a simple count would be OK in
+sysfs, I'd suggest adding both).
+
+>  	if (ret != 0 && rdev->supply)
+>  		regulator_disable(rdev->supply);
+> +	else
+> +		regulator->use++;
+
+This will increase the usage count in the case where we get an error but
+don't have a parent supply.
+
+--1Wg5Vd7si6EhrIHA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJREA7fAAoJELSic+t+oim9bl8P/2hY8/pn4uPMDprnDm/temsR
+9pRHhgGkPRBkeZgB0+kpvX2p9XlYdCOxcO9pIGbVhgpe4z96fQ6etH+Af7RTnYQS
+6hz5MtX9TAaDhQ6SrU4MxlOwSr2lM0BGnjbM464L07t9vSFmFANVL7sLM9G+QXqx
+eQeNz2dUcTZY8i8OwLzvoZPX9bBHfDi4vKn3gF6ASlqARz5woTJB9LDPADFO3lmx
+dAm6JNGxgijrI4aKNYi2dbf5fnqjb0X+c5u9/WTJP3VlsahsVQ+MJV1xCelkpkrZ
+T1bWxzbpFBPDsFJTxsnOU2Y+iTkIsPfCTrUeENDg7X+MZHinrtdYcba16X4JFMFB
+7FrzwTSndK/Tty3ntmjOZWFce0BLEa0D0xe+aI10IqvpvFGgC2PX5fL7csLwdGPt
+AQmDN0DkAFPwJi3peJSGJ3c64PtYLXvW8Gm51Ilex9KtdvEa6LwwOylFYLy5nroa
+anoxWqsCqdaNcnaf4/KjM3WWiDdfX/wBMATqAqK30XlQADvAJP4EbUO6mgCkRBLB
+ZhBPhiXUdgG0pHmPYrklstOwwOtNkcJgz5LXsKk540jtO4mKhE8RiLB8jQAAHEzf
+uuyeU9svU7z/fxExYaOh+E5rIg1mV62X3Y4dZpd4z9GqtR+fGJo1Cu+1naink3SF
+G0Y7B1W9rvJAJvVKnIHg
+=ctZy
+-----END PGP SIGNATURE-----
+
+--1Wg5Vd7si6EhrIHA--
