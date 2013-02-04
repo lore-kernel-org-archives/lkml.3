@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab3BDHLG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 02:11:06 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11574 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab3BDHLD (ORCPT
+	id S1753429Ab3BDHPC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 02:15:02 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:34406 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3BDHPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 02:11:03 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 03 Feb 2013 23:10:56 -0800
-Message-ID: <510F5EF7.9030201@nvidia.com>
-Date: Mon, 4 Feb 2013 12:40:47 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 4 Feb 2013 02:15:00 -0500
+From: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
+To: <linux-usb@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <zihan@huawei.com>, <Lin.Lei@huawei.com>,
+        <greg@kroah.com>, <neil.yi@huawei.com>, <wangyuhua@huawei.com>,
+        <huqiao36@huawei.com>, <balbi@ti.com>, <mdharm-usb@one-eyed-alien.net>,
+        <sebastian@breakpoint.cc>
+Message-ID: <fe8caaa7d09.d09fe8caaa7@huawei.com>
+Date: Mon, 4 Feb 2013 15:14:46 +0800
+X-Mailer: iPlanet Messenger Express 5.2 HotFix 2.14 (built Aug  8 2006)
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 10/10] clk: tegra: devicetree match for nvidia,tegra114-car
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com> <1359713962-16822-11-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1359713962-16822-11-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Language: zh-CN
+Subject: [PATCH 1/2]linux-usb:Define a new macro for USB storage match
+ rules
+X-Accept-Language: zh-CN
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 February 2013 03:48 PM, Peter De Schrijver wrote:
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
+From: fangxiaozhi <huananhu@huawei.com>
 
-Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+1. Define a new macro for USB storage match rules: 
+    matching with Vendor ID and interface descriptors.
 
->   drivers/clk/tegra/clk.c |    1 +
->   drivers/clk/tegra/clk.h |    7 +++++++
->   2 files changed, 8 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-> index a603b9a..a328365 100644
-> --- a/drivers/clk/tegra/clk.c
-> +++ b/drivers/clk/tegra/clk.c
-> @@ -76,6 +76,7 @@ void __init tegra_init_from_table(struct tegra_clk_init_table *tbl,
->   static const struct of_device_id tegra_dt_clk_match[] = {
->   	{ .compatible = "nvidia,tegra20-car", .data = tegra20_clock_init },
->   	{ .compatible = "nvidia,tegra30-car", .data = tegra30_clock_init },
-> +	{ .compatible = "nvidia,tegra114-car", .data = tegra114_clock_init },
->   	{ }
->   };
->   
-> diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-> index 8756d9f..8097850 100644
-> --- a/drivers/clk/tegra/clk.h
-> +++ b/drivers/clk/tegra/clk.h
-> @@ -576,4 +576,11 @@ void tegra30_clock_init(struct device_node *np);
->   static inline void tegra30_clock_init(struct device_node *np) {}
->   #endif /* CONFIG_ARCH_TEGRA_3x_SOC */
->   
-> +#ifdef CONFIG_ARCH_TEGRA_114_SOC
-> +void tegra114_clock_init(struct device_node *np);
-> +#else
-> +static inline void tegra114_clock_init(struct device_node *np) {}
-> +#endif /* CONFIG_ARCH_TEGRA114_SOC */
-> +
-> +
->   #endif /* TEGRA_CLK_H */
->
+Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+--------------------------------------------------------------------
+
+diff -uprN linux-3.8-rc6_orig/drivers/usb/storage/usb.c linux-3.8-rc6/drivers/usb/storage/usb.c
+--- linux-3.8-rc6_orig/drivers/usb/storage/usb.c	2013-02-04 14:38:34.268154216 +0800
++++ linux-3.8-rc6/drivers/usb/storage/usb.c	2013-02-04 14:42:17.103167073 +0800
+@@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental l
+ 	.useTransport = use_transport,	\
+ }
+ 
++#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
++		vendor_name, product_name, use_protocol, use_transport, \
++		init_function, Flags) \
++{ \
++	.vendorName = vendor_name,	\
++	.productName = product_name,	\
++	.useProtocol = use_protocol,	\
++	.useTransport = use_transport,	\
++	.initFunction = init_function,	\
++}
++
+ static struct us_unusual_dev us_unusual_dev_list[] = {
+ #	include "unusual_devs.h"
+ 	{ }		/* Terminating entry */
+@@ -131,6 +142,7 @@ static struct us_unusual_dev for_dynamic
+ #undef UNUSUAL_DEV
+ #undef COMPLIANT_DEV
+ #undef USUAL_DEV
++#undef UNUSUAL_VENDOR_INTF
+ 
+ #ifdef CONFIG_LOCKDEP
+ 
+diff -uprN linux-3.8-rc6_orig/drivers/usb/storage/usual-tables.c linux-3.8-rc6/drivers/usb/storage/usual-tables.c
+--- linux-3.8-rc6_orig/drivers/usb/storage/usual-tables.c	2013-02-04 14:38:34.268154216 +0800
++++ linux-3.8-rc6/drivers/usb/storage/usual-tables.c	2013-02-04 14:49:48.256193103 +0800
+@@ -41,6 +41,20 @@
+ #define USUAL_DEV(useProto, useTrans) \
+ { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans) }
+ 
++/* Define the device is matched with Vendor ID and interface descriptors */
++#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
++			vendorName, productName, useProtocol, useTransport, \
++			initFunction, flags) \
++{ \
++	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
++				| USB_DEVICE_ID_MATCH_VENDOR, \
++	.idVendor    = (id_vendor), \
++	.bInterfaceClass = (cl), \
++	.bInterfaceSubClass = (sc), \
++	.bInterfaceProtocol = (pr), \
++	.driver_info = (flags) \
++}
++
+ struct usb_device_id usb_storage_usb_ids[] = {
+ #	include "unusual_devs.h"
+ 	{ }		/* Terminating entry */
+@@ -50,6 +64,7 @@ MODULE_DEVICE_TABLE(usb, usb_storage_usb
+ #undef UNUSUAL_DEV
+ #undef COMPLIANT_DEV
+ #undef USUAL_DEV
++#undef UNUSUAL_VENDOR_INTF
+ 
+ /*
+  * The table of devices to ignore
 
