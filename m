@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3BDQgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:36:53 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48865 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756391Ab3BDQgv (ORCPT
+	id S1756604Ab3BDQh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:37:27 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:39302 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756532Ab3BDQhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:36:51 -0500
-Message-ID: <510FE39F.9070403@wwwdotorg.org>
-Date: Mon, 04 Feb 2013 09:36:47 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 4 Feb 2013 11:37:24 -0500
+Date: Mon, 4 Feb 2013 08:37:16 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vlad Yasevich <vyasevich@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
+        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
+        Sridhar Samudrala <sri@us.ibm.com>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-sctp@vger.kernel.org
+Subject: Re: [PATCH 60/62] sctp: convert to idr_alloc()
+Message-ID: <20130204163716.GB27963@mtj.dyndns.org>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+ <1359854463-2538-61-git-send-email-tj@kernel.org>
+ <510FE042.8040503@gmail.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        Stephen Warren <swarren@nvidia.com>, Joseph Lo <josephl@nvidia.com>
-Subject: Re: [PATCH 1/3] cpufreq: TEGRA: Set policy->cpus from driver->init()
-References: <1bf82454ab1f16b13212548d7c9605067c8b7a0d.1359700705.git.viresh.kumar@linaro.org>
-In-Reply-To: <1bf82454ab1f16b13212548d7c9605067c8b7a0d.1359700705.git.viresh.kumar@linaro.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <510FE042.8040503@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 11:40 PM, Viresh Kumar wrote:
-> For multicore SoC's, with cores sharing clock line, we are required to set
-> policy->cpus and policy->related_cpus with mask of cpus.
+On Mon, Feb 04, 2013 at 11:22:26AM -0500, Vlad Yasevich wrote:
+> >+	ret = idr_alloc(&sctp_assocs_id, asoc, idr_low, 0, GFP_NOWAIT);
+> >+	if (ret >= 0) {
 > 
-> With following patch, we need to set policy->cpus with mask of all possible cpus
-> and policy->related_cpus would be filled automatically by the cpufreq core.
-> 
-> commit 4948b355e90080cd5ec1e91189f65a01e4186ef2
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Tue Jan 29 14:39:08 2013 +0000
-> 
->     cpufreq: Simplify cpufreq_add_dev()
-> 
-> Current Tegra driver fills only ->related_cpus and not ->cpus, which looks to be
-> incorrect. Lets fix it.
+> In SCTP, association id is not allowed to be 0, so we have to treat
+> 0 as an error.
 
-Joseph Lo reviewed/tested this and it looks fine, so,
+That condition is specified via @idr_low and 0 won't be returned.  If
+your point is that the condition better be "ret > 0" for clarity, I
+don't know.  At that point, we already requested an ID in the
+acceptable range and testing whether the allocation succeeded or not
+where failure will always be indicated by -errno.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+We can surely add "if (ret == 0) ret = -EINVAL" but that would be a
+completely dead path (should we add dead retry loop too?).  If we
+don't add such code, the code would appear as silently ignoring error.
+
+So, I think "ret >= 0" is better there.  Maybe we can throw in a
+comment explaining idr_low never goes to zero.
+
+BTW, this style of cyclic allocation is broken.  It's prone to -ENOSPC
+failure after the first wrap around.  I think we need to implement
+proper cyclic support in idr, but let's worry about that later.
+
+Thanks.
+
+-- 
+tejun
