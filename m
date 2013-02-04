@@ -1,283 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab3BDHJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 02:09:14 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11410 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab3BDHJN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 02:09:13 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 03 Feb 2013 23:09:04 -0800
-Message-ID: <510F5E87.90801@nvidia.com>
-Date: Mon, 4 Feb 2013 12:38:55 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 09/10] clk: tegra: Implement clocks for Tegra114
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com> <1359713962-16822-10-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1359713962-16822-10-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753077Ab3BDHKT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 02:10:19 -0500
+Received: from mga03.intel.com ([143.182.124.21]:41495 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751437Ab3BDHKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 02:10:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,597,1355126400"; 
+   d="scan'208";a="252202675"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Cc: rjw@sisk.pl, lenb@kernel.org, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH V2 1/3] PM: Introduce suspend state PM_SUSPEND_FREEZE
+Date: Mon,  4 Feb 2013 15:10:09 +0800
+Message-Id: <1359961811-978-1-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 February 2013 03:48 PM, Peter De Schrijver wrote:
-> Implement most clocks for Tegra114. The super clocks for the CPU complex
-> are still missing and will be implemented in a future version.
->
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->   drivers/clk/tegra/Makefile       |    1 +
->   drivers/clk/tegra/clk-tegra114.c | 2002 ++++++++++++++++++++++++++++++++++++++
->   2 files changed, 2003 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/clk/tegra/clk-tegra114.c
->
-> diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
-> index 2b41b0f..f49fac2 100644
-> --- a/drivers/clk/tegra/Makefile
-> +++ b/drivers/clk/tegra/Makefile
-> @@ -9,3 +9,4 @@ obj-y                                   += clk-super.o
->
->   obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
->   obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
-> +obj-$(CONFIG_ARCH_TEGRA_114_SOC)       += clk-tegra114.o
-> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-> new file mode 100644
-> index 0000000..f8165d2
-> --- /dev/null
-> +++ b/drivers/clk/tegra/clk-tegra114.c
-> @@ -0,0 +1,2002 @@
-> +/*
-> + * Copyright (c) 2012, 2013, NVIDIA CORPORATION.  All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/clk.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/delay.h>
-> +#include <linux/clk/tegra.h>
-> +
-> +#include "clk.h"
-> +
-> +#define RST_DEVICES_L                  0x004
-> +#define RST_DEVICES_H                  0x008
-> +#define RST_DEVICES_U                  0x00C
-> +#define RST_DEVICES_V                  0x358
-> +#define RST_DEVICES_W                  0x35C
-> +#define RST_DEVICES_X                  0x28C
-> +#define RST_DEVICES_SET_L              0x300
-> +#define RST_DEVICES_CLR_L              0x304
-> +#define RST_DEVICES_SET_H              0x308
-> +#define RST_DEVICES_CLR_H              0x30c
-> +#define RST_DEVICES_SET_U              0x310
-> +#define RST_DEVICES_CLR_U              0x314
-> +#define RST_DEVICES_SET_V              0x430
-> +#define RST_DEVICES_CLR_V              0x434
-> +#define RST_DEVICES_SET_W              0x438
-> +#define RST_DEVICES_CLR_W              0x43c
-> +#define RST_DEVICES_NUM                        5
+PM_SUSPEND_FREEZE state is a general state that
+does not need any platform specific support, it equals
+frozen processes + suspended devices + idle processors.
 
-RST_DEVICES_SET/CLR_X?
+Compared with PM_SUSPEND_MEMORY,
+PM_SUSPEND_FREEZE saves less power
+because the system is still in a running state.
+PM_SUSPEND_FREEZE has less resume latency because it does not
+touch BIOS, and the processors are in idle state.
 
-> +
-> +#define CLK_OUT_ENB_L                  0x010
-> +#define CLK_OUT_ENB_H                  0x014
-> +#define CLK_OUT_ENB_U                  0x018
-> +#define CLK_OUT_ENB_V                  0x360
-> +#define CLK_OUT_ENB_W                  0x364
-> +#define CLK_OUT_ENB_X                  0x280
-> +#define CLK_OUT_ENB_SET_L              0x320
-> +#define CLK_OUT_ENB_CLR_L              0x324
-> +#define CLK_OUT_ENB_SET_H              0x328
-> +#define CLK_OUT_ENB_CLR_H              0x32c
-> +#define CLK_OUT_ENB_SET_U              0x330
-> +#define CLK_OUT_ENB_CLR_U              0x334
-> +#define CLK_OUT_ENB_SET_V              0x440
-> +#define CLK_OUT_ENB_CLR_V              0x444
-> +#define CLK_OUT_ENB_SET_W              0x448
-> +#define CLK_OUT_ENB_CLR_W              0x44c
-> +#define CLK_OUT_ENB_SET_X              0x284
-> +#define CLK_OUT_ENB_CLR_X              0x288
-> +#define CLK_OUT_ENB_NUM                        6
+Compared with RTPM/idle,
+PM_SUSPEND_FREEZE saves more power as
+1. the processor has longer sleep time because processes are frozen.
+   The deeper c-state the processor supports, more power saving we can get.
+2. PM_SUSPEND_FREEZE uses system suspend code path, thus we can get
+   more power saving from the devices that does not have good RTPM support.
 
-<snip>
+This state is useful for
+1) platforms that do not have STR, or have a broken STR.
+2) platforms that have an extremely low power idle state,
+   which can be used to replace STR.
 
-> +
-> +       /* dsia */
-> +       clk = clk_register_mux(NULL, "dsia_mux", mux_plld_out0_plld2_out0,
-> +                              ARRAY_SIZE(mux_plld_out0_plld2_out0), 0,
-> +                              clk_base + PLLD_BASE, 25, 1, 0, &pll_d_lock);
-> +       clks[dsia_mux] = clk;
-> +       clk = tegra_clk_register_periph_gate("dsia", "dsia_mux", 0, clk_base,
-> +                                   0, 48, &periph_h_regs,
-> +                                   periph_clk_enb_refcnt);
-> +       clk_register_clkdev(clk, "dsia", "tegradc.0");
-> +       clks[dsia] = clk;
-> +
-> +       /* dsib */
-> +       clk = clk_register_mux(NULL, "dsib_mux", mux_plld_out0_plld2_out0,
-> +                              ARRAY_SIZE(mux_plld_out0_plld2_out0), 0,
-> +                              clk_base + PLLD2_BASE, 25, 1, 0, &pll_d2_lock);
-> +       clks[dsib_mux] = clk;
-> +       clk = tegra_clk_register_periph_gate("dsib", "dsib_mux", 0, clk_base,
-> +                                   0, 82, &periph_u_regs,
-> +                                   periph_clk_enb_refcnt);
-> +       clk_register_clkdev(clk, "dsib", "tegradc.1");
-> +       clks[dsib] = clk;
-> +
+The following describes how PM_SUSPEND_FREEZE state works.
+1. echo freeze > /sys/power/state
+2. the processes are frozen.
+3. all the devices are suspended.
+4. all the processors are blocked by a wait queue
+5. all the processors idles and enters (Deep) c-state.
+6. an interrupt fires.
+7. a processor is woken up and handles the irq.
+8. if it is a general event,
+   a) the irq handler runs and quites.
+   b) goto step 4.
+9. if it is a real wake event, say, power button pressing, keyboard touch, mouse moving,
+   a) the irq handler runs and activate the wakeup source
+   b) wakeup_source_activate() notifies the wait queue.
+   c) system starts resuming from PM_SUSPEND_FREEZE
+10. all the devices are resumed.
+11. all the processes are unfrozen.
+12. system is back to working.
 
-Can we use periph no div clock here for dsia and dsib?
+Known Issue:
+The wakeup of this new PM_SUSPEND_FREEZE state may behave differently
+from the previous suspend state.
+Take ACPI platform for example, there are some GPEs that only enabled
+when the system is in sleep state, to wake the system backk from S3/S4.
+But we are not touching these GPEs during transition to PM_SUSPEND_FREEZE.
+This means we may lose some wake event.
+But on the other hand, as we do not disable all the Interrupts during
+PM_SUSPEND_FREEZE, we may get some extra "wakeup" Interrupts, that are
+not available for S3/S4.
 
-> +       /* xusb_hs_src */
-> +       val = readl(clk_base + CLK_SOURCE_XUSB_SS_SRC);
-> +       val |= BIT(25); /* always select PLLU_60M */
-> +       writel(val, clk_base + CLK_SOURCE_XUSB_SS_SRC);
-> +
-> +       clk = clk_register_fixed_factor(NULL, "xusb_hs_src", "pll_u_60M", 0,
-> +                                       1, 1);
-> +       clks[xusb_hs_src] = clk;
-> +
+The patches has been tested on an old Sony laptop, and here are the results:
 
-With device tree we can directly use pll_u_60M, no need to register 
-clock with fixed factor 1.
-Same comment for dis1-fixed, dsi2-fixed and mipi-cal-fast clocks.
+Average Power:
+1. RPTM/idle for half an hour:
+   14.8W, 12.6W, 14.1W, 12.5W, 14.4W, 13.2W, 12.9W
+2. Freeze for half an hour:
+   11W, 10.4W, 9.4W, 11.3W 10.5W
+3. RTPM/idle for three hours:
+   11.6W
+4. Freeze for three hours:
+   10W
+5. Suspend to Memory:
+   0.5~0.9W
 
-> +       /* xusb_host */
-> +       clk = tegra_clk_register_periph_gate("xusb_host", "xusb_host_src", 0,
-> +                                   clk_base, 0, 89, &periph_u_regs,
-> +                                   periph_clk_enb_refcnt);
-> +       clk_register_clkdev(clk, "tegra_xhci", "host");
-> +       clks[xusb_host] = clk;
-> +
-> +       /* xusb_ss */
-> +       clk = tegra_clk_register_periph_gate("xusb_ss", "xusb_ss_src", 0,
-> +                                   clk_base, 0, 156, &periph_w_regs,
-> +                                   periph_clk_enb_refcnt);
-> +       clk_register_clkdev(clk, "tegra_xhci", "ss");
-> +       clks[xusb_host] = clk;
-> +
-> +       /* xusb_dev */
-> +       clk = tegra_clk_register_periph_gate("xusb_dev", "xusb_dev_src", 0,
-> +                                   clk_base, 0, 95, &periph_u_regs,
-> +                                   periph_clk_enb_refcnt);
-> +       clk_register_clkdev(clk, "tegra_xhci", "dev");
+Average Resume Latency:
+1. RTPM/idle with a black screen: (From pressing keyboard to screen back)
+   Less than 0.2s
+2. Freeze: (From pressing power button to screen back)
+   2.50s
+3. Suspend to Memory: (From pressing power button to screen back)
+   4.33s
 
-clks[xusb_dev] = clk;
+>From the results, we can see that all the platforms should benefit from
+this patch, even if it does not have Low Power S0.
 
-> +
-> +       for (i = 0; i < ARRAY_SIZE(tegra_periph_clk_list); i++) {
-> +               data = &tegra_periph_clk_list[i];
-> +               clk = tegra_clk_register_periph(data->name, data->parent_names,
-> +                               data->num_parents, &data->periph,
-> +                               clk_base, data->offset, data->flags);
-> +               clk_register_clkdev(clk, data->con_id, data->dev_id);
-> +               clks[data->clk_id] = clk;
-> +       }
-> +
-> +       for (i = 0; i < ARRAY_SIZE(tegra_periph_nodiv_clk_list); i++) {
-> +               data = &tegra_periph_nodiv_clk_list[i];
-> +               clk = tegra_clk_register_periph_nodiv(data->name,
-> +                               data->parent_names, data->num_parents,
-> +                               &data->periph, clk_base, data->offset);
-> +               clk_register_clkdev(clk, data->con_id, data->dev_id);
-> +               clks[data->clk_id] = clk;
-> +       }
-> +}
-> +
-> +static struct tegra_cpu_car_ops tegra114_cpu_car_ops;
-> +
-> +static const struct of_device_id pmc_match[] __initconst = {
-> +       { .compatible = "nvidia,tegra114-pmc" },
-> +       {},
-> +};
-> +
-> +static __initdata struct tegra_clk_init_table init_table[] = {
-> +       {uartd, pll_p, 408000000, 1},
-> +       {clk_max, clk_max, 0, 0}, /* This MUST be the last entry. */
-> +};
-> +
-> +void __init tegra114_clock_init(struct device_node *np)
-> +{
-> +       struct device_node *node;
-> +       int i;
-> +
-> +       clk_base = of_iomap(np, 0);
-> +       if (!clk_base) {
-> +               pr_err("ioremap tegra114 CAR failed\n");
-> +               return;
-> +       }
-> +
-> +       node = of_find_matching_node(NULL, pmc_match);
-> +       if (!node) {
-> +               pr_err("Failed to find pmc node\n");
-> +               WARN_ON(1);
-> +               return;
-> +       }
-> +
-> +       pmc_base = of_iomap(node, 0);
-> +       if (!pmc_base) {
-> +               pr_err("Can't map pmc registers\n");
-> +               WARN_ON(1);
-> +               return;
-> +       }
-> +
-> +       if (tegra114_osc_clk_init(clk_base) < 0)
-> +               return;
-> +
-> +       tegra114_fixed_clk_init(clk_base);
-> +       tegra114_pll_init(clk_base, pmc_base);
-> +       tegra114_periph_clk_init(clk_base);
-> +       tegra114_audio_clk_init(clk_base);
-> +       tegra114_pmc_clk_init(pmc_base);
-> +
-> +       for (i = 0; i < ARRAY_SIZE(clks); i++) {
-> +               if (IS_ERR(clks[i])) {
-> +                       pr_err
-> +                           ("Tegra114 clk %d: register failed with %ld\n",
-> +                            i, PTR_ERR(clks[i]));
-> +               }
-> +               if (!clks[i])
-> +                       clks[i] = ERR_PTR(-EINVAL);
-> +       }
-> +
-> +       clk_data.clks = clks;
-> +       clk_data.clk_num = ARRAY_SIZE(clks);
-> +       of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
-> +
-> +       tegra_init_from_table(init_table, clks, clk_max);
-> +
-> +       tegra_cpu_car_ops = &tegra114_cpu_car_ops;
-> +}
->
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/base/power/wakeup.c |    6 ++++
+ include/linux/suspend.h     |    5 +++-
+ kernel/power/main.c         |    2 +-
+ kernel/power/suspend.c      |   69 +++++++++++++++++++++++++++++++++++--------
+ 4 files changed, 67 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+index e6ee5e8..79715e7 100644
+--- a/drivers/base/power/wakeup.c
++++ b/drivers/base/power/wakeup.c
+@@ -382,6 +382,12 @@ static void wakeup_source_activate(struct wakeup_source *ws)
+ {
+ 	unsigned int cec;
+ 
++	/*
++	 * active wakeup source should bring the system
++	 * out of PM_SUSPEND_FREEZE state
++	 */
++	freeze_wake();
++
+ 	ws->active = true;
+ 	ws->active_count++;
+ 	ws->last_time = ktime_get();
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 0c808d7..7420ab5 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -34,8 +34,10 @@ static inline void pm_restore_console(void)
+ typedef int __bitwise suspend_state_t;
+ 
+ #define PM_SUSPEND_ON		((__force suspend_state_t) 0)
+-#define PM_SUSPEND_STANDBY	((__force suspend_state_t) 1)
++#define PM_SUSPEND_FREEZE	((__force suspend_state_t) 1)
++#define PM_SUSPEND_STANDBY	((__force suspend_state_t) 2)
+ #define PM_SUSPEND_MEM		((__force suspend_state_t) 3)
++#define PM_SUSPEND_MIN		PM_SUSPEND_FREEZE
+ #define PM_SUSPEND_MAX		((__force suspend_state_t) 4)
+ 
+ enum suspend_stat_step {
+@@ -192,6 +194,7 @@ struct platform_suspend_ops {
+  */
+ extern void suspend_set_ops(const struct platform_suspend_ops *ops);
+ extern int suspend_valid_only_mem(suspend_state_t state);
++extern void freeze_wake(void);
+ 
+ /**
+  * arch_suspend_disable_irqs - disable IRQs for suspend
+diff --git a/kernel/power/main.c b/kernel/power/main.c
+index 1c16f91..b1c26a9 100644
+--- a/kernel/power/main.c
++++ b/kernel/power/main.c
+@@ -313,7 +313,7 @@ static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
+ static suspend_state_t decode_state(const char *buf, size_t n)
+ {
+ #ifdef CONFIG_SUSPEND
+-	suspend_state_t state = PM_SUSPEND_STANDBY;
++	suspend_state_t state = PM_SUSPEND_MIN;
+ 	const char * const *s;
+ #endif
+ 	char *p;
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index c8b7446..d4feda0 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -30,12 +30,38 @@
+ #include "power.h"
+ 
+ const char *const pm_states[PM_SUSPEND_MAX] = {
++	[PM_SUSPEND_FREEZE]	= "freeze",
+ 	[PM_SUSPEND_STANDBY]	= "standby",
+ 	[PM_SUSPEND_MEM]	= "mem",
+ };
+ 
+ static const struct platform_suspend_ops *suspend_ops;
+ 
++static bool need_suspend_ops(suspend_state_t state)
++{
++	return !!(state > PM_SUSPEND_FREEZE);
++}
++
++static DECLARE_WAIT_QUEUE_HEAD(suspend_freeze_wait_head);
++static bool suspend_freeze_wake;
++
++static void freeze_begin(void)
++{
++	suspend_freeze_wake = false;
++}
++
++static void freeze_enter(void)
++{
++	wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
++}
++
++void freeze_wake(void)
++{
++	suspend_freeze_wake = true;
++	wake_up(&suspend_freeze_wait_head);
++}
++EXPORT_SYMBOL_GPL(freeze_wake);
++
+ /**
+  * suspend_set_ops - Set the global suspend method table.
+  * @ops: Suspend operations to use.
+@@ -50,8 +76,11 @@ EXPORT_SYMBOL_GPL(suspend_set_ops);
+ 
+ bool valid_state(suspend_state_t state)
+ {
++	if (state == PM_SUSPEND_FREEZE)
++		return true;
+ 	/*
+-	 * All states need lowlevel support and need to be valid to the lowlevel
++	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEMORY states need lowlevel
++	 * support and need to be valid to the lowlevel
+ 	 * implementation, no valid callback implies that none are valid.
+ 	 */
+ 	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
+@@ -89,11 +118,11 @@ static int suspend_test(int level)
+  * hibernation).  Run suspend notifiers, allocate the "suspend" console and
+  * freeze processes.
+  */
+-static int suspend_prepare(void)
++static int suspend_prepare(suspend_state_t state)
+ {
+ 	int error;
+ 
+-	if (!suspend_ops || !suspend_ops->enter)
++	if (need_suspend_ops(state) && (!suspend_ops || !suspend_ops->enter))
+ 		return -EPERM;
+ 
+ 	pm_prepare_console();
+@@ -137,7 +166,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
+ {
+ 	int error;
+ 
+-	if (suspend_ops->prepare) {
++	if (need_suspend_ops(state) && suspend_ops->prepare) {
+ 		error = suspend_ops->prepare();
+ 		if (error)
+ 			goto Platform_finish;
+@@ -149,12 +178,23 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
+ 		goto Platform_finish;
+ 	}
+ 
+-	if (suspend_ops->prepare_late) {
++	if (need_suspend_ops(state) && suspend_ops->prepare_late) {
+ 		error = suspend_ops->prepare_late();
+ 		if (error)
+ 			goto Platform_wake;
+ 	}
+ 
++	/*
++	 * PM_SUSPEND_FREEZE equals
++	 * frozen processes + suspended devices + idle processors.
++	 * Thus we should invoke freeze_enter() soon after
++	 * all the devices are suspended.
++	 */
++	if (state == PM_SUSPEND_FREEZE) {
++		freeze_enter();
++		goto Platform_wake;
++	}
++
+ 	if (suspend_test(TEST_PLATFORM))
+ 		goto Platform_wake;
+ 
+@@ -182,13 +222,13 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
+ 	enable_nonboot_cpus();
+ 
+  Platform_wake:
+-	if (suspend_ops->wake)
++	if (need_suspend_ops(state) && suspend_ops->wake)
+ 		suspend_ops->wake();
+ 
+ 	dpm_resume_start(PMSG_RESUME);
+ 
+  Platform_finish:
+-	if (suspend_ops->finish)
++	if (need_suspend_ops(state) && suspend_ops->finish)
+ 		suspend_ops->finish();
+ 
+ 	return error;
+@@ -203,11 +243,11 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 	int error;
+ 	bool wakeup = false;
+ 
+-	if (!suspend_ops)
++	if (need_suspend_ops(state) && !suspend_ops)
+ 		return -ENOSYS;
+ 
+ 	trace_machine_suspend(state);
+-	if (suspend_ops->begin) {
++	if (need_suspend_ops(state) && suspend_ops->begin) {
+ 		error = suspend_ops->begin(state);
+ 		if (error)
+ 			goto Close;
+@@ -226,7 +266,7 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 
+ 	do {
+ 		error = suspend_enter(state, &wakeup);
+-	} while (!error && !wakeup
++	} while (!error && !wakeup && need_suspend_ops(state)
+ 		&& suspend_ops->suspend_again && suspend_ops->suspend_again());
+ 
+  Resume_devices:
+@@ -236,13 +276,13 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 	ftrace_start();
+ 	resume_console();
+  Close:
+-	if (suspend_ops->end)
++	if (need_suspend_ops(state) && suspend_ops->end)
+ 		suspend_ops->end();
+ 	trace_machine_suspend(PWR_EVENT_EXIT);
+ 	return error;
+ 
+  Recover_platform:
+-	if (suspend_ops->recover)
++	if (need_suspend_ops(state) && suspend_ops->recover)
+ 		suspend_ops->recover();
+ 	goto Resume_devices;
+ }
+@@ -278,12 +318,15 @@ static int enter_state(suspend_state_t state)
+ 	if (!mutex_trylock(&pm_mutex))
+ 		return -EBUSY;
+ 
++	if (state == PM_SUSPEND_FREEZE)
++		freeze_begin();
++
+ 	printk(KERN_INFO "PM: Syncing filesystems ... ");
+ 	sys_sync();
+ 	printk("done.\n");
+ 
+ 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
+-	error = suspend_prepare();
++	error = suspend_prepare(state);
+ 	if (error)
+ 		goto Unlock;
+ 
+-- 
+1.7.9.5
 
