@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3BDIr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 03:47:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29230 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab3BDIr4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 03:47:56 -0500
-Date: Mon, 4 Feb 2013 11:47:37 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Roger Tseng <rogerable@realtek.com>
-Cc: cjb@laptop.org, sameo@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wei_wang@realsil.com.cn, devel@linuxdriverproject.org
-Subject: Re: [PATCH 1/3] MMC: rtsx: remove driving adjustment
-Message-ID: <20130204084737.GG4937@mwanda>
-References: <1359963959-2305-1-git-send-email-rogerable@realtek.com>
- <1359963959-2305-2-git-send-email-rogerable@realtek.com>
+	id S1754103Ab3BDIwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 03:52:12 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49746 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753895Ab3BDIwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 03:52:10 -0500
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <santosh.shilimkar@ti.com>
+CC: Sourav Poddar <sourav.poddar@ti.com>
+Subject: [PATCHv2 0/2] add omap mcspi device tree data
+Date: Mon, 4 Feb 2013 14:21:47 +0530
+Message-ID: <1359967907-26645-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359963959-2305-2-git-send-email-rogerable@realtek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 03:45:57PM +0800, Roger Tseng wrote:
-> Several new models of readers use different way to select driving
-> capability(a necessary adjustment along with voltage change). Removing this
-> from device-independent rtsx_pci_sdmmc module. It will be implemented in
-> device-depend calls encapsulated by rtsx_pci_switch_output_voltage().
-> 
+Patch series adds omap5 evm mcspi nodes and pinctrl
+data in omap5.dtsi and omap5-evm.dts files.
 
-I'm not sure I understand.
+Felipe Balbi (1):
+  arm: dts: omap5: add SPI devices to OMAP5 DeviceTree file
 
-Does this patch break things and then "[PATCH 2/3] mfd: rtsx:
-implement driving adjustment to device-dependent callbacks" fixes
-things again?  In other words, will all the old devices run if we
-only apply patch 1/3 and not 2/3?
+Sourav Poddar (1):
+  arm: dts: omap5-evm: Add mcspi data
 
-That's not the right idea.  Just merge the two patches into one
-patch.
-
-regards,
-dan carpenter
+ arch/arm/boot/dts/omap5-evm.dts |   46 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/omap5.dtsi    |   40 +++++++++++++++++++++++++++++++++
+ 2 files changed, 86 insertions(+), 0 deletions(-)
 
