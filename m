@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab3BDQcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:32:54 -0500
-Received: from mga05.intel.com ([192.55.52.89]:53765 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756391Ab3BDQcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:32:52 -0500
-Message-ID: <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH] ia64/mm: fix a bad_page bug when crash kernel booting
-From: Matt Fleming <matt.fleming@intel.com>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>, fenghua.yu@intel.com,
-        Liujiang <jiang.liu@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Mon, 04 Feb 2013 16:32:45 +0000
-In-Reply-To: <51074786.5030007@huawei.com>
-References: <51074786.5030007@huawei.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756581Ab3BDQdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:33:04 -0500
+Received: from bounces.ut.ee ([193.40.5.137]:34425 "EHLO bounces.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756538Ab3BDQdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 11:33:03 -0500
+Date: Mon, 4 Feb 2013 18:32:59 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Alex Deucher <alexdeucher@gmail.com>
+cc: Jerome Glisse <j.glisse@gmail.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Radeon RV100 init fails with specific card+mobo - IRQ problem
+In-Reply-To: <CADnq5_Ny9_OVqyahSN9WOuwt=PxbT48=NbWr0-r1A5y0yhHKhA@mail.gmail.com>
+Message-ID: <alpine.SOC.1.00.1302041830450.5692@math.ut.ee>
+References: <alpine.SOC.1.00.1302011321220.17427@math.ut.ee> <CAH3drwb-248ngSqiXZGU=X1k45V8wmN4127_0gr=AQA=px2g0g@mail.gmail.com> <alpine.SOC.1.00.1302011726290.17427@math.ut.ee> <CADnq5_Ny9_OVqyahSN9WOuwt=PxbT48=NbWr0-r1A5y0yhHKhA@mail.gmail.com>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-29 at 11:52 +0800, Xishi Qiu wrote:
-> On ia64 platform, I set "crashkernel=1024M-:600M", and dmesg shows 128M-728M
-> memory is reserved for crash kernel. Then "echo c > /proc/sysrq-trigger" to
-> test kdump.
+> >> > Adding some printks reveals it calls
+> >> > r100_init() -> radeon_irq_kms_init() -> drm_irq_install() ->
+> >> > drm_dev_to_irq() and that fails. So no IRQ, no KMS.
+> >> >
+> >> > lspci does not show Interrupt like on some other PCI devices.
+> >> > /proc/interrupts obviously does not contain the irq since we do not
+> >> > register any yet.
+> >> >
+> >> > There is no BIOS option of "Enable IRQ for VGA" or similar (BIOS is
+> >> > latest). Could this be the problem?
+> >> >
+> >> > What can I do to get KMS working on this computer?
+> >> >
+> >> > --
+> >> > Meelis Roos (mroos@linux.ee)
+> >>
+> >> Try booting with radeon.agp_mode=-1
+> >
+> > radeon: `-1' invalid for parameter `agp_mode'
 > 
-> When crash kernel booting, efi_init() will aligns the memory address in
-> IA64_GRANULE_SIZE(16M), so 720M-728M memory will be dropped, It means
-> crash kernel only manage 128M-720M memory.
+> radeon.agpmode=-1
 > 
-> But initrd start and end are fixed in boot loader, it is before efi_init(),
-> so initrd size maybe overflow when free_initrd_mem().
+> However, I think there are a number of places where we require
+> interrupts that would need to be worked around (fences, display
+> hotplug, pageflipping) if not interrupt is available.
 
-[...]
+I did dome more testing with different cards an got a surprise. The 
+machine works fine with other AGP cards - one MX440 with nouvea, another 
+RV100 QY and a R200. They do have interrupt in lspci -vvv output.
 
-> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-> index b755ea9..cfdb1eb 100644
-> --- a/arch/ia64/mm/init.c
-> +++ b/arch/ia64/mm/init.c
-> @@ -207,6 +207,17 @@ free_initrd_mem (unsigned long start, unsigned long end)
->  	start = PAGE_ALIGN(start);
->  	end = end & PAGE_MASK;
-> 
-> +	/*
-> +	 * Initrd size is fixed in boot loader, but kernel parameter max_addr
-> +	 * which aligns in granules is fixed after boot loader, so initrd size
-> +	 * maybe overflow.
-> +	 */
-> +	if (max_addr != ~0UL) {
-> +		end = GRANULEROUNDDOWN(end);
-> +		if (start > end)
-> +			start = end;
-> +	}
-> +
->  	if (start < end)
->  		printk(KERN_INFO "Freeing initrd memory: %ldkB freed\n", (end - start) >> 10);
+Why does this specific card not have its IRQ routed - card ROM problem?
 
-I don't think this is the correct fix.
-
-Now, my ia64-fu is weak, but could it be that there's actually a bug in
-efi_init() and that the following patch would be the best way to fix
-this?
-
----
-
-diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
-index f034563..8d579f1 100644
---- a/arch/ia64/kernel/efi.c
-+++ b/arch/ia64/kernel/efi.c
-@@ -482,7 +482,7 @@ efi_init (void)
- 		if (memcmp(cp, "mem=", 4) == 0) {
- 			mem_limit = memparse(cp + 4, &cp);
- 		} else if (memcmp(cp, "max_addr=", 9) == 0) {
--			max_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
-+			max_addr = GRANULEROUNDUP(memparse(cp + 9, &cp));
- 		} else if (memcmp(cp, "min_addr=", 9) == 0) {
- 			min_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
- 		} else {
-
-
+-- 
+Meelis Roos (mroos@linux.ee)
