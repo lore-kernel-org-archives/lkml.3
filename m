@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab3BDLxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:53:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56901 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754243Ab3BDLx1 convert rfc822-to-8bit (ORCPT
+	id S1754337Ab3BDLzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:55:51 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:37845 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab3BDLzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:53:27 -0500
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: "J, KEERTHY" <j-keerthy@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>
-Subject: RE: [PATCH] Regulator: Reorder the min max assignment in the
- sequence of regulator_set_voltage function
-Thread-Topic: [PATCH] Regulator: Reorder the min max assignment in the
- sequence of regulator_set_voltage function
-Thread-Index: AQHOADnufPb44Tk3JkCHdcW8IZFak5hpm8OQ
-Date: Mon, 4 Feb 2013 11:53:20 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229B84BD@DBDE01.ent.ti.com>
-References: <1359695098-3630-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1359695098-3630-1-git-send-email-j-keerthy@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.159.88]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 4 Feb 2013 06:55:50 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
+Subject: [PATCH 00/73 v2] Regulators: Bring the AB8500 into the 20th century
+Date: Mon,  4 Feb 2013 11:53:15 +0000
+Message-Id: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark/Liam,
+Hi Mark,
 
-Any comments in this?
+As requested, the whole-shebang.
 
-Regards,
-Keerthy
+The Mainline AB8500 and DB8500 regulators are currently stuck in the
+Victorian era (AKA v2.6.35). This branch contains all of the
+upstreamable changes that have occurred on the internal repository and
+aims to bring them back into the 20th century.
 
------Original Message-----
-From: J, KEERTHY 
-Sent: Friday, February 01, 2013 10:35 AM
-To: linux-kernel@vger.kernel.org; lgirdwood@gmail.com; broonie@opensource.wolfsonmicro.com
-Cc: J, KEERTHY
-Subject: [PATCH] Regulator: Reorder the min max assignment in the sequence of regulator_set_voltage function
+This patch-set contains 73 of the original 111 patches and has already
+gone though multiple cycles of fixing-up, squashing, splitting and
+revert removal. I've also taken out all of the OF and -debug bits at
+your request.
 
-The min and max values for regulators are getting assigned before actually
-the voltage is set. So making sure that min and max values are assigned
-only if the voltage is successfully set else keeping the last successfully
-set voltage's min and max values.
+ arch/arm/mach-ux500/board-mop500-regulators.c |  730 ++++++-
+ arch/arm/mach-ux500/board-mop500-regulators.h |    7 +-
+ arch/arm/mach-ux500/board-mop500.c            |    5 +-
+ drivers/regulator/Kconfig                     |    8 +
+ drivers/regulator/Makefile                    |    1 +
+ drivers/regulator/ab8500-ext.c                |  475 +++++
+ drivers/regulator/ab8500.c                    | 2733 +++++++++++++++++++++++--
+ drivers/regulator/core.c                      |   37 +
+ include/linux/mfd/abx500/ab8500.h             |   11 +-
+ include/linux/regulator/ab8500.h              |  228 ++-
+ 10 files changed, 3988 insertions(+), 247 deletions(-)
 
-This is boot tested on OMAP4430 and OMAP4460 boards.
-
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com> 
----
- drivers/regulator/core.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 2785843..12140fb 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -81,6 +81,8 @@ struct regulator {
- 	int uA_load;
- 	int min_uV;
- 	int max_uV;
-+	int curr_min_uV;
-+	int curr_max_uV;
- 	char *supply_name;
- 	struct device_attribute dev_attr;
- 	struct regulator_dev *rdev;
-@@ -2315,6 +2317,8 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- 	ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
- 	if (ret < 0)
- 		goto out;
-+	regulator->curr_min_uV = regulator->min_uV;
-+	regulator->curr_max_uV = regulator->max_uV;
- 	regulator->min_uV = min_uV;
- 	regulator->max_uV = max_uV;
- 
-@@ -2325,6 +2329,11 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- 	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
- 
- out:
-+	if (ret) {
-+		regulator->min_uV = regulator->curr_min_uV;
-+		regulator->max_uV = regulator->curr_max_uV;
-+	}
-+
- 	mutex_unlock(&rdev->mutex);
- 	return ret;
- }
--- 
-1.7.5.4
+Kind regards,
+Lee
 
