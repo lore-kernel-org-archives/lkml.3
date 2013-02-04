@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3BDDCa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 22:02:30 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37283 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757Ab3BDDC2 (ORCPT
+	id S1753983Ab3BDDGw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 22:06:52 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:40318 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753826Ab3BDDGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 22:02:28 -0500
-Date: Mon, 4 Feb 2013 03:02:21 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: avr32: add dummy syscalls
-Message-ID: <20130204030221.GY4503@ZenIV.linux.org.uk>
-References: <1359291015-4544-1-git-send-email-matthias.bgg@gmail.com>
- <20130127195714.GA11224@samfundet.no>
- <20130127203009.GG4503@ZenIV.linux.org.uk>
- <20130127203954.GA22063@samfundet.no>
- <20130204001055.GV4503@ZenIV.linux.org.uk>
- <20130204003047.GW4503@ZenIV.linux.org.uk>
- <20130204013111.GX4503@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130204013111.GX4503@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 3 Feb 2013 22:06:50 -0500
+Date: Mon, 4 Feb 2013 14:06:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: linux-next: manual merge of the security tree with Linus' tree
+Message-Id: <20130204140641.076d7621651d346448fc58f7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Feb_2013_14_06_41_+1100_N9+k/iDxKIEb.chS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 01:31:11AM +0000, Al Viro wrote:
+--Signature=_Mon__4_Feb_2013_14_06_41_+1100_N9+k/iDxKIEb.chS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Unless I'm misreading ocavr32.pdf, that should be (R12, R10:R11, R9, R8) and
-> (R12, R10:R11, R9:R8, stack) resp., so fadvise64 doesn't need a wrapper, but
-> fadvise64_64 does.  And something like (s32, s32, s64, s64) would turn into
-> (R12, R11, R9:R8, stack, stack); AFAICS, we don't have anything that ugly...
+Hi James,
 
-Oh, yes, we do - fallocate(2).  int fd, int mode, loff_t offset, loff_t len.
-On something like mips or sparc32 it packs nicely; on avr32 it doesn't.
-Could you confirm that I haven't misparsed the ABI?
+Today's linux-next merge of the security tree got a conflict in
+lib/digsig.c between commit 7810cc1e7721 ("digsig: Fix memory leakage in
+digsig_verify_rsa()") from Linus' tree and commit 26d438457ed1 ("digsig:
+remove unnecessary memory allocation and copying") from the security tree.
 
-> Automating *that* is going to be interesting...  I've not given up, but it's
-> not going to be fun ;-/
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc lib/digsig.c
+index dc2be7e,0103c5b..0000000
+--- a/lib/digsig.c
++++ b/lib/digsig.c
+@@@ -162,13 -152,9 +152,11 @@@ static int digsig_verify_rsa(struct ke
+  	memset(out1, 0, head);
+  	memcpy(out1 + head, p, l);
+ =20
+ +	kfree(p);
+ +
+- 	err =3D pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
+- 	if (err)
+- 		goto err;
++ 	m =3D pkcs_1_v1_5_decode_emsa(out1, len, mblen, &len);
+ =20
+- 	if (len !=3D hlen || memcmp(out2, h, hlen))
++ 	if (!m || len !=3D hlen || memcmp(m, h, hlen))
+  		err =3D -EINVAL;
+ =20
+  err:
+
+--Signature=_Mon__4_Feb_2013_14_06_41_+1100_N9+k/iDxKIEb.chS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRDyXBAAoJEECxmPOUX5FESBgQAJ8SRDnb2sCO62ZgwIUIMGGl
+C7h+x2w5hpwkJCr4yg20gf1rqe//F+uEU1b2/SuFBQ6Yy5LrfIER17Xtv0erqUzS
+wW3SdtmAMYN4EEb3atZMRI/Me9CGqTghuHJf20DXF53UAXrJ4osCBUKXPGEijH9D
+iXSxGjCGDH72kPSeHwNwqwDejXCz1Og25HcCR3ciFRgIBeSzxGFHWTnQteb4GRxJ
+VI4ymjAy5KaGd2d9xGOjArJeCS9skpEAu+VBSl7Enuo+DFB+buTKWMmKQ8ct9cSS
+Hvpj2ZqdxR5fYLXlsw5quMwhhtIaMCrX6CB2OT4dPJmEu7XPlxKbvH1QAh4F7fZD
+Wtz2sOURfAjcaXSF82j91bNgN8+RGtYzXmRAEA7L6m4d6iZrGWxwWT5j7+ZW0e82
+zmBPpVJ2Z9PQES6E3R8asDz/gnRpNH/pw7JLXSjYL3G4+m85dtzMT4vo15aBw/8B
+1VJexiYIB0qNkTdcOv8VzGzWrjCS0yrF87ptglRhwhmMB1qVHBvkOzbuYz3M5jgI
+ao6a7lD9fdrOHtK5iu1//ASngehYXxDjbyDxDggAYq+k32eXNB/eDJZ4I/pHFOkB
+hmerO88GDOk5Shzp90lU7lv6WeGOlyct+cKxcxwwZJDuMFZS7EhkOl0U0hRIrYIp
+yji5rUXsjZJKNuQH4xrE
+=qjoU
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Feb_2013_14_06_41_+1100_N9+k/iDxKIEb.chS--
