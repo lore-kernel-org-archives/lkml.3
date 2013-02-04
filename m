@@ -1,58 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab3BDL4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:56:02 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:42457 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab3BDLz7 (ORCPT
+	id S1754838Ab3BDMQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:16:25 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:61785 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378Ab3BDL4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:55:59 -0500
-Subject: [PATCH v2 1/7] e1000e: fix pci-device enable-counter balance
-To: e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Date: Mon, 04 Feb 2013 15:55:54 +0400
-Message-ID: <20130204115554.5569.95207.stgit@zurg>
-In-Reply-To: <20130204115246.5569.85829.stgit@zurg>
-References: <20130204115246.5569.85829.stgit@zurg>
-User-Agent: StGit/0.15
+	Mon, 4 Feb 2013 06:56:01 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
+Cc: Emeric Vigier <emeric.vigier@stericsson.com>,
+        =?UTF-8?q?Ludovic=20Barr=C3=A9?= <ludovic.barre@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 06/73] regulator: ab8500: Add set_mode/get_mode support
+Date: Mon,  4 Feb 2013 11:53:21 +0000
+Message-Id: <1359978868-28736-7-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes redundant and unbalanced pci_disable_device() from
-__e1000_shutdown(). pci_clear_master() is enough, device can go into
-suspended state with elevated enable_cnt.
+From: Emeric Vigier <emeric.vigier@stericsson.com>
 
-Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
-("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: e1000-devel@lists.sourceforge.net
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Bruce Allan <bruce.w.allan@intel.com>
+Signed-off-by: Ludovic Barré <ludovic.barre@stericsson.com>
+Signed-off-by: Emeric Vigier <emeric.vigier@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Bengt JONSSON <bengt.g.jonsson@stericsson.com>
 ---
- drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/ab8500.c |   71 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 71 insertions(+)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index fbf75fd..49e944f 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -5503,7 +5503,7 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake,
- 	 */
- 	e1000e_release_hw_control(adapter);
- 
--	pci_disable_device(pdev);
-+	pci_clear_master(pdev);
- 
- 	return 0;
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index ba1483b..1854ec3 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -33,6 +33,8 @@
+  * @update_bank: bank to control on/off
+  * @update_reg: register to control on/off
+  * @update_mask: mask to enable/disable regulator
++ * @update_val: bits holding the regulator current mode
++ * @update_val_idle: bits to enable the regulator in idle (low power) mode
+  * @update_val_enable: bits to enable the regulator in normal (high power) mode
+  * @voltage_bank: bank to control regulator voltage
+  * @voltage_reg: register to control regulator voltage
+@@ -47,6 +49,8 @@ struct ab8500_regulator_info {
+ 	u8 update_bank;
+ 	u8 update_reg;
+ 	u8 update_mask;
++	u8 update_val;
++	u8 update_val_idle;
+ 	u8 update_val_enable;
+ 	u8 voltage_bank;
+ 	u8 voltage_reg;
+@@ -146,6 +150,63 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
+ 	return ret;
  }
+ 
++static int ab8500_regulator_set_mode(struct regulator_dev *rdev, unsigned int mode)
++{
++	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
++
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
++		return -EINVAL;
++	}
++
++	/*
++	 * update_val_enable is protected by mutex
++	 * into regulator/core.c layout
++	 */
++	switch (mode) {
++	case REGULATOR_MODE_NORMAL:
++		info->update_val = info->update_val_enable;
++		break;
++	case REGULATOR_MODE_IDLE:
++		info->update_val = info->update_val_idle;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return ab8500_regulator_enable(rdev);
++}
++
++static unsigned int ab8500_regulator_get_mode(struct regulator_dev *rdev)
++{
++	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
++	int ret;
++	u8 regval;
++
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
++		return -EINVAL;
++	}
++
++	ret = abx500_get_register_interruptible(info->dev,
++		info->update_bank, info->update_reg, &regval);
++	if (ret < 0) {
++		dev_err(rdev_get_dev(rdev),
++			"couldn't read 0x%x register\n", info->update_reg);
++		return ret;
++	}
++
++	regval &=info->update_mask;
++	if (regval == info->update_val_enable)
++		ret = REGULATOR_MODE_NORMAL;
++	else if (regval == info->update_val_idle)
++		ret = REGULATOR_MODE_IDLE;
++	else
++		ret = -EINVAL;
++
++	return ret;
++}
++
+ static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
+ {
+ 	int ret;
+@@ -249,6 +310,8 @@ static int ab8500_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
+ static struct regulator_ops ab8500_regulator_ops = {
+ 	.enable		= ab8500_regulator_enable,
+ 	.disable	= ab8500_regulator_disable,
++	.set_mode	= ab8500_regulator_set_mode,
++	.get_mode	= ab8500_regulator_get_mode,
+ 	.is_enabled	= ab8500_regulator_is_enabled,
+ 	.get_voltage_sel = ab8500_regulator_get_voltage_sel,
+ 	.set_voltage_sel = ab8500_regulator_set_voltage_sel,
+@@ -284,6 +347,8 @@ static struct ab8500_regulator_info
+ 		.update_bank		= 0x04,
+ 		.update_reg		= 0x09,
+ 		.update_mask		= 0x03,
++		.update_val		= 0x01,
++		.update_val_idle	= 0x03,
+ 		.update_val_enable	= 0x01,
+ 		.voltage_bank		= 0x04,
+ 		.voltage_reg		= 0x1f,
+@@ -302,6 +367,8 @@ static struct ab8500_regulator_info
+ 		.update_bank		= 0x04,
+ 		.update_reg		= 0x09,
+ 		.update_mask		= 0x0c,
++		.update_val		= 0x04,
++		.update_val_idle	= 0x0c,
+ 		.update_val_enable	= 0x04,
+ 		.voltage_bank		= 0x04,
+ 		.voltage_reg		= 0x20,
+@@ -320,6 +387,8 @@ static struct ab8500_regulator_info
+ 		.update_bank		= 0x04,
+ 		.update_reg		= 0x0a,
+ 		.update_mask		= 0x03,
++		.update_val		= 0x01,
++		.update_val_idle	= 0x03,
+ 		.update_val_enable	= 0x01,
+ 		.voltage_bank		= 0x04,
+ 		.voltage_reg		= 0x21,
+@@ -338,6 +407,8 @@ static struct ab8500_regulator_info
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x80,
+ 		.update_mask		= 0x44,
++		.update_val		= 0x04,
++		.update_val_idle	= 0x44,
+ 		.update_val_enable	= 0x04,
+ 		.voltage_bank		= 0x03,
+ 		.voltage_reg		= 0x80,
+-- 
+1.7.9.5
 
