@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab3BDCEd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 21:04:33 -0500
-Received: from mail.servus.at ([193.170.194.20]:38840 "EHLO mail.servus.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753785Ab3BDCE3 convert rfc822-to-8bit (ORCPT
+	id S1753960Ab3BDCGt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 21:06:49 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:41806 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab3BDCGq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 21:04:29 -0500
-Message-ID: <510F10C4.2080903@oberhumer.com>
-Date: Mon, 04 Feb 2013 02:37:08 +0100
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Organization: oberhumer.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.12) Gecko/20130105 Thunderbird/10.0.12
+	Sun, 3 Feb 2013 21:06:46 -0500
 MIME-Version: 1.0
-To: "kyungsik.lee" <kyungsik.lee@lge.com>
-CC: Rajesh Pawar <pawaraj@india.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-kbuild@jasper.es, linux-arm-kernel@lists.infradead.org,
-        David Sterba <dsterba@suse.cz>,
-        =?UTF-8?B?7J6E7Zqo7KSA?= <hyojun.im@lge.com>,
-        =?UTF-8?B?7KCV7LCs6reg?= <chan.jeong@lge.com>, minchan@kernel.org,
-        =?UTF-8?B?6rmA64Ko7ZiV?= <namhyung.kim@lge.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Egon Alter <egon.alter@gmx.net>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
-References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>, <20130128142510.68092e10.akpm@linux-foundation.org> <254788880.18003.1359493798737.JavaMail.tomcat@be12> <510B6829.7050908@lge.com>
-In-Reply-To: <510B6829.7050908@lge.com>
+In-Reply-To: <1359941916.26950.12.camel@kjgkr>
+References: <1359816711-16252-1-git-send-email-linkinjeon@gmail.com>
+	<1359941916.26950.12.camel@kjgkr>
+Date: Mon, 4 Feb 2013 11:06:45 +0900
+Message-ID: <CAKYAXd8FV=oSxjRx4y6uzuPnwz2g87ojc3aLeUv3qsKkqO1GbQ@mail.gmail.com>
+Subject: Re: [PATCH 1/6] f2fs: optimize get node page readahead part
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-02-01 08:00, kyungsik.lee wrote:
-> On 2013-01-30 오전 6:09, Rajesh Pawar wrote:
->>> Andrew Morton <akpm@linux-foundation.org> wrote:
->>>
->>> On Sat, 26 Jan 2013 14:50:43 +0900
->>> Kyungsik Lee <kyungsik.lee@lge.com> wrote:
->>>> [...]
->>>>
->>> What's this "with enabled unaligned memory access" thing? You mean "if
->>> the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"? If so,
->>> that's only x86, which isn't really in the target market for this
->>> patch, yes?
->>> It's a lot of code for a 50ms boot-time improvement. Does anyone have
->>> any opinions on whether or not the benefits are worth the cost?
->> BTW, what happened to the proposed LZO update - woudn't it better to merge
->> this first?
+2013/2/4, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> Hi,
+>
+> 2013-02-02 (토), 23:51 +0900, Namjae Jeon:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
 >>
->> Also, under the hood LZ4 seems to be quite similar to LZO, so probably
->> LZO speed would also greatly benefit from unaligned access and some other
->> ARM optimisations
->>   
-> I didn't test with the proposed LZO update you mentioned. Sorry, which one do
-> you mean?
-> I did some tests with the latest LZO in the mainline.
-
-In fact you can easily improve LZO decompression speed on armv7 by almost 50%
-by adding just a few lines for enabling unaligend access:
-
-armv7 (Cortex-A9), Linaro gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
-
-                   compression speed   decompression speed
-
-  LZO-2005    :          27 MB/sec           84 MB/sec
-  LZO-2012    :          44 MB/sec          117 MB/sec
-  LZO-2013-UA :          47 MB/sec          167 MB/sec
-
-Please see my other mail to LKML for details.
-
-Cheers,
-Markus
-
-> As a result, LZO is not faster in an unaligned access enabled on ARM. Actually
-> Slower.
-> 
-> Decompression time: 336ms(383ms, with unaligned access enabled)
-> 
-> You may refer to https://lkml.org/lkml/2012/10/7/85 to know more about it.
-> 
+>> We can remove the call to find_get_page to get a page from the cache
+>> and check for up-to-date, instead we can make use of grab_cache_page
+>> part itself to fetch the page from the cache.
+>> So, removing the call and moving the PageUptodate at proper place, also
+>> taken care of moving the lock_page condition in the page_hit part.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+>> ---
+>>  fs/f2fs/node.c |   10 ++++------
+>>  1 file changed, 4 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+>> index 33fa6d5..723185b 100644
+>> --- a/fs/f2fs/node.c
+>> +++ b/fs/f2fs/node.c
+>> @@ -920,15 +920,12 @@ struct page *get_node_page_ra(struct page *parent,
+>> int start)
+>>  	if (!nid)
+>>  		return ERR_PTR(-ENOENT);
+>>
+>> -	page = find_get_page(mapping, nid);
+>> -	if (page && PageUptodate(page))
+>> -		goto page_hit;
+>> -	f2fs_put_page(page, 0);
+>> -
+>
+> The reason why we use this is to avoid the lock overhead.
+> This is a readahead flow, and we don't need to care about real
+> existence. Let's get and check the status of the page without any locks.
 > Thanks,
-> Kyungsik
-> 
-> 
-> Thanks,
-> Kyungsik
-> 
-
--- 
-Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
+Yes, Agreed. I will chceck more about this.
+Thanks a lot!
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
