@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab3BDPDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 10:03:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255Ab3BDPDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 10:03:12 -0500
-Date: Mon, 4 Feb 2013 10:03:07 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v5 9/9] devcg: propagate local changes down the hierarchy
-Message-ID: <20130204150307.GQ17632@redhat.com>
-References: <20130130171101.060853036@napanee.usersys.redhat.com>
- <20130130171102.390708521@napanee.usersys.redhat.com>
- <20130131043839.GA14726@mail.hallyn.com>
- <20130201190958.GP17632@redhat.com>
- <20130202161341.GA11284@mail.hallyn.com>
+	id S1755962Ab3BDPDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 10:03:44 -0500
+Received: from mail.windriver.com ([147.11.1.11]:32961 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755827Ab3BDPDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 10:03:43 -0500
+Message-ID: <510FCDD9.7060900@windriver.com>
+Date: Mon, 4 Feb 2013 10:03:53 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130202161341.GA11284@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <artem.bityutskiy@linux.intel.com>
+CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] mtd: fix random pointer dereference in OF device name
+ handling
+References: <1358967548-25491-1-git-send-email-paul.gortmaker@windriver.com> <1359965101.13791.11.camel@sauron.fi.intel.com>
+In-Reply-To: <1359965101.13791.11.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 02, 2013 at 04:13:41PM +0000, Serge E. Hallyn wrote:
-> Quoting Aristeu Rozanski (aris@redhat.com):
-> > +static int propagate_behavior(struct dev_cgroup *devcg_root)
-> > +{
-> > +	struct cgroup *root = devcg_root->css.cgroup;
-> > +	struct dev_cgroup *parent, *devcg, *tmp;
-> > +	int rc = 0;
-> > +	LIST_HEAD(pending);
-> > +
-> > +	get_online_devcg(root, &pending);
-> > +
-> > +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
-> > +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
-> > +
-> > +		/* first copy parent's state */
-> > +		devcg->behavior = parent->behavior;
-> > +		dev_exception_clean(&devcg->exceptions);
-> > +		rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
+On 13-02-04 03:05 AM, Artem Bityutskiy wrote:
+> On Wed, 2013-01-23 at 13:59 -0500, Paul Gortmaker wrote:
+>> Here is the output from an mpc8548 based board.  There are
+>> three instances of missing device name here:
 > 
-> You may not want to do this if parent->behavior == DENY and
-> devcg->local.behavior == ALLOW.  You'll end up with matches
-> in may_access() in the child, where you assume that if
-> devcg->behavior != ALLOW it is DENY.
+> A similar fix is already in the linux-mtd.git tree.
+
+OK, I see it in linux-next for 3.9 (commit 7dfe4be351e816) but
+it needs to get to mainline/Linus before 3.8 gets released,
+since that is where the regression is introduced (and that
+is why I ended up not seeing the fix, and redoing it, as
+I was working off of mainline).
+
+$ git describe --contains d68cbdd4fb
+v3.8-rc1~47^2~53
+
+Thanks,
+Paul.
+
+
 > 
-> Now maybe that *was* your intent, but if so then I think you're
-> better off explicitly changing the child to DENY below.  (See my
-> related question below)
-
-hm, could go either way. if the local behavior is allowed and it's
-different, clearing the local list should be enough.
-
-but yes, you're right, the way it is now is wrong.
-
-> > +		if (devcg->local.behavior == devcg->behavior) {
-> > +			rc = revalidate_exceptions(devcg);
-> > +		} else {
-> > +			dev_exception_clean(&devcg->local.exceptions);
-> > +			/*
-> > +			 * if the local behavior couldn't be applied,
-> > +			 * reset it
-> > +			 */
-> > +			devcg->local.behavior = DEVCG_DEFAULT_NONE;
-> 
-> So the only way this will happen is if the parent and child were
-> originally both ALLOW, and the parent switches to DENY.
-
-hm, no. it could also happen if it was deny/deny. if a new exception is
-written in the child (consider that the parent just had a new exception
-written) it'll change automatically local.behavior to
-DEVCG_DEFAULT_DENY.
-
-> Now in general I'd discourage starting containers in ALLOW mode
-> at all, but I think if someone does so, then changes the host to
-> DENY, the container should not be blindly switched to having no
-> access.  Now as I say the way you have the code it will actually
-> behave a bit like a DENY...
-> 
-> Really I don't know what the right thing to do is.  The best I can
-> come up with is a big fat syslog warning, and keep the child as
-> ALLOW with exactly its original set of exceptions.
-
-hm, if you do that you're breaking the hierarchy and this patchset is
-useless :)
-
-> What you're doing iiuc is switching them to DENY behavior (but refusing
-> future exception additions) with a copy of the parent's rules.
-
-hm, no. I think you misunderstood "local.behavior = DEVCG_DEFAULT_NONE".
-This means "there's no local preference for behavior". local.* are just
-the local preferences that need to be revalidated everytime something is
-propagated. Or did you mean something else?
-
--- 
-Aristeu
-
