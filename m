@@ -1,119 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab3BDXNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 18:13:48 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:40393 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181Ab3BDXNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 18:13:44 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
-        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
-        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug framework
-Date: Tue, 05 Feb 2013 00:19:59 +0100
-Message-ID: <2002851.rU9bZPbPSe@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1360010058.23410.169.camel@misato.fc.hp.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <23473445.t1DSaBm58X@vostro.rjw.lan> <1360010058.23410.169.camel@misato.fc.hp.com>
+	id S1755070Ab3BDXNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 18:13:55 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:59537 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab3BDXNv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 18:13:51 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1360016458.4485.11.camel@rhapsody>
+References: <20130204115246.5569.85829.stgit@zurg> <20130204115557.5569.9748.stgit@zurg>
+ <1360016458.4485.11.camel@rhapsody>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 4 Feb 2013 16:13:30 -0700
+Message-ID: <CAErSpo7k96noiCtGYUFyuUQhE2GQA8ro5-9WC-JU_1HOWKUGvg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/7] PCI: don't touch enable_cnt in pci_device_shutdown()
+To: Khalid Aziz <khalid@gonehiking.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Matthew Garrett <mjg@redhat.com>,
+        khalid.aziz@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 04, 2013 01:34:18 PM Toshi Kani wrote:
-> On Mon, 2013-02-04 at 21:12 +0100, Rafael J. Wysocki wrote:
-> > On Monday, February 04, 2013 12:46:24 PM Toshi Kani wrote:
-> > > On Mon, 2013-02-04 at 20:48 +0100, Rafael J. Wysocki wrote:
-> > > > On Monday, February 04, 2013 09:02:46 AM Toshi Kani wrote:
-> > > > > On Mon, 2013-02-04 at 14:41 +0100, Rafael J. Wysocki wrote:
-> > > > > > On Sunday, February 03, 2013 07:23:49 PM Greg KH wrote:
-> > > > > > > On Sat, Feb 02, 2013 at 09:15:37PM +0100, Rafael J. Wysocki wrote:
-> > > > > > > > On Saturday, February 02, 2013 03:58:01 PM Greg KH wrote:
-> > > > >   :
-> > > > > > > > Yes, but those are just remove events and we can only see how destructive they
-> > > > > > > > were after the removal.  The point is to be able to figure out whether or not
-> > > > > > > > we *want* to do the removal in the first place.
-> > > > > > > 
-> > > > > > > Yes, but, you will always race if you try to test to see if you can shut
-> > > > > > > down a device and then trying to do it.  So walking the bus ahead of
-> > > > > > > time isn't a good idea.
-> > > > > > >
-> > > > > > > And, we really don't have a viable way to recover if disconnect() fails,
-> > > > > > > do we.  What do we do in that situation, restore the other devices we
-> > > > > > > disconnected successfully?  How do we remember/know what they were?
-> > > > > > > 
-> > > > > > > PCI hotplug almost had this same problem until the designers finally
-> > > > > > > realized that they just had to accept the fact that removing a PCI
-> > > > > > > device could either happen by:
-> > > > > > > 	- a user yanking out the device, at which time the OS better
-> > > > > > > 	  clean up properly no matter what happens
-> > > > > > > 	- the user asked nicely to remove a device, and the OS can take
-> > > > > > > 	  as long as it wants to complete that action, including
-> > > > > > > 	  stalling for noticable amounts of time before eventually,
-> > > > > > > 	  always letting the action succeed.
-> > > > > > > 
-> > > > > > > I think the second thing is what you have to do here.  If a user tells
-> > > > > > > the OS it wants to remove these devices, you better do it.  If you
-> > > > > > > can't, because memory is being used by someone else, either move them
-> > > > > > > off, or just hope that nothing bad happens, before the user gets
-> > > > > > > frustrated and yanks out the CPU/memory module themselves physically :)
-> > > > > > 
-> > > > > > Well, that we can't help, but sometimes users really *want* the OS to tell them
-> > > > > > if it is safe to unplug something at this particualr time (think about the
-> > > > > > Windows' "safe remove" feature for USB sticks, for example; that came out of
-> > > > > > users' demand AFAIR).
-> > > > > > 
-> > > > > > So in my opinion it would be good to give them an option to do "safe eject" or
-> > > > > > "forcible eject", whichever they prefer.
-> > > > > 
-> > > > > For system device hot-plug, it always needs to be "safe eject".  This
-> > > > > feature will be implemented on mission critical servers, which are
-> > > > > managed by professional IT folks.  Crashing a server causes serious
-> > > > > money to the business.
-> > > > 
-> > > > Well, "always" is a bit too strong a word as far as human behavior is concerned
-> > > > in my opinion.
-> > > > 
-> > > > That said I would be perfectly fine with not supporting the "forcible eject" to
-> > > > start with and waiting for the first request to add support for it.  I also
-> > > > would be fine with taking bets on how much time it's going to take for such a
-> > > > request to appear. :-)
-> > > 
-> > > Sounds good.  In my experience, though, it actually takes a LONG time to
-> > > convince customers that "safe eject" is actually safe.  Enterprise
-> > > customers are so afraid of doing anything risky that might cause the
-> > > system to crash or hang due to some defect.  I would be very surprised
-> > > to see a customer asking for a force operation when we do not guarantee
-> > > its outcome.  I have not seen such enterprise customers yet.
-> > 
-> > But we're talking about a kernel that is supposed to run on mobile phones too,
-> > among other things.
-> 
-> I think using this feature for RAS i.e. replacing a faulty device
-> on-line, will continue to be limited for high-end systems.  For low-end
-> systems, it does not make sense for customers to pay much $$ for this
-> feature.  They can just shut the system down for replacement, or they
-> can simply buy a new system instead of repairing.
-> 
-> That said, using this feature on VM for workload balancing does not
-> require any special hardware.  So, I can see someone willing to try out
-> to see how it goes with a force option on VM for personal use.   
+On Mon, Feb 4, 2013 at 3:20 PM, Khalid Aziz <khalid@gonehiking.org> wrote:
+> On Mon, 2013-02-04 at 15:55 +0400, Konstantin Khlebnikov wrote:
+>> Matthew Garrett and Alan Cox said (see LKML link below) that clearing bus-master
+>> for all PCI devices may lead to unpredictable consequences, some devices ignores
+>> this bit and continues DMA, some of them hang after that or crash whole system.
+>> Probably we should leave here only warning and disable bus-mastering for each
+>> driver individually in ->shutdown() callback.
+>
+> Agreed that the right place for shutting down a PCI device properly and
+> clearing its Bus Master bit, is the driver shutdown routine, if only all
+> drivers supplied a shutdown routine. As it is today, there are too many
+> drivers that do not provide a shutdown routine, ata_piix, Marvell SATA
+> driver, ATI AGP driver just to name a few among a large number of them.
+> Yet kexec is expected to work inspite of these drivers especially since
+> kdump depends on it. So until all PCI drivers supply a shutdown routine,
+> this is just a band-aid to disable interrupt and Bus Master bit in
+> pci_device_shutdown(). Most drivers do seem to supply a suspend and
+> resume function and it was discussed many years ago if it is feasible to
+> use the suspend() routine for drivers to shut devices down cleanly.
+> Maybe it is time to revisit that discussion.
 
-Besides, SMP was a $$ "enterprise" feature not so long ago, so things tend to
-change. :-)
+This patch as posted doesn't do anything with IRQs.  It only clears
+PCI_COMMAND_MASTER.
 
-Thanks,
-Rafael
+I'm open to considering something with IRQs, but I don't understand
+exactly what we should do.  In your response to the previous version
+(https://lkml.org/lkml/2013/1/28/720) you suggested this:
 
+  pci_clear_master(pci_dev);
+  pcibios_disable_device(pci_dev);
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Did you figure out specifically why pcibios_disable_device() helps?
+Using pcibios_disable_device() doesn't seem like the ideal solution
+because on most architectures, it is an empty function with no obvious
+connection to IRQs.  On x86 with ACPI, it cleans up some ACPI PCI IRQ
+stuff, but as far as I can tell, it doesn't actually touch the PCI
+device itself or even the IOAPIC to which it's connected, so I'm not
+sure how this would help kexec.
+
+Bjorn
