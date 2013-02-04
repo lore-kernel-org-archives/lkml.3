@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab3BDM7a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:59:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50235 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab3BDM73 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 07:59:29 -0500
-Date: Mon, 4 Feb 2013 15:59:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>, devel@driverdev.osuosl.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/10] staging/xgifb: Remove unnecessary bitshifts in
- XGI_SetCRT1ModeRegs
-Message-ID: <20130204125901.GH4937@mwanda>
-References: <1359928479-8484-1-git-send-email-peterhuewe@gmx.de>
- <1359928479-8484-8-git-send-email-peterhuewe@gmx.de>
+	id S1754966Ab3BDNCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 08:02:18 -0500
+Received: from 8bytes.org ([85.214.48.195]:33752 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754547Ab3BDNCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 08:02:17 -0500
+Date: Mon, 4 Feb 2013 14:02:14 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Sethi Varun-B16395 <B16395@freescale.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Yoder Stuart-B08248 <B08248@freescale.com>
+Subject: Re: [PATCH 4/4] iommu: Add domain window handling functions
+Message-ID: <20130204130214.GN25591@8bytes.org>
+References: <1359582228-21552-1-git-send-email-joro@8bytes.org>
+ <1359582228-21552-5-git-send-email-joro@8bytes.org>
+ <C5ECD7A89D1DC44195F34B25E172658D3670ED@039-SN2MPN1-013.039d.mgd.msft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359928479-8484-8-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D3670ED@039-SN2MPN1-013.039d.mgd.msft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Feb  4 14:02:15 2013
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 510fb15722971699272620
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 03, 2013 at 10:54:37PM +0100, Peter Huewe wrote:
-> Since data can only be 0x0000, 0x0035 or 0x0048 we can simply skip the
-> bit shifting and masking as data & 0xFF is always equal to data and
-> data & 0xFF00 is always 0.
-> So we simply use data and 0 directly and save the assignment.
-> 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
->  drivers/staging/xgifb/vb_setmode.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-> index 6f366f4..1ff1178 100644
-> --- a/drivers/staging/xgifb/vb_setmode.c
-> +++ b/drivers/staging/xgifb/vb_setmode.c
-> @@ -1083,10 +1083,8 @@ static void XGI_SetCRT1ModeRegs(struct xgi_hw_device_info *HwDeviceExtension,
->  			data = 0x0048;
->  	}
->  
-> -	data2 = data & 0x00FF;
-> -	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFF, data2);
-> -	data2 = (data & 0xFF00) >> 8;
-> -	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFC, data2);
-> +	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFF, data);
-> +	xgifb_reg_and_or(pVBInfo->P3d4, 0x19, 0xFC, 0);
+On Thu, Jan 31, 2013 at 09:32:26AM +0000, Sethi Varun-B16395 wrote:
+> We need a mechanism to determine the maximum number of subwindows supported by PAMU. How about representing it in the iommu_domain structure:
+> struct  iommu_domain {
+> 	struct iommu_ops *ops;
+> 	void *priv;
+> 	iommu_fault_handler_t handler;
+> 	void *handler_token;
+> 	struct iommu_domain_geometry geometry;
+> 	u32 max_sub_windows; -----> maximum number of sub windows supported by the hardware.
+> }
 
-This patch is fine.
+I`ll leave that flag to the private-data of the IOMMU domain. Instead I
+added a DOMAIN_ATTR_WINDOWS attribute to get/set the number of
+subwindows. I'll post the updated patch-set soon.
 
-This is a fairly common pattern where people do:
 
-	write_a_char(data & 0xff);
-	write_a_char((data >> 8) & 0xff);
+	Joerg
 
-It feels there should be a macro to do the shift and mask but I'm
-not sure what it would look like.
-
-regards,
-dan carpenter
 
