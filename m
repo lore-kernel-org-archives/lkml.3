@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab3BDGeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 01:34:00 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8253 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3BDGd6 (ORCPT
+	id S1752746Ab3BDGfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 01:35:46 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5917 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3BDGfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 01:33:58 -0500
+	Mon, 4 Feb 2013 01:35:44 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sun, 03 Feb 2013 22:31:42 -0800
-Message-ID: <510F5646.80907@nvidia.com>
-Date: Mon, 4 Feb 2013 12:03:42 +0530
+	by hqnvupgp05.nvidia.com on Sun, 03 Feb 2013 22:35:37 -0800
+Message-ID: <510F56B1.5060409@nvidia.com>
+Date: Mon, 4 Feb 2013 12:05:29 +0530
 From: Prashant Gaikwad <pgaikwad@nvidia.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
@@ -27,9 +28,10 @@ CC: Grant Likely <grant.likely@secretlab.ca>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 05/10] clk: tegra: Add flags to tegra_clk_periph()
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com> <1359713962-16822-6-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1359713962-16822-6-git-send-email-pdeschrijver@nvidia.com>
+Subject: Re: [PATCH v5 04/10] clk: tegra: Add new fields and PLL types for
+ Tegra114
+References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com> <1359713962-16822-5-git-send-email-pdeschrijver@nvidia.com> <510C1A2E.5010408@nvidia.com>
+In-Reply-To: <510C1A2E.5010408@nvidia.com>
 X-NVConfidentiality: public
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
@@ -37,136 +39,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 February 2013 03:48 PM, Peter De Schrijver wrote:
-> We will need some tegra peripheral clocks with the CLK_IGNORE_UNUSED flag,
-> most notably mselect, which is a bridge between AXI and most peripherals.
+On Saturday 02 February 2013 01:10 AM, Rhyland Klein wrote:
+> On 2/1/2013 5:18 AM, Peter De Schrijver wrote:
+>> Tegra114 introduces new PLL types. This requires new clocktypes as well
+>> as some new fields in the pll structure.
+>>
+>> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+>> ---
+>>    drivers/clk/tegra/clk-pll.c |  719 +++++++++++++++++++++++++++++++++++++++++++
+>>    drivers/clk/tegra/clk.h     |   47 +++
+>>    2 files changed, 766 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+>> index 87d2f34..50114b7 100644
+>> --- a/drivers/clk/tegra/clk-pll.c
+>> +++ b/drivers/clk/tegra/clk-pll.c
+>> [snip]
+>> +struct clk *tegra_clk_register_pllxc(const char *name, const char *parent_name,
+>> +                         void __iomem *clk_base, void __iomem *pmc,
+>> +                         unsigned long flags, unsigned long fixed_rate,
+>> +                         struct tegra_clk_pll_params *pll_params,
+>> +                         u32 pll_flags,
+>> +                         struct tegra_clk_pll_freq_table *freq_table,
+>> +                         spinlock_t *lock)
+>> +{
+>> +       if (!pll_params->pdiv_tohw)
+>> +               return -EINVAL;
+>> +
+> This will cause the following warning:
+> warning: return makes pointer from integer without a cast
 >
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
-
-Looks good to me.
-
-Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
-
->   drivers/clk/tegra/clk-periph.c  |   11 ++++++-----
->   drivers/clk/tegra/clk-tegra20.c |    2 +-
->   drivers/clk/tegra/clk-tegra30.c |    2 +-
->   drivers/clk/tegra/clk.h         |    9 ++++++---
->   4 files changed, 14 insertions(+), 10 deletions(-)
+> Same with occurrences in tegra_clk_register_pllm and
+> tegra_clk_register_pllc.
 >
-> diff --git a/drivers/clk/tegra/clk-periph.c b/drivers/clk/tegra/clk-periph.c
-> index 788486e..067abb3 100644
-> --- a/drivers/clk/tegra/clk-periph.c
-> +++ b/drivers/clk/tegra/clk-periph.c
-> @@ -170,14 +170,15 @@ const struct clk_ops tegra_clk_periph_nodiv_ops = {
->   static struct clk *_tegra_clk_register_periph(const char *name,
->   			const char **parent_names, int num_parents,
->   			struct tegra_clk_periph *periph,
-> -			void __iomem *clk_base, u32 offset, bool div)
-> +			void __iomem *clk_base, u32 offset, bool div,
-> +			unsigned long flags)
->   {
->   	struct clk *clk;
->   	struct clk_init_data init;
->   
->   	init.name = name;
->   	init.ops = div ? &tegra_clk_periph_ops : &tegra_clk_periph_nodiv_ops;
-> -	init.flags = div ? 0 : CLK_SET_RATE_PARENT;
-> +	init.flags = flags;
->   	init.parent_names = parent_names;
->   	init.num_parents = num_parents;
->   
-> @@ -202,10 +203,10 @@ static struct clk *_tegra_clk_register_periph(const char *name,
->   struct clk *tegra_clk_register_periph(const char *name,
->   		const char **parent_names, int num_parents,
->   		struct tegra_clk_periph *periph, void __iomem *clk_base,
-> -		u32 offset)
-> +		u32 offset, unsigned long flags)
->   {
->   	return _tegra_clk_register_periph(name, parent_names, num_parents,
-> -			periph, clk_base, offset, true);
-> +			periph, clk_base, offset, true, flags);
->   }
->   
->   struct clk *tegra_clk_register_periph_nodiv(const char *name,
-> @@ -214,5 +215,5 @@ struct clk *tegra_clk_register_periph_nodiv(const char *name,
->   		u32 offset)
->   {
->   	return _tegra_clk_register_periph(name, parent_names, num_parents,
-> -			periph, clk_base, offset, false);
-> +			periph, clk_base, offset, false, CLK_SET_RATE_PARENT);
->   }
-> diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
-> index 54c6777..870349e 100644
-> --- a/drivers/clk/tegra/clk-tegra20.c
-> +++ b/drivers/clk/tegra/clk-tegra20.c
-> @@ -1048,7 +1048,7 @@ static void __init tegra20_periph_clk_init(void)
->   		data = &tegra_periph_clk_list[i];
->   		clk = tegra_clk_register_periph(data->name, data->parent_names,
->   				data->num_parents, &data->periph,
-> -				clk_base, data->offset);
-> +				clk_base, data->offset, data->flags);
->   		clk_register_clkdev(clk, data->con_id, data->dev_id);
->   		clks[data->clk_id] = clk;
->   	}
-> diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-> index 078f9b8..126747b 100644
-> --- a/drivers/clk/tegra/clk-tegra30.c
-> +++ b/drivers/clk/tegra/clk-tegra30.c
-> @@ -1665,7 +1665,7 @@ static void __init tegra30_periph_clk_init(void)
->   		data = &tegra_periph_clk_list[i];
->   		clk = tegra_clk_register_periph(data->name, data->parent_names,
->   				data->num_parents, &data->periph,
-> -				clk_base, data->offset);
-> +				clk_base, data->offset, data->flags);
->   		clk_register_clkdev(clk, data->con_id, data->dev_id);
->   		clks[data->clk_id] = clk;
->   	}
-> diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-> index 4d0f556..79f5e2a 100644
-> --- a/drivers/clk/tegra/clk.h
-> +++ b/drivers/clk/tegra/clk.h
-> @@ -411,7 +411,7 @@ extern const struct clk_ops tegra_clk_periph_ops;
->   struct clk *tegra_clk_register_periph(const char *name,
->   		const char **parent_names, int num_parents,
->   		struct tegra_clk_periph *periph, void __iomem *clk_base,
-> -		u32 offset);
-> +		u32 offset, unsigned long flags);
->   struct clk *tegra_clk_register_periph_nodiv(const char *name,
->   		const char **parent_names, int num_parents,
->   		struct tegra_clk_periph *periph, void __iomem *clk_base,
-> @@ -454,12 +454,14 @@ struct tegra_periph_init_data {
->   	u32 offset;
->   	const char *con_id;
->   	const char *dev_id;
-> +	unsigned long flags;
->   };
->   
->   #define TEGRA_INIT_DATA_TABLE(_name, _con_id, _dev_id, _parent_names, _offset,\
->   			_mux_shift, _mux_mask, _mux_flags, _div_shift,	\
->   			_div_width, _div_frac_width, _div_flags, _regs,	\
-> -			_clk_num, _enb_refcnt, _gate_flags, _clk_id, _table) \
-> +			_clk_num, _enb_refcnt, _gate_flags, _clk_id, _table,\
-> +			_flags) \
->   	{								\
->   		.name = _name,						\
->   		.clk_id = _clk_id,					\
-> @@ -474,6 +476,7 @@ struct tegra_periph_init_data {
->   		.offset = _offset,					\
->   		.con_id = _con_id,					\
->   		.dev_id = _dev_id,					\
-> +		.flags = _flags						\
->   	}
->   
->   #define TEGRA_INIT_DATA(_name, _con_id, _dev_id, _parent_names, _offset,\
-> @@ -484,7 +487,7 @@ struct tegra_periph_init_data {
->   			_mux_shift, BIT(_mux_width) - 1, _mux_flags,	\
->   			_div_shift, _div_width, _div_frac_width, _div_flags, \
->   			_regs, _clk_num, _enb_refcnt, _gate_flags, _clk_id,\
-> -			NULL)
-> +			NULL, 0)
->   
->   /**
->    * struct clk_super_mux - super clock
+> Should this instead be returning NULL?
+
+return ERR_PTR(-EINVAL)
+
+>
+> -rhyland
 >
 
