@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3BDMFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:05:46 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:60986 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab3BDMFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 07:05:44 -0500
-Message-ID: <510FA409.2080201@ahsoftware.de>
-Date: Mon, 04 Feb 2013 13:05:29 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Bernie Thompson <bernie@plugable.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/3 v2] fb: udlfb: fix hang at disconnect
-References: <50F2A310.5010006@ahsoftware.de> <1359139768-32294-1-git-send-email-holler@ahsoftware.de> <1359139768-32294-2-git-send-email-holler@ahsoftware.de> <20130128162238.7fba92fe.akpm@linux-foundation.org> <51071E21.9030008@ahsoftware.de> <5107A5ED.7020009@ahsoftware.de> <5107AE4F.9000809@ahsoftware.de> <5107F014.4030704@ahsoftware.de> <5108329E.2050802@ahsoftware.de> <20130204011413.GA6413@kroah.com>
-In-Reply-To: <20130204011413.GA6413@kroah.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755336Ab3BDMGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:06:07 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57645 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755047Ab3BDMGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 07:06:04 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH] perf: Check for flex and bison before continuing building
+Date: Mon,  4 Feb 2013 13:05:54 +0100
+Message-Id: <1359979554-9160-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.2.422.g08c0e7f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.02.2013 02:14, schrieb Greg KH:
+From: Borislav Petkov <bp@suse.de>
 
-> So you are right in that your driver will wait for forever for a
-> disconnect() to happen, as it will never be called.  I don't understand
-> the problem that this is causing when it happens.  What's wrong with
-> udlfb that having the cpu suddently reset as the powerdown happened
-> without it knowing about it?
+Check whether both executables are present on the system before
+continuing with the build instead of failing halfway, if either are
+missing.
 
-There is nothing wrong with that. I've just explained why a problem 
-doesn't occur on shutdown but on disconnect (of the device).
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ tools/perf/Makefile | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-Regards,
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 4b1044cbd84c..a158309a65ef 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -149,6 +149,8 @@ RM = rm -f
+ MKDIR = mkdir
+ FIND = find
+ INSTALL = install
++FLEX = flex
++BISON= bison
+ 
+ # sparse is architecture-neutral, which means that we need to tell it
+ # explicitly what architecture to check for. Fix this up for yours..
+@@ -158,6 +160,14 @@ ifneq ($(MAKECMDGOALS),clean)
+ ifneq ($(MAKECMDGOALS),tags)
+ -include config/feature-tests.mak
+ 
++ifeq ($(call get-executable,$(FLEX)),)
++	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
++endif
++
++ifeq ($(call get-executable,$(BISON)),)
++	dummy := $(error Error: $(BISON) is missing on this system, please install it)
++endif
++
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+ 	CFLAGS := $(CFLAGS) -fstack-protector-all
+ endif
+@@ -282,9 +292,6 @@ endif
+ 
+ export PERL_PATH
+ 
+-FLEX = flex
+-BISON= bison
+-
+ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-events-bison.c
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
+ 
+-- 
+1.8.1.2.422.g08c0e7f
 
-Alexander
