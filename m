@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3BDRGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 12:06:33 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:59095 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734Ab3BDRGa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 12:06:30 -0500
-Date: Mon, 4 Feb 2013 09:06:24 -0800
-From: Tejun Heo <tj@kernel.org>
-To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
-        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 09/62] atm/nicstar: convert to idr_alloc()
-Message-ID: <20130204170624.GJ27963@mtj.dyndns.org>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
- <1359854463-2538-10-git-send-email-tj@kernel.org>
- <20130204090410.2942f8cc@thirdoffive.cmf.nrl.navy.mil>
+	id S1754329Ab3BDRHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 12:07:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751590Ab3BDRHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 12:07:00 -0500
+Date: Mon, 4 Feb 2013 12:06:55 -0500
+From: David Teigland <teigland@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: [GIT PULL] Revert "dlm: check the maximum size of a request from
+ user"
+Message-ID: <20130204170655.GA20950@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130204090410.2942f8cc@thirdoffive.cmf.nrl.navy.mil>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Chas.
+Hi Linus,
 
-On Mon, Feb 04, 2013 at 09:04:10AM -0500, chas williams - CONTRACTOR wrote:
-> I don't quite understand your comment.  idr_pre_get() returns 0 in the
-> case of failure.
+Please pull the following fix from branch:
 
-So, if you do the following,
+git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm.git for-linus
 
-	int id1 = 0, id2 = 0;
+This reverts commit 2b75bc9121e54e22537207b47b71373bcb0be41c.
 
-	if (!id1)
-		err = idr_get_new_above(&card->idr, handle1, 0, &id1);
-	if (!id2 && err == 0)
-		err = idr_get_new_above(&card->idr, handle2, 0, &id2);
-	if (err)
-		goto out;
-									    
-You have no way of telling whether id1/2 are allocated or not.  0 is
-the special "not allocated" value but it also is a valid ID.  The
-error path should be freeing id1/2 if either of them has been
-allocated but it doesn't and can't with 0 as the non-allocated value.
+There is something wrong with the CONFIG_COMPAT max size
+check in ioctl write.  There is a report of a case where
+this breaks userland (clvmd) when maximum resource name
+lengths are used.  I am still sorting out exactly which
+combinations of kernel and userland libs are a problem.
 
-Thanks.
+Reported-by: Jana Saout <jana@saout.de>
+CC: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: David Teigland <teigland@redhat.com>
+---
+ fs/dlm/user.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
+diff --git a/fs/dlm/user.c b/fs/dlm/user.c
+index 7ff4985..eb4ed9b 100644
+--- a/fs/dlm/user.c
++++ b/fs/dlm/user.c
+@@ -503,13 +503,6 @@ static ssize_t device_write(struct file *file, const char __user *buf,
+ #endif
+ 		return -EINVAL;
+ 
+-#ifdef CONFIG_COMPAT
+-	if (count > sizeof(struct dlm_write_request32) + DLM_RESNAME_MAXLEN)
+-#else
+-	if (count > sizeof(struct dlm_write_request) + DLM_RESNAME_MAXLEN)
+-#endif
+-		return -EINVAL;
+-
+ 	kbuf = kzalloc(count + 1, GFP_NOFS);
+ 	if (!kbuf)
+ 		return -ENOMEM;
 -- 
-tejun
+1.8.1.rc1.5.g7e0651a
+
