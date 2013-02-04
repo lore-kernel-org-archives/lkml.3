@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab3BDTjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:39:21 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:60577 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754286Ab3BDTjT (ORCPT
+	id S1755778Ab3BDTjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:39:42 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60605 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286Ab3BDTjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:39:19 -0500
-From: Bing Zhao <bzhao@marvell.com>
-To: Ben Hutchings <ben@decadent.org.uk>,
-        Amitkumar Karwar <akarwar@marvell.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 4 Feb 2013 11:37:46 -0800
-Subject: RE: [ 26/89] mwifiex: update config_bands during infra association
-Thread-Topic: [ 26/89] mwifiex: update config_bands during infra association
-Thread-Index: Ac4CD9INSaXH9TQITZiaUDlGfYAOqAA/tV8g
-Message-ID: <477F20668A386D41ADCC57781B1F70430D1432F5B5@SC-VEXCH1.marvell.com>
-References: <20130201130207.444989281@linuxfoundation.org>
-	 <20130201130209.370951271@linuxfoundation.org>
- <1359896994.29976.2.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1359896994.29976.2.camel@deadeye.wl.decadent.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 4 Feb 2013 14:39:41 -0500
+Message-ID: <51100E79.9080101@wwwdotorg.org>
+Date: Mon, 04 Feb 2013 12:39:37 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: James Hogan <james.hogan@imgtec.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org
+Subject: Re: next-20130204 - bisected slab problem to "slab: Common constants
+ for kmalloc boundaries"
+References: <510FE051.7080107@imgtec.com>
+In-Reply-To: <510FE051.7080107@imgtec.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r14JdN4A010281
 
-Hi Ben,
-
-> > From: Amitkumar Karwar <akarwar@marvell.com>
-> >
-> > commit d7b9c5204e9c6810a20d509ee47bc70419096e59 upstream.
-> >
-> > Currently "adapter->config_bands" is updated during infra
-> > association only if channel is provided by user in "iw connect"
-> > command. config_bands is used while preparing association
-> > request to calculate supported rates by intersecting our rates
-> > with the rates advertised by AP.
-> >
-> > There is corner case in which we include zero rates in
-> > supported rates TLV based on previous IBSS network history,
-> > which leads to association failure.
-> >
-> > This patch fixes the problem by correctly updating config_bands.
-> >
-> > Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-> > Signed-off-by: Bing Zhao <bzhao@marvell.com>
-> > Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> [...]
+On 02/04/2013 09:22 AM, James Hogan wrote:
+> Hi,
 > 
-> Is this fix needed for earlier kernel versions (3.0, 3.2, 3.4)?  If so,
-> could you provide backports?
+> I've hit boot problems in next-20130204 on Meta:
+> 
+> META213-Thread0 DSP [LogF] kobject (4fc03980): tried to init an initialized object, something is seriously wrong.
+> META213-Thread0 DSP [LogF] 
+> META213-Thread0 DSP [LogF] Call trace: 
+> META213-Thread0 DSP [LogF] [<4000888c>] _show_stack+0x68/0x7c
+> META213-Thread0 DSP [LogF] [<400088b4>] _dump_stack+0x14/0x28
+> META213-Thread0 DSP [LogF] [<40103794>] _kobject_init+0x58/0x9c
+> META213-Thread0 DSP [LogF] [<40103810>] _kobject_create+0x38/0x64
+> META213-Thread0 DSP [LogF] [<40103eac>] _kobject_create_and_add+0x14/0x8c
+> META213-Thread0 DSP [LogF] [<40190ac4>] _mnt_init+0xd8/0x220
+> META213-Thread0 DSP [LogF] [<40190508>] _vfs_caches_init+0xb0/0x160
+...
+> I've bisected it to the following commit:
+> 
+> commit 95a05b428cc675694321c8f762591984f3fd2b1e
+> Author: Christoph Lameter <cl@linux.com>
+> Date:   Thu Jan 10 19:14:19 2013 +0000
+> 
+>     slab: Common constants for kmalloc boundaries
+>     
+>     Standardize the constants that describe the smallest and largest
+>     object kept in the kmalloc arrays for SLAB and SLUB.
+>     
+>     Differentiate between the maximum size for which a slab cache is used
+>     (KMALLOC_MAX_CACHE_SIZE) and the maximum allocatable size
+>     (KMALLOC_MAX_SIZE, KMALLOC_MAX_ORDER).
+>     
+>     Signed-off-by: Christoph Lameter <cl@linux.com>
+>     Signed-off-by: Pekka Enberg <penberg@kernel.org>
 
-This patch is not needed for earlier kernel 3.0, 3.2, and 3.4.
+I see the same problem on ARM. I believe it's because of the changes to
+the calculation of MALLOC_SHIFT_LOW.
 
-Thanks,
-Bing
+The old code was:
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+#if defined(ARCH_DMA_MINALIGN) && ARCH_DMA_MINALIGN > 8
+#define KMALLOC_MIN_SIZE ARCH_DMA_MINALIGN
+#else
+#ifdef CONFIG_SLAB
+#define KMALLOC_MIN_SIZE 32
+#else
+#define KMALLOC_MIN_SIZE 8
+#endif
+#endif
+
+#define KMALLOC_SHIFT_LOW ilog2(KMALLOC_MIN_SIZE)
+
+Here, KMALLOC_SHIFT_LOW and KMALLOC_MIN_SIZE are always consistent/related.
+
+The new code is:
+
+#define KMALLOC_SHIFT_LOW	5
+...
+#if defined(ARCH_DMA_MINALIGN) && ARCH_DMA_MINALIGN > 8
+#define KMALLOC_MIN_SIZE ARCH_DMA_MINALIGN
+#else
+#define KMALLOC_MIN_SIZE (1 << KMALLOC_SHIFT_LOW)
+#endif
+
+Here, if defined(ARCH_DMA_MINALIGN), then KMALLOC_MIN_SIZE isn't
+relative-to/derived-from KMALLOC_SHIFT_LOW, so the two may become
+inconsistent.
+
+On my ARM system at least, CONFIG_ARM_L1_CACHE_SHIFT_6 is set since I
+have an ARMv7 CPU (see arch/arm/mm/Kconfig), which causes
+CONFIG_ARM_L1_CACHE_SHIFT=6, then:
+
+> arch/arm/include/asm/cache.h:7:#define L1_CACHE_SHIFT		CONFIG_ARM_L1_CACHE_SHIFT
+> arch/arm/include/asm/cache.h:8:#define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
+> arch/arm/include/asm/cache.h:17:#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
+
+... hence that case triggers.
+
+I also see that in most parts of the patch, SLUB_PAGE_SHIFT was replaced
+with (KMALLOC_SHIFT_HIGH + 1), or equivalently tests were changed from <
+to <=:
+
+> -		size <= SLUB_MAX_SIZE && !(flags & SLUB_DMA)) {
+> +		size <= KMALLOC_MAX_CACHE_SIZE && !(flags & SLUB_DMA)) {
+
+However, the following doesn't seem to have that adjustment:
+
+> diff --git a/mm/slub.c b/mm/slub.c
+> index ba2ca53..d0f72ee 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -2775,7 +2775,7 @@ init_kmem_cache_node(struct kmem_cache_node *n)
+>  static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
+>  {
+>  	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
+> -			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
+> +			KMALLOC_SHIFT_HIGH * sizeof(struct kmem_cache_cpu));
+
+Should that also be (KMALLOC_SHIFT_HIGH + 1)?
