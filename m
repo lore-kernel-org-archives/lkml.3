@@ -1,161 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab3BDRBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 12:01:49 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:35381 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab3BDRBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 12:01:47 -0500
-Date: Mon, 4 Feb 2013 22:29:45 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] uprobes/tracing: Kill uprobe_trace_consumer, embed
- uprobe_consumer into trace_uprobe
-Message-ID: <20130204165945.GB4246@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20130131191752.GA30410@redhat.com>
- <20130131191829.GA30454@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130131191829.GA30454@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020416-5490-0000-0000-000002EAAF25
+	id S1754351Ab3BDRCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 12:02:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750773Ab3BDRCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 12:02:13 -0500
+Message-ID: <1359997327.11144.452.camel@bling.home>
+Subject: Re: [PATCH v3 0/3] AER-KVM: Error containment of VFIO devices
+ assigned to KVM guests
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Blue Swirl <blauwirbel@gmail.com>,
+        "Ortiz, Lance E" <lance.oritz@hp.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 04 Feb 2013 10:02:07 -0700
+In-Reply-To: <F9E001219150CB45BEDC82A650F360C9014AAEF8@G9W0717.americas.hpqcorp.net>
+References: <F9E001219150CB45BEDC82A650F360C9014AAEF8@G9W0717.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-01-31 20:18:29]:
-
-> trace_uprobe->consumer and "struct uprobe_trace_consumer" add the
-> unnecessary indirection and complicate the code for no reason.
+On Sun, 2013-02-03 at 14:10 +0000, Pandarathil, Vijaymohan R wrote:
+> Add support for error containment when a VFIO device assigned to a KVM
+> guest encounters an error. This is for PCIe devices/drivers that support AER
+> functionality. When the host OS is notified of an error in a device either
+> through the firmware first approach or through an interrupt handled by the AER
+> root port driver, the error handler registered by the vfio-pci driver gets
+> invoked. The qemu process is signaled through an eventfd registered per
+> VFIO device by the qemu process. In the eventfd handler, qemu decides on
+> what action to take. In this implementation, guest is brought down to
+> contain the error.
 > 
-> This patch simply embeds uprobe_consumer into "struct trace_uprobe",
-> all other changes only fix the compilation errors.
 > 
+> v3:
+>  - Removed PCI_AER* flags from device info ioctl.
+>  - Incorporated feedback
 
-I know this patch doesnt change the current behaviour.
+Hi Vijay,
 
-We dont handle two concurrent perf record sessions for the same user
-space probe. Since both sessons share the same trace_uprobe and hence
-share the same consumer. Initially I had thought of having a chain in
-uprobe_trace_consumer. However we dont get have enough information at
-the probe_event_disable() time to detect which consumer to delete Hence
-I dropped the idea of having a list of consumers attached to the
-trace_uprobe.
+It's getting much closer, just a few comments in each patch.  As Gleb
+points out, please try to use git send-mail  (or even stg mail) so that
+threading is maintained for these.  A side effect will be that you can't
+send kernel & qemu patches in the same series, but that's not
+necessarily a bad thing.  Thanks,
 
-However with allowing prefiltering, we need to have ability to
-distinguish consumers. The idea of embedding uprobe_consumer within
-trace_uprobe, may make the problem even more tougher to solve.
+Alex
 
-Should we document this as a TODO?
-
-
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> v2:
+>  - Rebased to latest upstream stable bits
+>  - Changed the new ioctl to be part of VFIO_SET_IRQs ioctl
+>  - Added a new patch to get/put reference to a vfio device from struct device
+>  - Incorporated all other feedback.
+> 
 > ---
->  kernel/trace/trace_uprobe.c |   35 ++++++-----------------------------
->  1 files changed, 6 insertions(+), 29 deletions(-)
 > 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 947379a..55cdc14 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -31,17 +31,11 @@
->  /*
->   * uprobe event core functions
->   */
-> -struct trace_uprobe;
-> -struct uprobe_trace_consumer {
-> -	struct uprobe_consumer		cons;
-> -	struct trace_uprobe		*tu;
-> -};
-> -
->  struct trace_uprobe {
->  	struct list_head		list;
->  	struct ftrace_event_class	class;
->  	struct ftrace_event_call	call;
-> -	struct uprobe_trace_consumer	*consumer;
-> +	struct uprobe_consumer		consumer;
->  	struct inode			*inode;
->  	char				*filename;
->  	unsigned long			offset;
-> @@ -92,6 +86,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs)
->  		goto error;
+> Vijay Mohan Pandarathil(3):
 > 
->  	INIT_LIST_HEAD(&tu->list);
-> +	tu->consumer.handler = uprobe_dispatcher;
->  	return tu;
+> [PATCH 1/3] VFIO: Wrapper for getting reference to vfio_device from device 
+> [PATCH 2/3] VFIO-AER: Vfio-pci driver changes for supporting AER
+> [PATCH 3/3] QEMU-AER: Qemu changes to support AER for VFIO-PCI devices
 > 
->  error:
-> @@ -543,27 +538,15 @@ static inline bool is_trace_uprobe_enabled(struct trace_uprobe *tu)
+> Kernel files changed
 > 
->  static int probe_event_enable(struct trace_uprobe *tu, int flag)
->  {
-> -	struct uprobe_trace_consumer *utc;
->  	int ret = 0;
+>  drivers/vfio/vfio.c  | 41 ++++++++++++++++++++++++++++++++---------
+>  include/linux/vfio.h |  3 +++
+>  2 files changed, 35 insertions(+), 9 deletions(-)
 > 
->  	if (is_trace_uprobe_enabled(tu))
->  		return -EINTR;
+>  drivers/vfio/pci/vfio_pci.c         | 43 ++++++++++++++++++++++++++++++++++++-
+>  drivers/vfio/pci/vfio_pci_intrs.c   | 30 ++++++++++++++++++++++++++
+>  drivers/vfio/pci/vfio_pci_private.h |  1 +
+>  include/uapi/linux/vfio.h           |  1 +
+>  4 files changed, 74 insertions(+), 1 deletion(-)
 > 
-> -	utc = kzalloc(sizeof(struct uprobe_trace_consumer), GFP_KERNEL);
-> -	if (!utc)
-> -		return -EINTR;
-> -
-> -	utc->cons.handler = uprobe_dispatcher;
-> -	utc->tu = tu;
-> -	tu->consumer = utc;
->  	tu->flags |= flag;
-> -
-> -	ret = uprobe_register(tu->inode, tu->offset, &utc->cons);
-> -	if (ret) {
-> -		tu->consumer = NULL;
-> +	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> +	if (ret)
->  		tu->flags &= ~flag;
-> -		kfree(utc);
-> -	}
+> Qemu files changed
 > 
->  	return ret;
->  }
-> @@ -573,10 +556,8 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
->  	if (!is_trace_uprobe_enabled(tu))
->  		return;
-> 
-> -	uprobe_unregister(tu->inode, tu->offset, &tu->consumer->cons);
-> +	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
->  	tu->flags &= ~flag;
-> -	kfree(tu->consumer);
-> -	tu->consumer = NULL;
->  }
-> 
->  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
-> @@ -714,13 +695,9 @@ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type,
-> 
->  static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
->  {
-> -	struct uprobe_trace_consumer *utc;
->  	struct trace_uprobe *tu;
-> 
-> -	utc = container_of(con, struct uprobe_trace_consumer, cons);
-> -	tu = utc->tu;
-> -	if (!tu || tu->consumer != utc)
-> -		return 0;
-> +	tu = container_of(con, struct trace_uprobe, consumer);
-> 
->  	if (tu->flags & TP_FLAG_TRACE)
->  		uprobe_trace_func(tu, regs);
-> -- 
-> 1.5.5.1
-> 
+>  hw/vfio_pci.c              | 105 +++++++++++++++++++++++++++++++++++++++++++++
+>  linux-headers/linux/vfio.h |   1 +
+>  2 files changed, 106 insertions(+)
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+
 
