@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab3BDLCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:02:42 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:42670 "EHLO relay.sw.ru"
+	id S1754407Ab3BDLDJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:03:09 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:40505 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754266Ab3BDLCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:02:08 -0500
-Subject: [PATCH v2 6/6] SUNRPC: move cache_detail->cache_request callback call
-	to cache_read()
+	id S1754178Ab3BDLBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 06:01:47 -0500
+Subject: [PATCH v2 1/6] NFS: use SUNRPC cache creation and destruction helper
+	for DNS cache
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 04 Feb 2013 14:03:03 +0300
-Message-ID: <20130204110303.11633.95912.stgit@localhost.localdomain>
+Date: Mon, 04 Feb 2013 14:02:35 +0300
+Message-ID: <20130204110235.11633.59600.stgit@localhost.localdomain>
 In-Reply-To: <20130204105728.11633.53621.stgit@localhost.localdomain>
 References: <20130204105728.11633.53621.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -24,85 +24,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reason to move cache_request() callback call from
-sunrpc_cache_pipe_upcall() to cache_read() is that this garantees, that cache
-access will be done userspace process context (only userspace process have
-proper root context).
-This is required for NFSd support in container: svc_export_request() (which is
-cache_request callback) calls d_path(), which, in turn, traverse dentry up to
-current->fs->root. Kernel threads always have global root, while container
-have be in "root jail" - i.e. have it's own nested root.
+This cache was the first containerized and doesn't use net-aware cache
+creation and destruction helpers.
+This is a cleanup patch which just makes code looks clearer and reduce amount
+of lines of code.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- net/sunrpc/cache.c |   32 ++++++++++++++++++++------------
- 1 files changed, 20 insertions(+), 12 deletions(-)
+ fs/nfs/dns_resolve.c |   60 +++++++++++++++++++++-----------------------------
+ 1 files changed, 25 insertions(+), 35 deletions(-)
 
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index 8ffec5a..5502471 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -750,6 +750,18 @@ struct cache_reader {
- 	int			offset;	/* if non-0, we have a refcnt on next request */
- };
+diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
+index ca4b11e..5015447 100644
+--- a/fs/nfs/dns_resolve.c
++++ b/fs/nfs/dns_resolve.c
+@@ -351,48 +351,39 @@ ssize_t nfs_dns_resolve_name(struct net *net, char *name,
+ }
+ EXPORT_SYMBOL_GPL(nfs_dns_resolve_name);
  
-+static int cache_request(struct cache_detail *detail,
-+			       struct cache_request *crq)
-+{
-+	char *bp = crq->buf;
-+	int len = PAGE_SIZE;
++static struct cache_detail nfs_dns_resolve_template = {
++	.owner		= THIS_MODULE,
++	.hash_size	= NFS_DNS_HASHTBL_SIZE,
++	.name		= "dns_resolve",
++	.cache_put	= nfs_dns_ent_put,
++	.cache_upcall	= nfs_dns_upcall,
++	.cache_parse	= nfs_dns_parse,
++	.cache_show	= nfs_dns_show,
++	.match		= nfs_dns_match,
++	.init		= nfs_dns_ent_init,
++	.update		= nfs_dns_ent_update,
++	.alloc		= nfs_dns_ent_alloc,
++};
 +
-+	detail->cache_request(detail, crq->item, &bp, &len);
-+	if (len < 0)
-+		return -EAGAIN;
-+	return PAGE_SIZE - len;
-+}
 +
- static ssize_t cache_read(struct file *filp, char __user *buf, size_t count,
- 			  loff_t *ppos, struct cache_detail *cd)
+ int nfs_dns_resolver_cache_init(struct net *net)
  {
-@@ -784,6 +796,13 @@ static ssize_t cache_read(struct file *filp, char __user *buf, size_t count,
- 		rq->readers++;
- 	spin_unlock(&queue_lock);
+-	int err = -ENOMEM;
++	int err;
+ 	struct nfs_net *nn = net_generic(net, nfs_net_id);
+-	struct cache_detail *cd;
+-	struct cache_head **tbl;
  
-+	if (rq->len == 0) {
-+		err = cache_request(cd, rq);
-+		if (err < 0)
-+			goto out;
-+		rq->len = err;
-+	}
+-	cd = kzalloc(sizeof(struct cache_detail), GFP_KERNEL);
+-	if (cd == NULL)
+-		goto err_cd;
+-
+-	tbl = kzalloc(NFS_DNS_HASHTBL_SIZE * sizeof(struct cache_head *),
+-			GFP_KERNEL);
+-	if (tbl == NULL)
+-		goto err_tbl;
+-
+-	cd->owner = THIS_MODULE,
+-	cd->hash_size = NFS_DNS_HASHTBL_SIZE,
+-	cd->hash_table = tbl,
+-	cd->name = "dns_resolve",
+-	cd->cache_put = nfs_dns_ent_put,
+-	cd->cache_upcall = nfs_dns_upcall,
+-	cd->cache_parse = nfs_dns_parse,
+-	cd->cache_show = nfs_dns_show,
+-	cd->match = nfs_dns_match,
+-	cd->init = nfs_dns_ent_init,
+-	cd->update = nfs_dns_ent_update,
+-	cd->alloc = nfs_dns_ent_alloc,
+-
+-	nfs_cache_init(cd);
+-	err = nfs_cache_register_net(net, cd);
++	nn->nfs_dns_resolve = cache_create_net(&nfs_dns_resolve_template, net);
++	if (IS_ERR(nn->nfs_dns_resolve))
++		return PTR_ERR(nn->nfs_dns_resolve);
 +
- 	if (rp->offset == 0 && !test_bit(CACHE_PENDING, &rq->item->flags)) {
- 		err = -EAGAIN;
- 		spin_lock(&queue_lock);
-@@ -1145,8 +1164,6 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h)
++	nfs_cache_init(nn->nfs_dns_resolve);
++	err = nfs_cache_register_net(net, nn->nfs_dns_resolve);
+ 	if (err)
+ 		goto err_reg;
+-	nn->nfs_dns_resolve = cd;
+ 	return 0;
  
- 	char *buf;
- 	struct cache_request *crq;
--	char *bp;
--	int len;
+ err_reg:
+-	nfs_cache_destroy(cd);
+-	kfree(cd->hash_table);
+-err_tbl:
+-	kfree(cd);
+-err_cd:
++	nfs_cache_destroy(nn->nfs_dns_resolve);
++	cache_destroy_net(nn->nfs_dns_resolve, net);
+ 	return err;
+ }
  
- 	if (!detail->cache_request)
- 		return -EINVAL;
-@@ -1166,19 +1183,10 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h)
- 		return -EAGAIN;
- 	}
+@@ -403,8 +394,7 @@ void nfs_dns_resolver_cache_destroy(struct net *net)
  
--	bp = buf; len = PAGE_SIZE;
--
--	detail->cache_request(detail, h, &bp, &len);
--
--	if (len < 0) {
--		kfree(buf);
--		kfree(crq);
--		return -EAGAIN;
--	}
- 	crq->q.reader = 0;
- 	crq->item = cache_get(h);
- 	crq->buf = buf;
--	crq->len = PAGE_SIZE - len;
-+	crq->len = 0;
- 	crq->readers = 0;
- 	spin_lock(&queue_lock);
- 	list_add_tail(&crq->q.list, &detail->queue);
+ 	nfs_cache_unregister_net(net, cd);
+ 	nfs_cache_destroy(cd);
+-	kfree(cd->hash_table);
+-	kfree(cd);
++	cache_destroy_net(nn->nfs_dns_resolve, net);
+ }
+ 
+ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
 
