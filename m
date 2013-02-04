@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab3BDTDn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:03:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55056 "EHLO mx1.redhat.com"
+	id S1755016Ab3BDTD6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:03:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48142 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593Ab3BDTDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:03:42 -0500
-Date: Mon, 4 Feb 2013 20:02:25 +0100
+	id S1754833Ab3BDTD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 14:03:57 -0500
+Date: Mon, 4 Feb 2013 20:02:46 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -16,39 +16,93 @@ Cc: Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
         Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7] uprobes/perf: pre-filtering
-Message-ID: <20130204190225.GA10840@redhat.com>
+Subject: [PATCH 2/7] perf: Introduce hw_perf_event->tp_target and ->tp_list
+Message-ID: <20130204190246.GA10865@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130204190225.GA10840@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+sys_perf_event_open()->perf_init_event(event) is called before
+find_get_context(event), this means that event->ctx == NULL when
+class->reg(TRACE_REG_PERF_REGISTER/OPEN) is called and thus it
+can't know if this event is per-task or system-wide.
 
-Based on git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core,
-on top of "[PATCH 0/5] uprobes: kill uprobe_trace_consumer and other cleanups"
-series.
+This patch adds hw_perf_event->tp_target for PERF_TYPE_TRACEPOINT,
+this is analogous to PERF_TYPE_BREAKPOINT/bp_target we already have.
+The patch also moves ->bp_target up so that it can overlap with the
+new member, this can help the compiler to generate the better code.
 
-With this series 'perf record -e uprobe ...' does not install the breakpoints
-into the processes it doesn't want to probe.
+trace_uprobe_register() will use it for prefiltering to avoid the
+unnecessary breakpoints in mm's we do not want to trace.
 
-Probably this all needs more testing (the last patch for sure) but please
-review. I'll try to do more testing tomorrow.
+->tp_target doesn't have its own reference, but we can rely on the
+fact that either sys_perf_event_open() holds a reference, or it is
+equal to event->ctx->task. So this pointer is always valid until
+free_event().
 
-A special note about 1/7. It was actually needed for initial implementation,
-this version doesn't need it. Still I am sending it at least for review, it
-looks "natural" and potentially useful, and I would like to know if it is
-correct or not.
+Also add the "struct list_head tp_list" into this union. It is not
+strictly necessary, but it can simplify the next changes and we can
+add it for free.
 
-Oleg.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/perf_event.h |    9 +++++++--
+ kernel/events/core.c       |    5 ++++-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
- include/linux/perf_event.h  |    9 ++-
- include/linux/uprobes.h     |    6 ++
- kernel/events/core.c        |   29 +++++----
- kernel/events/uprobes.c     |   39 ++++++++++-
- kernel/trace/trace_uprobe.c |  152 ++++++++++++++++++++++++++++++++++++++++---
- 5 files changed, 206 insertions(+), 29 deletions(-)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6bfb2fa..c9775e9 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -135,16 +135,21 @@ struct hw_perf_event {
+ 		struct { /* software */
+ 			struct hrtimer	hrtimer;
+ 		};
++		struct { /* tracepoint */
++			struct task_struct	*tp_target;
++			/* for tp_event->class */
++			struct list_head	tp_list;
++		};
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 		struct { /* breakpoint */
+-			struct arch_hw_breakpoint	info;
+-			struct list_head		bp_list;
+ 			/*
+ 			 * Crufty hack to avoid the chicken and egg
+ 			 * problem hw_breakpoint has with context
+ 			 * creation and event initalization.
+ 			 */
+ 			struct task_struct		*bp_target;
++			struct arch_hw_breakpoint	info;
++			struct list_head		bp_list;
+ 		};
+ #endif
+ 	};
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1b2e516..340fb53 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6162,11 +6162,14 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 
+ 	if (task) {
+ 		event->attach_state = PERF_ATTACH_TASK;
++
++		if (attr->type == PERF_TYPE_TRACEPOINT)
++			event->hw.tp_target = task;
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 		/*
+ 		 * hw_breakpoint is a bit difficult here..
+ 		 */
+-		if (attr->type == PERF_TYPE_BREAKPOINT)
++		else if (attr->type == PERF_TYPE_BREAKPOINT)
+ 			event->hw.bp_target = task;
+ #endif
+ 	}
+-- 
+1.5.5.1
 
