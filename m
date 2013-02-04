@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab3BDRmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 12:42:39 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:36737 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab3BDRmi (ORCPT
+	id S1754740Ab3BDRmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 12:42:51 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40523 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab3BDRmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 12:42:38 -0500
-Date: Mon, 4 Feb 2013 09:42:32 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
-        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH 59/62] mac80211: convert to idr_alloc()
-Message-ID: <20130204174232.GO27963@mtj.dyndns.org>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
- <1359854463-2538-60-git-send-email-tj@kernel.org>
- <1359999624.17993.21.camel@jlt4.sipsolutions.net>
+	Mon, 4 Feb 2013 12:42:49 -0500
+Date: Mon, 4 Feb 2013 09:18:17 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org, rostedt@goodmis.org,
+        rbraun@sceen.net, zhong@linux.vnet.ibm.com, markus@trippelsdorf.de,
+        sasha.levin@oracle.com, cody@linux.vnet.ibm.com,
+        dave@linux.vnet.ibm.com, fweisbec@gmail.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Subject: [GIT PULL rcu/next] RCU commits for 3.9
+Message-ID: <20130204171817.GA18332@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359999624.17993.21.camel@jlt4.sipsolutions.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020417-5406-0000-0000-000004E782F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 06:40:24PM +0100, Johannes Berg wrote:
-> On Sat, 2013-02-02 at 17:21 -0800, Tejun Heo wrote:
-> > Convert to the much saner new idr interface.
-> > 
-> > Only compile tested.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Cc: Johannes Berg <johannes@sipsolutions.net>
-> > Cc: linux-wireless@vger.kernel.org
-> > ---
-> > This patch depends on an earlier idr changes and I think it would be
-> > best to route these together through -mm.  Please holler if there's
-> > any objection.  Thanks.
-> 
-> Looks fine to me, thanks.
+Hello, Ingo,
 
-Will add Acked-by.  Thanks a lot!
+The major features of this series are:
 
--- 
-tejun
+1.	Changes to rcutorture and to RCU documentation.  Posted to LKML at
+	https://lkml.org/lkml/2013/1/26/188.
+
+2.	Enhancements to uniprocessor handling in tiny RCU. Posted to LKML
+	at https://lkml.org/lkml/2013/1/27/2.
+
+3.	Tag RCU callbacks with grace-period number to simplify callback
+	advancement.  Posted to LKML at https://lkml.org/lkml/2013/1/26/203.
+
+4.	Miscellaneous fixes.  Posted to LKML at
+	https://lkml.org/lkml/2013/1/26/204.
+
+All of these commits have been subject to -next testing.
+
+These changes are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+
+--------------------->
+
+Cody P Schafer (1):
+      rcu: Correct 'optimized' to 'optimize' in header comment
+
+Dave Hansen (1):
+      rcu: Consolidate debugging Kconfig options
+
+Frederic Weisbecker (1):
+      context_tracking: Add comments on interface and internals
+
+Josh Triplett (1):
+      rcu: Make rcu_is_cpu_rrupt_from_idle helper functions static
+
+Li Zhong (2):
+      rcu: Use new nesting value for rcu_dyntick trace in rcu_eqs_enter_common
+      rcu: Remove unused code originally used for context tracking
+
+Paul E. McKenney (11):
+      tracing: Export trace_clock_local()
+      rcu: Reduce rcutorture tracing
+      rcu: Fix blimit type for trace_rcu_batch_start()
+      rcu: Silence compiler array out-of-bounds false positive
+      rcu: Tag callback lists with corresponding grace-period number
+      rcu: Trace callback acceleration
+      rcu: Remove obsolete Kconfig option from comment
+      rcu: Provide RCU CPU stall warnings for tiny RCU
+      rcu: Allow TREE_PREEMPT_RCU on UP systems
+      rcu: Make rcutorture's shuffler task shuffle recently added tasks
+      Merge branches 'doctorture.2013.01.29a', 'fixes.2013.01.26a', 'tagcb.2013.01.24a' and 'tiny.2013.01.29b' into HEAD
+
+Richard Braun (1):
+      Documentation: Memory barrier semantics of atomic_xchg()
+
+Sasha Levin (1):
+      rcutorture: Don't compare ptr with 0
+
+ Documentation/atomic_ops.txt      |    2 +
+ Documentation/memory-barriers.txt |    1 +
+ include/linux/rcupdate.h          |   15 ++-
+ include/trace/events/rcu.h        |   31 +++--
+ init/Kconfig                      |   12 ++-
+ kernel/context_tracking.c         |   75 +++++++++--
+ kernel/rcu.h                      |    7 +
+ kernel/rcupdate.c                 |   60 ++++++++-
+ kernel/rcutiny.c                  |    8 +-
+ kernel/rcutiny_plugin.h           |   56 ++++++++
+ kernel/rcutorture.c               |   57 +++++++--
+ kernel/rcutree.c                  |  260 ++++++++++++++++++++++++++-----------
+ kernel/rcutree.h                  |   11 +--
+ kernel/trace/trace_clock.c        |    1 +
+ lib/Kconfig.debug                 |  117 +++++++++--------
+ 15 files changed, 528 insertions(+), 185 deletions(-)
+
