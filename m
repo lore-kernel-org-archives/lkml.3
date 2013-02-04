@@ -1,118 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab3BDJYv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 04:24:51 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:53289 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab3BDJYu (ORCPT
+	id S1754073Ab3BDJY4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 04:24:56 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:44645 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab3BDJYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 04:24:50 -0500
+	Mon, 4 Feb 2013 04:24:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130203122748.GA2513@polaris.bitmath.org>
-References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1359649351-11092-2-git-send-email-benjamin.tissoires@gmail.com>
-	<20130203122748.GA2513@polaris.bitmath.org>
-Date: Mon, 4 Feb 2013 10:24:48 +0100
-Message-ID: <CAN+gG=H8tTcQ9NNAk-EOxMJsqvrC6X1ZqmQB62eBHnXyG=RRng@mail.gmail.com>
-Subject: Re: [PATCH v2 1/9] HID: core: add "report" hook, called once the
- report has been parsed
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <510F6CF8.3000700@gaisler.com>
+References: <1359548921-14925-1-git-send-email-andreas@gaisler.com>
+	<CACRpkdbAS05dVOrE2E5Uu6qfzfgcoz_KqQmqZxz5Pne9BbCt-g@mail.gmail.com>
+	<510F6CF8.3000700@gaisler.com>
+Date: Mon, 4 Feb 2013 10:24:50 +0100
+Message-ID: <CACRpkdYbJiBT5u0qJz+Krpky7W0WNqtSsO6Jo2TYZ2LRcyassA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Add device driver for GRGPIO cores
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andreas Larsson <andreas@gaisler.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+(CC:ing Anton who wrote the generic GPIO. I might be wrong.)
 
-On Sun, Feb 3, 2013 at 1:27 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
->> This callback is called when the parsing of the report has been done
->> by hid-core (so after the calls to .event). The hid drivers can now
->> have access to the whole report by relying on the values stored in
->> the different fields.
+On Mon, Feb 4, 2013 at 9:10 AM, Andreas Larsson <andreas@gaisler.com> wrote:
+> On 2013-02-02 16:16, Linus Walleij wrote:
+>>>
+>>> +#if defined(__BIG_ENDIAN)
+>>> +static inline u32 grgpio_read_reg(u32 __iomem *reg)
+>>> +{
+>>> +       return ioread32be(reg);
+>>> +}
+>>> +
+>>> +static inline void grgpio_write_reg(u32 __iomem *reg, u32 val)
+>>> +{
+>>> +       iowrite32be(val, reg);
+>>> +}
+>>> +#else
+>>> [...]
 >>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
->> ---
->>  drivers/hid/hid-core.c | 4 ++++
->>  include/linux/hid.h    | 2 ++
->>  2 files changed, 6 insertions(+)
 >>
->> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
->> index 5ae2cb1..b671e4e 100644
->> --- a/drivers/hid/hid-core.c
->> +++ b/drivers/hid/hid-core.c
->> @@ -1195,6 +1195,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->>  {
->>       struct hid_report_enum *report_enum = hid->report_enum + type;
->>       struct hid_report *report;
->> +     struct hid_driver *hdrv;
->>       unsigned int a;
->>       int rsize, csize = size;
->>       u8 *cdata = data;
->> @@ -1231,6 +1232,9 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->>       if (hid->claimed != HID_CLAIMED_HIDRAW) {
->>               for (a = 0; a < report->maxfield; a++)
->>                       hid_input_field(hid, report->field[a], cdata, interrupt);
->> +             hdrv = hid->driver;
->> +             if (hdrv && hdrv->report)
->> +                     hdrv->report(hid, report);
+>> Where is this __BIG_ENDIAN flag coming from?
+>>
+>> And do you really have and test this regularly on both LE and BE hardware?
+>> I am worrying a bit about maintenance...
 >
-> I think this is more useful if called before the individual fields. In
-> fact, it seems raw_event() is already doing exactly that. No need for
-> a new callback, in other words.
+> I am more than happy to drop that. I will most probably never test this on
+> LE hardware.
 
-I'm afraid this does not work:
-- calling it before the individual fields is not possible unless more
-intrusive changes to hid-core:
-  * "hid_input_field" does the actual parsing of the input report, so
-without the call the .value field is still set to the previous one
-(not very useful then)
-  * the "hid_input_field" requires to know the previous report, due to
-Array type reports which send the current keys down, and not the
-release.
-- the raw_event() callback contains the report _unparsed_, which means
-that it's up to the hid specific driver to split the fields depending
-on the report descriptor (for instance, get the right bit for
-tipswitch in a byte containing tipswitch, inrange, confidence,
-contactId).
-- the raw_event() mechanism was the one in place in the v1 of the
-patch series, in which the new callback was asked.
+Will someone else? I'm more thinking whether it is customary in
+the SPARC drivers to do things like this, then we should follow
+that pattern of course.
 
-Cheers,
-Benjamin
+>>> +static void grgpio_set_sbit(struct grgpio_priv *priv, u32 __iomem *reg,
+>>> +                          unsigned offset, int val, u32 *shadow)
+>>> +{
+>>> +       unsigned long flags;
+>>> +
+>>> +       spin_lock_irqsave(&priv->lock, flags);
+>>> +
+>>> +       if (val)
+>>> +               *shadow |= (1 << offset);
+>>> +       else
+>>> +               *shadow &= ~(1 << offset);
+>>> +       grgpio_write_reg(reg, *shadow);
+>>> +
+>>> +       spin_unlock_irqrestore(&priv->lock, flags);
+>>> +}
+>>
+>>
+>> This is all very basic stuff. Please make a best effort to reuse or
+>> augment and reuse this:
+>> drivers/gpio/gpio-generic.c
+>>
+>> IIRC this one also handles endianness issues, but I could be wrong.
+>
+> Sure, many of the initial functions do small basic tasks and resembles
+> functions in gpio-generic. But that does not make the hardware itself a good
+> candidate to use gpio-generic IMHO:
+>
+> 1) This core is generally running on SPARC, that is BE, but even on SPARC,
+> readl and writel (that would be used in gprio-generic) deals with LE
+> accesses and my registers are BE.
 
->
->>       }
->>
->>       if (hid->claimed & HID_CLAIMED_INPUT)
->> diff --git a/include/linux/hid.h b/include/linux/hid.h
->> index 828726c..e14b465 100644
->> --- a/include/linux/hid.h
->> +++ b/include/linux/hid.h
->> @@ -589,6 +589,7 @@ struct hid_usage_id {
->>   * @raw_event: if report in report_table, this hook is called (NULL means nop)
->>   * @usage_table: on which events to call event (NULL means all)
->>   * @event: if usage in usage_table, this hook is called (NULL means nop)
->> + * @report: this hook is called after parsing a report (NULL means nop)
->>   * @report_fixup: called before report descriptor parsing (NULL means nop)
->>   * @input_mapping: invoked on input registering before mapping an usage
->>   * @input_mapped: invoked on input registering after mapping an usage
->> @@ -627,6 +628,7 @@ struct hid_driver {
->>       const struct hid_usage_id *usage_table;
->>       int (*event)(struct hid_device *hdev, struct hid_field *field,
->>                       struct hid_usage *usage, __s32 value);
->> +     void (*report)(struct hid_device *hdev, struct hid_report *report);
->>
->>       __u8 *(*report_fixup)(struct hid_device *hdev, __u8 *buf,
->>                       unsigned int *size);
->> --
->> 1.8.1
->>
->
-> Thanks,
-> Henrik
+Yeah that's true. :-(
+
+I think it's because read[lwb]/write[lwb] comes out of PCI and PCI
+is LE.
+
+Didn't think of this...
+
+> 2) The grgpio_to_irq function is very hardware specific, and there is of
+> course no gpio_to_irq support in gpio-generic.
+
+Well, the idea about gpio-generic is to use the pieces you need
+IIRC. You may override.
+
+> 3) Running on SPARC, I get Open Firmware information from prom, so there is
+> no platform data to access in the probe function. Of course general Open
+> Firmware support could be added to gpio-generic, but in addition my probe
+> needs to set up very hardware specific things for gpio_to_irq.
+
+We should probably add some way to handle generic GPIO
+with compatible strings etc, but that's way outside my competence
+so OK. Maybe Rob or Grant can say something.
+
+Yours,
+Linus Walleij
