@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3BDBLn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 20:11:43 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:12102 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab3BDBLl (ORCPT
+	id S1753837Ab3BDBbV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 20:31:21 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37140 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab3BDBbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 20:11:41 -0500
-X-AuditID: cbfee61b-b7fb06d000000f28-64-510f0ab9ea2f
-Message-id: <510F0AB9.3090105@samsung.com>
-Date: Mon, 04 Feb 2013 10:11:21 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com
-Subject: Re: [PATCH 1/3] extcon: max8997: Make max8997_extcon_cable static
-References: <1359452402-15885-1-git-send-email-sachin.kamat@linaro.org>
-In-reply-to: <1359452402-15885-1-git-send-email-sachin.kamat@linaro.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t8zLd2dXPyBBu//Sltc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MP2fusxX0s1VM+bKYrYHxB0sXIyeHhICJxPNLf5ghbDGJC/fW
-	s3UxcnEICSxjlLi15j8zTNHWbUtYIRKLGCV2n7zPCOF0MkmcPdjPBFLFK6AlceljK1gHi4Cq
-	ROfjNWAr2IDi+1/cYAOxRQXCJFZOv8ICUS8o8WPyPTBbBKjmZfdyoDkcHMwCVhIblxqDhIUF
-	vCTuzOtmBLGFBNwlFnRdZAUp4RTwkDi/0AckzCxgLbFy0jZGCFteYvOat8wgp0kINLNLzLxy
-	CeocAYlvkw+xgPRKCMhKbDoA9ZekxMEVN1gmMIrNQnLQLCRjZyEZu4CReRWjaGpBckFxUnqu
-	kV5xYm5xaV66XnJ+7iZGSERI72Bc1WBxiFGAg1GJh5fhF1+gEGtiWXFl7iFGCQ5mJRHeq0ZA
-	Id6UxMqq1KL8+KLSnNTiQ4zJQAdOZJYSTc4HRmteSbyhsYGxoaGloZmppakBacJK4ryMp54E
-	CAmkJ5akZqemFqQWwWxh4uCUamBcUWPOldO+aOJzO22jzVlqsdExX6rClKoF0i6t8eQuPvdz
-	TpqvLofBAd7tLO8SSzlPHH/a7LH9xpHKL8/+RGu//Rh8VHvlwptCfxO7tQ8m1a9eqLBx7lIB
-	wTUKeSYCLFH7y/0DaoWPn897NLOaMWvOklO3SncHurZfMGD558+nuLXw1fzPL7cpsRRnJBpq
-	MRcVJwIAGxC8b8wCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t9jAd2dXPyBBt9villc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjD9n7rMV9LNVTPmymK2B
-	8QdLFyMnh4SAicTWbUtYIWwxiQv31rN1MXJxCAksYpTYffI+I4TTySRx9mA/E0gVr4CWxKWP
-	rcwgNouAqkTn4zVgk9iA4vtf3GADsUUFwiRWTr/CAlEvKPFj8j0wWwSo5mX3cqA5HBzMAlYS
-	G5cag4SFBbwk7szrZgSxhQTcJRZ0XWQFKeEU8JA4v9AHJMwsYC2xctI2RghbXmLzmrfMExgF
-	ZiFZMAtJ2SwkZQsYmVcxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBMfbM+kdjKsaLA4xCnAw
-	KvHwMvziCxRiTSwrrsw9xCjBwawkwnvVCCjEm5JYWZValB9fVJqTWnyIMRno/4nMUqLJ+cBU
-	kFcSb2hsYmZkaWRmbGJubEyasJI4L+OpJwFCAumJJanZqakFqUUwW5g4OKUaGJvYNlwveRRW
-	JqR6QFo9e5rk5xqurIjwbt62IOMLi2faWhi/bL3dUMe9ac3WkyEdM77HWbavXl988fKvO/7n
-	bp6yX7kta3qeL1uusK/X6eRM396fLIcea3kyntWe8/TEVZHp6080v63z/2qgUvLd7F3ierlb
-	X8S7fzvzPG8PYwlxcE2win6Yo8RSnJFoqMVcVJwIANVLSqP7AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 3 Feb 2013 20:31:19 -0500
+Date: Mon, 4 Feb 2013 01:31:11 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: avr32: add dummy syscalls
+Message-ID: <20130204013111.GX4503@ZenIV.linux.org.uk>
+References: <1359291015-4544-1-git-send-email-matthias.bgg@gmail.com>
+ <20130127195714.GA11224@samfundet.no>
+ <20130127203009.GG4503@ZenIV.linux.org.uk>
+ <20130127203954.GA22063@samfundet.no>
+ <20130204001055.GV4503@ZenIV.linux.org.uk>
+ <20130204003047.GW4503@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130204003047.GW4503@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2013 06:40 PM, Sachin Kamat wrote:
-> 'max8997_extcon_cable' is used only in this file. Hence make it static.
->
-> Signed-off-by: Sachin Kamat<sachin.kamat@linaro.org>
-> ---
->   drivers/extcon/extcon-max8997.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-> index df9358e..7039541 100644
-> --- a/drivers/extcon/extcon-max8997.c
-> +++ b/drivers/extcon/extcon-max8997.c
-> @@ -109,7 +109,7 @@ struct max8997_muic_info {
->   	struct extcon_dev	*edev;
->   };
->   
-> -const char *max8997_extcon_cable[] = {
-> +static const char *max8997_extcon_cable[] = {
->   	[0] = "USB",
->   	[1] = "USB-Host",
->   	[2] = "TA",
-Patches 1-3 applied.
+On Mon, Feb 04, 2013 at 12:30:47AM +0000, Al Viro wrote:
+> On Mon, Feb 04, 2013 at 12:10:55AM +0000, Al Viro wrote:
+> > On Sun, Jan 27, 2013 at 09:39:54PM +0100, Hans-Christian Egtvedt wrote:
+> > > > If you are OK with going that way, I could probably put together patches doing
+> > > > just that.  Note that for rt_sigsuspend/rt_sigreturn/sigaltstack the wrappers
+> > > > are not needed at all - they can just use current_pt_regs() in syscall body.
+> > > > IOW, all of syscall-stubs.S could be killed.
+> > > 
+> > > Nice, could you put together the preprocessor stuff in a patch? It would be
+> > > great to not having to write a re-occuring stub for each syscall that has 6+
+> > > arguments.
+> > > 
+> > > Thanks for looking at this.
+> > 
+> > Apologies about the delay...  One question: what's the AVR32 C ABI for
+> > passing 64bit arguments?  The tricky bugger is sys_sync_file_range();
+> > it takes (s32, s64, s64, u32) as arguments and if not any pair of
+> > registers can be used to pass 64bit value, we have more serious trouble
+> > there...
+> 
+> BTW, it's worse: both fadivse64 and fadvise64_64 are wired, neither of them
+> has a wrapper and arguments are (s32, s64, u32, s32) and (s32, s64, s64, s32)
+> resp.  The former is OK unless you have restrictions on register pairs that
+> can be used for 64bit; the latter is past the 5-register limit no matter what,
+> so the wrapper is really needed.
 
-Thanks,
-Chanwoo Choi
+Unless I'm misreading ocavr32.pdf, that should be (R12, R10:R11, R9, R8) and
+(R12, R10:R11, R9:R8, stack) resp., so fadvise64 doesn't need a wrapper, but
+fadvise64_64 does.  And something like (s32, s32, s64, s64) would turn into
+(R12, R11, R9:R8, stack, stack); AFAICS, we don't have anything that ugly...
+
+Automating *that* is going to be interesting...  I've not given up, but it's
+not going to be fun ;-/
