@@ -1,133 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab3BDN6U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 08:58:20 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:34696 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab3BDN6R convert rfc822-to-8bit (ORCPT
+	id S1755555Ab3BDN7B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 08:59:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60985 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755126Ab3BDN7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 08:58:17 -0500
+	Mon, 4 Feb 2013 08:59:00 -0500
+Date: Mon, 4 Feb 2013 05:58:38 -0800
+From: tip-bot for anish kumar <anish198519851985@gmail.com>
+Message-ID: <tip-c02cf5f8ed6137e2b3b2f10e0fca336e06e09ba4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, anish198519851985@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, anish198519851985@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+In-Reply-To: <1359925703-24304-1-git-send-email-fweisbec@gmail.com>
+References: <1359925703-24304-1-git-send-email-fweisbec@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] irq_work:
+  Remove return value from the irq_work_queue() function
+Git-Commit-ID: c02cf5f8ed6137e2b3b2f10e0fca336e06e09ba4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20130204133648.GE13909@pd.tnic>
-References: <cover.1359976493.git.viresh.kumar@linaro.org>
-	<5808458.pvV2iHpBWm@vostro.rjw.lan>
-	<CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
-	<20130204123221.GA22340@pd.tnic>
-	<CAKohpomcrtV3i9fL4zV6Mt0uDza-9pHTOsqTe2=C1t6mE6cpCQ@mail.gmail.com>
-	<20130204130403.GD13909@pd.tnic>
-	<CAKohpokuFC5gnTFcD3+RH3p5XaW8vBtyfq+Kej=d2J8tERdmoQ@mail.gmail.com>
-	<20130204133648.GE13909@pd.tnic>
-Date: Mon, 4 Feb 2013 19:28:16 +0530
-Message-ID: <CAKohpo=aLnhM0Op_32ohWZK5eG5nT7iK0OktBe+8ygOQW7zUqQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Borislav Petkov <bp@alien8.de>, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 04 Feb 2013 05:58:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 February 2013 19:06, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Feb 04, 2013 at 06:55:25PM +0530, Viresh Kumar wrote:
->> That's not completely true. There lies cpufreq directory in cpu/cpu*/
->> too, where we have per policy stuff in cpu/cpu*/, like policy tunables
->> and stats. And the same is true for governor too.
->
-> $ tree /sys/devices/system/cpu/cpu0/cpufreq/
-> /sys/devices/system/cpu/cpu0/cpufreq/
-> ├── affected_cpus
-> ├── bios_limit
-> ├── cpb
-> ├── cpuinfo_cur_freq
-> ├── cpuinfo_max_freq
-> ├── cpuinfo_min_freq
-> ├── cpuinfo_transition_latency
-> ├── related_cpus
-> ├── scaling_available_frequencies
-> ├── scaling_available_governors
-> ├── scaling_cur_freq
-> ├── scaling_driver
-> ├── scaling_governor
-> ├── scaling_max_freq
-> ├── scaling_min_freq
-> ├── scaling_setspeed
-> └── stats
->     ├── time_in_state
->     ├── total_trans
->     └── trans_table
->
-> 1 directory, 19 files
->
-> $ grep -r . /sys/devices/system/cpu/cpu0/cpufreq/*
-> /sys/devices/system/cpu/cpu0/cpufreq/affected_cpus:0
-> /sys/devices/system/cpu/cpu0/cpufreq/bios_limit:4000000
-> /sys/devices/system/cpu/cpu0/cpufreq/cpb:1
-> /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq:1400000
-> /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq:4000000
-> /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq:1400000
-> /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_transition_latency:4000
-> /sys/devices/system/cpu/cpu0/cpufreq/related_cpus:0 1
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies:4000000 3400000 2800000 2100000 1400000
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors:powersave userspace conservative ondemand perform
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:1400000
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver:acpi-cpufreq
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor:ondemand
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq:4000000
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq:1400000
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed:<unsupported>
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:4000000 3089328
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:3400000 47448
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:2800000 67185
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:2100000 92731
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:1400000 11416914
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:   From  :    To
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:         :   4000000   3400000   2800000   2100000   140000
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  4000000:         0     34756     46388     53179    21824
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  3400000:     12938         0      3755      3555     1450
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  2800000:     19940         0         0      4547     2565
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  2100000:     18523         0         0         0     4275
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  1400000:    301168         0         0         0
-> /sys/devices/system/cpu/cpu0/cpufreq/stats/total_trans:799918
->
-> Show me the policy tunables here.
+Commit-ID:  c02cf5f8ed6137e2b3b2f10e0fca336e06e09ba4
+Gitweb:     http://git.kernel.org/tip/c02cf5f8ed6137e2b3b2f10e0fca336e06e09ba4
+Author:     anish kumar <anish198519851985@gmail.com>
+AuthorDate: Sun, 3 Feb 2013 22:08:23 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 4 Feb 2013 11:50:59 +0100
 
-All files which are directly present in cpu/cpu*/cpufreq/ folder. I am not
-talking about governor tunables but policy tunables. Things like
-scaling_[min]max_freq are policy tunables.
+irq_work: Remove return value from the irq_work_queue() function
 
->> That was slightly confusing to me :( The whole governor directory
->> is per policy, i have to keep that in cpu/cpu*/cpufreq instead of
->> cpu/cpufreq.
->
-> So make a /sys/devices/system/cpu/cpufreq/policies/ and add
-> functionality to assign cpus to policies or whatever the design of this
-> thing will be.
+As no one is using the return value of irq_work_queue(),
+so it is better to just make it void.
 
-Policies don't have a name associated with them and so cpu/cpufreq/policies
-doesn't make any sense. Rather one policy is related to multiple cpus and
-its tunables are linked in all the cpus that belong to it, like
-scaling_[min]max_freq.
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+[ Fix stale comments, remove now unnecessary __irq_work_queue() intermediate function ]
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/1359925703-24304-1-git-send-email-fweisbec@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/irq_work.h |  2 +-
+ kernel/irq_work.c        | 31 ++++++++++---------------------
+ 2 files changed, 11 insertions(+), 22 deletions(-)
 
->> Its not only for multicluster system, but a system where multiple cpus
->> have separate clock control and hence multiple policy structures.
->
-> What are those systems? Examples?
-
-Don't have examples of these, but there can be few. Over that it is
-a must for multicluster systems as clusters normally have separate
-clock control.
-
->> Problem with this is it would fail for single image solutions on which
->> everybody is working on. So, with multiple platforms compiled into a
->> single image, this wouldn't work.
->
-> Single-image solutions will enable that config option and get built with
-> it - no problem at all.
-
-But then we will get governors tunables in cpu/cpu*/cpufreq/ instead of
-cpu/cpufreq/ . Will that not break userspace for other systems?
+diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+index 6a9e8f5..ce60c08 100644
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -16,7 +16,7 @@ void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
+ 	work->func = func;
+ }
+ 
+-bool irq_work_queue(struct irq_work *work);
++void irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
+ void irq_work_sync(struct irq_work *work);
+ 
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 64eddd5..c9d7478 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -63,12 +63,20 @@ void __weak arch_irq_work_raise(void)
+ }
+ 
+ /*
+- * Queue the entry and raise the IPI if needed.
++ * Enqueue the irq_work @entry unless it's already pending
++ * somewhere.
++ *
++ * Can be re-enqueued while the callback is still in progress.
+  */
+-static void __irq_work_queue(struct irq_work *work)
++void irq_work_queue(struct irq_work *work)
+ {
+ 	bool empty;
+ 
++	/* Only queue if not already pending */
++	if (!irq_work_claim(work))
++		return;
++
++	/* Queue the entry and raise the IPI if needed. */
+ 	preempt_disable();
+ 
+ 	empty = llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+@@ -78,25 +86,6 @@ static void __irq_work_queue(struct irq_work *work)
+ 
+ 	preempt_enable();
+ }
+-
+-/*
+- * Enqueue the irq_work @entry, returns true on success, failure when the
+- * @entry was already enqueued by someone else.
+- *
+- * Can be re-enqueued while the callback is still in progress.
+- */
+-bool irq_work_queue(struct irq_work *work)
+-{
+-	if (!irq_work_claim(work)) {
+-		/*
+-		 * Already enqueued, can't do!
+-		 */
+-		return false;
+-	}
+-
+-	__irq_work_queue(work);
+-	return true;
+-}
+ EXPORT_SYMBOL_GPL(irq_work_queue);
+ 
+ /*
