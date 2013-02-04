@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3BDIDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 03:03:31 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27769 "EHLO mga11.intel.com"
+	id S1753903Ab3BDIDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 03:03:47 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:42953 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881Ab3BDIDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 03:03:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,597,1355126400"; 
-   d="asc'?scan'208";a="282398436"
-Message-ID: <1359965101.13791.11.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: fix random pointer dereference in OF device name
- handling
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Mon, 04 Feb 2013 10:05:01 +0200
-In-Reply-To: <1358967548-25491-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1358967548-25491-1-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-zLB4sqBWOty5dL5QyLzB"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1751825Ab3BDIDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 03:03:46 -0500
+Message-ID: <510F6B76.3080605@parallels.com>
+Date: Mon, 4 Feb 2013 12:04:06 +0400
+From: Lord Glauber Costa of Sealand <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH] memcg: stop warning on memcg_propagate_kmem
+References: <alpine.LNX.2.00.1302032023280.4611@eggly.anvils> <20130204075732.GA2556@dhcp22.suse.cz>
+In-Reply-To: <20130204075732.GA2556@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/04/2013 11:57 AM, Michal Hocko wrote:
+> On Sun 03-02-13 20:29:01, Hugh Dickins wrote:
+>> Whilst I run the risk of a flogging for disloyalty to the Lord of Sealand,
+>> I do have CONFIG_MEMCG=y CONFIG_MEMCG_KMEM not set, and grow tired of the
+>> "mm/memcontrol.c:4972:12: warning: `memcg_propagate_kmem' defined but not
+>> used [-Wunused-function]" seen in 3.8-rc: move the #ifdef outwards.
+>>
+>> Signed-off-by: Hugh Dickins <hughd@google.com>
+> 
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Hmm, if you are not too tired then moving the function downwards to
+> where it is called (memcg_init_kmem) will reduce the number of ifdefs.
+> But this can wait for a bigger clean up which is getting due:
+> git grep "def.*CONFIG_MEMCG_KMEM" mm/memcontrol.c | wc -l
+> 12
+> 
 
---=-zLB4sqBWOty5dL5QyLzB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The problem is that I was usually keeping things in clearly separated
+blocks, like this :
 
-On Wed, 2013-01-23 at 13:59 -0500, Paul Gortmaker wrote:
-> Here is the output from an mpc8548 based board.  There are
-> three instances of missing device name here:
+#if defined(CONFIG_MEMCG_KMEM) && defined(CONFIG_INET)
+        struct tcp_memcontrol tcp_mem;
+#endif
+#if defined(CONFIG_MEMCG_KMEM)
+        /* analogous to slab_common's slab_caches list. per-memcg */
+        struct list_head memcg_slab_caches;
+        /* Not a spinlock, we can take a lot of time walking the list */
+        struct mutex slab_caches_mutex;
+        /* Index in the kmem_cache->memcg_params->memcg_caches array */
+        int kmemcg_id;
+#endif
 
-A similar fix is already in the linux-mtd.git tree.
+If it would be preferable to everybody, this could be easily rewritten as:
 
---=20
-Best Regards,
-Artem Bityutskiy
+#if defined(CONFIG_MEMCG_KMEM)
+#if defined(CONFIG_INET)
+        struct tcp_memcontrol tcp_mem;
+#endif
+        /* analogous to slab_common's slab_caches list. per-memcg */
+        struct list_head memcg_slab_caches;
+        /* Not a spinlock, we can take a lot of time walking the list */
+        struct mutex slab_caches_mutex;
+        /* Index in the kmem_cache->memcg_params->memcg_caches array */
+        int kmemcg_id;
+#endif
 
---=-zLB4sqBWOty5dL5QyLzB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+This would allow us to collapse some blocks a bit down as well.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+It doesn't bother me *that* much, though.
 
-iQIcBAABAgAGBQJRD2utAAoJECmIfjd9wqK0sIwP/1ro+FypPr8AHbAPiv9pzSln
-OCgaUBBAqE6exD5hfjj5GGCzfLtX6IpyAH7zzxLvFttEsEakM5dmzYdgok80Gqg7
-NQyBSxphcWKB9VfankM5LRUzN7y/enNXMuTSIZu1rXZ0KBwwNc1QrNIXa4BNlFxx
-E1e4CTF8JkQXxBL5o/Vg+u0mZ76Aspfcj3Q82Mtx4nA6l3fPmvU9SbyuJpkFdZ2e
-fkRWLxuQknWx6QGO+ViRzHQUvCA2McOkDt8yfIe+GFdA9mn/XgGZ0DulH5XEaKIL
-wMebfwRTOOJszEi+KtbxVtJ9BreTCpaMu5fqjzyNCs5Xx/qwC8IFlaE+HzRZXdx2
-P5WIT0tva+0TC0EKE6eUARmM8xFrIFq8vWv9QuuDugtnYHsonIscLdZrNa0Gwci9
-H47+RUKJPdNQRlvsuLCI7dU81nINvjOSsl4+GArrPqb4YrcpQl9RB2ajyYLPvCbl
-QVTeNRKRlFSTiL0B5PLeCEWBv6cYFGpqGoeai+/QvLxnuOFg5+nelpfxxJCIaaX4
-phEG0LXtWN3baUP1poXoPdgDuiq/Rc5hhH1Ls6bNntPTl26fitQsTdqTxLIEu+Ts
-eVRDbG7c5v+VQGOyfYIQLqn24MUmUjL4JV0BDaJVk2DLrN8Q8ZIFyqx7Zpte6Xug
-wgGUVZTQGvgMq1FqG8FF
-=k2d+
------END PGP SIGNATURE-----
-
---=-zLB4sqBWOty5dL5QyLzB--
+> Thanks
+>> ---
+>>
+>>  mm/memcontrol.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> --- 3.8-rc6/mm/memcontrol.c	2012-12-22 09:43:27.628015582 -0800
+>> +++ linux/mm/memcontrol.c	2013-02-02 16:56:06.188325771 -0800
+>> @@ -4969,6 +4969,7 @@ out:
+>>  	return ret;
+>>  }
+>>  
+>> +#ifdef CONFIG_MEMCG_KMEM
+>>  static int memcg_propagate_kmem(struct mem_cgroup *memcg)
+>>  {
+>>  	int ret = 0;
+>> @@ -4977,7 +4978,6 @@ static int memcg_propagate_kmem(struct m
+>>  		goto out;
+>>  
+>>  	memcg->kmem_account_flags = parent->kmem_account_flags;
+>> -#ifdef CONFIG_MEMCG_KMEM
+>>  	/*
+>>  	 * When that happen, we need to disable the static branch only on those
+>>  	 * memcgs that enabled it. To achieve this, we would be forced to
+>> @@ -5003,10 +5003,10 @@ static int memcg_propagate_kmem(struct m
+>>  	mutex_lock(&set_limit_mutex);
+>>  	ret = memcg_update_cache_sizes(memcg);
+>>  	mutex_unlock(&set_limit_mutex);
+>> -#endif
+>>  out:
+>>  	return ret;
+>>  }
+>> +#endif /* CONFIG_MEMCG_KMEM */
+>>  
+>>  /*
+>>   * The user of this function is...
+> 
 
