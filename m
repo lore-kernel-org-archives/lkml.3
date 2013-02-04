@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab3BDVBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 16:01:15 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33436 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab3BDVBO (ORCPT
+	id S1755093Ab3BDVDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 16:03:13 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:33072 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754431Ab3BDVDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 16:01:14 -0500
-Message-ID: <51102195.9050604@wwwdotorg.org>
-Date: Mon, 04 Feb 2013 14:01:09 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 4 Feb 2013 16:03:12 -0500
+Date: Mon, 4 Feb 2013 16:03:10 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <rogerq@ti.com>
+cc: tony@atomide.com, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 31/31] USB: ehci-omap: Select NOP USB transceiver driver
+In-Reply-To: <1359989205-12879-1-git-send-email-rogerq@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1302041602350.1756-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 09/10] clk: tegra: Implement clocks for Tegra114
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com> <1359713962-16822-10-git-send-email-pdeschrijver@nvidia.com> <510F5E87.90801@nvidia.com> <20130204104531.GQ2364@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20130204104531.GQ2364@tbergstrom-lnx.Nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2013 03:45 AM, Peter De Schrijver wrote:
-> On Mon, Feb 04, 2013 at 08:08:55AM +0100, Prashant Gaikwad wrote:
+On Mon, 4 Feb 2013, Roger Quadros wrote:
 
->>> +       /* xusb_hs_src */
->>> +       val = readl(clk_base + CLK_SOURCE_XUSB_SS_SRC);
->>> +       val |= BIT(25); /* always select PLLU_60M */
->>> +       writel(val, clk_base + CLK_SOURCE_XUSB_SS_SRC);
->>> +
->>> +       clk = clk_register_fixed_factor(NULL, "xusb_hs_src", "pll_u_60M", 0,
->>> +                                       1, 1);
->>> +       clks[xusb_hs_src] = clk;
->>> +
->>
->> With device tree we can directly use pll_u_60M, no need to register 
->> clock with fixed factor 1.
+> In PHY mode we need to have the nop-usb-xceiv transceiver
+> driver to operate, so select it in Kconfig.
 > 
-> This is true for now. In the future these clocks will need to be dvfs aware
-> though. I think it makes sense to have a separate clock then?
+> CC: Alan Stern <stern@rowland.harvard.edu>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/usb/host/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index 11e102e..2d2975d 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -157,6 +157,7 @@ config USB_EHCI_MXC
+>  config USB_EHCI_HCD_OMAP
+>  	tristate "EHCI support for OMAP3 and later chips"
+>  	depends on USB_EHCI_HCD && ARCH_OMAP
+> +	select NOP_USB_XCEIV
+>  	default y
+>  	---help---
+>  	  Enables support for the on-chip EHCI controller on
 
-Why does DVFS-awareness require it to be a different clock/ID?
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
