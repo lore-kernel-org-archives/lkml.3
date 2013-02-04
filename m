@@ -1,131 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab3BDU3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 15:29:50 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:38820 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab3BDU3r (ORCPT
+	id S1755248Ab3BDUaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 15:30:00 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41635 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab3BDU36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 15:29:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <51100A72.6030909@ti.com>
-References: <20130201184915.GP2244@beef>
-	<510C1D0E.6030401@mvista.com>
-	<20130201185820.GE29898@arwen.pp.htv.fi>
-	<510C2A47.1090607@mvista.com>
-	<20130201205600.GA31762@arwen.pp.htv.fi>
-	<20130201213003.GW2637@n2100.arm.linux.org.uk>
-	<20130204154153.GA18237@arwen.pp.htv.fi>
-	<510FF1A6.403@mvista.com>
-	<20130204164712.GB4269@arwen.pp.htv.fi>
-	<510FF5C9.3030600@mvista.com>
-	<20130204170216.GC4269@arwen.pp.htv.fi>
-	<51100A72.6030909@ti.com>
-Date: Mon, 4 Feb 2013 21:29:46 +0100
-Message-ID: <CACRpkdZihnp3_Df==QRWxQupgi7W_YXZxc-MxkusVH6J+Vx56A@mail.gmail.com>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Cyril Chemparathy <cyril@ti.com>
-Cc: balbi@ti.com, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, "Nair, Sandeep" <sandeep_n@ti.com>,
-        Chris Ball <cjb@laptop.org>, Matt Porter <mporter@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Feb 2013 15:29:58 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Stoney Wang <song-bo.wang@hp.com>,
+        Yinghai Lu <yinghai@kernel.org>, stable@kernel.org
+Subject: [PATCH] x86, apic: Check fadt x2apic phys in x2apic_phys_probe()
+Date: Mon,  4 Feb 2013 12:29:27 -0800
+Message-Id: <1360009767-3633-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20130204110304.GD24173@gmail.com>
+References: <20130204110304.GD24173@gmail.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 4, 2013 at 8:22 PM, Cyril Chemparathy <cyril@ti.com> wrote:
+From: Stoney Wang <song-bo.wang@hp.com>
 
-> Based on our experience with fitting multiple subsystems on top of this
-> DMA-Engine driver, I must say that the DMA-Engine interface has proven
-> to be a less than ideal fit for the network driver use case.
->
-> The first problem is that the DMA-Engine interface expects to "push"
-> completed traffic up into the upper layer as a part of its callback.
-> This doesn't fit cleanly with NAPI, which expects to "pull" completed
-> traffic from below in the NAPI poll.  We've somehow kludged together a
-> solution around this, but it isn't very elegant.
+When HP ProLiant DL980 G7 Server boot without x2apic_phys, there will be
+intermittent lost interrupts and could result in a hang or data loss.
 
-I cannot understand the actual technical problem from the above
-paragraphs though. dmaengine doesn't have a concept of pushing
-nor polling, it basically copies streams of words from A to B, where
-A/B can be a device or a buffer, nothing else.
+Those systems only work with x2apic phys mode so BIOS set
+ACPI_FADT_APIC_PHYSICAL in FADT table.
+Also because all apicids are less then 255, BIOS need to pass the control
+to the OS with xapic mode, according to x2apic-spec, chapter 2.9.
 
-The thing you're looking for sounds more like an adapter on top
-of dmaengine, which can surely be constructed, some
-drivers/dma/dmaengine-napi.c or whatever.
+Current code handle x2apic when BIOS pass with xapic mode:
 
-> The second problem is one of binding fixed DMA resources to fixed users.
->   AFAICT, the stock DMA-Engine mechanism works best when one DMA
-> resource is as good as any other.
+When user specify x2apic_phys, or FADT indicates PHYSICAL.
+During madt oem check, apic driver is set with xapic logical or
+xapic phys driver at first.
+Later enable_IR_x2apic() will enable x2apic_mode.
+After that, x2apic_phys_probe() will install right x2apic phys driver
+if user specify x2apic_phys,
+but will skip and let x2apic_cluster_probe to take over to install
+wrong apic driver (x2apic cluster) when FADT indicates
+PHYSICAL, because x2apic_phys_probe does not check FADT PHYSICAL.
 
-The filter function picks a channel for whatever reason. That reason
-can be, well whatever. Some engines have a clever mechanism to
-select resources on the other end.
+Add checking x2apic_fadt_phys in x2apic_phys_probe() to fix the problem.
 
-Then for tying devices to channels we have the dmaengine
-DT branch:
-http://git.infradead.org/users/vkoul/slave-dma.git/shortlog/refs/heads/topic/dmaengine_dt
+-v3: update the change according to Ingo.
 
-This stuff didn't go into v3.8 but you can *sure* expect it
-to be in v3.9.
+[ changelog, and simplify code - Yinghai Lu ]
+Signed-off-by: Stoney Wang <song-bo.wang@hp.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
 
-Or are you referring to a multi-engine scenario? Say if there is engine
-A and B and depending on circumstances A or B may be preferred
-in some order (and permutations of this problem). That is currently
-identified as a shortcoming that we need help to address.
+---
+ arch/x86/kernel/apic/x2apic_phys.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
-> To get over this problem, we've added
-> support for named channels, and drivers specifically request for a DMA
-> resource by name.  Again, this is less than ideal.
-
-Jon Hunter has been working on a mechanism to look up DMA channels
-from struct device *, dev_name() or a device tree node for example.
-Just like we do with clocks or regulators.
-
-Look at this patch from the dmaengine_dt branch:
-http://git.infradead.org/users/vkoul/slave-dma.git/commitdiff/528499a7037ebec0636d928f88cd783c618df3c5
-
-Looks up an optionally named channel for a certain
-device.
-
-It currently only supports device tree, but you are free to
-patch in whatever mechanism you need there. Static tables
-in platform data works too. Just nobody did it.
-
-So go ahead and hack on dma_request_slave_channel().
-(I would just branch of the DT branch.)
-
-> We found that virtio devices offer a more elegant solution to this
-> problem.  First, the virtqueue interface is a much better fit into NAPI
-> (callback --> napi schedule, napi poll --> get_buf), and this eliminates
-> the need for aforementioned kludges in the code.  Second, the virtio
-> device infrastructure nicely uses the device model to solve the problem
-> of binding DMA users to specific DMA resources.
-
-Not that I understand the polling issue, but it sounds to me like
-what Jon is doing is similar.
-
-Surely the way to look up resources cannot be paramount in this
-discussion, I think the real problem must be your specific networking
-usecase, so we need to drill into that.
-
-Yours,
-Linus Walleij
+Index: linux-2.6/arch/x86/kernel/apic/x2apic_phys.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/x2apic_phys.c
++++ linux-2.6/arch/x86/kernel/apic/x2apic_phys.c
+@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *ar
+ }
+ early_param("x2apic_phys", set_x2apic_phys_mode);
+ 
+-static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++static bool x2apic_fadt_phys(void)
+ {
+-	if (x2apic_phys)
+-		return x2apic_enabled();
+-	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
+-		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
+-		x2apic_enabled()) {
++	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
++		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
+ 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
+-		return 1;
++		return true;
+ 	}
+-	else
+-		return 0;
++	return false;
++}
++
++static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++{
++	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
+ }
+ 
+ static void
+@@ -82,7 +83,7 @@ static void init_x2apic_ldr(void)
+ 
+ static int x2apic_phys_probe(void)
+ {
+-	if (x2apic_mode && x2apic_phys)
++	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
+ 		return 1;
+ 
+ 	return apic == &apic_x2apic_phys;
