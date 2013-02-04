@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab3BDX0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 18:26:47 -0500
-Received: from mout.gmx.net ([212.227.17.21]:57009 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755297Ab3BDX0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 18:26:02 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18Ba2tXvIMBY/NNQLlfUQmmbrwMKTuvZjtV8PLSgd
-	qD7ARFVTC1rFYg
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
-        Sam Hansen <solid.se7en@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] staging/xgifb: Don't write the same values x times
-Date: Tue,  5 Feb 2013 00:29:45 +0100
-Message-Id: <1360020587-8399-3-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1360020587-8399-1-git-send-email-peterhuewe@gmx.de>
-References: <1360020587-8399-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1756018Ab3BDX0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 18:26:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48976 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755846Ab3BDX0x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 18:26:53 -0500
+Date: Mon, 4 Feb 2013 15:26:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] acpi, memory-hotplug: Support getting hotplug info
+ from SRAT.
+Message-Id: <20130204152651.2bca8dba.akpm@linux-foundation.org>
+In-Reply-To: <1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
+References: <1359106929-3034-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1359106929-3034-4-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the previous patch 'Move duplicated code for dram to helper
-function' it becomes evident that the code is performing the same
-thing 4 or 8 times in a row without changing arguments to the function
-and thus writing the same values over and over again.
+On Fri, 25 Jan 2013 17:42:09 +0800
+Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-It was tested that these repeats are unnecessary.
+> We now provide an option for users who don't want to specify physical
+> memory address in kernel commandline.
+> 
+>         /*
+>          * For movablemem_map=acpi:
+>          *
+>          * SRAT:                |_____| |_____| |_________| |_________| ......
+>          * node id:                0       1         1           2
+>          * hotpluggable:           n       y         y           n
+>          * movablemem_map:              |_____| |_________|
+>          *
+>          * Using movablemem_map, we can prevent memblock from allocating memory
+>          * on ZONE_MOVABLE at boot time.
+>          */
+> 
+> So user just specify movablemem_map=acpi, and the kernel will use hotpluggable
+> info in SRAT to determine which memory ranges should be set as ZONE_MOVABLE.
+> 
+> ...
+>  
+> +	if (!strncmp(p, "acpi", max(4, strlen(p))))
+> +		movablemem_map.acpi = true;
 
--> we can safely remove them.
+Generates a warning:
 
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/xgifb/vb_init.c |   19 ++++++-------------
- 1 files changed, 6 insertions(+), 13 deletions(-)
+mm/page_alloc.c: In function 'cmdline_parse_movablemem_map':
+mm/page_alloc.c:5312: warning: comparison of distinct pointer types lacks a cast
 
-diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
-index 25fc7bc..1c6e0f3 100644
---- a/drivers/staging/xgifb/vb_init.c
-+++ b/drivers/staging/xgifb/vb_init.c
-@@ -439,25 +439,18 @@ static void XGINew_SetDRAMDefaultRegister340(
- 	xgifb_reg_set(P3d4, 0x69, pVBInfo->CR40[6][pVBInfo->ram_type]);
- 	xgifb_reg_set(P3d4, 0x6A, pVBInfo->CR40[7][pVBInfo->ram_type]);
- 
--	for (i = 0; i < 4; i++) {
--		/* CR6B DQS fine tune delay */
--		temp = (pVBInfo->ram_type <= 2) ? 0xaa : 0x00;
--		XGI_SetDRAM_Helper(P3d4, temp, 0, 0x6B, 2, 0xF0, 0x10);
--	}
-+	/* CR6B DQS fine tune delay */
-+	temp = (pVBInfo->ram_type <= 2) ? 0xaa : 0x00;
-+	XGI_SetDRAM_Helper(P3d4, temp, 0, 0x6B, 2, 0xF0, 0x10);
- 
--	for (i = 0; i < 4; i++) {
--		/* CR6E DQM fine tune delay */
--		XGI_SetDRAM_Helper(P3d4, 0, 0, 0x6E, 2, 0xF0, 0x10);
--	}
-+	/* CR6E DQM fine tune delay */
-+	XGI_SetDRAM_Helper(P3d4, 0, 0, 0x6E, 2, 0xF0, 0x10);
- 
- 	temp3 = 0;
- 	for (k = 0; k < 4; k++) {
- 		/* CR6E_D[1:0] select channel */
- 		xgifb_reg_and_or(P3d4, 0x6E, 0xFC, temp3);
--		for (i = 0; i < 8; i++) {
--			/* CR6F DQ fine tune delay */
--			XGI_SetDRAM_Helper(P3d4, 0, 0, 0x6F, 0, 0xF8, 0x08);
--		}
-+		XGI_SetDRAM_Helper(P3d4, 0, 0, 0x6F, 0, 0xF8, 0x08);
- 		temp3 += 0x01;
- 	}
- 
--- 
-1.7.8.6
+due to max(int, size_t).
+
+This is easily fixed, but the code looks rather pointless.  If the
+incoming string is supposed to be exactly "acpi" then use strcmp().  If
+the incoming string must start with "acpi" then use strncmp(p, "acpi", 4).
+
+IOW, the max is unneeded?
 
