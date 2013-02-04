@@ -1,121 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab3BDJcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 04:32:39 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:43397 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab3BDJci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 04:32:38 -0500
+	id S1753123Ab3BDJel (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 04:34:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39951 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070Ab3BDJek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 04:34:40 -0500
+Date: Mon, 4 Feb 2013 10:34:35 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/9] HID: core: add "report" hook, called once the
+ report has been parsed
+In-Reply-To: <20130203122748.GA2513@polaris.bitmath.org>
+Message-ID: <alpine.LNX.2.00.1302041033500.26996@pobox.suse.cz>
+References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com> <1359649351-11092-2-git-send-email-benjamin.tissoires@gmail.com> <20130203122748.GA2513@polaris.bitmath.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1781360.cmQWHCW5SC@wuerfel>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	<51090DB5.7050203@synopsys.com>
-	<CAHTX3d+B4_u4zG+iGnGMuRj4Zt8WCUS32apwhFVJen0JtzcRfA@mail.gmail.com>
-	<1781360.cmQWHCW5SC@wuerfel>
-Date: Mon, 4 Feb 2013 10:26:03 +0100
-Message-ID: <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-From: Michal Simek <monstr@monstr.eu>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, benh@kernel.crashing.org,
-        alan@lxorguk.ukuu.org.uk, geert@linux-m68k.org,
-        dahinds@users.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI, [cc: Alan and Geert and David]
+On Sun, 3 Feb 2013, Henrik Rydberg wrote:
 
+> > This callback is called when the parsing of the report has been done
+> > by hid-core (so after the calls to .event). The hid drivers can now
+> > have access to the whole report by relying on the values stored in
+> > the different fields.
+> > 
+> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> > ---
+> >  drivers/hid/hid-core.c | 4 ++++
+> >  include/linux/hid.h    | 2 ++
+> >  2 files changed, 6 insertions(+)
+> > 
+> > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> > index 5ae2cb1..b671e4e 100644
+> > --- a/drivers/hid/hid-core.c
+> > +++ b/drivers/hid/hid-core.c
+> > @@ -1195,6 +1195,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+> >  {
+> >  	struct hid_report_enum *report_enum = hid->report_enum + type;
+> >  	struct hid_report *report;
+> > +	struct hid_driver *hdrv;
+> >  	unsigned int a;
+> >  	int rsize, csize = size;
+> >  	u8 *cdata = data;
+> > @@ -1231,6 +1232,9 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+> >  	if (hid->claimed != HID_CLAIMED_HIDRAW) {
+> >  		for (a = 0; a < report->maxfield; a++)
+> >  			hid_input_field(hid, report->field[a], cdata, interrupt);
+> > +		hdrv = hid->driver;
+> > +		if (hdrv && hdrv->report)
+> > +			hdrv->report(hid, report);
+> 
+> I think this is more useful if called before the individual fields. In
+> fact, it seems raw_event() is already doing exactly that. No need for
+> a new callback, in other words.
 
-2013/1/30 Arnd Bergmann <arnd@arndb.de>:
-> On Wednesday 30 January 2013 13:31:58 Michal Simek wrote:
->> Also from my understanding of arm we should use readl/b/w functions because
->> they have memory barriers which should be probably performed.
->>
->> And I haven't found any IO function which will behave on arm as LE and
->> on PPC as BE.
->
-> There are none, except for the __raw_ versions that are generally
-> not recommended for other reasons.
->
-> There really is no easy solution, because most of the hardware IP
-> blocks have fixed endianess, e.g. an OHCI USB controller will normally
-> have little-endian registers on all architectures, but in very rare
-> cases it may be big-endian, because some hardware designer tried to
-> be helpful and put a byte swapping logic in front of it.
->
-> There are a few devices that tend to have the same endianess as the
-> CPU, again because some hardware designer tried to make things easy
-> for software by making the hardware confiurable. Again, what normally
-> happens is that the next hardware designer takes this block and
-> hardwires it to some endianess that he sees as "correct" but puts
-> it on a system with a variable-endian CPU. Note that there are both
-> little-endian PowerPC systems and big-endian ARM systems, they just
-> happen to be the minority on an architecture where 99% of the users
-> prefer the opposite.
->
-> The outcome is basically you're screwed for every driver that is
-> not fixed endianess. The normal workaround is to do something like
->
-> #if defined(CONFIG_FOO_BIG_ENDIAN) && !defined(CONFIG_FOO_LITTLE_ENDIAN)
-> /* always big-endian
-> #define foo_readl(dev, reg) ioread32_be(dev->regs + reg)
-> #define foo_writel(dev, reg, val) iowrite32_be(val, dev->regs + reg)
-> #elif !defined(CONFIG_FOO_BIG_ENDIAN) && defined(CONFIG_FOO_LITTLE_ENDIAN)
-> /* always little-endian
-> #define foo_readl(dev, reg) ioread32(dev->regs + reg)
-> #define foo_writel(dev, reg, val) iowrite32e(val, dev->regs + reg)
-> #else
-> /* run-time configured */
-> #define foo_readl(dev, reg) dev->readl(dev->regs + reg)
-> #define foo_writel(dev, reg, val) dev->writel(val, dev->regs + reg)
-> #endif
->
-> and select the CONFIG_FOO_BIG_ENDIAN and CONFIG_FOO_LITTLE_ENDIAN
-> symbols in Kconfig based on the system you are building for.
+raw_event() doesn't provide equivalent functionality though; namely, the 
+report is not parsed.
 
-Using CONFIG_FOO_BIG/LITTLE is not good because it is just another
-Kconfig option.
-You can easily detect it at runtime and for dedicated hw with fixed
-endians you can just
-handle it in the driver and don't care about global setting.
+Or have I missed your point?
 
-
-> This of course gets further complicated if you require different
-> accessors per architecture, like ARM wanting readl or ioread32
-> and PowerPC wanting in_le32 for a little-endian SoC component.
-
-FYI: I have got two responses on linux-arch from Alan
-"Set the pointers up and pass them as data with your platform device, that
-way the function definitions are buried in your platform code where they
-depend."
-
-and Geert:
-"Or embed a struct io_ops * in struct device, to be set up by the bus driver?
-
-Wasn't David Hinds working on something like this in the context of PCMCIA
-a few decades ago?"
-
-Based on their suggestions one way can be to pass it through void *platform_data
-which is probably not the best and then which make more sense to me is to extend
-struct dev_archdata archdata to add there native read/write functions.
-
-What do you think?
-
-Thanks,
-Michal
-
-
+Thanks for the extensive review, Henrik, it's really helpful.
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Jiri Kosina
+SUSE Labs
