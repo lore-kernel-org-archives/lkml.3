@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab3BDUgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 15:36:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49102 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab3BDUga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 15:36:30 -0500
-Date: Mon, 4 Feb 2013 15:36:25 -0500
-From: David Teigland <teigland@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Revert "dlm: check the maximum size of a request from
- user"
-Message-ID: <20130204203625.GB20950@redhat.com>
-References: <20130204170655.GA20950@redhat.com>
- <CA+1xoqdDoKxU4L6u4XRXVMCSiMG174_y9kwoEO6i9rXS2AfUig@mail.gmail.com>
+	id S1754435Ab3BDUkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 15:40:25 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:57304 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282Ab3BDUkY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 15:40:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqdDoKxU4L6u4XRXVMCSiMG174_y9kwoEO6i9rXS2AfUig@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1359854463-2538-15-git-send-email-tj@kernel.org>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+	<1359854463-2538-15-git-send-email-tj@kernel.org>
+Date: Mon, 4 Feb 2013 21:40:23 +0100
+Message-ID: <CACRpkdb_an_OSynCzu0nLkRaBQ8uYbyvGojySbSdCnp1-1AOSQ@mail.gmail.com>
+Subject: Re: [PATCH 14/62] gpio: convert to idr_alloc()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
+        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 03:19:44PM -0500, Sasha Levin wrote:
-> Hi David,
-> 
-> This opens up a hole for userspace to force the kernel to allocate
-> huge chunks of memory, triggering oom killing spree and such.
-> 
-> It should probably be fixed instead of just reverted.
-> 
-> I'll look into it.
+On Sun, Feb 3, 2013 at 2:20 AM, Tejun Heo <tj@kernel.org> wrote:
 
-Here is the patch I'm planning to put in the queue for the next
-merge window, once it's been tested.
+> Convert to the much saner new idr interface.
+>
+> Only compile tested.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> This patch depends on an earlier idr changes and I think it would be
+> best to route these together through -mm.  Please holler if there's
+> any objection.  Thanks.
 
-Subject: [PATCH] dlm: check the write size from user
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Return EINVAL from write if the size is larger than
-allowed.  Do this before allocating kernel memory for
-the bogus size, which could lead to OOM.
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: David Teigland <teigland@redhat.com>
----
- fs/dlm/user.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/fs/dlm/user.c b/fs/dlm/user.c
-index eb4ed9b..911649a 100644
---- a/fs/dlm/user.c
-+++ b/fs/dlm/user.c
-@@ -503,6 +503,13 @@ static ssize_t device_write(struct file *file, const char __user *buf,
- #endif
- 		return -EINVAL;
- 
-+	/*
-+	 * can't compare against COMPAT/dlm_write_request32 because
-+	 * we don't yet know if is64bit is zero
-+	 */
-+	if (count > sizeof(struct dlm_write_request) + DLM_RESNAME_MAXLEN)
-+		return -EINVAL;
-+
- 	kbuf = kzalloc(count + 1, GFP_NOFS);
- 	if (!kbuf)
- 		return -ENOMEM;
--- 
-1.8.1.rc1.5.g7e0651a
-
+Yours,
+Linus Walleij
