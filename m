@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab3BDL5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:57:15 -0500
-Received: from mga14.intel.com ([143.182.124.37]:55169 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754961Ab3BDL5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:57:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,598,1355126400"; 
-   d="scan'208";a="252300815"
-Date: Mon, 4 Feb 2013 12:57:04 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Roger Tseng <rogerable@realtek.com>
-Cc: cjb@laptop.org, devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
-        wei_wang@realsil.com.cn
-Subject: Re: [PATCH 3/3] mfd: rtsx: support RTS5227
-Message-ID: <20130204115704.GE8476@sortiz-mobl>
-References: <1359963959-2305-1-git-send-email-rogerable@realtek.com>
- <1359963959-2305-4-git-send-email-rogerable@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359963959-2305-4-git-send-email-rogerable@realtek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755193Ab3BDL5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:57:06 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:36833 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961Ab3BDL5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 06:57:03 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
+Cc: Michel JAOUEN <michel.jaouen@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 39/73] regulator: ab8500-ext: Add support for AB9540 regulators
+Date: Mon,  4 Feb 2013 11:53:54 +0000
+Message-Id: <1359978868-28736-40-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+From: Michel JAOUEN <michel.jaouen@stericsson.com>
 
-On Mon, Feb 04, 2013 at 03:45:59PM +0800, Roger Tseng wrote:
-> Support new model RTS5227.
-> 
-> Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> Reviewed-by: Wei WANG <wei_wang@realsil.com.cn>
-> ---
->  drivers/mfd/Makefile         |   2 +-
->  drivers/mfd/rts5227.c        | 234 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/mfd/rtsx_pcr.c       |   5 +
->  drivers/mfd/rtsx_pcr.h       |   1 +
->  include/linux/mfd/rtsx_pci.h |   5 +
->  5 files changed, 246 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/mfd/rts5227.c
-Applied as well, thanks.
+Add the support for ab9540 external regulators.
 
-Cheers,
-Samuel.
+Signed-off-by: Michel JAOUEN <michel.jaouen@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+---
+ drivers/regulator/ab8500-ext.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index f3ec867..e5e6453 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -298,6 +298,16 @@ static struct regulator_ops ab8500_ext_regulator_ops = {
+ 	.list_voltage		= ab8500_ext_list_voltage,
+ };
+ 
++static struct regulator_ops ab9540_ext_regulator_ops = {
++	.enable			= ab8500_ext_regulator_enable,
++	.disable		= ab8500_ext_regulator_disable,
++	.is_enabled		= ab8500_ext_regulator_is_enabled,
++	.set_mode		= ab8500_ext_regulator_set_mode,
++	.get_mode		= ab8500_ext_regulator_get_mode,
++	.get_voltage		= ab8500_ext_fixed_get_voltage,
++	.list_voltage		= ab8500_ext_list_voltage,
++};
++
+ static struct ab8500_ext_regulator_info
+ 		ab8500_ext_regulator_info[AB8500_NUM_EXT_REGULATORS] = {
+ 	[AB8500_EXT_SUPPLY1] = {
+@@ -406,6 +416,20 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
+ 		info->cfg = (struct ab8500_ext_regulator_cfg *)
+ 			pdata->ext_regulator[i].driver_data;
+ 
++		if (is_ab9540(ab8500)) {
++			if (info->desc.id == AB8500_EXT_SUPPLY1) {
++				info->desc.ops = &ab9540_ext_regulator_ops;
++				info->fixed_uV = 4500000;
++			}
++			if (info->desc.id == AB8500_EXT_SUPPLY2)
++				info->desc.ops = &ab9540_ext_regulator_ops;
++
++			if (info->desc.id == AB8500_EXT_SUPPLY3) {
++				info->desc.ops = &ab9540_ext_regulator_ops;
++				info->fixed_uV = 3300000;
++			}
++		}
++
+ 		/* register regulator with framework */
+ 		info->rdev = regulator_register(&info->desc, &pdev->dev,
+ 				&pdata->ext_regulator[i], info, NULL);
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9.5
+
