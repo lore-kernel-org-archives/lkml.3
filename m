@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab3BDS1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:27:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46051 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755349Ab3BDS1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:27:03 -0500
-Date: Mon, 4 Feb 2013 10:27:04 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: linux-next: manual merge of the char-misc tree with the mfd tree
-Message-ID: <20130204182704.GD3219@kroah.com>
-References: <20130204161241.9ba53f0389122d30a2b32ed4@canb.auug.org.au>
+	id S1754070Ab3BDS2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:28:20 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:59195 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab3BDS2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 13:28:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130204161241.9ba53f0389122d30a2b32ed4@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAH9NwWfRL3HpfhLW5FqmWJC+NYHagoQXMoavAzMYciHRDg6mdQ@mail.gmail.com>
+References: <1358928657-15781-1-git-send-email-christian.gmeiner@gmail.com>
+ <7AFBFD79B857054D97821A9BD3FBFA9744D05BD2@ATFKEX06.bachmann.at>
+ <CAH9NwWdciqHSkkMSk4CW4XX+d6JSZBnvw52Svu8M4o-PGMQsDA@mail.gmail.com>
+ <20130201141211.1adadfe5.akpm@linux-foundation.org> <CAH9NwWfRL3HpfhLW5FqmWJC+NYHagoQXMoavAzMYciHRDg6mdQ@mail.gmail.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 4 Feb 2013 10:27:57 -0800
+Message-ID: <CAK5ve-KEM1xOxRyWsDQMNps-3r-V3Vaiu7SMW8=nuQcz2-2ozg@mail.gmail.com>
+Subject: Re: [PATCH] leds-ot200: Fix error caused by shifted mask
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "GMEINER.Christian" <C.GMEINER@bachmann.info>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 04:12:41PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the char-misc tree got a conflict in
-> drivers/mfd/wm5102-tables.c between commit d078377faf5f ("mfd: wm5102:
-> Refresh register defaults") from the mfd tree and commit 689557d3c704
-> ("mfd: wm5102: Add microphone clamp control registers") from the
-> char-misc tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On Mon, Feb 4, 2013 at 6:46 AM, Christian Gmeiner
+<christian.gmeiner@gmail.com> wrote:
+> 2013/2/1 Andrew Morton <akpm@linux-foundation.org>:
+>> On Fri, 1 Feb 2013 16:08:15 +0100
+>> Christian Gmeiner <christian.gmeiner@gmail.com> wrote:
+>>
+>>> ping
+>>
+>> Bryan is handling LEDs patches (see ./MAINTAINERS).  Without a cc he
+>> presumably missed this in the lkml flood.
+>
+> You are right...
+>
+> ~/kernel/linux-3.7.6$ ./scripts/get_maintainer.pl -f drivers/leds/leds-ot200.c
+> Bryan Wu <cooloney@gmail.com> (maintainer:LED SUBSYSTEM)
+> Richard Purdie <rpurdie@rpsys.net> (maintainer:LED SUBSYSTEM)
+> linux-leds@vger.kernel.org (open list:LED SUBSYSTEM)
+> linux-kernel@vger.kernel.org (open list)
+>
+> Next time I will add Bryan to CC
+>
+>>
+>>> 2013/1/23 GMEINER.Christian <C.GMEINER@bachmann.info>:
+>>> >> -----Urspr__ngliche Nachricht-----
+>>> >> Von: Christian Gmeiner [mailto:christian.gmeiner@gmail.com]
+>>> >> Gesendet: Mittwoch, 23. Januar 2013 09:11
+>>> >> An: linux-next@vger.kernel.org; akpm@linux-foundation.org;
+>>> >> rpurdie@rpsys.net; linux-kernel@vger.kernel.org; GMEINER.Christian
+>>> >> Cc: Christian Gmeiner
+>>> >> Betreff: [PATCH] leds-ot200: Fix error caused by shifted mask
+>>> >>
+>>> >> During the development of this driver an in-house register documentation
+>>> >> was used. The last weeks some integration tests were done and this problem
+>>> >> was found. It turned out that the released register documentation is wrong.
+>>> >>
+>>> >> The fix is very simple: shift all masks by one.
+>>> >>
+>>
+>> The changelog failed to describe the effects of the bug it fixes.  This
+>> is a grave (and all too common) omission; it makes it difficult for
+>> others to determine whether the patch should be backported into earlier
+>> kernels.
+>>
+>> So, please tell us.  And feel free to explain whether you believe the
+>> fix should be backported.
+>
+> Our customers can control LEDs from userspace via Java, C++ or what every. They
+> have running/working applications where they want to control led_3 but
+> led_2 get's
+> used. I got a bug report in our in-house bug tracker so it would be
+> great if this patch can make it into 3.7.x series.
+>
 
-Thanks for this, it looks fine to me.
+OK, could you please update the commit message of this patch and
+resubmit it? It's better to submit to -stable tree as well.
 
-greg k-h
+Thanks,
+-Bryan
