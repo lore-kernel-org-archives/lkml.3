@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab3BDQ5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:57:15 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55102 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab3BDQ5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:57:14 -0500
-Message-ID: <510FE866.9090600@wwwdotorg.org>
-Date: Mon, 04 Feb 2013 09:57:10 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753932Ab3BDQ5h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:57:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35192 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753593Ab3BDQ5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 11:57:35 -0500
+Message-ID: <510FE7F5.3080802@zytor.com>
+Date: Mon, 04 Feb 2013 08:55:17 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>
-CC: Shaohua Li <shli@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Joseph Lo <josephl@nvidia.com>
-Subject: Re: CPU hotplug hang due to "swap: make each swap partition have
- one address_space"
-References: <510C9DE9.9040207@wwwdotorg.org> <20130204023646.GA321@kernel.org>
-In-Reply-To: <20130204023646.GA321@kernel.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 4/4] x86, 32-bit: Drop new_cpu_data
+References: <1359908079-10469-1-git-send-email-bp@alien8.de> <1359908079-10469-5-git-send-email-bp@alien8.de> <510EF65D.4020602@zytor.com> <20130204052725.GA13909@pd.tnic> <562c8dd4-6665-4365-8eb4-33e77e6f6798@email.android.com> <20130204090237.GB13909@pd.tnic>
+In-Reply-To: <20130204090237.GB13909@pd.tnic>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2013 07:36 PM, Shaohua Li wrote:
-> On Fri, Feb 01, 2013 at 10:02:33PM -0700, Stephen Warren wrote:
->> Shaohua,
->>
->> In next-20130128, commit 174f064 "swap: make each swap partition have
->> one address_space" (from the mm/akpm tree) appears causes a hang/RCU
->> stall for me when hot-unplugging a CPU.
+On 02/04/2013 01:02 AM, Borislav Petkov wrote:
+> On Sun, Feb 03, 2013 at 09:44:02PM -0800, H. Peter Anvin wrote:
+>> boot_cpu_data is ok for things that are indeed universally valid
+>> across. That does not include CPUID level, for one.
 > 
-> does this one work for you?
-> http://marc.info/?l=linux-mm&m=135929599505624&w=2
-> Or try a more recent linux-next. The patch is in akpm's tree.
+> Wait a minute, hold the phone! :-)
+> 
+> Are you saying that CPUID_EAX(0) could return different values in %eax
+> on the *same* system with mixed-silicon steppings? Or even on an uniform
+> system?
+> 
 
-Yes, that patch fixes the issue for me, thanks.
+Yes and yes (in the latter case due to inconsistent MSR programming.)
+
+	-hpa
+
