@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab3BDQSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:18:37 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:51397 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756367Ab3BDQSg (ORCPT
+	id S1756445Ab3BDQTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:19:35 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:39205 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756402Ab3BDQTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:18:36 -0500
-Date: Mon, 4 Feb 2013 08:18:29 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "skinsbursky@parallels.com" <skinsbursky@parallels.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>, infinipath <infinipath@intel.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "roland@kernel.org" <roland@kernel.org>
-Subject: Re: [PATCH 27/62] infiniband/ipath: convert to idr_alloc()
-Message-ID: <20130204161829.GA27963@mtj.dyndns.org>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
- <1359854463-2538-28-git-send-email-tj@kernel.org>
- <32E1700B9017364D9B60AED9960492BC0D58DDB2@FMSMSX108.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <32E1700B9017364D9B60AED9960492BC0D58DDB2@FMSMSX108.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Feb 2013 11:19:34 -0500
+Date: Mon, 4 Feb 2013 08:19:20 -0800
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jesse Gross <jesse@nicira.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>
+Subject: Re: No sysfs directory for openvswitch module when built-in
+Message-ID: <20130204081920.00e9f22e@nehalam.linuxnetplumber.net>
+In-Reply-To: <CAM_iQpVgEchb8UsxUP=w6OMbYx=zuP2yv=QwFhe8rPCbNBreVg@mail.gmail.com>
+References: <CAM_iQpVgEchb8UsxUP=w6OMbYx=zuP2yv=QwFhe8rPCbNBreVg@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 29 Jan 2013 22:15:18 +0800
+Cong Wang <xiyou.wangcong@gmail.com> wrote:
 
-On Mon, Feb 04, 2013 at 04:15:52PM +0000, Marciniszyn, Mike wrote:
-> I tried the branch you indicated in the initial patch cover.
+> Hello, Rusty, Jesse,
 > 
-> When run with a qib driver, and ipoib ping of another system produces:
-...
-> Looks like this is tripping during the arp/neighbour path resolution:
+> I met an interesting problem when I compile openvswitch module as a
+> built-in (actually I compile ALL kernel modules as built-in), there is
+> no /sys/module/openvswitch/ directory created by the kernel in this
+> case.
 > 
-> void idr_preload(gfp_t gfp_mask)
-> {
->     /*
->      * Consuming preload buffer from non-process context breaks preload
->      * allocation guarantee.  Disallow usage from those contexts.
->      */
->     WARN_ON_ONCE(in_interrupt()); <------------------------
-> 
-> Any ideas Roland?
+> What's worse, the user-space init script thinks openvswitch module is
+> not loaded by checking the exist of this directory, therefore refuses
+> to start.
 
-Yeah, firewire had the same problem.  It needs to conditionalize
-preload() if !__GFP_WAIT (no point anyway).  Will send update patches
-soon.
+Shouldn't the OVS init script be testing for some other API.
 
-Thanks.
-
--- 
-tejun
