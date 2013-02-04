@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3BDMdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:33:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4976 "EHLO mx1.redhat.com"
+	id S1755151Ab3BDMdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:33:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17435 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754987Ab3BDMdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 07:33:38 -0500
+	id S1755030Ab3BDMdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 07:33:46 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -15,24 +15,20 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 08/11] perf tools: Add PERF_SAMPLE_READ sample related processing
-Date: Mon,  4 Feb 2013 13:33:02 +0100
-Message-Id: <1359981185-16819-9-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 11/11] perf tests: Add parse events tests for leader sampling
+Date: Mon,  4 Feb 2013 13:33:05 +0100
+Message-Id: <1359981185-16819-12-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1359981185-16819-1-git-send-email-jolsa@redhat.com>
 References: <1359981185-16819-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For sample with sample type PERF_SAMPLE_READ the period value is
-stored in the 'struct sample_read'.
+Adding 2 more tests to the automated parse events suite
+for following event config:
 
-Moreover if the read format has PERF_FORMAT_GROUP, the 'struct
-sample_read' contains period values for all events in the group
-(for which the sample's event is a leader).
-
-We deliver separated samples for all the values contained
-within the 'struct sample_read'.
+  '{cycles,cache-misses,branch-misses}:S'
+  '{instructions,branch-misses}:Su'
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -43,114 +39,247 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/evsel.h   |  3 ++
- tools/perf/util/session.c | 72 ++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 74 insertions(+), 1 deletion(-)
+ tools/perf/tests/parse-events.c | 115 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 115 insertions(+)
 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 8512f6a..a05d008 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -37,6 +37,9 @@ struct perf_sample_id {
- 	struct hlist_node 	node;
- 	u64		 	id;
- 	struct perf_evsel	*evsel;
-+
-+	/* Holds total ID period value for PERF_SAMPLE_READ processing. */
-+	u64			period;
- };
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index c5636f3..9c4f45b 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -528,6 +528,7 @@ static int test__group1(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ 	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
  
- /** struct perf_evsel - event selector
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 0612ae5..3b32acc 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -862,6 +862,75 @@ static struct machine *
- 	return &session->machines.host;
+ 	/* cycles:upp */
+ 	evsel = perf_evsel__next(evsel);
+@@ -543,6 +544,7 @@ static int test__group1(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	return 0;
+ }
+@@ -568,6 +570,7 @@ static int test__group2(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ 	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* cache-references + :u modifier */
+ 	evsel = perf_evsel__next(evsel);
+@@ -582,6 +585,7 @@ static int test__group2(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* cycles:k */
+ 	evsel = perf_evsel__next(evsel);
+@@ -595,6 +599,7 @@ static int test__group2(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	return 0;
+ }
+@@ -623,6 +628,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 		!strcmp(leader->group_name, "group1"));
+ 	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* group1 cycles:kppp */
+ 	evsel = perf_evsel__next(evsel);
+@@ -639,6 +645,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
+ 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* group2 cycles + G modifier */
+ 	evsel = leader = perf_evsel__next(evsel);
+@@ -656,6 +663,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 		!strcmp(leader->group_name, "group2"));
+ 	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* group2 1:3 + G modifier */
+ 	evsel = perf_evsel__next(evsel);
+@@ -669,6 +677,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* instructions:u */
+ 	evsel = perf_evsel__next(evsel);
+@@ -682,6 +691,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	return 0;
+ }
+@@ -709,6 +719,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ 	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* instructions:kp + p */
+ 	evsel = perf_evsel__next(evsel);
+@@ -724,6 +735,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	return 0;
+ }
+@@ -750,6 +762,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ 	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* instructions + G */
+ 	evsel = perf_evsel__next(evsel);
+@@ -764,6 +777,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* cycles:G */
+ 	evsel = leader = perf_evsel__next(evsel);
+@@ -780,6 +794,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
+ 	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ 	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
+ 	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
++	TEST_ASSERT_VAL("wrong sample_read", !evsel->sample_read);
+ 
+ 	/* instructions:G */
+ 	evsel = perf_evsel__next(evsel);
+@@ -971,6 +986,98 @@ static int test__group_gh4(struct perf_evlist *evlist)
+ 	return 0;
  }
  
-+static int deliver_sample_value(struct perf_session *session,
-+				struct perf_tool *tool,
-+				union perf_event *event,
-+				struct perf_sample *sample,
-+				struct sample_read_value *v,
-+				struct machine *machine)
++static int test__leader_sample1(struct perf_evlist *evlist)
 +{
-+	struct perf_sample_id *sid;
++	struct perf_evsel *evsel, *leader;
 +
-+	sid = perf_evlist__id2sid(session->evlist, v->id);
-+	if (sid) {
-+		sample->id     = v->id;
-+		sample->period = v->value - sid->period;
-+		sid->period    = v->value;
-+	}
++	TEST_ASSERT_VAL("wrong number of entries", 3 == evlist->nr_entries);
 +
-+	if (!sid || sid->evsel == NULL) {
-+		++session->stats.nr_unknown_id;
-+		return 0;
-+	}
++	/* cycles - sampling group leader */
++	evsel = leader = perf_evlist__first(evlist);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong sample_read", evsel->sample_read);
 +
-+	return tool->sample(tool, event, sample, sid->evsel, machine);
++	/* cache-misses - not sampling */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong sample_read", evsel->sample_read);
++
++	/* branch-misses - not sampling */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_BRANCH_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong sample_read", evsel->sample_read);
++
++	return 0;
 +}
 +
-+static int deliver_sample_group(struct perf_session *session,
-+				struct perf_tool *tool,
-+				union  perf_event *event,
-+				struct perf_sample *sample,
-+				struct machine *machine)
++static int test__leader_sample2(struct perf_evlist *evlist __maybe_unused)
 +{
-+	int ret = -EINVAL;
-+	u64 i;
++	struct perf_evsel *evsel, *leader;
 +
-+	for (i = 0; i < sample->read.group.nr; i++) {
-+		ret = deliver_sample_value(session, tool, event, sample,
-+					   &sample->read.group.values[i],
-+					   machine);
-+		if (ret)
-+			break;
-+	}
++	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
 +
-+	return ret;
++	/* instructions - sampling group leader */
++	evsel = leader = perf_evlist__first(evlist);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong sample_read", evsel->sample_read);
++
++	/* branch-misses - not sampling */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_BRANCH_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
++	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong sample_read", evsel->sample_read);
++
++	return 0;
 +}
 +
-+static int
-+perf_session__deliver_sample(struct perf_session *session,
-+			     struct perf_tool *tool,
-+			     union  perf_event *event,
-+			     struct perf_sample *sample,
-+			     struct perf_evsel *evsel,
-+			     struct machine *machine)
-+{
-+	/* We know evsel != NULL. */
-+	u64 sample_type = evsel->attr.sample_type;
-+	u64 read_format = evsel->attr.read_format;
-+
-+	/* Standard sample delievery. */
-+	if (!(sample_type & PERF_SAMPLE_READ))
-+		return tool->sample(tool, event, sample, evsel, machine);
-+
-+	/* For PERF_SAMPLE_READ we have either single or group mode. */
-+	if (read_format & PERF_FORMAT_GROUP)
-+		return deliver_sample_group(session, tool, event, sample,
-+					    machine);
-+	else
-+		return deliver_sample_value(session, tool, event, sample,
-+					    &sample->read.one, machine);
-+}
-+
- static int perf_session_deliver_event(struct perf_session *session,
- 				      union perf_event *event,
- 				      struct perf_sample *sample,
-@@ -904,7 +973,8 @@ static int perf_session_deliver_event(struct perf_session *session,
- 			++session->stats.nr_unprocessable_samples;
- 			return 0;
- 		}
--		return tool->sample(tool, event, sample, evsel, machine);
-+		return perf_session__deliver_sample(session, tool, event,
-+						    sample, evsel, machine);
- 	case PERF_RECORD_MMAP:
- 		return tool->mmap(tool, event, sample, machine);
- 	case PERF_RECORD_COMM:
+ static int count_tracepoints(void)
+ {
+ 	char events_path[PATH_MAX];
+@@ -1187,6 +1294,14 @@ static struct evlist_test test__events[] = {
+ 		.name  = "{cycles:G,cache-misses:H}:uG",
+ 		.check = test__group_gh4,
+ 	},
++	[38] = {
++		.name  = "{cycles,cache-misses,branch-misses}:S",
++		.check = test__leader_sample1,
++	},
++	[39] = {
++		.name  = "{instructions,branch-misses}:Su",
++		.check = test__leader_sample2,
++	},
+ };
+ 
+ static struct evlist_test test__events_pmu[] = {
 -- 
 1.7.11.7
 
