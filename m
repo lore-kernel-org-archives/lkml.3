@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab3BDWI4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 17:08:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39482 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab3BDWIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 17:08:55 -0500
-From: Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: [TRIVIAL PATCH V2] Doc: percpu_counter doc code for better readability
-To: Jiri Kosina <trivial@kernel.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Jesper Dangaard Brouer <brouer@redhat.com>, netdev@vger.kernel.org,
-        joe@perches.com
-Date: Mon, 04 Feb 2013 23:14:12 +0100
-Message-ID: <20130204221356.29548.35746.stgit@dragon>
-In-Reply-To: <20130204214952.GJ27963@mtj.dyndns.org>
-References: <20130204214952.GJ27963@mtj.dyndns.org>
-User-Agent: StGIT/0.14.3
+	id S1755500Ab3BDWKC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 17:10:02 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60250 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab3BDWKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 17:10:00 -0500
+Message-ID: <511031B5.4010900@wwwdotorg.org>
+Date: Mon, 04 Feb 2013 15:09:57 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clocksource: tegra: move to of_clk_get
+References: <1359985230-11506-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1359985230-11506-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Help people reading the percpu_counter code, to notice the ifdef
-else statement that seperates CONFIG_SMP.
+On 02/04/2013 06:40 AM, Peter De Schrijver wrote:
+> The new clockframework introduced DT IDs for each clock. To be able to remove
+> the device registrations, this driver needs to be updated to use the DT IDs.
+> Note that the actual removal of the clk_register_clkdev() calls will be done
+> in a later series.
 
-Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
----
-
- include/linux/percpu_counter.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-index b9df9ed..d5dd465 100644
---- a/include/linux/percpu_counter.h
-+++ b/include/linux/percpu_counter.h
-@@ -83,7 +83,7 @@ static inline int percpu_counter_initialized(struct percpu_counter *fbc)
- 	return (fbc->counters != NULL);
- }
- 
--#else
-+#else /* !CONFIG_SMP */
- 
- struct percpu_counter {
- 	s64 count;
-
+This seems fine for 3.10, but I wonder about dependencies. Will there be
+a bunch of other similar changes? I guess this patch is a dependency of
+some changes to drivers/clk/tegra/ to remove the non-DT clock
+registrations? It'd be good to get a clear idea of all the dependencies,
+so we can see what's the best tree to apply the changes to; perhaps this
+should go through the drivers/clk tree, or Tegra's clk driver changes
+need to go through the Tegra tree again in 3.10?
