@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab3BDX3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 18:29:39 -0500
-Received: from wolff.to ([65.117.131.163]:32966 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754629Ab3BDX31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 18:29:27 -0500
-Date: Mon, 4 Feb 2013 17:28:27 -0600
-From: Bruno Wolff III <bruno@wolff.to>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Problems with late 3.8-rc5 and 3.8-rc6 on i686
-Message-ID: <20130204232827.GA14752@wolff.to>
-References: <20130201201332.GA2965@wolff.to>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20130201201332.GA2965@wolff.to>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755764Ab3BDX3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 18:29:51 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:36124 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754879Ab3BDX3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 18:29:48 -0500
+From: Andy King <acking@vmware.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Cc: gregkh@linuxfoundation.org, davem@davemloft.net, pv-drivers@vmware.com,
+        Andy King <acking@vmware.com>
+Subject: [PATCH 0/1] VM Sockets for Linux upstreaming
+Date: Mon,  4 Feb 2013 15:26:01 -0800
+Message-Id: <1360020362-25561-1-git-send-email-acking@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 14:13:32 -0600,
-   Bruno Wolff III <bruno@wolff.to> wrote:
->
->One is that the rtkit-daemon service fails to start up and the other 
->is that there are issues with X. One one machine with an rv280 based 
->video card the background image doesn't show up in gdm and I can't 
->enter a password in gdm. C-A-F2 does get me back to a vt. On another 
->machine with a nv28 based video card I get the Oh no something went 
->wrong page, but again I can still use C-A-F2 to get to a vt.
+In an effort to improve the out-of-the-box experience with Linux kernels for
+VMware users, VMware is working on readying the VM Sockets (VSOCK, formerly
+VMCI Sockets) (vsock) kernel module for inclusion in the Linux kernel. The
+purpose of this post is to acquire feedback on the vsock kernel module.
 
-I am still seeing this with 3.8.0-0.rc6.git1.1.fc19.i686.PAE.
+Unlike previous submissions, where the new socket family was entirely reliant
+on VMware's VMCI PCI device (and thus VMware's hypervisor), VM Sockets is now
+*completely* separated out into two parts, each in its own module:
 
-However, I have found the GUI issues are because gnome is waiting on the 
-rtkit-daemon and once it times out, things are OK. So the issue is just 
-that the recent kernels break something for the rtkit-daemon service 
-on i686.
+o Core socket code, which is transport-neutral and invokes transport
+  callbacks to communicate with the hypervisor.  This is vsock.ko.
+o A VMCI transport, which communicates over VMCI with the VMware hypervisor.
+  This is vmw_vsock_vmci_transport.ko, and it registers with the core module
+  as a transport.
+
+This should provide a path to introducing additional transports, for example
+virtio, with the ultimate goal being to make this new socket family
+hypervisor-neutral.
+
+Andy King (1):
+  VSOCK: Introduce VM Sockets
+
+ include/linux/socket.h                       |    4 +-
+ include/uapi/linux/vm_sockets.h              |  169 +++
+ net/Kconfig                                  |    1 +
+ net/Makefile                                 |    1 +
+ net/vmw_vsock/Kconfig                        |   28 +
+ net/vmw_vsock/Makefile                       |    7 +
+ net/vmw_vsock/af_vsock.c                     | 2085 ++++++++++++++++++++++++++
+ net/vmw_vsock/af_vsock.h                     |  170 +++
+ net/vmw_vsock/vmci_transport.c               | 2050 +++++++++++++++++++++++++
+ net/vmw_vsock/vmci_transport.h               |  139 ++
+ net/vmw_vsock/vmci_transport_notify.c        |  680 +++++++++
+ net/vmw_vsock/vmci_transport_notify.h        |   83 +
+ net/vmw_vsock/vmci_transport_notify_qstate.c |  438 ++++++
+ net/vmw_vsock/vsock_addr.c                   |  128 ++
+ net/vmw_vsock/vsock_addr.h                   |   36 +
+ net/vmw_vsock/vsock_version.h                |   22 +
+ 16 files changed, 6040 insertions(+), 1 deletions(-)
+ create mode 100644 include/uapi/linux/vm_sockets.h
+ create mode 100644 net/vmw_vsock/Kconfig
+ create mode 100644 net/vmw_vsock/Makefile
+ create mode 100644 net/vmw_vsock/af_vsock.c
+ create mode 100644 net/vmw_vsock/af_vsock.h
+ create mode 100644 net/vmw_vsock/vmci_transport.c
+ create mode 100644 net/vmw_vsock/vmci_transport.h
+ create mode 100644 net/vmw_vsock/vmci_transport_notify.c
+ create mode 100644 net/vmw_vsock/vmci_transport_notify.h
+ create mode 100644 net/vmw_vsock/vmci_transport_notify_qstate.c
+ create mode 100644 net/vmw_vsock/vsock_addr.c
+ create mode 100644 net/vmw_vsock/vsock_addr.h
+ create mode 100644 net/vmw_vsock/vsock_version.h
+
+-- 
+1.7.4.1
+
