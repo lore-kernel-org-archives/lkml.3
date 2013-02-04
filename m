@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab3BDTl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:41:28 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37669 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754833Ab3BDTl1 (ORCPT
+	id S1755893Ab3BDTmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:42:05 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:33529 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755733Ab3BDTmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:41:27 -0500
-Date: Mon, 4 Feb 2013 19:41:26 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/73] regulator: core: Show consumers that hold a
- regulator in Sysfs
-Message-ID: <20130204194125.GW4720@opensource.wolfsonmicro.com>
-References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
- <1359978868-28736-13-git-send-email-lee.jones@linaro.org>
+	Mon, 4 Feb 2013 14:42:00 -0500
+Date: Mon, 4 Feb 2013 11:41:57 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: liguang <lig.fnst@cn.fujitsu.com>
+cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 2/5] acpi/numa: check if parsing acpi numa info disabled
+ earlier
+In-Reply-To: <1359967426-32629-3-git-send-email-lig.fnst@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.02.1302041133520.10378@chino.kir.corp.google.com>
+References: <1359967426-32629-1-git-send-email-lig.fnst@cn.fujitsu.com> <1359967426-32629-3-git-send-email-lig.fnst@cn.fujitsu.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1Wg5Vd7si6EhrIHA"
-Content-Disposition: inline
-In-Reply-To: <1359978868-28736-13-git-send-email-lee.jones@linaro.org>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 4 Feb 2013, liguang wrote:
 
---1Wg5Vd7si6EhrIHA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
 
-On Mon, Feb 04, 2013 at 11:53:27AM +0000, Lee Jones wrote:
+Because there's no changelog, I have to read the patch to figure out what 
+it's doing since the title isn't that helpful either.  Please provide a 
+description of what problem you're trying to fix or what improvement 
+you're trying to make so it's clear.
 
-> +	int use;
+> ---
+>  arch/x86/mm/srat.c  |    6 ------
+>  drivers/acpi/numa.c |    2 ++
+>  2 files changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+> index a837c95..78c67bd 100644
+> --- a/arch/x86/mm/srat.c
+> +++ b/arch/x86/mm/srat.c
+> @@ -60,8 +60,6 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+>  	int pxm, node;
+>  	int apic_id;
+>  
+> -	if (srat_disabled())
+> -		return;
+>  	if (pa->header.length < sizeof(struct acpi_srat_x2apic_cpu_affinity)) {
+>  		bad_srat();
+>  		return;
+> @@ -100,8 +98,6 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+>  	int pxm, node;
+>  	int apic_id;
+>  
+> -	if (srat_disabled())
+> -		return;
+>  	if (pa->header.length != sizeof(struct acpi_srat_cpu_affinity)) {
+>  		bad_srat();
+>  		return;
+> @@ -148,8 +144,6 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+>  	u64 start, end;
+>  	int node, pxm;
+>  
+> -	if (srat_disabled())
+> -		return -1;
+>  	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity)) {
+>  		bad_srat();
+>  		return -1;
+> diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+> index cb31298..1f51222 100644
+> --- a/drivers/acpi/numa.c
+> +++ b/drivers/acpi/numa.c
+> @@ -262,6 +262,8 @@ static int __init acpi_parse_srat(struct acpi_table_header *table)
+>  	struct acpi_table_srat *srat;
+>  	if (!table)
+>  		return -EINVAL;
+> +	if (srat_disabled())
+> +		return -EACCES;
+>  
+>  	srat = (struct acpi_table_srat *)table;
+>  	acpi_srat_revision = srat->header.revision;
 
-Better to call it use_count like the other use_count.
+Nack, this isn't helpful since SRAT is only for x86 and other 
+architectures use this code.  It would break the build on ia64 since it's 
+obviously not going to have a function called srat_disabled().
 
-> +	list_for_each_entry(reg, &rdev->consumer_list, list) {
-> +		if (!reg->use)
-> +			continue;
-> +
-> +		if (reg->dev != NULL)
-> +			size += sprintf((buf + size), "%s (%d) ",
-> +					dev_name(reg->dev), reg->use);
-> +		else
-> +			size += sprintf((buf + size), "unknown (%d) ",
-> +					reg->use);
-
-Should really check we don't go over PAGE_SIZE, and since this isn't a
-simple value it should go in debugfs (a simple count would be OK in
-sysfs, I'd suggest adding both).
-
->  	if (ret != 0 && rdev->supply)
->  		regulator_disable(rdev->supply);
-> +	else
-> +		regulator->use++;
-
-This will increase the usage count in the case where we get an error but
-don't have a parent supply.
-
---1Wg5Vd7si6EhrIHA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREA7fAAoJELSic+t+oim9bl8P/2hY8/pn4uPMDprnDm/temsR
-9pRHhgGkPRBkeZgB0+kpvX2p9XlYdCOxcO9pIGbVhgpe4z96fQ6etH+Af7RTnYQS
-6hz5MtX9TAaDhQ6SrU4MxlOwSr2lM0BGnjbM464L07t9vSFmFANVL7sLM9G+QXqx
-eQeNz2dUcTZY8i8OwLzvoZPX9bBHfDi4vKn3gF6ASlqARz5woTJB9LDPADFO3lmx
-dAm6JNGxgijrI4aKNYi2dbf5fnqjb0X+c5u9/WTJP3VlsahsVQ+MJV1xCelkpkrZ
-T1bWxzbpFBPDsFJTxsnOU2Y+iTkIsPfCTrUeENDg7X+MZHinrtdYcba16X4JFMFB
-7FrzwTSndK/Tty3ntmjOZWFce0BLEa0D0xe+aI10IqvpvFGgC2PX5fL7csLwdGPt
-AQmDN0DkAFPwJi3peJSGJ3c64PtYLXvW8Gm51Ilex9KtdvEa6LwwOylFYLy5nroa
-anoxWqsCqdaNcnaf4/KjM3WWiDdfX/wBMATqAqK30XlQADvAJP4EbUO6mgCkRBLB
-ZhBPhiXUdgG0pHmPYrklstOwwOtNkcJgz5LXsKk540jtO4mKhE8RiLB8jQAAHEzf
-uuyeU9svU7z/fxExYaOh+E5rIg1mV62X3Y4dZpd4z9GqtR+fGJo1Cu+1naink3SF
-G0Y7B1W9rvJAJvVKnIHg
-=ctZy
------END PGP SIGNATURE-----
-
---1Wg5Vd7si6EhrIHA--
+And -EACCES would not be the appropriate return value, this has nothing to 
+do with permissions.
