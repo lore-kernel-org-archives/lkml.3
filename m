@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab3BDEE6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 23:04:58 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:33224 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258Ab3BDEE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 23:04:57 -0500
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] kdump: do not drop entire e820 in crash kernel
-Cc: mingo@elte.hu, hpa@zytor.com, venkatesh.pallipadi@intel.com,
-        kexec@lists.infradead.org
-Message-Id: <E1U2DId-0001E4-Df@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Sun, 03 Feb 2013 22:04:55 -0600
+	id S1753929Ab3BDEPJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 23:15:09 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:34975 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab3BDEPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 23:15:08 -0500
+Date: Mon, 4 Feb 2013 15:14:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>
+Subject: linux-next: build failure after merge of the xen-two tree
+Message-Id: <20130204151456.ea053895a487a19013e4991f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Feb_2013_15_14_56_+1100_6MiWI.E5ZwRPTJcU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cliff Wickman <cpw@sgi.com>
+--Signature=_Mon__4_Feb_2013_15_14_56_+1100_6MiWI.E5ZwRPTJcU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The crash kernel is not able to find its root device if that device is not
-on PCI 0.
+Hi Konrad,
 
-This is because it is booted with the command line option memmap=exactmap
-which currently clears the e820 table.  So ACPI processing does not
-find reserved i/o spaces. 
+After merging the xen-two tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-This works for a device on PCI 0 because ACPI falls back to a legacy mode.
-But the error message " [Firmware Bug]: PCI: MMCONFIG at
- [mem 0x80000000-0x80cfffff] not reserved in ACPI motherboard resources"
-is written to the log even in this functioning case.
+arch/x86/xen/mmu.c: In function 'xen_init_mmu_ops':
+arch/x86/xen/mmu.c:2213:10: error: 'struct x86_init_ops' has no member name=
+d 'mapping'
+arch/x86/xen/mmu.c:2213:39: error: 'xen_mapping_pagetable_reserve' undeclar=
+ed (first use in this function)
 
-It fails for some devices on UV2, and only for UV2, because SGI seems to
-be the only manufacturer currently using the extended PCI(>0).
+Caused by commit 8154d7a6b9b9 ("xen/pvh: Implement MMU changes for PVH")
+from the xen-two tree interacting with commit 6f80b68e9e51 ("x86, mm,
+Xen: Remove mapping_pagetable_reserve()") from the tip tree.  The
+automatic merge left the moved version of the above line intact while it
+should have been removed (I assume).
 
-The fix is to not drop the entire e820 table on a memmap=exactmap, but
-to preserve all the non-E820_RAM reservations that the BIOS has made.
+I have added the following merge fix patch and can carry the fix as
+necessary.
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 4 Feb 2013 15:08:33 +1100
+Subject: [PATCH] xen: fix bad merge of arch/x86/xen/mmu.c
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- arch/x86/kernel/e820.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ arch/x86/xen/mmu.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Index: linus.current/arch/x86/kernel/e820.c
-===================================================================
---- linus.current.orig/arch/x86/kernel/e820.c
-+++ linus.current/arch/x86/kernel/e820.c
-@@ -839,6 +839,8 @@ static int __init parse_memmap_opt(char
- {
- 	char *oldp;
- 	u64 start_at, mem_size;
-+	int i;
-+	struct e820entry *curp, *availp;
- 
- 	if (!p)
- 		return -EINVAL;
-@@ -852,7 +854,17 @@ static int __init parse_memmap_opt(char
- 		 */
- 		saved_max_pfn = e820_end_of_ram_pfn();
- #endif
--		e820.nr_map = 0;
-+		/* keep everything that was reserved by the BIOS */
-+		for (i = 0, curp = &e820.map[0], availp = &e820.map[0];
-+						i < e820.nr_map; i++, curp++) {
-+			if (curp->type != E820_RAM) {
-+				if (curp != availp) {
-+					*availp = *curp;
-+					availp++;
-+				}
-+			}
-+		}
-+		e820.nr_map = availp - &e820.map[0];
- 		userdef = 1;
- 		return 0;
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 824706a..3228600 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2210,7 +2210,6 @@ void __init xen_init_mmu_ops(void)
+ 		pv_mmu_ops.flush_tlb_others =3D xen_flush_tlb_others;
+ 		return;
  	}
+-	x86_init.mapping.pagetable_reserve =3D xen_mapping_pagetable_reserve;
+ 	pv_mmu_ops =3D xen_mmu_ops;
+=20
+ 	memset(dummy_mapping, 0xff, PAGE_SIZE);
+--=20
+1.8.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__4_Feb_2013_15_14_56_+1100_6MiWI.E5ZwRPTJcU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRDzXAAAoJEECxmPOUX5FEsqkQAKeja+gLS4+FC3qpSdbAQBnT
+Uw2+AnfWQwLPJqXMJP255Oc9qj9LtMpOAd3bgH6a7MDBqQAYcx8s6H4UIFyS5Llx
+UDDoJf7LOvX+ilCN5MbvReEeepv58Kb+cIATXn2nm/KgABfdhiyLYp2aDEnt2hF6
+JQsjID5jduOOo7lyUJm2uUQhBxGWonhthgY1ILVEvdm0sgOH4IinkrIkiKaoafIC
+/B6wOThQXWjW1b/bYSN1NSfNCjzV/uFIoLgKMxahW9p9anmoZbtaTlmPouWECp5i
+wzfryw03LsLtsxwbFSWDNwkXHh8mJnypfCTIALW1b5Pk1dUG4ey22Wpr0grP0fN6
+A2bjT8npSZYCYrZx+rRqsK7gwPffnCTx116MxpE22BHYIQtRi4GJ8AXfhyAa9Pn/
+UkJXarWXJB7mvtwSuOePGAmA2q7iDZmLx8QGVuc+gzzd5xHMSY6W7hCgmXsWWiIJ
+YwtlQi9vLVr8y+7larfOY3QoFYliEnrXBuSdEEMFtx/whjUbpQteB3zmvq/cIM6V
+qf2EJQaE/1rBQMZBjVlHD9iLajJgPJfP5XNX2m7iKqBUlHRkkbuqZDGxem8u+Dig
+4gK1CrfXHZCOLmtd8snSOet+BZc6bO7PuW2RIWS/LUSGtcDx5vycDWTb8mZzOWr/
+Ng0JuFIMD6+5NMMsPyJL
+=B/sW
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Feb_2013_15_14_56_+1100_6MiWI.E5ZwRPTJcU--
