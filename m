@@ -1,281 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3BDVqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 16:46:22 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:57936 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754448Ab3BDVqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 16:46:21 -0500
-Message-ID: <51102BE8.3090301@linux.vnet.ibm.com>
-Date: Mon, 04 Feb 2013 15:45:12 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755462Ab3BDVsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 16:48:25 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:63248 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab3BDVsW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 16:48:22 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
+Date: Mon, 4 Feb 2013 21:47:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
+Cc: Cyril Chemparathy <cyril@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, balbi@ti.com,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Lindgren <tony@atomide.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, "Nair, Sandeep" <sandeep_n@ti.com>,
+        Chris Ball <cjb@laptop.org>, Matt Porter <mporter@ti.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+References: <510C2A47.1090607@mvista.com> <20130204203358.GX4720@opensource.wolfsonmicro.com> <CACRpkdbPyZt8=pLhz-5qcaSSAk6VBn61dPTNp6teU9HksBwN2w@mail.gmail.com>
+In-Reply-To: <CACRpkdbPyZt8=pLhz-5qcaSSAk6VBn61dPTNp6teU9HksBwN2w@mail.gmail.com>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCHv4 0/7] zswap: compressed swap caching
-References: <1359495627-30285-1-git-send-email-sjenning@linux.vnet.ibm.com> <5110287A.5050200@linux.vnet.ibm.com>
-In-Reply-To: <5110287A.5050200@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020421-5806-0000-0000-00001F248B54
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302042147.38407.arnd@arndb.de>
+X-Provags-ID: V02:K0:Or3zkanQJNu3v103eKzZpnRe+oD/YIFCeIZ7lsUkSV8
+ FVFxsKlefYnwvCm5+TJxXQfsUYXBOe4rRYTXJ86AiEfPWgunS9
+ Ofyrj6dGLQc/itjyJnxx9j7REeeIfZfyd/65U93qhZD/SnfdRH
+ Ovfeo9eqj/JHV3rtQX3MoTaEspEpbgQZ5cwePtZASsCksvRWwP
+ P2YUMOSRnO8gpAkvvnyGXKf6M90Icqi7LR93InJrNbtTddSWil
+ wT8o0M+C26izG5RPNkpPhUDP4CUap38pcdTwEkc6TnrAIdutaL
+ JzJ432FNw4T5CfllAwY3ROueZiNUPQgQ7MCLSyW2hdz/3DRMN5
+ 1q0ve9lS/e1U4vyMob9Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2013 03:30 PM, Seth Jennings wrote:
-> On 01/29/2013 03:40 PM, Seth Jennings wrote:
->> Sorry for the churn but just this set might be easier to review.
->> The code required for the flushing is in a separate patch now
->> as requested.
+On Monday 04 February 2013, Linus Walleij wrote:
+> So I think the above concerns are moot. The callback we can
+> set on cookies is entirely optional, and it's even implemented by
+> each DMA engine, and some may not even support it but require
+> polling, and then it won't even be implemented by the driver.
 
-I've got a large and valuable body of feedback to integrate for v5.
-Thanks to all that reviewed/commented!
+Just to ensure that everybody is talking about the same thing here:
+Is it just the callback that is optional, or also the interrupt
+coming from the hardware? With NAPI, you want to avoid both, since
+getting an interrupt for every packet adds noticeable overhead,
+but you still want to be able to tell the hardware that you
+are fed up with polling and would like to get an interrupt again
+when the next data arrives (ideally, after either a little time
+has passed after the next packet, or a specific number of packets
+has arrived).
 
-It will take a little time to compile it all and coordinate with
-Minchan and Nitin on the additional documentation and rationale for
-zsmalloc.
-
-I just wanted to acknowledge the feedback and state that I'm working
-on v5 and I'll get it out as soon as I can.
-
-Thanks,
-Seth
-
->
->>
->> Changelog:
->>
->> v4:
->> * Added Acks (Minchan)
->> * Separated flushing functionality into standalone patch
->>   for easier review (Minchan)
->> * fix comment on zswap enabled attribute (Minchan)
->> * add TODO for dynamic mempool size (Minchan)
->> * and check for NULL in zswap_free_page() (Minchan)
->> * add missing zs_free() in error path (Minchan)
->> * TODO: add comments for flushing/refcounting (Minchan)
->>
->> NOTE: To build, read this:
->> http://lkml.org/lkml/2013/1/28/586
->>
->> v3:
->> * Dropped the zsmalloc patches from the set, except the promotion patch
->>   which has be converted to a rename patch (vs full diff).  The dropped
->>   patches have been Acked and are going into Greg's staging tree soon.
->> * Separated [PATCHv2 7/9] into two patches since it makes changes for two
->>   different reasons (Minchan)
->> * Moved ZSWAP_MAX_OUTSTANDING_FLUSHES near the top in zswap.c (Rik)
->> * Rebase to v3.8-rc5. linux-next is a little volatile with the
->>   swapper_space per type changes which will effect this patchset.
->> * TODO: Move some stats from debugfs to sysfs. Which ones? (Rik)
->>
->> v2:
->> * Rename zswap_fs_* functions to zswap_frontswap_* to avoid
->>   confusion with "filesystem"
->> * Add comment about what the tree lock protects
->> * Remove "#if 0" code (should have been done before)
->> * Break out changes to existing swap code into separate patch
->> * Fix blank line EOF warning on documentation file
->> * Rebase to next-20130107
->>
->> Zswap Overview:
->>
->> Zswap is a lightweight compressed cache for swap pages. It takes
->> pages that are in the process of being swapped out and attempts to
->> compress them into a dynamically allocated RAM-based memory pool.
->> If this process is successful, the writeback to the swap device is
->> deferred and, in many cases, avoided completely.  This results in
->> a significant I/O reduction and performance gains for systems that
->> are swapping.
->>
->> The results of a kernel building benchmark indicate a
->> runtime reduction of 53% and an I/O reduction 76% with zswap vs normal
->> swapping with a kernel build under heavy memory pressure (see
->> Performance section for more).
->>
->> Some addition performance metrics regarding the performance
->> improvements and I/O reductions that can be achieved using zswap as
->> measured by SPECjbb are provided here:
->>
->> http://ibm.co/VCgHvM
->>
->> These results include runs on x86 and new results on Power7+ with
->> hardware compression acceleration.
->>
->> Of particular note is that zswap is able to evict pages from the compressed
->> cache, on an LRU basis, to the backing swap device when the compressed pool
->> reaches it size limit or the pool is unable to obtain additional pages
->> from the buddy allocator.  This eviction functionality had been identified
->> as a requirement in prior community discussions.
->>
->> Patchset Structure:
->> 1:   add atomic_t get/set to debugfs
->> 2:   promote zsmalloc to /lib
->> 3,4: changes to existing swap code for zswap
->> 5,6: add zswap and documentation
->>
->> Rationale:
->>
->> Zswap provides compressed swap caching that basically trades CPU cycles
->> for reduced swap I/O.  This trade-off can result in a significant
->> performance improvement as reads to/writes from to the compressed
->> cache almost always faster that reading from a swap device
->> which incurs the latency of an asynchronous block I/O read.
->>
->> Some potential benefits:
->> * Desktop/laptop users with limited RAM capacities can mitigate the
->>     performance impact of swapping.
->> * Overcommitted guests that share a common I/O resource can
->>     dramatically reduce their swap I/O pressure, avoiding heavy
->>     handed I/O throttling by the hypervisor.  This allows more work
->>     to get done with less impact to the guest workload and guests
->>     sharing the I/O subsystem
->> * Users with SSDs as swap devices can extend the life of the device by
->>     drastically reducing life-shortening writes.
->>
->> Compressed swap is also provided in zcache, along with page cache
->> compression and RAM clustering through RAMSter. Zswap seeks to deliver
->> the benefit of swap  compression to users in a discrete function.
->> This design decision is akin to Unix design philosophy of doing one
->> thing well, it leaves file cache compression and other features
->> for separate code.
->>
->> Design:
->>
->> Zswap receives pages for compression through the Frontswap API and
->> is able to evict pages from its own compressed pool on an LRU basis
->> and write them back to the backing swap device in the case that the
->> compressed pool is full or unable to secure additional pages from
->> the buddy allocator.
->>
->> Zswap makes use of zsmalloc for the managing the compressed memory
->> pool.  This is because zsmalloc is specifically designed to minimize
->> fragmentation on large (> PAGE_SIZE/2) allocation sizes.  Each
->> allocation in zsmalloc is not directly accessible by address.
->> Rather, a handle is return by the allocation routine and that handle
->> must be mapped before being accessed.  The compressed memory pool grows
->> on demand and shrinks as compressed pages are freed.  The pool is
->> not preallocated.
->>
->> When a swap page is passed from frontswap to zswap, zswap maintains
->> a mapping of the swap entry, a combination of the swap type and swap
->> offset, to the zsmalloc handle that references that compressed swap
->> page.  This mapping is achieved with a red-black tree per swap type.
->> The swap offset is the search key for the tree nodes.
->>
->> Zswap seeks to be simple in its policies.  Sysfs attributes allow for
->> two user controlled policies:
->> * max_compression_ratio - Maximum compression ratio, as as percentage,
->>     for an acceptable compressed page. Any page that does not compress
->>     by at least this ratio will be rejected.
->> * max_pool_percent - The maximum percentage of memory that the compressed
->>     pool can occupy.
->>
->> To enabled zswap, the "enabled" attribute must be set to 1 at boot time.
->>
->> Zswap allows the compressor to be selected at kernel boot time by
->> setting the “compressor” attribute.  The default compressor is lzo.
->>
->> A debugfs interface is provided for various statistic about pool size,
->> number of pages stored, and various counters for the reasons pages
->> are rejected.
->>
->> Performance, Kernel Building:
->>
->> Setup
->> ========
->> Gentoo w/ kernel v3.7-rc7
->> Quad-core i5-2500 @ 3.3GHz
->> 512MB DDR3 1600MHz (limited with mem=512m on boot)
->> Filesystem and swap on 80GB HDD (about 58MB/s with hdparm -t)
->> majflt are major page faults reported by the time command
->> pswpin/out is the delta of pswpin/out from /proc/vmstat before and after
->> the make -jN
->>
->> Summary
->> ========
->> * Zswap reduces I/O and improves performance at all swap pressure levels.
->>
->> * Under heavy swaping at 24 threads, zswap reduced I/O by 76%, saving
->>   over 1.5GB of I/O, and cut runtime in half.
->>
->> Details
->> ========
->> I/O (in pages)
->> 	base				zswap				change	change
->> N	pswpin	pswpout	majflt	I/O sum	pswpin	pswpout	majflt	I/O sum	%I/O	MB
->> 8	1	335	291	627	0	0	249	249	-60%	1
->> 12	3688	14315	5290	23293	123	860	5954	6937	-70%	64
->> 16	12711	46179	16803	75693	2936	7390	46092	56418	-25%	75
->> 20	42178	133781	49898	225857	9460	28382	92951	130793	-42%	371
->> 24	96079	357280	105242	558601	7719	18484	109309	135512	-76%	1653
->>
->> Runtime (in seconds)
->> N	base	zswap	%change
->> 8	107	107	0%
->> 12	128	110	-14%
->> 16	191	179	-6%
->> 20	371	240	-35%
->> 24	570	267	-53%
->>
->> %CPU utilization (out of 400% on 4 cpus)
->> N	base	zswap	%change
->> 8	317	319	1%
->> 12	267	311	16%
->> 16	179	191	7%
->> 20	94	143	52%
->> 24	60	128	113%
->>
->>
->> Seth Jennings (7):
->>   debugfs: add get/set for atomic types
->>   zsmalloc: promote to lib/
->>   zswap: add to mm/
->>   mm: break up swap_writepage() for frontswap backends
->>   mm: allow for outstanding swap writeback accounting
->>   zswap: add flushing support
->>   zswap: add documentation
->>
->>  Documentation/vm/zswap.txt                         |   73 ++
->>  drivers/staging/Kconfig                            |    2 -
->>  drivers/staging/Makefile                           |    1 -
->>  drivers/staging/zcache/zcache-main.c               |    3 +-
->>  drivers/staging/zram/zram_drv.h                    |    3 +-
->>  drivers/staging/zsmalloc/Kconfig                   |   10 -
->>  drivers/staging/zsmalloc/Makefile                  |    3 -
->>  fs/debugfs/file.c                                  |   42 +
->>  include/linux/debugfs.h                            |    2 +
->>  include/linux/swap.h                               |    4 +
->>  .../staging/zsmalloc => include/linux}/zsmalloc.h  |    0
->>  lib/Kconfig                                        |   18 +
->>  lib/Makefile                                       |    1 +
->>  .../zsmalloc/zsmalloc-main.c => lib/zsmalloc.c     |    3 +-
->>  mm/Kconfig                                         |   15 +
->>  mm/Makefile                                        |    1 +
->>  mm/page_io.c                                       |   22 +-
->>  mm/swap_state.c                                    |    2 +-
->>  mm/zswap.c                                         | 1073 ++++++++++++++++++++
->>  19 files changed, 1250 insertions(+), 28 deletions(-)
->>  create mode 100644 Documentation/vm/zswap.txt
->>  delete mode 100644 drivers/staging/zsmalloc/Kconfig
->>  delete mode 100644 drivers/staging/zsmalloc/Makefile
->>  rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
->>  rename drivers/staging/zsmalloc/zsmalloc-main.c => lib/zsmalloc.c (99%)
->>  create mode 100644 mm/zswap.c
->>
-> 
-
+	Arnd
