@@ -1,58 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab3BDAay (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 19:30:54 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37045 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab3BDAax (ORCPT
+	id S1754202Ab3BDAdS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 19:33:18 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43381 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab3BDAdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 19:30:53 -0500
-Date: Mon, 4 Feb 2013 00:30:47 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: avr32: add dummy syscalls
-Message-ID: <20130204003047.GW4503@ZenIV.linux.org.uk>
-References: <1359291015-4544-1-git-send-email-matthias.bgg@gmail.com>
- <20130127195714.GA11224@samfundet.no>
- <20130127203009.GG4503@ZenIV.linux.org.uk>
- <20130127203954.GA22063@samfundet.no>
- <20130204001055.GV4503@ZenIV.linux.org.uk>
+	Sun, 3 Feb 2013 19:33:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130204001055.GV4503@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 4 Feb 2013 10:33:15 +1000
+Message-ID: <CAPM=9tyyR2YkaFPHQGy_mU9YM87uaQ79Cgxvy=-ZfAAuxcSj+g@mail.gmail.com>
+Subject: pci_lock and runtime resume
+From: Dave Airlie <airlied@gmail.com>
+To: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 12:10:55AM +0000, Al Viro wrote:
-> On Sun, Jan 27, 2013 at 09:39:54PM +0100, Hans-Christian Egtvedt wrote:
-> > > If you are OK with going that way, I could probably put together patches doing
-> > > just that.  Note that for rt_sigsuspend/rt_sigreturn/sigaltstack the wrappers
-> > > are not needed at all - they can just use current_pt_regs() in syscall body.
-> > > IOW, all of syscall-stubs.S could be killed.
-> > 
-> > Nice, could you put together the preprocessor stuff in a patch? It would be
-> > great to not having to write a re-occuring stub for each syscall that has 6+
-> > arguments.
-> > 
-> > Thanks for looking at this.
-> 
-> Apologies about the delay...  One question: what's the AVR32 C ABI for
-> passing 64bit arguments?  The tricky bugger is sys_sync_file_range();
-> it takes (s32, s64, s64, u32) as arguments and if not any pair of
-> registers can be used to pass 64bit value, we have more serious trouble
-> there...
+So I've just been looking a bit more at dynamic PM for graphics and
+noticed that when userspace reads pci config space, the read happens
+under the pci_lock which is a spinlock.
+Now on most of the GPU drivers we'll be entering standard s/r paths
+which don't have this restriction from what I can see, I get to see
+lots of scheduling while atomic fun, that I'm not really sure I can
+fix nicely.
 
-BTW, it's worse: both fadivse64 and fadvise64_64 are wired, neither of them
-has a wrapper and arguments are (s32, s64, u32, s32) and (s32, s64, s64, s32)
-resp.  The former is OK unless you have restrictions on register pairs that
-can be used for 64bit; the latter is past the 5-register limit no matter what,
-so the wrapper is really needed.
+Dave.
