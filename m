@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab3BDAXs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 19:23:48 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63949 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab3BDAXq (ORCPT
+	id S1754154Ab3BDA14 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 19:27:56 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:41772 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab3BDA1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 19:23:46 -0500
-X-AuditID: 9c930179-b7c24ae00000119c-53-510eff8f5ffe
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
-Date: Mon,  4 Feb 2013 09:23:41 +0900
-Message-Id: <1359937421-19921-1-git-send-email-minchan@kernel.org>
+	Sun, 3 Feb 2013 19:27:54 -0500
+From: Ben Noordhuis <info@bnoordhuis.nl>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ben Noordhuis <info@bnoordhuis.nl>
+Subject: [PATCH] perf: fix undefined symbols in python binding
+Date: Mon,  4 Feb 2013 01:27:32 +0100
+Message-Id: <1359937652-16186-1-git-send-email-info@bnoordhuis.nl>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zsmalloc has two methods 1) copy-based and 2) pte based to access
-allocations that span two pages.
-You can see history why we supported two approach from [1].
+Add dummy test_attr__enabled and test_attr__open symbols to
+util/python.c to fix the following dynamic linker error:
 
-But it was bad choice that adding hard coding to select architecture
-which want to use pte based method. This patch removed it and adds
-new Kconfig to select the approach.
+  $ python python/twatch.py
+  Traceback (most recent call last):
+    File "python/twatch.py", line 16, in <module>
+      import perf
+  ImportError: /path/to/perf.so: undefined symbol: test_attr__enabled
 
-This patch is based on next-20130202.
-
-[1] https://lkml.org/lkml/2012/7/11/58
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Ben Noordhuis <info@bnoordhuis.nl>
 ---
- drivers/staging/zsmalloc/Kconfig         |   12 ++++++++++++
- drivers/staging/zsmalloc/zsmalloc-main.c |   11 -----------
- 2 files changed, 12 insertions(+), 11 deletions(-)
+ tools/perf/util/python.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-index 9084565..2359123 100644
---- a/drivers/staging/zsmalloc/Kconfig
-+++ b/drivers/staging/zsmalloc/Kconfig
-@@ -8,3 +8,15 @@ config ZSMALLOC
- 	  non-standard allocator interface where a handle, not a pointer, is
- 	  returned by an alloc().  This handle must be mapped in order to
- 	  access the allocated space.
-+
-+config ZSMALLOC_PGTABLE_MAPPING
-+        bool "Use page table mapping to access allocations that span two pages"
-+        depends on ZSMALLOC
-+        default n
-+        help
-+	  By default, zsmalloc uses a copy-based object mapping method to access
-+	  allocations that span two pages. However, if a particular architecture
-+	  performs VM mapping faster than copying, then you should select this.
-+	  This causes zsmalloc to use page table mapping rather than copying
-+	  for object mapping. You can check speed with zsmalloc benchmark[1].
-+	  [1] https://github.com/spartacus06/zsmalloc
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 06f73a9..b161ca1 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -218,17 +218,6 @@ struct zs_pool {
- #define CLASS_IDX_MASK	((1 << CLASS_IDX_BITS) - 1)
- #define FULLNESS_MASK	((1 << FULLNESS_BITS) - 1)
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index a2657fd..163abbb 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -8,6 +8,15 @@
+ #include "cpumap.h"
+ #include "thread_map.h"
  
--/*
-- * By default, zsmalloc uses a copy-based object mapping method to access
-- * allocations that span two pages. However, if a particular architecture
-- * performs VM mapping faster than copying, then it should be added here
-- * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
-- * page table mapping rather than copying for object mapping.
--*/
--#if defined(CONFIG_ARM)
--#define USE_PGTABLE_MAPPING
--#endif
--
- struct mapping_area {
- #ifdef USE_PGTABLE_MAPPING
- 	struct vm_struct *vm; /* vm area for mapping object that span pages */
++/* Dummy to satisfy linker. */
++bool test_attr__enabled;
++
++/* Dummy to satisfy linker. */
++void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
++	int fd, int group_fd, unsigned long flags)
++{
++}
++
+ /* Define PyVarObject_HEAD_INIT for python 2.5 */
+ #ifndef PyVarObject_HEAD_INIT
+ # define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 -- 
 1.7.9.5
 
