@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab3BDDlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 22:41:09 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:51987 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844Ab3BDDlI (ORCPT
+	id S1754061Ab3BDDmM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 22:42:12 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42992 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753816Ab3BDDmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 22:41:08 -0500
-Message-ID: <510F2D86.5050408@huawei.com>
-Date: Mon, 4 Feb 2013 11:39:50 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Sun, 3 Feb 2013 22:42:10 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-4c-510f2e10ae53
+Date: Mon, 4 Feb 2013 12:42:08 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, jmarchan@redhat.com
+Subject: Re: [PATCH v6 4/4] zram: get rid of lockdep warning
+Message-ID: <20130204034208.GF2688@blaptop>
+References: <1359513702-18709-1-git-send-email-minchan@kernel.org>
+ <1359513702-18709-4-git-send-email-minchan@kernel.org>
+ <20130204015333.GA6548@kroah.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: David Teigland <teigland@redhat.com>, <akpm@linux-foundation.org>,
-        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        Christine Caulfield <ccaulfie@redhat.com>, <cluster-devel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] idr: fix a subtle bug in idr_get_next()
-References: <1359163872-1949-1-git-send-email-tj@kernel.org> <1359163872-1949-11-git-send-email-tj@kernel.org> <20130128155723.GC16789@redhat.com> <20130129151317.GA11609@redhat.com> <20130130212417.GJ24014@redhat.com> <20130131235320.GN6824@mtj.dyndns.org> <20130201001841.GP6824@mtj.dyndns.org> <20130201174443.GC3812@redhat.com> <20130201180028.GC31863@mtj.dyndns.org> <20130202231048.GA3940@mtj.dyndns.org>
-In-Reply-To: <20130202231048.GA3940@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130204015333.GA6548@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/3 7:10, Tejun Heo wrote:
-> The iteration logic of idr_get_next() is borrowed mostly verbatim from
-> idr_for_each().  It walks down the tree looking for the slot matching
-> the current ID.  If the matching slot is not found, the ID is
-> incremented by the distance of single slot at the given level and
-> repeats.
-> 
-> The implementation assumes that during the whole iteration id is
-> aligned to the layer boundaries of the level closest to the leaf,
-> which is true for all iterations starting from zero or an existing
-> element and thus is fine for idr_for_each().
-> 
-> However, idr_get_next() may be given any point and if the starting id
-> hits in the middle of a non-existent layer, increment to the next
-> layer will end up skipping the same offset into it.  For example, an
-> IDR with IDs filled between [64, 127] would look like the following.
-> 
->           [  0  64 ... ]
->        /----/   |
->        |        |
->       NULL    [ 64 ... 127 ]
-> 
-> If idr_get_next() is called with 63 as the starting point, it will try
-> to follow down the pointer from 0.  As it is NULL, it will then try to
-> proceed to the next slot in the same level by adding the slot distance
-> at that level which is 64 - making the next try 127.  It goes around
-> the loop and finds and returns 127 skipping [64, 126].
-> 
-> Note that this bug also triggers in idr_for_each_entry() loop which
-> deletes during iteration as deletions can make layers go away leaving
-> the iteration with unaligned ID into missing layers.
-> 
-> Fix it by ensuring proceeding to the next slot doesn't carry over the
-> unaligned offset - ie. use round_up(id + 1, slot_distance) instead of
-> id += slot_distance.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+Hi Greg,
 
-Don't we need to cc stable?
-
-> Reported-by: David Teigland <teigland@redhat.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  lib/idr.c |    9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
+On Sun, Feb 03, 2013 at 05:53:33PM -0800, Greg Kroah-Hartman wrote:
+> On Wed, Jan 30, 2013 at 11:41:42AM +0900, Minchan Kim wrote:
+> > Lockdep complains about recursive deadlock of zram->init_lock.
+> > [1] made it false positive because we can't request IO to zram
+> > before setting disksize. Anyway, we should shut lockdep up to
+> > avoid many reporting from user.
+> > 
+> > [1] : zram: force disksize setting before using zram
+> > 
+> > Acked-by: Jerome Marchand <jmarchand@redhat.com>
+> > Acked-by: Nitin Gupta <ngupta@vflare.org>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  drivers/staging/zram/zram_drv.c   |  189 +++++++++++++++++++------------------
+> >  drivers/staging/zram/zram_drv.h   |   12 ++-
+> >  drivers/staging/zram/zram_sysfs.c |   11 ++-
+> >  3 files changed, 116 insertions(+), 96 deletions(-)
 > 
-> diff --git a/lib/idr.c b/lib/idr.c
-> index 6482390..ca5aa00 100644
-> --- a/lib/idr.c
-> +++ b/lib/idr.c
-> @@ -625,7 +625,14 @@ void *idr_get_next(struct idr *idp, int *nextidp)
->  			return p;
->  		}
->  
-> -		id += 1 << n;
-> +		/*
-> +		 * Proceed to the next layer at the current level.  Unlike
-> +		 * idr_for_each(), @id isn't guaranteed to be aligned to
-> +		 * layer boundary at this point and adding 1 << n may
-> +		 * incorrectly skip IDs.  Make sure we jump to the
-> +		 * beginning of the next layer using round_up().
-> +		 */
-> +		id = round_up(id + 1, 1 << n);
->  		while (n < fls(id)) {
->  			n += IDR_BITS;
->  			p = *--paa;
+> This patch fails to apply to my staging-next branch, but the three
+> others did, so I took them.  Please refresh this one and resend if you
+> want it applied.
+
+We must have missed each other.
+A few hours ago, I sent to you v7 based on next-20130202.
+https://lkml.org/lkml/2013/2/3/319
+
+v7 includes acks of Jerome and resolve conflict with latest staging.
+I believe it is okay to apply your tree.
+
+Please reapply v7 instead of v6.
+
+Thanks.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 > --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+-- 
+Kind regards,
+Minchan Kim
