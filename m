@@ -1,130 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab3BDQM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:12:59 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:48250 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab3BDQM5 (ORCPT
+	id S1756362Ab3BDQOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:14:33 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39547 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab3BDQOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:12:57 -0500
-Message-ID: <1359993766.23410.105.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device
- hotplug framework
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
-        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
-        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Mon, 04 Feb 2013 09:02:46 -0700
-In-Reply-To: <5192355.CsKHU8mj3W@vostro.rjw.lan>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
-	 <1810611.i6Sc4oLaux@vostro.rjw.lan> <20130204012349.GA6433@kroah.com>
-	 <5192355.CsKHU8mj3W@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 11:14:32 -0500
+Date: Mon, 4 Feb 2013 21:42:27 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] uprobes/tracing: Introduce
+ is_trace_uprobe_enabled()
+Message-ID: <20130204161227.GA4246@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20130131191752.GA30410@redhat.com>
+ <20130131191825.GA30447@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20130131191825.GA30447@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020416-9264-0000-0000-0000031AAA91
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-04 at 14:41 +0100, Rafael J. Wysocki wrote:
-> On Sunday, February 03, 2013 07:23:49 PM Greg KH wrote:
-> > On Sat, Feb 02, 2013 at 09:15:37PM +0100, Rafael J. Wysocki wrote:
-> > > On Saturday, February 02, 2013 03:58:01 PM Greg KH wrote:
-  :
-> > > Yes, but those are just remove events and we can only see how destructive they
-> > > were after the removal.  The point is to be able to figure out whether or not
-> > > we *want* to do the removal in the first place.
-> > 
-> > Yes, but, you will always race if you try to test to see if you can shut
-> > down a device and then trying to do it.  So walking the bus ahead of
-> > time isn't a good idea.
-> >
-> > And, we really don't have a viable way to recover if disconnect() fails,
-> > do we.  What do we do in that situation, restore the other devices we
-> > disconnected successfully?  How do we remember/know what they were?
-> > 
-> > PCI hotplug almost had this same problem until the designers finally
-> > realized that they just had to accept the fact that removing a PCI
-> > device could either happen by:
-> > 	- a user yanking out the device, at which time the OS better
-> > 	  clean up properly no matter what happens
-> > 	- the user asked nicely to remove a device, and the OS can take
-> > 	  as long as it wants to complete that action, including
-> > 	  stalling for noticable amounts of time before eventually,
-> > 	  always letting the action succeed.
-> > 
-> > I think the second thing is what you have to do here.  If a user tells
-> > the OS it wants to remove these devices, you better do it.  If you
-> > can't, because memory is being used by someone else, either move them
-> > off, or just hope that nothing bad happens, before the user gets
-> > frustrated and yanks out the CPU/memory module themselves physically :)
+* Oleg Nesterov <oleg@redhat.com> [2013-01-31 20:18:25]:
+
+> probe_event_enable/disable() check tu->consumer != NULL to avoid the
+> wrong uprobe_register/unregister().
 > 
-> Well, that we can't help, but sometimes users really *want* the OS to tell them
-> if it is safe to unplug something at this particualr time (think about the
-> Windows' "safe remove" feature for USB sticks, for example; that came out of
-> users' demand AFAIR).
+> We are going to kill this pointer and "struct uprobe_trace_consumer",
+> so we add the new helper, is_trace_uprobe_enabled(), which can rely
+> on TP_FLAG_TRACE/TP_FLAG_PROFILE instead.
 > 
-> So in my opinion it would be good to give them an option to do "safe eject" or
-> "forcible eject", whichever they prefer.
-
-For system device hot-plug, it always needs to be "safe eject".  This
-feature will be implemented on mission critical servers, which are
-managed by professional IT folks.  Crashing a server causes serious
-money to the business.
-
-A user yanking out a system device won't happen, and it immediately
-crashes the system if it is done.  So, we have nothing to do with this
-case.  The 2nd case can hang the operation, waiting forever to proceed,
-which is still a serious issue for enterprise customers.
-
-
-> > > Say you have a computing node which signals a hardware problem in a processor
-> > > package (the container with CPU cores, memory, PCI host bridge etc.).  You
-> > > may want to eject that package, but you don't want to kill the system this
-> > > way.  So if the eject is doable, it is very much desirable to do it, but if it
-> > > is not doable, you'd rather shut the box down and do the replacement afterward.
-> > > That may be costly, however (maybe weeks of computations), so it should be
-> > > avoided if possible, but not at the expense of crashing the box if the eject
-> > > doesn't work out.
-> > 
-> > These same "situations" came up for PCI hotplug, and I still say the
-> > same resolution there holds true, as described above.  The user wants to
-> > remove something, so let them do it.  They always know best, and get mad
-> > at us if we think otherwise :)
+> Note: the current logic doesn't look optimal, it is not clear why
+> TP_FLAG_TRACE/TP_FLAG_PROFILE are mutually exclusive, we will probably
+> change this later.
 > 
-> Well, not necessarily.  Users sometimes really don't know what they are doing
-> and want us to give them a hint.  My opinion is that if we can give them a
-> hint, there's no reason not to.
+> Also kill the unused TP_FLAG_UPROBE.
 > 
-> > What does the ACPI spec say about this type of thing?  Surely the same
-> > people that did the PCI Hotplug spec were consulted when doing this part
-> > of the spec, right?  Yeah, I know, I can dream...
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  kernel/trace/trace_probe.h  |    1 -
+>  kernel/trace/trace_uprobe.c |    9 +++++++--
+>  2 files changed, 7 insertions(+), 3 deletions(-)
 > 
-> It's not very specific (as usual), but it gives hints. :-)
+> diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+> index 9337086..5c7e09d 100644
+> --- a/kernel/trace/trace_probe.h
+> +++ b/kernel/trace/trace_probe.h
+> @@ -66,7 +66,6 @@
+>  #define TP_FLAG_TRACE		1
+>  #define TP_FLAG_PROFILE		2
+>  #define TP_FLAG_REGISTERED	4
+> -#define TP_FLAG_UPROBE		8
 > 
-> For example, there is the _OST method (Section 6.3.5 of ACPI 5) that we are
-> supposed to use to notify the platform of ejection failures and there are
-> status codes like "0x81: Device in use by application" or "0x82: Device busy"
-> that can be used in there.  So definitely the authors took ejection failures
-> for software-related reasons into consideration.
+> 
+>  /* data_rloc: data relative location, compatible with u32 */
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index f02bbec..947379a 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -536,12 +536,17 @@ partial:
+>  	return TRACE_TYPE_PARTIAL_LINE;
+>  }
+> 
+> +static inline bool is_trace_uprobe_enabled(struct trace_uprobe *tu)
+> +{
+> +	return tu->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE);
+> +}
+> +
+>  static int probe_event_enable(struct trace_uprobe *tu, int flag)
+>  {
+>  	struct uprobe_trace_consumer *utc;
+>  	int ret = 0;
+> 
+> -	if (tu->consumer)
+> +	if (is_trace_uprobe_enabled(tu))
+>  		return -EINTR;
+> 
+>  	utc = kzalloc(sizeof(struct uprobe_trace_consumer), GFP_KERNEL);
+> @@ -565,7 +570,7 @@ static int probe_event_enable(struct trace_uprobe *tu, int flag)
+> 
+>  static void probe_event_disable(struct trace_uprobe *tu, int flag)
+>  {
+> -	if (!tu->consumer)
+> +	if (!is_trace_uprobe_enabled(tu))
+>  		return;
+> 
+>  	uprobe_unregister(tu->inode, tu->offset, &tu->consumer->cons);
+> -- 
+> 1.5.5.1
+> 
 
-That is correct.  Also, ACPI spec deliberately does not define
-implementation details, so we defined DIG64 hotplug spec below (which I
-contributed to the spec.)
-
-http://www.dig64.org/home/DIG64_HPPF_R1_0.pdf
-
-For example, Figure 2 in page 14 states memory hot-remove flow.  The
-operation needs to either succeed or fail.  Crash or hang is not an
-option.
-
-
-Thanks,
--Toshi
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
