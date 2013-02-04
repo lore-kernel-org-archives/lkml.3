@@ -1,147 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab3BDPyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 10:54:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57177 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754435Ab3BDPyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 10:54:49 -0500
-Date: Mon, 4 Feb 2013 09:54:38 -0600
-From: Clark Williams <williams@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.6.11-rt26
-Message-ID: <20130204095438.41376edb@riff.lan>
-In-Reply-To: <alpine.LFD.2.02.1302041537230.11905@ionos>
-References: <alpine.LFD.2.02.1302041537230.11905@ionos>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/TlsHmUhMCMHG4=vpMA2pW4g"; protocol="application/pgp-signature"
+	id S1756106Ab3BDP4D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 10:56:03 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:61083 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754908Ab3BDP4B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 10:56:01 -0500
+Message-ID: <510FDA0B.3020408@suse.cz>
+Date: Mon, 04 Feb 2013 16:55:55 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+MIME-Version: 1.0
+To: Josh Boyer <jwboyer@gmail.com>
+CC: gregkh@linuxfoundation.org, alan@linux.intel.com, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Bryan Mason <bmason@redhat.com>
+Subject: Re: [PATCH] TTY: do not reset master's packet mode
+References: <1358288782-2946-1-git-send-email-jslaby@suse.cz> <CA+5PVA5K8Fuvu_5GmpCS_wmQ5OgaeC9mTwUQfrX22juA3nk6og@mail.gmail.com>
+In-Reply-To: <CA+5PVA5K8Fuvu_5GmpCS_wmQ5OgaeC9mTwUQfrX22juA3nk6og@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TlsHmUhMCMHG4=vpMA2pW4g
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 02/01/2013 06:59 PM, Josh Boyer wrote:
+> On Tue, Jan 15, 2013 at 5:26 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+>> Now that login from util-linux is forced to drop all references to a
+>> TTY which it wants to hangup (to reach reference count 1) we are
+>> seeing issues with telnet. When login closes its last reference to the
+>> slave PTY, it also resets packet mode on the *master* side. And we
+>> have a race here.
+>>
+>> What telnet does is fork+exec of `login'. Then there are two
+>> scenarios:
+>> * `login' closes the slave TTY and resets thus master's packet mode,
+>>   but even now telnet properly sets the mode, or
+>> * `telnetd' sets packet mode on the master, `login' closes the slave
+>>   TTY and resets master's packet mode.
+>>
+>> The former case is OK. However the latter happens in much more cases,
+>> by the order of magnitude to be precise. So when one tries to login to
+>> such a messed telnet setup, they see the following:
+>> inux login:
+>>             ogin incorrect
+>>
+>> Note the missing first letters -- telnet thinks it is still in the
+>> packet mode, so when it receives "linux login" from `login', it
+>> considers "l" as the type of the packet and strips it.
+>>
+>> SuS does not mention how the implementation should behave. Both BSDs I
+>> checked (Free and Net) do not reset the flag upon the last close.
+>>
+>> By this I am resurrecting an old bug, see References. We are hitting
+>> it regularly now, i.e. with updated util-linux, ergo login.
+>>
+>> Here, I am changing a behavior introduced back in 2.1 times. It would
+>> better have a long time testing before goes upstream.
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> Cc: Bryan Mason <bmason@redhat.com>
+>> References: https://lkml.org/lkml/2009/11/11/223
+>> References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
+>> References: https://bugzilla.novell.com/show_bug.cgi?id=797042
+> 
+> Shouldn't this be CC'd to stable?
 
-On Mon, 4 Feb 2013 15:58:26 +0100 (CET)
-Thomas Gleixner <tglx@linutronix.de> wrote:
+Nope, it will be sent to stable as soon as it proves itself to be stable
+enough. Note that we are changing very old code and the last thing we
+want to do here is to break stable trees.
 
-> Dear RT Folks,
->=20
-> I'm pleased to announce the 3.6.11-rt26 release.
->=20
-> Changes since 3.6.11-rt25:
->=20
->    1) Fix the RT highmem implementation on x86
->=20
->    2) Support highmem + RT on ARM
->=20
->    3) Fix an one off error in the generic highmem code (upstream fix
->       did not make it into 3.6.stable)
->=20
->    4) Upstream SLUB fixes (Christoph Lameter)
->=20
->    5) Fix a few RT issues in mmc and amba drivers
->=20
->    6) Initialize local locks in mm/swap.c early
->=20
->    7) Use simple wait queues for completions. This is a performance
->       improvement.
->=20
->       Completions do not have complex callbacks and the wakeup path is
->       disabling interrupts anyway. So using simple wait locks with the
->       raw spinlock is not a latency problem, but the "sleeping lock"
->       in the normal waitqueue is a source for lock bouncing:
->=20
->       T1  	 	   T2
->       lock(WQ)
->       wakeup(T2)
->       ---> preemption
-> 			   lock(WQ)
-> 			   pi_boost(T1)
-> 			   wait_for_lock(WQ)
->       unlock(WQ)
->       deboost(T1)
->       ---> preemption
-> 			   ....
->=20
->       The simple waitqueue reduces this to:
-> 		  =20
->       T1  	 	   T2
->       raw_lock(WQ)
->       wakeup(T2)
->       raw_unlock(WQ)
->       ---> preemption
-> 			   raw_lock(WQ)=09
-> 			   ....
->=20
-> @Steven: Sorry, I forgot the stable tags on:
-> 	 drivers-tty-pl011-irq-disable-madness.patch
-> 	 mmci-remove-bogus-irq-save.patch
-> 	 idle-state.patch
-> 	 might-sleep-check-for-idle.patch
-> 	 mm-swap-fix-initialization.patch
->=20
-> I'm still digging through my mail backlog, so I have not yet decided
-> whether this is the last RT release for 3.6.
->=20
->=20
-> The delta patch against 3.6.11-rt25 is appended below and can be found
-> here:
->=20
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.1=
-1-rt25-rt26.patch.xz
->=20
-> The RT patch against 3.6.11 can be found here:
->=20
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11-rt2=
-6.patch.xz
->=20
-> The split quilt queue is available at:
->=20
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.11-r=
-t26.tar.xz
->=20
-> Enjoy,
->=20
-> 	tglx
->=20
-
-
-Thomas,
-
-I needed this change to build:
-
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index efe4b33..3d5231f 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -26,6 +26,7 @@
-=20
- #include <linux/errno.h>
- #include <linux/rbtree.h>
-+#include <linux/wait.h>
-=20
- struct vm_area_struct;
- struct mm_struct;
-
-
-Clark
-
---Sig_/TlsHmUhMCMHG4=vpMA2pW4g
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlEP2b4ACgkQHyuj/+TTEp3f1ACfXFb5W0JcqOZSB8XPC9MGsX2h
-TGsAnRxAQQB6yrvNDcKA+RD3AJ7cEqGg
-=g+uT
------END PGP SIGNATURE-----
-
---Sig_/TlsHmUhMCMHG4=vpMA2pW4g--
+thanks,
+-- 
+js
+suse labs
