@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab3BDXvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 18:51:32 -0500
-Received: from smtp12.ono.com ([62.42.230.20]:3307 "EHLO resmaa12.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754356Ab3BDXvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 18:51:31 -0500
-X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Feb 2013 18:51:30 EST
-Message-ID: <51104830.7060005@ono.com>
-Date: Tue, 05 Feb 2013 00:45:52 +0100
-From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130114 Thunderbird/17.0.2
+	id S1755550Ab3BDXwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 18:52:06 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:61539 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356Ab3BDXwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 18:52:04 -0500
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Problems with late 3.8-rc5 and 3.8-rc6 on i686
-References: <20130201201332.GA2965@wolff.to> <20130204232827.GA14752@wolff.to>
-In-Reply-To: <20130204232827.GA14752@wolff.to>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130204234358.GB2610@blaptop>
+References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
+	<20130204150657.6d05f76a.akpm@linux-foundation.org>
+	<CAH9JG2Usd4HJKrBXwX3aEc3i6068zU=F=RjcoQ8E8uxYGrwXgg@mail.gmail.com>
+	<20130204234358.GB2610@blaptop>
+Date: Tue, 5 Feb 2013 08:52:02 +0900
+X-Google-Sender-Auth: ViQaxhyBICA8TDrOKC1IsRlou7U
+Message-ID: <CAH9JG2VDOVv4-QrDs1FeyQNPzEDq+bf+qiSZ0snEqLGSed3PqA@mail.gmail.com>
+Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high memory
+From: Kyungmin Park <kmpark@infradead.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 12:28 AM, Bruno Wolff III wrote:
-> On Fri, Feb 01, 2013 at 14:13:32 -0600, Bruno Wolff III
-> <bruno@wolff.to> wrote:
+Hi,
+
+On Tue, Feb 5, 2013 at 8:43 AM, Minchan Kim <minchan@kernel.org> wrote:
+> Hello,
+>
+> On Tue, Feb 05, 2013 at 08:29:26AM +0900, Kyungmin Park wrote:
+>> On Tue, Feb 5, 2013 at 8:06 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> > On Mon, 04 Feb 2013 11:27:05 +0100
+>> > Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+>> >
+>> >> The total number of low memory pages is determined as
+>> >> totalram_pages - totalhigh_pages, so without this patch all CMA
+>> >> pageblocks placed in highmem were accounted to low memory.
+>> >
+>> > What are the end-user-visible effects of this bug?
 >>
->> One is that the rtkit-daemon service fails to start up and the
->> other is that there are issues with X. One one machine with an
->> rv280 based video card the background image doesn't show up in gdm
->> and I can't enter a password in gdm. C-A-F2 does get me back to a
->> vt. On another machine with a nv28 based video card I get the Oh no
->> something went wrong page, but again I can still use C-A-F2 to get
->> to a vt.
+>> Even though CMA is located at highmem. LowTotal has more than lowmem
+>> address spaces.
+>>
+>> e.g.,
+>> lowmem  : 0xc0000000 - 0xdf000000   ( 496 MB)
+>> LowTotal:         555788 kB
+>>
+>> >
+>> > (This information is needed so that others can make patch-scheduling
+>> > decisions and should be included in all bugfix changelogs unless it is
+>> > obvious).
+>>
+>> CMA Highmem support is new feature. so don't need to go stable tree.
 >
-> I am still seeing this with 3.8.0-0.rc6.git1.1.fc19.i686.PAE.
+> I would like to clarify it because I remembered alloc_migrate_target have considered
+> CMA pages could be highmem. Is it really new feature? If so, could you point out
+> enabling patches for the new feature?
 >
-> However, I have found the GUI issues are because gnome is waiting on
-> the rtkit-daemon and once it times out, things are OK.
+Here's related patch.
+http://www.spinics.net/lists/arm-kernel/msg222369.html
 
-I had also problems with this and other daemons...
-If you are using systemd, check if rtkit wants to run with PrivateTmp=yes.
-If this is so, then check that your /tmp is _not_ a symlink, but
-a real dir...
+Previous time, it's not fully tested and now we checked it with
+highmem support patches.
 
--- 
-J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
+Thank you,
+Kyungmin Park
+> struct page *alloc_migrate_target(struct page *page, unsigned long private,
+>                                   int **resultp)
+> {
+>         gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
+>
+>         if (PageHighMem(page))
+>                 gfp_mask |= __GFP_HIGHMEM;
+>
+>         return alloc_page(gfp_mask);
+> }
+>
+
+
+> Thanks.
+>
+>>
+>> Thank you,
+>> Kyungmin Park
+>> >
+>> > --
+>> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> > the body to majordomo@kvack.org.  For more info on Linux MM,
+>> > see: http://www.linux-mm.org/ .
+>> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Kind regards,
+> Minchan Kim
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
