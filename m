@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab3BDUd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 15:33:27 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:44353 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368Ab3BDUd0 (ORCPT
+	id S1755305Ab3BDUde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 15:33:34 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56934 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab3BDUda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 15:33:26 -0500
-Date: Tue, 5 Feb 2013 07:33:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: Tree for Feb 4
-Message-Id: <20130205073312.e534dda4b9b6b1bc95b3d25c@canb.auug.org.au>
-In-Reply-To: <CAAG0J99hxOOGh74wQ2R47o0noRxQhNS8T_DNnbX2FX-rJ2wMzQ@mail.gmail.com>
-References: <20130204183926.f5d5ab14b0ae4d22cb253202@canb.auug.org.au>
-	<CAAG0J99hxOOGh74wQ2R47o0noRxQhNS8T_DNnbX2FX-rJ2wMzQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__5_Feb_2013_07_33_12_+1100_pDybNxLzgssb3F.O"
+	Mon, 4 Feb 2013 15:33:30 -0500
+Date: Mon, 4 Feb 2013 12:33:26 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        Amit Kale <akale@stec-inc.com>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
+        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, lsf-pc@lists.linux-foundation.org,
+        Joe Thornber <ejt@redhat.com>
+Subject: Re: [LSF/MM TOPIC] Re: [dm-devel] Announcement: STEC EnhanceIO SSD
+ caching software for Linux kernel
+Message-ID: <20130204203326.GA21532@google.com>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7248@MYMBX.MY.STEC-INC.AD>
+ <50F844A3.9020300@warr.net>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D72F1@MYMBX.MY.STEC-INC.AD>
+ <50F970A3.4000403@warr.net>
+ <20130118161135.GA3118@raspberrypi>
+ <50F97C0F.9010405@warr.net>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7345@MYMBX.MY.STEC-INC.AD>
+ <50F9963A.2080608@warr.net>
+ <20130118212543.GB6425@blackbox.djwong.org>
+ <20130118213759.GA30278@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130118213759.GA30278@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Feb_2013_07_33_12_+1100_pDybNxLzgssb3F.O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jan 18, 2013 at 04:37:59PM -0500, Mike Snitzer wrote:
+> On Fri, Jan 18 2013 at  4:25pm -0500,
+> Darrick J. Wong <darrick.wong@oracle.com> wrote:
+> 
+> > Since Joe is putting together a testing tree to compare the three caching
+> > things, what do you all think of having a(nother) session about ssd caching at
+> > this year's LSFMM Summit?
+> > 
+> > [Apologies for hijacking the thread.]
+> > [Adding lsf-pc to the cc list.]
+> 
+> Hopefully we'll have some findings on the comparisons well before LSF
+> (since we currently have some momentum).  But yes it may be worthwhile
+> to discuss things further and/or report findings.
 
-Hi James,
-
-On Mon, 4 Feb 2013 13:56:32 +0000 James Hogan <james.hogan@imgtec.com> wrot=
-e:
->
-> On 4 February 2013 07:39, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Merging signal/for-next (9005965 x86: convert to ksignal)
-> > CONFLICT (content): Merge conflict in arch/x86/Kconfig
->=20
-> I think this conflict has been resolved incorrectly.
->=20
-> Al's commit 1820f96 "burying unused conditionals" removed
-> GENERIC_SIGALTSTACK from config X86, but the merge
-> (c5395e2affed5c42200cb6e21e3380995ef22ae3) left GENERIC_SIGALTSTACK
-> in:
-
-Thanks, I will fix that today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__5_Feb_2013_07_33_12_+1100_pDybNxLzgssb3F.O
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJREBsIAAoJEECxmPOUX5FER1gQAJ/YGosBXKkOysluwCPolEFM
-ItMq+W3sI4k8dPEdLVK2CnfhMuUGZyy2DHoA7y4lnAtLFHMKFECYBiBm4jGAEy2L
-pU92R8iV8NG+URIaU2EY8Qv5BQvwTnkHMBdK29i87hRXEcPfo8jikpHWeLAD8UIi
-qppZPM2U1vk63F13sfeJhYoSZar8/nXuV+RV/rUxqNwVVYAD3jS5BFuy6fVFy0T3
-tFqHzSLfebtkhTQ03KpCijTlYsoiXleuQW9Phutnak+9JURTFmKFBB6e2Nhs4fb3
-ThjTDSINqfXMJEj3896gSd3S62ZObr83/qC+kLliQrEtHOptJlPcZxp7Fsi4zMOy
-g+rZeNn+qPjQO/NYWr9RCUmddmAtocasWposO/0ayIR6S6lKu8j8bBGZoZpzESeN
-0TF9BmqfOhSVNSX6uxMSTF3VOUkxsjTysQSfLIJhdyjHcb0t/zKM/5JGj/Hqohzq
-bJpNkXxHxwtmC5EfsE4Q7m404Ilm1fg+Tt99EDrSMtqZN4xlpvtq5HE6lvzS1ePq
-wEqaz4TyKFRV5uLFrrSobZNNaifjL2tmPPMnbYuF5CM1aHrHI1VQ8TgegFPqE0Of
-tUxqIyI12NaLNTq4XQEyqNeJ2XYW4BDPDPlpAi6iy7hsFriekXuz7VJ37AnOLsEf
-GjVQfuxSqcKalr4+zepv
-=UOKm
------END PGP SIGNATURE-----
-
---Signature=_Tue__5_Feb_2013_07_33_12_+1100_pDybNxLzgssb3F.O--
+I'd be willing to go and talk a bit about bcache. Curious to hear more
+about the dm caching stuff, too.
