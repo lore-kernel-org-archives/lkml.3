@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab3BDFj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 00:39:57 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3253 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab3BDFjz (ORCPT
+	id S1751699Ab3BDFpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 00:45:17 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37057 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab3BDFpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 00:39:55 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sun, 03 Feb 2013 21:37:46 -0800
-Message-ID: <510F49A2.4080701@nvidia.com>
-Date: Mon, 4 Feb 2013 13:39:46 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Durgadoss R <durgadoss.r@intel.com>
-CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>
-Subject: Re: [PATCHv2 0/9] Thermal Framework Enhancements
-References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
-In-Reply-To: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 00:45:15 -0500
+Date: Mon, 4 Feb 2013 16:45:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: linux-next: manual merge of the pinctrl tree with the battery tree
+Message-Id: <20130204164506.b1bdf19083adab5e94b0534c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Feb_2013_16_45_06_+1100_p5=lUNntm1_IRH6e"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2013 03:13 PM, Durgadoss R wrote:
-> This patch set is a v2 of the previous versions submitted here:
-> [v1]:  https://lkml.org/lkml/2012/12/18/108 
-> [RFC]: https://patchwork.kernel.org/patch/1758921/
-> 
-> This patch set is based on Rui's -thermal tree, and is
-> tested on a Core-i5 and an Atom netbook.
-> 
-> Changes Since v1:
->  * Removed kobject creation for thermal_trip and thermal_map
->    nodes as per Greg-KH's comments.
->  * Added ABI Documentation under 'testing'.
->  * Modified the GET_INDEX macro to be more linux-like, thanks
->    to Joe Perches.
->  * Added get_[sensor/cdev]_by_name APIs to thermal.h
+--Signature=_Mon__4_Feb_2013_16_45_06_+1100_p5=lUNntm1_IRH6e
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi, Durgadoss and Rui
-Will these patches be merged to next branch? or will you send out next
-version?
-I wish to use this new framework, could I send out patches for RFC based
-on this serial patches?
+Hi Linus,
 
-Thanks.
-Wei.
+Today's linux-next merge of the pinctrl tree got a conflict in
+include/linux/mfd/abx500/ab8500.h between commit 0ed5107fa860
+("ab8500-charger: Do not touch VBUSOVV bits") from the battery tree and
+commit 56813f798e8c ("mfd: ab8500: update header file and version
+detection") from the pinctrl tree.
 
-> 
-> This series contains 9 patches:
-> Patch 1/9: Creates new sensor level APIs
-> Patch 2/9: Creates new zone level APIs. The existing tzd structure is
->            kept as such for clarity and compatibility purposes.
-> Patch 3/9: Creates functions to add/remove a cdev to/from a zone. The
->            existing tcd structure need not be modified.
-> Patch 4/9: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
-> 	   under /sys/class/thermal/zoneY/. This exposes various trip
->            points for sensorX present in zoneY.
-> Patch 5/9: Adds mapX sysfs node. It is a compact representation
->            of the binding relationship between a sensor and a cdev,
->            within a zone.
-> Patch 6/9: Creates Documentation for the new APIs. A new file is
->            created for clarity. Final goal is to merge with the existing
->            file or refactor the files, as whatever seems appropriate.
-> Patch 7/9: Make PER ZONE values configurable through Kconfig
-> Patch 8/9: Add ABI documentation for sysfs interfaces introduced in this patch.
-> Patch 9/9: A dummy driver that can be used for testing. This is not for merge.
-> 
-> Thanks to Greg-KH, Hongbo Zhang and Joe Perches for their comments on v1.
-> 
-> Durgadoss R (9):
->   Thermal: Create sensor level APIs
->   Thermal: Create zone level APIs
->   Thermal: Add APIs to bind cdev to new zone structure
->   Thermal: Add trip point sysfs nodes for sensor
->   Thermal: Create 'mapX' sysfs node for a zone
->   Thermal: Add Documentation to new APIs
->   Thermal: Make PER_ZONE values configurable
->   Thermal: Add ABI Documentation for sysfs interfaces
->   Thermal: Dummy driver used for testing
-> 
->  Documentation/ABI/testing/sysfs-class-thermal |   93 +++
->  Documentation/thermal/sysfs-api2.txt          |  248 +++++++
->  drivers/thermal/Kconfig                       |   19 +
->  drivers/thermal/Makefile                      |    3 +
->  drivers/thermal/thermal_sys.c                 |  881 +++++++++++++++++++++++++
->  drivers/thermal/thermal_test.c                |  315 +++++++++
->  include/linux/thermal.h                       |  117 +++-
->  7 files changed, 1675 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
->  create mode 100644 Documentation/thermal/sysfs-api2.txt
->  create mode 100644 drivers/thermal/thermal_test.c
-> 
+I fixed it up (the former is a subset of the latter) and can carry the
+fix as necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__4_Feb_2013_16_45_06_+1100_p5=lUNntm1_IRH6e
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRD0riAAoJEECxmPOUX5FEqlcP/10IYTaXeAGVQCTXfPGfMLmZ
+9/KLi4hSYbsN9oUiY+ue3TAi2H4xZP+HoVvljc9nJ+VY0bTE8t83tX1x59MPwClH
+UI6nRDGiYl+P0O6DMQGzgHq6SKf6sAe9KXZn/2vLfsZ1BLOGB/vDGAHXuPujZbva
+BjAvbCuqDW9fIVPhLUad5oisiYSZg1DZPlVNsCV3berC4OWq++c55b67zaw257Ft
+R+WVX/g7J7l0apbZHEU873hiDmQxlhxw9SlQ+4ljLQiDeAZb3jYpv/I0jCD4HCFw
+CXSNt0eL3J38EC9f/FSrEpNtudy1KWsxXF/OQUESaoMwy0cw1As7/QE5dBqVvzWe
+ab7+6A0bL+lE1qWfTWt9LzJ2dmAKEtMKbSP36p1WZbzZXEi9DUryMDZqG5wl3J7c
+JqhxPj5L+DGHlA35iEm1Glq5ydYTwyDplHXUOBwjNywrPBMAjgso7ze8UpcXRtsw
+BKChJA6gX5HigKS8gjIQK7VUOYOl1bCR8Bte6ZrlRAu9xwmxccysnfx/L7p2MAnB
+nPmD4FkS18fxBTQ/B5EtotH6WEZL7It3S41XXrvXYWOoOgFHLzk6uurw27cNxmGn
+splye8/MuNJipLtYLdTMQBNZzULyk1THMhhHicQwpcrd5PXYSwmniAR94V5dHi+i
+q9c+d/IloK0SAoezrbRR
+=YFet
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Feb_2013_16_45_06_+1100_p5=lUNntm1_IRH6e--
