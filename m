@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab3BDL01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:26:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54941 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3BDL00 (ORCPT
+	id S1754321Ab3BDL3k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:29:40 -0500
+Received: from na3sys010aog101.obsmtp.com ([74.125.245.70]:40316 "HELO
+	na3sys010aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754007Ab3BDL3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:26:26 -0500
-Date: Mon, 4 Feb 2013 12:26:22 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Terje Bergstrom <tbergstrom@nvidia.com>
-Cc: amerilainen@nvidia.com, airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5,RESEND 7/8] ARM: tegra: Add board data and 2D clocks
-Message-ID: <20130204112622.GC595@avionic-0098.mockup.avionic-design.de>
-References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
- <1358250244-9678-8-git-send-email-tbergstrom@nvidia.com>
+	Mon, 4 Feb 2013 06:29:38 -0500
+X-Greylist: delayed 446 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Feb 2013 06:29:38 EST
+From: "Leonid Shatz" <leonid.shatz@ravellosystems.com>
+To: "'Thomas Gleixner'" <tglx@linutronix.de>,
+        "'Izik Eidus'" <izik.eidus@ravellosystems.com>
+Cc: <linux-kernel@vger.kernel.org>, "'Andrea Arcangeli'" <aarcange@redhat.com>,
+        "Mike Rapoport" <mike.rapoport@ravellosystems.com>
+References: <510E58C2.9010207@ravellosystems.com> <alpine.LFD.2.02.1302041110160.11905@ionos>
+In-Reply-To: <alpine.LFD.2.02.1302041110160.11905@ionos>
+Subject: RE: hrtimer possible issue
+Date: Mon, 4 Feb 2013 13:22:07 +0200
+Message-ID: <030401ce02c9$e5139170$af3ab450$@ravellosystems.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QRj9sO5tAVLaXnSD"
-Content-Disposition: inline
-In-Reply-To: <1358250244-9678-8-git-send-email-tbergstrom@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:RYX9pQORNECG02QIWKHskQmOMd50Tf2ddg8+WDZnY4v
- 00tMVzqFPTIF+DLn7uzIU7WRFhWzl3nPStaJXLO3H0WsMWX5zG
- uFHrBmnTzOygPaqcyDIWgcxhqjfQOCGm+AihOx3bMEJTJNHjOT
- Y6NXPX4D6tlviJER8XywMyxvX52Q02ZIvOECwrOZ098o3Z3NDj
- TEdtH1nBXCOShGQdgRCxUWpuQeiyu58FlPndYRUmhYuLmLsXbI
- KXS0qz7pF+Ggln9+kwLw2BtYD7/rZQQ6L9TtmgBv4UB62k3JQ7
- NO5rCrPy7PVEP5UOKAt9tQkzVu+eePHR9ppVGbo2IrWOPRCZRn
- bIAnBME3ndLEg9bs5pvJULoyKnbFopNriRaxJAjJS8Pck5UhFz
- b2FBJLLOtrpp/gJGK0U21x8BdKzh02EgV4=
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQF0ILwKmJFBTDiDvqyx/BcHikXLFQFjuHE5mRIzlJA=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I assume the race can also happen between hrtimer cancel and start. In both
+cases timer base switch can happen.
 
---QRj9sO5tAVLaXnSD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Izik, please check if you can arrange the patch in the standard format (do
+we need to do it against latest kernel version?)
 
-On Tue, Jan 15, 2013 at 01:44:03PM +0200, Terje Bergstrom wrote:
-> Add a driver alias gr2d for Tegra 2D device, and assign a duplicate
-> of 2D clock to that driver alias.
->=20
-> Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
-> ---
->  arch/arm/mach-tegra/board-dt-tegra20.c    |    1 +
->  arch/arm/mach-tegra/board-dt-tegra30.c    |    1 +
->  arch/arm/mach-tegra/tegra20_clocks_data.c |    2 +-
->  arch/arm/mach-tegra/tegra30_clocks_data.c |    1 +
->  4 files changed, 4 insertions(+), 1 deletion(-)
+Leonid Shatz
 
-With Prashant's clock rework patches now merged this patch can be
-dropped.
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Monday, February 04, 2013 12:13 PM
+> To: Izik Eidus
+> Cc: linux-kernel@vger.kernel.org; Andrea Arcangeli; Leonid Shatz
+> Subject: Re: hrtimer possible issue
+> 
+> On Sun, 3 Feb 2013, Izik Eidus wrote:
+> 
+> > Hi,
+> >
+> > it seems like hrtimer_enqueue_reprogram contain a race which could
+> > result in timer.base switch during unlock/lock sequence.
+> >
+> > See the code at __hrtimer_start_range_ns where it calls
+> > hrtimer_enqueue_reprogram. The later is releasing lock protecting the
+> > timer base for a short time and timer base switch can occur from a
+> > different CPU thread. Later when __hrtimer_start_range_ns calls
+> > unlock_hrtimer_base, a base switch could have happened and this causes
+> > the bug
+> >
+> > Try to start the same hrtimer from two different threads in kernel
+> > running each one on a different CPU. Eventually one of the calls will
+> > cause timer base switch while another thread is not expecting it.
+> >
+> > This can happen in virtualized environment where one thread can be
+> > delayed by lower hypervisor, and due to time delay a different CPU is
+> > taking care of missed timer start and runs the timer start logic on its
+own.
+> 
+> Nice analysis.
+> 
+> > This simple patch (just to give example of a fix) refactor this
+> > function to get rid of unneeded lock which immediately was followed by
+> > the unlock (with possible undesired base switch).
+> >
+> > (Both the bug and the fixed were found/patched by Leonid Shatz)
+> 
+> The patch got mangled by your mail client and it is missing the proper
+Signed-
+> off-by annotation in the patch description. See
+> Documentation/SubmittingPatches.
+> 
+> Can you please resend ?
+> 
+> Thanks,
+> 
+> 	tglx
+> 
 
-Thierry
 
---QRj9sO5tAVLaXnSD
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRD5reAAoJEN0jrNd/PrOhQTsP/1SHqWbU5vGVye/MiuqGVFAf
-AG/oTf8vLi6wn/+qa8tsM/ADvEfyi5E2/xH4xeMCVMQnw4C6zebAiI2gQdrajVIp
-g5OciSWhWyFT9vXsQtky3XLMVm66C2amOVfwuSidIVrs/9phLcGy9MwLQu1b92xq
-Khokhc3O/Ddd1vU1x31vbfklwG/9HHRPxgEY1h+XpK6WJAUPH1fGx7vxbGJyWhb4
-+UZlEUk8gF5YwrBwvbtw1f3Kqo0z9JdvMoXh34tiptTJ91ihZq6ajOjBLheK6oxj
-kJXiXuZpOnkORLZBiAk2wADJr3mKSGC2lD6o2exgPnNMPc0XW0gMn/PcFSwcJZPZ
-XJrZbh93Vx7eyzH7xe+ECOHWOl5SA0+v3ED5Yf0UtYZp/DbEqx3MSoRr1V7U+I0Y
-wefSfh10+GdgSUQJ3hhcO37LNaG9N74XOGHXsF7IoOXWyVGKHdOwJ6UXpkXDqVHv
-SrdffLSMU+bA9J0CxziVQbDnfkGwC5mZH5jlLQM5FEingei3pctA67eaHrmneYil
-n28uRy3C8ZnZePgPItG9gNiikfU6qsufi56Q/wYWnhfUaxuDJHrEB/ZEXx00lEfa
-dRPSrf95QV1vy6oaVfDe/GQqXCa1S4zpg6pFGuqszT8xLBrfDGFjNopVhF+EcM7m
-MhfqFPg6nPfnN3rUoHQi
-=bOV1
------END PGP SIGNATURE-----
-
---QRj9sO5tAVLaXnSD--
