@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab3BDSaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:30:24 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36203 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753467Ab3BDSaU (ORCPT
+	id S1754511Ab3BDSbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:31:11 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:50213 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab3BDSbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:30:20 -0500
-Message-ID: <1360002617.2465.33.camel@dabdike>
-Subject: Re: [PATCH RESEND 1/1] arch Kconfig: remove references to
- IRQ_PER_CPU
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-hexagon@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-parisc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux-arch@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Frysinger <vapier@gentoo.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>
-Date: Mon, 04 Feb 2013 10:30:17 -0800
-In-Reply-To: <1359972583-17134-1-git-send-email-james.hogan@imgtec.com>
-References: <1359972583-17134-1-git-send-email-james.hogan@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 13:31:09 -0500
+Date: Mon, 4 Feb 2013 19:31:03 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20130204183103.GA13132@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-04 at 10:09 +0000, James Hogan wrote:
-> The IRQ_PER_CPU Kconfig symbol was removed in the following commit:
-> 
-> Commit 6a58fb3bad099076f36f0f30f44507bc3275cdb6 ("genirq: Remove
-> CONFIG_IRQ_PER_CPU") merged in v2.6.39-rc1.
-> 
-> But IRQ_PER_CPU wasn't removed from any of the architecture Kconfig
-> files where it was defined or selected. It's completely unused so remove
-> the remaining references.
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-> Cc: Helge Deller <deller@gmx.de>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Acked-by: Tony Luck <tony.luck@intel.com>
-> Acked-by: Richard Kuo <rkuo@codeaurora.org>
+Linus,
 
-For what it's worth ACK, but I don't really think you need it since the
-patch is trivial and obviously correct.
+Please pull the latest x86-urgent-for-linus git tree from:
 
-> 
-> Does anybody want to pick this patch up?
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-I see Thomas already has.  Thanks, by the way, for not doing this as one
-patch per architecture ...
+   HEAD: f76e39c531304b114e27c3dd3e0036f56cd33df1 x86/intel/cacheinfo: Shut up annoying warning
 
-James
+Three small fixlets.
+
+ Thanks,
+
+	Ingo
+
+------------------> Borislav Petkov (1):
+
+H. Peter Anvin (1):
+      x86, doc: Boot protocol 2.12 is in 3.8
+
+Jan Beulich (1):
+      x86-64: Replace left over sti/cli in ia32 audit exit code
 
 
+ Documentation/x86/boot.txt            | 2 +-
+ arch/x86/ia32/ia32entry.S             | 4 ++--
+ arch/x86/kernel/cpu/intel_cacheinfo.c | 7 +++----
+ 3 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index 3edb4c2..e540fd6 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -57,7 +57,7 @@ Protocol 2.10:	(Kernel 2.6.31) Added a protocol for relaxed alignment
+ Protocol 2.11:	(Kernel 3.6) Added a field for offset of EFI handover
+ 		protocol entry point.
+ 
+-Protocol 2.12:	(Kernel 3.9) Added the xloadflags field and extension fields
++Protocol 2.12:	(Kernel 3.8) Added the xloadflags field and extension fields
+ 	 	to struct boot_params for for loading bzImage and ramdisk
+ 		above 4G in 64bit.
+ 
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 102ff7c..142c4ce 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -207,7 +207,7 @@ sysexit_from_sys_call:
+ 	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	jnz ia32_ret_from_sys_call
+ 	TRACE_IRQS_ON
+-	sti
++	ENABLE_INTERRUPTS(CLBR_NONE)
+ 	movl %eax,%esi		/* second arg, syscall return value */
+ 	cmpl $-MAX_ERRNO,%eax	/* is it an error ? */
+ 	jbe 1f
+@@ -217,7 +217,7 @@ sysexit_from_sys_call:
+ 	call __audit_syscall_exit
+ 	movq RAX-ARGOFFSET(%rsp),%rax	/* reload syscall return value */
+ 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
+-	cli
++	DISABLE_INTERRUPTS(CLBR_NONE)
+ 	TRACE_IRQS_OFF
+ 	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	jz \exit
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index fe9edec..84c1309 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -298,8 +298,7 @@ struct _cache_attr {
+ 			 unsigned int);
+ };
+ 
+-#ifdef CONFIG_AMD_NB
+-
++#if defined(CONFIG_AMD_NB) && defined(CONFIG_SYSFS)
+ /*
+  * L3 cache descriptors
+  */
+@@ -524,9 +523,9 @@ store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
+ static struct _cache_attr subcaches =
+ 	__ATTR(subcaches, 0644, show_subcaches, store_subcaches);
+ 
+-#else	/* CONFIG_AMD_NB */
++#else
+ #define amd_init_l3_cache(x, y)
+-#endif /* CONFIG_AMD_NB */
++#endif  /* CONFIG_AMD_NB && CONFIG_SYSFS */
+ 
+ static int
+ __cpuinit cpuid4_cache_lookup_regs(int index,
