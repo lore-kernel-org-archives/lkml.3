@@ -1,103 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab3BDQWc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:22:32 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:62574 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227Ab3BDQWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:22:30 -0500
-Message-ID: <510FE042.8040503@gmail.com>
-Date: Mon, 04 Feb 2013 11:22:26 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756517Ab3BDQWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:22:47 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:38960 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756480Ab3BDQWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 11:22:46 -0500
+Message-ID: <510FE051.7080107@imgtec.com>
+Date: Mon, 4 Feb 2013 16:22:41 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
-        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
-        Sridhar Samudrala <sri@us.ibm.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-sctp@vger.kernel.org
-Subject: Re: [PATCH 60/62] sctp: convert to idr_alloc()
-References: <1359854463-2538-1-git-send-email-tj@kernel.org> <1359854463-2538-61-git-send-email-tj@kernel.org>
-In-Reply-To: <1359854463-2538-61-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, "Pekka Enberg" <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, <linux-mm@kvack.org>
+Subject: next-20130204 - bisected slab problem to "slab: Common constants
+ for kmalloc boundaries"
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_02_04_16_22_43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2013 08:21 PM, Tejun Heo wrote:
-> Convert to the much saner new idr interface.
->
-> Only compile tested.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Vlad Yasevich <vyasevich@gmail.com>
-> Cc: Sridhar Samudrala <sri@us.ibm.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: linux-sctp@vger.kernel.org
-> ---
-> This patch depends on an earlier idr changes and I think it would be
-> best to route these together through -mm.  Please holler if there's
-> any objection.  Thanks.
->
->   net/sctp/associola.c | 27 +++++++++++----------------
->   1 file changed, 11 insertions(+), 16 deletions(-)
->
-> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> index b45ed1f..a9962e4 100644
-> --- a/net/sctp/associola.c
-> +++ b/net/sctp/associola.c
-> @@ -1592,32 +1592,27 @@ int sctp_assoc_lookup_laddr(struct sctp_association *asoc,
->   /* Set an association id for a given association */
->   int sctp_assoc_set_id(struct sctp_association *asoc, gfp_t gfp)
->   {
-> -	int assoc_id;
-> -	int error = 0;
-> +	int ret;
->
->   	/* If the id is already assigned, keep it. */
->   	if (asoc->assoc_id)
-> -		return error;
-> -retry:
-> -	if (unlikely(!idr_pre_get(&sctp_assocs_id, gfp)))
-> -		return -ENOMEM;
-> +		return 0;
->
-> +	idr_preload(gfp);
->   	spin_lock_bh(&sctp_assocs_id_lock);
-> -	error = idr_get_new_above(&sctp_assocs_id, (void *)asoc,
-> -				    idr_low, &assoc_id);
-> -	if (!error) {
-> -		idr_low = assoc_id + 1;
-> +	ret = idr_alloc(&sctp_assocs_id, asoc, idr_low, 0, GFP_NOWAIT);
-> +	if (ret >= 0) {
+Hi,
 
-In SCTP, association id is not allowed to be 0, so we have to treat 0 as 
-an error.
+I've hit boot problems in next-20130204 on Meta:
 
--vlad
+META213-Thread0 DSP [LogF] kobject (4fc03980): tried to init an initialized object, something is seriously wrong.
+META213-Thread0 DSP [LogF] 
+META213-Thread0 DSP [LogF] Call trace: 
+META213-Thread0 DSP [LogF] [<4000888c>] _show_stack+0x68/0x7c
+META213-Thread0 DSP [LogF] [<400088b4>] _dump_stack+0x14/0x28
+META213-Thread0 DSP [LogF] [<40103794>] _kobject_init+0x58/0x9c
+META213-Thread0 DSP [LogF] [<40103810>] _kobject_create+0x38/0x64
+META213-Thread0 DSP [LogF] [<40103eac>] _kobject_create_and_add+0x14/0x8c
+META213-Thread0 DSP [LogF] [<40190ac4>] _mnt_init+0xd8/0x220
+META213-Thread0 DSP [LogF] [<40190508>] _vfs_caches_init+0xb0/0x160
+META213-Thread0 DSP [LogF] [<401851f4>] _start_kernel+0x274/0x340
+META213-Thread0 DSP [LogF] [<40188424>] _metag_start_kernel+0x58/0x6c
+META213-Thread0 DSP [LogF] [<40000044>] __start+0x44/0x48
+META213-Thread0 DSP [LogF] 
+META213-Thread0 DSP [LogF] devtmpfs: initialized
+META213-Thread0 DSP [LogF] L2 Cache: Not present
+META213-Thread0 DSP [LogF] BUG: failure at fs/sysfs/dir.c:736/sysfs_read_ns_type()!
+META213-Thread0 DSP [LogF] Kernel panic - not syncing: BUG!
+META213-Thread0 DSP [Thread Exit] Thread has exited - return code = 4294967295
 
-> +		idr_low = ret + 1;
->   		if (idr_low == INT_MAX)
->   			idr_low = 1;
->   	}
->   	spin_unlock_bh(&sctp_assocs_id_lock);
-> -	if (error == -EAGAIN)
-> -		goto retry;
-> -	else if (error)
-> -		return error;
-> +	idr_preload_end();
-> +	if (ret < 0)
-> +		return ret;
->
-> -	asoc->assoc_id = (sctp_assoc_t) assoc_id;
-> -	return error;
-> +	asoc->assoc_id = (sctp_assoc_t)ret;
-> +	return 0;
->   }
->
->   /* Free the ASCONF queue */
->
+I've bisected it to the following commit:
+
+commit 95a05b428cc675694321c8f762591984f3fd2b1e
+Author: Christoph Lameter <cl@linux.com>
+Date:   Thu Jan 10 19:14:19 2013 +0000
+
+    slab: Common constants for kmalloc boundaries
+    
+    Standardize the constants that describe the smallest and largest
+    object kept in the kmalloc arrays for SLAB and SLUB.
+    
+    Differentiate between the maximum size for which a slab cache is used
+    (KMALLOC_MAX_CACHE_SIZE) and the maximum allocatable size
+    (KMALLOC_MAX_SIZE, KMALLOC_MAX_ORDER).
+    
+    Signed-off-by: Christoph Lameter <cl@linux.com>
+    Signed-off-by: Pekka Enberg <penberg@kernel.org>
+
+
+Any ideas what could be going on here?
+
+This commit merged with the metag for-next branch fails, but
+the previous commit merged with the metag for-next branch
+doesn't fail.
+
+make savedefconfig output:
+
+CONFIG_EXPERIMENTAL=y
+# CONFIG_LOCALVERSION_AUTO is not set
+# CONFIG_SWAP is not set
+CONFIG_SYSVIPC=y
+CONFIG_LOG_BUF_SHIFT=13
+CONFIG_SYSFS_DEPRECATED=y
+CONFIG_SYSFS_DEPRECATED_V2=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE="arch/metag/boot/ramdisk.cpio"
+CONFIG_INITRAMFS_COMPRESSION_GZIP=y
+CONFIG_KALLSYMS_ALL=y
+# CONFIG_ELF_CORE is not set
+CONFIG_SLAB=y
+# CONFIG_BLK_DEV_BSG is not set
+CONFIG_PARTITION_ADVANCED=y
+# CONFIG_MSDOS_PARTITION is not set
+# CONFIG_IOSCHED_DEADLINE is not set
+# CONFIG_IOSCHED_CFQ is not set
+CONFIG_METAG_L2C=y
+CONFIG_FLATMEM_MANUAL=y
+CONFIG_METAG_HALT_ON_PANIC=y
+CONFIG_METAG_ATOMICITY_IRQSOFF=y
+CONFIG_METAG_DA=y
+CONFIG_HZ_100=y
+CONFIG_DEVTMPFS=y
+# CONFIG_STANDALONE is not set
+# CONFIG_PREVENT_FIRMWARE_BUILD is not set
+# CONFIG_FW_LOADER is not set
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_COUNT=1
+CONFIG_BLK_DEV_RAM_SIZE=16384
+# CONFIG_INPUT is not set
+# CONFIG_SERIO is not set
+# CONFIG_VT is not set
+# CONFIG_LEGACY_PTYS is not set
+CONFIG_DA_TTY=y
+CONFIG_DA_CONSOLE=y
+# CONFIG_DEVKMEM is not set
+# CONFIG_HW_RANDOM is not set
+# CONFIG_HWMON is not set
+# CONFIG_USB_SUPPORT is not set
+# CONFIG_DNOTIFY is not set
+CONFIG_TMPFS=y
+# CONFIG_MISC_FILESYSTEMS is not set
+# CONFIG_SCHED_DEBUG is not set
+CONFIG_DEBUG_INFO=y
+CONFIG_FRAME_POINTER=y
+
+Thanks
+James
 
