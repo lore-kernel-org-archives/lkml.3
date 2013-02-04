@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab3BDTyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:54:16 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47973 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176Ab3BDTyP convert rfc822-to-8bit (ORCPT
+	id S1754819Ab3BDTzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:55:05 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:58915 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754465Ab3BDTzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:54:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,602,1355126400"; 
-   d="scan'208";a="257567289"
-From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-To: Tejun Heo <tj@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "skinsbursky@parallels.com" <skinsbursky@parallels.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: RE: [PATCHSET] idr: implement idr_alloc() and convert existing users
-Thread-Topic: [PATCHSET] idr: implement idr_alloc() and convert existing
- users
-Thread-Index: AQHOAwydQ2h2OImAJkq/KdAWqmA7TJhqHIQg
-Date: Mon, 4 Feb 2013 19:54:12 +0000
-Message-ID: <32E1700B9017364D9B60AED9960492BC0D58DF5C@FMSMSX108.amr.corp.intel.com>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
- <20130204191720.GW27963@mtj.dyndns.org>
-In-Reply-To: <20130204191720.GW27963@mtj.dyndns.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.107]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Feb 2013 14:55:03 -0500
+Date: Mon, 4 Feb 2013 11:54:58 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/13] workqueue: fix work_busy()
+Message-ID: <20130204195458.GA27963@mtj.dyndns.org>
+References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
+ <1359657696-2767-3-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359657696-2767-3-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like this kernel won't compile with CONFIG_HOTPLUG_MEMORY set to 'y'
+Hello, Lai.
 
-Mike
+On Fri, Feb 01, 2013 at 02:41:25AM +0800, Lai Jiangshan wrote:
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 973b290..d474a6c 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -3443,8 +3443,6 @@ EXPORT_SYMBOL_GPL(workqueue_congested);
+>   * Test whether @work is currently pending or running.  There is no
+>   * synchronization around this function and the test result is
+>   * unreliable and only useful as advisory hints or for debugging.
+> - * Especially for reentrant wqs, the pending state might hide the
+> - * running state.
 
-> -----Original Message-----
-> From: Tejun Heo [mailto:htejun@gmail.com] On Behalf Of Tejun Heo
-> Sent: Monday, February 04, 2013 2:17 PM
-> To: akpm@linux-foundation.org
-> Cc: linux-kernel@vger.kernel.org; rusty@rustcorp.com.au; bfields@fieldses.org;
-> skinsbursky@parallels.com; ebiederm@xmission.com; jmorris@namei.org;
-> axboe@kernel.dk; Marciniszyn, Mike
-> Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
-> 
-> Hello,
-> 
-> I rolled up all the updates and rebased it on top of today's linux-next
-> (20130204).
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git convert-to-idr_alloc
-> 
-> The git branch contains the following.
-> 
->   [1] [PATCH] idr: fix a subtle bug in idr_get_next()
-> + [2] [PATCHSET] idr: deprecate idr_remove_all() [3] [PATCHSET] idr:
-> + implement idr_alloc() and convert existing users (w/ all updates)
-> 
-> The only conflict from rebasing it on top of -next is in
-> drm_get_connector_status_name() which moved id assignment inside mutex
-> and trivial to resolve.
-> 
-> Given the size of the patchset, I'm waiting a bit more before reposting the
-> whole thing.  If anyone wants it reposted now, please let me know.
-> 
-> Thanks.
-> 
-> --
-> tejun
-> 
-> [1] https://lkml.org/lkml/2013/2/2/145
-> [2] https://lkml.org/lkml/2013/1/25/759
-> [3] https://lkml.org/lkml/2013/2/2/159
+Yeap, this is no longer true.
+
+>   *
+>   * RETURNS:
+>   * OR'd bitmask of WORK_BUSY_* bits.
+> @@ -3453,15 +3451,13 @@ unsigned int work_busy(struct work_struct *work)
+>  {
+>  	struct worker_pool *pool = get_work_pool(work);
+>  	unsigned long flags;
+> -	unsigned int ret = 0;
+> +	unsigned int ret = work_pending(work) ? WORK_BUSY_PENDING : 0;
+
+I'd prefer this as a if() statement.
+
+>  	if (!pool)
+> -		return 0;
+> +		return ret;
+
+I'm a bit confused.  When can we be pending w/o pool?
+
+Thanks.
+
+-- 
+tejun
