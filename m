@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab3BDShR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:37:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46408 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687Ab3BDShP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:37:15 -0500
-Date: Mon, 4 Feb 2013 10:39:29 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, zihan@huawei.com,
-        Lin.Lei@huawei.com, neil.yi@huawei.com, wangyuhua@huawei.com,
-        huqiao36@huawei.com, balbi@ti.com, mdharm-usb@one-eyed-alien.net,
-        sebastian@breakpoint.cc
-Subject: Re: [PATCH 1/2] USB: storage: Define a new macro for USB storage
- match rules
-Message-ID: <20130204183929.GA5570@kroah.com>
-References: <fe8caaa7d09.d09fe8caaa7@huawei.com>
+	id S1755339Ab3BDSiJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:38:09 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:61878 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab3BDSiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 13:38:07 -0500
+Date: Mon, 4 Feb 2013 10:37:56 -0800
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
+        skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
+        axboe@kernel.dk, Chas Williams <chas@cmf.nrl.navy.mil>,
+        netdev@vger.kernel.org
+Subject: [PATCH v3 09/62] atm/nicstar: convert to idr_alloc()
+Message-ID: <20130204183756.GV27963@mtj.dyndns.org>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+ <1359854463-2538-10-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <fe8caaa7d09.d09fe8caaa7@huawei.com>
+In-Reply-To: <1359854463-2538-10-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 03:14:46PM +0800, fangxiaozhi 00110321 wrote:
-> +/* Define the device is matched with Vendor ID and interface descriptors */
-> +#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
-> +			vendorName, productName, useProtocol, useTransport, \
-> +			initFunction, flags) \
-> +{ \
-> +	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-> +				| USB_DEVICE_ID_MATCH_VENDOR, \
-> +	.idVendor    = (id_vendor), \
-> +	.bInterfaceClass = (cl), \
-> +	.bInterfaceSubClass = (sc), \
-> +	.bInterfaceProtocol = (pr), \
-> +	.driver_info = (flags) \
-> +}
+Convert to the much saner new idr interface.  The existing code looks
+buggy to me - ID 0 is treated as no-ID but allocation specifies 0 as
+lower limit and there's no error handling after partial success.  This
+conversion keeps the bugs unchanged.
 
-I'm not going to reject this given the number of times it has been
-submitted, but can't you use the USB_VENDOR_AND_INTERFACE_INFO() macro
-here in this definition?
+Only compile tested.
 
-If so, can you send me an add-on patch that makes that change?
+v2: id1 and id2 are now directly used for -errno return and thus
+    should be signed.  Make them int instead of u32.  This was spotted
+    by kbuild test robot.
 
-thanks,
+v3: Further simplify as suggested by Chas Williams.
 
-greg k-h
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Chas Williams <chas@cmf.nrl.navy.mil>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Cc: netdev@vger.kernel.org
+---
+ drivers/atm/nicstar.c |   24 ++++++------------------
+ 1 file changed, 6 insertions(+), 18 deletions(-)
+
+--- a/drivers/atm/nicstar.c
++++ b/drivers/atm/nicstar.c
+@@ -949,11 +949,10 @@ static void free_scq(ns_dev *card, scq_i
+ static void push_rxbufs(ns_dev * card, struct sk_buff *skb)
+ {
+ 	struct sk_buff *handle1, *handle2;
+-	u32 id1 = 0, id2 = 0;
++	int id1, id2;
+ 	u32 addr1, addr2;
+ 	u32 stat;
+ 	unsigned long flags;
+-	int err;
+ 
+ 	/* *BARF* */
+ 	handle2 = NULL;
+@@ -1026,23 +1025,12 @@ static void push_rxbufs(ns_dev * card, s
+ 				card->lbfqc += 2;
+ 		}
+ 
+-		do {
+-			if (!idr_pre_get(&card->idr, GFP_ATOMIC)) {
+-				printk(KERN_ERR
+-				       "nicstar%d: no free memory for idr\n",
+-				       card->index);
+-				goto out;
+-			}
+-
+-			if (!id1)
+-				err = idr_get_new_above(&card->idr, handle1, 0, &id1);
+-
+-			if (!id2 && err == 0)
+-				err = idr_get_new_above(&card->idr, handle2, 0, &id2);
+-
+-		} while (err == -EAGAIN);
++		id1 = idr_alloc(&card->idr, handle1, 0, 0, GFP_ATOMIC);
++		if (id1 < 0)
++			goto out;
+ 
+-		if (err)
++		id2 = idr_alloc(&card->idr, handle2, 0, 0, GFP_ATOMIC);
++		if (id2 < 0)
+ 			goto out;
+ 
+ 		spin_lock_irqsave(&card->res_lock, flags);
