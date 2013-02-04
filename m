@@ -1,124 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab3BDLDJ (ORCPT <rfc822;w@1wt.eu>);
+	id S1754440Ab3BDLDM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:03:12 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:61170 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab3BDLDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Feb 2013 06:03:09 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:40505 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754178Ab3BDLBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:01:47 -0500
-Subject: [PATCH v2 1/6] NFS: use SUNRPC cache creation and destruction helper
-	for DNS cache
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 04 Feb 2013 14:02:35 +0300
-Message-ID: <20130204110235.11633.59600.stgit@localhost.localdomain>
-In-Reply-To: <20130204105728.11633.53621.stgit@localhost.localdomain>
-References: <20130204105728.11633.53621.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+Date: Mon, 4 Feb 2013 12:03:04 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "mingo.kernel.org@gmail.com" <mingo.kernel.org@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
+        "Pearson, Greg" <greg.pearson@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] x86/apic: check FADT settings after enable x2apic
+Message-ID: <20130204110304.GD24173@gmail.com>
+References: <FE3E8B88161FFE48B03E3B93408433EC671016E2@G9W0754.americas.hpqcorp.net>
+ <CAE9FiQW75eP_exufb1gd7jQuu98WnkyGX23EBXktUCSyZX9Jvg@mail.gmail.com>
+ <20130128101135.GD7168@gmail.com>
+ <CAE9FiQUtQ4uaBZxndV+acHW55JL5-nb0EnuXHhwiB-mK8Swtag@mail.gmail.com>
+ <20130129074746.GA594@gmail.com>
+ <FE3E8B88161FFE48B03E3B93408433EC671027BC@G9W0754.americas.hpqcorp.net>
+ <20130129084914.GB5350@gmail.com>
+ <CAE9FiQXe2QHacwyJx+5MQWmoGYW1Swnr5M-MSircgfA4_9e19Q@mail.gmail.com>
+ <20130131113230.GD4587@gmail.com>
+ <FE3E8B88161FFE48B03E3B93408433EC67110405@G9W0754.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <FE3E8B88161FFE48B03E3B93408433EC67110405@G9W0754.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This cache was the first containerized and doesn't use net-aware cache
-creation and destruction helpers.
-This is a cleanup patch which just makes code looks clearer and reduce amount
-of lines of code.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfs/dns_resolve.c |   60 +++++++++++++++++++++-----------------------------
- 1 files changed, 25 insertions(+), 35 deletions(-)
+* Wang, Song-Bo (Stoney) <song-bo.wang@hp.com> wrote:
 
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index ca4b11e..5015447 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -351,48 +351,39 @@ ssize_t nfs_dns_resolve_name(struct net *net, char *name,
- }
- EXPORT_SYMBOL_GPL(nfs_dns_resolve_name);
- 
-+static struct cache_detail nfs_dns_resolve_template = {
-+	.owner		= THIS_MODULE,
-+	.hash_size	= NFS_DNS_HASHTBL_SIZE,
-+	.name		= "dns_resolve",
-+	.cache_put	= nfs_dns_ent_put,
-+	.cache_upcall	= nfs_dns_upcall,
-+	.cache_parse	= nfs_dns_parse,
-+	.cache_show	= nfs_dns_show,
-+	.match		= nfs_dns_match,
-+	.init		= nfs_dns_ent_init,
-+	.update		= nfs_dns_ent_update,
-+	.alloc		= nfs_dns_ent_alloc,
-+};
-+
-+
- int nfs_dns_resolver_cache_init(struct net *net)
- {
--	int err = -ENOMEM;
-+	int err;
- 	struct nfs_net *nn = net_generic(net, nfs_net_id);
--	struct cache_detail *cd;
--	struct cache_head **tbl;
- 
--	cd = kzalloc(sizeof(struct cache_detail), GFP_KERNEL);
--	if (cd == NULL)
--		goto err_cd;
--
--	tbl = kzalloc(NFS_DNS_HASHTBL_SIZE * sizeof(struct cache_head *),
--			GFP_KERNEL);
--	if (tbl == NULL)
--		goto err_tbl;
--
--	cd->owner = THIS_MODULE,
--	cd->hash_size = NFS_DNS_HASHTBL_SIZE,
--	cd->hash_table = tbl,
--	cd->name = "dns_resolve",
--	cd->cache_put = nfs_dns_ent_put,
--	cd->cache_upcall = nfs_dns_upcall,
--	cd->cache_parse = nfs_dns_parse,
--	cd->cache_show = nfs_dns_show,
--	cd->match = nfs_dns_match,
--	cd->init = nfs_dns_ent_init,
--	cd->update = nfs_dns_ent_update,
--	cd->alloc = nfs_dns_ent_alloc,
--
--	nfs_cache_init(cd);
--	err = nfs_cache_register_net(net, cd);
-+	nn->nfs_dns_resolve = cache_create_net(&nfs_dns_resolve_template, net);
-+	if (IS_ERR(nn->nfs_dns_resolve))
-+		return PTR_ERR(nn->nfs_dns_resolve);
-+
-+	nfs_cache_init(nn->nfs_dns_resolve);
-+	err = nfs_cache_register_net(net, nn->nfs_dns_resolve);
- 	if (err)
- 		goto err_reg;
--	nn->nfs_dns_resolve = cd;
- 	return 0;
- 
- err_reg:
--	nfs_cache_destroy(cd);
--	kfree(cd->hash_table);
--err_tbl:
--	kfree(cd);
--err_cd:
-+	nfs_cache_destroy(nn->nfs_dns_resolve);
-+	cache_destroy_net(nn->nfs_dns_resolve, net);
- 	return err;
- }
- 
-@@ -403,8 +394,7 @@ void nfs_dns_resolver_cache_destroy(struct net *net)
- 
- 	nfs_cache_unregister_net(net, cd);
- 	nfs_cache_destroy(cd);
--	kfree(cd->hash_table);
--	kfree(cd);
-+	cache_destroy_net(nn->nfs_dns_resolve, net);
- }
- 
- static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
+>  * Ingo Molnar <mingo.kernel.org@gmail.com> wrote:
+> > 
+> > * Yinghai Lu <yinghai@kernel.org> wrote:
+> > 
+> > > Please check attached.
+> > 
+> > Almost good.
+> > 
+> > This:
+> > 
+> >   > When some HP sytems boot without x2apic_phys, there will be
+> > 
+> > Should mention the approximate models of the systems affected - is it
+> > just a specific line of systems, or a wider range of systems affected?
+> > 
+> > This will inform users and will help maintainers like me to prioritize
+> > the merging and backporting of patches.
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> 
+> Hi Ingo,
+> 
+> Due to some HW limitation, HP ProLiant DL980 G7 Server has the 
+> BIT ACPI_FADT_APIC_PHYSICAL set in BIOS.
+> 
+> This model of systems already shipped. It is great if some 
+> backporting could be done.
 
+Ok, please re-send the last version of the patch with the model 
+information included in the changelog and also include a Cc: 
+<stable@kernel.org> tag before your signoff line.
+
+Thanks,
+
+	Ingo
