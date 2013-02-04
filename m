@@ -1,74 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab3BDRBd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 12:01:33 -0500
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:39655 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab3BDRBU (ORCPT
+	id S1754268Ab3BDRBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 12:01:49 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:35381 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab3BDRBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 12:01:20 -0500
-Date: Mon, 4 Feb 2013 12:02:04 -0500
-From: Matt Porter <mporter@ti.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v8 2/4] misc: Generic on-chip SRAM allocation driver
-Message-ID: <20130204170204.GX2244@beef>
-References: <1359977538-5859-1-git-send-email-p.zabel@pengutronix.de>
- <1359977538-5859-3-git-send-email-p.zabel@pengutronix.de>
- <20130204155344.GA14171@linux-sh.org>
+	Mon, 4 Feb 2013 12:01:47 -0500
+Date: Mon, 4 Feb 2013 22:29:45 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] uprobes/tracing: Kill uprobe_trace_consumer, embed
+ uprobe_consumer into trace_uprobe
+Message-ID: <20130204165945.GB4246@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20130131191752.GA30410@redhat.com>
+ <20130131191829.GA30454@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130204155344.GA14171@linux-sh.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130131191829.GA30454@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020416-5490-0000-0000-000002EAAF25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 12:53:45AM +0900, Paul Mundt wrote:
-> On Mon, Feb 04, 2013 at 12:32:16PM +0100, Philipp Zabel wrote:
-> > This driver requests and remaps a memory region as configured in the
-> > device tree. It serves memory from this region via the genalloc API.
-> > It optionally enables the SRAM clock.
-> > 
-> > Other drivers can retrieve the genalloc pool from a phandle pointing
-> > to this drivers' device node in the device tree.
-> > 
-> > The allocation granularity is hard-coded to 32 bytes for now,
-> > to make the SRAM driver useful for the 6502 remoteproc driver.
-> > There is overhead for bigger SRAMs, where only a much coarser
-> > allocation granularity is needed: At 32 bytes minimum allocation
-> > size, a 256 KiB SRAM needs a 1 KiB bitmap to track allocations.
-> > 
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+* Oleg Nesterov <oleg@redhat.com> [2013-01-31 20:18:29]:
+
+> trace_uprobe->consumer and "struct uprobe_trace_consumer" add the
+> unnecessary indirection and complicate the code for no reason.
 > 
-> How exactly is this "generic" if you have randomly hard-coded an
-> allocation granularity that is larger than half of the in-tree SRAM pool
-> users today can even support? Did you even bother to look at in-tree SRAM
-> pool users other than the one you are working on?
->
-> There also doesn't seem to be any real reason for the hard-coding either,
-> this information could easily be fetched via platform data or the device
-> tree, and the driver in question would simply need to be able to
-> determine whether the size is suitable for it or not.
+> This patch simply embeds uprobe_consumer into "struct trace_uprobe",
+> all other changes only fix the compilation errors.
+> 
 
-Please see http://thread.gmane.org/gmane.linux.kernel/1377702 for the
-original discussion on my patch for configurable allocation granularity.
-I believe there was an implied agreement from Grant that it was ok if we
-went with a more descriptive name even though it hits the grey area of
-not describing hardware.
+I know this patch doesnt change the current behaviour.
 
--Matt
+We dont handle two concurrent perf record sessions for the same user
+space probe. Since both sessons share the same trace_uprobe and hence
+share the same consumer. Initially I had thought of having a chain in
+uprobe_trace_consumer. However we dont get have enough information at
+the probe_event_disable() time to detect which consumer to delete Hence
+I dropped the idea of having a list of consumers attached to the
+trace_uprobe.
+
+However with allowing prefiltering, we need to have ability to
+distinguish consumers. The idea of embedding uprobe_consumer within
+trace_uprobe, may make the problem even more tougher to solve.
+
+Should we document this as a TODO?
+
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/trace_uprobe.c |   35 ++++++-----------------------------
+>  1 files changed, 6 insertions(+), 29 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 947379a..55cdc14 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -31,17 +31,11 @@
+>  /*
+>   * uprobe event core functions
+>   */
+> -struct trace_uprobe;
+> -struct uprobe_trace_consumer {
+> -	struct uprobe_consumer		cons;
+> -	struct trace_uprobe		*tu;
+> -};
+> -
+>  struct trace_uprobe {
+>  	struct list_head		list;
+>  	struct ftrace_event_class	class;
+>  	struct ftrace_event_call	call;
+> -	struct uprobe_trace_consumer	*consumer;
+> +	struct uprobe_consumer		consumer;
+>  	struct inode			*inode;
+>  	char				*filename;
+>  	unsigned long			offset;
+> @@ -92,6 +86,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs)
+>  		goto error;
+> 
+>  	INIT_LIST_HEAD(&tu->list);
+> +	tu->consumer.handler = uprobe_dispatcher;
+>  	return tu;
+> 
+>  error:
+> @@ -543,27 +538,15 @@ static inline bool is_trace_uprobe_enabled(struct trace_uprobe *tu)
+> 
+>  static int probe_event_enable(struct trace_uprobe *tu, int flag)
+>  {
+> -	struct uprobe_trace_consumer *utc;
+>  	int ret = 0;
+> 
+>  	if (is_trace_uprobe_enabled(tu))
+>  		return -EINTR;
+> 
+> -	utc = kzalloc(sizeof(struct uprobe_trace_consumer), GFP_KERNEL);
+> -	if (!utc)
+> -		return -EINTR;
+> -
+> -	utc->cons.handler = uprobe_dispatcher;
+> -	utc->tu = tu;
+> -	tu->consumer = utc;
+>  	tu->flags |= flag;
+> -
+> -	ret = uprobe_register(tu->inode, tu->offset, &utc->cons);
+> -	if (ret) {
+> -		tu->consumer = NULL;
+> +	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+> +	if (ret)
+>  		tu->flags &= ~flag;
+> -		kfree(utc);
+> -	}
+> 
+>  	return ret;
+>  }
+> @@ -573,10 +556,8 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
+>  	if (!is_trace_uprobe_enabled(tu))
+>  		return;
+> 
+> -	uprobe_unregister(tu->inode, tu->offset, &tu->consumer->cons);
+> +	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+>  	tu->flags &= ~flag;
+> -	kfree(tu->consumer);
+> -	tu->consumer = NULL;
+>  }
+> 
+>  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
+> @@ -714,13 +695,9 @@ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type,
+> 
+>  static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
+>  {
+> -	struct uprobe_trace_consumer *utc;
+>  	struct trace_uprobe *tu;
+> 
+> -	utc = container_of(con, struct uprobe_trace_consumer, cons);
+> -	tu = utc->tu;
+> -	if (!tu || tu->consumer != utc)
+> -		return 0;
+> +	tu = container_of(con, struct trace_uprobe, consumer);
+> 
+>  	if (tu->flags & TP_FLAG_TRACE)
+>  		uprobe_trace_func(tu, regs);
+> -- 
+> 1.5.5.1
+> 
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
+
