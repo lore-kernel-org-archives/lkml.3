@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab3BDQ5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:57:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35192 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593Ab3BDQ5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:57:35 -0500
-Message-ID: <510FE7F5.3080802@zytor.com>
-Date: Mon, 04 Feb 2013 08:55:17 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753984Ab3BDQ5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:57:41 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:45644 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab3BDQ5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 11:57:38 -0500
+Date: Mon, 4 Feb 2013 08:57:32 -0800
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, bfields@fieldses.org,
+        skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
+        axboe@kernel.dk, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net
+Subject: [PATCH 12.5/62] firewire: add minor number range check to
+ fw_device_init()
+Message-ID: <20130204165732.GG27963@mtj.dyndns.org>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+ <1359854463-2538-14-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 4/4] x86, 32-bit: Drop new_cpu_data
-References: <1359908079-10469-1-git-send-email-bp@alien8.de> <1359908079-10469-5-git-send-email-bp@alien8.de> <510EF65D.4020602@zytor.com> <20130204052725.GA13909@pd.tnic> <562c8dd4-6665-4365-8eb4-33e77e6f6798@email.android.com> <20130204090237.GB13909@pd.tnic>
-In-Reply-To: <20130204090237.GB13909@pd.tnic>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359854463-2538-14-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2013 01:02 AM, Borislav Petkov wrote:
-> On Sun, Feb 03, 2013 at 09:44:02PM -0800, H. Peter Anvin wrote:
->> boot_cpu_data is ok for things that are indeed universally valid
->> across. That does not include CPUID level, for one.
-> 
-> Wait a minute, hold the phone! :-)
-> 
-> Are you saying that CPUID_EAX(0) could return different values in %eax
-> on the *same* system with mixed-silicon steppings? Or even on an uniform
-> system?
-> 
+fw_device_init() didn't check whether the allocated minor number isn't
+too large.  Fail if it goes overflows MINORBITS.
 
-Yes and yes (in the latter case due to inconsistent MSR programming.)
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Suggested-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: stable@vger.kernel.org
+---
+ drivers/firewire/core-device.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-	-hpa
-
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -1020,6 +1020,10 @@ static void fw_device_init(struct work_s
+ 	ret = idr_pre_get(&fw_device_idr, GFP_KERNEL) ?
+ 	      idr_get_new(&fw_device_idr, device, &minor) :
+ 	      -ENOMEM;
++	if (minor >= 1 << MINORBITS) {
++		idr_remove(&fw_device_idr, minor);
++		minor = -ENOSPC;
++	}
+ 	up_write(&fw_device_rwsem);
+ 
+ 	if (ret < 0)
