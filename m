@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab3BDVRm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 16:17:42 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43077 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303Ab3BDVRk (ORCPT
+	id S1754948Ab3BDVVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 16:21:38 -0500
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:48893 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab3BDVVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 16:17:40 -0500
-Message-ID: <5110253C.3070005@wwwdotorg.org>
-Date: Mon, 04 Feb 2013 14:16:44 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 4 Feb 2013 16:21:37 -0500
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>, Joseph Lo <josephl@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 07/10] ARM: tegra: Define Tegra114 CAR binding
-References: <1359713962-16822-1-git-send-email-pdeschrijver@nvidia.com> <1359713962-16822-8-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1359713962-16822-8-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <20130204193737.GU4720@opensource.wolfsonmicro.com>
+References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+	<1359978868-28736-6-git-send-email-lee.jones@linaro.org>
+	<20130204193737.GU4720@opensource.wolfsonmicro.com>
+Date: Mon, 4 Feb 2013 22:21:36 +0100
+Message-ID: <CACRpkdYWZOa=bbJYpG7owxVJXxPq5sx7jHmo5UpRe8pmPGYKMQ@mail.gmail.com>
+Subject: Re: [PATCH 05/73] ARM: ux500: Vsmps3 controlled by SysClkReq1
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 03:18 AM, Peter De Schrijver wrote:
-> The device tree binding models Tegra114 CAR (Clock And Reset) as a single
-> monolithic clock provider.
-...
-> +- #clock-cells : Should be 1.
-> +  In clock consumers, this cell represents the clock ID exposed by the CAR.
-...
-> +  222	pll_u
-> +  223	pll_u_480M
-> +  224	pll_u_60M
-> +  225	pll_u_48M
-> +  226	pll_u_12M
+On Mon, Feb 4, 2013 at 8:37 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Feb 04, 2013 at 11:53:20AM +0000, Lee Jones wrote:
+>> Vsmps3 is put in HW control by SysClkReq1 at init. The
+>> corresponding settings in suspend-force are removed.
+>
+> So, I've applied the patches up to here though I'm still reallly unhappy
+> with this code - it seems clear from the comments that a lot of this
+> stuff should be using regulator constraints to initialise.  It would be
+> good to move this stuff over to use the framework.
 
-I notice here that we have separate clock IDs for the various PLL u
-outputs. We don't have this on Tegra20 or Tegra30, but I wonder if we
-should have them there too?
+So I've briefly discussed it with Bengt at one point.
+
+Basically what the ABx500 PMICs have is a sort of
+logic network or table that you can set up to respond
+autonomously to different "SysClkReq" signals.
+
+Originally these signals were intended for gating
+and ungating clocks but they are basically a boolean
+"enable that resource I want" signals.
+
+So it is not even primarily used for clocks, but
+regulators. It will for example power them off/on
+on that signal but also more elaborate stuff I think.
+
+What is needed is some way to model that
+electronic relationship into both the regulator
+and clock subsystems (Ulf Hansson is working on
+the ABx500 clocks as we speak.)
+
+Maybe the actual place to have it would be
+somewhere like drivers/mfd/ab8500-core.c.
+
+Have you seen similar stuff in other PMICs?
+
+Yours,
+Linus Walleij
