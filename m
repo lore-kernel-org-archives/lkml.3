@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab3BDSop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:44:45 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:51881 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab3BDSoo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:44:44 -0500
-Date: Mon, 4 Feb 2013 19:44:36 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch] config: fix make kvmconfig
-Message-ID: <20130204184436.GA13256@gmail.com>
-References: <1356040315.3198.51.camel@shinybook.infradead.org>
- <tip-ffee0de411fd4f74f3b788892eeb075abbf26c52@git.kernel.org>
- <alpine.DEB.2.00.1212252222450.24528@chino.kir.corp.google.com>
- <1356564746.7010.56.camel@shinybook.infradead.org>
- <50DB9FA5.6070704@infradead.org>
- <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
+	id S1755094Ab3BDSvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:51:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46898 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750773Ab3BDSvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 13:51:31 -0500
+Date: Mon, 4 Feb 2013 10:51:46 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: Re: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
+Message-ID: <20130204185146.GA31284@kroah.com>
+References: <1359937421-19921-1-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1302041002430.6063@chino.kir.corp.google.com>
+In-Reply-To: <1359937421-19921-1-git-send-email-minchan@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Rientjes <rientjes@google.com> wrote:
-
->  arch/x86/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
+On Mon, Feb 04, 2013 at 09:23:41AM +0900, Minchan Kim wrote:
+> Zsmalloc has two methods 1) copy-based and 2) pte based to access
+> allocations that span two pages.
+> You can see history why we supported two approach from [1].
 > 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 6979498..f9459b3 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -606,6 +606,7 @@ config KVMTOOL_TEST_ENABLE
->  	select NETWORK_FILESYSTEMS
->  	select INET
->  	select EXPERIMENTAL
-> +	select TTY
->  	select SERIAL_8250
->  	select SERIAL_8250_CONSOLE
->  	select IP_PNP
+> But it was bad choice that adding hard coding to select architecture
+> which want to use pte based method. This patch removed it and adds
+> new Kconfig to select the approach.
+> 
+> This patch is based on next-20130202.
+> 
+> [1] https://lkml.org/lkml/2012/7/11/58
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zsmalloc/Kconfig         |   12 ++++++++++++
+>  drivers/staging/zsmalloc/zsmalloc-main.c |   11 -----------
+>  2 files changed, 12 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+> index 9084565..2359123 100644
+> --- a/drivers/staging/zsmalloc/Kconfig
+> +++ b/drivers/staging/zsmalloc/Kconfig
+> @@ -8,3 +8,15 @@ config ZSMALLOC
+>  	  non-standard allocator interface where a handle, not a pointer, is
+>  	  returned by an alloc().  This handle must be mapped in order to
+>  	  access the allocated space.
+> +
+> +config ZSMALLOC_PGTABLE_MAPPING
+> +        bool "Use page table mapping to access allocations that span two pages"
+> +        depends on ZSMALLOC
+> +        default n
+> +        help
+> +	  By default, zsmalloc uses a copy-based object mapping method to access
+> +	  allocations that span two pages. However, if a particular architecture
+> +	  performs VM mapping faster than copying, then you should select this.
+> +	  This causes zsmalloc to use page table mapping rather than copying
+> +	  for object mapping. You can check speed with zsmalloc benchmark[1].
+> +	  [1] https://github.com/spartacus06/zsmalloc
+> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> index 06f73a9..b161ca1 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> @@ -218,17 +218,6 @@ struct zs_pool {
+>  #define CLASS_IDX_MASK	((1 << CLASS_IDX_BITS) - 1)
+>  #define FULLNESS_MASK	((1 << FULLNESS_BITS) - 1)
+>  
+> -/*
+> - * By default, zsmalloc uses a copy-based object mapping method to access
+> - * allocations that span two pages. However, if a particular architecture
+> - * performs VM mapping faster than copying, then it should be added here
+> - * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
+> - * page table mapping rather than copying for object mapping.
+> -*/
+> -#if defined(CONFIG_ARM)
+> -#define USE_PGTABLE_MAPPING
+> -#endif
 
-There's no 'config TTY' in the kernel AFAICS.
+Did you test this?  I don't see the new config value you added actually
+do anything in this code.  Also, if I select it incorrectly on ARM, or
+or other platforms, what is keeping this from doing bad things?
 
-Did you mean:
+thanks,
 
-	select SERIAL_CORE
-	select SERIAL_CORE_CONSOLE
-
-?
-
-Thanks,
-
-	Ingo
+greg k-h
