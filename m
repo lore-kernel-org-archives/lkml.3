@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab3BDXV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 18:21:29 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:44291 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab3BDXV2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 18:21:28 -0500
-Date: Tue, 5 Feb 2013 10:21:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Pirko <jiri@resnulli.us>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        =?UTF-8?B?IllPU0hJRlVKSSBIaWRlYWtpIC8g5ZCJ?=
-	 =?UTF-8?B?6Jek6Iux5piOIg==?= <yoshfuji@linux-ipv6.org>
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20130205102122.07abc37d0ee81304f9014cde@canb.auug.org.au>
-In-Reply-To: <20130202100506.GB1864@minipsycho.orion>
-References: <20130202142253.e31167bf695f000c0c78f4cc@canb.auug.org.au>
-	<20130202100506.GB1864@minipsycho.orion>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__5_Feb_2013_10_21_22_+1100_aYJP.4SMmk8pTUSY"
+	id S1755241Ab3BDXZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 18:25:58 -0500
+Received: from mout.gmx.net ([212.227.17.21]:60831 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754501Ab3BDXZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 18:25:57 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+Rn6EQyVqR39NJUtQUK+aryTrTMxEmPtD57YCLic
+	up2CjJzV4Nq8u6
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
+        Sam Hansen <solid.se7en@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] staging/xgifb: Replace XGI340_CR6B table with simple if/else
+Date: Tue,  5 Feb 2013 00:29:43 +0100
+Message-Id: <1360020587-8399-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Feb_2013_10_21_22_+1100_aYJP.4SMmk8pTUSY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The XGI340_CR6B lookup table consists of the entries
+{0xaa, 0xaa, 0xaa, 0xaa} for an index <= 2 and
+{0x00, 0x00, 0x00, 0x00} for all other indices.
 
-Hi Jiri,
+The only user XGINew_SetDRAMDefaultRegister340 loops over these 4 values
+of a line with a for loop and since all entries are the same for each line
+we can simply replace the whole lookup table with a simple if/else assignment.
 
-On Sat, 2 Feb 2013 11:05:06 +0100 Jiri Pirko <jiri@resnulli.us> wrote:
->
-> >diff --cc net/ipv6/route.c
-> >index 363d8b7,f3328bc..0000000
-> >--- a/net/ipv6/route.c
-> >+++ b/net/ipv6/route.c
-> >@@@ -928,7 -884,7 +884,7 @@@ restart
-> >  	dst_hold(&rt->dst);
-> >  	read_unlock_bh(&table->tb6_lock);
-> > =20
-> >- 	if (!rt->n && !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
-> > -	if (!(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_GATEWAY)))
-> >++	if (!(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL | RTF_GATEWAY)))
->=20
-> I believe that no change here is correct to do. RTF_LOCAL here is needed
-> only before Yoshifuji's "IPv6 rt->n removal"
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/xgifb/vb_init.c  |    2 +-
+ drivers/staging/xgifb/vb_table.h |   11 -----------
+ 2 files changed, 1 insertions(+), 12 deletions(-)
 
-Thanks for the feedback.  I have removed the " | RTF_LOCAL" from the
-merge resolution.
+diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
+index dd34570..a778df6 100644
+--- a/drivers/staging/xgifb/vb_init.c
++++ b/drivers/staging/xgifb/vb_init.c
+@@ -429,7 +429,7 @@ static void XGINew_SetDRAMDefaultRegister340(
+ 	temp2 = 0;
+ 	for (i = 0; i < 4; i++) {
+ 		/* CR6B DQS fine tune delay */
+-		temp = XGI340_CR6B[pVBInfo->ram_type][i];
++		temp = (pVBInfo->ram_type <= 2) ? 0xaa : 0x00;
+ 		for (j = 0; j < 4; j++) {
+ 			temp1 = ((temp >> (2 * j)) & 0x03) << 2;
+ 			temp2 |= temp1;
+diff --git a/drivers/staging/xgifb/vb_table.h b/drivers/staging/xgifb/vb_table.h
+index fca1a1d..34e1656 100644
+--- a/drivers/staging/xgifb/vb_table.h
++++ b/drivers/staging/xgifb/vb_table.h
+@@ -103,17 +103,6 @@ static const unsigned char XGI27_cr41[24][8] = {
+ 	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}  /* 23 CRC5 */
+ };
+ 
+-const unsigned char XGI340_CR6B[8][4] = {
+-	{0xaa, 0xaa, 0xaa, 0xaa},
+-	{0xaa, 0xaa, 0xaa, 0xaa},
+-	{0xaa, 0xaa, 0xaa, 0xaa},
+-	{0x00, 0x00, 0x00, 0x00},
+-	{0x00, 0x00, 0x00, 0x00},
+-	{0x00, 0x00, 0x00, 0x00},
+-	{0x00, 0x00, 0x00, 0x00},
+-	{0x00, 0x00, 0x00, 0x00}
+-};
+-
+ /* CR47,CR48,CR49,CR4A,CR4B,CR4C,CR70,CR71,CR74,CR75,CR76,CR77 */
+ const unsigned char XGI340_AGPReg[12] = {
+ 	0x28, 0x23, 0x00, 0x20, 0x00, 0x20,
+-- 
+1.7.8.6
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__5_Feb_2013_10_21_22_+1100_aYJP.4SMmk8pTUSY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJREEJyAAoJEECxmPOUX5FEWqEQAI032QMnyppQcoIV3A4ecA85
-LWXvn1CmTMYXZDOHX5ZkWISR8chRbjyTRSK/xMX4i7n8XRmMqlKYN6c9El50WHr2
-Kg5tKBODYE1JQpXS36KOSSa3NOyZODyRwabauh6t9Mzj+MwvL+u4sjjJYq4KSgoX
-/VceKS1g5xlM5b7mwZioZDDGOiLW2pkxRZRu9YYavXptAK752p4V8fmYyixNQ2s1
-QzpWDCDO2xdbT0miu3LwgC7QSi46gNXlFi4MC6mE5PdlKX4eNR/lL2lV7w4PPPEf
-uYA1iFcm51iZOvXTAZu/NLn0MoYlSZ6Am9Ek8bM9MIcjhdQzwgxnznC+l/+pi4+R
-civP40enhipsQZ1qJccpsPob+npe+FvxFQXnCGg0jZGRZAtQqG84FnhEtliuP5qY
-vTT64cDl7pA+WqV64h7bN1V52sPGMZDc2s4AVEG4CEbg6YNwjqeVgHhmoUDMmTE/
-l3dTbjU0hbLzy/esh8Kg5U30m/ZQGnWp9s7NmtW3SNCkQdyvMG3nUXHCETpoCrrn
-IE0uHwnZ756DUeVGFtOjyEISp7B9KrsR9WlG6tBnqkcxO+HRPmSnvakSFidzF2LZ
-wefKQ2OtSCqtkZPvlicPWCwAFtarhksblk44S1byqVOuNTU5Ej7DuIkPgp/6qkkQ
-rPQlHvl9AK3aOwrD5UbH
-=da3w
------END PGP SIGNATURE-----
-
---Signature=_Tue__5_Feb_2013_10_21_22_+1100_aYJP.4SMmk8pTUSY--
