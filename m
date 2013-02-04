@@ -1,171 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab3BDMQZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1754886Ab3BDMQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:16:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36211 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754674Ab3BDMQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Feb 2013 07:16:25 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:61785 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378Ab3BDL4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:56:01 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Cc: Emeric Vigier <emeric.vigier@stericsson.com>,
-        =?UTF-8?q?Ludovic=20Barr=C3=A9?= <ludovic.barre@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 06/73] regulator: ab8500: Add set_mode/get_mode support
-Date: Mon,  4 Feb 2013 11:53:21 +0000
-Message-Id: <1359978868-28736-7-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
-References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, "Li, Fei" <fei.li@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH V4] suspend: enable freeze timeout configuration through sys
+Date: Mon, 04 Feb 2013 13:22:42 +0100
+Message-ID: <2394748.6YpH0CJTqu@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A222AEB@SHSMSX101.ccr.corp.intel.com>
+References: <BEC9F67575FA1E429CA7CF5AE9BE36343F154E@SHSMSX102.ccr.corp.intel.com> <Pine.LNX.4.44L0.1302032213410.28934-100000@netrider.rowland.org> <27240C0AC20F114CBF8149A2696CBE4A222AEB@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emeric Vigier <emeric.vigier@stericsson.com>
+On Monday, February 04, 2013 04:32:11 AM Liu, Chuansheng wrote:
+> 
+> > -----Original Message-----
+> > From: Alan Stern [mailto:stern@rowland.harvard.edu]
+> > Sent: Monday, February 04, 2013 11:16 AM
+> > To: Li, Fei
+> > Cc: Rafael J. Wysocki; akpm@linux-foundation.org;
+> > linux-kernel@vger.kernel.org; linux-pm@vger.kernel.org; Liu, Chuansheng
+> > Subject: RE: [PATCH V4] suspend: enable freeze timeout configuration through
+> > sys
+> > 
+> > On Mon, 4 Feb 2013, Li, Fei wrote:
+> > 
+> > > > -> the situation described above shouldn't happen and if it does, then there
+> > > > is a bug that needs to be fixed.
+> > >
+> > > Yes, we agree with that it's a bug that needs to be fixed, and we are already
+> > done
+> > > for some cases.
+> > > During the process, we realize that tuning the timeout value to smaller value
+> > will help
+> > > to expose freezing failure for some cases.
+> > 
+> > Besides, the underlying bug is well known (fuse filesystems hanging
+> > because the fuse daemon gets frozen before the process doing file I/O,
+> > or something like that) and so far nobody has a good idea of how to
+> > fix it.
+> Indeed, we have some well-known deadlock issues existed there.
+> And once there is deadlock case, this patch is helpful to the user experience,
+> because 20s is pointless for those deadlock case.
+> 
+> Also even adjusting the 20s to 2s, we still can get to know the process stack who rejecting the freezing,
+> so this freezing configuration is really helpful to avoid 20s waiting for that deadlock case.
+> Alan and Rafael, could you consider this patch? Thanks.
 
-Signed-off-by: Ludovic Barré <ludovic.barre@stericsson.com>
-Signed-off-by: Emeric Vigier <emeric.vigier@stericsson.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Bengt JONSSON <bengt.g.jonsson@stericsson.com>
----
- drivers/regulator/ab8500.c |   71 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 71 insertions(+)
+OK, I'll take it.
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index ba1483b..1854ec3 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -33,6 +33,8 @@
-  * @update_bank: bank to control on/off
-  * @update_reg: register to control on/off
-  * @update_mask: mask to enable/disable regulator
-+ * @update_val: bits holding the regulator current mode
-+ * @update_val_idle: bits to enable the regulator in idle (low power) mode
-  * @update_val_enable: bits to enable the regulator in normal (high power) mode
-  * @voltage_bank: bank to control regulator voltage
-  * @voltage_reg: register to control regulator voltage
-@@ -47,6 +49,8 @@ struct ab8500_regulator_info {
- 	u8 update_bank;
- 	u8 update_reg;
- 	u8 update_mask;
-+	u8 update_val;
-+	u8 update_val_idle;
- 	u8 update_val_enable;
- 	u8 voltage_bank;
- 	u8 voltage_reg;
-@@ -146,6 +150,63 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
- 	return ret;
- }
- 
-+static int ab8500_regulator_set_mode(struct regulator_dev *rdev, unsigned int mode)
-+{
-+	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
-+
-+	if (info == NULL) {
-+		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
-+		return -EINVAL;
-+	}
-+
-+	/*
-+	 * update_val_enable is protected by mutex
-+	 * into regulator/core.c layout
-+	 */
-+	switch (mode) {
-+	case REGULATOR_MODE_NORMAL:
-+		info->update_val = info->update_val_enable;
-+		break;
-+	case REGULATOR_MODE_IDLE:
-+		info->update_val = info->update_val_idle;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return ab8500_regulator_enable(rdev);
-+}
-+
-+static unsigned int ab8500_regulator_get_mode(struct regulator_dev *rdev)
-+{
-+	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
-+	int ret;
-+	u8 regval;
-+
-+	if (info == NULL) {
-+		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = abx500_get_register_interruptible(info->dev,
-+		info->update_bank, info->update_reg, &regval);
-+	if (ret < 0) {
-+		dev_err(rdev_get_dev(rdev),
-+			"couldn't read 0x%x register\n", info->update_reg);
-+		return ret;
-+	}
-+
-+	regval &=info->update_mask;
-+	if (regval == info->update_val_enable)
-+		ret = REGULATOR_MODE_NORMAL;
-+	else if (regval == info->update_val_idle)
-+		ret = REGULATOR_MODE_IDLE;
-+	else
-+		ret = -EINVAL;
-+
-+	return ret;
-+}
-+
- static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
- {
- 	int ret;
-@@ -249,6 +310,8 @@ static int ab8500_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
- static struct regulator_ops ab8500_regulator_ops = {
- 	.enable		= ab8500_regulator_enable,
- 	.disable	= ab8500_regulator_disable,
-+	.set_mode	= ab8500_regulator_set_mode,
-+	.get_mode	= ab8500_regulator_get_mode,
- 	.is_enabled	= ab8500_regulator_is_enabled,
- 	.get_voltage_sel = ab8500_regulator_get_voltage_sel,
- 	.set_voltage_sel = ab8500_regulator_set_voltage_sel,
-@@ -284,6 +347,8 @@ static struct ab8500_regulator_info
- 		.update_bank		= 0x04,
- 		.update_reg		= 0x09,
- 		.update_mask		= 0x03,
-+		.update_val		= 0x01,
-+		.update_val_idle	= 0x03,
- 		.update_val_enable	= 0x01,
- 		.voltage_bank		= 0x04,
- 		.voltage_reg		= 0x1f,
-@@ -302,6 +367,8 @@ static struct ab8500_regulator_info
- 		.update_bank		= 0x04,
- 		.update_reg		= 0x09,
- 		.update_mask		= 0x0c,
-+		.update_val		= 0x04,
-+		.update_val_idle	= 0x0c,
- 		.update_val_enable	= 0x04,
- 		.voltage_bank		= 0x04,
- 		.voltage_reg		= 0x20,
-@@ -320,6 +387,8 @@ static struct ab8500_regulator_info
- 		.update_bank		= 0x04,
- 		.update_reg		= 0x0a,
- 		.update_mask		= 0x03,
-+		.update_val		= 0x01,
-+		.update_val_idle	= 0x03,
- 		.update_val_enable	= 0x01,
- 		.voltage_bank		= 0x04,
- 		.voltage_reg		= 0x21,
-@@ -338,6 +407,8 @@ static struct ab8500_regulator_info
- 		.update_bank		= 0x03,
- 		.update_reg		= 0x80,
- 		.update_mask		= 0x44,
-+		.update_val		= 0x04,
-+		.update_val_idle	= 0x44,
- 		.update_val_enable	= 0x04,
- 		.voltage_bank		= 0x03,
- 		.voltage_reg		= 0x80,
+Thanks,
+Rafael
+
+
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
