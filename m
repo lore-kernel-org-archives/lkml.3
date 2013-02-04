@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3BDMfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:35:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50814 "EHLO mx1.redhat.com"
+	id S1754602Ab3BDMd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:33:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754615Ab3BDMfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 07:35:11 -0500
+	id S1753785Ab3BDMdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 07:33:24 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -15,24 +15,40 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 04/11] perf tools: Use PERF_EVENT_IOC_ID perf ioctl to read event id
-Date: Mon,  4 Feb 2013 13:32:58 +0100
-Message-Id: <1359981185-16819-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 01/11] perf ui/hist: Add support to display whole group data for raw columns
+Date: Mon,  4 Feb 2013 13:32:55 +0100
+Message-Id: <1359981185-16819-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1359981185-16819-1-git-send-email-jolsa@redhat.com>
 References: <1359981185-16819-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing the way we retrieve the event ID. Instead of parsing out
-the ID out of the read data, using the PERF_EVENT_IOC_ID ioctl.
+Currently we don't display group members' values for raw
+columns like 'Samples' and 'Period' when in group report
+mode.
 
-Keeping the old way in place to support kernels without
-PERF_EVENT_IOC_ID ioctl support.
+Uniting '__hpp__percent_fmt' and '__hpp__raw_fmt' function under
+new function __hpp__fmt. It's basically '__hpp__percent_fmt' code
+with new 'fmt_percent' bool parameter added saying whether raw
+number or percentage should be printed.
 
-This will be useful for retrieving the event ID for events
-with PERF_FORMAT_GROUP read format set, where it's impossible
-to get correct event id out of the read call data.
+This way raw columns print out all the group members when
+in group report mode, like:
+
+  $ perf record -e '{cycles,cache-misses}' ls
+  ...
+  $ perf report --group --show-total-period --stdio
+  ...
+  #         Overhead                    Period  Command      Shared Object                             Symbol
+  # ................  ........................  .......  .................  .................................
+  #
+      23.63%  11.24%       3331335         317       ls  [kernel.kallsyms]  [k] __lock_acquire
+      12.72%   0.00%       1793100           0       ls  [kernel.kallsyms]  [k] native_sched_clock
+       9.72%   0.00%       1369920           0       ls  libc-2.14.90.so    [.] _nl_find_locale
+       0.03%   0.07%          4476           2       ls  [kernel.kallsyms]  [k] intel_pmu_enable_all
+       0.00%  11.73%             0         331       ls  ld-2.14.90.so      [.] _dl_cache_libcmp
+       0.00%  11.06%             0         312       ls  [kernel.kallsyms]  [k] vma_interval_tree_insert
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -43,43 +59,119 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/evlist.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ tools/perf/ui/hist.c | 53 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 26 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index eddd5eb..51e21f9 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -298,6 +298,17 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index a47ce98..d671e63 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -9,18 +9,24 @@
+ 
+ typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
+ 
+-static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-			      u64 (*get_field)(struct hist_entry *),
+-			      const char *fmt, hpp_snprint_fn print_fn)
++static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
++		      u64 (*get_field)(struct hist_entry *),
++		      const char *fmt, hpp_snprint_fn print_fn,
++		      bool fmt_percent)
  {
- 	u64 read_data[4] = { 0, };
- 	int id_idx = 1; /* The first entry is the counter value */
-+	u64 id;
-+	int ret;
-+
-+	ret = ioctl(fd, PERF_EVENT_IOC_ID, &id);
-+	if (!ret)
-+		goto add;
-+
-+	if (errno != ENOTTY)
-+		return -1;
-+
-+	/* Legacy way to get event id.. All hail to old kernels! */
+ 	int ret;
+-	double percent = 0.0;
+ 	struct hists *hists = he->hists;
  
- 	if (!(evsel->attr.read_format & PERF_FORMAT_ID) ||
- 	    read(fd, &read_data, sizeof(read_data)) == -1)
-@@ -308,7 +319,10 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
- 	if (evsel->attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
- 		++id_idx;
- 
--	perf_evlist__id_add(evlist, evsel, cpu, thread, read_data[id_idx]);
-+	id = read_data[id_idx];
+-	if (hists->stats.total_period)
+-		percent = 100.0 * get_field(he) / hists->stats.total_period;
++	if (fmt_percent) {
++		double percent = 0.0;
 +
-+ add:
-+	perf_evlist__id_add(evlist, evsel, cpu, thread, id);
- 	return 0;
++		if (hists->stats.total_period)
++			percent = 100.0 * get_field(he) /
++				  hists->stats.total_period;
+ 
+-	ret = print_fn(hpp->buf, hpp->size, fmt, percent);
++		ret = print_fn(hpp->buf, hpp->size, fmt, percent);
++	} else
++		ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
+ 
+ 	if (symbol_conf.event_group) {
+ 		int prev_idx, idx_delta;
+@@ -49,11 +55,15 @@ static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 				 * have no sample
+ 				 */
+ 				ret += print_fn(hpp->buf + ret, hpp->size - ret,
+-						fmt, 0.0);
++						fmt, 0);
+ 			}
+ 
+-			ret += print_fn(hpp->buf + ret, hpp->size - ret,
+-					fmt, 100.0 * period / total);
++			if (fmt_percent)
++				ret += print_fn(hpp->buf + ret, hpp->size - ret,
++						fmt, 100.0 * period / total);
++			else
++				ret += print_fn(hpp->buf + ret, hpp->size - ret,
++						fmt, period);
+ 
+ 			prev_idx = perf_evsel__group_idx(evsel);
+ 		}
+@@ -65,23 +75,12 @@ static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 			 * zero-fill group members at last which have no sample
+ 			 */
+ 			ret += print_fn(hpp->buf + ret, hpp->size - ret,
+-					fmt, 0.0);
++					fmt, 0);
+ 		}
+ 	}
+ 	return ret;
  }
  
+-static int __hpp__raw_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-			  u64 (*get_field)(struct hist_entry *),
+-			  const char *fmt, hpp_snprint_fn print_fn)
+-{
+-	int ret;
+-
+-	ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
+-	return ret;
+-}
+-
+-
+ #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
+ static int hpp__header_##_type(struct perf_hpp *hpp)			\
+ {									\
+@@ -116,16 +115,16 @@ static u64 he_get_##_field(struct hist_entry *he)				\
+ 										\
+ static int hpp__color_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+-	return __hpp__percent_fmt(hpp, he, he_get_##_field, " %6.2f%%",		\
+-				  (hpp_snprint_fn)percent_color_snprintf); 	\
++	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
++			  (hpp_snprint_fn)percent_color_snprintf, true);	\
+ }
+ 
+ #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
+ static int hpp__entry_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+ 	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
+-	return __hpp__percent_fmt(hpp, he, he_get_##_field, fmt,		\
+-				  scnprintf);					\
++	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
++			  scnprintf, true);					\
+ }
+ 
+ #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+@@ -137,7 +136,7 @@ static u64 he_get_raw_##_field(struct hist_entry *he)				\
+ static int hpp__entry_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+ 	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
+-	return __hpp__raw_fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf);	\
++	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf, false);	\
+ }
+ 
+ #define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
 -- 
 1.7.11.7
 
