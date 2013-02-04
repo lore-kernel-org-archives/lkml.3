@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab3BDJCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 04:02:15 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58996 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab3BDJCN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 04:02:13 -0500
-Message-ID: <510F790B.3060508@pengutronix.de>
-Date: Mon, 04 Feb 2013 10:02:03 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1754275Ab3BDJCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 04:02:49 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44417 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754207Ab3BDJCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 04:02:46 -0500
+Date: Mon, 4 Feb 2013 10:02:37 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 4/4] x86, 32-bit: Drop new_cpu_data
+Message-ID: <20130204090237.GB13909@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+References: <1359908079-10469-1-git-send-email-bp@alien8.de>
+ <1359908079-10469-5-git-send-email-bp@alien8.de>
+ <510EF65D.4020602@zytor.com>
+ <20130204052725.GA13909@pd.tnic>
+ <562c8dd4-6665-4365-8eb4-33e77e6f6798@email.android.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: netdev@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>,
-        linux-can@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] can: Remove unnecessary alloc/OOM messages
-References: <cover.1359939012.git.joe@perches.com> <4bcd953ce87ecab86e000443df36a2867927c96e.1359939013.git.joe@perches.com>
-In-Reply-To: <4bcd953ce87ecab86e000443df36a2867927c96e.1359939013.git.joe@perches.com>
-X-Enigmail-Version: 1.5
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2LILJNEMMDBAHXUFIGAAD"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <562c8dd4-6665-4365-8eb4-33e77e6f6798@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2LILJNEMMDBAHXUFIGAAD
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Sun, Feb 03, 2013 at 09:44:02PM -0800, H. Peter Anvin wrote:
+> boot_cpu_data is ok for things that are indeed universally valid
+> across. That does not include CPUID level, for one.
 
-On 02/04/2013 04:28 AM, Joe Perches wrote:
-> alloc failures already get standardized OOM
-> messages and a dump_stack.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
+Wait a minute, hold the phone! :-)
 
-Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Are you saying that CPUID_EAX(0) could return different values in %eax
+on the *same* system with mixed-silicon steppings? Or even on an uniform
+system?
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+-- 
+Regards/Gruss,
+    Boris.
 
-
-------enig2LILJNEMMDBAHXUFIGAAD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlEPeQ8ACgkQjTAFq1RaXHPAwwCfalMFWS4CHlrDEYQ2RNGCNlYF
-Wj4AniRXiE+bFKYqvN/Op/niXW7yHHnc
-=wTU7
------END PGP SIGNATURE-----
-
-------enig2LILJNEMMDBAHXUFIGAAD--
+Sent from a fat crate under my desk. Formatting is fine.
+--
