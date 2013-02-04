@@ -1,59 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3BDFGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 00:06:04 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37447 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab3BDFGC (ORCPT
+	id S1751960Ab3BDFHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 00:07:55 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:63093 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab3BDFHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 00:06:02 -0500
-Date: Mon, 4 Feb 2013 05:05:50 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: H?vard Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: avr32: add dummy syscalls
-Message-ID: <20130204050550.GA4503@ZenIV.linux.org.uk>
-References: <1359291015-4544-1-git-send-email-matthias.bgg@gmail.com>
- <20130127195714.GA11224@samfundet.no>
- <20130127203009.GG4503@ZenIV.linux.org.uk>
- <20130127203954.GA22063@samfundet.no>
- <20130204001055.GV4503@ZenIV.linux.org.uk>
- <20130204003047.GW4503@ZenIV.linux.org.uk>
- <20130204013111.GX4503@ZenIV.linux.org.uk>
- <20130204030221.GY4503@ZenIV.linux.org.uk>
- <CACiLriQbrKvo128hhH4Cd3U+qZwgXPGFEAs4b3=SsK59=4Kkkw@mail.gmail.com>
+	Mon, 4 Feb 2013 00:07:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACiLriQbrKvo128hhH4Cd3U+qZwgXPGFEAs4b3=SsK59=4Kkkw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <510E51FF.8090005@ti.com>
+References: <1359380879-26306-1-git-send-email-prabhakar.lad@ti.com>
+ <1359380879-26306-5-git-send-email-prabhakar.lad@ti.com> <510E51FF.8090005@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 4 Feb 2013 10:37:32 +0530
+Message-ID: <CA+V-a8uT-iF_TdWQwvnc1PfcQ9z3WBuZ2MYS1X_u3wO0_p=T0w@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] ARM: davinci: da850: add DT node for eth0.
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Heiko Schocher <hs@denx.de>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 03, 2013 at 08:52:18PM -0800, H?vard Skinnemoen wrote:
+Sekhar ,
 
-> You're right on -- in this case, the compiler will skip r10, and do
-> (r12, r11, r8:r9, stack). We pass the syscall number in r8, but we
-> also unconditionally move r7 to r8 in the syscall path, so it
-> shouldn't matter (libc does the opposite when necessary).
-> 
-> I remember some talk about having the compiler reuse r10 for the next
-> 32-bit argument in cases like this, but I don't think it ever
-> happened.
+On Sun, Feb 3, 2013 at 5:33 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On 1/28/2013 7:17 PM, Prabhakar Lad wrote:
+>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>
+>> Add eth0 device tree node information and pinmux for mii to da850 by
+>> providing interrupt details and local mac address of eth0.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: davinci-linux-open-source@linux.davincidsp.com
+>> Cc: netdev@vger.kernel.org
+>> Cc: devicetree-discuss@lists.ozlabs.org
+>> Cc: Sekhar Nori <nsekhar@ti.com>
+>> Cc: Heiko Schocher <hs@denx.de>
+>> ---
+>>  arch/arm/boot/dts/da850-evm.dts |    5 +++++
+>>  arch/arm/boot/dts/da850.dtsi    |   35 +++++++++++++++++++++++++++++++++++
+>>  2 files changed, 40 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+>> index a319491..19aa2b3 100644
+>> --- a/arch/arm/boot/dts/da850-evm.dts
+>> +++ b/arch/arm/boot/dts/da850-evm.dts
+>> @@ -30,6 +30,11 @@
+>>               mdio: davinci_mdio@1e24000 {
+>>                       status = "okay";
+>>               };
+>> +             eth0: emac@1e20000 {
+>> +                     status = "okay";
+>> +                     pinctrl-names = "default";
+>> +                     pinctrl-0 = <&mii_pins>;
+>> +             };
+>>       };
+>>       nand_cs3@62000000 {
+>>               status = "okay";
+>> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+>> index ba28f2d..76905f3 100644
+>> --- a/arch/arm/boot/dts/da850.dtsi
+>> +++ b/arch/arm/boot/dts/da850.dtsi
+>> @@ -56,6 +56,26 @@
+>>                                       0x30 0x01100000  0x0ff00000
+>>                               >;
+>>                       };
+>> +                     mii_pins: pinmux_mii_pins {
+>> +                             pinctrl-single,bits = <
+>> +                                     /*
+>> +                                      * MII_TXEN, MII_TXCLK, MII_COL
+>> +                                      * MII_TXD_3, MII_TXD_2, MII_TXD_1
+>> +                                      * MII_TXD_0
+>> +                                      */
+>> +                                     0x8 0x88888880 0xfffffff0
+>> +                                     /*
+>> +                                      * MII_RXER, MII_CRS, MII_RXCLK
+>> +                                      * MII_RXDV, MII_RXD_3, MII_RXD_2
+>> +                                      * MII_RXD_1, MII_RXD_0
+>> +                                      */
+>> +                                     0xc 0x88888888 0xffffffff
+>> +                                     /* MDIO_CLK, MDIO_D */
+>
+> You call this mii_pins, but include mdio pins in there as well. Can you
+> separate them out? Then some board which uses rmii can simply reuse the
+> entry.
+>
+Ok makes sense.
 
-Umm...  In case of fallocate() the next argument is 64bit one, though;
-sys_fallocate() will be looking for two 32bit words on stack, so no
-matter how do we pass them to syscall, we'd better push two words in
-the wrapper.
+>> +                                     0x10 0x00222288 0x00ffffff
+>> +                                     /* GPIO2_6 */
+>> +                                     0x18 0x00000080 0x000000f0
+>
+> This is SoC specific pin list. Such board specific pins should not make
+> it here.
+>
+Ok, so this should be set up using GPIO API's ?
 
-But yes, 32bit/32bit/64bit/32bit is another interesting case -
-fanotify_mark is 32/32/64/32/32.  From what ABI says it would seem to
-be r12/r11/r8:r9/r10/stack, but if I understand you correctly, we'll
-end up wanting *two* arguments on stack...
+>> +                             >;
+>> +                     };
+>>               };
+>>               serial0: serial@1c42000 {
+>>                       compatible = "ns16550a";
+>> @@ -88,6 +108,21 @@
+>>                       reg = <0x224000 0x1000>;
+>>                       bus_freq = <2200000>;
+>>               };
+>> +             eth0: emac@1e20000 {
+>> +                     compatible = "ti,davinci-dm6467-emac";
+>> +                     reg = <0x220000 0x4000>;
+>> +                     ti,davinci-ctrl-reg-offset = <0x3000>;
+>> +                     ti,davinci-ctrl-mod-reg-offset = <0x2000>;
+>> +                     ti,davinci-ctrl-ram-offset = <0>;
+>> +                     ti,davinci-ctrl-ram-size = <0x2000>;
+>> +                     local-mac-address = [ 00 00 00 00 00 00 ];
+>> +                     interrupts = <33
+>> +                                     34
+>> +                                     35
+>> +                                     36
+>> +                                     >;
+>> +                     phy-handle = <&mdio>;
+>
+> I doubt this is required. This property is to pass a handle to the phy,
+> not mdio bus.
+>
+Ok I'll check on this.
+
+Regards,
+--Prabhakar
+
+
+> Thanks,
+> Sekhar
