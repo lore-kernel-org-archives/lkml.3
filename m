@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab3BDQZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 11:25:09 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:43186 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400Ab3BDQZH (ORCPT
+	id S1756526Ab3BDQ2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 11:28:31 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39811 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405Ab3BDQ2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 11:25:07 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: zsmalloc: replace local MAX() with max()
-Date: Mon,  4 Feb 2013 10:23:53 -0600
-Message-Id: <1359995033-30225-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.1
+	Mon, 4 Feb 2013 11:28:30 -0500
+Date: Mon, 4 Feb 2013 21:56:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Arapov <anton@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] uprobes/perf: Always increment trace_uprobe->nhit
+Message-ID: <20130204162611.GB28145@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20130131191752.GA30410@redhat.com>
+ <20130131191832.GA30457@redhat.com>
+ <20130204111711.GB12900@linux.vnet.ibm.com>
+ <20130204151850.GA6641@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20130204151850.GA6641@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020416-3620-0000-0000-000001125E9F
+x-cbid: 13020416-2876-0000-0000-000004E2D894
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the local define MAX() macro with the
-kernel-wide max() macro from kernel.h
+* Oleg Nesterov <oleg@redhat.com> [2013-02-04 16:18:50]:
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
-Based on greg/staging-next
+> On 02/04, Srikar Dronamraju wrote:
+> >
+> > * Oleg Nesterov <oleg@redhat.com> [2013-01-31 20:18:32]:
+> >
+> > > Move tu->nhit++ from uprobe_trace_func() to uprobe_dispatcher().
+> > >
+> > > ->nhit counts how many time we hit the breakpoint inserted by this
+> > > uprobe, we do not want to loose this info if uprobe was enabled by
+> > > sys_perf_event_open().
+> > >
+> >
+> > Though I dont see a problem with this change, It seems unnecessary for
+> > me.
+> >
+> > Info from nhits is mostly for /sys/kernel/debug/tracing/uprobe_profile
+> 
+> It is only for uprobe_profile, yes, and it is useful. Why should we hide
+> this info if this uprobe is used by perf?
 
- drivers/staging/zsmalloc/zsmalloc-main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Fine with me.
 
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 06f73a9..fd63b67 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -122,10 +122,9 @@
- #define OBJ_INDEX_BITS	(BITS_PER_LONG - _PFN_BITS)
- #define OBJ_INDEX_MASK	((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
- 
--#define MAX(a, b) ((a) >= (b) ? (a) : (b))
- /* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
- #define ZS_MIN_ALLOC_SIZE \
--	MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
-+	max(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
- #define ZS_MAX_ALLOC_SIZE	PAGE_SIZE
- 
- /*
+Steve, Masami, Do you have comments/suggestions on this. 
+(Since kprobe_profile just accounts for kprobetracer and doesnt account
+for perf record.)
+May we should make a similar change in kprobetracer to keep things
+similar.
+
 -- 
-1.8.1.1
+Thanks and Regards
+Srikar Dronamraju
+
+> 
+> > I am not sure how sys_perf_event_open() is making use of this?
+> 
+> I hope I'll send the final series today. From the changelog of the patch
+> which actually turns the filtering on:
+> 
+> 	Testing:
+> 
+> 		# perf probe -x /lib/libc.so.6 syscall
+> 
+> 		# perl -e 'syscall -1 while 1' &
+> 		[1] 530
+> 
+> 		# perf record -e probe_libc:syscall perl -e 'syscall -1 for 1..10; sleep 1'
+> 
+> 		# perf report --show-total-period
+> 			100.00%            10     perl  libc-2.8.so    [.] syscall
+> 
+> 	Before this patch:
+> 
+> 		# cat /sys/kernel/debug/tracing/uprobe_profile
+> 			/lib/libc.so.6 syscall				79291
+> 
+> 	A huge ->nrhit == 79291 reflects the fact that the background process
+> 	530 constantly hits this breakpoint too, even if doesn't contribute to
+> 	the output.
+> 
+> 	After the patch:
+> 
+> 		# cat /sys/kernel/debug/tracing/uprobe_profile
+> 			/lib/libc.so.6 syscall				10
+> 
+> 	This shows that only the target process was punished by int3.
+> 
+> Oleg.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
