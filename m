@@ -1,114 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab3BDSRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:17:16 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:54578 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab3BDSRP (ORCPT
+	id S1755204Ab3BDSRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:17:23 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:64845 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab3BDSRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:17:15 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 4 Feb 2013 19:16:41 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, bfields@fieldses.org, skinsbursky@parallels.com,
-        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
-        linux1394-devel@lists.sourceforge.net
-Subject: Re: [PATCH v2 13/62] firewire: convert to idr_alloc()
-Message-ID: <20130204191641.4817bba2@stein>
-In-Reply-To: <20130204165803.GH27963@mtj.dyndns.org>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
-	<1359854463-2538-14-git-send-email-tj@kernel.org>
-	<20130204165803.GH27963@mtj.dyndns.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 13:17:21 -0500
+Date: Mon, 4 Feb 2013 19:17:16 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] RCU fixes
+Message-ID: <20130204181716.GB10022@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 04 Tejun Heo wrote:
-> Convert to the much saner new idr interface.
-> 
-> Only compile tested.
-> 
-> v2: Stefan pointed out that add_client_resource() may be called from
->     non-process context.  Preload iff @gfp_mask contains __GFP_WAIT.
->     Also updated to include minor upper limit check.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> Cc: linux1394-devel@lists.sourceforge.net
+Linus,
 
-Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> ---
->  drivers/firewire/core-cdev.c   |   19 ++++++++++---------
->  drivers/firewire/core-device.c |    8 +-------
->  2 files changed, 11 insertions(+), 16 deletions(-)
-> 
-> --- a/drivers/firewire/core-cdev.c
-> +++ b/drivers/firewire/core-cdev.c
-> @@ -487,27 +487,28 @@ static int ioctl_get_info(struct client
->  static int add_client_resource(struct client *client,
->  			       struct client_resource *resource, gfp_t gfp_mask)
->  {
-> +	bool preload = gfp_mask & __GFP_WAIT;
->  	unsigned long flags;
->  	int ret;
->  
-> - retry:
-> -	if (idr_pre_get(&client->resource_idr, gfp_mask) == 0)
-> -		return -ENOMEM;
-> -
-> +	if (preload)
-> +		idr_preload(gfp_mask);
->  	spin_lock_irqsave(&client->lock, flags);
-> +
->  	if (client->in_shutdown)
->  		ret = -ECANCELED;
->  	else
-> -		ret = idr_get_new(&client->resource_idr, resource,
-> -				  &resource->handle);
-> +		ret = idr_alloc(&client->resource_idr, resource, 0, 0,
-> +				GFP_NOWAIT);
->  	if (ret >= 0) {
-> +		resource->handle = ret;
->  		client_get(client);
->  		schedule_if_iso_resource(resource);
->  	}
-> -	spin_unlock_irqrestore(&client->lock, flags);
->  
-> -	if (ret == -EAGAIN)
-> -		goto retry;
-> +	spin_unlock_irqrestore(&client->lock, flags);
-> +	if (preload)
-> +		idr_preload_end();
->  
->  	return ret < 0 ? ret : 0;
->  }
-> --- a/drivers/firewire/core-device.c
-> +++ b/drivers/firewire/core-device.c
-> @@ -1017,13 +1017,7 @@ static void fw_device_init(struct work_s
->  
->  	fw_device_get(device);
->  	down_write(&fw_device_rwsem);
-> -	ret = idr_pre_get(&fw_device_idr, GFP_KERNEL) ?
-> -	      idr_get_new(&fw_device_idr, device, &minor) :
-> -	      -ENOMEM;
-> -	if (minor >= 1 << MINORBITS) {
-> -		idr_remove(&fw_device_idr, minor);
-> -		minor = -ENOSPC;
-> -	}
-> +	ret = idr_alloc(&fw_device_idr, device, 0, 1 << MINORBITS, GFP_KERNEL);
->  	up_write(&fw_device_rwsem);
->  
->  	if (ret < 0)
+Please pull the latest core-urgent-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
+
+   HEAD: d36b7b9643faca8aab8cee8d824f75c800b337ac Merge branch 'rcu/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu into core/urgent
+
+Two small fixlets.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Paul Gortmaker (2):
+      rcu: Prevent soft-lockup complaints about no-CBs CPUs
+      rcu: Make rcu_nocb_poll an early_param instead of module_param
 
 
+ Documentation/kernel-parameters.txt |  2 +-
+ kernel/rcutree_plugin.h             | 13 ++++++++++---
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
--- 
-Stefan Richter
--=====-===-= --=- --=--
-http://arcgraph.de/sr/
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 363e348..6c72381 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2438,7 +2438,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			real-time workloads.  It can also improve energy
+ 			efficiency for asymmetric multiprocessors.
+ 
+-	rcu_nocbs_poll	[KNL,BOOT]
++	rcu_nocb_poll	[KNL,BOOT]
+ 			Rather than requiring that offloaded CPUs
+ 			(specified by rcu_nocbs= above) explicitly
+ 			awaken the corresponding "rcuoN" kthreads,
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index f6e5ec2..c1cc7e1 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -40,8 +40,7 @@
+ #ifdef CONFIG_RCU_NOCB_CPU
+ static cpumask_var_t rcu_nocb_mask; /* CPUs to have callbacks offloaded. */
+ static bool have_rcu_nocb_mask;	    /* Was rcu_nocb_mask allocated? */
+-static bool rcu_nocb_poll;	    /* Offload kthread are to poll. */
+-module_param(rcu_nocb_poll, bool, 0444);
++static bool __read_mostly rcu_nocb_poll;    /* Offload kthread are to poll. */
+ static char __initdata nocb_buf[NR_CPUS * 5];
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+ 
+@@ -2159,6 +2158,13 @@ static int __init rcu_nocb_setup(char *str)
+ }
+ __setup("rcu_nocbs=", rcu_nocb_setup);
+ 
++static int __init parse_rcu_nocb_poll(char *arg)
++{
++	rcu_nocb_poll = 1;
++	return 0;
++}
++early_param("rcu_nocb_poll", parse_rcu_nocb_poll);
++
+ /* Is the specified CPU a no-CPUs CPU? */
+ static bool is_nocb_cpu(int cpu)
+ {
+@@ -2366,10 +2372,11 @@ static int rcu_nocb_kthread(void *arg)
+ 	for (;;) {
+ 		/* If not polling, wait for next batch of callbacks. */
+ 		if (!rcu_nocb_poll)
+-			wait_event(rdp->nocb_wq, rdp->nocb_head);
++			wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
+ 		list = ACCESS_ONCE(rdp->nocb_head);
+ 		if (!list) {
+ 			schedule_timeout_interruptible(1);
++			flush_signals(current);
+ 			continue;
+ 		}
+ 
