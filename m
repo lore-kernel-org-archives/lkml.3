@@ -1,104 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3BDRX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 12:23:58 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:41873 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157Ab3BDRX4 (ORCPT
+	id S1754340Ab3BDRYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 12:24:44 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25661 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917Ab3BDRYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 12:23:56 -0500
-Message-ID: <510FFC72.2050706@mvista.com>
-Date: Mon, 04 Feb 2013 21:22:42 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Mon, 4 Feb 2013 12:24:42 -0500
+Message-ID: <510FEECA.6070106@oracle.com>
+Date: Mon, 04 Feb 2013 11:24:26 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Matt Porter <mporter@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
-References: <20130201184915.GP2244@beef> <510C1D0E.6030401@mvista.com> <20130201185820.GE29898@arwen.pp.htv.fi> <510C2A47.1090607@mvista.com> <20130201205600.GA31762@arwen.pp.htv.fi> <20130201213003.GW2637@n2100.arm.linux.org.uk> <20130204154153.GA18237@arwen.pp.htv.fi> <510FF1A6.403@mvista.com> <20130204164712.GB4269@arwen.pp.htv.fi> <510FF5C9.3030600@mvista.com> <20130204170216.GC4269@arwen.pp.htv.fi>
-In-Reply-To: <20130204170216.GC4269@arwen.pp.htv.fi>
+To: Hugh Dickins <hughd@google.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Jeff Moyer <jmoyer@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tmpfs: add support for read_iter and write_iter
+References: <alpine.LNX.2.00.1302032200400.7832@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1302032200400.7832@eggly.anvils>
+X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 02/04/2013 12:15 AM, Hugh Dickins wrote:
+> Convert tmpfs do_shmem_file_read() to shmem_file_read_iter().
+> Make file_read_iter_actor() global so tmpfs can use it too: delete
+> file_read_actor(), which was made global in 2.4.4 for use by tmpfs.
+> Replace tmpfs generic_file_aio_write() by generic_file_write_iter().
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+> Please add this to the end of your loop O_DIRECT series.  I tested loop
+> on tmpfs successfully with .direct_IO = shmem_direct_IO() { return 0; }
+> but that's better left as a patch for separate discussion.
 
-On 02/04/2013 08:02 PM, Felipe Balbi wrote:
+Thanks!
 
->>> On Mon, Feb 04, 2013 at 08:36:38PM +0300, Sergei Shtylyov wrote:
->>>>> opted out of it. From the top of my head we have CPPI 3.x, CPPI 4.1,
->>>>> Inventra DMA, OMAP sDMA and ux500 DMA engines supported by the driver.
+> Hmm, I don't see an equivalent of the old fault_in_pages_writeable():
+> have I missed it, or is that a problem?
 
->>>>> Granted, CPPI 4.1 makes some assumptions about the fact that it's
->>>>> handling USB tranfers,
+That's a good question. I think adding back fault_in_pages_writeable()
+and the surrounding logic into ii_iovec_copy_to_user() would be worthwhile.
 
->>>>    What CPPI 4.1 code makes this assumptions? MUSB DMA driver? Then it's just
-
->>> HW makes the asumptions
-
->>    Not true at all. There is a separate set of registers (at offset 0) which
->> copes with USB specifics, but CPPI 4.1 itself doesn't know about USB anything.
-
-> CPPI 4.1 was made for USB transfers.
-
-   Utter nonsense, CPPI 4.1 is hardware abstract DMA engine. It's used for
-Ethernet transfers on out-of-tree platforms like mach-avalanche/.
-
->> It's just the way the driver was written that it used both sets of registers but
->> this needs to be changed into more abstacted accesses to the USB-specific part,
->> to cope with it being different on different platfroms, like AM35x. The driver
->> as it was last posted, just needs rework now.
-
-> are you saying you will do the work ?
-
-   My efforts stopped to be funded by MV back in 2010. Hell, I'm not even
-working in MV as I used to, hanging on the verge of my current contract being
-terminated.
-
->>>>    Don't know, I was quite content with the abstraction when writing CPPI 4.1
->>>> driver for MUSB...
-
->>> look closer. The whole:
-
->>> if (is_cppi())
->>> 	foo();
->>> else if (is_inventra())
->>> 	bar();
->>> else if (is_omap_sdma())
->>> 	baz();
-
->>> is bogus.
-
->>    That part -- yes. There were attempt to get rid of this, but without changing
->> the DMA API. It was left halfway done after my only critical comment, IIRC. Will
->> we ever see the continuation of this effort?
-
-> patches are welcome
-
-   There was a patch, it only needed comments addressed. I think the author was
-Heikki Krogerus. As for me, my time is very limited, so be thankful even for
-those scarce patches I'm sending out now -- I'm doing them in my copious free time.
-
-WBR, Sergei
-
+>  include/linux/fs.h |    5 ++-
+>  mm/filemap.c       |   42 +----------------------------
+>  mm/shmem.c         |   61 +++++++++++++------------------------------
+>  3 files changed, 24 insertions(+), 84 deletions(-)
+> 
+> --- 3.8-dk/include/linux/fs.h	2013-01-29 14:40:40.272041622 -0800
+> +++ linux/include/linux/fs.h	2013-02-02 20:40:07.316296654 -0800
+> @@ -2458,8 +2458,9 @@ extern int sb_min_blocksize(struct super
+>  extern int generic_file_mmap(struct file *, struct vm_area_struct *);
+>  extern int generic_file_readonly_mmap(struct file *, struct vm_area_struct *);
+>  extern int generic_file_remap_pages(struct vm_area_struct *, unsigned long addr,
+> -		unsigned long size, pgoff_t pgoff);
+> -extern int file_read_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size);
+> +				unsigned long size, pgoff_t pgoff);
+> +extern int file_read_iter_actor(read_descriptor_t *desc, struct page *page,
+> +				unsigned long offset, unsigned long size);
+>  int generic_write_checks(struct file *file, loff_t *pos, size_t *count, int isblk);
+>  extern ssize_t generic_file_aio_read(struct kiocb *, const struct iovec *, unsigned long, loff_t);
+>  extern ssize_t generic_file_read_iter(struct kiocb *, struct iov_iter *,
+> --- 3.8-dk/mm/filemap.c	2013-01-29 14:40:12.520040962 -0800
+> +++ linux/mm/filemap.c	2013-02-02 20:40:17.728296902 -0800
+> @@ -1295,44 +1295,6 @@ out:
+>  	file_accessed(filp);
+>  }
+>  
+> -int file_read_actor(read_descriptor_t *desc, struct page *page,
+> -			unsigned long offset, unsigned long size)
+> -{
+> -	char *kaddr;
+> -	unsigned long left, count = desc->count;
+> -
+> -	if (size > count)
+> -		size = count;
+> -
+> -	/*
+> -	 * Faults on the destination of a read are common, so do it before
+> -	 * taking the kmap.
+> -	 */
+> -	if (!fault_in_pages_writeable(desc->arg.buf, size)) {
+> -		kaddr = kmap_atomic(page);
+> -		left = __copy_to_user_inatomic(desc->arg.buf,
+> -						kaddr + offset, size);
+> -		kunmap_atomic(kaddr);
+> -		if (left == 0)
+> -			goto success;
+> -	}
+> -
+> -	/* Do it the slow way */
+> -	kaddr = kmap(page);
+> -	left = __copy_to_user(desc->arg.buf, kaddr + offset, size);
+> -	kunmap(page);
+> -
+> -	if (left) {
+> -		size -= left;
+> -		desc->error = -EFAULT;
+> -	}
+> -success:
+> -	desc->count = count - size;
+> -	desc->written += size;
+> -	desc->arg.buf += size;
+> -	return size;
+> -}
+> -
+>  /*
+>   * Performs necessary checks before doing a write
+>   * @iov:	io vector request
+> @@ -1372,8 +1334,8 @@ int generic_segment_checks(const struct
+>  }
+>  EXPORT_SYMBOL(generic_segment_checks);
+>  
+> -static int file_read_iter_actor(read_descriptor_t *desc, struct page *page,
+> -				unsigned long offset, unsigned long size)
+> +int file_read_iter_actor(read_descriptor_t *desc, struct page *page,
+> +			 unsigned long offset, unsigned long size)
+>  {
+>  	struct iov_iter *iter = desc->arg.data;
+>  	unsigned long copied = 0;
+> --- 3.8-dk/mm/shmem.c	2013-01-02 20:27:10.956550061 -0800
+> +++ linux/mm/shmem.c	2013-02-03 21:21:17.332510148 -0800
+> @@ -1463,14 +1463,23 @@ shmem_write_end(struct file *file, struc
+>  	return copied;
+>  }
+>  
+> -static void do_shmem_file_read(struct file *filp, loff_t *ppos, read_descriptor_t *desc, read_actor_t actor)
+> +static ssize_t shmem_file_read_iter(struct kiocb *iocb,
+> +				struct iov_iter *iter, loff_t pos)
+>  {
+> +	read_descriptor_t desc;
+> +	loff_t *ppos = &iocb->ki_pos;
+> +	struct file *filp = iocb->ki_filp;
+>  	struct inode *inode = filp->f_path.dentry->d_inode;
+>  	struct address_space *mapping = inode->i_mapping;
+>  	pgoff_t index;
+>  	unsigned long offset;
+>  	enum sgp_type sgp = SGP_READ;
+>  
+> +	desc.written = 0;
+> +	desc.count = iov_iter_count(iter);
+> +	desc.arg.data = iter;
+> +	desc.error = 0;
+> +
+>  	/*
+>  	 * Might this read be for a stacking filesystem?  Then when reading
+>  	 * holes of a sparse file, we actually need to allocate those pages,
+> @@ -1497,10 +1506,10 @@ static void do_shmem_file_read(struct fi
+>  				break;
+>  		}
+>  
+> -		desc->error = shmem_getpage(inode, index, &page, sgp, NULL);
+> -		if (desc->error) {
+> -			if (desc->error == -EINVAL)
+> -				desc->error = 0;
+> +		desc.error = shmem_getpage(inode, index, &page, sgp, NULL);
+> +		if (desc.error) {
+> +			if (desc.error == -EINVAL)
+> +				desc.error = 0;
+>  			break;
+>  		}
+>  		if (page)
+> @@ -1551,13 +1560,13 @@ static void do_shmem_file_read(struct fi
+>  		 * "pos" here (the actor routine has to update the user buffer
+>  		 * pointers and the remaining count).
+>  		 */
+> -		ret = actor(desc, page, offset, nr);
+> +		ret = file_read_iter_actor(&desc, page, offset, nr);
+>  		offset += ret;
+>  		index += offset >> PAGE_CACHE_SHIFT;
+>  		offset &= ~PAGE_CACHE_MASK;
+>  
+>  		page_cache_release(page);
+> -		if (ret != nr || !desc->count)
+> +		if (ret != nr || !desc.count)
+>  			break;
+>  
+>  		cond_resched();
+> @@ -1565,40 +1574,8 @@ static void do_shmem_file_read(struct fi
+>  
+>  	*ppos = ((loff_t) index << PAGE_CACHE_SHIFT) + offset;
+>  	file_accessed(filp);
+> -}
+>  
+> -static ssize_t shmem_file_aio_read(struct kiocb *iocb,
+> -		const struct iovec *iov, unsigned long nr_segs, loff_t pos)
+> -{
+> -	struct file *filp = iocb->ki_filp;
+> -	ssize_t retval;
+> -	unsigned long seg;
+> -	size_t count;
+> -	loff_t *ppos = &iocb->ki_pos;
+> -
+> -	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+> -	if (retval)
+> -		return retval;
+> -
+> -	for (seg = 0; seg < nr_segs; seg++) {
+> -		read_descriptor_t desc;
+> -
+> -		desc.written = 0;
+> -		desc.arg.buf = iov[seg].iov_base;
+> -		desc.count = iov[seg].iov_len;
+> -		if (desc.count == 0)
+> -			continue;
+> -		desc.error = 0;
+> -		do_shmem_file_read(filp, ppos, &desc, file_read_actor);
+> -		retval += desc.written;
+> -		if (desc.error) {
+> -			retval = retval ?: desc.error;
+> -			break;
+> -		}
+> -		if (desc.count > 0)
+> -			break;
+> -	}
+> -	return retval;
+> +	return desc.written ? desc.written : desc.error;
+>  }
+>  
+>  static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
+> @@ -2679,8 +2656,8 @@ static const struct file_operations shme
+>  	.llseek		= shmem_file_llseek,
+>  	.read		= do_sync_read,
+>  	.write		= do_sync_write,
+> -	.aio_read	= shmem_file_aio_read,
+> -	.aio_write	= generic_file_aio_write,
+> +	.read_iter	= shmem_file_read_iter,
+> +	.write_iter	= generic_file_write_iter,
+>  	.fsync		= noop_fsync,
+>  	.splice_read	= shmem_file_splice_read,
+>  	.splice_write	= generic_file_splice_write,
+> 
