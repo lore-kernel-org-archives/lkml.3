@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab3BDMcd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:32:33 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34583 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab3BDMcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 07:32:31 -0500
-Date: Mon, 4 Feb 2013 13:32:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-Message-ID: <20130204123221.GA22340@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Viresh Kumar <viresh.kumar@linaro.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-	Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-References: <cover.1359976493.git.viresh.kumar@linaro.org>
- <5808458.pvV2iHpBWm@vostro.rjw.lan>
- <CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
+	id S1754625Ab3BDMck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:32:40 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11695 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858Ab3BDMci (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 07:32:38 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 04 Feb 2013 04:32:37 -0800
+From: Sami Liedes <sliedes@nvidia.com>
+To: <iommu@lists.linux-foundation.org>
+CC: Sami Liedes <sliedes@nvidia.com>, Joerg Roedel <joro@8bytes.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] iommu/tegra: Add missing spinlock initialization
+Date: Mon, 4 Feb 2013 14:31:48 +0200
+Message-ID: <1359981110-9924-1-git-send-email-sliedes@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 05:54:18PM +0530, Viresh Kumar wrote:
-> One important point i would like to highlight is: governors directory
-> would be present in cpu/cpu*/cpufreq/ now instead of cpu/cpufreq/.
+Fix tegra_smmu_probe() to initialize client_lock spinlocks in
+per-address-space structures.
 
-Uh, hold on, isn't this breaking a bunch of userspace with this move?
-Also, on all those other systems which don't need per-policy governors,
-we probably don't need this. So maybe this should be made optional, to
-be enabled by a config option IMO...
+Signed-off-by: Sami Liedes <sliedes@nvidia.com>
+---
+ drivers/iommu/tegra-smmu.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks.
-
+diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+index f08dbcd..46cc8cf 100644
+--- a/drivers/iommu/tegra-smmu.c
++++ b/drivers/iommu/tegra-smmu.c
+@@ -1,7 +1,7 @@
+ /*
+  * IOMMU API for SMMU in Tegra30
+  *
+- * Copyright (c) 2011-2012, NVIDIA CORPORATION.  All rights reserved.
++ * Copyright (c) 2011-2013, NVIDIA CORPORATION.  All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms and conditions of the GNU General Public License,
+@@ -1217,6 +1217,7 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+ 		as->pte_attr = _PTE_ATTR;
+ 
+ 		spin_lock_init(&as->lock);
++		spin_lock_init(&as->client_lock);
+ 		INIT_LIST_HEAD(&as->client);
+ 	}
+ 	spin_lock_init(&smmu->lock);
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
