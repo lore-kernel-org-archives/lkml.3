@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab3BDJN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 04:13:59 -0500
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:35465 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab3BDJN5 (ORCPT
+	id S1754337Ab3BDJOz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 04:14:55 -0500
+Received: from mail-da0-f45.google.com ([209.85.210.45]:41595 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab3BDJOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 04:13:57 -0500
+	Mon, 4 Feb 2013 04:14:53 -0500
+Date: Mon, 4 Feb 2013 17:29:06 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/6 RFC] Mapping range lock
+Message-ID: <20130204092906.GA7503@gmail.com>
+Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+	linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+References: <1359668994-13433-1-git-send-email-jack@suse.cz>
+ <20130131160757.06d7f1c2.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1359965415-3887-1-git-send-email-agust@denx.de>
-References: <1359461275-7059-1-git-send-email-agust@denx.de>
-	<1359965415-3887-1-git-send-email-agust@denx.de>
-Date: Mon, 4 Feb 2013 10:13:56 +0100
-Message-ID: <CACRpkdZfrXkK3RLgDRwey28JQPHEkyZyQa9RmjzKCP3wrzxQjg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: mpc8xxx: don't set IRQ_TYPE_NONE when creating irq mapping
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Anatolij Gustschin <agust@denx.de>
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130131160757.06d7f1c2.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 4, 2013 at 9:10 AM, Anatolij Gustschin <agust@denx.de> wrote:
+On Thu, Jan 31, 2013 at 04:07:57PM -0800, Andrew Morton wrote:
+[snip]
+> > c) i_mutex doesn't allow any paralellism of operations using it and some
+> >    filesystems workaround this for specific cases (e.g. DIO reads). Using
+> >    range locking allows for concurrent operations (e.g. writes, DIO) on
+> >    different parts of the file. Of course, range locking itself isn't
+> >    enough to make the parallelism possible. Filesystems still have to
+> >    somehow deal with the concurrency when manipulating inode allocation
+> >    data. But the range locking at least provides a common VFS mechanism for
+> >    serialization VFS itself needs and it's upto each filesystem to
+> >    serialize more if it needs to.
+> 
+> That would be useful to end-users, but I'm having trouble predicting
+> *how* useful.
 
-> Exporting gpios over sysfs GPIO interface throws genirq
-> error messages, i.e. on an mpc5121 based board exporting
-> GPIO 5 triggers it:
+Hello Andrew,
 
-Thanks, I'm convinced now. Applied the v2 patch!
+I believe this would be useful for the end-user, at least for dio user, e.g.
+database.  Now when we want to issue a direct io, i_mutex will serialize
+concurrent reader/writer.  Some filesystems (xfs and ext4) try not to take
+this locking in some conditions to improve the performance, especially for the
+latency, because we don't need to wait on this locking.  But there are still
+some cases that need to take it.  So range locking can make us reduce the
+contention as far as possible.
 
-Yours,
-Linus Walleij
+Regards,
+						- Zheng
