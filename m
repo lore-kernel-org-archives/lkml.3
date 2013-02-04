@@ -1,255 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab3BDJ5t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 04:57:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753807Ab3BDJ5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 04:57:05 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 2/2] perf tests: Adding automated parsing tests for group :GH modifiers
-Date: Mon,  4 Feb 2013 10:56:43 +0100
-Message-Id: <1359971803-2343-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1359971803-2343-1-git-send-email-jolsa@redhat.com>
-References: <1359971803-2343-1-git-send-email-jolsa@redhat.com>
+	id S1754046Ab3BDJ5b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 04:57:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:37967 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962Ab3BDJ52 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 04:57:28 -0500
+Message-ID: <510F8602.9080806@canonical.com>
+Date: Mon, 04 Feb 2013 10:57:22 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Inki Dae <inki.dae@samsung.com>
+CC: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linaro-mm-sig@lists.linaro.org
+Subject: Re: [Linaro-mm-sig] [PATCH 6/7] reservation: cross-device reservation
+ support
+References: <1358253244-11453-1-git-send-email-maarten.lankhorst@canonical.com> <1358253244-11453-7-git-send-email-maarten.lankhorst@canonical.com> <CAAQKjZPJX9Rt0LH0PMpwRSv3etNvoGh3MvNcmFpvCXTtJeeFqw@mail.gmail.com>
+In-Reply-To: <CAAQKjZPJX9Rt0LH0PMpwRSv3etNvoGh3MvNcmFpvCXTtJeeFqw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ':GH' group modifier handling was just recently fixed,
-adding some autommated tests to keep it that way. Adding
-tests for following events:
+Op 04-02-13 08:06, Inki Dae schreef:
+>> +/**
+>> + * ticket_commit - commit a reservation with a new fence
+>> + * @ticket:    [in]    the reservation_ticket returned by
+>> + * ticket_reserve
+>> + * @entries:   [in]    a linked list of struct reservation_entry
+>> + * @fence:     [in]    the fence that indicates completion
+>> + *
+>> + * This function will call reservation_ticket_fini, no need
+>> + * to do it manually.
+>> + *
+>> + * This function should be called after a hardware command submission is
+>> + * completed succesfully. The fence is used to indicate completion of
+>> + * those commands.
+>> + */
+>> +void
+>> +ticket_commit(struct reservation_ticket *ticket,
+>> +                 struct list_head *entries, struct fence *fence)
+>> +{
+>> +       struct list_head *cur;
+>> +
+>> +       if (list_empty(entries))
+>> +               return;
+>> +
+>> +       if (WARN_ON(!fence)) {
+>> +               ticket_backoff(ticket, entries);
+>> +               return;
+>> +       }
+>> +
+>> +       list_for_each(cur, entries) {
+>> +               struct reservation_object *bo;
+>> +               bool shared;
+>> +
+>> +               reservation_entry_get(cur, &bo, &shared);
+>> +
+>> +               if (!shared) {
+>> +                       int i;
+>> +                       for (i = 0; i < bo->fence_shared_count; ++i) {
+>> +                               fence_put(bo->fence_shared[i]);
+>> +                               bo->fence_shared[i] = NULL;
+>> +                       }
+>> +                       bo->fence_shared_count = 0;
+>> +                       if (bo->fence_excl)
+>> +                               fence_put(bo->fence_excl);
+>> +
+>> +                       bo->fence_excl = fence;
+>> +               } else {
+>> +                       if (WARN_ON(bo->fence_shared_count >=
+>> +                                   ARRAY_SIZE(bo->fence_shared))) {
+>> +                               mutex_unreserve_unlock(&bo->lock);
+>> +                               continue;
+>> +                       }
+>> +
+>> +                       bo->fence_shared[bo->fence_shared_count++] = fence;
+>> +               }
+> Hi,
+>
+> I got some questions to fence_excl and fence_shared. At the above
+> code, if bo->fence_excl is not NULL then it puts bo->fence_excl and
+> sets a new fence to it. This seems like that someone that committed a
+> new fence, wants to access the given dmabuf exclusively even if
+> someone is accessing the given dmabuf.
+Yes, if there were shared fences, they had to issue a wait for the previous exclusive fence, so if you add
+(possibly hardware) wait ops on those shared fences to your command stream, it follows that you also
+waited for the previous exclusive fence implicitly.
 
-  "{cycles,cache-misses:G}:H"
-  "{cycles,cache-misses:H}:G"
-  "{cycles:G,cache-misses:H}:u"
-  "{cycles:G,cache-misses:H}:uG"
-
-Plus fixing test__group2 test.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/tests/parse-events.c | 178 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 177 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 80a8daf..c5636f3 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -577,7 +577,7 @@ static int test__group2(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
- 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
--	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-@@ -811,6 +811,166 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	return 0;
- }
- 
-+static int test__group_gh1(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
-+
-+	/* cycles + :H group modifier */
-+	evsel = leader = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
-+
-+	/* cache-misses:G + :H group modifier */
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
-+
-+	return 0;
-+}
-+
-+static int test__group_gh2(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
-+
-+	/* cycles + :G group modifier */
-+	evsel = leader = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
-+
-+	/* cache-misses:H + :G group modifier */
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
-+
-+	return 0;
-+}
-+
-+static int test__group_gh3(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
-+
-+	/* cycles:G + :u group modifier */
-+	evsel = leader = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
-+
-+	/* cache-misses:H + :u group modifier */
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
-+
-+	return 0;
-+}
-+
-+static int test__group_gh4(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong number of groups", 1 == evlist->nr_groups);
-+
-+	/* cycles:G + :uG group modifier */
-+	evsel = leader = perf_evlist__first(evlist);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
-+	TEST_ASSERT_VAL("wrong nr_members", evsel->nr_members == 2);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 0);
-+
-+	/* cache-misses:H + :uG group modifier */
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group_idx", perf_evsel__group_idx(evsel) == 1);
-+
-+	return 0;
-+}
-+
- static int count_tracepoints(void)
- {
- 	char events_path[PATH_MAX];
-@@ -1011,6 +1171,22 @@ static struct evlist_test test__events[] = {
- 		.name  = "*:*",
- 		.check = test__all_tracepoints,
- 	},
-+	[34] = {
-+		.name  = "{cycles,cache-misses:G}:H",
-+		.check = test__group_gh1,
-+	},
-+	[35] = {
-+		.name  = "{cycles,cache-misses:H}:G",
-+		.check = test__group_gh2,
-+	},
-+	[36] = {
-+		.name  = "{cycles:G,cache-misses:H}:u",
-+		.check = test__group_gh3,
-+	},
-+	[37] = {
-+		.name  = "{cycles:G,cache-misses:H}:uG",
-+		.check = test__group_gh4,
-+	},
- };
- 
- static struct evlist_test test__events_pmu[] = {
--- 
-1.7.11.7
+If there is only an exclusive fence, you have to issue some explicit wait op  on it before you start the rest
+of the commands.
+> On the other hand, in case of fence_shared, someone wants to access
+> that dmabuf non-exclusively. So this case seems like that the given
+> dmabuf could be accessed by two more devices. So I guess that the
+> fence_excl could be used for write access(may need buffer sync like
+> blocking) and read access for the fence_shared(may not need buffer
+> sync). I'm not sure that I understand these two things correctly so
+> could you please give me more comments for them?
+Correct, if you create a shared fence, you still have to emit a wait op for the exclusive fence.
+> Thanks,
+> Inki Dae
+>
+>> +               fence_get(fence);
+>> +
+>> +               mutex_unreserve_unlock(&bo->lock);
+>> +       }
+>> +       reservation_ticket_fini(ticket);
+>> +}
+>> +EXPORT_SYMBOL(ticket_commit);
 
