@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab3BDPDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 10:03:44 -0500
-Received: from mail.windriver.com ([147.11.1.11]:32961 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827Ab3BDPDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 10:03:43 -0500
-Message-ID: <510FCDD9.7060900@windriver.com>
-Date: Mon, 4 Feb 2013 10:03:53 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755936Ab3BDPFX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 10:05:23 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49812 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753974Ab3BDPFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 10:05:21 -0500
+Date: Mon, 4 Feb 2013 16:05:11 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
+Message-ID: <20130204150511.GF13909@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Viresh Kumar <viresh.kumar@linaro.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
+	Steve.Bannister@arm.com, Liviu.Dudau@arm.com
+References: <5808458.pvV2iHpBWm@vostro.rjw.lan>
+ <CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
+ <20130204123221.GA22340@pd.tnic>
+ <CAKohpomcrtV3i9fL4zV6Mt0uDza-9pHTOsqTe2=C1t6mE6cpCQ@mail.gmail.com>
+ <20130204130403.GD13909@pd.tnic>
+ <CAKohpokuFC5gnTFcD3+RH3p5XaW8vBtyfq+Kej=d2J8tERdmoQ@mail.gmail.com>
+ <20130204133648.GE13909@pd.tnic>
+ <CAKohpo=aLnhM0Op_32ohWZK5eG5nT7iK0OktBe+8ygOQW7zUqQ@mail.gmail.com>
+ <20130204140908.GC15452@pd.tnic>
+ <CAKohpokowK6ybYd8aDUdfFYsnzoc5VAKsuPSkfxoDqJ3k+FwGA@mail.gmail.com>
 MIME-Version: 1.0
-To: <artem.bityutskiy@linux.intel.com>
-CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] mtd: fix random pointer dereference in OF device name
- handling
-References: <1358967548-25491-1-git-send-email-paul.gortmaker@windriver.com> <1359965101.13791.11.camel@sauron.fi.intel.com>
-In-Reply-To: <1359965101.13791.11.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAKohpokowK6ybYd8aDUdfFYsnzoc5VAKsuPSkfxoDqJ3k+FwGA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-02-04 03:05 AM, Artem Bityutskiy wrote:
-> On Wed, 2013-01-23 at 13:59 -0500, Paul Gortmaker wrote:
->> Here is the output from an mpc8548 based board.  There are
->> three instances of missing device name here:
+On Mon, Feb 04, 2013 at 07:51:33PM +0530, Viresh Kumar wrote:
+> We correlate things with cpus rather than policies and so the current
+> directory structure of cpu/cpu*/cpufreq/*** is the best suited ones.
+
+Ok, show me the details of that layout. How is that going to look?
+
+One thing I've come to realize with the current interface is that if
+you want to change stuff, you need to iterate over all cpus instead of
+writing to a system-wide node.
+
+And, in this case, if you can and need to change the policy per
+clock-domain, I wouldn't make it needlessly too-granulary per-cpu.
+
+That's why I'm advocating the cpu/cpufreq/ path.
+
+> Yes, and that's why cpu/cpu*/cpufreq/ondemand/*** suits the best, with
+> exactly the same logic that went for P-states or cpufreq-stats.
+
+See above.
+
+> Hmm.. confused..
+> Consider two systems:
+> - A dual core system, with cores sharing clocks.
+> - A dual cluster system (dual core per cluster), with separate clocks
+> per cluster.
 > 
-> A similar fix is already in the linux-mtd.git tree.
+> Where will you keep governor directories for both of these configurations?
 
-OK, I see it in linux-next for 3.9 (commit 7dfe4be351e816) but
-it needs to get to mainline/Linus before 3.8 gets released,
-since that is where the regression is introduced (and that
-is why I ended up not seeing the fix, and redoing it, as
-I was working off of mainline).
+Easy: as said above, make the policy granularity per clock-domain. On
+systems which have only one set of P-states - like it is the case with
+the overwhelming majority of systems running linux now - nothing should
+change.
 
-$ git describe --contains d68cbdd4fb
-v3.8-rc1~47^2~53
+> We need to select only one... cpu/cpufreq doesn't suit the second case
+> at all as we need to use ondemand governor for both the clusters but
+> with separate tunables. And so a single cpu/cpufreq/ondemand directory
+> wouldn't solve the issue.
 
-Thanks,
-Paul.
+Think of it this way: what is the highest granularity you need per
+clock-domain? If you want to control the policy per clock-domain, then
+cpu/cpufreq/ is what you want. If you want finer-grained control -
+and you need to think hard of what use cases are sensible for that
+finer-grained solution - then you're better off with cpu/cpu*/ layout.
 
+In both cases though, having clear examples of why you've come up with
+the layout you're advocating would help reviewers a lot. If you simply
+come and say we need this because there might be systems out there who
+could use it, then that probably is not going to get you that far.
 
-> 
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
