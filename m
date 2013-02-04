@@ -1,129 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab3BDNhB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 08:37:01 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37769 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab3BDNg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 08:36:59 -0500
-Date: Mon, 4 Feb 2013 14:36:48 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-Message-ID: <20130204133648.GE13909@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Viresh Kumar <viresh.kumar@linaro.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-	Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-References: <cover.1359976493.git.viresh.kumar@linaro.org>
- <5808458.pvV2iHpBWm@vostro.rjw.lan>
- <CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
- <20130204123221.GA22340@pd.tnic>
- <CAKohpomcrtV3i9fL4zV6Mt0uDza-9pHTOsqTe2=C1t6mE6cpCQ@mail.gmail.com>
- <20130204130403.GD13909@pd.tnic>
- <CAKohpokuFC5gnTFcD3+RH3p5XaW8vBtyfq+Kej=d2J8tERdmoQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKohpokuFC5gnTFcD3+RH3p5XaW8vBtyfq+Kej=d2J8tERdmoQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755213Ab3BDNhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 08:37:34 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:39572 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753324Ab3BDNhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 08:37:31 -0500
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: linux-kernel@vger.kernel.org
+Cc: intel-gfx@lists.freedesktop.org, linux-pm@vger.kernel.org, rjw@sisk.pl
+Subject: [PATCH 1/3] PM: make VT switching to the suspend console optional v3
+Date: Mon,  4 Feb 2013 13:37:20 +0000
+Message-Id: <1359985042-2610-1-git-send-email-jbarnes@virtuousgeek.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 83.217.123.106 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 06:55:25PM +0530, Viresh Kumar wrote:
-> That's not completely true. There lies cpufreq directory in cpu/cpu*/
-> too, where we have per policy stuff in cpu/cpu*/, like policy tunables
-> and stats. And the same is true for governor too.
+KMS drivers can potentially restore the display configuration without
+userspace help.  Such drivers can can call a new funciton,
+pm_vt_switch_required(false) if they support this feature.  In that
+case, the PM layer won't VT switch to the suspend console at suspend
+time and then back to the original VT on resume, but rather leave things
+alone for a nicer looking suspend and resume sequence.
 
-$ tree /sys/devices/system/cpu/cpu0/cpufreq/
-/sys/devices/system/cpu/cpu0/cpufreq/
-├── affected_cpus
-├── bios_limit
-├── cpb
-├── cpuinfo_cur_freq
-├── cpuinfo_max_freq
-├── cpuinfo_min_freq
-├── cpuinfo_transition_latency
-├── related_cpus
-├── scaling_available_frequencies
-├── scaling_available_governors
-├── scaling_cur_freq
-├── scaling_driver
-├── scaling_governor
-├── scaling_max_freq
-├── scaling_min_freq
-├── scaling_setspeed
-└── stats
-    ├── time_in_state
-    ├── total_trans
-    └── trans_table
+v2: make a function so we can handle multiple drivers (Alan)
+v3: use a list to track device requests (Rafael)
 
-1 directory, 19 files
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ include/linux/pm.h     |    4 ++
+ kernel/power/console.c |  115 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 119 insertions(+)
 
-$ grep -r . /sys/devices/system/cpu/cpu0/cpufreq/*
-/sys/devices/system/cpu/cpu0/cpufreq/affected_cpus:0
-/sys/devices/system/cpu/cpu0/cpufreq/bios_limit:4000000
-/sys/devices/system/cpu/cpu0/cpufreq/cpb:1
-/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq:1400000
-/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq:4000000
-/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq:1400000
-/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_transition_latency:4000
-/sys/devices/system/cpu/cpu0/cpufreq/related_cpus:0 1
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies:4000000 3400000 2800000 2100000 1400000
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors:powersave userspace conservative ondemand perform
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:1400000
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver:acpi-cpufreq
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor:ondemand
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq:4000000
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq:1400000
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed:<unsupported>
-/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:4000000 3089328
-/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:3400000 47448
-/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:2800000 67185
-/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:2100000 92731
-/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state:1400000 11416914
-/sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:   From  :    To
-/sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:         :   4000000   3400000   2800000   2100000   140000
-/sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  4000000:         0     34756     46388     53179    21824
-/sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  3400000:     12938         0      3755      3555     1450
-/sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  2800000:     19940         0         0      4547     2565
-/sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  2100000:     18523         0         0         0     4275
-/sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table:  1400000:    301168         0         0         0
-/sys/devices/system/cpu/cpu0/cpufreq/stats/total_trans:799918
-
-Show me the policy tunables here.
-
-> That was slightly confusing to me :( The whole governor directory
-> is per policy, i have to keep that in cpu/cpu*/cpufreq instead of
-> cpu/cpufreq.
-
-So make a /sys/devices/system/cpu/cpufreq/policies/ and add
-functionality to assign cpus to policies or whatever the design of this
-thing will be.
-
-> Its not only for multicluster system, but a system where multiple cpus
-> have separate clock control and hence multiple policy structures.
-
-What are those systems? Examples?
-
-> Problem with this is it would fail for single image solutions on which
-> everybody is working on. So, with multiple platforms compiled into a
-> single image, this wouldn't work.
-
-Single-image solutions will enable that config option and get built with
-it - no problem at all.
-
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index 03d7bb1..98310eb 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -35,6 +35,10 @@ extern void (*pm_idle)(void);
+ extern void (*pm_power_off)(void);
+ extern void (*pm_power_off_prepare)(void);
+ 
++struct device; /* we have a circular dep with device.h */
++extern void pm_vt_switch_required(struct device *dev, bool required);
++extern void pm_vt_switch_unregister(struct device *dev);
++
+ /*
+  * Device power management
+  */
+diff --git a/kernel/power/console.c b/kernel/power/console.c
+index b1dc456..4871ca9 100644
+--- a/kernel/power/console.c
++++ b/kernel/power/console.c
+@@ -4,6 +4,7 @@
+  * Originally from swsusp.
+  */
+ 
++#include <linux/console.h>
+ #include <linux/vt_kern.h>
+ #include <linux/kbd_kern.h>
+ #include <linux/vt.h>
+@@ -14,8 +15,119 @@
+ 
+ static int orig_fgconsole, orig_kmsg;
+ 
++DEFINE_MUTEX(vt_switch_mutex);
++
++struct pm_vt_switch {
++	struct list_head head;
++	struct device *dev;
++	bool required;
++};
++
++LIST_HEAD(pm_vt_switch_list);
++
++
++/**
++ * pm_vt_switch_required - indicate VT switch at suspend requirements
++ * @dev: device
++ * @required: if true, caller needs VT switch at suspend/resume time
++ *
++ * The different console drivers may or may not require VT switches across
++ * suspend/resume, depending on how they handle restoring video state and
++ * what may be running.
++ *
++ * Drivers can indicate support for switchless suspend/resume, which can
++ * save time and flicker, by using this routine and passing 'false' as
++ * the argument.  If any loaded driver needs VT switching, or the
++ * no_console_suspend argument has been passed on the command line, VT
++ * switches will occur.
++ */
++void pm_vt_switch_required(struct device *dev, bool required)
++{
++	struct pm_vt_switch *entry, *tmp;
++
++	mutex_lock(&vt_switch_mutex);
++	list_for_each_entry(tmp, &pm_vt_switch_list, head) {
++		if (tmp->dev == dev) {
++			/* already registered, update requirement */
++			tmp->required = required;
++			goto out;
++		}
++	}
++
++	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
++	if (!entry)
++		goto out;
++
++	entry->required = required;
++	entry->dev = dev;
++
++	list_add(&entry->head, &pm_vt_switch_list);
++out:
++	mutex_unlock(&vt_switch_mutex);
++}
++EXPORT_SYMBOL(pm_vt_switch_required);
++
++/**
++ * pm_vt_switch_unregister - stop tracking a device's VT switching needs
++ * @dev: device
++ *
++ * Remove @dev from the vt switch list.
++ */
++void pm_vt_switch_unregister(struct device *dev)
++{
++	struct pm_vt_switch *tmp;
++
++	mutex_lock(&vt_switch_mutex);
++	list_for_each_entry(tmp, &pm_vt_switch_list, head) {
++		if (tmp->dev == dev) {
++			list_del(&tmp->head);
++			break;
++		}
++	}
++	mutex_unlock(&vt_switch_mutex);
++}
++
++/*
++ * There are three cases when a VT switch on suspend/resume are required:
++ *   1) no driver has indicated a requirement one way or another, so preserve
++ *      the old behavior
++ *   2) console suspend is disabled, we want to see debug messages across
++ *      suspend/resume
++ *   3) any registered driver indicates it needs a VT switch
++ *
++ * If none of these conditions is present, meaning we have at least one driver
++ * that doesn't need the switch, and none that do, we can avoid it to make
++ * resume look a little prettier (and suspend too, but that's usually hidden,
++ * e.g. when closing the lid on a laptop).
++ */
++static bool pm_vt_switch(void)
++{
++	struct pm_vt_switch *entry;
++	bool ret = true;
++
++	mutex_lock(&vt_switch_mutex);
++	if (list_empty(&pm_vt_switch_list))
++		goto out;
++
++	if (!console_suspend_enabled)
++		goto out;
++
++	list_for_each_entry(entry, &pm_vt_switch_list, head) {
++		if (entry->required)
++			goto out;
++	}
++
++	ret = false;
++out:
++	mutex_unlock(&vt_switch_mutex);
++	return ret;
++}
++
+ int pm_prepare_console(void)
+ {
++	if (!pm_vt_switch())
++		return 0;
++
+ 	orig_fgconsole = vt_move_to_console(SUSPEND_CONSOLE, 1);
+ 	if (orig_fgconsole < 0)
+ 		return 1;
+@@ -26,6 +138,9 @@ int pm_prepare_console(void)
+ 
+ void pm_restore_console(void)
+ {
++	if (!pm_vt_switch())
++		return;
++
+ 	if (orig_fgconsole >= 0) {
+ 		vt_move_to_console(orig_fgconsole, 0);
+ 		vt_kmsg_redirect(orig_kmsg);
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
