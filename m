@@ -1,104 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3BDUGi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 15:06:38 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:39164 "EHLO hydra.sisk.pl"
+	id S1754619Ab3BDUIz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 15:08:55 -0500
+Received: from mga03.intel.com ([143.182.124.21]:6958 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753800Ab3BDUGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 15:06:37 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, lenb@kernel.org,
-        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, guohanjun@huawei.com,
-        yinghai@kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug framework
-Date: Mon, 04 Feb 2013 21:12:55 +0100
-Message-ID: <23473445.t1DSaBm58X@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1360007184.23410.139.camel@misato.fc.hp.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <1890597.vDojv7So7R@vostro.rjw.lan> <1360007184.23410.139.camel@misato.fc.hp.com>
+	id S1753800Ab3BDUIy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 15:08:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,602,1355126400"; 
+   d="scan'208";a="198602445"
+From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+To: Tejun Heo <tj@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "skinsbursky@parallels.com" <skinsbursky@parallels.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "roland@kernel.org" <roland@kernel.org>
+Subject: RE: [PATCHSET] idr: implement idr_alloc() and convert existing users
+Thread-Topic: [PATCHSET] idr: implement idr_alloc() and convert existing
+ users
+Thread-Index: AQHOAwydQ2h2OImAJkq/KdAWqmA7TJhqHIQggAACahA=
+Date: Mon, 4 Feb 2013 20:08:47 +0000
+Message-ID: <32E1700B9017364D9B60AED9960492BC0D58DF86@FMSMSX108.amr.corp.intel.com>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+ <20130204191720.GW27963@mtj.dyndns.org> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 04, 2013 12:46:24 PM Toshi Kani wrote:
-> On Mon, 2013-02-04 at 20:48 +0100, Rafael J. Wysocki wrote:
-> > On Monday, February 04, 2013 09:02:46 AM Toshi Kani wrote:
-> > > On Mon, 2013-02-04 at 14:41 +0100, Rafael J. Wysocki wrote:
-> > > > On Sunday, February 03, 2013 07:23:49 PM Greg KH wrote:
-> > > > > On Sat, Feb 02, 2013 at 09:15:37PM +0100, Rafael J. Wysocki wrote:
-> > > > > > On Saturday, February 02, 2013 03:58:01 PM Greg KH wrote:
-> > >   :
-> > > > > > Yes, but those are just remove events and we can only see how destructive they
-> > > > > > were after the removal.  The point is to be able to figure out whether or not
-> > > > > > we *want* to do the removal in the first place.
-> > > > > 
-> > > > > Yes, but, you will always race if you try to test to see if you can shut
-> > > > > down a device and then trying to do it.  So walking the bus ahead of
-> > > > > time isn't a good idea.
-> > > > >
-> > > > > And, we really don't have a viable way to recover if disconnect() fails,
-> > > > > do we.  What do we do in that situation, restore the other devices we
-> > > > > disconnected successfully?  How do we remember/know what they were?
-> > > > > 
-> > > > > PCI hotplug almost had this same problem until the designers finally
-> > > > > realized that they just had to accept the fact that removing a PCI
-> > > > > device could either happen by:
-> > > > > 	- a user yanking out the device, at which time the OS better
-> > > > > 	  clean up properly no matter what happens
-> > > > > 	- the user asked nicely to remove a device, and the OS can take
-> > > > > 	  as long as it wants to complete that action, including
-> > > > > 	  stalling for noticable amounts of time before eventually,
-> > > > > 	  always letting the action succeed.
-> > > > > 
-> > > > > I think the second thing is what you have to do here.  If a user tells
-> > > > > the OS it wants to remove these devices, you better do it.  If you
-> > > > > can't, because memory is being used by someone else, either move them
-> > > > > off, or just hope that nothing bad happens, before the user gets
-> > > > > frustrated and yanks out the CPU/memory module themselves physically :)
-> > > > 
-> > > > Well, that we can't help, but sometimes users really *want* the OS to tell them
-> > > > if it is safe to unplug something at this particualr time (think about the
-> > > > Windows' "safe remove" feature for USB sticks, for example; that came out of
-> > > > users' demand AFAIR).
-> > > > 
-> > > > So in my opinion it would be good to give them an option to do "safe eject" or
-> > > > "forcible eject", whichever they prefer.
-> > > 
-> > > For system device hot-plug, it always needs to be "safe eject".  This
-> > > feature will be implemented on mission critical servers, which are
-> > > managed by professional IT folks.  Crashing a server causes serious
-> > > money to the business.
-> > 
-> > Well, "always" is a bit too strong a word as far as human behavior is concerned
-> > in my opinion.
-> > 
-> > That said I would be perfectly fine with not supporting the "forcible eject" to
-> > start with and waiting for the first request to add support for it.  I also
-> > would be fine with taking bets on how much time it's going to take for such a
-> > request to appear. :-)
-> 
-> Sounds good.  In my experience, though, it actually takes a LONG time to
-> convince customers that "safe eject" is actually safe.  Enterprise
-> customers are so afraid of doing anything risky that might cause the
-> system to crash or hang due to some defect.  I would be very surprised
-> to see a customer asking for a force operation when we do not guarantee
-> its outcome.  I have not seen such enterprise customers yet.
+> It looks like this kernel won't compile with CONFIG_HOTPLUG_MEMORY set to
+> 'y'
 
-But we're talking about a kernel that is supposed to run on mobile phones too,
-among other things.
+Turning off the CONFIG_HOTPLUG_MEMORY allowed the build to work.
 
-Thanks,
-Rafael
+At least for me, basic IB functionality works with the latest repo.
 
+The ipath and qib patches look ok, but we usually use IB/<module> vs. infiniband/<module>.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Mike
