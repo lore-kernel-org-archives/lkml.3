@@ -1,106 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab3BDGgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 01:36:21 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:39637 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab3BDGgU (ORCPT
+	id S1752776Ab3BDGhi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 01:37:38 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54530 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557Ab3BDGhh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 01:36:20 -0500
-Date: Mon, 4 Feb 2013 17:36:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: linux-next: manual merge of the signal tree with the mips tree
-Message-Id: <20130204173607.d593102dfc20079ec9392fb4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Feb_2013_17_36_07_+1100_uzpZN0N7/q1YPkH7"
+	Mon, 4 Feb 2013 01:37:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,597,1355126400"; 
+   d="scan'208";a="280522717"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Wei Ni <wni@nvidia.com>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>
+Subject: RE: [PATCHv2 0/9] Thermal Framework Enhancements
+Thread-Topic: [PATCHv2 0/9] Thermal Framework Enhancements
+Thread-Index: AQHN7KcvHTPdBgTj/0Kde8zE8LSCGJho/pIAgABr8lA=
+Date: Mon, 4 Feb 2013 06:37:27 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59275C20@BGSMSX101.gar.corp.intel.com>
+References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+ <510F49A2.4080701@nvidia.com>
+In-Reply-To: <510F49A2.4080701@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Feb_2013_17_36_07_+1100_uzpZN0N7/q1YPkH7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Wei,
 
-Hi Al,
+> -----Original Message-----
+> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
+> owner@vger.kernel.org] On Behalf Of Wei Ni
+> Sent: Monday, February 04, 2013 11:10 AM
+> To: R, Durgadoss
+> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> eduardo.valentin@ti.com; hongbo.zhang@linaro.org
+> Subject: Re: [PATCHv2 0/9] Thermal Framework Enhancements
+> 
+> On 01/07/2013 03:13 PM, Durgadoss R wrote:
+> > This patch set is a v2 of the previous versions submitted here:
+> > [v1]:  https://lkml.org/lkml/2012/12/18/108
+> > [RFC]: https://patchwork.kernel.org/patch/1758921/
+> >
+> > This patch set is based on Rui's -thermal tree, and is
+> > tested on a Core-i5 and an Atom netbook.
+> >
+> > Changes Since v1:
+> >  * Removed kobject creation for thermal_trip and thermal_map
+> >    nodes as per Greg-KH's comments.
+> >  * Added ABI Documentation under 'testing'.
+> >  * Modified the GET_INDEX macro to be more linux-like, thanks
+> >    to Joe Perches.
+> >  * Added get_[sensor/cdev]_by_name APIs to thermal.h
+> 
+> Hi, Durgadoss and Rui
+> Will these patches be merged to next branch? or will you send out next
+> version?
 
-Today's linux-next merge of the signal tree got a conflict in
-arch/mips/kernel/syscall.c between commit 7034228792cc ("MIPS: Whitespace
-cleanup") from the mips tree and commit 50150d2bb903 ("mips: switch to
-generic sys_fork() and sys_clone()") from the signal tree.
+Yes, I have to send the v3, with some small changes on the patch 5/9
+(map sysfs node..) and others won't have any changes.
 
-I fixed it up (the sys_clone stuff was removed by the latter - see below)
-and can carry the fix as necessary (no action is required).
+> I wish to use this new framework, could I send out patches for RFC based
+> on this serial patches?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So, if your patch set does not need 5/9, you can send your RFC.
 
-diff --cc arch/mips/kernel/syscall.c
-index d7feee0,b32466a..0000000
---- a/arch/mips/kernel/syscall.c
-+++ b/arch/mips/kernel/syscall.c
-@@@ -41,25 -41,19 +41,19 @@@
- =20
-  /*
-   * For historic reasons the pipe(2) syscall on MIPS has an unusual calling
- - * convention.  It returns results in registers $v0 / $v1 which means the=
-re
- + * convention.	It returns results in registers $v0 / $v1 which means there
-   * is no need for it to do verify the validity of a userspace pointer
- - * argument.  Historically that used to be expensive in Linux.  These days
- + * argument.  Historically that used to be expensive in Linux.	These days
-   * the performance advantage is negligible.
-   */
-- asmlinkage int sysm_pipe(nabi_no_regargs volatile struct pt_regs regs)
-+ asmlinkage int sysm_pipe(void)
-  {
-  	int fd[2];
-- 	int error, res;
--=20
-- 	error =3D do_pipe_flags(fd, 0);
-- 	if (error) {
-- 		res =3D error;
-- 		goto out;
-- 	}
-- 	regs.regs[3] =3D fd[1];
-- 	res =3D fd[0];
-- out:
-- 	return res;
-+ 	int error =3D do_pipe_flags(fd, 0);
-+ 	if (error)
-+ 		return error;
-+ 	current_pt_regs()->regs[3] =3D fd[1];
-+ 	return fd[0];
-  }
- =20
-  SYSCALL_DEFINE6(mips_mmap, unsigned long, addr, unsigned long, len,
+Thanks,
+Durga
 
---Signature=_Mon__4_Feb_2013_17_36_07_+1100_uzpZN0N7/q1YPkH7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRD1bXAAoJEECxmPOUX5FEF2YP/2TLG8LuKDkAEnP9e8s01eXQ
-ODsDv5nT3UNbQ4ZljAAqbSDr/VnhVZfurhzvIlZofHATc4q99o9LK9K/M61gktUx
-SiPbzTxaV/41InssrsznDJi3YPs5YfOwZnBb9qP7aE2c+JgORgqFHqTBLLpIfjqt
-sKsan6/2tefaNxF9zRD1mN7pSWQ6jbAn+7gTR03hPdknCn/T2/cL6byqVH21YYhZ
-kAlAGuXPIopZUnl9wgAf5dQZ8hpdpb8kVdrz37l64C02Gb23jV/3v6ftbyBbI7n3
-3KvTp7z8qr5K4xFWEjlGtIeB2zCgZKDlqoYyfUlxUGrc28uJ3jAvyMvNSrOOi7iy
-hPs+m+MPRdU5c1gYo0jbgGcKG1MN8IkS3/R2DtpHTS07csGKwYGClfp+YhynskV9
-ZnOYHT4hk8gh7xICzdCwhG5G1A9u3f7M1MfZWDNOAbFX84CgGvmxYh6i/QKqiiWl
-68UGAfs4xDZUg2yyrbKORZXYXtCpCGM7spK2nTKkTiiYXCuWRkSJ7LReejOcnhCy
-1NUPgA64mAmCRechUloCDyt+0jiSg6D53A2XsBf29B6fyj+7EzV3+oKcWIwQW8KU
-9zkmPiMsPiRfAlbj37+ePrRfQboDkhoAbX1eZ5XzRf0lZotKxALraBR5apx5LxpO
-C50tRWTz5Vb0aNHi8F2u
-=TTrb
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Feb_2013_17_36_07_+1100_uzpZN0N7/q1YPkH7--
+> 
+> Thanks.
+> Wei.
+> 
+> >
+> > This series contains 9 patches:
+> > Patch 1/9: Creates new sensor level APIs
+> > Patch 2/9: Creates new zone level APIs. The existing tzd structure is
+> >            kept as such for clarity and compatibility purposes.
+> > Patch 3/9: Creates functions to add/remove a cdev to/from a zone. The
+> >            existing tcd structure need not be modified.
+> > Patch 4/9: Adds sensorX_trip_[active/passive/hot/critical] sysfs nodes,
+> > 	   under /sys/class/thermal/zoneY/. This exposes various trip
+> >            points for sensorX present in zoneY.
+> > Patch 5/9: Adds mapX sysfs node. It is a compact representation
+> >            of the binding relationship between a sensor and a cdev,
+> >            within a zone.
+> > Patch 6/9: Creates Documentation for the new APIs. A new file is
+> >            created for clarity. Final goal is to merge with the existing
+> >            file or refactor the files, as whatever seems appropriate.
+> > Patch 7/9: Make PER ZONE values configurable through Kconfig
+> > Patch 8/9: Add ABI documentation for sysfs interfaces introduced in this
+> patch.
+> > Patch 9/9: A dummy driver that can be used for testing. This is not for
+> merge.
+> >
+> > Thanks to Greg-KH, Hongbo Zhang and Joe Perches for their comments on
+> v1.
+> >
+> > Durgadoss R (9):
+> >   Thermal: Create sensor level APIs
+> >   Thermal: Create zone level APIs
+> >   Thermal: Add APIs to bind cdev to new zone structure
+> >   Thermal: Add trip point sysfs nodes for sensor
+> >   Thermal: Create 'mapX' sysfs node for a zone
+> >   Thermal: Add Documentation to new APIs
+> >   Thermal: Make PER_ZONE values configurable
+> >   Thermal: Add ABI Documentation for sysfs interfaces
+> >   Thermal: Dummy driver used for testing
+> >
+> >  Documentation/ABI/testing/sysfs-class-thermal |   93 +++
+> >  Documentation/thermal/sysfs-api2.txt          |  248 +++++++
+> >  drivers/thermal/Kconfig                       |   19 +
+> >  drivers/thermal/Makefile                      |    3 +
+> >  drivers/thermal/thermal_sys.c                 |  881
+> +++++++++++++++++++++++++
+> >  drivers/thermal/thermal_test.c                |  315 +++++++++
+> >  include/linux/thermal.h                       |  117 +++-
+> >  7 files changed, 1675 insertions(+), 1 deletion(-)
+> >  create mode 100644 Documentation/ABI/testing/sysfs-class-thermal
+> >  create mode 100644 Documentation/thermal/sysfs-api2.txt
+> >  create mode 100644 drivers/thermal/thermal_test.c
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
