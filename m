@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab3BDLCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:02:09 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:16310 "EHLO relay.sw.ru"
+	id S1754382Ab3BDLCm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:02:42 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:42670 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754254Ab3BDLCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:02:05 -0500
-Subject: [PATCH v2 5/6] SUNRPC: remove "cache_request" argument in
-	sunrpc_cache_pipe_upcall() function
+	id S1754266Ab3BDLCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 06:02:08 -0500
+Subject: [PATCH v2 6/6] SUNRPC: move cache_detail->cache_request callback call
+	to cache_read()
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 04 Feb 2013 14:02:55 +0300
-Message-ID: <20130204110255.11633.3726.stgit@localhost.localdomain>
+Date: Mon, 04 Feb 2013 14:03:03 +0300
+Message-ID: <20130204110303.11633.95912.stgit@localhost.localdomain>
 In-Reply-To: <20130204105728.11633.53621.stgit@localhost.localdomain>
 References: <20130204105728.11633.53621.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -24,79 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passing this pointer is redundant since it's stored on cache_detail structure,
-which is also passed to sunrpc_cache_pipe_upcall () function.
+The reason to move cache_request() callback call from
+sunrpc_cache_pipe_upcall() to cache_read() is that this garantees, that cache
+access will be done userspace process context (only userspace process have
+proper root context).
+This is required for NFSd support in container: svc_export_request() (which is
+cache_request callback) calls d_path(), which, in turn, traverse dentry up to
+current->fs->root. Kernel threads always have global root, while container
+have be in "root jail" - i.e. have it's own nested root.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/dns_resolve.c         |    2 +-
- include/linux/sunrpc/cache.h |    6 +-----
- net/sunrpc/cache.c           |   10 +++-------
- 3 files changed, 5 insertions(+), 13 deletions(-)
+ net/sunrpc/cache.c |   32 ++++++++++++++++++++------------
+ 1 files changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index 53109f0..88b46c7 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -142,7 +142,7 @@ static int nfs_dns_upcall(struct cache_detail *cd,
- 
- 	ret = nfs_cache_upcall(cd, key->hostname);
- 	if (ret)
--		ret = sunrpc_cache_pipe_upcall(cd, ch, cd->cache_request);
-+		ret = sunrpc_cache_pipe_upcall(cd, ch);
- 	return ret;
- }
- 
-diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-index 4f1c858..303399b 100644
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -161,11 +161,7 @@ sunrpc_cache_update(struct cache_detail *detail,
- 		    struct cache_head *new, struct cache_head *old, int hash);
- 
- extern int
--sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
--		void (*cache_request)(struct cache_detail *,
--				      struct cache_head *,
--				      char **,
--				      int *));
-+sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h);
- 
- 
- extern void cache_clean_deferred(void *owner);
 diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index 51853d8..8ffec5a 100644
+index 8ffec5a..5502471 100644
 --- a/net/sunrpc/cache.c
 +++ b/net/sunrpc/cache.c
-@@ -198,7 +198,7 @@ static int cache_make_upcall(struct cache_detail *cd, struct cache_head *h)
- {
- 	if (cd->cache_upcall)
- 		return cd->cache_upcall(cd, h);
--	return sunrpc_cache_pipe_upcall(cd, h, cd->cache_request);
-+	return sunrpc_cache_pipe_upcall(cd, h);
- }
+@@ -750,6 +750,18 @@ struct cache_reader {
+ 	int			offset;	/* if non-0, we have a refcnt on next request */
+ };
  
- static inline int cache_is_valid(struct cache_detail *detail, struct cache_head *h)
-@@ -1140,11 +1140,7 @@ static bool cache_listeners_exist(struct cache_detail *detail)
-  *
-  * Each request is at most one page long.
-  */
--int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
--		void (*cache_request)(struct cache_detail *,
--				      struct cache_head *,
--				      char **,
--				      int *))
-+int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h)
++static int cache_request(struct cache_detail *detail,
++			       struct cache_request *crq)
++{
++	char *bp = crq->buf;
++	int len = PAGE_SIZE;
++
++	detail->cache_request(detail, crq->item, &bp, &len);
++	if (len < 0)
++		return -EAGAIN;
++	return PAGE_SIZE - len;
++}
++
+ static ssize_t cache_read(struct file *filp, char __user *buf, size_t count,
+ 			  loff_t *ppos, struct cache_detail *cd)
  {
+@@ -784,6 +796,13 @@ static ssize_t cache_read(struct file *filp, char __user *buf, size_t count,
+ 		rq->readers++;
+ 	spin_unlock(&queue_lock);
+ 
++	if (rq->len == 0) {
++		err = cache_request(cd, rq);
++		if (err < 0)
++			goto out;
++		rq->len = err;
++	}
++
+ 	if (rp->offset == 0 && !test_bit(CACHE_PENDING, &rq->item->flags)) {
+ 		err = -EAGAIN;
+ 		spin_lock(&queue_lock);
+@@ -1145,8 +1164,6 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h)
  
  	char *buf;
-@@ -1172,7 +1168,7 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h,
+ 	struct cache_request *crq;
+-	char *bp;
+-	int len;
  
- 	bp = buf; len = PAGE_SIZE;
+ 	if (!detail->cache_request)
+ 		return -EINVAL;
+@@ -1166,19 +1183,10 @@ int sunrpc_cache_pipe_upcall(struct cache_detail *detail, struct cache_head *h)
+ 		return -EAGAIN;
+ 	}
  
--	cache_request(detail, h, &bp, &len);
-+	detail->cache_request(detail, h, &bp, &len);
- 
- 	if (len < 0) {
- 		kfree(buf);
+-	bp = buf; len = PAGE_SIZE;
+-
+-	detail->cache_request(detail, h, &bp, &len);
+-
+-	if (len < 0) {
+-		kfree(buf);
+-		kfree(crq);
+-		return -EAGAIN;
+-	}
+ 	crq->q.reader = 0;
+ 	crq->item = cache_get(h);
+ 	crq->buf = buf;
+-	crq->len = PAGE_SIZE - len;
++	crq->len = 0;
+ 	crq->readers = 0;
+ 	spin_lock(&queue_lock);
+ 	list_add_tail(&crq->q.list, &detail->queue);
 
