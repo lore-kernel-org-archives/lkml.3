@@ -1,36 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab3BDRBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 12:01:21 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37996 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab3BDRBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 12:01:18 -0500
-Message-ID: <510FE95B.20207@wwwdotorg.org>
-Date: Mon, 04 Feb 2013 10:01:15 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753993Ab3BDRBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 12:01:19 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47522 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753240Ab3BDRBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 12:01:17 -0500
+Date: Mon, 4 Feb 2013 18:01:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 4/4] x86, 32-bit: Drop new_cpu_data
+Message-ID: <20130204170108.GI13909@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+References: <1359908079-10469-1-git-send-email-bp@alien8.de>
+ <1359908079-10469-5-git-send-email-bp@alien8.de>
+ <510EF65D.4020602@zytor.com>
+ <20130204052725.GA13909@pd.tnic>
+ <562c8dd4-6665-4365-8eb4-33e77e6f6798@email.android.com>
+ <20130204090237.GB13909@pd.tnic>
+ <510FE7F5.3080802@zytor.com>
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-tegra@vger.kernel.org, Sami Liedes <sliedes@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ARM: tegra: Fix build error for gic update
-References: <1359976100-28871-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1359976100-28871-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <510FE7F5.3080802@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2013 04:08 AM, Hiroshi Doyu wrote:
-> Fix build error in board-dt-tegra114.c(next-20130204)
+On Mon, Feb 04, 2013 at 08:55:17AM -0800, H. Peter Anvin wrote:
+> Yes and yes (in the latter case due to inconsistent MSR programming.)
 
-Hiroshi, which tree should this patch be applied to? I assume it needs
-to go through arm-soc since that's where the Tegra and GIC patches meet?
+Ok, I'll drop the last one, redo 2/4 and run them on the hardware I have
+here.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
