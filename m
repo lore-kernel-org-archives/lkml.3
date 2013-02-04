@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab3BDLcm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:32:42 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49552 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab3BDLci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:32:38 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v8 4/4] ARM: dts: add sram for imx53 and imx6q
-Date: Mon,  4 Feb 2013 12:32:18 +0100
-Message-Id: <1359977538-5859-5-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1359977538-5859-1-git-send-email-p.zabel@pengutronix.de>
-References: <1359977538-5859-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754350Ab3BDLdG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:33:06 -0500
+Received: from mga14.intel.com ([143.182.124.37]:62764 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754141Ab3BDLdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 06:33:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,598,1355126400"; 
+   d="scan'208";a="198441861"
+Date: Mon, 4 Feb 2013 12:32:54 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Qing Xu <qingx@marvell.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 0/7] mfd: update on max8925 for DT support
+Message-ID: <20130204113254.GC8476@sortiz-mobl>
+References: <1352187305-9660-1-git-send-email-qingx@marvell.com>
+ <CAN1soZzAZ9Od_5jC0ZFdw03c5P9Q+gJQswTwp0M1YWM_ti+9xw@mail.gmail.com>
+ <50B6F8AC.6050307@marvell.com>
+ <CAN1soZzTYjU9nEe1hQWAwz2R0GRfvaQ7HyaMZ3uNxtBV0X14uA@mail.gmail.com>
+ <50C8228B.7040702@marvell.com>
+ <CAN1soZycHE97uAFcJYxxkUXc_66JJgKUFRxed1sii9VswTdXDQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN1soZycHE97uAFcJYxxkUXc_66JJgKUFRxed1sii9VswTdXDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
----
- arch/arm/boot/dts/imx53.dtsi |    5 +++++
- arch/arm/boot/dts/imx6q.dtsi |    6 ++++++
- 2 files changed, 11 insertions(+)
+Hi Haojian,
 
-diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
-index edc3f1e..8faca1a 100644
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -664,5 +664,10 @@
- 				status = "disabled";
- 			};
- 		};
-+
-+		ocram: ocram@f8000000 {
-+			compatible = "fsl,imx-ocram", "sram";
-+			reg = <0xf8000000 0x20000>;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-index d6265ca..740e714 100644
---- a/arch/arm/boot/dts/imx6q.dtsi
-+++ b/arch/arm/boot/dts/imx6q.dtsi
-@@ -124,6 +124,12 @@
- 			status = "disabled";
- 		};
- 
-+		ocram: ocram@00900000 {
-+			compatible = "fsl,imx-ocram", "sram";
-+			reg = <0x00900000 0x3f000>;
-+			clocks = <&clks 142>;
-+		};
-+
- 		timer@00a00600 {
- 			compatible = "arm,cortex-a9-twd-timer";
- 			reg = <0x00a00600 0x20>;
+On Mon, Feb 04, 2013 at 09:05:09AM +0800, Haojian Zhuang wrote:
+> Hi Samuel,
+> 
+> Are they merged into your git tree?
+No, they're not. Qing sent several versions for many of the patches in this
+patchset: Could you please send a rebased patchset (on top of for-next) with
+the latest versions of each patch ?
+
+Cheers,
+Samuel.
+
 -- 
-1.7.10.4
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
