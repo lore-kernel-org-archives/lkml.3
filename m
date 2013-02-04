@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab3BDL3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 06:29:40 -0500
-Received: from na3sys010aog101.obsmtp.com ([74.125.245.70]:40316 "HELO
-	na3sys010aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754007Ab3BDL3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:29:38 -0500
-X-Greylist: delayed 446 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Feb 2013 06:29:38 EST
-From: "Leonid Shatz" <leonid.shatz@ravellosystems.com>
-To: "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Izik Eidus'" <izik.eidus@ravellosystems.com>
-Cc: <linux-kernel@vger.kernel.org>, "'Andrea Arcangeli'" <aarcange@redhat.com>,
-        "Mike Rapoport" <mike.rapoport@ravellosystems.com>
-References: <510E58C2.9010207@ravellosystems.com> <alpine.LFD.2.02.1302041110160.11905@ionos>
-In-Reply-To: <alpine.LFD.2.02.1302041110160.11905@ionos>
-Subject: RE: hrtimer possible issue
-Date: Mon, 4 Feb 2013 13:22:07 +0200
-Message-ID: <030401ce02c9$e5139170$af3ab450$@ravellosystems.com>
+	id S1754370Ab3BDLcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:32:09 -0500
+Received: from linux-sh.org ([111.68.239.195]:54931 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754242Ab3BDLcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 06:32:06 -0500
+Date: Mon, 4 Feb 2013 20:30:44 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: <linux-kernel@vger.kernel.org>, <uclinux-dist-devel@blackfin.uclinux.org>,
+        <linux-hexagon@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <linux-parisc@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-sh@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, "Thomas Gleixner" <tglx@linutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH RESEND 1/1] arch Kconfig: remove references to IRQ_PER_CPU
+Message-ID: <20130204113043.GB12216@linux-sh.org>
+References: <1359972583-17134-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQF0ILwKmJFBTDiDvqyx/BcHikXLFQFjuHE5mRIzlJA=
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359972583-17134-1-git-send-email-james.hogan@imgtec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I assume the race can also happen between hrtimer cancel and start. In both
-cases timer base switch can happen.
+On Mon, Feb 04, 2013 at 10:09:43AM +0000, James Hogan wrote:
+> The IRQ_PER_CPU Kconfig symbol was removed in the following commit:
+> 
+> Commit 6a58fb3bad099076f36f0f30f44507bc3275cdb6 ("genirq: Remove
+> CONFIG_IRQ_PER_CPU") merged in v2.6.39-rc1.
+> 
+> But IRQ_PER_CPU wasn't removed from any of the architecture Kconfig
+> files where it was defined or selected. It's completely unused so remove
+> the remaining references.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+> Cc: Helge Deller <deller@gmx.de>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Acked-by: Tony Luck <tony.luck@intel.com>
+> Acked-by: Richard Kuo <rkuo@codeaurora.org>
 
-Izik, please check if you can arrange the patch in the standard format (do
-we need to do it against latest kernel version?)
-
-Leonid Shatz
-
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Monday, February 04, 2013 12:13 PM
-> To: Izik Eidus
-> Cc: linux-kernel@vger.kernel.org; Andrea Arcangeli; Leonid Shatz
-> Subject: Re: hrtimer possible issue
-> 
-> On Sun, 3 Feb 2013, Izik Eidus wrote:
-> 
-> > Hi,
-> >
-> > it seems like hrtimer_enqueue_reprogram contain a race which could
-> > result in timer.base switch during unlock/lock sequence.
-> >
-> > See the code at __hrtimer_start_range_ns where it calls
-> > hrtimer_enqueue_reprogram. The later is releasing lock protecting the
-> > timer base for a short time and timer base switch can occur from a
-> > different CPU thread. Later when __hrtimer_start_range_ns calls
-> > unlock_hrtimer_base, a base switch could have happened and this causes
-> > the bug
-> >
-> > Try to start the same hrtimer from two different threads in kernel
-> > running each one on a different CPU. Eventually one of the calls will
-> > cause timer base switch while another thread is not expecting it.
-> >
-> > This can happen in virtualized environment where one thread can be
-> > delayed by lower hypervisor, and due to time delay a different CPU is
-> > taking care of missed timer start and runs the timer start logic on its
-own.
-> 
-> Nice analysis.
-> 
-> > This simple patch (just to give example of a fix) refactor this
-> > function to get rid of unneeded lock which immediately was followed by
-> > the unlock (with possible undesired base switch).
-> >
-> > (Both the bug and the fixed were found/patched by Leonid Shatz)
-> 
-> The patch got mangled by your mail client and it is missing the proper
-Signed-
-> off-by annotation in the patch description. See
-> Documentation/SubmittingPatches.
-> 
-> Can you please resend ?
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-
-
+Acked-by: Paul Mundt <lethal@linux-sh.org>
