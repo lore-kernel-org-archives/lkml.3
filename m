@@ -1,106 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab3BDOVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 09:21:36 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:65037 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab3BDOVe (ORCPT
+	id S1755649Ab3BDO1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 09:27:49 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57437 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab3BDO1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 09:21:34 -0500
+	Mon, 4 Feb 2013 09:27:47 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Felipe Balbi <balbi@ti.com>, Matt Porter <mporter@ti.com>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
+Date: Mon, 04 Feb 2013 15:27:09 +0100
+Message-ID: <7655522.SvRnLo3eyU@wuerfel>
+User-Agent: KMail/4.10 rc3 (Linux/3.8.0-3-generic; KDE/4.9.98; x86_64; ; )
+In-Reply-To: <510C58DF.3010103@mvista.com>
+References: <1359742975-10421-1-git-send-email-mporter@ti.com> <20130201213003.GW2637@n2100.arm.linux.org.uk> <510C58DF.3010103@mvista.com>
 MIME-Version: 1.0
-In-Reply-To: <20130204140908.GC15452@pd.tnic>
-References: <cover.1359976493.git.viresh.kumar@linaro.org>
-	<5808458.pvV2iHpBWm@vostro.rjw.lan>
-	<CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
-	<20130204123221.GA22340@pd.tnic>
-	<CAKohpomcrtV3i9fL4zV6Mt0uDza-9pHTOsqTe2=C1t6mE6cpCQ@mail.gmail.com>
-	<20130204130403.GD13909@pd.tnic>
-	<CAKohpokuFC5gnTFcD3+RH3p5XaW8vBtyfq+Kej=d2J8tERdmoQ@mail.gmail.com>
-	<20130204133648.GE13909@pd.tnic>
-	<CAKohpo=aLnhM0Op_32ohWZK5eG5nT7iK0OktBe+8ygOQW7zUqQ@mail.gmail.com>
-	<20130204140908.GC15452@pd.tnic>
-Date: Mon, 4 Feb 2013 19:51:33 +0530
-Message-ID: <CAKohpokowK6ybYd8aDUdfFYsnzoc5VAKsuPSkfxoDqJ3k+FwGA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:NVkFPuZmw54Z8zl+H7mfs29YgTOEKxmeQsrimTvavjg
+ 9meZIO8G592Phj71KFj+q9Gso2Mu9eI/ZZAji6DJZXPYZXEynH
+ 1UbSR98JqHU6QQLnZNysuDhupAoECDV9JV1Od4mwT9VgnPAOeB
+ CvlZch/x3LTSeyb3o8mGmNjpwGb/U06JVj0o8Hu5nc/XxwcAoB
+ 7OwUj4cpAfDYOfR8NWnVjGyMdmIuOIE9z9VOSGMqnBBfJbIEkZ
+ hDYmvplwIjx+tJaFCIsbIlO4SzpabhwqfoQ66Nzoala1yRVp4r
+ LnPE5vP4icUHIYJXvC6z++2QjhB0tIfS8Hyc2MBj3XrvmWjMH8
+ K3XB+Kchc6Bc9dslrK1c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 February 2013 19:39, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Feb 04, 2013 at 07:28:16PM +0530, Viresh Kumar wrote:
->> All files which are directly present in cpu/cpu*/cpufreq/ folder. I am
->> not talking about governor tunables but policy tunables. Things like
->> scaling_[min]max_freq are policy tunables.
->
-> No, on x86 those are the P-states frequencies. They're defined by the
-> hardware.
+On Saturday 02 February 2013 04:07:59 Sergei Shtylyov wrote:
+> On 02-02-2013 1:30, Russell King - ARM Linux wrote:
 
-A question we need to answer: What is "policy"?
+> >> because it doesn't make sense to support multiple DMA APIs. We can check
+> >> from MUSB's registers if it was configured with Inventra DMA support and
+> >> based on that we can register MUSB's own DMA Engine to dmaengine API.
+> 
+> > Hang on.  This is one of the DMA implementations which is closely
+> > coupled with the USB and only the USB?  If it is...
+> 
+> > I thought this had been discussed _extensively_ before.  I thought the
+> > resolution on it was:
+> > 1. It would not use the DMA engine API.
+> > 2. It would not live in arch/arm.
+> > 3. It would be placed nearby the USB driver it's associated with.
+> 
+> > (1) because we don't use APIs just for the hell of it - think.  Do we
+> > use the DMA engine API for PCI bus mastering ethernet controllers?  No.
+> > Do we use it for PCI bus mastering SCSI controllers?  No.  Because the
+> > DMA is integral to the rest of the device.
+> 
+> > The DMA engine API only makes sense if the DMA engine is a shared
+> > system resource.
+> 
+>     Thanks for such extensive wording in the support of my point. 
 
-For me, "policy" is the hardware policy for a group of cpus, defined by the
-hardware. We call them P-states. But these are strictly per policy (i.e. per
-cpu group sharing clock line).
+Actually there is another problem with the musb driver, which is that
+you can only have one DMA controller configured at build time, and
+that currently prevents us from building a kernel that supports both
+the Inventra and TUSB variants together. With multiplatform coming
+up for both ux500 and omap2, we will also have to make a decision
+about ux500 vs omap being supported in DMA mode.
 
-So, if we have two packages with two cpus each, we will have two copies
-of these P-states and every other file/directory in cpu/cpu*/cpufreq.
-One common copy would be shared between cpu/cpu[0-1]/cpufreq
-directory and other one between cpu/cpu[2-3]/cpufreq.
+I can see two ways out of this: either we extend the musb driver to
+have run-time registration of the DMA controller, which duplicates
+infrastructure that already exists in the dmaengine API, or we
+make the dmaengine back-end for musb the default and require all
+platforms to use that if they want to coexist with other platforms
+and also use DMA support in musb.
 
->> Policies don't have a name associated with them and so
->> cpu/cpufreq/policies doesn't make any sense. Rather one policy is
->> related to multiple cpus and its tunables are linked in all the cpus
->> that belong to it, like scaling_[min]max_freq.
->
-> Then do the following:
->
-> cpu/cpufreq/policies/
-> |-> policy0
->     |-> min_freq
->     |-> max_freq
->     |-> affected_cpus
->     ...
+Note that the ux500_dma code in musb already uses dmaengine. It could
+probably be extended to support any platform that has a dmaengine
+driver for the DMA controller used in MUSB.
 
-We correlate things with cpus rather than policies and so the current directory
-structure of cpu/cpu*/cpufreq/*** is the best suited ones.
+	Arnd
 
-> or whatever needs to be a flexible interface for multi-policy cpufreq
-> support.
-
-The multi policy part is already well implemented, we are talking about governor
-per policy here.
-
-> Remember: once you do those, they're more or less cast in stone so take
-> your time and do the design right, do not hurry those.
-
-Yes, and that's why cpu/cpu*/cpufreq/ondemand/*** suits the best, with exactly
-the same logic that went for P-states or cpufreq-stats.
-
->> But then we will get governors tunables in cpu/cpu*/cpufreq/ instead
->> of cpu/cpufreq/ . Will that not break userspace for other systems?
->
-> What's wrong with having both? The cpu/cpufreq/ governor will set the
-> system-wide governor and the cpu/cpu*/cpufreq/ will add the different
-> policies.
-
-Hmm.. confused..
-Consider two systems:
-- A dual core system, with cores sharing clocks.
-- A dual cluster system (dual core per cluster), with separate clocks
-per cluster.
-
-Where will you keep governor directories for both of these configurations?
-
-We need to select only one... cpu/cpufreq doesn't suit the second case at all
-as we need to use ondemand governor for both the clusters but with separate
-tunables. And so a single cpu/cpufreq/ondemand directory wouldn't solve the
-issue.
-
---
-viresh
