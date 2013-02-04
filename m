@@ -1,73 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab3BDIbP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 03:31:15 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:51573 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab3BDIbO convert rfc822-to-8bit (ORCPT
+	id S1754009Ab3BDIdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 03:33:39 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:42976 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab3BDIdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 03:31:14 -0500
+	Mon, 4 Feb 2013 03:33:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <17352980.268481359965953092.JavaMail.weblogic@epml13>
-References: <17352980.268481359965953092.JavaMail.weblogic@epml13>
-Date: Mon, 4 Feb 2013 14:01:13 +0530
-Message-ID: <CAM4voakFpXwG7ukO5p4=NKDQZc--rcLDPU8jGag_gB=4ZdvRAA@mail.gmail.com>
-Subject: Re: Re: [PATCH v4 4/4] PM: Devfreq: Add Exynos5-bus devfreq driver
- for Exynos5250
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: myungjoo.ham@samsung.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
-        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        =?UTF-8?B?7LWc7KKF7ZmY?= <jhbird.choi@samsung.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <CA+Z25wVnFMkXvSOvetipBEFkZgSKe2Qjn1wYf-x5i7skGQ-XSA@mail.gmail.com>
+References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+	<CAJ0PZbTAOdQrUjefOpc2MDam1hHLjSEDLHw3VrP+9=OAbgQ8ug@mail.gmail.com>
+	<CA+Z25wVnFMkXvSOvetipBEFkZgSKe2Qjn1wYf-x5i7skGQ-XSA@mail.gmail.com>
+Date: Mon, 4 Feb 2013 14:03:36 +0530
+Message-ID: <CA+Z25wWCvSNb0pBaGcnj2k1J-Z9+UUhSTRsXsQYAA2eFzoO1ZA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PM / devfreq: set min/max freq limit from freq table
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: myungjoo.ham@gmail.com
+Cc: kyungmin.park@samsung.com, mturquette@linaro.org, rjw@sisk.pl,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+MyungJoo, Ping.
 
-On Mon, Feb 4, 2013 at 1:49 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
->> Hi,
+On 15 January 2013 16:51, Rajagopal Venkat <rajagopal.venkat@linaro.org> wrote:
+> On 14 January 2013 20:06, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+>> On Tue, Jan 8, 2013 at 2:50 PM, Rajagopal Venkat
+>> <rajagopal.venkat@linaro.org> wrote:
+>>> Set devfreq device min and max frequency limits when device
+>>> is added to devfreq, provided frequency table is supplied.
+>>> This helps governors to suggest target frequency with in
+>>> limits.
+>>>
+>>> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
 >>
->> > Sorry for being late.
->> >
->> > One concern is that I cannot apply Patch 1/4 directly as the .dts file isn't
->> > available to me.
->> > Do you intend to apply that patch to another tree and apply the other three
->> > to devfreq tree?
->> I have been merging the devfreq tree into Kgene's tree for my testing. I am not
->> sure how this should get in, any suggestions ?
+>> Could you please elaborate the benefit of the patch?
+>>
 >
-> I'd suggest to send Patch 1/4 to Kgene and get it applied first if that patch is preliminary to the other patchset. If it is not, we can go seperated and independently.
-Thanks for the suggestion. Kgene is a recipient on patches 1 and 2. I
-am hoping he'll pick it up soon. However, the devfreq patches are not
-dependent on them and can be applied independently.
+> When freq table is supplied, it's unreasonable to suggest the target frequency
+> which is - target_freq < min_freq and target_freq > max_freq. It avoids
+> unnecessary checks at devfreq drivers.
 >
->> >
->> > Another is the location of exynos_ppmu.h.
->> > Who is going to refer exynos_ppmu.h?
->> > If Exynos devfreq drivers are the only files to refer, wouldn't it be better
->> > located at drivers/devfreq/exynos/ ?
->> >
->> > Or do you intend to let someone else (drivers located not in
->> > drivers/devfreq) access exynos-ppmu?
->> > (If so, who's going to be? and that means we are going to have
->> > include/linux/devfreq/, I don't think it'd be appropriate to populate
->> > include/linux with device driver specific headers)
->> In an earlier comment on this patch Olof suggested I place it in
->> include/linux/. It is going to be
->> used only by Exynos and I will move it into drivers/devfreq/exynos as
->> per your suggestion.
+>> The devfreq device drivers are required to choose proper frequencies
+>> anyway regardless which values the governors may give (hopefully by
+>> choosing the closest value that can support the required performance).
+>>
 >
-> If it is to be used by Exynos non-devfreq drivers (e.g., Exynos ADC driver in drivers/iio/...), it should be stting on include/linux/devfreq/. If it is to be used by Exynos devfreq drivers only, it'd be better located at drivers/devfreq/exynos/. It appears to be still compatible with Olof's suggestion:
+> Yes. but then each driver needs to have conditional checks for choosing
+> closet value even though freq table is provided.
 >
-> (quoting Olof) "Local defines that are used in just one C file can either go in that file, or in a header file that sits next to it instead of in the shared directory."
-Understood, updated patch 4/4 in a bit.
+>> Besides, the min/max values are to be set by userspace. Users may
+>> enter 0 in order to express that they do not want to limit the
+>> behaviors of governors.
+>>
+>>
+>> Cheers,
+>> MyungJoo.
+>>
+>>> ---
+>>>  drivers/devfreq/devfreq.c |   24 ++++++++++++++++++++++++
+>>>  1 file changed, 24 insertions(+)
+>>>
+>>> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+>>> index a8f0173..5782c9b 100644
+>>> --- a/drivers/devfreq/devfreq.c
+>>> +++ b/drivers/devfreq/devfreq.c
+>>> @@ -69,6 +69,29 @@ static struct devfreq *find_device_devfreq(struct device *dev)
+>>>  }
+>>>
+>>>  /**
+>>> + * devfreq_set_freq_limits() - Set min and max frequency from freq_table
+>>> + * @devfreq:   the devfreq instance
+>>> + */
+>>> +static void devfreq_set_freq_limits(struct devfreq *devfreq)
+>>> +{
+>>> +       int idx;
+>>> +       unsigned long min = ~0, max = 0;
+>>> +
+>>> +       if (!devfreq->profile->freq_table)
+>>> +               return;
+>>> +
+>>> +       for (idx = 0; idx < devfreq->profile->max_state; idx++) {
+>>> +               if (min > devfreq->profile->freq_table[idx])
+>>> +                       min = devfreq->profile->freq_table[idx];
+>>> +               if (max < devfreq->profile->freq_table[idx])
+>>> +                       max = devfreq->profile->freq_table[idx];
+>>> +       }
+>>> +
+>>> +       devfreq->min_freq = min;
+>>> +       devfreq->max_freq = max;
+>>> +}
+>>> +
+>>> +/**
+>>>   * devfreq_get_freq_level() - Lookup freq_table for the frequency
+>>>   * @devfreq:   the devfreq instance
+>>>   * @freq:      the target frequency
+>>> @@ -476,6 +499,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+>>>                                                 devfreq->profile->max_state,
+>>>                                                 GFP_KERNEL);
+>>>         devfreq->last_stat_updated = jiffies;
+>>> +       devfreq_set_freq_limits(devfreq);
+>>>
+>>>         dev_set_name(&devfreq->dev, dev_name(dev));
+>>>         err = device_register(&devfreq->dev);
+>>> --
+>>> 1.7.10.4
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>>
+>> --
+>> MyungJoo Ham, Ph.D.
+>> Mobile Software Platform Lab, DMC Business, Samsung Electronics
 >
 >
+>
+> --
+> Regards,
+> Rajagopal
 
- Abhilash
+
+
+-- 
+Regards,
+Rajagopal
