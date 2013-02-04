@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab3BDSvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 13:51:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46898 "EHLO mail.kernel.org"
+	id S1754640Ab3BDS4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 13:56:54 -0500
+Received: from 8bytes.org ([85.214.48.195]:34455 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750773Ab3BDSvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 13:51:31 -0500
-Date: Mon, 4 Feb 2013 10:51:46 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
-Message-ID: <20130204185146.GA31284@kroah.com>
-References: <1359937421-19921-1-git-send-email-minchan@kernel.org>
+	id S1750773Ab3BDS4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 13:56:53 -0500
+Date: Mon, 4 Feb 2013 19:56:50 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Stuart Yoder <b08248@gmail.com>
+Cc: Sethi Varun-B16395 <B16395@freescale.com>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] iommu: Add domain window handling functions
+Message-ID: <20130204185650.GP25591@8bytes.org>
+References: <1359983924-28952-1-git-send-email-joro@8bytes.org>
+ <1359983924-28952-5-git-send-email-joro@8bytes.org>
+ <CALRxmdCiSZgoqd8tp90kPCdA=s7SWZCTwKsFnWu7S5=U7+eRLQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359937421-19921-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <CALRxmdCiSZgoqd8tp90kPCdA=s7SWZCTwKsFnWu7S5=U7+eRLQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Feb  4 19:56:51 2013
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5110047322971526457755
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 09:23:41AM +0900, Minchan Kim wrote:
-> Zsmalloc has two methods 1) copy-based and 2) pte based to access
-> allocations that span two pages.
-> You can see history why we supported two approach from [1].
+On Mon, Feb 04, 2013 at 12:10:51PM -0600, Stuart Yoder wrote:
+> On Mon, Feb 4, 2013 at 7:18 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> > +static inline int iommu_domain_window_enable(struct iommu_domain *domain,
+> > +                                            u32 wnd_nr, phys_addr_t paddr,
+> > +                                            size_t size)
+> > +{
+> > +       return -ENODEV;
+> > +}
+> > +
+> > +static inline void iommu_domain_window_disable(struct iommu_domain *domain,
+> > +                                              u32 wnd_nr)
+> > +{
+> > +}
+> > +
+> >  static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+> >                                              unsigned long iova)
+> >  {
 > 
-> But it was bad choice that adding hard coding to select architecture
-> which want to use pte based method. This patch removed it and adds
-> new Kconfig to select the approach.
-> 
-> This patch is based on next-20130202.
-> 
-> [1] https://lkml.org/lkml/2012/7/11/58
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zsmalloc/Kconfig         |   12 ++++++++++++
->  drivers/staging/zsmalloc/zsmalloc-main.c |   11 -----------
->  2 files changed, 12 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> index 9084565..2359123 100644
-> --- a/drivers/staging/zsmalloc/Kconfig
-> +++ b/drivers/staging/zsmalloc/Kconfig
-> @@ -8,3 +8,15 @@ config ZSMALLOC
->  	  non-standard allocator interface where a handle, not a pointer, is
->  	  returned by an alloc().  This handle must be mapped in order to
->  	  access the allocated space.
-> +
-> +config ZSMALLOC_PGTABLE_MAPPING
-> +        bool "Use page table mapping to access allocations that span two pages"
-> +        depends on ZSMALLOC
-> +        default n
-> +        help
-> +	  By default, zsmalloc uses a copy-based object mapping method to access
-> +	  allocations that span two pages. However, if a particular architecture
-> +	  performs VM mapping faster than copying, then you should select this.
-> +	  This causes zsmalloc to use page table mapping rather than copying
-> +	  for object mapping. You can check speed with zsmalloc benchmark[1].
-> +	  [1] https://github.com/spartacus06/zsmalloc
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 06f73a9..b161ca1 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -218,17 +218,6 @@ struct zs_pool {
->  #define CLASS_IDX_MASK	((1 << CLASS_IDX_BITS) - 1)
->  #define FULLNESS_MASK	((1 << FULLNESS_BITS) - 1)
->  
-> -/*
-> - * By default, zsmalloc uses a copy-based object mapping method to access
-> - * allocations that span two pages. However, if a particular architecture
-> - * performs VM mapping faster than copying, then it should be added here
-> - * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
-> - * page table mapping rather than copying for object mapping.
-> -*/
-> -#if defined(CONFIG_ARM)
-> -#define USE_PGTABLE_MAPPING
-> -#endif
+> This API looks workable.   The one change we need is that the size argument in
+> the enable API needs to be 64 bits.   Our window sizes can exceed 4GB.
 
-Did you test this?  I don't see the new config value you added actually
-do anything in this code.  Also, if I select it incorrectly on ARM, or
-or other platforms, what is keeping this from doing bad things?
+Okay. So if your architecture supports sizes over 2^32 then size_t
+probably is already 64bits, right?
 
-thanks,
 
-greg k-h
+	Joerg
+
+
