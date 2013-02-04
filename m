@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab3BDCDj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 21:03:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47404 "EHLO mx1.redhat.com"
+	id S1753963Ab3BDCEd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 21:04:33 -0500
+Received: from mail.servus.at ([193.170.194.20]:38840 "EHLO mail.servus.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753785Ab3BDCDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 21:03:37 -0500
-Date: Sun, 3 Feb 2013 20:03:16 -0600
-From: Clark Williams <williams@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 2/2] sched/rt:  add a tuning knob to allow changing
- SCHED_RR timeslice
-Message-ID: <20130203200316.63c15a79@riff.lan>
-In-Reply-To: <20130203185709.GA22826@gmail.com>
-References: <20130131135242.1b77b841@redhat.com>
-	<20130203111025.GC11739@gmail.com>
-	<20130203185709.GA22826@gmail.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/81kLhp_./PcudaTMfQ8OiIY"; protocol="application/pgp-signature"
+	id S1753785Ab3BDCE3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 21:04:29 -0500
+Message-ID: <510F10C4.2080903@oberhumer.com>
+Date: Mon, 04 Feb 2013 02:37:08 +0100
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Organization: oberhumer.com
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.12) Gecko/20130105 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: "kyungsik.lee" <kyungsik.lee@lge.com>
+CC: Rajesh Pawar <pawaraj@india.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-kbuild@jasper.es, linux-arm-kernel@lists.infradead.org,
+        David Sterba <dsterba@suse.cz>,
+        =?UTF-8?B?7J6E7Zqo7KSA?= <hyojun.im@lge.com>,
+        =?UTF-8?B?7KCV7LCs6reg?= <chan.jeong@lge.com>, minchan@kernel.org,
+        =?UTF-8?B?6rmA64Ko7ZiV?= <namhyung.kim@lge.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Egon Alter <egon.alter@gmx.net>,
+        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
+        raphael.andy.lee@gmail.com
+Subject: Re: [RFC PATCH 0/4] Add support for LZ4-compressed kernels
+References: <1359179447-31118-1-git-send-email-kyungsik.lee@lge.com>, <20130128142510.68092e10.akpm@linux-foundation.org> <254788880.18003.1359493798737.JavaMail.tomcat@be12> <510B6829.7050908@lge.com>
+In-Reply-To: <510B6829.7050908@lge.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/81kLhp_./PcudaTMfQ8OiIY
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 2013-02-01 08:00, kyungsik.lee wrote:
+> On 2013-01-30 오전 6:09, Rajesh Pawar wrote:
+>>> Andrew Morton <akpm@linux-foundation.org> wrote:
+>>>
+>>> On Sat, 26 Jan 2013 14:50:43 +0900
+>>> Kyungsik Lee <kyungsik.lee@lge.com> wrote:
+>>>> [...]
+>>>>
+>>> What's this "with enabled unaligned memory access" thing? You mean "if
+>>> the arch supports CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS"? If so,
+>>> that's only x86, which isn't really in the target market for this
+>>> patch, yes?
+>>> It's a lot of code for a 50ms boot-time improvement. Does anyone have
+>>> any opinions on whether or not the benefits are worth the cost?
+>> BTW, what happened to the proposed LZO update - woudn't it better to merge
+>> this first?
+>>
+>> Also, under the hood LZ4 seems to be quite similar to LZO, so probably
+>> LZO speed would also greatly benefit from unaligned access and some other
+>> ARM optimisations
+>>   
+> I didn't test with the proposed LZO update you mentioned. Sorry, which one do
+> you mean?
+> I did some tests with the latest LZO in the mainline.
 
-On Sun, 3 Feb 2013 19:57:09 +0100
-Ingo Molnar <mingo@kernel.org> wrote:
+In fact you can easily improve LZO decompression speed on armv7 by almost 50%
+by adding just a few lines for enabling unaligend access:
 
->=20
-> * Ingo Molnar <mingo@kernel.org> wrote:
->=20
-> > The first patch looks good, I've applied it.
->=20
-> I've skipped this one after all, as it sometimes generates:
->=20
-> include/linux/sched/sysctl.h:108:41: warning: =E2=80=98struct signal_stru=
-ct=E2=80=99 declared inside parameter list [enabled by default]
->=20
-> Sometimes doesn't built kernel/sched/auto_group.c. So those bits=20
-> probably want to move into a separate sched/auto_group.h header=20
-> or so.
->=20
-> But, more fundamentally, I think sched.h should not include the=20
-> new sched/sysctl.h file. The whole point is to move out bits=20
-> from sched.h and decouple them from sched.h - to shrink sched.h=20
-> in the long run.
->=20
+armv7 (Cortex-A9), Linaro gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
+
+                   compression speed   decompression speed
+
+  LZO-2005    :          27 MB/sec           84 MB/sec
+  LZO-2012    :          44 MB/sec          117 MB/sec
+  LZO-2013-UA :          47 MB/sec          167 MB/sec
+
+Please see my other mail to LKML for details.
+
+Cheers,
+Markus
+
+> As a result, LZO is not faster in an unaligned access enabled on ARM. Actually
+> Slower.
+> 
+> Decompression time: 336ms(383ms, with unaligned access enabled)
+> 
+> You may refer to https://lkml.org/lkml/2012/10/7/85 to know more about it.
+> 
 > Thanks,
->=20
-> 	Ingo
+> Kyungsik
+> 
+> 
+> Thanks,
+> Kyungsik
+> 
 
-Ahh, you wanted to not only reduce the size of sched.h you want to
-reduce the amount of code it brings in.=20
-
-I'll go back to the drawing board. I'll pull the relevant code from
-sysctl.h into auto_group.h, then I'll remove the include in sched.h.
-Then I'll track down all the build failures from the above :).
-
-Clark
-
---Sig_/81kLhp_./PcudaTMfQ8OiIY
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlEPFuQACgkQHyuj/+TTEp1gZwCffswao7YqefZKMJx3R8tIWd0j
-FGEAoKvvcLzckYpxwXY8UhMzirqB5uM5
-=0wOp
------END PGP SIGNATURE-----
-
---Sig_/81kLhp_./PcudaTMfQ8OiIY--
+-- 
+Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
