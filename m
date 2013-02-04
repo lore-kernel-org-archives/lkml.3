@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab3BDKUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 05:20:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43643 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751023Ab3BDKU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 05:20:29 -0500
-Date: Mon, 4 Feb 2013 10:20:26 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] regmap: Include <linux/sched.h> header
-Message-ID: <20130204102026.GD4720@opensource.wolfsonmicro.com>
-References: <1359935343-30558-1-git-send-email-festevam@gmail.com>
+	id S1753974Ab3BDKVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 05:21:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42201 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753072Ab3BDKVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 05:21:30 -0500
+Date: Mon, 4 Feb 2013 11:21:27 +0100
+From: Jan Kara <jack@suse.cz>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        Bonggil Bak <bgbak@samsung.com>
+Subject: Re: [PATCH] udf: add extent cache support in case of file reading
+Message-ID: <20130204102127.GB7523@quack.suse.cz>
+References: <1358561834-8108-1-git-send-email-linkinjeon@gmail.com>
+ <20130121110442.GF5588@quack.suse.cz>
+ <CAKYAXd-_chC9zFtC7A=puo9AgQSAD5JbkF=y=ZYP5vS7bO7-dg@mail.gmail.com>
+ <20130122100447.GA31140@quack.suse.cz>
+ <CAKYAXd_3Fxxsw=nQs3aZK8V+DqfhYgWmF14Qxr7J-QJ+i-9=Ug@mail.gmail.com>
+ <CAKYAXd8YuAmy+EDK9ck8n1kq_GgzRUfhSbgrVZWa5sdaPUKPKA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MAH+hnPXVZWQ5cD/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1359935343-30558-1-git-send-email-festevam@gmail.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKYAXd8YuAmy+EDK9ck8n1kq_GgzRUfhSbgrVZWa5sdaPUKPKA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat 02-02-13 15:21:09, Namjae Jeon wrote:
+> Hi. Jan.
+> 
+> Sorry for interrupt.
+> Have you taken this patch to your tree ? I can not find it..
+> or Is there any issue regarding this patch ?
+  I had it in my tree but not in the for_next branch. Did it now so you
+should see the patch in tomorrow's linux-next.
 
---MAH+hnPXVZWQ5cD/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, Feb 03, 2013 at 09:49:03PM -0200, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
->=20
-> commit 0e8c0234b2 (regmap: Add asynchronous I/O support) introduced the=
-=20
-> following build error:
-
-Already fixed.
-
---MAH+hnPXVZWQ5cD/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRD4tgAAoJELSic+t+oim9560P/2jScbJktT3qVdLN3Si03553
-QsBHgFPqmspfUwTR8I6uPg0Fq4iAWIkQptiCiaCwzZ7/Zfwg+bv6p0rFeVJriynj
-FVa1teHIDHlLabAYhw/tRTqxy/dtzaSEz4TcWINd4Jvwl7xnm/ls7VITvMlwe3uT
-dQYKkw/c6WZMQhtMQyDr5gRHP0RdB5wUmTPmdirWsY79pQkztkcyDIiHGTnZeMMz
-1wDCmbMBfGyNeftogydfWFYDtVaUy33Yt+mK8rWC3HhktnrrUY5APbgAxI3FSRFj
-d6kELwwrQskgotbVZt2gpU/DwfsZPqJnUGN6iDtFxoX9wqnVDooScxqR6aQnLLFd
-5G7agagQDDcJKwz9PHEKV0Knizk9RgeUdIflf3Oue7vIMC1HCx08jqCp9+EKAtmL
-RXCrdRC8idBywWsXI6c04heNlpao/rLHFKHwXJEH/Gw8nyxi+odl9lDutNEv7W2d
-NVu9KrxhBHEkAp4Xvjsq/ONUwLSrhNEeldEMlbzk7myTxHaJuAWopG7JDi4IsJw+
-2N6HhIXv8T4cCJaMKB9YhgtChNmgucdWmqhmSsyDQPDgxChyyX6aOWLe1m5h65Fa
-X2zOrJ33ilGV5+qLMtZQbvhDFVGupHylYPq2hwT1ieb589pb9YqkGTvgovu5On3r
-vWHhQXCo2YRr7P1rQ6pl
-=EiGZ
------END PGP SIGNATURE-----
-
---MAH+hnPXVZWQ5cD/--
+									Honza
+> 2013/1/22, Namjae Jeon <linkinjeon@gmail.com>:
+> > 2013/1/22, Jan Kara <jack@suse.cz>:
+> >> On Tue 22-01-13 09:45:09, Namjae Jeon wrote:
+> >>> 2013/1/21, Jan Kara <jack@suse.cz>:
+> >>> > @@ -2222,6 +2219,8 @@ int udf_read_extent_cache(struct inode *inode,
+> >>> > loff_t
+> >>> > bcount,
+> >>> >  		*lbcount = iinfo->cached_extent.lstart;
+> >>> >  		memcpy(pos, &iinfo->cached_extent.epos,
+> >>> >  		       sizeof(struct extent_position));
+> >>> > +		if (pos->bh)
+> >>> > +			get_bh(pos->bh);
+> >>> >  		spin_unlock(&iinfo->i_extent_cache_lock);
+> >>> >  		return 1;
+> >>> >  	} else
+> >>> >   This is the most important - we should give buffer reference to
+> >>> > pos->bh.
+> >>> > Caller will eventually free it right?
+> >>> This change is not required as we give buffer reference to pos->bh at
+> >>> the time of cache update.
+> >>> When we start reading a file, first we try to read the cache which
+> >>> will lead to cache miss.
+> >>> So, we would really access the pos->bh in udf_update_extent_cache for
+> >>> the first time, and this is where the buffer reference is incremented.
+> >>> Calling get_bh at 2 places will eventually lead to mem leak.
+> >>> Let me know your opinion.
+> >>   Yes, udf_update_extent_cache() gets its own reference to bh but that is
+> >> dropped in udf_clear_extent_cache(). So I think udf_read_extent_cache()
+> >> needs to get a reference to the caller (as the caller will eventually
+> >> free
+> >> the bh via brelse(epos.bh) e.g. in udf_extend_file(). Also I realized
+> >> udf_update_extent_cache() needs to first clear the cache if it is valid.
+> >> Otherwise it just overwrites bh pointer and reference is leaked. Is it
+> >> clearer now?
+> > Yes, you're right. Also, this patch looks good to me.
+> >>
+> >>   I've also changed locking of udf_clear_extent_cache() so that
+> >> i_extent_cache_lock is always taken for that function - it makes the
+> >> locking rules obvious at the first sight.
+> > Yes, right. it is needed.
+> > When we test with this patch, working fine.
+> > Thanks Jan!
+> >>
+> >>   Attached is the patch I currently carry.
+> >>
+> >> 								Honza
+> >>
+> >> --
+> >> Jan Kara <jack@suse.cz>
+> >> SUSE Labs, CR
+> >>
+> >
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
