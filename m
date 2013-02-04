@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3BDMD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:03:28 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:43588 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab3BDL53 (ORCPT
+	id S1755405Ab3BDMDx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:03:53 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44521 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755033Ab3BDL5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:57:29 -0500
+	Mon, 4 Feb 2013 06:57:22 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>,
+Cc: Zhenhua HUANG <zhenhua.huang@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 52/73] ARM ux500: Remove external regulators from AB8505 init data
-Date: Mon,  4 Feb 2013 11:54:07 +0000
-Message-Id: <1359978868-28736-53-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 49/73] regulator: ab8500: Fix vsdio parameters for AB8540 based platforms
+Date: Mon,  4 Feb 2013 11:54:04 +0000
+Message-Id: <1359978868-28736-50-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
 References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
@@ -21,54 +21,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+From: Zhenhua HUANG <zhenhua.huang@stericsson.com>
 
-They are nonexistent on this platform.
+Fix the parameters for vsdio in idle mode and normal mode.
 
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Zhenhua HUANG <zhenhua.huang@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Tested-by: Marcus COOPER <marcus.xm.cooper@stericsson.com>
+Reviewed-by: Maxime COQUELIN <maxime.coquelin@stericsson.com>
+Reviewed-by: Xiao Mei ZHANG <xiaomei.zhang@stericsson.com>
+Reviewed-by: Rabin VINCENT <rabin.vincent@stericsson.com>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/regulator/ab8500.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index b0f5e8f..6c232b7 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -759,7 +759,6 @@ static struct ab8500_regulator_reg_init ab8505_reg_init[] = {
- struct regulator_init_data ab8505_regulators[AB8505_NUM_REGULATORS] = {
- 	/* supplies to the display/camera */
- 	[AB8505_LDO_AUX1] = {
--		.supply_regulator = "ab8500-ext-supply3",
- 		.constraints = {
- 			.name = "V-DISPLAY",
- 			.min_uV = 2800000,
-@@ -773,7 +772,6 @@ struct regulator_init_data ab8505_regulators[AB8505_NUM_REGULATORS] = {
- 	},
- 	/* supplies to the on-board eMMC */
- 	[AB8505_LDO_AUX2] = {
--		.supply_regulator = "ab8500-ext-supply3",
- 		.constraints = {
- 			.name = "V-eMMC1",
- 			.min_uV = 1100000,
-@@ -789,7 +787,6 @@ struct regulator_init_data ab8505_regulators[AB8505_NUM_REGULATORS] = {
- 	},
- 	/* supply for VAUX3, supplies to SDcard slots */
- 	[AB8505_LDO_AUX3] = {
--		.supply_regulator = "ab8500-ext-supply3",
- 		.constraints = {
- 			.name = "V-MMC-SD",
- 			.min_uV = 1100000,
-@@ -936,8 +933,6 @@ struct ab8500_regulator_platform_data ab8505_regulator_plat_data = {
- 	.num_reg_init           = ARRAY_SIZE(ab8505_reg_init),
- 	.regulator              = ab8505_regulators,
- 	.num_regulator          = ARRAY_SIZE(ab8505_regulators),
--	.ext_regulator          = ab8500_ext_regulators,
--	.num_ext_regulator      = ARRAY_SIZE(ab8500_ext_regulators),
- };
- 
- static void ab8500_modify_reg_init(int id, u8 mask, u8 value)
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 5218502..b09b507 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -1412,8 +1412,8 @@ static struct ab8500_regulator_info
+ 		.update_reg		= 0x88,
+ 		.update_mask		= 0x30,
+ 		.update_val		= 0x10,
+-		.update_val_idle	= 0x00,
+-		.update_val_normal	= 0x20,
++		.update_val_idle	= 0x30,
++		.update_val_normal	= 0x10,
+ 		.voltage_bank		= 0x03,
+ 		.voltage_reg		= 0x88,
+ 		.voltage_mask		= 0x07,
 -- 
 1.7.9.5
 
