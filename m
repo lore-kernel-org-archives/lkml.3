@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3BDTq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 14:46:28 -0500
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:64287 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab3BDTq0 (ORCPT
+	id S1754826Ab3BDTqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 14:46:34 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:52265 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754141Ab3BDTq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 14:46:26 -0500
+	Mon, 4 Feb 2013 14:46:29 -0500
 From: Matt Porter <mporter@ti.com>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>,
@@ -15,9 +15,9 @@ Cc: Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>,
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: [PATCH v3 1/3] dmaengine: add dma_get_slave_sg_caps()
-Date: Mon,  4 Feb 2013 14:47:02 -0500
-Message-Id: <1360007224-21735-2-git-send-email-mporter@ti.com>
+Subject: [PATCH v3 3/3] mmc: davinci: get SG segment limits with dma_get_slave_sg_caps()
+Date: Mon,  4 Feb 2013 14:47:04 -0500
+Message-Id: <1360007224-21735-4-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360007224-21735-1-git-send-email-mporter@ti.com>
 References: <1360007224-21735-1-git-send-email-mporter@ti.com>
@@ -25,92 +25,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a dmaengine API to retrieve slave SG transfer capabilities.
-
-The API is optionally implemented by dmaengine drivers and when
-unimplemented will return a NULL pointer. A client driver using
-this API provides the required dma channel, address width, and
-burst size of the transfer. dma_get_slave_sg_caps() returns an
-SG caps structure with the maximum number and size of SG segments
-that the given channel can handle.
+Replace the hardcoded values used to set max_segs/max_seg_size with
+a dma_get_slave_sg_caps() query to the dmaengine driver.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- include/linux/dmaengine.h |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ drivers/mmc/host/davinci_mmc.c            |   37 ++++++++---------------------
+ include/linux/platform_data/mmc-davinci.h |    3 ---
+ 2 files changed, 10 insertions(+), 30 deletions(-)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index d3201e4..5b5b220 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -371,6 +371,19 @@ struct dma_slave_config {
- 	unsigned int slave_id;
+diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
+index 2063677..583cbd0 100644
+--- a/drivers/mmc/host/davinci_mmc.c
++++ b/drivers/mmc/host/davinci_mmc.c
+@@ -144,18 +144,6 @@
+ /* MMCSD Init clock in Hz in opendrain mode */
+ #define MMCSD_INIT_CLOCK		200000
+ 
+-/*
+- * One scatterlist dma "segment" is at most MAX_CCNT rw_threshold units,
+- * and we handle up to MAX_NR_SG segments.  MMC_BLOCK_BOUNCE kicks in only
+- * for drivers with max_segs == 1, making the segments bigger (64KB)
+- * than the page or two that's otherwise typical. nr_sg (passed from
+- * platform data) == 16 gives at least the same throughput boost, using
+- * EDMA transfer linkage instead of spending CPU time copying pages.
+- */
+-#define MAX_CCNT	((1 << 16) - 1)
+-
+-#define MAX_NR_SG	16
+-
+ static unsigned rw_threshold = 32;
+ module_param(rw_threshold, uint, S_IRUGO);
+ MODULE_PARM_DESC(rw_threshold,
+@@ -216,8 +204,6 @@ struct mmc_davinci_host {
+ 	u8 version;
+ 	/* for ns in one cycle calculation */
+ 	unsigned ns_in_one_cycle;
+-	/* Number of sg segments */
+-	u8 nr_sg;
+ #ifdef CONFIG_CPU_FREQ
+ 	struct notifier_block	freq_transition;
+ #endif
+@@ -1165,6 +1151,7 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+ 	struct resource *r, *mem = NULL;
+ 	int ret = 0, irq = 0;
+ 	size_t mem_size;
++	struct dma_slave_sg_caps *dma_sg_caps;
+ 
+ 	/* REVISIT:  when we're fully converted, fail if pdata is NULL */
+ 
+@@ -1214,12 +1201,6 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+ 
+ 	init_mmcsd_host(host);
+ 
+-	if (pdata->nr_sg)
+-		host->nr_sg = pdata->nr_sg - 1;
+-
+-	if (host->nr_sg > MAX_NR_SG || !host->nr_sg)
+-		host->nr_sg = MAX_NR_SG;
+-
+ 	host->use_dma = use_dma;
+ 	host->mmc_irq = irq;
+ 	host->sdio_irq = platform_get_irq(pdev, 1);
+@@ -1248,14 +1229,16 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+ 		mmc->caps |= pdata->caps;
+ 	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+ 
+-	/* With no iommu coalescing pages, each phys_seg is a hw_seg.
+-	 * Each hw_seg uses one EDMA parameter RAM slot, always one
+-	 * channel and then usually some linked slots.
+-	 */
+-	mmc->max_segs		= MAX_NR_SG;
++	/* Just check one channel for the DMA SG limits */
++	dma_sg_caps = dma_get_slave_sg_caps(
++				host->dma_tx,
++				DMA_SLAVE_BUSWIDTH_4_BYTES,
++				rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES);
+ 
+-	/* EDMA limit per hw segment (one or two MBytes) */
+-	mmc->max_seg_size	= MAX_CCNT * rw_threshold;
++	if (dma_sg_caps) {
++		mmc->max_segs = dma_sg_caps->max_seg_nr;
++		mmc->max_seg_size = dma_sg_caps->max_seg_len;
++	}
+ 
+ 	/* MMC/SD controller limits for multiblock requests */
+ 	mmc->max_blk_size	= 4095;  /* BLEN is 12 bits */
+diff --git a/include/linux/platform_data/mmc-davinci.h b/include/linux/platform_data/mmc-davinci.h
+index 5ba6b22..6910209 100644
+--- a/include/linux/platform_data/mmc-davinci.h
++++ b/include/linux/platform_data/mmc-davinci.h
+@@ -25,9 +25,6 @@ struct davinci_mmc_config {
+ 
+ 	/* Version of the MMC/SD controller */
+ 	u8	version;
+-
+-	/* Number of sg segments */
+-	u8	nr_sg;
  };
+ void davinci_setup_mmc(int module, struct davinci_mmc_config *config);
  
-+/* struct dma_slave_sg_caps - expose SG transfer capability of a
-+ * channel.
-+ *
-+ * @max_seg_nr: maximum number of SG segments supported on a SG/SLAVE
-+ *	    channel (0 for no maximum or not a SG/SLAVE channel)
-+ * @max_seg_len: maximum length of SG segments supported on a SG/SLAVE
-+ *	     channel (0 for no maximum or not a SG/SLAVE channel)
-+ */
-+struct dma_slave_sg_caps {
-+	u32 max_seg_nr;
-+	u32 max_seg_len;
-+};
-+
- static inline const char *dma_chan_name(struct dma_chan *chan)
- {
- 	return dev_name(&chan->dev->device);
-@@ -534,6 +547,7 @@ struct dma_tx_state {
-  *	struct with auxiliary transfer status information, otherwise the call
-  *	will just return a simple status code
-  * @device_issue_pending: push pending transactions to hardware
-+ * @device_slave_sg_caps: return the slave SG capabilities
-  */
- struct dma_device {
- 
-@@ -602,6 +616,9 @@ struct dma_device {
- 					    dma_cookie_t cookie,
- 					    struct dma_tx_state *txstate);
- 	void (*device_issue_pending)(struct dma_chan *chan);
-+	struct dma_slave_sg_caps *(*device_slave_sg_caps)(
-+		struct dma_chan *chan, enum dma_slave_buswidth addr_width,
-+		u32 maxburst);
- };
- 
- static inline int dmaengine_device_control(struct dma_chan *chan,
-@@ -969,6 +986,29 @@ dma_set_tx_state(struct dma_tx_state *st, dma_cookie_t last, dma_cookie_t used,
- 	}
- }
- 
-+/**
-+ * dma_get_slave_sg_caps - get DMAC SG transfer capabilities
-+ * @chan: target DMA channel
-+ * @addr_width: address width of the DMA transfer
-+ * @maxburst: maximum DMA transfer burst size
-+ *
-+ * Get SG transfer capabilities for a specified channel. If the dmaengine
-+ * driver does not implement SG transfer capabilities then NULL is
-+ * returned.
-+ */
-+static inline struct dma_slave_sg_caps
-+*dma_get_slave_sg_caps(struct dma_chan *chan,
-+		       enum dma_slave_buswidth addr_width,
-+		       u32 maxburst)
-+{
-+	if (chan->device->device_slave_sg_caps)
-+		return chan->device->device_slave_sg_caps(chan,
-+							  addr_width,
-+							  maxburst);
-+
-+	return NULL;
-+}
-+
- enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
- #ifdef CONFIG_DMA_ENGINE
- enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
 -- 
 1.7.9.5
 
