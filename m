@@ -1,88 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab3BDDGw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Feb 2013 22:06:52 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:40318 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab3BDDGu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Feb 2013 22:06:50 -0500
-Date: Mon, 4 Feb 2013 14:06:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: linux-next: manual merge of the security tree with Linus' tree
-Message-Id: <20130204140641.076d7621651d346448fc58f7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Feb_2013_14_06_41_+1100_N9+k/iDxKIEb.chS"
+	id S1753954Ab3BDDIU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Feb 2013 22:08:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:49283 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753757Ab3BDDIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Feb 2013 22:08:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,596,1355126400"; 
+   d="scan'208";a="252148954"
+From: "Li, Fei" <fei.li@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: RE: [PATCH V4] suspend: enable freeze timeout configuration through
+ sys
+Thread-Topic: [PATCH V4] suspend: enable freeze timeout configuration
+ through sys
+Thread-Index: AQHOAFo0hWFivPoOY0qOogSgn3FjQ5hnoYOAgAFcViA=
+Date: Mon, 4 Feb 2013 03:08:13 +0000
+Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE36343F154E@SHSMSX102.ccr.corp.intel.com>
+References: <1359428300.3211.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <1359608132.7918.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <1359708963.7240.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <1919836.fQMoKOYYSd@vostro.rjw.lan>
+In-Reply-To: <1919836.fQMoKOYYSd@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1438Lms005698
 
---Signature=_Mon__4_Feb_2013_14_06_41_+1100_N9+k/iDxKIEb.chS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> 
+> On Friday, February 01, 2013 04:56:03 PM fli24 wrote:
+> 
+> The code looks OK, but I'm still having a more fundamental problem with this
+> change, because ->
+> 
+> > At present, the value of timeout for freezing is 20s, which is
+> > meaningless in case that one thread is frozen with mutex locked
+> > and another thread is trying to lock the mutex, as this time of
+> > freezing will fail unavoidably.
+> 
+> -> the situation described above shouldn't happen and if it does, then there
+> is a bug that needs to be fixed.
 
-Hi James,
+Yes, we agree with that it's a bug that needs to be fixed, and we are already done
+for some cases. 
+During the process, we realize that tuning the timeout value to smaller value will help
+to expose freezing failure for some cases.
 
-Today's linux-next merge of the security tree got a conflict in
-lib/digsig.c between commit 7810cc1e7721 ("digsig: Fix memory leakage in
-digsig_verify_rsa()") from Linus' tree and commit 26d438457ed1 ("digsig:
-remove unnecessary memory allocation and copying") from the security tree.
+> The change you're proposing seems to be targeted at hiding those bugs rather
+> than at fixing them.  I wonder why we should hide those bugs instead of fixing
+> them?
+> 
+> Rafael
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+We understand your concern about hiding bugs, and we are not going to do this.
+In contrast, setting timeout value to smaller value means more strict threshold, and
+it will expose the potential issue more quickly with more chance.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Taking diversity of system into consideration, we think it's suitable to expose the interface
+to support different configuration on different system for purpose of debugging and 
+performance tuning.
 
-diff --cc lib/digsig.c
-index dc2be7e,0103c5b..0000000
---- a/lib/digsig.c
-+++ b/lib/digsig.c
-@@@ -162,13 -152,9 +152,11 @@@ static int digsig_verify_rsa(struct ke
-  	memset(out1, 0, head);
-  	memcpy(out1 + head, p, l);
- =20
- +	kfree(p);
- +
-- 	err =3D pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
-- 	if (err)
-- 		goto err;
-+ 	m =3D pkcs_1_v1_5_decode_emsa(out1, len, mblen, &len);
- =20
-- 	if (len !=3D hlen || memcmp(out2, h, hlen))
-+ 	if (!m || len !=3D hlen || memcmp(m, h, hlen))
-  		err =3D -EINVAL;
- =20
-  err:
+Do you think it make sense for you?
 
---Signature=_Mon__4_Feb_2013_14_06_41_+1100_N9+k/iDxKIEb.chS
-Content-Type: application/pgp-signature
+Best Regards,
+Li Fei
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRDyXBAAoJEECxmPOUX5FESBgQAJ8SRDnb2sCO62ZgwIUIMGGl
-C7h+x2w5hpwkJCr4yg20gf1rqe//F+uEU1b2/SuFBQ6Yy5LrfIER17Xtv0erqUzS
-wW3SdtmAMYN4EEb3atZMRI/Me9CGqTghuHJf20DXF53UAXrJ4osCBUKXPGEijH9D
-iXSxGjCGDH72kPSeHwNwqwDejXCz1Og25HcCR3ciFRgIBeSzxGFHWTnQteb4GRxJ
-VI4ymjAy5KaGd2d9xGOjArJeCS9skpEAu+VBSl7Enuo+DFB+buTKWMmKQ8ct9cSS
-Hvpj2ZqdxR5fYLXlsw5quMwhhtIaMCrX6CB2OT4dPJmEu7XPlxKbvH1QAh4F7fZD
-Wtz2sOURfAjcaXSF82j91bNgN8+RGtYzXmRAEA7L6m4d6iZrGWxwWT5j7+ZW0e82
-zmBPpVJ2Z9PQES6E3R8asDz/gnRpNH/pw7JLXSjYL3G4+m85dtzMT4vo15aBw/8B
-1VJexiYIB0qNkTdcOv8VzGzWrjCS0yrF87ptglRhwhmMB1qVHBvkOzbuYz3M5jgI
-ao6a7lD9fdrOHtK5iu1//ASngehYXxDjbyDxDggAYq+k32eXNB/eDJZ4I/pHFOkB
-hmerO88GDOk5Shzp90lU7lv6WeGOlyct+cKxcxwwZJDuMFZS7EhkOl0U0hRIrYIp
-yji5rUXsjZJKNuQH4xrE
-=qjoU
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Feb_2013_14_06_41_+1100_N9+k/iDxKIEb.chS--
+> 
+> > And if there is no new wakeup event registered, the system will
+> > waste at most 20s for such meaningless trying of freezing.
+> >
+> > With this patch, the value of timeout can be configured to smaller
+> > value, so such meaningless trying of freezing will be aborted in
+> > earlier time, and later freezing can be also triggered in earlier
+> > time. And more power will be saved.
+> > In normal case on mobile phone, it costs real little time to freeze
+> > processes. On some platform, it only costs about 20ms to freeze
+> > user space processes and 10ms to freeze kernel freezable threads.
+> >
+> > Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
+> > Signed-off-by: Li Fei <fei.li@intel.com>
+> > ---
+> >  Documentation/power/freezing-of-tasks.txt |    5 +++++
+> >  include/linux/freezer.h                   |    5 +++++
+> >  kernel/power/main.c                       |   27
+> +++++++++++++++++++++++++++
+> >  kernel/power/process.c                    |    4 ++--
+> >  4 files changed, 39 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/Documentation/power/freezing-of-tasks.txt
+> b/Documentation/power/freezing-of-tasks.txt
+> > index 6ec291e..85894d8 100644
+> > --- a/Documentation/power/freezing-of-tasks.txt
+> > +++ b/Documentation/power/freezing-of-tasks.txt
+> > @@ -223,3 +223,8 @@ since they ask the freezer to skip freezing this task,
+> since it is anyway
+> >  only after the entire suspend/hibernation sequence is complete.
+> >  So, to summarize, use [un]lock_system_sleep() instead of directly using
+> >  mutex_[un]lock(&pm_mutex). That would prevent freezing failures.
+> > +
+> > +V. Miscellaneous
+> > +/sys/power/pm_freeze_timeout controls how long it will cost at most to
+> freeze
+> > +all user space processes or all freezable kernel threads, in unit of millisecond.
+> > +The default value is 20000, with range of unsigned integer.
+> > diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> > index e4238ce..e70df40 100644
+> > --- a/include/linux/freezer.h
+> > +++ b/include/linux/freezer.h
+> > @@ -13,6 +13,11 @@ extern bool pm_freezing;		/* PM freezing in effect
+> */
+> >  extern bool pm_nosig_freezing;		/* PM nosig freezing in effect */
+> >
+> >  /*
+> > + * Timeout for stopping processes
+> > + */
+> > +extern unsigned int freeze_timeout_msecs;
+> > +
+> > +/*
+> >   * Check if a process has been frozen
+> >   */
+> >  static inline bool frozen(struct task_struct *p)
+> > diff --git a/kernel/power/main.c b/kernel/power/main.c
+> > index 1c16f91..3e1c9da 100644
+> > --- a/kernel/power/main.c
+> > +++ b/kernel/power/main.c
+> > @@ -553,6 +553,30 @@ power_attr(pm_trace_dev_match);
+> >
+> >  #endif /* CONFIG_PM_TRACE */
+> >
+> > +#ifdef CONFIG_FREEZER
+> > +static ssize_t pm_freeze_timeout_show(struct kobject *kobj,
+> > +				      struct kobj_attribute *attr, char *buf)
+> > +{
+> > +	return sprintf(buf, "%u\n", freeze_timeout_msecs);
+> > +}
+> > +
+> > +static ssize_t pm_freeze_timeout_store(struct kobject *kobj,
+> > +				       struct kobj_attribute *attr,
+> > +				       const char *buf, size_t n)
+> > +{
+> > +	unsigned long val;
+> > +
+> > +	if (kstrtoul(buf, 10, &val))
+> > +		return -EINVAL;
+> > +
+> > +	freeze_timeout_msecs = val;
+> > +	return n;
+> > +}
+> > +
+> > +power_attr(pm_freeze_timeout);
+> > +
+> > +#endif	/* CONFIG_FREEZER*/
+> > +
+> >  static struct attribute * g[] = {
+> >  	&state_attr.attr,
+> >  #ifdef CONFIG_PM_TRACE
+> > @@ -576,6 +600,9 @@ static struct attribute * g[] = {
+> >  	&pm_print_times_attr.attr,
+> >  #endif
+> >  #endif
+> > +#ifdef CONFIG_FREEZER
+> > +	&pm_freeze_timeout_attr.attr,
+> > +#endif
+> >  	NULL,
+> >  };
+> >
+> > diff --git a/kernel/power/process.c b/kernel/power/process.c
+> > index d5a258b..98088e0 100644
+> > --- a/kernel/power/process.c
+> > +++ b/kernel/power/process.c
+> > @@ -21,7 +21,7 @@
+> >  /*
+> >   * Timeout for stopping processes
+> >   */
+> > -#define TIMEOUT	(20 * HZ)
+> > +unsigned int __read_mostly freeze_timeout_msecs = 20 * MSEC_PER_SEC;
+> >
+> >  static int try_to_freeze_tasks(bool user_only)
+> >  {
+> > @@ -36,7 +36,7 @@ static int try_to_freeze_tasks(bool user_only)
+> >
+> >  	do_gettimeofday(&start);
+> >
+> > -	end_time = jiffies + TIMEOUT;
+> > +	end_time = jiffies + msecs_to_jiffies(freeze_timeout_msecs);
+> >
+> >  	if (!user_only)
+> >  		freeze_workqueues_begin();
+> >
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
