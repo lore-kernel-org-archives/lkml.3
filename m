@@ -1,128 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3BDVJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 16:09:45 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:17369 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab3BDVJn (ORCPT
+	id S1755312Ab3BDVLb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 16:11:31 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:33096 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755076Ab3BDVLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 16:09:43 -0500
-Message-ID: <1360011567.23410.179.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device
- hotplug framework
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg KH <gregkh@linuxfoundation.org>, "lenb@kernel.org" <lenb@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "guohanjun@huawei.com" <guohanjun@huawei.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Mon, 04 Feb 2013 13:59:27 -0700
-In-Reply-To: <3007489.fG0fDZGHrB@vostro.rjw.lan>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
-	 <20130204124612.GA22096@kroah.com>
-	 <1359996378.23410.130.camel@misato.fc.hp.com>
-	 <3007489.fG0fDZGHrB@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 16:11:30 -0500
+Date: Mon, 4 Feb 2013 16:11:29 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <rogerq@ti.com>
+cc: tony@atomide.com, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 09/31] USB: ehci-omap: Use devm_ioremap_resource()
+In-Reply-To: <1359988520-11996-1-git-send-email-rogerq@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1302041609290.1756-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-04 at 20:45 +0100, Rafael J. Wysocki wrote:
-> On Monday, February 04, 2013 09:46:18 AM Toshi Kani wrote:
-> > On Mon, 2013-02-04 at 04:46 -0800, Greg KH wrote:
-> > > On Sun, Feb 03, 2013 at 05:28:09PM -0700, Toshi Kani wrote:
-> > > > On Sat, 2013-02-02 at 16:01 +0100, Greg KH wrote:
-> > > > > On Fri, Feb 01, 2013 at 01:40:10PM -0700, Toshi Kani wrote:
-> > > > > > On Fri, 2013-02-01 at 07:30 +0000, Greg KH wrote:
-> > > > > > > On Thu, Jan 31, 2013 at 06:32:18PM -0700, Toshi Kani wrote:
-> > > > > > >  > This is already done for PCI host bridges and platform devices and I don't
-> > > > > > > > > see why we can't do that for the other types of devices too.
-> > > > > > > > > 
-> > > > > > > > > The only missing piece I see is a way to handle the "eject" problem, i.e.
-> > > > > > > > > when we try do eject a device at the top of a subtree and need to tear down
-> > > > > > > > > the entire subtree below it, but if that's going to lead to a system crash,
-> > > > > > > > > for example, we want to cancel the eject.  It seems to me that we'll need some
-> > > > > > > > > help from the driver core here.
-> > > > > > > > 
-> > > > > > > > There are three different approaches suggested for system device
-> > > > > > > > hot-plug:
-> > > > > > > >  A. Proceed within system device bus scan.
-> > > > > > > >  B. Proceed within ACPI bus scan.
-> > > > > > > >  C. Proceed with a sequence (as a mini-boot).
-> > > > > > > > 
-> > > > > > > > Option A uses system devices as tokens, option B uses acpi devices as
-> > > > > > > > tokens, and option C uses resource tables as tokens, for their handlers.
-> > > > > > > > 
-> > > > > > > > Here is summary of key questions & answers so far.  I hope this
-> > > > > > > > clarifies why I am suggesting option 3.
-> > > > > > > > 
-> > > > > > > > 1. What are the system devices?
-> > > > > > > > System devices provide system-wide core computing resources, which are
-> > > > > > > > essential to compose a computer system.  System devices are not
-> > > > > > > > connected to any particular standard buses.
-> > > > > > > 
-> > > > > > > Not a problem, lots of devices are not connected to any "particular
-> > > > > > > standard busses".  All this means is that system devices are connected
-> > > > > > > to the "system" bus, nothing more.
-> > > > > > 
-> > > > > > Can you give me a few examples of other devices that support hotplug and
-> > > > > > are not connected to any particular buses?  I will investigate them to
-> > > > > > see how they are managed to support hotplug.
-> > > > > 
-> > > > > Any device that is attached to any bus in the driver model can be
-> > > > > hotunplugged from userspace by telling it to be "unbound" from the
-> > > > > driver controlling it.  Try it for any platform device in your system to
-> > > > > see how it happens.
-> > > > 
-> > > > The unbind operation, as I understand from you, is to detach a driver
-> > > > from a device.  Yes, unbinding can be done for any devices.  It is
-> > > > however different from hot-plug operation, which unplugs a device.
-> > > 
-> > > Physically, yes, but to the driver involved, and the driver core, there
-> > > is no difference.  That was one of the primary goals of the driver core
-> > > creation so many years ago.
-> > > 
-> > > > Today, the unbind operation to an ACPI cpu/memory devices causes
-> > > > hot-unplug (offline) operation to them, which is one of the major issues
-> > > > for us since unbind cannot fail.  This patchset addresses this issue by
-> > > > making the unbind operation of ACPI cpu/memory devices to do the
-> > > > unbinding only.  ACPI drivers no longer control cpu and memory as they
-> > > > are supposed to be controlled by their drivers, cpu and memory modules.
-> > > 
-> > > I think that's the problem right there, solve that, please.
-> > 
-> > We cannot eliminate the ACPI drivers since we have to scan ACPI.  But we
-> > can limit the ACPI drivers to do the scanning stuff only.   This is
-> > precisely the intend of this patchset.  The real stuff, removing actual
-> > devices, is done by the system device drivers/modules.
+On Mon, 4 Feb 2013, Roger Quadros wrote:
+
+> Make use of devm_ioremap_resource() and correct comment.
 > 
-> In case you haven't realized that yet, the $subject patchset has no future.
+> CC: Alan Stern <stern@rowland.harvard.edu>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/usb/host/ehci-omap.c |   21 ++++++---------------
+>  1 files changed, 6 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+> index 30fc482..6b088a4 100644
+> --- a/drivers/usb/host/ehci-omap.c
+> +++ b/drivers/usb/host/ehci-omap.c
+> @@ -216,23 +216,17 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+>  
+>  	res =  platform_get_resource_byname(pdev,
+>  				IORESOURCE_MEM, "ehci");
+> -	if (!res) {
+> -		dev_err(dev, "UHH EHCI get resource failed\n");
+> -		return -ENODEV;
+> -	}
+> -
+> -	regs = ioremap(res->start, resource_size(res));
+> -	if (!regs) {
+> -		dev_err(dev, "UHH EHCI ioremap failed\n");
+> -		return -ENOMEM;
+> +	regs = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(regs)) {
+> +		dev_err(dev, "Resource request/ioremap failed\n");
 
-That's really disappointing, esp. the fact that this basic approach has
-been proven to work on other OS for years...
+According to Thierry Reding, devm_ioremap_resource() provides its own 
+error messages.  Hence this one isn't needed.
 
+Apart from this one issue,
 
-> Let's just talk about how we can get what we need in more general terms.
-
-So, are we heading to an approach of doing everything in ACPI?  I am not
-clear about which direction we have agreed with or disagreed with.
-
-As for the eject flag approach, I agree with Greg.
-
-
-Thanks,
--Toshi
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
