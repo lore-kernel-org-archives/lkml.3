@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab3BDIqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 03:46:52 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:33907
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753691Ab3BDIqv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 03:46:51 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VS4(z3121kz98dIc89bh936eIzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h1155h)
-Message-ID: <510F7577.7070300@freescale.com>
-Date: Mon, 4 Feb 2013 16:46:47 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1754108Ab3BDIr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 03:47:57 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29230 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753691Ab3BDIr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 03:47:56 -0500
+Date: Mon, 4 Feb 2013 11:47:37 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Roger Tseng <rogerable@realtek.com>
+Cc: cjb@laptop.org, sameo@linux.intel.com, gregkh@linuxfoundation.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wei_wang@realsil.com.cn, devel@linuxdriverproject.org
+Subject: Re: [PATCH 1/3] MMC: rtsx: remove driving adjustment
+Message-ID: <20130204084737.GG4937@mwanda>
+References: <1359963959-2305-1-git-send-email-rogerable@realtek.com>
+ <1359963959-2305-2-git-send-email-rogerable@realtek.com>
 MIME-Version: 1.0
-To: <artem.bityutskiy@linux.intel.com>
-CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
-        <shmulik.ladkani@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] mtd: add new fields to nand_flash_dev{}
-References: <1359007901-26464-1-git-send-email-b32955@freescale.com>	 <1359007901-26464-2-git-send-email-b32955@freescale.com>	 <5105DD0E.1010500@freescale.com> <1359967368.13791.22.camel@sauron.fi.intel.com>
-In-Reply-To: <1359967368.13791.22.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359963959-2305-2-git-send-email-rogerable@realtek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年02月04日 16:42, Artem Bityutskiy 写道:
-> On Mon, 2013-01-28 at 10:06 +0800, Huang Shijie wrote:
->>> +     unsigned int id_len;
->>> +     unsigned long oobsize;
->>> +     unsigned long ecc_len;
->> I think it's better to submit another patch set to solve the ECC
->> problem.
-> Would you please strip the cited text when bottom-posting - this would
-> be a lot mailing-list-friendly.
+On Mon, Feb 04, 2013 at 03:45:57PM +0800, Roger Tseng wrote:
+> Several new models of readers use different way to select driving
+> capability(a necessary adjustment along with voltage change). Removing this
+> from device-independent rtsx_pci_sdmmc module. It will be implemented in
+> device-depend calls encapsulated by rtsx_pci_switch_output_voltage().
+> 
 
-ok. I will keep in mind about this.
+I'm not sure I understand.
 
-thanks
-Huang Shijie
+Does this patch break things and then "[PATCH 2/3] mfd: rtsx:
+implement driving adjustment to device-dependent callbacks" fixes
+things again?  In other words, will all the old devices run if we
+only apply patch 1/3 and not 2/3?
 
+That's not the right idea.  Just merge the two patches into one
+patch.
+
+regards,
+dan carpenter
 
