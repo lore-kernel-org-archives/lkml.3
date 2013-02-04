@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab3BDMNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:13:25 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:57335 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714Ab3BDL4T (ORCPT
+	id S1754712Ab3BDL4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 06:56:17 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:61044 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754674Ab3BDL4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:56:19 -0500
+	Mon, 4 Feb 2013 06:56:13 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
 Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 16/73] regulator: ab8500-ext: Cosmetic changes
-Date: Mon,  4 Feb 2013 11:53:31 +0000
-Message-Id: <1359978868-28736-17-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 13/73] regulator: ab8500: Separate regulator and MFD platform data
+Date: Mon,  4 Feb 2013 11:53:28 +0000
+Message-Id: <1359978868-28736-14-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
 References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
@@ -23,131 +23,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 
-Variable is renamed in driver. Some comments are added.
+The ab8500 MFD should not have knowledge about regulator-
+specific platform data like number of regulators and
+regulator registers. As the regulator platform data is
+about to grow with external regulators, this information
+is moved to a new structure provided by the regulator
+driver.
 
 Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Mattias NILSSON <mattias.i.nilsson@stericsson.com>
-Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+Reviewed-by: Yvan FILLION <yvan.fillion@stericsson.com>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |    2 +-
- drivers/regulator/ab8500-ext.c                |   22 +++++++++++-----------
- include/linux/regulator/ab8500.h              |    2 ++
- 3 files changed, 14 insertions(+), 12 deletions(-)
+ arch/arm/mach-ux500/board-mop500-regulators.c |   12 +++++++++---
+ arch/arm/mach-ux500/board-mop500-regulators.h |    4 +---
+ drivers/regulator/ab8500.c                    |   21 +++++++++++++++------
+ include/linux/regulator/ab8500.h              |    7 +++++++
+ 4 files changed, 32 insertions(+), 12 deletions(-)
 
 diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index c58fc86..72fb449 100644
+index a138587..967e4ac 100644
 --- a/arch/arm/mach-ux500/board-mop500-regulators.c
 +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -280,7 +280,7 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
+@@ -122,8 +122,7 @@ static struct regulator_consumer_supply ab8500_vana_consumers[] = {
+ };
+ 
+ /* ab8500 regulator register initialization */
+-struct ab8500_regulator_reg_init
+-ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
++static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
  	/*
- 	 * VextSupply1Regu          = HW control
- 	 * VextSupply2Regu          = HW control
--	 * VextSupply3Regu          = HW control
-+	 * VextSupply3Regu          = force HP (-> STBB2=LP and TPS=LP)
- 	 * ExtSupply2Bypass         = ExtSupply12LPn ball is 0 when Ena is 0
- 	 * ExtSupply3Bypass         = ExtSupply3LPn ball is 0 when Ena is 0
- 	 */
-diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
-index ffcb96e..aa55a05 100644
---- a/drivers/regulator/ab8500-ext.c
-+++ b/drivers/regulator/ab8500-ext.c
-@@ -28,7 +28,7 @@
-  * struct ab8500_ext_regulator_info - ab8500 regulator information
-  * @dev: device pointer
-  * @desc: regulator description
-- * @regulator_dev: regulator device
-+ * @rdev: regulator device
-  * @is_enabled: status of regulator (on/off)
-  * @fixed_uV: typical voltage (for fixed voltage supplies)
-  * @update_bank: bank to control on/off
-@@ -44,7 +44,7 @@
- struct ab8500_ext_regulator_info {
- 	struct device *dev;
- 	struct regulator_desc desc;
--	struct regulator_dev *regulator;
-+	struct regulator_dev *rdev;
- 	bool is_enabled;
- 	int fixed_uV;
- 	u8 update_bank;
-@@ -69,7 +69,7 @@ static int ab8500_ext_regulator_enable(struct regulator_dev *rdev)
- 		info->update_bank, info->update_reg,
- 		info->update_mask, info->update_val);
- 	if (ret < 0)
--		dev_err(rdev_get_dev(rdev),
-+		dev_err(rdev_get_dev(info->rdev),
- 			"couldn't set enable bits for regulator\n");
+ 	 * VanaRequestCtrl          = HP/LP depending on VxRequest
+ 	 * VpllRequestCtrl          = HP/LP depending on VxRequest
+@@ -330,7 +329,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ };
  
- 	info->is_enabled = true;
-@@ -96,7 +96,7 @@ static int ab8500_ext_regulator_disable(struct regulator_dev *rdev)
- 		info->update_bank, info->update_reg,
- 		info->update_mask, 0x0);
- 	if (ret < 0)
--		dev_err(rdev_get_dev(rdev),
-+		dev_err(rdev_get_dev(info->rdev),
- 			"couldn't set disable bits for regulator\n");
+ /* AB8500 regulators */
+-struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
++static struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
+ 	/* supplies to the display/camera */
+ 	[AB8500_LDO_AUX1] = {
+ 		.constraints = {
+@@ -439,3 +438,10 @@ struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
+ 		.consumer_supplies = ab8500_vana_consumers,
+ 	},
+ };
++
++struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
++	.reg_init               = ab8500_reg_init,
++	.num_reg_init           = ARRAY_SIZE(ab8500_reg_init),
++	.regulator              = ab8500_regulators,
++	.num_regulator          = ARRAY_SIZE(ab8500_regulators),
++};
+diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
+index 78a0642..9ca4869 100644
+--- a/arch/arm/mach-ux500/board-mop500-regulators.h
++++ b/arch/arm/mach-ux500/board-mop500-regulators.h
+@@ -14,9 +14,7 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/ab8500.h>
  
- 	info->is_enabled = false;
-@@ -249,21 +249,21 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
- 		info->dev = &pdev->dev;
+-extern struct ab8500_regulator_reg_init
+-ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
+-extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
++extern struct ab8500_regulator_platform_data ab8500_regulator_plat_data;
+ extern struct regulator_init_data tps61052_regulator;
+ extern struct regulator_init_data gpio_en_3v3_regulator;
  
- 		/* register regulator with framework */
--		info->regulator = regulator_register(&info->desc, &pdev->dev,
-+		info->rdev = regulator_register(&info->desc, &pdev->dev,
- 				&pdata->ext_regulator[i], info, NULL);
--		if (IS_ERR(info->regulator)) {
--			err = PTR_ERR(info->regulator);
-+		if (IS_ERR(info->rdev)) {
-+			err = PTR_ERR(info->rdev);
- 			dev_err(&pdev->dev, "failed to register regulator %s\n",
- 					info->desc.name);
- 			/* when we fail, un-register all earlier regulators */
- 			while (--i >= 0) {
- 				info = &ab8500_ext_regulator_info[i];
--				regulator_unregister(info->regulator);
-+				regulator_unregister(info->rdev);
- 			}
- 			return err;
- 		}
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index d88ff3e..3ccb9eb 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -976,8 +976,9 @@ ab8500_regulator_of_probe(struct platform_device *pdev, struct device_node *np)
+ static int ab8500_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+-	struct ab8500_platform_data *pdata;
+ 	struct device_node *np = pdev->dev.of_node;
++	struct ab8500_platform_data *ppdata;
++	struct ab8500_regulator_platform_data *pdata;
+ 	int i, err;
  
--		dev_dbg(rdev_get_dev(info->regulator),
-+		dev_dbg(rdev_get_dev(info->rdev),
- 			"%s-probed\n", info->desc.name);
+ 	if (np) {
+@@ -998,7 +999,14 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "null mfd parent\n");
+ 		return -EINVAL;
+ 	}
+-	pdata = dev_get_platdata(ab8500->dev);
++
++	ppdata = dev_get_platdata(ab8500->dev);
++	if (!ppdata) {
++		dev_err(&pdev->dev, "null parent pdata\n");
++		return -EINVAL;
++	}
++
++	pdata = ppdata->regulator;
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "null pdata\n");
+ 		return -EINVAL;
+@@ -1011,12 +1019,12 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
  	}
  
-@@ -278,10 +278,10 @@ int ab8500_ext_regulator_exit(struct platform_device *pdev)
- 		struct ab8500_ext_regulator_info *info = NULL;
- 		info = &ab8500_ext_regulator_info[i];
+ 	/* initialize registers */
+-	for (i = 0; i < pdata->num_regulator_reg_init; i++) {
++	for (i = 0; i < pdata->num_reg_init; i++) {
+ 		int id, mask, value;
  
--		dev_vdbg(rdev_get_dev(info->regulator),
-+		dev_vdbg(rdev_get_dev(info->rdev),
- 			"%s-remove\n", info->desc.name);
+-		id = pdata->regulator_reg_init[i].id;
+-		mask = pdata->regulator_reg_init[i].mask;
+-		value = pdata->regulator_reg_init[i].value;
++		id = pdata->reg_init[i].id;
++		mask = pdata->reg_init[i].mask;
++		value = pdata->reg_init[i].value;
  
--		regulator_unregister(info->regulator);
-+		regulator_unregister(info->rdev);
- 	}
+ 		/* check for configuration errors */
+ 		BUG_ON(id >= AB8500_NUM_REGULATOR_REGISTERS);
+@@ -1082,5 +1090,6 @@ module_exit(ab8500_regulator_exit);
  
- 	return 0;
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Sundar Iyer <sundar.iyer@stericsson.com>");
++MODULE_AUTHOR("Bengt Jonsson <bengt.g.jonsson@stericsson.com>");
+ MODULE_DESCRIPTION("Regulator Driver for ST-Ericsson AB8500 Mixed-Sig PMIC");
+ MODULE_ALIAS("platform:ab8500-regulator");
 diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
-index 63d2c4e..e9522c9 100644
+index dd7944f..3a8e026 100644
 --- a/include/linux/regulator/ab8500.h
 +++ b/include/linux/regulator/ab8500.h
-@@ -160,6 +160,7 @@ enum ab8500_ext_regulator_id {
- 	AB8500_NUM_EXT_REGULATORS,
+@@ -152,4 +152,11 @@ enum ab9540_regulator_reg {
+ 	AB9540_NUM_REGULATOR_REGISTERS,
  };
  
-+/* AB8500 regulator platform data */
- struct ab8500_regulator_platform_data {
- 	int num_reg_init;
- 	struct ab8500_regulator_reg_init *reg_init;
-@@ -169,6 +170,7 @@ struct ab8500_regulator_platform_data {
- 	struct regulator_init_data *ext_regulator;
- };
- 
-+/* AB8500 external regulator functions (internal) */
- #ifdef CONFIG_REGULATOR_AB8500_EXT
- int ab8500_ext_regulator_init(struct platform_device *pdev);
- int ab8500_ext_regulator_exit(struct platform_device *pdev);
++struct ab8500_regulator_platform_data {
++	int num_reg_init;
++	struct ab8500_regulator_reg_init *reg_init;
++	int num_regulator;
++	struct regulator_init_data *regulator;
++};
++
+ #endif
 -- 
 1.7.9.5
 
