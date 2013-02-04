@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab3BDKcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 05:32:19 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39571 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752962Ab3BDKcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 05:32:14 -0500
-Date: Mon, 4 Feb 2013 10:32:11 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lrg@ti.com>, amit.kachhap@gmail.com,
-        Thomas Abraham <thomas.abraham@linaro.org>, kgene.kim@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH V3] regulator: add device tree support for s5m8767
-Message-ID: <20130204103211.GI4720@opensource.wolfsonmicro.com>
-References: <1359935387-19065-1-git-send-email-amit.daniel@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rCb8EA+9TsBVtA92"
-Content-Disposition: inline
-In-Reply-To: <1359935387-19065-1-git-send-email-amit.daniel@samsung.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753933Ab3BDKdI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 05:33:08 -0500
+Received: from mga03.intel.com ([143.182.124.21]:24798 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab3BDKdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 05:33:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,598,1355126400"; 
+   d="asc'?scan'208";a="252266662"
+Message-ID: <1359973956.13791.36.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: map: BUG() in non handled cases
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Mon, 04 Feb 2013 12:32:36 +0200
+In-Reply-To: <1359651994-27363-1-git-send-email-dmitry_eremin@mentor.com>
+References: <1359651994-27363-1-git-send-email-dmitry_eremin@mentor.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-uLvg00JGLWJcrwwWsYmf"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rCb8EA+9TsBVtA92
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-uLvg00JGLWJcrwwWsYmf
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Feb 03, 2013 at 03:49:47PM -0800, Amit Daniel Kachhap wrote:
-> This device tree support is added for PMIC block of S5m8767 multi
-> function driver. The usage detail is added in the device tree
-> documentation section. This change is tested on exynos5250 based
-> arndale platform by regulator voltage set/get API's.
+On Thu, 2013-01-31 at 21:06 +0400, Dmitry Eremin-Solenikov wrote:
+> Several map-related functions look like a serie of ifs, checking
+> widths of map. Those functions do not have any handling for default
+> case. Instead of fiddling with uninitialized_var in those functions,
+> let's just add a (correct) BUG() to the default case on those maps. This
+> will also allow us to catch potential errors in maps setup in future.
+>=20
+> Signed-off-by: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
 
-Applied, thanks.
+Pushed to l2-mtd.git, thanks!
 
---rCb8EA+9TsBVtA92
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-uLvg00JGLWJcrwwWsYmf
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1.4.13 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRD44eAAoJELSic+t+oim9F2kQAI1oapH3N0mA60jSVNnZL6NL
-AIGkSHMRebYen+83oYRh5kfw7RvYUQoys2rti7KpchczqRhidGTs4jM/MsA9rnyx
-92Jtvlm2YBkzgMl8pS2qEDRethMZQjMU84FUj7wNbW+wjTuxfjW9AIOnN6gkgZAr
-2FYiCQQH8T9OaVAt9DSpqXp+8O82U6vIKYi9FS1WRvdL72RtAkj0Db3h7CAIBXZq
-q85zIUJGMN6mW1S4XaZeMym3PpI298XwXZe+PQe9NUAw8kzelkl1xq+752Y2TBGa
-fOZKXX4ppJvFE0tT182fcrl13bEufNPCwhGMEpnoYxL4SEuVLzxOh3JB/OjLANLr
-W8dZA9VZGC6j+iFfsXrUyp7d93FSy787G15nnHEN3Oxl3l/9MsDkZPeGJQeVT+sJ
-M3RsdD2xq02tMEJO87TkiHOaugGfz5Tc2QCz9j07QTptJ11K3iJ7m58KBtGqsLYJ
-nt82f4oPTstLAGCLEahJAVWO79XMfl9V4N3m0MvUdGj+wzNlmKfAzmZxZanfDfkj
-++0GpFRFlYndl8UOpM3MoAwXpsfsTevbyMDByae9Z2V2blTvvoYiJ+zIPHklsewL
-OOvyfiDiSvjdiQUWWJkcMmQelYcZ5yQrKHHYWiW/5h2Z6pw54tibD+Whzyo7MLwD
-tJjU0hyryirm+89QZshF
-=USWJ
+iQIcBAABAgAGBQJRD45EAAoJECmIfjd9wqK0mHoQAKJWUlwGdyM7dzvBE8ddudj+
+6OXcXzAWb6GStgXLZ7KDimbllxgiykGx8/SmmC3nmWlsCnJcB4xr7XDrLlbJlGV/
+l92jFuABYzAnGtdE7TN9LBD3F8SD8Nw+YSIv0NFRB713lLJ9DW+PyHB7dYEAyTD4
+rU4eEq0RXk6AByR604ic5jWJvq4r6WU8wC7/6ZWi1jetUC9POssZ6D4ESVNorWmO
+N34T2ZNArvgMyrUXqiGU3A5gkXLM03wxSGd5FmPv9zL73M6ug4OLxsmTnQoiAR+i
+SjAe7jQ5bURMTO1MKO0+z7SajtzMXMTKGGfFXPxBvwoJwab7ksdaNZ4jYPJoXKNJ
++Rz1SqKIZqskYF21BaTsgA+yWW02NnsRmrHRaCscjs07w2NQEQxGIgx/DARtN9Ms
+OV3ttW2kJ3Z9g7byaS7fSCKqfplhdy6C+2rdqI0pqhsUGnaoD1wSVQPofo+rF4ar
+cCqUR7YhIOMGNRabJZyxrHg7CTMOAXgQhrH1F0JqTHMxViRNkkm1DH61BQQCrdE2
+R4tEXNIU+HZwXUvB7aYRV4aNaP0tMF64d6N8gVC84htKAbyHpOxse1Xz+U8jBQRm
+eodsM/tp3V/hL27WiaD4GAeH15t2c4r6DQaZuUcixdkklJkvKxGgd5yNIsRCMOjF
+ceW8t5+wBbIjVB+OI4er
+=ti/m
 -----END PGP SIGNATURE-----
 
---rCb8EA+9TsBVtA92--
+--=-uLvg00JGLWJcrwwWsYmf--
+
