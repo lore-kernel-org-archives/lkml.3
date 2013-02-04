@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab3BDUaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 15:30:00 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41635 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab3BDU36 (ORCPT
+	id S1755184Ab3BDUd1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 15:33:27 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:44353 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab3BDUd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 15:29:58 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Stoney Wang <song-bo.wang@hp.com>,
-        Yinghai Lu <yinghai@kernel.org>, stable@kernel.org
-Subject: [PATCH] x86, apic: Check fadt x2apic phys in x2apic_phys_probe()
-Date: Mon,  4 Feb 2013 12:29:27 -0800
-Message-Id: <1360009767-3633-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130204110304.GD24173@gmail.com>
-References: <20130204110304.GD24173@gmail.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 4 Feb 2013 15:33:26 -0500
+Date: Tue, 5 Feb 2013 07:33:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: Tree for Feb 4
+Message-Id: <20130205073312.e534dda4b9b6b1bc95b3d25c@canb.auug.org.au>
+In-Reply-To: <CAAG0J99hxOOGh74wQ2R47o0noRxQhNS8T_DNnbX2FX-rJ2wMzQ@mail.gmail.com>
+References: <20130204183926.f5d5ab14b0ae4d22cb253202@canb.auug.org.au>
+	<CAAG0J99hxOOGh74wQ2R47o0noRxQhNS8T_DNnbX2FX-rJ2wMzQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__5_Feb_2013_07_33_12_+1100_pDybNxLzgssb3F.O"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stoney Wang <song-bo.wang@hp.com>
+--Signature=_Tue__5_Feb_2013_07_33_12_+1100_pDybNxLzgssb3F.O
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-When HP ProLiant DL980 G7 Server boot without x2apic_phys, there will be
-intermittent lost interrupts and could result in a hang or data loss.
+Hi James,
 
-Those systems only work with x2apic phys mode so BIOS set
-ACPI_FADT_APIC_PHYSICAL in FADT table.
-Also because all apicids are less then 255, BIOS need to pass the control
-to the OS with xapic mode, according to x2apic-spec, chapter 2.9.
+On Mon, 4 Feb 2013 13:56:32 +0000 James Hogan <james.hogan@imgtec.com> wrot=
+e:
+>
+> On 4 February 2013 07:39, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Merging signal/for-next (9005965 x86: convert to ksignal)
+> > CONFLICT (content): Merge conflict in arch/x86/Kconfig
+>=20
+> I think this conflict has been resolved incorrectly.
+>=20
+> Al's commit 1820f96 "burying unused conditionals" removed
+> GENERIC_SIGALTSTACK from config X86, but the merge
+> (c5395e2affed5c42200cb6e21e3380995ef22ae3) left GENERIC_SIGALTSTACK
+> in:
 
-Current code handle x2apic when BIOS pass with xapic mode:
+Thanks, I will fix that today.
 
-When user specify x2apic_phys, or FADT indicates PHYSICAL.
-During madt oem check, apic driver is set with xapic logical or
-xapic phys driver at first.
-Later enable_IR_x2apic() will enable x2apic_mode.
-After that, x2apic_phys_probe() will install right x2apic phys driver
-if user specify x2apic_phys,
-but will skip and let x2apic_cluster_probe to take over to install
-wrong apic driver (x2apic cluster) when FADT indicates
-PHYSICAL, because x2apic_phys_probe does not check FADT PHYSICAL.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Add checking x2apic_fadt_phys in x2apic_phys_probe() to fix the problem.
+--Signature=_Tue__5_Feb_2013_07_33_12_+1100_pDybNxLzgssb3F.O
+Content-Type: application/pgp-signature
 
--v3: update the change according to Ingo.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-[ changelog, and simplify code - Yinghai Lu ]
-Signed-off-by: Stoney Wang <song-bo.wang@hp.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: stable@kernel.org
+iQIcBAEBCAAGBQJREBsIAAoJEECxmPOUX5FER1gQAJ/YGosBXKkOysluwCPolEFM
+ItMq+W3sI4k8dPEdLVK2CnfhMuUGZyy2DHoA7y4lnAtLFHMKFECYBiBm4jGAEy2L
+pU92R8iV8NG+URIaU2EY8Qv5BQvwTnkHMBdK29i87hRXEcPfo8jikpHWeLAD8UIi
+qppZPM2U1vk63F13sfeJhYoSZar8/nXuV+RV/rUxqNwVVYAD3jS5BFuy6fVFy0T3
+tFqHzSLfebtkhTQ03KpCijTlYsoiXleuQW9Phutnak+9JURTFmKFBB6e2Nhs4fb3
+ThjTDSINqfXMJEj3896gSd3S62ZObr83/qC+kLliQrEtHOptJlPcZxp7Fsi4zMOy
+g+rZeNn+qPjQO/NYWr9RCUmddmAtocasWposO/0ayIR6S6lKu8j8bBGZoZpzESeN
+0TF9BmqfOhSVNSX6uxMSTF3VOUkxsjTysQSfLIJhdyjHcb0t/zKM/5JGj/Hqohzq
+bJpNkXxHxwtmC5EfsE4Q7m404Ilm1fg+Tt99EDrSMtqZN4xlpvtq5HE6lvzS1ePq
+wEqaz4TyKFRV5uLFrrSobZNNaifjL2tmPPMnbYuF5CM1aHrHI1VQ8TgegFPqE0Of
+tUxqIyI12NaLNTq4XQEyqNeJ2XYW4BDPDPlpAi6iy7hsFriekXuz7VJ37AnOLsEf
+GjVQfuxSqcKalr4+zepv
+=UOKm
+-----END PGP SIGNATURE-----
 
----
- arch/x86/kernel/apic/x2apic_phys.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/apic/x2apic_phys.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/x2apic_phys.c
-+++ linux-2.6/arch/x86/kernel/apic/x2apic_phys.c
-@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *ar
- }
- early_param("x2apic_phys", set_x2apic_phys_mode);
- 
--static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+static bool x2apic_fadt_phys(void)
- {
--	if (x2apic_phys)
--		return x2apic_enabled();
--	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
--		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
--		x2apic_enabled()) {
-+	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-+		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
- 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
--		return 1;
-+		return true;
- 	}
--	else
--		return 0;
-+	return false;
-+}
-+
-+static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+{
-+	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
- }
- 
- static void
-@@ -82,7 +83,7 @@ static void init_x2apic_ldr(void)
- 
- static int x2apic_phys_probe(void)
- {
--	if (x2apic_mode && x2apic_phys)
-+	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
- 		return 1;
- 
- 	return apic == &apic_x2apic_phys;
+--Signature=_Tue__5_Feb_2013_07_33_12_+1100_pDybNxLzgssb3F.O--
