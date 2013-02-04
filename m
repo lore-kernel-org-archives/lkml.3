@@ -1,94 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3BDMND (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:13:03 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:35921 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab3BDL4U (ORCPT
+	id S1754822Ab3BDMNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 07:13:25 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:57335 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714Ab3BDL4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 06:56:20 -0500
-Subject: [PATCH v2 7/7] e1000e: fix accessing to suspended device
-To: e1000-devel@lists.sourceforge.net, linux-pci@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Date: Mon, 04 Feb 2013 15:56:15 +0400
-Message-ID: <20130204115615.5569.77011.stgit@zurg>
-In-Reply-To: <20130204115246.5569.85829.stgit@zurg>
-References: <20130204115246.5569.85829.stgit@zurg>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 06:56:19 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 16/73] regulator: ab8500-ext: Cosmetic changes
+Date: Mon,  4 Feb 2013 11:53:31 +0000
+Message-Id: <1359978868-28736-17-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes some annoying messages like 'Error reading PHY register' and
-'Hardware Erorr' and saves several seconds on reboot.
+From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: e1000-devel@lists.sourceforge.net
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Bruce Allan <bruce.w.allan@intel.com>
+Variable is renamed in driver. Some comments are added.
+
+Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Mattias NILSSON <mattias.i.nilsson@stericsson.com>
+Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
 ---
- drivers/net/ethernet/intel/e1000e/ethtool.c |   13 +++++++++++++
- drivers/net/ethernet/intel/e1000e/netdev.c  |    2 ++
- 2 files changed, 15 insertions(+)
+ arch/arm/mach-ux500/board-mop500-regulators.c |    2 +-
+ drivers/regulator/ab8500-ext.c                |   22 +++++++++++-----------
+ include/linux/regulator/ab8500.h              |    2 ++
+ 3 files changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/ethtool.c b/drivers/net/ethernet/intel/e1000e/ethtool.c
-index f95bc6e..90afe58 100644
---- a/drivers/net/ethernet/intel/e1000e/ethtool.c
-+++ b/drivers/net/ethernet/intel/e1000e/ethtool.c
-@@ -35,6 +35,7 @@
- #include <linux/slab.h>
- #include <linux/delay.h>
- #include <linux/vmalloc.h>
-+#include <linux/pm_runtime.h>
+diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
+index c58fc86..72fb449 100644
+--- a/arch/arm/mach-ux500/board-mop500-regulators.c
++++ b/arch/arm/mach-ux500/board-mop500-regulators.c
+@@ -280,7 +280,7 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
+ 	/*
+ 	 * VextSupply1Regu          = HW control
+ 	 * VextSupply2Regu          = HW control
+-	 * VextSupply3Regu          = HW control
++	 * VextSupply3Regu          = force HP (-> STBB2=LP and TPS=LP)
+ 	 * ExtSupply2Bypass         = ExtSupply12LPn ball is 0 when Ena is 0
+ 	 * ExtSupply3Bypass         = ExtSupply3LPn ball is 0 when Ena is 0
+ 	 */
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index ffcb96e..aa55a05 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -28,7 +28,7 @@
+  * struct ab8500_ext_regulator_info - ab8500 regulator information
+  * @dev: device pointer
+  * @desc: regulator description
+- * @regulator_dev: regulator device
++ * @rdev: regulator device
+  * @is_enabled: status of regulator (on/off)
+  * @fixed_uV: typical voltage (for fixed voltage supplies)
+  * @update_bank: bank to control on/off
+@@ -44,7 +44,7 @@
+ struct ab8500_ext_regulator_info {
+ 	struct device *dev;
+ 	struct regulator_desc desc;
+-	struct regulator_dev *regulator;
++	struct regulator_dev *rdev;
+ 	bool is_enabled;
+ 	int fixed_uV;
+ 	u8 update_bank;
+@@ -69,7 +69,7 @@ static int ab8500_ext_regulator_enable(struct regulator_dev *rdev)
+ 		info->update_bank, info->update_reg,
+ 		info->update_mask, info->update_val);
+ 	if (ret < 0)
+-		dev_err(rdev_get_dev(rdev),
++		dev_err(rdev_get_dev(info->rdev),
+ 			"couldn't set enable bits for regulator\n");
  
- #include "e1000.h"
+ 	info->is_enabled = true;
+@@ -96,7 +96,7 @@ static int ab8500_ext_regulator_disable(struct regulator_dev *rdev)
+ 		info->update_bank, info->update_reg,
+ 		info->update_mask, 0x0);
+ 	if (ret < 0)
+-		dev_err(rdev_get_dev(rdev),
++		dev_err(rdev_get_dev(info->rdev),
+ 			"couldn't set disable bits for regulator\n");
  
-@@ -2051,7 +2052,19 @@ static int e1000_get_rxnfc(struct net_device *netdev,
+ 	info->is_enabled = false;
+@@ -249,21 +249,21 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
+ 		info->dev = &pdev->dev;
+ 
+ 		/* register regulator with framework */
+-		info->regulator = regulator_register(&info->desc, &pdev->dev,
++		info->rdev = regulator_register(&info->desc, &pdev->dev,
+ 				&pdata->ext_regulator[i], info, NULL);
+-		if (IS_ERR(info->regulator)) {
+-			err = PTR_ERR(info->regulator);
++		if (IS_ERR(info->rdev)) {
++			err = PTR_ERR(info->rdev);
+ 			dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 					info->desc.name);
+ 			/* when we fail, un-register all earlier regulators */
+ 			while (--i >= 0) {
+ 				info = &ab8500_ext_regulator_info[i];
+-				regulator_unregister(info->regulator);
++				regulator_unregister(info->rdev);
+ 			}
+ 			return err;
+ 		}
+ 
+-		dev_dbg(rdev_get_dev(info->regulator),
++		dev_dbg(rdev_get_dev(info->rdev),
+ 			"%s-probed\n", info->desc.name);
  	}
- }
  
-+static int e1000e_ethtool_begin(struct net_device *netdev)
-+{
-+	return pm_runtime_get_sync(netdev->dev.parent);
-+}
-+
-+static void e1000e_ethtool_complete(struct net_device *netdev)
-+{
-+	pm_runtime_put_sync(netdev->dev.parent);
-+}
-+
- static const struct ethtool_ops e1000_ethtool_ops = {
-+	.begin			= e1000e_ethtool_begin,
-+	.complete		= e1000e_ethtool_complete,
- 	.get_settings		= e1000_get_settings,
- 	.set_settings		= e1000_set_settings,
- 	.get_drvinfo		= e1000_get_drvinfo,
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 708d609..e501298 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -4267,6 +4267,7 @@ static void e1000_phy_read_status(struct e1000_adapter *adapter)
- 	    (adapter->hw.phy.media_type == e1000_media_type_copper)) {
- 		int ret_val;
+@@ -278,10 +278,10 @@ int ab8500_ext_regulator_exit(struct platform_device *pdev)
+ 		struct ab8500_ext_regulator_info *info = NULL;
+ 		info = &ab8500_ext_regulator_info[i];
  
-+		pm_runtime_get_sync(&adapter->pdev->dev);
- 		ret_val  = e1e_rphy(hw, PHY_CONTROL, &phy->bmcr);
- 		ret_val |= e1e_rphy(hw, PHY_STATUS, &phy->bmsr);
- 		ret_val |= e1e_rphy(hw, PHY_AUTONEG_ADV, &phy->advertise);
-@@ -4277,6 +4278,7 @@ static void e1000_phy_read_status(struct e1000_adapter *adapter)
- 		ret_val |= e1e_rphy(hw, PHY_EXT_STATUS, &phy->estatus);
- 		if (ret_val)
- 			e_warn("Error reading PHY register\n");
-+		pm_runtime_put_sync(&adapter->pdev->dev);
- 	} else {
- 		/* Do not read PHY registers if link is not up
- 		 * Set values to typical power-on defaults
+-		dev_vdbg(rdev_get_dev(info->regulator),
++		dev_vdbg(rdev_get_dev(info->rdev),
+ 			"%s-remove\n", info->desc.name);
+ 
+-		regulator_unregister(info->regulator);
++		regulator_unregister(info->rdev);
+ 	}
+ 
+ 	return 0;
+diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
+index 63d2c4e..e9522c9 100644
+--- a/include/linux/regulator/ab8500.h
++++ b/include/linux/regulator/ab8500.h
+@@ -160,6 +160,7 @@ enum ab8500_ext_regulator_id {
+ 	AB8500_NUM_EXT_REGULATORS,
+ };
+ 
++/* AB8500 regulator platform data */
+ struct ab8500_regulator_platform_data {
+ 	int num_reg_init;
+ 	struct ab8500_regulator_reg_init *reg_init;
+@@ -169,6 +170,7 @@ struct ab8500_regulator_platform_data {
+ 	struct regulator_init_data *ext_regulator;
+ };
+ 
++/* AB8500 external regulator functions (internal) */
+ #ifdef CONFIG_REGULATOR_AB8500_EXT
+ int ab8500_ext_regulator_init(struct platform_device *pdev);
+ int ab8500_ext_regulator_exit(struct platform_device *pdev);
+-- 
+1.7.9.5
 
