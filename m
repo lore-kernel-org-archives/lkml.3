@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab3BECiK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 21:38:10 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:37534 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369Ab3BEChk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 21:37:40 -0500
-X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
-   d="scan'208";a="6689143"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Cc: rientjes@google.com, liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH v2 4/4] remove include asm/acpi.h in process_driver.c
-Date: Tue, 5 Feb 2013 10:37:18 +0800
-Message-Id: <1360031838-26898-5-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1360031838-26898-1-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1360031838-26898-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/05 10:36:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/05 10:36:22,
-	Serialize complete at 2013/02/05 10:36:22
+	id S1756486Ab3BECik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 21:38:40 -0500
+Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:62942 "EHLO
+	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753525Ab3BECii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 21:38:38 -0500
+X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Feb 2013 21:38:37 EST
+Date: Tue, 5 Feb 2013 02:29:03 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: James Hogan <james.hogan@imgtec.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org
+Subject: Re: next-20130204 - bisected slab problem to "slab: Common constants
+ for kmalloc boundaries"
+In-Reply-To: <51100E79.9080101@wwwdotorg.org>
+Message-ID: <0000013ca82f61e2-592bc561-c5ae-4193-8007-bef820f2734d-000000@email.amazonses.com>
+References: <510FE051.7080107@imgtec.com> <51100E79.9080101@wwwdotorg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.210
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-process_driver.c include linux/acpi.h which already
-include asm/acpi.h, so remove it.
+On Mon, 4 Feb 2013, Stephen Warren wrote:
 
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- drivers/acpi/processor_driver.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+> Here, if defined(ARCH_DMA_MINALIGN), then KMALLOC_MIN_SIZE isn't
+> relative-to/derived-from KMALLOC_SHIFT_LOW, so the two may become
+> inconsistent.
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index e83311b..752eedb 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -52,7 +52,6 @@
- #include <asm/uaccess.h>
- #include <asm/processor.h>
- #include <asm/smp.h>
--#include <asm/acpi.h>
- 
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
--- 
-1.7.2.5
+Right. And kmalloc_index() will therefore return KMALLOC_SHIFT_LOW which
+will dereference a NULL pointer since only the later cache pointers are
+populated. KMALLOC_SHIFT_LOW needs to be set correctly.
 
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index ba2ca53..d0f72ee 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -2775,7 +2775,7 @@ init_kmem_cache_node(struct kmem_cache_node *n)
+> >  static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
+> >  {
+> >  	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
+> > -			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
+> > +			KMALLOC_SHIFT_HIGH * sizeof(struct kmem_cache_cpu));
+>
+> Should that also be (KMALLOC_SHIFT_HIGH + 1)?
+
+That is already a pretty fuzzy test. The nr of kmem_cache_cpu allocated is
+lower than KMALLOC_SHIFT_HIGH since several index positions will not be
+occupied.
