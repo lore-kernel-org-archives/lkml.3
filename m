@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab3BESDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 13:03:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755283Ab3BESDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 13:03:05 -0500
-Date: Tue, 5 Feb 2013 13:03:00 -0500
-From: Peter Jones <pjones@redhat.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-Message-ID: <20130205180300.GE2335@fenchurch.internal.datastacks.com>
-References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
- <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+	id S1756489Ab3BESIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 13:08:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46861 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab3BESIl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 13:08:41 -0500
+Date: Tue, 5 Feb 2013 12:08:31 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: iwlwifi: regression in 3.8-rc4 and 3.7.3
+Message-ID: <20130205180831.GA29557@thinkpad-t410>
+Mail-Followup-To: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+	Hugh Dickins <hughd@google.com>,
+	"sedat.dilek@gmail.com" <sedat.dilek@gmail.com>,
+	"Berg, Johannes" <johannes.berg@intel.com>,
+	"ilw@linux.intel.com" <ilw@linux.intel.com>,
+	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <alpine.LNX.2.00.1301192141540.1303@eggly.anvils>
+ <CA+icZUWULf9-3vEQHM59HM7+PPXxvpWGnNB137+=WyEXj9noiQ@mail.gmail.com>
+ <0BA3FCBA62E2DC44AF3030971E174FB301920DA0@HASMSX103.ger.corp.intel.com>
+ <alpine.LNX.2.00.1301192331140.3905@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+In-Reply-To: <alpine.LNX.2.00.1301192331140.3905@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 02:34:50PM +0200, Dmitry Kasatkin wrote:
-> Often initramfs is (re)fabricated on the machine on which it runs.
-> In such cases it is impossible to sign initramfs image, because
-> private key is not supposed to be available.
-
-This doesn't address that problem at all.
-
-> This patch adds support for additional digitaly signed initramfs images.
-> Digitaly signed initramfs image can be loaded from conventional initramfs
-> image or from rootfs and '/pre-init' is executed prior 'init' from initramfs
-> or root file system. If 'pre-init' fails, kernel panics. Signed initramfs
-> image must be located in '/initramfs-sig.img'.
-
-So with this patch, you've effectively combined an unchecked initramfs with
-a checked one that loads before it, and called the answer "secure".  This is
-like S&P traunching a AAA mortgage with a DDD mortgage and calling it a
-AAA CDO - the result isn't as good as what's claimed.
-
-> Digitally signed initramfs can be used to provide protected user-space
-> environment for initialization purpose. For example, LSM, IMA/EVM can be
-> securely initialized using such approach.
+On Sat, Jan 19, 2013 at 11:40:24PM -0800, Hugh Dickins wrote:
+> On Sun, 20 Jan 2013, Grumbach, Emmanuel wrote:
+> > > 
+> > > On Sun, Jan 20, 2013 at 6:56 AM, Hugh Dickins <hughd@google.com> wrote:
+> > > > After sending the first 2MB, scp over wireless becomes unbearably
+> > > > slow, with frequent stalls: on this ThinkPad T420s running 3.8-rc4 or 3.7.3.
+> > > > Not always, but often.
+> > > >
+> > > 
+> > > There is one pending iwlwifi-fixes, dunno if it will fix your issue.
+> > > [1] http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-
+> > > fixes.git;a=commitdiff;h=c3e5d7181afb66657393066bccce0956fab09ab3
+> > 
+> > Right - so the 2 patches are unrelated, and the one Sedat is pointing at is relevant for 3.8 only. It fixes a bug that has been introduced in 3.8.
 > 
-> Signing is done using scripts/sign-file from kernel source code and uses module
-> signature format and module verification API. Important to note again that
-> signing of such images should be done on the build machine.
+> Yes, I have now given that one a try, but it does not affect my issue.
 > 
-> Bellow is an example, how to sign compressed initrd (cpio) image:
+> > Regarding the issue Hugh is suffering from, I have to say that I am a little confused since I am pretty sure the patch is right. Now, it might uncover other pre-existing bugs. All I can say is that I don't think that reverting the patch is *so* problematic since the patch really wants to solve a rare case. If it causes issues, we can simply revert it. It only means that when I will get a little bit of time, I might need to ask you a few logs. Thanks for the report (and the bisection).
 > 
-> scripts/sign-file -v signing_key.priv signing_key.x509 initrd.gz initramfs-sig.img
+> Sure, let me know what to do, once you have time to investigate.
+> 
+> So far as I know, I'm the first to notice: so we can probably
+> leave it in 3.8-rc for now, until/unless it gives wider trouble.
+> 
+> But reverting from 3.7-stable soon would be a good idea,
+> regressions there being more tiresome.
 
-This means that if you've got multiple initramfs images, there's a signature
-interleaved between them in the in-memory representation. We've used separate
-images to separate invariant bits from e.g. plymouth from the initramfs that's
-generated for each new kernel installed.  In general, it'd be nice to
-keep multiple initramfs images working.
+I'm seeing iwlwifi performance problems in 3.8 as well, and have heard
+from several other saying the same thing. Testing with iperf shows very
+little data getting through most of the time.
 
-It's not clear to me why we need this encapsulation - wouldn't it be
-better to add another [pointer,size] pair to the bootloader protocol
-with a structure like:
+Reverting f590dcec944552f9a4a61155810f3abd17d6465d on top of 3.8-rc6
+seems to have eliminated the problems for me, so far at least. I'll
+request some testing from others as well.
 
-struct {
-	void *initramfs_area;
-	size_t initramfs_area_len;
-	void *signature;
-	size_t signature_len;
-};
+Seth
 
-And make that a list (all fields zero signifying the end).  That way we
-can a) continue to easily support multiple initramfs images, b) allow
-for /the whole initramfs to be checked/, which would be useful for e.g.
-distro media?  If we really need a "parts of this are checked and parts
-aren't" system, you could still allow policy to support that, but it's
-not clear to me why that's a useful thing to have.
-
-> @@ -895,6 +897,8 @@ static void __init kernel_init_freeable(void)
->  		prepare_namespace();
->  	}
->  
-> +	initramfs_sig_load();
-> +
->  	/*
->  	 * Ok, we have completed the initial bootup, and
->  	 * we're essentially up and running. Get rid of the
-
-At the very least, this call should go in kernel_init() so that it's
-logically after the comment you trimmed here about how we're about to
-start userland running.
-
--- 
-        Peter
