@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab3BERFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:05:35 -0500
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:35239 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab3BERFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:05:33 -0500
+	id S1756060Ab3BERIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:08:51 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:8577 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755246Ab3BERIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 12:08:49 -0500
+Message-ID: <51113C8A.2060908@imgtec.com>
+Date: Tue, 5 Feb 2013 17:08:26 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1359822572-26009-5-git-send-email-acourbot@nvidia.com>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
-	<1359822572-26009-5-git-send-email-acourbot@nvidia.com>
-Date: Tue, 5 Feb 2013 18:05:32 +0100
-Message-ID: <CACRpkdaVwjv2DwSx667sgVkHqx-tHsy6A0mP-kvq6h9nDDBrGA@mail.gmail.com>
-Subject: Re: [PATCH 3/9] gpiolib: use gpio_chips list in gpiochip_find
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christoph Lameter <cl@linux.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        <linux-mm@kvack.org>
+Subject: Re: next-20130204 - bisected slab problem to "slab: Common constants
+ for kmalloc boundaries"
+References: <510FE051.7080107@imgtec.com> <51100E79.9080101@wwwdotorg.org> <alpine.DEB.2.02.1302042019170.32396@gentwo.org> <0000013cab3780f7-5e49ef46-e41a-4ff2-88f8-46bf216d677e-000000@email.amazonses.com>
+In-Reply-To: <0000013cab3780f7-5e49ef46-e41a-4ff2-88f8-46bf216d677e-000000@email.amazonses.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_02_05_17_08_27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 2, 2013 at 5:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+On 05/02/13 16:36, Christoph Lameter wrote:
+> OK I was able to reproduce it by setting ARCH_DMA_MINALIGN in slab.h. This
+> patch fixes it here:
+> 
+> 
+> Subject: slab: Handle ARCH_DMA_MINALIGN correctly
+> 
+> A fixed KMALLOC_SHIFT_LOW does not work for arches with higher alignment
+> requirements.
+> 
+> Determine KMALLOC_SHIFT_LOW from ARCH_DMA_MINALIGN instead.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> Using the GPIO chips list is much faster than parsing the entire GPIO
-> number space.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Thanks, your patch fixes it for me.
 
-You don't say :-)
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Cheers
+James
 
-Yours,
-Linus Walleij
