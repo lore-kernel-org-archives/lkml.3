@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315Ab3BECyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 21:54:04 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:41817 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab3BECyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 21:54:02 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r152rF8U020185
-Message-ID: <511073C5.9040300@realtek.com>
-Date: Tue, 5 Feb 2013 10:51:49 +0800
-From: Roger Tseng <rogerable@realtek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756282Ab3BECyw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 21:54:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43903 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754056Ab3BECyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 21:54:51 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1360032141.12062.12@driftwood>
+References: <1359672699-23540-1-git-send-email-w.d.hubbs@gmail.com> <510AFCA1.5000700@zytor.com> <1360032141.12062.12@driftwood>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        "cjb@laptop.org" <cjb@laptop.org>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wei_wang <wei_wang@realsil.com.cn>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/3] MMC: rtsx: remove driving adjustment
-References: <1359963959-2305-1-git-send-email-rogerable@realtek.com> <1359963959-2305-2-git-send-email-rogerable@realtek.com> <20130204084737.GG4937@mwanda>
-In-Reply-To: <20130204084737.GG4937@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 04 Feb 2013 18:54:32 -0800
+To: Rob Landley <rob@landley.net>
+CC: William Hubbs <w.d.hubbs@gmail.com>, linux-kernel@vger.kernel.org,
+        mpagano@gentoo.org
+Message-ID: <a6a99589-ac94-4cfc-a871-095431bfd8ef@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+The difference is that it used to be customary to have a /dev/root symlink; iirc udev created one.  Devtmpfs does not (for largely valid reasons, but it does break some userspaces.)
 
-Correct. I will prevent this kind of breaking in the future.
+Rob Landley <rob@landley.net> wrote:
 
-However, after our analysis the breaking of patch 1/3 and 2/3 should not 
-fail old devices. And since Samuel has applied 2/3 and 3/3, it might be 
-better for Chris to apply patch 1/3 and let all this things appear in 
-kernel v3.9.
+>On 01/31/2013 05:22:09 PM, H. Peter Anvin wrote:
+>> On 01/31/2013 02:51 PM, William Hubbs wrote:
+>> > On a system that does not use an initramfs, /dev/root was always
+>> > listed in /proc/mounts. This breaks software which scans  
+>> /proc/mounts to
+>> > determine which file systems are mounted since /dev/root is not a  
+>> valid
+>> > device name.
+>> >
+>> > This changes that processing so that "/dev/root" is only added to
+>> > /proc/mounts if a root device is not specified with the root=  
+>> option on
+>> > the kernel command line.
+>> >
+>> > Signed-off-by: William Hubbs <w.d.hubbs@gmail.com>
+>> 
+>> Let me also point out that most of the time, the kernel actually has
+>a
+>> udev device name for an actual device...
+>
+>So your software is broken by overmounts? /dev/root is just one example
+> 
+>of this. (And you can specify a root= on the kernel command line and  
+>have that be parsed by initramfs. I vaguely recall klibc does this...)
+>
+>For an example of how to parse this stuff, how about:
+>
+>   http://landley.net/hg/toybox/file/4ffb735aea59/toys/posix/df.c
+>
+>I.E. parse from the end of the list (most recent match is the  
+>overmount), and eliminate synthetic filesystems. Note that code is from
+> 
+>2006, other people have managed to cope all this time...
+>
+>Rob
 
-Hi Chris,
-
-Would you please apply patch 1/3 for kernel v3.9. Thanks.
-
-Best regards,
-Roger Tseng
-
-On 02/04/2013 04:47 PM, Dan Carpenter wrote:
-> On Mon, Feb 04, 2013 at 03:45:57PM +0800, Roger Tseng wrote:
->> Several new models of readers use different way to select driving
->> capability(a necessary adjustment along with voltage change). Removing this
->> from device-independent rtsx_pci_sdmmc module. It will be implemented in
->> device-depend calls encapsulated by rtsx_pci_switch_output_voltage().
->>
->
-> I'm not sure I understand.
->
-> Does this patch break things and then "[PATCH 2/3] mfd: rtsx:
-> implement driving adjustment to device-dependent callbacks" fixes
-> things again?  In other words, will all the old devices run if we
-> only apply patch 1/3 and not 2/3?
->
-> That's not the right idea.  Just merge the two patches into one
-> patch.
->
-> regards,
-> dan carpenter
->
->
-> ------Please consider the environment before printing this e-mail.
->
->
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
