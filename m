@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802Ab3BEWL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:11:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48116 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757740Ab3BEWLU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:11:20 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>, Olivier Sobrie <olivier@sobrie.be>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 59/93] can: c_can: fix invalid error codes
-Date: Tue,  5 Feb 2013 20:06:48 -0200
-Message-Id: <1360102042-10732-60-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	id S1757922Ab3BEWUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:20:20 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34714 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757557Ab3BEWUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 17:20:17 -0500
+Message-ID: <5111859B.7060004@linux.vnet.ibm.com>
+Date: Tue, 05 Feb 2013 14:20:11 -0800
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Linux MM <linux-mm@kvack.org>, David Hansen <dave@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH 6/9] mm/page_alloc: add informative debugging message
+ in page_outside_zone_boundaries()
+References: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com> <1358463181-17956-7-git-send-email-cody@linux.vnet.ibm.com> <20130201162848.74bdb2a7.akpm@linux-foundation.org> <20130201162957.3ec618cf.akpm@linux-foundation.org>
+In-Reply-To: <20130201162957.3ec618cf.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020522-9360-0000-0000-000010335783
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.5 -stable review patch.  If anyone has any objections, please let me know.
+On 02/01/2013 04:29 PM, Andrew Morton wrote:
+> On Fri, 1 Feb 2013 16:28:48 -0800
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+>
+>>> +	if (ret)
+>>> +		pr_debug("page %lu outside zone [ %lu - %lu ]\n",
+>>> +			pfn, start_pfn, start_pfn + sp);
+>>> +
+>>>   	return ret;
+>>>   }
+>>
+>> As this condition leads to a VM_BUG_ON(), "pr_debug" seems rather wimpy
+>> and I doubt if we need to be concerned about flooding the console.
+>>
+>> I'll switch it to pr_err.
+>
+> otoh, as nobody has ever hit that VM_BUG_ON() (yes?), do we really need
+> the patch?
 
-------------------
+I've hit this bug while developing some code that moves pages between zones.
 
-From: Olivier Sobrie <olivier@sobrie.be>
-
-commit 6ea45886865c1abb01bb861f7f6bdd5d0f398cb3 upstream.
-
-Errors in CAN protocol (location) are reported in data[3] of the can
-frame instead of data[2].
-
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/net/can/c_can/c_can.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index 86cd532..21a3d77 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -914,7 +914,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
- 		break;
- 	case LEC_ACK_ERROR:
- 		netdev_dbg(dev, "ack error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_ACK |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_ACK |
- 				CAN_ERR_PROT_LOC_ACK_DEL);
- 		break;
- 	case LEC_BIT1_ERROR:
-@@ -927,7 +927,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
- 		break;
- 	case LEC_CRC_ERROR:
- 		netdev_dbg(dev, "CRC error\n");
--		cf->data[2] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
-+		cf->data[3] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
- 				CAN_ERR_PROT_LOC_CRC_DEL);
- 		break;
- 	default:
--- 
-1.7.9.5
+As it helped me debug that issue with my own code, I could see how 
+another developer might be helped by it.
 
