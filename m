@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab3BEDUD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 22:20:03 -0500
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:30729
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754894Ab3BEDUB (ORCPT
+	id S1755980Ab3BEDYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 22:24:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30561 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab3BEDY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 22:20:01 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH 1/2] mtd: torturetest: rewrite the erase-write-verify process into one block unit.
-Date: Tue, 5 Feb 2013 10:20:19 +0800
-Message-ID: <1360030820-21491-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Mon, 4 Feb 2013 22:24:28 -0500
+X-Authority-Analysis: v=2.0 cv=NqdTgrhJ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=-mX8_mtaSd8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=BnJ6rni4RVIA:10 a=E3WhOqUKMzCLwSn6_8QA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360034667.27007.10.camel@gandalf.local.home>
+Subject: Re: [GIT PULL] printk: Support for full dynticks mode
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 04 Feb 2013 22:24:27 -0500
+In-Reply-To: <CAFTL4hyvvpqw2KwFzHLN5V5izKh4d0rp9mQhadZwRp8actRr+g@mail.gmail.com>
+References: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
+	 <20130204172001.8bb358b0.akpm@linux-foundation.org>
+	 <CAFTL4hxHEknUfv0rt73Tb0YAUrypuGJArvCw4wmEPp_8PF_b0A@mail.gmail.com>
+	 <20130204180948.68c206c0.akpm@linux-foundation.org>
+	 <1360034041.27007.6.camel@gandalf.local.home>
+	 <CAFTL4hyvvpqw2KwFzHLN5V5izKh4d0rp9mQhadZwRp8actRr+g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rewrite the torture cycle, do the erase-write-verify process in
-one block unit, not in several blocks unit.
+On Tue, 2013-02-05 at 04:19 +0100, Frederic Weisbecker wrote:
+> 2013/2/5 Steven Rostedt <rostedt@goodmis.org>:
+> > On Mon, 2013-02-04 at 18:09 -0800, Andrew Morton wrote:
+> >
+> >> Maybe there were other deadlock scenarios, dunno.  That knowledge
+> >> appears to be disappearing into the mists of time :(
+> >
+> > Discussing this on IRC with Frederic, he brought up that the
+> > up(&console_sem) can do a wake_up as well. I guess that's the issue we
+> > have :-/
+> 
+> Also if we delay the wakeup on klogd but not on the console_sem
+> waiters, it looks like a general printk() problem. Not something that
+> only printk_sched() would like to avoid.
 
-This patch makes preparations for adding the rand data pattern support.
+printk_sched() is a delay to printk() to avoid calling printk() which
+might take the rq lock. It's to prevent printk() deadlocking in case it
+wakes up. printk_sched() just delays the printk() to the next timer
+tick.
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- drivers/mtd/tests/mtd_torturetest.c |   29 +++++++----------------------
- 1 files changed, 7 insertions(+), 22 deletions(-)
+The reason to avoid the wake up of klogd() is that it also grabs the
+wait queue spinlock every time it's called. up() is fast when there's no
+waiters, but wake_up_interruptible() is not so fast.
 
-diff --git a/drivers/mtd/tests/mtd_torturetest.c b/drivers/mtd/tests/mtd_torturetest.c
-index c4cde1e..516cf66 100644
---- a/drivers/mtd/tests/mtd_torturetest.c
-+++ b/drivers/mtd/tests/mtd_torturetest.c
-@@ -313,21 +313,18 @@ static int __init tort_init(void)
- 		int i;
- 		void *patt;
- 
--		/* Erase all eraseblocks */
- 		for (i = eb; i < eb + ebcnt; i++) {
- 			if (bad_ebs[i - eb])
- 				continue;
-+
-+			/* Erase all eraseblocks */
- 			err = erase_eraseblock(i);
- 			if (err)
- 				goto out;
- 			cond_resched();
--		}
- 
--		/* Check if the eraseblocks contain only 0xFF bytes */
--		if (check) {
--			for (i = eb; i < eb + ebcnt; i++) {
--				if (bad_ebs[i - eb])
--					continue;
-+			/* Check if the eraseblocks contain only 0xFF bytes */
-+			if (check) {
- 				err = check_eraseblock(i, patt_FF);
- 				if (err) {
- 					pr_info("verify failed"
-@@ -336,12 +333,8 @@ static int __init tort_init(void)
- 				}
- 				cond_resched();
- 			}
--		}
- 
--		/* Write the pattern */
--		for (i = eb; i < eb + ebcnt; i++) {
--			if (bad_ebs[i - eb])
--				continue;
-+			/* Write the pattern */
- 			if ((eb + erase_cycles) & 1)
- 				patt = patt_5A5;
- 			else
-@@ -350,17 +343,9 @@ static int __init tort_init(void)
- 			if (err)
- 				goto out;
- 			cond_resched();
--		}
- 
--		/* Verify what we wrote */
--		if (check) {
--			for (i = eb; i < eb + ebcnt; i++) {
--				if (bad_ebs[i - eb])
--					continue;
--				if ((eb + erase_cycles) & 1)
--					patt = patt_5A5;
--				else
--					patt = patt_A5A;
-+			/* Verify what we wrote */
-+			if (check) {
- 				err = check_eraseblock(i, patt);
- 				if (err) {
- 					pr_info("verify failed for %s"
--- 
-1.7.0.4
+There's no issue calling wake_up_process() from printk() as long as you
+don't do it while holding a rq lock.
+
+-- Steve
 
 
