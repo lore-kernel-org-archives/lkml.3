@@ -1,47 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3BEAHN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 19:07:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:32270 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754649Ab3BEAHL convert rfc822-to-8bit (ORCPT
+	id S1755568Ab3BEAI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 19:08:57 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:65186 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab3BEAI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 19:07:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,602,1355126400"; 
-   d="scan'208";a="282757644"
-From: "Hefty, Sean" <sean.hefty@intel.com>
-To: Tejun Heo <tj@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "skinsbursky@parallels.com" <skinsbursky@parallels.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>, Roland Dreier <roland@kernel.org>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-Subject: RE: [PATCH v2 22/62] infiniband/core: convert to idr_alloc()
-Thread-Topic: [PATCH v2 22/62] infiniband/core: convert to idr_alloc()
-Thread-Index: AQHOAvbabJRvMdCaGESe6kAlS1ptrphqXTog
-Date: Tue, 5 Feb 2013 00:07:09 +0000
-Message-ID: <1828884A29C6694DAF28B7E6B8A8237357D43183@ORSMSX101.amr.corp.intel.com>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
- <1359854463-2538-23-git-send-email-tj@kernel.org>
- <20130204164355.GD27963@mtj.dyndns.org>
-In-Reply-To: <20130204164355.GD27963@mtj.dyndns.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Feb 2013 19:08:56 -0500
+X-AuditID: 9c930179-b7c24ae00000119c-87-51104d961986
+Date: Tue, 5 Feb 2013 09:08:54 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: Re: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
+Message-ID: <20130205000854.GC2610@blaptop>
+References: <1359937421-19921-1-git-send-email-minchan@kernel.org>
+ <20130204185146.GA31284@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130204185146.GA31284@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Sean Hefty <sean.hefty@intel.com>
+Hi Greg,
+
+On Mon, Feb 04, 2013 at 10:51:46AM -0800, Greg Kroah-Hartman wrote:
+> On Mon, Feb 04, 2013 at 09:23:41AM +0900, Minchan Kim wrote:
+> > Zsmalloc has two methods 1) copy-based and 2) pte based to access
+> > allocations that span two pages.
+> > You can see history why we supported two approach from [1].
+> > 
+> > But it was bad choice that adding hard coding to select architecture
+> > which want to use pte based method. This patch removed it and adds
+> > new Kconfig to select the approach.
+> > 
+> > This patch is based on next-20130202.
+> > 
+> > [1] https://lkml.org/lkml/2012/7/11/58
+> > 
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > Cc: Nitin Gupta <ngupta@vflare.org>
+> > Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> > Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  drivers/staging/zsmalloc/Kconfig         |   12 ++++++++++++
+> >  drivers/staging/zsmalloc/zsmalloc-main.c |   11 -----------
+> >  2 files changed, 12 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+> > index 9084565..2359123 100644
+> > --- a/drivers/staging/zsmalloc/Kconfig
+> > +++ b/drivers/staging/zsmalloc/Kconfig
+> > @@ -8,3 +8,15 @@ config ZSMALLOC
+> >  	  non-standard allocator interface where a handle, not a pointer, is
+> >  	  returned by an alloc().  This handle must be mapped in order to
+> >  	  access the allocated space.
+> > +
+> > +config ZSMALLOC_PGTABLE_MAPPING
+> > +        bool "Use page table mapping to access allocations that span two pages"
+> > +        depends on ZSMALLOC
+> > +        default n
+> > +        help
+> > +	  By default, zsmalloc uses a copy-based object mapping method to access
+> > +	  allocations that span two pages. However, if a particular architecture
+> > +	  performs VM mapping faster than copying, then you should select this.
+> > +	  This causes zsmalloc to use page table mapping rather than copying
+> > +	  for object mapping. You can check speed with zsmalloc benchmark[1].
+> > +	  [1] https://github.com/spartacus06/zsmalloc
+> > diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> > index 06f73a9..b161ca1 100644
+> > --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> > +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> > @@ -218,17 +218,6 @@ struct zs_pool {
+> >  #define CLASS_IDX_MASK	((1 << CLASS_IDX_BITS) - 1)
+> >  #define FULLNESS_MASK	((1 << FULLNESS_BITS) - 1)
+> >  
+> > -/*
+> > - * By default, zsmalloc uses a copy-based object mapping method to access
+> > - * allocations that span two pages. However, if a particular architecture
+> > - * performs VM mapping faster than copying, then it should be added here
+> > - * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
+> > - * page table mapping rather than copying for object mapping.
+> > -*/
+> > -#if defined(CONFIG_ARM)
+> > -#define USE_PGTABLE_MAPPING
+> > -#endif
+> 
+> Did you test this?  I don't see the new config value you added actually
+> do anything in this code.  Also, if I select it incorrectly on ARM, or
+
+*slaps self*
+
+> or other platforms, what is keeping this from doing bad things?
+
+There is no way to prevent it now.
+I thought a way to detect it dynamically by testing performance
+both approaches in booting/module-loading time and select the best choice.
+For it, we should add benchmark code and delay booting/module-loading,
+it's not good for embedded system because they are fighting with 300msec all
+day long.
+So I think best choice we can do is that pass the decision to user by Kconfig
+which includes pointing the benchmark. I intionally removed "ARM" word in help
+because we checked the performance in just three devices of all ARM CPU
+so we can't make sure it does makse sense all ARM CPU.
+
+Of course, I'm open for suggestion. Do you have better idea?
+
+
+> 
+> thanks,
+> 
+> greg k-h
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
