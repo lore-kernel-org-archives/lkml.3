@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab3BETsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 14:48:03 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:37026 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab3BETr7 (ORCPT
+	id S1756671Ab3BETtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 14:49:06 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:55099 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754111Ab3BETtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 14:47:59 -0500
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: NeilBrown <neilb@suse.de>,
-        "Shilimkar\, Santosh" <santosh.shilimkar@ti.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Benoit <b-cousson@ti.com>,
-        Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Jon Hunter <jon-hunter@ti.com>
-Subject: Re: [PATCH] OMAP GPIO - don't wake from suspend unless requested.
-Organization: Deep Root Systems, LLC
-References: <20120825214459.7333a376@notabene.brown>
-	<CAMQu2gz0-U4GxEpZFfmJec+0FRs7ugy8EYS3HyYhb1jwbMBjug@mail.gmail.com>
-	<20120827085312.75957354@notabene.brown>
-	<CAMQu2gwH0O+NHV7H2aF375qmv0=TKb6RweOLohTHtB4UhQ-1gQ@mail.gmail.com>
-	<CAMQu2gw2b8HHDPuSRuHXVYn3sJ5BYi_PuOT=snpa3zD5ert=QQ@mail.gmail.com>
-	<20120906130510.32b0b877@notabene.brown>
-	<CAMQu2gxGNJ+NW_rcRiXNE=OMTq8Hb81_1hDZnNen6mjc2cf6BQ@mail.gmail.com>
-	<20120906170245.10e97bdd@notabene.brown>
-	<87627pldkj.fsf@deeprootsystems.com>
-	<CAMQu2gwSCvw_4gVE-giD6MSzmRCNoNu4NoFBSao_dh9YnojfuA@mail.gmail.com>
-	<87ipblahho.fsf@deeprootsystems.com>
-	<20121214180553.5eb62c0c@notabene.brown>
-	<20121219222028.6BA4A3E0AD6@localhost>
-Date: Tue, 05 Feb 2013 11:47:54 -0800
-In-Reply-To: <20121219222028.6BA4A3E0AD6@localhost> (Grant Likely's message of
-	"Wed, 19 Dec 2012 22:20:28 +0000")
-Message-ID: <87622635lh.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 5 Feb 2013 14:49:02 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 00/14] reform the ABx500 IRQ handling
+Date: Tue, 5 Feb 2013 20:48:21 +0100
+Message-ID: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@secretlab.ca> writes:
+From: Linus Walleij <linus.walleij@linaro.org>
 
-> On Fri, 14 Dec 2012 18:05:53 +1100, NeilBrown <neilb@suse.de> wrote:
->> On Mon, 10 Sep 2012 10:57:07 -0700 Kevin Hilman <khilman@deeprootsystems.com>
->> wrote:
->> 
->> 
->> > OK thanks, I'll queue this up for v3.6-rc as this should qualify as a
->> > regression.
->> 
->> I don't think this did actually get queued.  At least I'm still seeing the
->> bug in 3.7 and I cannot see a patch in the git history that looks right.
->> But then I don't remember what we ended up with - it was 3 months ago!!!
->> 
->> This is the last thing I can find in my email history - it still seems to
->> apply and still seems to work.
->> 
->> NeilBrown
->
-> Kevin, let me know if I need to do anything here. Since you might have
-> it in one of you're trees, I'm not going to do anything unless I hear
-> from you.
+The AB8500/ABx500 PMIC ASICs have a real interesting way
+of handling GPIO interrupts. They can trigger both on rising
+and falling edge but will fire two different physical hwirqs
+for rising resp. falling edge.
 
-oops, just stumbled across this one.  Sorry for the lag.
+The complexity was kept in the abx500 pinctrl driver by
+heritage from the ab8500 GPIO driver. That one was however
+severely broken and this was part of the brokenness.
 
-Grant, feel free to apply.  Seems this one never made it into my queue.
+This series tries to decrease the complexity by moving
+the interrupt handling back into the AB8500 core and
+letting the ABx500 pinctrl driver rely on the irqdomain
+stored inside the mfd device.
 
-Kevin
+The basic design problem with the old driver was that it
+was modeling a *cascading* interrupt controller off the
+AB8500 core, whereas what we want is actually a *merging*
+interrupt controller, that will take two physical hwirqs
+and associate them with *one* Linux IRQ.
+
+The right place to handle this is in the AB8500 core.
+
+Lee Jones (13):
+  mfd: ab8500: prepare to handle AB8500 GPIO's IRQs correctly
+  mfd: ab8500: provide a irq_set_type() function
+  mfd: ab8500: ensure new AB8500 pinctrl driver is probed correctly
+  mfd: ab8500: allow AB9540 based devices to use ABX500 pinctrl
+  pinctrl/abx500: prevent error path from corrupting returning error
+  pinctrl/abx500: align GPIO cluster boundaries
+  pinctrl/abx500: move IRQ handling to ab8500-core
+  pinctrl/abx500: replace IRQ offsets with table read-in values
+  pinctrl/abx500: add Device Tree support
+  ARM: ux500: remove irq_base property from platform_data
+  ARM: ux500: use real AB8500 IRQ numbers instead of virtual ones
+  ARM: ux500: enable AB8500 GPIO for HREF
+  ARM: ux500: allow Snowball access to the AB8500 GPIO pins
+
+Linus Walleij (1):
+  pinctrl/abx500: use direct IRQ defines
+
+ arch/arm/boot/dts/hrefprev60.dts                   |   8 +
+ arch/arm/boot/dts/snowball.dts                     |   4 +
+ arch/arm/mach-ux500/board-mop500.c                 |   1 -
+ .../mach-ux500/include/mach/irqs-board-mop500.h    |  10 +-
+ drivers/mfd/ab8500-core.c                          |  37 ++-
+ drivers/pinctrl/pinctrl-ab8500.c                   |   6 +-
+ drivers/pinctrl/pinctrl-ab8505.c                   |  10 +-
+ drivers/pinctrl/pinctrl-ab8540.c                   |   5 +-
+ drivers/pinctrl/pinctrl-ab9540.c                   |   8 +-
+ drivers/pinctrl/pinctrl-abx500.c                   | 365 +++------------------
+ drivers/pinctrl/pinctrl-abx500.h                   |  10 +-
+ include/linux/mfd/abx500/ab8500-gpio.h             |   1 -
+ 12 files changed, 120 insertions(+), 345 deletions(-)
+
+-- 
+1.7.11.3
+
