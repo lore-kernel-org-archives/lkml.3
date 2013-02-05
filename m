@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab3BEWIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:08:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47847 "EHLO
+	id S1757136Ab3BEWIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:08:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47858 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085Ab3BEWIE (ORCPT
+	with ESMTP id S1756999Ab3BEWIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:08:04 -0500
+	Tue, 5 Feb 2013 17:08:12 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 08/93] tty: 8250_dw: Fix inverted arguments to serial_out in IRQ handler
-Date: Tue,  5 Feb 2013 20:05:57 -0200
-Message-Id: <1360102042-10732-9-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 10/93] ARM: 7627/1: Predicate preempt logic on PREEMP_COUNT not PREEMPT alone
+Date: Tue,  5 Feb 2013 20:05:59 -0200
+Message-Id: <1360102042-10732-11-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,30 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 68e56cb3a068f9c30971c6117fbbd1e32918e49e upstream.
+commit 568dca15aa2a0f4ddee255894ec393a159f13147 upstream.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Patrik Kluba reports that the preempt count becomes invalid due
+to the preempt_enable() call being unbalanced with a
+preempt_disable() call in the vfp assembly routines. This happens
+because preempt_enable() and preempt_disable() update preempt
+counts under PREEMPT_COUNT=y but the vfp assembly routines do so
+under PREEMPT=y. In a configuration where PREEMPT=n and
+DEBUG_ATOMIC_SLEEP=y, PREEMPT_COUNT=y and so the preempt_enable()
+call in VFP_bounce() keeps subtracting from the preempt count
+until it goes negative.
+
+Fix this by always using PREEMPT_COUNT to decided when to update
+preempt counts in the ARM assembly code.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Reported-by: Patrik Kluba <pkluba@dension.com>
+Tested-by: Patrik Kluba <pkluba@dension.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/tty/serial/8250/8250_dw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/vfp/entry.S |    6 +++---
+ arch/arm/vfp/vfphw.S |    4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index f574eef..b6dc908 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -79,7 +79,7 @@ static int dw8250_handle_irq(struct uart_port *p)
- 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
- 		/* Clear the USR and write the LCR again. */
- 		(void)p->serial_in(p, UART_USR);
--		p->serial_out(p, d->last_lcr, UART_LCR);
-+		p->serial_out(p, UART_LCR, d->last_lcr);
+diff --git a/arch/arm/vfp/entry.S b/arch/arm/vfp/entry.S
+index cc926c9..323ce1a 100644
+--- a/arch/arm/vfp/entry.S
++++ b/arch/arm/vfp/entry.S
+@@ -22,7 +22,7 @@
+ @  IRQs disabled.
+ @
+ ENTRY(do_vfp)
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	add	r11, r4, #1		@ increment it
+ 	str	r11, [r10, #TI_PREEMPT]
+@@ -35,7 +35,7 @@ ENTRY(do_vfp)
+ ENDPROC(do_vfp)
  
- 		return 1;
- 	}
+ ENTRY(vfp_null_entry)
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	get_thread_info	r10
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	sub	r11, r4, #1		@ decrement it
+@@ -53,7 +53,7 @@ ENDPROC(vfp_null_entry)
+ 
+ 	__INIT
+ ENTRY(vfp_testing_entry)
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	get_thread_info	r10
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	sub	r11, r4, #1		@ decrement it
+diff --git a/arch/arm/vfp/vfphw.S b/arch/arm/vfp/vfphw.S
+index 3a0efaa..6ff903e 100644
+--- a/arch/arm/vfp/vfphw.S
++++ b/arch/arm/vfp/vfphw.S
+@@ -167,7 +167,7 @@ vfp_hw_state_valid:
+ 					@ else it's one 32-bit instruction, so
+ 					@ always subtract 4 from the following
+ 					@ instruction address.
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	get_thread_info	r10
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	sub	r11, r4, #1		@ decrement it
+@@ -191,7 +191,7 @@ look_for_VFP_exceptions:
+ 	@ not recognised by VFP
+ 
+ 	DBGSTR	"not VFP"
+-#ifdef CONFIG_PREEMPT
++#ifdef CONFIG_PREEMPT_COUNT
+ 	get_thread_info	r10
+ 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 	sub	r11, r4, #1		@ decrement it
 -- 
 1.7.9.5
 
