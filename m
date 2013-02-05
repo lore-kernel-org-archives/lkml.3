@@ -1,124 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab3BEPmF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 10:42:05 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:33674 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab3BEPmA (ORCPT
+	id S1756238Ab3BEPme (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 10:42:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57324 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756114Ab3BEPmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 10:42:00 -0500
+	Tue, 5 Feb 2013 10:42:31 -0500
+Message-ID: <5111285D.3030503@ti.com>
+Date: Tue, 5 Feb 2013 10:42:21 -0500
+From: Cyril Chemparathy <cyril@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1360057555-10279-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1360057555-10279-1-git-send-email-myungjoo.ham@samsung.com>
-Date: Tue, 5 Feb 2013 21:11:59 +0530
-Message-ID: <CA+Z25wX5a4_NFX0xGTWEcPkB=625m9w=OvDgM6o4WgPo3iHqNw@mail.gmail.com>
-Subject: Re: [PATCH] PM / devfreq: add comments and Documentation
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rafael.j.wysocki@intel.com, nm@ti.com, a.kesavan@samsung.com,
-        jonghwa3.lee@samsung.com, sangjung.woo@samsung.com,
-        myungjoo.ham@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, <balbi@ti.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
+        "Nair, Sandeep" <sandeep_n@ti.com>, Chris Ball <cjb@laptop.org>,
+        Matt Porter <mporter@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
+References: <20130204154153.GA18237@arwen.pp.htv.fi> <510FF1A6.403@mvista.com> <20130204164712.GB4269@arwen.pp.htv.fi> <510FF5C9.3030600@mvista.com> <20130204170216.GC4269@arwen.pp.htv.fi> <51100A72.6030909@ti.com> <CACRpkdZihnp3_Df==QRWxQupgi7W_YXZxc-MxkusVH6J+Vx56A@mail.gmail.com> <20130204203358.GX4720@opensource.wolfsonmicro.com> <CACRpkdbPyZt8=pLhz-5qcaSSAk6VBn61dPTNp6teU9HksBwN2w@mail.gmail.com> <51102E25.8040107@ti.com> <20130205124120.GC17852@n2100.arm.linux.org.uk>
+In-Reply-To: <20130205124120.GC17852@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 February 2013 15:15, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-> - Added missing ABI documents
-> - Added comments to clarify the objectives of functions
+On 02/05/2013 07:41 AM, Russell King - ARM Linux wrote:
+> On Mon, Feb 04, 2013 at 04:54:45PM -0500, Cyril Chemparathy wrote:
+>> You're assuming that cookies complete in order.  That is not necessarily
+>> true.
 >
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Acked-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-
-> ---
->  Documentation/ABI/testing/sysfs-class-devfreq |   20 ++++++++++++++++++++
->  drivers/devfreq/devfreq.c                     |   10 ++++++++++
->  include/linux/devfreq.h                       |    2 ++
->  3 files changed, 32 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
-> index 0ba6ea2..ee39aca 100644
-> --- a/Documentation/ABI/testing/sysfs-class-devfreq
-> +++ b/Documentation/ABI/testing/sysfs-class-devfreq
-> @@ -78,3 +78,23 @@ Contact:     Nishanth Menon <nm@ti.com>
->  Description:
->                 The /sys/class/devfreq/.../available_governors shows
->                 currently available governors in the system.
-> +
-> +What:          /sys/class/devfreq/.../min_freq
-> +Date:          January 2013
-> +Contact:       MyungJoo Ham <myungjoo.ham@samsung.com>
-> +Description:
-> +               The /sys/class/devfreq/.../min_freq shows and stores
-> +               the minimum frequency requested by users. It is 0 if
-> +               the user does not care. min_freq overrides the
-> +               frequency requested by governors.
-> +
-> +What:          /sys/class/devfreq/.../max_freq
-> +Date:          January 2013
-> +Contact:       MyungJoo Ham <myungjoo.ham@samsung.com>
-> +Description:
-> +               The /sys/class/devfreq/.../max_freq shows and stores
-> +               the maximum frequency requested by users. It is 0 if
-> +               the user does not care. max_freq overrides the
-> +               frequency requested by governors and min_freq.
-> +               The max_freq overrides min_freq because max_freq may be
-> +               used to throttle devices to avoid overheating.
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> index abfa14d..44c4079 100644
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -527,6 +527,8 @@ EXPORT_SYMBOL(devfreq_add_device);
->  /**
->   * devfreq_remove_device() - Remove devfreq feature from a device.
->   * @devfreq:   the devfreq instance to be removed
-> + *
-> + * The opposite of devfreq_add_device().
->   */
->  int devfreq_remove_device(struct devfreq *devfreq)
->  {
-> @@ -542,6 +544,10 @@ EXPORT_SYMBOL(devfreq_remove_device);
->  /**
->   * devfreq_suspend_device() - Suspend devfreq of a device.
->   * @devfreq: the devfreq instance to be suspended
-> + *
-> + * This function is intended to be called by the pm callbacks
-> + * (e.g., runtime_suspend, suspend) of the device driver that
-> + * holds the devfreq.
->   */
->  int devfreq_suspend_device(struct devfreq *devfreq)
->  {
-> @@ -559,6 +565,10 @@ EXPORT_SYMBOL(devfreq_suspend_device);
->  /**
->   * devfreq_resume_device() - Resume devfreq of a device.
->   * @devfreq: the devfreq instance to be resumed
-> + *
-> + * This function is intended to be called by the pm callbacks
-> + * (e.g., runtime_resume, resume) of the device driver that
-> + * holds the devfreq.
->   */
->  int devfreq_resume_device(struct devfreq *devfreq)
->  {
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index e83ef39..04ad61d 100644
-> --- a/include/linux/devfreq.h
-> +++ b/include/linux/devfreq.h
-> @@ -181,6 +181,8 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
->                                   const char *governor_name,
->                                   void *data);
->  extern int devfreq_remove_device(struct devfreq *devfreq);
-> +
-> +/* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
->  extern int devfreq_suspend_device(struct devfreq *devfreq);
->  extern int devfreq_resume_device(struct devfreq *devfreq);
->
-> --
-> 1.7.5.4
+> Under what circumstances is that not true?
 >
 
-
-
--- 
-Regards,
-Rajagopal
+Notably when hardware can prioritize certain classes of traffic over 
+others, for instance with data center bridging mechanisms.
