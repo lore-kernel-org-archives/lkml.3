@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab3BEPgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 10:36:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33600 "EHLO mx1.redhat.com"
+	id S1756246Ab3BEPga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 10:36:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55553 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755045Ab3BEPgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 10:36:15 -0500
-Date: Tue, 5 Feb 2013 12:35:51 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH v7 00/18] perf: add memory access sampling support
-Message-ID: <20130205153551.GC29163@infradead.org>
-References: <1359040242-8269-1-git-send-email-eranian@google.com>
- <20130125103832.GB20826@gmail.com>
- <CABPqkBQ8+wT1AYRNGttvteJTCujL4grQ20Pa6jnqrKKEvaVeWA@mail.gmail.com>
+	id S1755045Ab3BEPg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 10:36:27 -0500
+Date: Tue, 5 Feb 2013 10:36:14 -0500
+From: David Teigland <teigland@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org,
+        Christine Caulfield <ccaulfie@redhat.com>, cluster-devel@redhat.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] idr: fix a subtle bug in idr_get_next()
+Message-ID: <20130205153614.GA1508@redhat.com>
+References: <1359163872-1949-11-git-send-email-tj@kernel.org>
+ <20130128155723.GC16789@redhat.com>
+ <20130129151317.GA11609@redhat.com>
+ <20130130212417.GJ24014@redhat.com>
+ <20130131235320.GN6824@mtj.dyndns.org>
+ <20130201001841.GP6824@mtj.dyndns.org>
+ <20130201174443.GC3812@redhat.com>
+ <20130201180028.GC31863@mtj.dyndns.org>
+ <20130202231048.GA3940@mtj.dyndns.org>
+ <20130202231135.GB3940@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBQ8+wT1AYRNGttvteJTCujL4grQ20Pa6jnqrKKEvaVeWA@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20130202231135.GB3940@mtj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Feb 05, 2013 at 02:03:55PM +0100, Stephane Eranian escreveu:
-> On Fri, Jan 25, 2013 at 11:38 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > * Stephane Eranian <eranian@google.com> wrote:
-> >> This patch series had a new feature to the kernel perf_events
-> >> interface and corresponding user level tool, perf.
+On Sat, Feb 02, 2013 at 03:11:35PM -0800, Tejun Heo wrote:
+> On Sat, Feb 02, 2013 at 03:10:48PM -0800, Tejun Heo wrote:
+> > Fix it by ensuring proceeding to the next slot doesn't carry over the
+> > unaligned offset - ie. use round_up(id + 1, slot_distance) instead of
+> > id += slot_distance.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Reported-by: David Teigland <teigland@redhat.com>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> David, can you please test whether the patch makes the skipped
+> deletion bug go away?
 
-> > Ok, so I have created a topic tree for this, tip:perf/x86.
+Yes, I've tested, and it works fine now.
+Thanks,
+Dave
 
-> > I have applied the kernel bits (with some minor renaming
-> > changes). Arnaldo, if you agree with the tooling bits you can
-> > merge that branch into your tree and apply the tooling bits from
-> > Stephane.
-
-> Arnaldo, did you incorporate the perf changes for this somewhere in
-> your tree yet? The kernel bits are in.
-
-I'm doing it, updating some csets on the go, will post here after I go
-thru some tests.
-
-- Arnaldo
