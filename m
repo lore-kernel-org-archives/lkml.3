@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab3BEJA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:00:26 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:37699 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab3BEJAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:00:25 -0500
-X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
-   d="scan'208";a="6691571"
-Message-ID: <5110C28D.1040001@cn.fujitsu.com>
-Date: Tue, 05 Feb 2013 16:27:57 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753984Ab3BEJBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:01:04 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:40227 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308Ab3BEJBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:01:00 -0500
+Message-ID: <5110CA8E.5020606@ti.com>
+Date: Tue, 5 Feb 2013 14:32:06 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, linux-mm@kvack.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] mm: hotplug: implement non-movable version of get_user_pages()
- to kill long-time pin pages
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com> <20130205005859.GE2610@blaptop> <51108DC8.4090704@cn.fujitsu.com> <20130205052517.GH2610@blaptop> <5110A442.5000707@cn.fujitsu.com> <20130205074519.GB11197@blaptop>
-In-Reply-To: <20130205074519.GB11197@blaptop>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/05 16:28:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/05 16:28:08,
-	Serialize complete at 2013/02/05 16:28:08
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Russell King <linux@arm.linux.org.uk>, <js1304@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 0/3] introduce static_vm for ARM-specific static mapped
+ area
+References: <1360024314-1895-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1360024314-1895-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+On Tuesday 05 February 2013 06:01 AM, Joonsoo Kim wrote:
+> In current implementation, we used ARM-specific flag, that is,
+> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+> The purpose of static mapped area is to re-use static mapped area when
+> entire physical address range of the ioremap request can be covered
+> by this area.
+>
+> This implementation causes needless overhead for some cases.
+> For example, assume that there is only one static mapped area and
+> vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+> deciding whether it is matched or not. Moreover, even if there is
+> no static mapped area and vmlist has 300 areas, every time we call
+> ioremap, we check 300 areas in now.
+>
+> If we construct a extra list for static mapped area, we can eliminate
+> above mentioned overhead.
+> With a extra list, if there is one static mapped area,
+> we just check only one area and proceed next operation quickly.
+>
+> In fact, it is not a critical problem, because ioremap is not frequently
+> used. But reducing overhead is better idea.
+>
+> Another reason for doing this work is for removing vm_struct list management,
+> entirely. For more information, look at the following link.
+> http://lkml.org/lkml/2012/12/6/184
+>
 
-On 02/05/2013 03:45 PM, Minchan Kim wrote:
->> So it may not a good idea that we all fall into calling the *non_movable* version of
->> > GUP when CONFIG_MIGRATE_ISOLATE is on. What do you think?
-> Frankly speaking, I can't understand Mel's comment.
-> AFAIUC, he said GUP checks the page before get_page and if the page is movable zone,
-> then migrate it out of movable zone and get_page again.
-> That's exactly what I want. It doesn't introduce GUP_NM.
-Since an long time pin or not is an unpredictable behave except you know what the caller
-wants to do. We have to check every time we call GUP, and GUP may need another parameter
- to teach itself to make the right decision? We have already got *8* parameters :(
+[..]
 
-thanks,
-linfeng
+>
+> Joonsoo Kim (3):
+>    ARM: vmregion: remove vmregion code entirely
+>    ARM: ioremap: introduce an infrastructure for static mapped area
+>    ARM: mm: use static_vm for managing static mapped areas
+>
+>   arch/arm/mm/Makefile   |    2 +-
+>   arch/arm/mm/ioremap.c  |  135 +++++++++++++++++++++----------
+>   arch/arm/mm/mm.h       |   12 +++
+>   arch/arm/mm/mmu.c      |   34 ++++----
+>   arch/arm/mm/vmregion.c |  205 ------------------------------------------------
+>   arch/arm/mm/vmregion.h |   31 --------
+>   6 files changed, 123 insertions(+), 296 deletions(-)
+>   delete mode 100644 arch/arm/mm/vmregion.c
+>   delete mode 100644 arch/arm/mm/vmregion.h
+>
+Nice Clean-up. I tested this series on OMAP which uses few static
+mappings. Feel free to add,
+
+Tested-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
