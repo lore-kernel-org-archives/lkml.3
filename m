@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3BEBOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 20:14:12 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:42548 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab3BEBOK (ORCPT
+	id S1755376Ab3BEBRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 20:17:15 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:41005 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753769Ab3BEBRO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 20:14:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130205000517.GB9969@gmail.com>
-References: <1360015899-13706-1-git-send-email-dinggnu@gmail.com>
-	<CAH9JG2XSpFJeUvv7cw-JWadmi=X0-4EsN5FFKuDkwo=-mmzHSQ@mail.gmail.com>
-	<20130205000517.GB9969@gmail.com>
-Date: Tue, 5 Feb 2013 09:14:08 +0800
-Message-ID: <CAN1soZwM6qNTJn3vvMdc6TR1eJHc=K+_c0WuWOBBuFYMWB_oCA@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c: busses/i2c-pxa.c: fix potential null pointer
- dereference error
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Kyungmin Park <kmpark@infradead.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Feb 2013 20:17:14 -0500
+X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
+   d="scan'208";a="6688711"
+Subject: Re: [PATCH 3/5] acpi: move x86/mm/srat.c to x86/kernel/acpi/srat.c
+From: li guang <lig.fnst@cn.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
+In-Reply-To: <alpine.DEB.2.02.1302041142550.10378@chino.kir.corp.google.com>
+References: <1359967426-32629-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	 <1359967426-32629-4-git-send-email-lig.fnst@cn.fujitsu.com>
+	 <alpine.DEB.2.02.1302041142550.10378@chino.kir.corp.google.com>
+Date: Tue, 05 Feb 2013 09:16:57 +0800
+Message-ID: <1360027017.4449.9.camel@liguang.fnst.cn.fujitsu.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 09:15:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 09:15:56,
+	Serialize complete at 2013/02/05 09:15:56
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 8:05 AM, Cong Ding <dinggnu@gmail.com> wrote:
-> If it goes to eclk through line 1107, the variable res would be NULL. It will
-> cause a null pointer dereference error if we call release_mem_region.
->
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> ---
->  drivers/i2c/busses/i2c-pxa.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-> index 1034d93..00df535 100644
-> --- a/drivers/i2c/busses/i2c-pxa.c
-> +++ b/drivers/i2c/busses/i2c-pxa.c
-> @@ -1211,7 +1211,8 @@ eremap:
->  eclk:
->         kfree(i2c);
->  emalloc:
-> -       release_mem_region(res->start, resource_size(res));
-> +       if (res)
-> +               release_mem_region(res->start, resource_size(res));
->         return ret;
->  }
->
->
+在 2013-02-04一的 11:44 -0800，David Rientjes写道：
+> On Mon, 4 Feb 2013, liguang wrote:
+> 
+> > srat table should present only on acpi domain,
+> > seems mm/ is not the right place for it.
+> > 
+> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> > ---
+> >  arch/x86/kernel/acpi/Makefile |    1 +
+> >  arch/x86/mm/Makefile          |    1 -
+> >  arch/x86/mm/srat.c            |  191 -----------------------------------------
+> >  3 files changed, 1 insertions(+), 192 deletions(-)
+> >  delete mode 100644 arch/x86/mm/srat.c
+> > 
+> 
+> I was excited for a moment because this would have been one great cleanup, 
+> but you never readded the code to arch/x86/kernel/acpi.  (You probably 
+> need to do "git add <newfile>" before generating the patch file.)  I do 
+> like the idea of moving it, though, if it's build tested thoroughly.
 
-No. I don't agree on this. Your fix can't resolve all potential issues.
+OK, will git add it.
 
-        i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
-        if (!i2c) {
-                ret = -ENOMEM;
-                goto emalloc;
-        }
 
-        ret = i2c_pxa_probe_dt(dev, i2c, &i2c_type);
-        if (ret > 0)
-                ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
-        if (ret < 0)
-                goto eclk;
-
-        res = platform_get_resource(dev, IORESOURCE_MEM, 0);
-        irq = platform_get_irq(dev, 0);
-        if (res == NULL || irq < 0) {
-                ret = -ENODEV;
-                goto eclk;
-        }
-
-        if (!request_mem_region(res->start, resource_size(res), res->name)) {
-                ret = -ENOMEM;
-                goto eclk;
-        }
-
-We shouldn't jump to eclk for these error cases. Then we needn't to add
-checking on res.
-
-Regards
-Haojian
