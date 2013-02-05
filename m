@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab3BEI3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 03:29:55 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34774 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753969Ab3BEI3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 03:29:53 -0500
-Message-ID: <5110C2E6.30504@ti.com>
-Date: Tue, 5 Feb 2013 13:59:26 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756239Ab3BEIaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 03:30:55 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43190 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230Ab3BEIay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 03:30:54 -0500
+Date: Tue, 5 Feb 2013 11:30:37 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Roger Tseng <rogerable@realtek.com>
+Cc: "cjb@laptop.org" <cjb@laptop.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wei_wang <wei_wang@realsil.com.cn>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/3] MMC: rtsx: remove driving adjustment
+Message-ID: <20130205083037.GI4937@mwanda>
+References: <1359963959-2305-1-git-send-email-rogerable@realtek.com>
+ <1359963959-2305-2-git-send-email-rogerable@realtek.com>
+ <20130204084737.GG4937@mwanda>
+ <511073C5.9040300@realtek.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: <balbi@ti.com>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <s-guiriec@ti.com>, <gg@slimlogic.co.uk>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/6] ARM: dts: omap5: add dwc3 omap dt data
-References: <1359112312-6918-1-git-send-email-kishon@ti.com> <1359112312-6918-5-git-send-email-kishon@ti.com> <510432BF.80808@mvista.com>
-In-Reply-To: <510432BF.80808@mvista.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <511073C5.9040300@realtek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 27 January 2013 01:17 AM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 25-01-2013 15:11, Kishon Vijay Abraham I wrote:
->
->> Add dwc3 omap glue data to the omap5 dt data file. The information about
->> the dt node added here is available @
->> Documentation/devicetree/bindings/usb/omap-usb.txt
->
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   arch/arm/boot/dts/omap5.dtsi |   11 +++++++++++
->>   1 file changed, 11 insertions(+)
->
->> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
->> index 5f59bf2..1703a72 100644
->> --- a/arch/arm/boot/dts/omap5.dtsi
->> +++ b/arch/arm/boot/dts/omap5.dtsi
->> @@ -513,6 +513,17 @@
->>               ti,type = <2>;
->>           };
->>
->> +        omap_dwc3@4a020000 {
->> +            compatible = "ti,dwc3";
->> +            ti,hwmods = "usb_otg_ss";
->> +            reg = <0x4a020000 0x1ff>;
->
->     Shoudn't the "reg" length be 0x200 here? It's length, not limit.
+On Tue, Feb 05, 2013 at 10:51:49AM +0800, Roger Tseng wrote:
+> Hi Dan,
+> 
+> Correct. I will prevent this kind of breaking in the future.
+> 
 
-I think 0x1ff is correct. I got the data from hwmod data.
+Cool.  Or if we applied 2/3 first and then 1/3 there would be no
+breakage?  Anyway, it's a bit late to combine them at this point.
 
-Thanks
-Kishon
+> However, after our analysis the breaking of patch 1/3 and 2/3 should
+> not fail old devices. And since Samuel has applied 2/3 and 3/3, it
+> might be better for Chris to apply patch 1/3 and let all this things
+> appear in kernel v3.9.
+> 
+> Hi Chris,
+> 
+> Would you please apply patch 1/3 for kernel v3.9. Thanks.
+> 
+
+Sounds good.
+
+regards,
+dan carpenter
+
