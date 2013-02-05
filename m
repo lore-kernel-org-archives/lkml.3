@@ -1,133 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab3BEJN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:13:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9958 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab3BEJMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:12:50 -0500
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH v2 16/18] ext4: update ext4_ext_remove_space trace point
-Date: Tue,  5 Feb 2013 10:12:09 +0100
-Message-Id: <1360055531-26309-17-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
-References: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
+	id S1752567Ab3BEJOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:14:17 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50472 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3BEJOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:14:12 -0500
+Date: Tue, 5 Feb 2013 11:13:54 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 10/30] USB: ehci-omap: Use PHY APIs to get the PHY
+ device and put it out of suspend
+Message-ID: <20130205091354.GJ32118@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1359453032-20604-1-git-send-email-rogerq@ti.com>
+ <Pine.LNX.4.44L0.1301291026020.1507-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2VXyA7JGja7B50zs"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1301291026020.1507-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add "end" variable.
+--2VXyA7JGja7B50zs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
----
- fs/ext4/extents.c           |    6 +++---
- include/trace/events/ext4.h |   21 ++++++++++++++-------
- 2 files changed, 17 insertions(+), 10 deletions(-)
+On Tue, Jan 29, 2013 at 10:30:05AM -0500, Alan Stern wrote:
+> On Tue, 29 Jan 2013, Roger Quadros wrote:
+>=20
+> > For each port that is in PHY mode we obtain a PHY device using the USB =
+PHY
+> > library and put it out of suspend.
+> >=20
+> > It is up to platform code to associate the PHY to the controller's
+> > port and it is upto the PHY driver to manage the PHY's resources.
+>=20
+> s/upto/up to/
+>=20
+> > Also remove wired spacing around declarations we come across.
+>=20
+> s/wired/weird/ -- not that people care about misspellings in the=20
+> Changelog.  You don't have to resubmit the patch just to fix these two=20
+> items.
+>=20
+> > Signed-off-by: Roger Quadros <rogerq@ti.com>
+>=20
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 966a09e..2b7e521 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2647,7 +2647,7 @@ static int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
- again:
- 	ext4_ext_invalidate_cache(inode);
- 
--	trace_ext4_ext_remove_space(inode, start, depth);
-+	trace_ext4_ext_remove_space(inode, start, end, depth);
- 
- 	/*
- 	 * Check if we are removing extents inside the extent tree. If that
-@@ -2813,8 +2813,8 @@ again:
- 		}
- 	}
- 
--	trace_ext4_ext_remove_space_done(inode, start, depth, partial_cluster,
--			path->p_hdr->eh_entries);
-+	trace_ext4_ext_remove_space_done(inode, start, end, depth,
-+			partial_cluster, path->p_hdr->eh_entries);
- 
- 	/* If we still have something in the partial cluster and we have removed
- 	 * even the first extent, then we should free the blocks in the partial
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index 6ab6f8a..5fd98f9 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -2010,14 +2010,16 @@ TRACE_EVENT(ext4_ext_rm_idx,
- );
- 
- TRACE_EVENT(ext4_ext_remove_space,
--	TP_PROTO(struct inode *inode, ext4_lblk_t start, int depth),
-+	TP_PROTO(struct inode *inode, ext4_lblk_t start,
-+		 ext4_lblk_t end, int depth),
- 
--	TP_ARGS(inode, start, depth),
-+	TP_ARGS(inode, start, end, depth),
- 
- 	TP_STRUCT__entry(
- 		__field(	dev_t,		dev	)
- 		__field(	ino_t,		ino	)
- 		__field(	ext4_lblk_t,	start	)
-+		__field(	ext4_lblk_t,	end	)
- 		__field(	int,		depth	)
- 	),
- 
-@@ -2025,26 +2027,29 @@ TRACE_EVENT(ext4_ext_remove_space,
- 		__entry->dev	= inode->i_sb->s_dev;
- 		__entry->ino	= inode->i_ino;
- 		__entry->start	= start;
-+		__entry->end	= end;
- 		__entry->depth	= depth;
- 	),
- 
--	TP_printk("dev %d,%d ino %lu since %u depth %d",
-+	TP_printk("dev %d,%d ino %lu start %u end %u depth %d",
- 		  MAJOR(__entry->dev), MINOR(__entry->dev),
- 		  (unsigned long) __entry->ino,
- 		  (unsigned) __entry->start,
-+		  (unsigned) __entry->end,
- 		  __entry->depth)
- );
- 
- TRACE_EVENT(ext4_ext_remove_space_done,
--	TP_PROTO(struct inode *inode, ext4_lblk_t start, int depth,
--		ext4_lblk_t partial, unsigned short eh_entries),
-+	TP_PROTO(struct inode *inode, ext4_lblk_t start, ext4_lblk_t end,
-+		 int depth, ext4_lblk_t partial, unsigned short eh_entries),
- 
--	TP_ARGS(inode, start, depth, partial, eh_entries),
-+	TP_ARGS(inode, start, end, depth, partial, eh_entries),
- 
- 	TP_STRUCT__entry(
- 		__field(	dev_t,		dev		)
- 		__field(	ino_t,		ino		)
- 		__field(	ext4_lblk_t,	start		)
-+		__field(	ext4_lblk_t,	end		)
- 		__field(	int,		depth		)
- 		__field(	ext4_lblk_t,	partial		)
- 		__field(	unsigned short,	eh_entries	)
-@@ -2054,16 +2059,18 @@ TRACE_EVENT(ext4_ext_remove_space_done,
- 		__entry->dev		= inode->i_sb->s_dev;
- 		__entry->ino		= inode->i_ino;
- 		__entry->start		= start;
-+		__entry->end		= end;
- 		__entry->depth		= depth;
- 		__entry->partial	= partial;
- 		__entry->eh_entries	= eh_entries;
- 	),
- 
--	TP_printk("dev %d,%d ino %lu since %u depth %d partial %u "
-+	TP_printk("dev %d,%d ino %lu start %u end %u depth %d partial %u "
- 		  "remaining_entries %u",
- 		  MAJOR(__entry->dev), MINOR(__entry->dev),
- 		  (unsigned long) __entry->ino,
- 		  (unsigned) __entry->start,
-+		  (unsigned) __entry->end,
- 		  __entry->depth,
- 		  (unsigned) __entry->partial,
- 		  (unsigned short) __entry->eh_entries)
--- 
-1.7.7.6
+Acked-by: Felipe Balbi <balbi@ti.com>
 
+--=20
+balbi
+
+--2VXyA7JGja7B50zs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJREM1SAAoJEIaOsuA1yqRE6ZcP/3AoiV2HqmqYNW4EhdFZX53j
+en0NpRDheb6bJEgvWqcu4bqtMWr4KPCDvVAxDYENjByY7s2xX0EUwRhOX9EZC9P7
+qwEsWQ5cuOhb7pX1N5gJcfbGob8fZg8AdjixIWv3k+Wx729EZ7Ja3squdn05f7nN
+HTlmcKclvMdQ7D8348GZD4OfslUKaeTOQrOW2Y8veaDg0pmQ2z0on5mpxqWvDvD7
+aGq4tuJXgP8A7ZpTUOYWKYdD8JtOwbLuLkanCZBA6j1zoCu1gEtFqzULcWsgURIR
+ZxYbsHtN7BTkhlstPLiSn6sXvfxcErRpQnG50tPkqYPKbxDqAbucfBA4ggOPMRg9
+K+4sB5ZdVNqrmRlhWjQEFPrSM7SL0JeqPHwnrsRk9YoGZ+d8EwouICoWrYfP207t
+puCZOmp3N7u8ShpuhnWAz9Zqorm67hL6TY5fY0N8ppyXY9qC0PiIIFu9ZuaCCF2C
+l515SduwXiVAo9E7IIafABppEUfHpnsJrisbCRthwfwRQa8pkFtuWi57SQrxTTOF
+c1DueP9dFworK92Kpv0+UVNVlsmcwv1HNFkLBPcjoG7ON9exLvcP7V0ebf5uL7FJ
+V4OPFjGSj0KWacO83ley5E9I4zjPK2Y6wjkJRVc5T585i5ERltMzDPu3G01MyQ7O
+hek1zhtn7U9e6NpeLYPS
+=kf+0
+-----END PGP SIGNATURE-----
+
+--2VXyA7JGja7B50zs--
