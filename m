@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab3BEKe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:34:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab3BEKeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 05:34:25 -0500
-Date: Tue, 5 Feb 2013 11:34:56 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Tommi Rantala <tt.rantala@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: clock_nanosleep() task_struct leak
-Message-ID: <20130205103455.GB18313@redhat.com>
-References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com>
- <alpine.LFD.2.02.1302011450160.11905@ionos>
- <20130204193223.GA11910@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130204193223.GA11910@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753992Ab3BEKiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:38:54 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:42148 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156Ab3BEKiv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 05:38:51 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-9e-5110e1393287
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>, Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2] clk: Add composite clock type
+Date: Tue, 05 Feb 2013 11:38:46 +0100
+Message-id: <1554530.H35cUWvpSY@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.9.5 (Linux/3.7.4-gentoo; KDE/4.9.5; x86_64; ; )
+In-reply-to: <20130205.122252.570646990867457667.hdoyu@nvidia.com>
+References: <1359965482-29655-1-git-send-email-pgaikwad@nvidia.com>
+ <5110C3E5.2010503@nvidia.com>
+ <20130205.122252.570646990867457667.hdoyu@nvidia.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t9jQV3LhwKBBnPfm1hc3jWHzaLzyyw2
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKefGMv2CZY8Xb1NeYGxjW8XYycHBICJhLP79xlgrDF
+	JC7cW8/WxcjFISQwnVGi4/pZVginhUni/JepYFVsAmoSnxsesYHYIgIaElO6HrODFDELPGKS
+	WPRlLztIQljAVGL5ve3MIDaLgKrEg8WTgGwODl4BTYmN54JAwvwC6hLvtj0Fmykq4CyxsPc1
+	2ExOASeJd3uOM0Esns0oMfPUFlaQBK+AoMSPyfdYQGxmAXmJffunskLYWhLrdx5nmsAoOAtJ
+	2SwkZbOQlC1gZF7FKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERykz6R2MK5ssDjEKMDBqMTD
+	++Myf6AQa2JZcWXuIUYJDmYlEd6PN4BCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeRlPPQkQEkhP
+	LEnNTk0tSC2CyTJxcEo1MIa9lfe6Z/W6RcnmjIr3TtmSI2c2cKo8ty2p6F/lm316ZdHyTo1g
+	td4ZO5t987VED528Vxc/zTDkvCGbl4SP2P9thfX8eoyJm3+yzE8TK7Ss+JvPn/tYY3nznd5d
+	PULNj/KmrC/+mrhnaV7ong1K1id1miynRFrVGNrpTVuubKMXdFlWZv5TJZbijERDLeai4kQA
+	/TXdpU4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 08:32:23PM +0100, Oleg Nesterov wrote:
-> On 02/01, Thomas Gleixner wrote:
-> >
-> > B1;2601;0cOn Fri, 1 Feb 2013, Tommi Rantala wrote:
-> >
-> > > Hello,
-> > >
-> > > Trinity discovered a task_struct leak with clock_nanosleep(), reproducible with:
-> > >
-> > > -----8<-----8<-----8<-----
-> > > #include <time.h>
-> > >
-> > > static const struct timespec req;
-> > >
-> > > int main(void) {
-> > >         return clock_nanosleep(CLOCK_PROCESS_CPUTIME_ID,
-> > >                         TIMER_ABSTIME, &req, NULL);
-> > > }
-> > > -----8<-----8<-----8<-----
+On Tuesday 05 of February 2013 11:22:52 Hiroshi Doyu wrote:
+> Prashant Gaikwad <pgaikwad@nvidia.com> wrote @ Tue, 5 Feb 2013 09:33:41 
++0100:
+> > > The members of "clk_composite_ops" seems to be always assigned
+> > > statically. Istead of dynamically allocating/assigning, can't we
+> > > just
+> > > have "clk_composite_ops" statically as below?
+> > > 
+> > > static struct clk_ops clk_composite_ops = {
+> > > 
+> > > 	.get_parent = clk_composite_get_parent;
+> > > 	.set_parent = clk_composite_set_parent;
+> > > 	.recalc_rate = clk_composite_recalc_rate;
+> > > 	.round_rate = clk_composite_round_rate;
+> > > 	.set_rate = clk_composite_set_rate;
+> > > 	.is_enabled = clk_composite_is_enabled;
+> > > 	.enable = clk_composite_enable;
+> > > 	.disable = clk_composite_disable;
+> > > 
+> > > };
+> > > 
+> > > struct clk *clk_register_composite(struct device *dev, const char
+> > > *name,> > 
+> > > 		       const char **parent_names, int num_parents,
+> > > 		       struct clk_hw *mux_hw, const struct clk_ops 
+*mux_ops,
+> > > 		       struct clk_hw *div_hw, const struct clk_ops 
+*div_ops,
+> > > 		       struct clk_hw *gate_hw, const struct clk_ops 
+*gate_ops,
+> > > 		       unsigned long flags)
+> > > 
+> > > {
+> > > 
+> > > 	.....
+> > > 	
+> > > 	init.ops = &clk_composite_ops;
+> > 
+> > No, clk_ops depends on the clocks you are using. There could be a
+> > clock
+> > with mux and gate while another one with mux and div.
 > 
-> posix_cpu_timer_create()->get_task_struct() I guess...
+> You are right. What about the following? We don't have to have similar
+> copy of clk_composite_ops for each instances.
 > 
-> Cough. I am not sure I ever understood this code, but now it certainly
-> looks as if I never saw it before.
+> diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
+> index f30fb4b..8f88805 100644
+> --- a/drivers/clk/clk-composite.c
+> +++ b/drivers/clk/clk-composite.c
+> @@ -27,6 +27,9 @@ static u8 clk_composite_get_parent(struct clk_hw *hw)
+>         const struct clk_ops *mux_ops = composite->mux_ops;
+>         struct clk_hw *mux_hw = composite->mux_hw;
+> 
+> +       if (!mux_hw->clk)
+> +	       return -EINVAL;
+> +
 
-Looks on do_cpu_nanosleep() we call posix_cpu_timer_create(), but we do
-not call posix_cpu_timer_del() at the end. Fix will not be super simple,
-since we need to care about error cases. I can cook a patch if nobody
-else want to do this.
+Or maybe even:
 
-Stanislaw
+		if (!mux_ops)
+
+This would be more self-explanatory and save one dereference.
+
+Best regards,
+-- 
+Tomasz Figa
+Samsung Poland R&D Center
+SW Solution Development, Linux Platform
+
