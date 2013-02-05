@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3BEI20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 03:28:26 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46507 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab3BEI2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 03:28:22 -0500
+	id S1756422Ab3BEI2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 03:28:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36796 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751426Ab3BEI21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 03:28:27 -0500
+Date: Tue, 5 Feb 2013 08:28:22 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, minchan@kernel.org
+Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high
+ memory
+Message-ID: <20130205082822.GE21389@suse.de>
+References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
+ <20130204150657.6d05f76a.akpm@linux-foundation.org>
+ <CAH9JG2Usd4HJKrBXwX3aEc3i6068zU=F=RjcoQ8E8uxYGrwXgg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <2765418.Ft0GYkgNgL@vostro.rjw.lan>
-References: <1360017913-25667-1-git-send-email-nzimmer@sgi.com>
-	<2765418.Ft0GYkgNgL@vostro.rjw.lan>
-Date: Tue, 5 Feb 2013 13:58:20 +0530
-X-Google-Sender-Auth: tmI8P707eb6lPKixgqt4Fs_056Q
-Message-ID: <CAOh2x=n+ASeLpGHexxDvPGrN6ia+bLnNUNCb-covGDoABVk_wQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] cpufreq: cpufreq_driver_lock is hot on large systems
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>, linaro-dev@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAH9JG2Usd4HJKrBXwX3aEc3i6068zU=F=RjcoQ8E8uxYGrwXgg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 6:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, February 04, 2013 04:45:11 PM Nathan Zimmer wrote:
->> I am noticing the cpufreq_driver_lock is quite hot.
->> On an idle 512 system perf shows me most of the system time is spent on this
->> lock.  This is quite signifigant as top shows 5% of time in system time.
->> My solution was to first convert the lock to a rwlock and then to the rcu.
->>
->>
->> Nathan Zimmer (2):
->>   cpufreq: Convert the cpufreq_driver_lock to a rwlock
->>   cpufreq: Convert the cpufreq_driver_lock to use the rcu
->>
->>  drivers/cpufreq/cpufreq.c | 139 ++++++++++++++++++++++++++--------------------
->>  1 file changed, 79 insertions(+), 60 deletions(-)
->
-> I like these changes.
->
-> Viresh, anyone, any comments?
+On Tue, Feb 05, 2013 at 08:29:26AM +0900, Kyungmin Park wrote:
+> >
+> > (This information is needed so that others can make patch-scheduling
+> > decisions and should be included in all bugfix changelogs unless it is
+> > obvious).
+> 
+> CMA Highmem support is new feature. so don't need to go stable tree.
+> 
 
-Hi Nathan/Rafael,
+You could have given a lot more information to that question!
 
-Even i liked the basic idea behind the patchset, but didn't like the way it
-is divided into patches. For me, it is highly discouraged to undo something
-that you added in the same patchset. And you did exactly the same thing.
+How new a feature is it? Does this mean that this patch must go in before
+3.8 releases or is it a fix against a patch that is only in Andrew's tree?
+If the patch is only in Andrew's tree, which one is it and should this be
+folded in as a fix?
 
-Patch 2 is revert of 1 + rcu stuff.
+On a semi-related note; is there a plan for backporting highmem support for
+the LTSI kernel considering it's aimed at embedded and CMA was highlighted
+in their announcment for 3.4 support?
 
-So, i would expect a single patch, i.e. merge of both patches + rebased
-on latest stuff.
-
---
-viresh
+-- 
+Mel Gorman
+SUSE Labs
