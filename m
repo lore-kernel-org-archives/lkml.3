@@ -1,152 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab3BEOIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 09:08:49 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:37358 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754330Ab3BEOIs (ORCPT
+	id S1755456Ab3BEOOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 09:14:17 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:52202 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab3BEOOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 09:08:48 -0500
-Message-ID: <1360073199.3354.48.camel@thor.lan>
-Subject: Re: [PATCH 07/10] TTY: switch tty_schedule_flip
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org
-Date: Tue, 05 Feb 2013 09:06:39 -0500
-In-Reply-To: <5110EF95.4060402@suse.cz>
-References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
-	  <1357224789-2853-8-git-send-email-jslaby@suse.cz>
-	  <1359722247.3381.16.camel@thor.lan> <510BD9E9.9000400@suse.cz>
-	 <1359751171.22968.6.camel@thor.lan> <5110EF95.4060402@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Tue, 5 Feb 2013 09:14:15 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [v4 PATCH 00/12] atmel spi controller with dmaengine and device tree support
+To: Wenyou Yang <wenyou.yang@atmel.com>, linux-arm-kernel@lists.infradead.org
+Cc: richard.genoud@gmail.com, JM.Lin@atmel.com, nicolas.ferre@atmel.com,
+        linux-kernel@vger.kernel.org, wenyou.yang@atmel.com,
+        plagnioj@jcrosoft.com
+In-Reply-To: <1358148877-18679-1-git-send-email-wenyou.yang@atmel.com>
+References: <1358148877-18679-1-git-send-email-wenyou.yang@atmel.com>
+Date: Tue, 05 Feb 2013 14:14:10 +0000
+Message-Id: <20130205141410.712493E1265@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-05 at 12:40 +0100, Jiri Slaby wrote:
-> On 02/01/2013 09:39 PM, Peter Hurley wrote:
-> > On Fri, 2013-02-01 at 16:06 +0100, Jiri Slaby wrote:
-> >> On 02/01/2013 01:37 PM, Peter Hurley wrote:
-> >>> On Thu, 2013-01-03 at 15:53 +0100, Jiri Slaby wrote:
-> >>>> Now, we start converting tty buffer functions to actually use
-> >>>> tty_port. This will allow us to get rid of the need of tty in many
-> >>>> call sites. Only tty_port will needed and hence no more
-> >>>> tty_port_tty_get in those paths.
-> >>>>
-> >>>> This is the last one: tty_schedule_flip
-> >>>
-> >>> [snip]
-> >>>
-> >>>> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-> >>>> index 5aace4d..a9af1b9a 100644
-> >>>> --- a/drivers/tty/vt/keyboard.c
-> >>>> +++ b/drivers/tty/vt/keyboard.c
-> >>>> @@ -307,26 +307,17 @@ int kbd_rate(struct kbd_repeat *rep)
-> >>>>   */
-> >>>>  static void put_queue(struct vc_data *vc, int ch)
-> >>>>  {
-> >>>> -	struct tty_struct *tty = vc->port.tty;
-> >>>> -
-> >>>>  	tty_insert_flip_char(&vc->port, ch, 0);
-> >>>> -	if (tty) {
-> >>>> -		tty_schedule_flip(tty);
-> >>>> -	}
-> >>>> +	tty_schedule_flip(&vc->port);
-> >>>>  }
-> >>>>  
-> >>>>  static void puts_queue(struct vc_data *vc, char *cp)
-> >>>>  {
-> >>>> -	struct tty_struct *tty = vc->port.tty;
-> >>>> -
-> >>>> -	if (!tty)
-> >>>> -		return;
-> >>>> -
-> >>>>  	while (*cp) {
-> >>>>  		tty_insert_flip_char(&vc->port, *cp, 0);
-> >>>>  		cp++;
-> >>>>  	}
-> >>>> -	tty_schedule_flip(tty);
-> >>>> +	tty_schedule_flip(&vc->port);
-> >>>>  }
-> >>>
-> >>> Umm. So even though the vt driver knows the tty has been shutdown,
-> >>> keystrokes will still be buffered? And then fed to whichever tty happens
-> >>> to next get installed on the same port?
-> >>
-> >> Unless I completely missed something, they should be flushed. If that's
-> >> not the case, that's a bug. I will check next week.
-> > 
-> > Ok.
-> > 
-> > I'm fairly sure this is happening. Try repeatedly tapping arrow-down
-> > while booting (I suggest a VM) and you won't be able to login at tty1
-> > (ie, text mode). Repeatable 1 time in 5 or so.
+On Mon, 14 Jan 2013 15:34:25 +0800, Wenyou Yang <wenyou.yang@atmel.com> wrote:
+> Hi All, 
 > 
-> I can reproduce... with 3.0! Are you sure this is new and introduced by
-> the tty buffers switch?
-
-No, I'm not sure this is new.
-
-> > FWIW, I don't agree that the best way is to flush the flip buffers. Why
-> > buffer and then schedule the cpu to do work which we already know it
-> > can't do and which we're going to discard anyway?
+> This set of patches is to add dmaengine and device tree support for atmel spi.
+> The work is based on Nicolas and Richard's work.
+> It is tested on at91sam9x5ek, at91sam9m10g45ek, at91sam9263ek and at91sam9g20ek.
 > 
-> Because the drivers needn't care whether there is any tty behind and
-> listening. This simplifies and speeds up the paths _a lot_. No spin
-> locks, no ttys around, no two code paths etc.
+> It is based on v3.8-rc3.
 
-Let's defer this part of the discussion until after everything is
-running solid.
+Hi Wenyou,
 
-> > In any event, since -next is already carrying these patches, and
-> > by-design, these patches _expect_ the tty to be NULL, are you going to
-> > remove the warning in flush_to_ldisc() or shall I?
+The patches look fine on a quick look, but I cannot apply them without a
+Signed-off-by line from you since you are the person posting the
+patches. Please read section 12 of Documentation/SubmittingPatches
+(about line #288) and then reply confirming what your signed-off-by line
+should be.
+
 > 
-> I think I don't understand you here, could you elaborate?
+> Changelog:
+> v4:
+> 	1./ Take Joe Perches's advance, rewrite atmel_spi_is_v2(struct atmel_spi *as)
+> 	     and atmel_spi_use_dma(struct atmel_spi *as),
+> 	     and remove atmel_spi_use_pdc(struct atmel_spi *as).
+> 
+> 	2./ Rebase on v3.8-rc3.
+> 
+> V3:
+> 	1./ Rebase on v3.8-rc2.
+> 
+> 	2./ Remove some Jean-Christophe's patches which has been
+> 	    applied on v3.8-rc2.
+> 
+> 	3./ Remove spi property "cs-gpios" from the SoC dtsi files
+> 	    to the board dts files to avoid some useless pin conflicts.
+> 
+> v2: 
+>    	1./ Remove the patch :PATCH]mtd: m25p80: change the m25p80_read to reading page to page
+> 	    which purpose to fix the BUG: when run "flashcp /bin/busybox /dev/mtdX" in 
+> 	    the at91sam9g25ek with DMA mode, it arises a OOPS. 
+> 	    Now fix it in this patch:
+> 	    [PATHC] spi/atmel_spi: add dmaengine support changing to fix the [BUG].
+> 
+> 	2./ Remove two patches:
+>    	    which purpose to read dts property to select SPI IP version and DMA mode
+> 	    Now they will be gat from device tree different compatile.
+> 
+> 	3./ Fix DMA: when enable both spi0 AND spi1, the spi0 doesn't work BUG.
+> 
+> 	4./ Rebase v3.7-rc8.
+> 
+> Best Regards,
+> Wenyou Yang.
+> 
+> Nicolas Ferre (5):
+>   spi/atmel_spi: add physical base address
+>   spi/atmel_spi: call unmapping on transfers buffers
+>   spi/atmel_spi: status information passed through controller data
+>   spi/atmel_spi: add flag to controller data for lock operations
+>   spi/atmel_spi: add dmaengine support
+> 
+> Richard Genoud (6):
+>   spi/atmel_spi: fix spi-atmel driver to adapt to slave_config changes
+>   spi/atmel_spi: correct 16 bits transfers using PIO
+>   spi/atmel_spi: correct 16 bits transfer with DMA
+>   ARM: at91: add clocks for spi dt entries
+>   ARM: dts: add spi nodes for atmel SoC
+>   ARM: dts: add spi nodes for the atmel boards
+> 
+> Wenyou Yang (1):
+>   spi/atmel_spi: update the dt support
+> 
+>  arch/arm/boot/dts/at91sam9260.dtsi          |   18 +
+>  arch/arm/boot/dts/at91sam9263.dtsi          |   18 +
+>  arch/arm/boot/dts/at91sam9263ek.dts         |   14 +
+>  arch/arm/boot/dts/at91sam9g20ek_common.dtsi |   14 +
+>  arch/arm/boot/dts/at91sam9g45.dtsi          |   18 +
+>  arch/arm/boot/dts/at91sam9m10g45ek.dts      |   14 +
+>  arch/arm/boot/dts/at91sam9n12.dtsi          |   18 +
+>  arch/arm/boot/dts/at91sam9n12ek.dts         |   14 +
+>  arch/arm/boot/dts/at91sam9x5.dtsi           |   18 +
+>  arch/arm/boot/dts/at91sam9x5ek.dtsi         |   14 +
+>  arch/arm/mach-at91/at91sam9260.c            |    2 +
+>  arch/arm/mach-at91/at91sam9g45.c            |    2 +
+>  arch/arm/mach-at91/at91sam9n12.c            |    2 +
+>  arch/arm/mach-at91/at91sam9x5.c             |    2 +
+>  drivers/spi/spi-atmel.c                     |  809 ++++++++++++++++++++++++---
+>  15 files changed, 908 insertions(+), 69 deletions(-)
+> 
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-         - CPU 0 -          |          - CPU 1 -
-                            |
-release_tty()               |
-   .                        |
-   tty->ops->shutdown()     |
-      con_shutdown()        |
-      .                     |
-      vc->port.tty = NULL;  |
-      .                     |
-   tty->port->itty = NULL;  |
-   .                        | puts_queue()
-   .                        |    .
-   .                        |    tty_schedule_flip(&vc->port);
-   .                        |    .
-                            |
-                            | flush_to_ldisc() runs & WARNs
-
-If driver i/o paths don't need to worry about the lifetime of the tty,
-then why warn when they inevitably schedule work to a dead tty (as
-above)?
-
-Also, what ensures that flush_to_ldisc() has a valid tty when obtaining
-an ldisc ref?  IOW,
-
-        - CPU 0 -           |          - CPU 1 -
-                            |
-                            | flush_to_ldisc()
-                            |    tty = port->itty;
-                            | < scheduled away - IRQ servicing ...
-tty->port->itty = NULL;     |    .
-...                         |    .
-free_tty_struct(tty);       |    .
-                            | ... returns from IRQ service >
-                            | ldisc = tty_ldisc_ref(tty);
-
-Regards,
-Peter Hurley
-
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
