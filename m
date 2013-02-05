@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab3BENSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 08:18:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47013 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab3BENST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 08:18:19 -0500
-Date: Tue, 5 Feb 2013 14:17:17 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        brking@linux.vnet.ibm.com, josh.h.morris@us.ibm.com
-Subject: Re: [PATCHv2 1/1] block: IBM RamSan 70/80 device driver.
-Message-ID: <20130205131717.GS15092@kernel.dk>
-References: <20130201214139.GB6971@oc6784271780.ibm.com>
+	id S1754912Ab3BENUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 08:20:50 -0500
+Received: from 8bytes.org ([85.214.48.195]:35755 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751279Ab3BENUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 08:20:48 -0500
+Date: Tue, 5 Feb 2013 14:20:45 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Stuart Yoder <b08248@gmail.com>
+Cc: Sethi Varun-B16395 <B16395@freescale.com>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] iommu: Add domain window handling functions
+Message-ID: <20130205132044.GB2532@8bytes.org>
+References: <1359983924-28952-1-git-send-email-joro@8bytes.org>
+ <1359983924-28952-5-git-send-email-joro@8bytes.org>
+ <CALRxmdCiSZgoqd8tp90kPCdA=s7SWZCTwKsFnWu7S5=U7+eRLQ@mail.gmail.com>
+ <20130204185650.GP25591@8bytes.org>
+ <CALRxmdD9Ock04AoUtF9FT_uY5C5Eb7cSPmtCM6WK=StNB_iYkQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130201214139.GB6971@oc6784271780.ibm.com>
+In-Reply-To: <CALRxmdD9Ock04AoUtF9FT_uY5C5Eb7cSPmtCM6WK=StNB_iYkQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Feb  5 14:20:47 2013
+X-DSPAM-Confidence: 0.9995
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5111072f22971943321305
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01 2013, Philip J. Kelleher wrote:
-> From: Joshua H Morris <josh.h.morris@us.ibm.com>
-> 	Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On Mon, Feb 04, 2013 at 05:31:51PM -0600, Stuart Yoder wrote:
+> On Mon, Feb 4, 2013 at 12:56 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> > On Mon, Feb 04, 2013 at 12:10:51PM -0600, Stuart Yoder wrote:
+> >> On Mon, Feb 4, 2013 at 7:18 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> >> > +static inline int iommu_domain_window_enable(struct iommu_domain *domain,
+> >> > +                                            u32 wnd_nr, phys_addr_t paddr,
+> >> > +                                            size_t size)
+> >> > +{
+> >> > +       return -ENODEV;
+> >> > +}
+> >> > +
+> >> > +static inline void iommu_domain_window_disable(struct iommu_domain *domain,
+> >> > +                                              u32 wnd_nr)
+> >> > +{
+> >> > +}
+> >> > +
+> >> >  static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+> >> >                                              unsigned long iova)
+> >> >  {
+> >>
+> >> This API looks workable.   The one change we need is that the size argument in
+> >> the enable API needs to be 64 bits.   Our window sizes can exceed 4GB.
+> >
+> > Okay. So if your architecture supports sizes over 2^32 then size_t
+> > probably is already 64bits, right?
 > 
-> This patch includes the device driver for the IBM RamSan family
-> of PCI SSD flash storage cards. This driver will inlcude support for the
-> RamSan 70 and 80. The driver presents a block device for device I/O.
-> 
-> Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
-> -------------------------------------------------------------------------------
-> This update addresses all issues raised thus far. Changes include:
-> o Moved blk_queue_max_discard_sectors into the 'discard supported' if
->   statement.
-> o Changed email address to linux.vnet.ibm.com
+> No, on a 32-bit platform size_t would generally be 32-bits.  But the PAMU
+> is independent of that.   I think we should just make it a u64.
 
-Tentatively applied for 3.9.
+Okay, I will change that. Will push the updated branch once Sethi agrees
+on the interface changes.
 
--- 
-Jens Axboe
+
+	Joerg
+
 
