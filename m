@@ -1,104 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3BEDqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 22:46:21 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48961 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751151Ab3BEDqT (ORCPT
+	id S1756344Ab3BEDut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 22:50:49 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:24510 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab3BEDur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 22:46:19 -0500
-Message-ID: <1360035964.32217.9.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 105/128] efi: Make efi_enabled a function to query EFI
- facilities
-From: Ben Hutchings <ben@decadent.org.uk>
+	Mon, 4 Feb 2013 22:50:47 -0500
+Message-ID: <51108126.3050905@huawei.com>
+Date: Tue, 5 Feb 2013 11:48:54 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
 To: Matt Fleming <matt.fleming@intel.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, David Airlie <airlied@linux.ie>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dave Jiang <dave.jiang@intel.com>, Olof Johansson <olof@lixom.net>,
-        Peter Jones <pjones@redhat.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Steve Langasek <steve.langasek@canonical.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Tue, 05 Feb 2013 03:46:04 +0000
-In-Reply-To: <1359996265.7515.180.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <20130203144653.313760856@decadent.org.uk>
-	 <1359904557.1822.2.camel@deadeye.wl.decadent.org.uk>
-	 <1359996265.7515.180.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Bhpj3zX60jyK6cNdJG7C"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+CC: "Luck, Tony" <tony.luck@intel.com>, <fenghua.yu@intel.com>,
+        Liujiang <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-efi@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH] ia64/mm: fix a bad_page bug when crash kernel booting
+References: <51074786.5030007@huawei.com> <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013/2/5 0:32, Matt Fleming wrote:
 
---=-Bhpj3zX60jyK6cNdJG7C
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On Tue, 2013-01-29 at 11:52 +0800, Xishi Qiu wrote:
+>> On ia64 platform, I set "crashkernel=1024M-:600M", and dmesg shows 128M-728M
+>> memory is reserved for crash kernel. Then "echo c > /proc/sysrq-trigger" to
+>> test kdump.
+>>
+>> When crash kernel booting, efi_init() will aligns the memory address in
+>> IA64_GRANULE_SIZE(16M), so 720M-728M memory will be dropped, It means
+>> crash kernel only manage 128M-720M memory.
+>>
+>> But initrd start and end are fixed in boot loader, it is before efi_init(),
+>> so initrd size maybe overflow when free_initrd_mem().
+> 
+> [...]
+> 
+>> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+>> index b755ea9..cfdb1eb 100644
+>> --- a/arch/ia64/mm/init.c
+>> +++ b/arch/ia64/mm/init.c
+>> @@ -207,6 +207,17 @@ free_initrd_mem (unsigned long start, unsigned long end)
+>>  	start = PAGE_ALIGN(start);
+>>  	end = end & PAGE_MASK;
+>>
+>> +	/*
+>> +	 * Initrd size is fixed in boot loader, but kernel parameter max_addr
+>> +	 * which aligns in granules is fixed after boot loader, so initrd size
+>> +	 * maybe overflow.
+>> +	 */
+>> +	if (max_addr != ~0UL) {
+>> +		end = GRANULEROUNDDOWN(end);
+>> +		if (start > end)
+>> +			start = end;
+>> +	}
+>> +
+>>  	if (start < end)
+>>  		printk(KERN_INFO "Freeing initrd memory: %ldkB freed\n", (end - start) >> 10);
+> 
+> I don't think this is the correct fix.
+> 
+> Now, my ia64-fu is weak, but could it be that there's actually a bug in
+> efi_init() and that the following patch would be the best way to fix
+> this?
+> 
+> ---
+> 
+> diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
+> index f034563..8d579f1 100644
+> --- a/arch/ia64/kernel/efi.c
+> +++ b/arch/ia64/kernel/efi.c
+> @@ -482,7 +482,7 @@ efi_init (void)
+>  		if (memcmp(cp, "mem=", 4) == 0) {
+>  			mem_limit = memparse(cp + 4, &cp);
+>  		} else if (memcmp(cp, "max_addr=", 9) == 0) {
+> -			max_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
+> +			max_addr = GRANULEROUNDUP(memparse(cp + 9, &cp));
+>  		} else if (memcmp(cp, "min_addr=", 9) == 0) {
+>  			min_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
+>  		} else {
+> 
+> 
 
-On Mon, 2013-02-04 at 16:44 +0000, Matt Fleming wrote:
-> On Sun, 2013-02-03 at 16:15 +0100, Ben Hutchings wrote:
-> > As you can see this needed quite a lot of work to backport, and I
-> > haven't been able to test it yet.  So I would particularly appreciate
-> > careful review of this.
->=20
-> Everything looks fine to me but I haven't actually booted with these
-> changes.
+Hi Matt,
 
-Thanks.  I've now tested this on a 64-bit EFI system myself:
+Thanks for your awareness.
 
-x86_64 kernel build:
-- Boots successfully
-- x86_efi_facilities =3D 0x3f
-- efifb works
-- efivars can be loaded and creates /sys/firmware/efi/vars
+I have a question. If we set "crashkernel=1024M-:600M", the log shows 128M-728M memory
+is reserved for crash kernel. So if "max_addr = GRANULEROUNDUP()", when crash kernel boot,
+it uses 128M-736M memory, overflow! (suppose IA64_GRANULE_SIZE=16M).
 
-i386 kernel build:
-- Boots as far as an initramfs shell, but the machine doesn't have an
-i386 installation to continue with
-- x86_efi_facilities =3D 0x21
-- efifb works
-- efivars can be loaded but does nothing
+Thanks,
+Xishi Qiu
 
-All of which I think is correct.
+> 
+> .
+> 
 
-Ben.
 
---=20
-Ben Hutchings
-Everything should be made as simple as possible, but not simpler.
-                                                           - Albert Einstei=
-n
 
---=-Bhpj3zX60jyK6cNdJG7C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAURCAfOe/yOyVhhEJAQqo1xAAi1LyVScMTjypjN9IkqJsq7eJbuV6l7Pb
-Odv3Xoy2SqJsh3bHEfAI+Zcf+CHGEXC5BK6thdAXgZ6lq7QdVRNHgQKHaidke8PZ
-hgAqb9y/pa5UCA3GLzqqwLgVhZ2lQ5mPM+Ilvn94eqzy44iebb+jI6Jwvyovw5xd
-e2OIsi/VlQe5cBKQIZ63m8Z5A0M3OgRi4041mhxVQtgNeHBBbiry1W8t7aGIQnn1
-kPnMCVIEaymsyfVSXSQusRb8QIcX7ZwPbb6rQFVWlQ5mZTokkVaoxb6SSVT0BTgf
-jENeXjL6OWWtDDOq8lcDcB//D0xVMtnIWgV/7JzS5y2F9jVSxv/5Gt/7rDQaIw98
-cyg9isvvg5OvLap+zc7f8qcg1xegll35HfcGYdFpacCt8+impLnRwL8U4swApJRe
-rOAWhIGN1qOGyTj5DG7k5ccW77sIbNVciB5RqcMxhIhl0JoGP4kBhg7tZBji/SUz
-StYE3M5Bp4dALzV3v9iOlXcA7ntdqJEJsIBRo9nytcvHk4YUYoHMnTeOLepgiPJy
-t3lcvN+dBW3GYKmjoEIBm9j1bnn6JxN+D3gUx09jC6109fu73UDmBXhweoOH87Yl
-uM60lE5Q/Mizzu1Yt65Z5fd3ivAgAHCQt56iWscaxgwiS5Kl7tXXz3TOvuY8z97h
-cDXZyfz7xRk=
-=3rpP
------END PGP SIGNATURE-----
-
---=-Bhpj3zX60jyK6cNdJG7C--
