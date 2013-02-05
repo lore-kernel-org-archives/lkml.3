@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab3BEJX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:23:28 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:40638 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab3BEJXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:23:17 -0500
-X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
-   d="scan'208";a="6691732"
-From: Lin Feng <linfeng@cn.fujitsu.com>
-To: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk
-Cc: khlebnikov@openvz.org, walken@google.com, kamezawa.hiroyu@jp.fujitsu.com,
-        minchan@kernel.org, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
-        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lin Feng <linfeng@cn.fujitsu.com>
-Subject: [PATCH V2 0/2] mm: hotplug: implement non-movable version of get_user_pages() to kill long-time pin pages
-Date: Tue, 5 Feb 2013 17:21:51 +0800
-Message-Id: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/05 17:21:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/05 17:21:59,
-	Serialize complete at 2013/02/05 17:21:59
+	id S1751480Ab3BEJYY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:24:24 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50756 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844Ab3BEJXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:23:25 -0500
+Date: Tue, 5 Feb 2013 11:23:12 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
+        <balbi@ti.com>, <stern@rowland.harvard.edu>,
+        <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 06/30] usb: phy: nop: use new PHY API to register PHY
+Message-ID: <20130205092312.GO32118@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+ <1359372631-8180-7-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hOh8F6DNH/RZBSFD"
+Content-Disposition: inline
+In-Reply-To: <1359372631-8180-7-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently get_user_pages() always tries to allocate pages from movable zone,
-as discussed in thread https://lkml.org/lkml/2012/11/29/69, in some case users
-of get_user_pages() is easy to pin user pages for a long time(for now we found
-that pages pinned as aio ring pages is such case), which is fatal for memory
-hotplug/remove framework.
+--hOh8F6DNH/RZBSFD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So the 1st patch introduces a new library function called
-get_user_pages_non_movable() to pin pages only from zone non-movable in memory.
-It's a wrapper of get_user_pages() but it makes sure that all pages come from
-non-movable zone via additional page migration.
+On Mon, Jan 28, 2013 at 01:30:07PM +0200, Roger Quadros wrote:
+> We would need to support multiple PHYs of the same type
+> so use the new PHY API usb_add_phy_dev() to register the PHY.
+>=20
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-The 2nd patch gets around the aio ring pages can't be migrated bug caused by
-get_user_pages() via using the new function. It only works when configed with
-CONFIG_MEMORY_HOTREMOVE, otherwise it falls back to use the old version of
-get_user_pages().
+Acked-by: Felipe Balbi <balbi@ti.com>
 
----
-ChangeLog v1->v2:
- Patch1:
- - Fix the negative return value bug pointed out by Andrew and other
-   suggestions pointed out by Andrew and Jeff.
+> ---
+>  drivers/usb/otg/nop-usb-xceiv.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xc=
+eiv.c
+> index 3060ed0..ac027a1 100644
+> --- a/drivers/usb/otg/nop-usb-xceiv.c
+> +++ b/drivers/usb/otg/nop-usb-xceiv.c
+> @@ -197,12 +197,13 @@ static int nop_usb_xceiv_probe(struct platform_devi=
+ce *pdev)
+>  	nop->phy.init		=3D nop_init;
+>  	nop->phy.shutdown	=3D nop_shutdown;
+>  	nop->phy.state		=3D OTG_STATE_UNDEFINED;
+> +	nop->phy.type		=3D type;
+> =20
+>  	nop->phy.otg->phy		=3D &nop->phy;
+>  	nop->phy.otg->set_host		=3D nop_set_host;
+>  	nop->phy.otg->set_peripheral	=3D nop_set_peripheral;
+> =20
+> -	err =3D usb_add_phy(&nop->phy, type);
+> +	err =3D usb_add_phy_dev(&nop->phy);
+>  	if (err) {
+>  		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
+>  			err);
+> --=20
+> 1.7.4.1
+>=20
 
- Patch2:
- - Kill the CONFIG_MEMORY_HOTREMOVE dependence suggested by Jeff.
----
-Lin Feng (2):
-  mm: hotplug: implement non-movable version of get_user_pages() called
-    get_user_pages_non_movable()
-  fs/aio.c: use get_user_pages_non_movable() to pin ring pages when
-    support memory hotremove
+--=20
+balbi
 
- fs/aio.c               |    4 +-
- include/linux/mm.h     |    3 ++
- include/linux/mmzone.h |    4 ++
- mm/memory.c            |   83 ++++++++++++++++++++++++++++++++++++++++++++++++
- mm/page_isolation.c    |    5 +++
- 5 files changed, 97 insertions(+), 2 deletions(-)
+--hOh8F6DNH/RZBSFD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJREM+AAAoJEIaOsuA1yqREAfgP/1L/Z3dw6zrKsJSZATLmM4gb
+mvAiRvK4mGDunHLCMReBHHFgyElgZV+DMDHaG5x+GTkFngGXTdRtWzjSZhpi9fAa
+YnPUFPj/GJNhWNS20mlXvkOUUXXbK6NeckcGGByo0S6iF5hhNUZBQKjU+0UTh6yY
+E0ywzPH4XwS1R5ciAVNGcM7epUxcXMWNJ+Pr3WSd2XYXP5nMxJtW1vb0ZTlwHMuP
+2+RHqsNL5uw4NflzSNXNNoPPcyIMXl9e/2BVl6oNXZqEBWM0XhzFfz6Hu3Pb3fcT
+tFg2g2E2/8VSQ4mYNGyJoHD1QUjMChpoBf9iaLLKJttPpxV2VJOZWnRSHi93442W
+Rtck7c10Zxpgb3c74LiWds5DIrzq4e4oztkN+n7HmTFcmxbmGPeO6gyah8BxAh1k
+4nr6Ksu3T4G0ETyVNsc13eyYYS8wOCZhNvmdc9gONBSQ6bTuRw+Omwt75TAtqJQF
+DcRfMz0rBN3lmoBivP1CBA/sGod3F40Bn6kMrS80KwVB10ai1Htc0LeLtlv3hwJ5
+lB8uiiiUvMtLRUCCxgX75GHdBadhGkAt1P5NRewc4KBhCGKzOWT5Mn9tEHTsLWqb
+WPPhBZVHdj7tRRHt7Hul04Xre6Gdbbvka1gsjPKiLPFkOGdryHFA65g0OKKJBan/
+YcaiF0eVp2n21oWttuom
+=QUy7
+-----END PGP SIGNATURE-----
+
+--hOh8F6DNH/RZBSFD--
