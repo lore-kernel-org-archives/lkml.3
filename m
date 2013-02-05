@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab3BEIMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 03:12:38 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:50474 "EHLO a.mx.secunet.com"
+	id S1755539Ab3BEIN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 03:13:27 -0500
+Received: from ra.se.axis.com ([195.60.68.13]:52001 "EHLO ra.se.axis.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753969Ab3BEIMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 03:12:35 -0500
-Date: Tue, 5 Feb 2013 09:12:32 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Romain KUNTZ <r.kuntz@ipflavors.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        herbert@gondor.hengli.com.au,
-        Emmanuel THIERRY <emmanuel.thierry@telecom-bretagne.eu>,
+	id S1753822Ab3BEINZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 03:13:25 -0500
+X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Feb 2013 03:13:25 EST
+Date: Tue, 5 Feb 2013 09:05:18 +0100
+From: Ricard Wanderlof <ricard.wanderlof@axis.com>
+X-X-Sender: ricardw@lnxricardw.se.axis.com
+To: Huang Shijie <b32955@freescale.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jamal Hadi Salim <hadi@cyberus.ca>
-Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
-Message-ID: <20130205081232.GF23291@secunet.com>
-References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com>
+        "dedekind1@gmail.com" <dedekind1@gmail.com>
+Subject: Re: [PATCH 2/2] mtd: torturetest: add the support for random data
+ pattern
+In-Reply-To: <1360030820-21491-2-git-send-email-b32955@freescale.com>
+Message-ID: <alpine.DEB.2.00.1302050900010.3736@lnxricardw.se.axis.com>
+References: <1360030820-21491-1-git-send-email-b32955@freescale.com> <1360030820-21491-2-git-send-email-b32955@freescale.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 05 Feb 2013 08:12:32.0662 (UTC) FILETIME=[8C639B60:01CE0378]
+Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc Jamal, he introduced the xfrm_mark framework and knows it
-probably the best.
 
-On Sat, Feb 02, 2013 at 06:27:03PM +0100, Romain KUNTZ wrote:
-> The current algorithm to insert XFRM policies with a mark and a mask
-> allows the insertion of more generic policies, but fails when trying
-> to install more specific policies.
-> 
+On Tue, 5 Feb 2013, Huang Shijie wrote:
 
-Hm, I think we will not match always the right policy if we allow both
-orders. Lets take your example and assume we have a flow with mark 1.
-The policy lookup is a linear search, so we use the first matching
-policy. xfrm_policy_match() does the following check on the mark:
+> Add a new module parameter 'pattern'. If it is set to zero, we will use 
+> the 55/AA pattern to torture the nand blocks; if it is set to a non-zero 
+> value, we will use the random data pattern.
 
-if (... || (fl->flowi_mark & pol->mark.m) != pol->mark.v || ...)
-	return -ESRCH
+Not a big issue in any way, but if you're using a numeric parameter value 
+anyway, could not one use a range of the permissable values to set a seed 
+for the random generation, so that the test can be repeated with the same 
+set of random numbers?
 
-> For example, executing the below commands in that order succeed:
->  ip -6 xfrm policy flush
->  ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
->  ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
+Something like
 
-The policy with mark 1 is the first we find. The policy passes the
-mark check and if the flow matches the selectors, we use this policy.
+0 => 55/AA
+-1 => random
+1 and up => random, specifying seed for random number generator.
 
-> 
-> But it fails in the reverse order:
->  ip -6 xfrm policy flush
->  ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out
->  ip -6 xfrm policy add src fd00::1/128 dst fd00::2/128 dir out mark 1 mask 0xffffffff
->  RTNETLINK answers: File exists
+> +MODULE_PARM_DESC(pattern, "0 for 55/AA pattern(default), else for
+> +				the random pattern");
 
-With this scenario, we would find the policy with mark and mask 0 first.
-This policy passes the mark check too. So we would use this policy if the
-flow matches the selectors, but the flow asked for a policy with mark 1.
+I'd suggest something like "0 for 55/AA pattern (default), non-zero for 
+random pattern".
+
+(Or "-1 for 55/AA pattern (default), else random; >=1 sets seed" if 
+changed according to the above).
+
+/Ricard
+-- 
+Ricard Wolf Wanderlöf                           ricardw(at)axis.com
+Axis Communications AB, Lund, Sweden            www.axis.com
+Phone +46 46 272 2016                           Fax +46 46 13 61 30
