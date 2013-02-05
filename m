@@ -1,197 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab3BEEoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 23:44:21 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:55124 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242Ab3BEEoT (ORCPT
+	id S1756542Ab3BEEpL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 23:45:11 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54511 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab3BEEpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 23:44:19 -0500
-Date: Mon, 4 Feb 2013 23:44:16 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Rob Herring <rob.herring@calxeda.com>
-cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v5 3/3] ARM: mm: use static_vm for managing static mapped
- areas
-In-Reply-To: <1360024314-1895-4-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.LFD.2.02.1302042308220.6300@xanadu.home>
-References: <1360024314-1895-1-git-send-email-iamjoonsoo.kim@lge.com> <1360024314-1895-4-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 4 Feb 2013 23:45:09 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51108E25.6070300@jp.fujitsu.com>
+Date: Tue, 5 Feb 2013 13:44:21 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: liguang <lig.fnst@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <x86@kernel.org>, <rientjes@google.com>
+Subject: Re: [PATCH v2 1/4] acpi: move x86/mm/srat.c to x86/kernel/acpi/srat.c
+References: <1360031838-26898-1-git-send-email-lig.fnst@cn.fujitsu.com> <1360031838-26898-2-git-send-email-lig.fnst@cn.fujitsu.com>
+In-Reply-To: <1360031838-26898-2-git-send-email-lig.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013, Joonsoo Kim wrote:
+Hi Liguang,
 
-> A static mapped area is ARM-specific, so it is better not to use
-> generic vmalloc data structure, that is, vmlist and vmlist_lock
-> for managing static mapped area. And it causes some needless overhead and
-> reducing this overhead is better idea.
+2013/02/05 11:37, liguang wrote:
+> srat table should present only on acpi domain,
+> seems mm/ is not the right place for it.
 > 
-> Now, we have newly introduced static_vm infrastructure.
-> With it, we don't need to iterate all mapped areas. Instead, we just
-> iterate static mapped areas. It helps to reduce an overhead of finding
-> matched area. And architecture dependency on vmalloc layer is removed,
-> so it will help to maintainability for vmalloc layer.
+> Reviewed-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> ---
+>
+>   arch/x86/kernel/acpi/srat.c |  197 +++++++++++++++++++++++++++++++++++++++++++
+>   arch/x86/mm/srat.c          |  197 -------------------------------------------
+>   2 files changed, 197 insertions(+), 197 deletions(-)
+>   create mode 100644 arch/x86/kernel/acpi/srat.c
+>   delete mode 100644 arch/x86/mm/srat.c
+
+Changes of Makefile disappeared.
+
+Thanks,
+Yasuaki Ishimatsu
+
 > 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-Some comments below.
-
-> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-> index 904c15e..c7fef4b 100644
-> --- a/arch/arm/mm/ioremap.c
-> +++ b/arch/arm/mm/ioremap.c
-> @@ -261,13 +261,14 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
->  	const struct mem_type *type;
->  	int err;
->  	unsigned long addr;
-> - 	struct vm_struct * area;
-> +	struct vm_struct *area;
-> +	phys_addr_t paddr = __pfn_to_phys(pfn);
->  
->  #ifndef CONFIG_ARM_LPAE
->  	/*
->  	 * High mappings must be supersection aligned
->  	 */
-> -	if (pfn >= 0x100000 && (__pfn_to_phys(pfn) & ~SUPERSECTION_MASK))
-> +	if (pfn >= 0x100000 && (paddr & ~SUPERSECTION_MASK))
->  		return NULL;
->  #endif
->  
-> @@ -283,24 +284,16 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
->  	/*
->  	 * Try to reuse one of the static mapping whenever possible.
->  	 */
-> -	read_lock(&vmlist_lock);
-> -	for (area = vmlist; area; area = area->next) {
-> -		if (!size || (sizeof(phys_addr_t) == 4 && pfn >= 0x100000))
-> -			break;
-> -		if (!(area->flags & VM_ARM_STATIC_MAPPING))
-> -			continue;
-> -		if ((area->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
-> -			continue;
-> -		if (__phys_to_pfn(area->phys_addr) > pfn ||
-> -		    __pfn_to_phys(pfn) + size-1 > area->phys_addr + area->size-1)
-> -			continue;
-> -		/* we can drop the lock here as we know *area is static */
-> -		read_unlock(&vmlist_lock);
-> -		addr = (unsigned long)area->addr;
-> -		addr += __pfn_to_phys(pfn) - area->phys_addr;
-> -		return (void __iomem *) (offset + addr);
-> +	if (size && !((sizeof(phys_addr_t) == 4 && pfn >= 0x100000))) {
-                     ^                                             ^
-You have a needless extra set of parents here.
-
-[...]
-
-> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> index ce328c7..b2c0356 100644
-> --- a/arch/arm/mm/mmu.c
-> +++ b/arch/arm/mm/mmu.c
-> @@ -757,21 +757,24 @@ void __init iotable_init(struct map_desc *io_desc, int nr)
->  {
->  	struct map_desc *md;
->  	struct vm_struct *vm;
-> +	struct static_vm *svm;
->  
->  	if (!nr)
->  		return;
->  
-> -	vm = early_alloc_aligned(sizeof(*vm) * nr, __alignof__(*vm));
-> +	svm = early_alloc_aligned(sizeof(*svm) * nr, __alignof__(*svm));
->  
->  	for (md = io_desc; nr; md++, nr--) {
->  		create_mapping(md);
+> diff --git a/arch/x86/kernel/acpi/srat.c b/arch/x86/kernel/acpi/srat.c
+> new file mode 100644
+> index 0000000..4ddf497
+> --- /dev/null
+> +++ b/arch/x86/kernel/acpi/srat.c
+> @@ -0,0 +1,197 @@
+> +/*
+> + * ACPI 3.0 based NUMA setup
+> + * Copyright 2004 Andi Kleen, SuSE Labs.
+> + *
+> + * Reads the ACPI SRAT table to figure out what memory belongs to which CPUs.
+> + *
+> + * Called from acpi_numa_init while reading the SRAT and SLIT tables.
+> + * Assumes all memory regions belonging to a single proximity domain
+> + * are in one chunk. Holes between them will be included in the node.
+> + */
 > +
-> +		vm = &svm->vm;
->  		vm->addr = (void *)(md->virtual & PAGE_MASK);
->  		vm->size = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
->  		vm->phys_addr = __pfn_to_phys(md->pfn);
->  		vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
->  		vm->flags |= VM_ARM_MTYPE(md->type);
->  		vm->caller = iotable_init;
-> -		vm_area_add_early(vm++);
-> +		add_static_vm_early(svm++);
->  	}
->  }
->  
-> @@ -779,13 +782,16 @@ void __init vm_reserve_area_early(unsigned long addr, unsigned long size,
->  				  void *caller)
->  {
->  	struct vm_struct *vm;
-> +	struct static_vm *svm;
+> +#include <linux/kernel.h>
+> +#include <linux/acpi.h>
+> +#include <linux/mmzone.h>
+> +#include <linux/bitmap.h>
+> +#include <linux/module.h>
+> +#include <linux/topology.h>
+> +#include <linux/bootmem.h>
+> +#include <linux/memblock.h>
+> +#include <linux/mm.h>
+> +#include <asm/proto.h>
+> +#include <asm/numa.h>
+> +#include <asm/e820.h>
+> +#include <asm/apic.h>
+> +#include <asm/uv/uv.h>
 > +
-> +	svm = early_alloc_aligned(sizeof(*svm), __alignof__(*svm));
->  
-> -	vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
-> +	vm = &svm->vm;
->  	vm->addr = (void *)addr;
->  	vm->size = size;
->  	vm->flags = VM_IOREMAP | VM_ARM_EMPTY_MAPPING;
->  	vm->caller = caller;
-> -	vm_area_add_early(vm);
-> +	add_static_vm_early(svm);
->  }
->  
->  #ifndef CONFIG_ARM_LPAE
-> @@ -810,14 +816,13 @@ static void __init pmd_empty_section_gap(unsigned long addr)
->  
->  static void __init fill_pmd_gaps(void)
->  {
-> +	struct static_vm *svm;
->  	struct vm_struct *vm;
->  	unsigned long addr, next = 0;
->  	pmd_t *pmd;
->  
-> -	/* we're still single threaded hence no lock needed here */
-> -	for (vm = vmlist; vm; vm = vm->next) {
-> -		if (!(vm->flags & (VM_ARM_STATIC_MAPPING | VM_ARM_EMPTY_MAPPING)))
-> -			continue;
-> +	list_for_each_entry(svm, &static_vmlist, list) {
-> +		vm = &svm->vm;
->  		addr = (unsigned long)vm->addr;
->  		if (addr < next)
->  			continue;
-> @@ -859,17 +864,12 @@ static void __init pci_reserve_io(void)
->  {
->  	struct vm_struct *vm;
->  	unsigned long addr;
-> +	struct static_vm *svm;
->  
-> -	/* we're still single threaded hence no lock needed here */
-> -	for (vm = vmlist; vm; vm = vm->next) {
-> -		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
-> -			continue;
-> -		addr = (unsigned long)vm->addr;
-> -		addr &= ~(SZ_2M - 1);
-> -		if (addr == PCI_IO_VIRT_BASE)
-> -			return;
-> +	svm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE);
-> +	if (svm)
+> +int acpi_numa __initdata;
+> +
+> +static __init int setup_node(int pxm)
+> +{
+> +	return acpi_map_pxm_to_node(pxm);
+> +}
+> +
+> +static __init void bad_srat(void)
+> +{
+> +	printk(KERN_ERR "SRAT: SRAT not used.\n");
+> +	acpi_numa = -1;
+> +}
+> +
+> +static __init inline int srat_disabled(void)
+> +{
+> +	return acpi_numa < 0;
+> +}
+> +
+> +/* Callback for SLIT parsing */
+> +void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
+> +{
+> +	int i, j;
+> +
+> +	for (i = 0; i < slit->locality_count; i++)
+> +		for (j = 0; j < slit->locality_count; j++)
+> +			numa_set_distance(pxm_to_node(i), pxm_to_node(j),
+> +				slit->entry[slit->locality_count * i + j]);
+> +}
+> +
+> +/* Callback for Proximity Domain -> x2APIC mapping */
+> +void __init
+> +acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+> +{
+> +	int pxm, node;
+> +	int apic_id;
+> +
+> +	if (srat_disabled())
 > +		return;
-> 
+> +	if (pa->header.length < sizeof(struct acpi_srat_x2apic_cpu_affinity)) {
+> +		bad_srat();
+> +		return;
+> +	}
+> +	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
+> +		return;
+> +	pxm = pa->proximity_domain;
+> +	apic_id = pa->apic_id;
+> +	if (!apic->apic_id_valid(apic_id)) {
+> +		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
+> +			 pxm, apic_id);
+> +		return;
+> +	}
+> +	node = setup_node(pxm);
+> +	if (node < 0) {
+> +		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+> +		bad_srat();
+> +		return;
+> +	}
+> +
+> +	if (apic_id >= MAX_LOCAL_APIC) {
+> +		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+> +		return;
+> +	}
+> +	set_apicid_to_node(apic_id, node);
+> +	node_set(node, numa_nodes_parsed);
+> +	acpi_numa = 1;
+> +	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
+> +	       pxm, apic_id, node);
+> +}
+> +
+> +/* Callback for Proximity Domain -> LAPIC mapping */
+> +void __init
+> +acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+> +{
+> +	int pxm, node;
+> +	int apic_id;
+> +
+> +	if (srat_disabled())
+> +		return;
+> +	if (pa->header.length != sizeof(struct acpi_srat_cpu_affinity)) {
+> +		bad_srat();
+> +		return;
+> +	}
+> +	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
+> +		return;
+> +	pxm = pa->proximity_domain_lo;
+> +	if (acpi_srat_revision >= 2)
+> +		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
+> +	node = setup_node(pxm);
+> +	if (node < 0) {
+> +		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+> +		bad_srat();
+> +		return;
+> +	}
+> +
+> +	if (get_uv_system_type() >= UV_X2APIC)
+> +		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
+> +	else
+> +		apic_id = pa->apic_id;
+> +
+> +	if (apic_id >= MAX_LOCAL_APIC) {
+> +		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+> +		return;
+> +	}
+> +
+> +	set_apicid_to_node(apic_id, node);
+> +	node_set(node, numa_nodes_parsed);
+> +	acpi_numa = 1;
+> +	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
+> +	       pxm, apic_id, node);
+> +}
+> +
+> +#ifdef CONFIG_MEMORY_HOTPLUG
+> +static inline int save_add_info(void) {return 1;}
+> +#else
+> +static inline int save_add_info(void) {return 0;}
+> +#endif
+> +
+> +/* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+> +int __init
+> +acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+> +{
+> +	u64 start, end;
+> +	int node, pxm;
+> +
+> +	if (srat_disabled())
+> +		return -1;
+> +	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity)) {
+> +		bad_srat();
+> +		return -1;
+> +	}
+> +	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+> +		return -1;
+> +
+> +	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
+> +		return -1;
+> +	start = ma->base_address;
+> +	end = start + ma->length;
+> +	pxm = ma->proximity_domain;
+> +	if (acpi_srat_revision <= 1)
+> +		pxm &= 0xff;
+> +	node = setup_node(pxm);
+> +	if (node < 0) {
+> +		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
+> +		bad_srat();
+> +		return -1;
+> +	}
+> +
+> +	if (numa_add_memblk(node, start, end) < 0) {
+> +		bad_srat();
+> +		return -1;
+> +	}
+> +
+> +	node_set(node, numa_nodes_parsed);
+> +
+> +	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
+> +	       node, pxm,
+> +	       (unsigned long long) start, (unsigned long long) end - 1);
+> +	return 0;
+> +}
+> +
+> +void __init acpi_numa_arch_fixup(void) {}
+> +
+> +int __init x86_acpi_numa_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = acpi_numa_init();
+> +	if (ret < 0)
+> +		return ret;
+> +	return srat_disabled() ? -EINVAL : 0;
+> +}
+> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+> deleted file mode 100644
+> index 4ddf497..0000000
+> --- a/arch/x86/mm/srat.c
+> +++ /dev/null
+> @@ -1,197 +0,0 @@
+> -/*
+> - * ACPI 3.0 based NUMA setup
+> - * Copyright 2004 Andi Kleen, SuSE Labs.
+> - *
+> - * Reads the ACPI SRAT table to figure out what memory belongs to which CPUs.
+> - *
+> - * Called from acpi_numa_init while reading the SRAT and SLIT tables.
+> - * Assumes all memory regions belonging to a single proximity domain
+> - * are in one chunk. Holes between them will be included in the node.
+> - */
+> -
+> -#include <linux/kernel.h>
+> -#include <linux/acpi.h>
+> -#include <linux/mmzone.h>
+> -#include <linux/bitmap.h>
+> -#include <linux/module.h>
+> -#include <linux/topology.h>
+> -#include <linux/bootmem.h>
+> -#include <linux/memblock.h>
+> -#include <linux/mm.h>
+> -#include <asm/proto.h>
+> -#include <asm/numa.h>
+> -#include <asm/e820.h>
+> -#include <asm/apic.h>
+> -#include <asm/uv/uv.h>
+> -
+> -int acpi_numa __initdata;
+> -
+> -static __init int setup_node(int pxm)
+> -{
+> -	return acpi_map_pxm_to_node(pxm);
+> -}
+> -
+> -static __init void bad_srat(void)
+> -{
+> -	printk(KERN_ERR "SRAT: SRAT not used.\n");
+> -	acpi_numa = -1;
+> -}
+> -
+> -static __init inline int srat_disabled(void)
+> -{
+> -	return acpi_numa < 0;
+> -}
+> -
+> -/* Callback for SLIT parsing */
+> -void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
+> -{
+> -	int i, j;
+> -
+> -	for (i = 0; i < slit->locality_count; i++)
+> -		for (j = 0; j < slit->locality_count; j++)
+> -			numa_set_distance(pxm_to_node(i), pxm_to_node(j),
+> -				slit->entry[slit->locality_count * i + j]);
+> -}
+> -
+> -/* Callback for Proximity Domain -> x2APIC mapping */
+> -void __init
+> -acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+> -{
+> -	int pxm, node;
+> -	int apic_id;
+> -
+> -	if (srat_disabled())
+> -		return;
+> -	if (pa->header.length < sizeof(struct acpi_srat_x2apic_cpu_affinity)) {
+> -		bad_srat();
+> -		return;
 > -	}
->  
->  	vm_reserve_area_early(PCI_IO_VIRT_BASE, SZ_2M, pci_reserve_io);
->  }
+> -	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
+> -		return;
+> -	pxm = pa->proximity_domain;
+> -	apic_id = pa->apic_id;
+> -	if (!apic->apic_id_valid(apic_id)) {
+> -		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
+> -			 pxm, apic_id);
+> -		return;
+> -	}
+> -	node = setup_node(pxm);
+> -	if (node < 0) {
+> -		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+> -		bad_srat();
+> -		return;
+> -	}
+> -
+> -	if (apic_id >= MAX_LOCAL_APIC) {
+> -		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+> -		return;
+> -	}
+> -	set_apicid_to_node(apic_id, node);
+> -	node_set(node, numa_nodes_parsed);
+> -	acpi_numa = 1;
+> -	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
+> -	       pxm, apic_id, node);
+> -}
+> -
+> -/* Callback for Proximity Domain -> LAPIC mapping */
+> -void __init
+> -acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+> -{
+> -	int pxm, node;
+> -	int apic_id;
+> -
+> -	if (srat_disabled())
+> -		return;
+> -	if (pa->header.length != sizeof(struct acpi_srat_cpu_affinity)) {
+> -		bad_srat();
+> -		return;
+> -	}
+> -	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
+> -		return;
+> -	pxm = pa->proximity_domain_lo;
+> -	if (acpi_srat_revision >= 2)
+> -		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
+> -	node = setup_node(pxm);
+> -	if (node < 0) {
+> -		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+> -		bad_srat();
+> -		return;
+> -	}
+> -
+> -	if (get_uv_system_type() >= UV_X2APIC)
+> -		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
+> -	else
+> -		apic_id = pa->apic_id;
+> -
+> -	if (apic_id >= MAX_LOCAL_APIC) {
+> -		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+> -		return;
+> -	}
+> -
+> -	set_apicid_to_node(apic_id, node);
+> -	node_set(node, numa_nodes_parsed);
+> -	acpi_numa = 1;
+> -	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
+> -	       pxm, apic_id, node);
+> -}
+> -
+> -#ifdef CONFIG_MEMORY_HOTPLUG
+> -static inline int save_add_info(void) {return 1;}
+> -#else
+> -static inline int save_add_info(void) {return 0;}
+> -#endif
+> -
+> -/* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+> -int __init
+> -acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+> -{
+> -	u64 start, end;
+> -	int node, pxm;
+> -
+> -	if (srat_disabled())
+> -		return -1;
+> -	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity)) {
+> -		bad_srat();
+> -		return -1;
+> -	}
+> -	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+> -		return -1;
+> -
+> -	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
+> -		return -1;
+> -	start = ma->base_address;
+> -	end = start + ma->length;
+> -	pxm = ma->proximity_domain;
+> -	if (acpi_srat_revision <= 1)
+> -		pxm &= 0xff;
+> -	node = setup_node(pxm);
+> -	if (node < 0) {
+> -		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
+> -		bad_srat();
+> -		return -1;
+> -	}
+> -
+> -	if (numa_add_memblk(node, start, end) < 0) {
+> -		bad_srat();
+> -		return -1;
+> -	}
+> -
+> -	node_set(node, numa_nodes_parsed);
+> -
+> -	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
+> -	       node, pxm,
+> -	       (unsigned long long) start, (unsigned long long) end - 1);
+> -	return 0;
+> -}
+> -
+> -void __init acpi_numa_arch_fixup(void) {}
+> -
+> -int __init x86_acpi_numa_init(void)
+> -{
+> -	int ret;
+> -
+> -	ret = acpi_numa_init();
+> -	if (ret < 0)
+> -		return ret;
+> -	return srat_disabled() ? -EINVAL : 0;
+> -}
+> 
 
-The replacement code is not equivalent.  I can't recall why the original 
-is as it is, but it doesn't look right to me.  The 2MB round down 
-certainly looks suspicious.
 
-The replacement code should be better.  However I'd like you to get an 
-ACK from Rob Herring as well for this patch.
-
-Once that is sorted out, you can add
-
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-
-
-Nicolas
