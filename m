@@ -1,80 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab3BEKxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:53:39 -0500
-Received: from [216.32.180.186] ([216.32.180.186]:40926 "EHLO
-	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751378Ab3BEKxh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 05:53:37 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Stuart Yoder <b08248@gmail.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: RE: [PATCH 5/5] iommu: Add DOMAIN_ATTR_WINDOWS domain attribute
-Thread-Topic: [PATCH 5/5] iommu: Add DOMAIN_ATTR_WINDOWS domain attribute
-Thread-Index: AQHOAto2wzGTacmHgEKF4kls7teXNphq9JTwgAAgjICAAACt0A==
-Date: Tue, 5 Feb 2013 10:52:03 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D3752B1@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1359983924-28952-1-git-send-email-joro@8bytes.org>
- <1359983924-28952-6-git-send-email-joro@8bytes.org>
- <C5ECD7A89D1DC44195F34B25E172658D373D2B@039-SN2MPN1-013.039d.mgd.msft.net>
- <20130205104155.GR25591@8bytes.org>
-In-Reply-To: <20130205104155.GR25591@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.132.45]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1755070Ab3BEKyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:54:03 -0500
+Received: from mga14.intel.com ([143.182.124.37]:3483 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754544Ab3BEKwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 05:52:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,602,1355126400"; 
+   d="scan'208";a="252768343"
+From: Durgadoss R <durgadoss.r@intel.com>
+To: rui.zhang@intel.com, linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, eduardo.valentin@ti.com,
+        hongbo.zhang@linaro.org, wni@nvidia.com,
+        Durgadoss R <durgadoss.r@intel.com>
+Subject: [PATCH 2/8] Thermal: Create zone level APIs
+Date: Tue,  5 Feb 2013 16:16:17 +0530
+Message-Id: <1360061183-14137-3-git-send-email-durgadoss.r@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
+References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DOMAIN_ATTR_PAMU_ENABLE is required to enable a particular DMA window. My point is about the domain geometry, which is incomplete in case of PAMU without the number of subwindows. Geometry parameters are used for initializing the PAMU window settings. Individual subwindows can only be enabled, once the PAMU window has been initialized using the geometry settings.
+This patch adds a new thermal_zone structure to
+thermal.h. Also, adds zone level APIs to the thermal
+framework.
 
-Regards
-Varun
+A thermal zone is a hot spot on the platform, which
+can have one or more sensors and cooling devices attached
+to it. These sensors can be mapped to a set of cooling
+devices, which when throttled, can help to bring down
+the temperature of the hot spot.
 
+Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+---
+ drivers/thermal/thermal_sys.c |  196 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/thermal.h       |   22 +++++
+ 2 files changed, 218 insertions(+)
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Tuesday, February 05, 2013 4:12 PM
-> To: Sethi Varun-B16395
-> Cc: Stuart Yoder; iommu@lists.linux-foundation.org; linux-
-> kernel@vger.kernel.org; Wood Scott-B07421
-> Subject: Re: [PATCH 5/5] iommu: Add DOMAIN_ATTR_WINDOWS domain attribute
-> 
-> Hi,
-> 
-> On Tue, Feb 05, 2013 at 09:14:40AM +0000, Sethi Varun-B16395 wrote:
-> > In case of PAMU, geometry would be meaningless without specifying the
-> > number of subwindows. If the API user specifies a geometry but fails
-> > to specify the number of required subwindows, we would assume a
-> > default (max supported) value, which may be incorrect. It's going to
-> > be really ugly. I think we should add the number of sub windows to the
-> > domain geometry. This parameter would be used in case of a window
-> > based iommu. So, a separate set_window API wouldn't be required.
-> 
-> I think this can all be implemented with the interface proposed here
-> together with a PAMU-specific DOMAIN_ATTR_PAMU_ENABLE attribute. Stuart
-> outlined in his RFC mail how this can be done. I don't consider this
-> ugly, it is rather a clean tradeoff between putting functionality into
-> the generic part of the IOMMU-API and putting it into the PAMU specific
-> part.
-> 
-> Regards,
-> 
-> 	Joerg
-> 
-> 
-
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index cb94497..838d4fb 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -43,19 +43,46 @@ MODULE_DESCRIPTION("Generic thermal management sysfs support");
+ MODULE_LICENSE("GPL");
+ 
+ static DEFINE_IDR(thermal_tz_idr);
++static DEFINE_IDR(thermal_zone_idr);
+ static DEFINE_IDR(thermal_cdev_idr);
+ static DEFINE_IDR(thermal_sensor_idr);
+ static DEFINE_MUTEX(thermal_idr_lock);
+ 
+ static LIST_HEAD(thermal_tz_list);
+ static LIST_HEAD(thermal_sensor_list);
++static LIST_HEAD(thermal_zone_list);
+ static LIST_HEAD(thermal_cdev_list);
+ static LIST_HEAD(thermal_governor_list);
+ 
+ static DEFINE_MUTEX(thermal_list_lock);
+ static DEFINE_MUTEX(sensor_list_lock);
++static DEFINE_MUTEX(zone_list_lock);
+ static DEFINE_MUTEX(thermal_governor_lock);
+ 
++#define for_each_thermal_sensor(pos) \
++	list_for_each_entry(pos, &thermal_sensor_list, node)
++
++#define for_each_thermal_zone(pos) \
++	list_for_each_entry(pos, &thermal_zone_list, node)
++
++#define GET_INDEX(tz, ptr, type)			\
++({							\
++	int i, ret = -EINVAL;				\
++	do {						\
++		if (!tz || !ptr)			\
++			break;				\
++		mutex_lock(&type##_list_lock);		\
++		for (i = 0; i < tz->type##_indx; i++) {	\
++			if (tz->type##s[i] == ptr) {	\
++				ret = i;		\
++				break;			\
++			}				\
++		}					\
++		mutex_unlock(&type##_list_lock);	\
++	} while (0);					\
++	ret;						\
++})
++
+ static struct thermal_governor *__find_governor(const char *name)
+ {
+ 	struct thermal_governor *pos;
+@@ -421,15 +448,44 @@ static void thermal_zone_device_check(struct work_struct *work)
+ 	thermal_zone_device_update(tz);
+ }
+ 
++static void remove_sensor_from_zone(struct thermal_zone *tz,
++				struct thermal_sensor *ts)
++{
++	int j, indx;
++
++	indx = GET_INDEX(tz, ts, sensor);
++	if (indx < 0)
++		return;
++
++	sysfs_remove_link(&tz->device.kobj, kobject_name(&ts->device.kobj));
++
++	/* Shift the entries in the tz->sensors array */
++	for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++)
++		tz->sensors[j] = tz->sensors[j + 1];
++
++	tz->sensor_indx--;
++}
++
+ /* sys I/F for thermal zone */
+ 
+ #define to_thermal_zone(_dev) \
+ 	container_of(_dev, struct thermal_zone_device, device)
+ 
++#define to_zone(_dev) \
++	container_of(_dev, struct thermal_zone, device)
++
+ #define to_thermal_sensor(_dev) \
+ 	container_of(_dev, struct thermal_sensor, device)
+ 
+ static ssize_t
++zone_name_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct thermal_zone *tz = to_zone(dev);
++
++	return sprintf(buf, "%s\n", tz->name);
++}
++
++static ssize_t
+ sensor_name_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+ 	struct thermal_sensor *ts = to_thermal_sensor(dev);
+@@ -811,6 +867,8 @@ static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
+ static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
+ static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
+ 
++static DEVICE_ATTR(zone_name, 0444, zone_name_show, NULL);
++
+ /* sys I/F for cooling device */
+ #define to_cooling_device(_dev)	\
+ 	container_of(_dev, struct thermal_cooling_device, device)
+@@ -1656,6 +1714,136 @@ static int enable_sensor_thresholds(struct thermal_sensor *ts, int count)
+ 	return 0;
+ }
+ 
++struct thermal_zone *create_thermal_zone(const char *name, void *devdata)
++{
++	struct thermal_zone *tz;
++	int ret;
++
++	if (!name || (name && strlen(name) >= THERMAL_NAME_LENGTH))
++		return ERR_PTR(-EINVAL);
++
++	tz = kzalloc(sizeof(*tz), GFP_KERNEL);
++	if (!tz)
++		return ERR_PTR(-ENOMEM);
++
++	idr_init(&tz->idr);
++	ret = get_idr(&thermal_zone_idr, &thermal_idr_lock, &tz->id);
++	if (ret)
++		goto exit_free;
++
++	strcpy(tz->name, name);
++	tz->devdata = devdata;
++	tz->device.class = &thermal_class;
++
++	dev_set_name(&tz->device, "zone%d", tz->id);
++	ret = device_register(&tz->device);
++	if (ret)
++		goto exit_idr;
++
++	ret = device_create_file(&tz->device, &dev_attr_zone_name);
++	if (ret)
++		goto exit_unregister;
++
++	/* Add this zone to the global list of thermal zones */
++	mutex_lock(&zone_list_lock);
++	list_add_tail(&tz->node, &thermal_zone_list);
++	mutex_unlock(&zone_list_lock);
++	return tz;
++
++exit_unregister:
++	device_unregister(&tz->device);
++exit_idr:
++	release_idr(&thermal_zone_idr, &thermal_idr_lock, tz->id);
++exit_free:
++	kfree(tz);
++	return ERR_PTR(ret);
++}
++EXPORT_SYMBOL(create_thermal_zone);
++
++void remove_thermal_zone(struct thermal_zone *tz)
++{
++	struct thermal_zone *pos, *next;
++	bool found = false;
++
++	if (!tz)
++		return;
++
++	mutex_lock(&zone_list_lock);
++
++	list_for_each_entry_safe(pos, next, &thermal_zone_list, node) {
++		if (pos == tz) {
++			list_del(&tz->node);
++			found = true;
++			break;
++		}
++	}
++
++	if (!found)
++		goto exit;
++
++	device_remove_file(&tz->device, &dev_attr_zone_name);
++
++	release_idr(&thermal_zone_idr, &thermal_idr_lock, tz->id);
++	idr_destroy(&tz->idr);
++
++	device_unregister(&tz->device);
++	kfree(tz);
++exit:
++	mutex_unlock(&zone_list_lock);
++	return;
++}
++EXPORT_SYMBOL(remove_thermal_zone);
++
++struct thermal_sensor *get_sensor_by_name(const char *name)
++{
++	struct thermal_sensor *pos;
++	struct thermal_sensor *ts = NULL;
++
++	mutex_lock(&sensor_list_lock);
++	for_each_thermal_sensor(pos) {
++		if (!strnicmp(pos->name, name, THERMAL_NAME_LENGTH)) {
++			ts = pos;
++			break;
++		}
++	}
++	mutex_unlock(&sensor_list_lock);
++	return ts;
++}
++EXPORT_SYMBOL(get_sensor_by_name);
++
++int add_sensor_to_zone(struct thermal_zone *tz, struct thermal_sensor *ts)
++{
++	int ret;
++
++	if (!tz || !ts)
++		return -EINVAL;
++
++	mutex_lock(&zone_list_lock);
++
++	/* Ensure we are not adding the same sensor again!! */
++	ret = GET_INDEX(tz, ts, sensor);
++	if (ret >= 0) {
++		ret = -EEXIST;
++		goto exit_zone;
++	}
++
++	mutex_lock(&sensor_list_lock);
++
++	ret = sysfs_create_link(&tz->device.kobj, &ts->device.kobj,
++				kobject_name(&ts->device.kobj));
++	if (ret)
++		goto exit_sensor;
++
++	tz->sensors[tz->sensor_indx++] = ts;
++
++exit_sensor:
++	mutex_unlock(&sensor_list_lock);
++exit_zone:
++	mutex_unlock(&zone_list_lock);
++	return ret;
++}
++EXPORT_SYMBOL(add_sensor_to_zone);
++
+ /**
+  * thermal_sensor_register - register a new thermal sensor
+  * @name:	name of the thermal sensor
+@@ -1732,6 +1920,7 @@ EXPORT_SYMBOL(thermal_sensor_register);
+ void thermal_sensor_unregister(struct thermal_sensor *ts)
+ {
+ 	int i;
++	struct thermal_zone *tz;
+ 	struct thermal_sensor *pos, *next;
+ 	bool found = false;
+ 
+@@ -1751,6 +1940,13 @@ void thermal_sensor_unregister(struct thermal_sensor *ts)
+ 	if (!found)
+ 		return;
+ 
++	mutex_lock(&zone_list_lock);
++
++	for_each_thermal_zone(tz)
++		remove_sensor_from_zone(tz, ts);
++
++	mutex_unlock(&zone_list_lock);
++
+ 	for (i = 0; i < ts->thresholds; i++) {
+ 		device_remove_file(&ts->device, &ts->thresh_attrs[i].attr);
+ 		if (ts->ops->get_hyst) {
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 5470dae..2194519 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -55,6 +55,8 @@
+ #define DEFAULT_THERMAL_GOVERNOR       "user_space"
+ #endif
+ 
++#define MAX_SENSORS_PER_ZONE		5
++
+ struct thermal_sensor;
+ struct thermal_zone_device;
+ struct thermal_cooling_device;
+@@ -202,6 +204,21 @@ struct thermal_zone_device {
+ 	struct delayed_work poll_queue;
+ };
+ 
++struct thermal_zone {
++	char name[THERMAL_NAME_LENGTH];
++	int id;
++	void *devdata;
++	struct thermal_zone *ops;
++	struct thermal_governor *governor;
++	struct idr idr;
++	struct device device;
++	struct list_head node;
++
++	/* Sensor level information */
++	int sensor_indx; /* index into 'sensors' array */
++	struct thermal_sensor *sensors[MAX_SENSORS_PER_ZONE];
++};
++
+ /* Structure that holds thermal governor information */
+ struct thermal_governor {
+ 	char name[THERMAL_NAME_LENGTH];
+@@ -274,6 +291,11 @@ struct thermal_sensor *thermal_sensor_register(const char *, int,
+ 				struct thermal_sensor_ops *, void *);
+ void thermal_sensor_unregister(struct thermal_sensor *);
+ 
++struct thermal_zone *create_thermal_zone(const char *, void *);
++void remove_thermal_zone(struct thermal_zone *);
++int add_sensor_to_zone(struct thermal_zone *, struct thermal_sensor *);
++struct thermal_sensor *get_sensor_by_name(const char *);
++
+ #ifdef CONFIG_NET
+ extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
+ 						enum events event);
+-- 
+1.7.9.5
 
