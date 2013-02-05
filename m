@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758123Ab3BEWOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:14:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42102 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758101Ab3BEWNe (ORCPT
+	id S1758083Ab3BEWN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:13:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48291 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758058Ab3BEWNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:13:34 -0500
-Date: Tue, 5 Feb 2013 14:13:32 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>, Linux MM <linux-mm@kvack.org>,
-        mgorman@suse.de, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        m.szyprowski@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] mm: rename confusing function names
-Message-Id: <20130205141332.04fcceac.akpm@linux-foundation.org>
-In-Reply-To: <20130205192640.GC6481@cmpxchg.org>
-References: <51113CE3.5090000@gmail.com>
-	<20130205192640.GC6481@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Feb 2013 17:13:23 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dave Chinner <dchinner@redhat.com>, Ben Myers <bpm@sgi.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 91/93] xfs: fix periodic log flushing
+Date: Tue,  5 Feb 2013 20:07:20 -0200
+Message-Id: <1360102042-10732-92-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013 14:26:40 -0500
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+3.5.7.5 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Wed, Feb 06, 2013 at 01:09:55AM +0800, Zhang Yanfei wrote:
-> > Function nr_free_zone_pages, nr_free_buffer_pages and nr_free_pagecache_pages
-> > are horribly badly named, they count present_pages - pages_high within zones
-> > instead of free pages, so why not rename them to reasonable names, not cofusing
-> > people.
-> > 
-> > patch2 and patch3 are based on patch1. So please apply patch1 first.
-> > 
-> > Zhang Yanfei (3):
-> >   mm: rename nr_free_zone_pages to nr_free_zone_high_pages
-> >   mm: rename nr_free_buffer_pages to nr_free_buffer_high_pages
-> >   mm: rename nr_free_pagecache_pages to nr_free_pagecache_high_pages
-> 
-> I don't feel that this is an improvement.
-> 
-> As you said, the "free" is already misleading, because those pages
-> might all be allocated.  "High" makes me think not just of highmem,
-> but drug abuse in general.
-> 
-> nr_available_*_pages?  I don't know, but if we go through with all
-> that churn, it had better improve something.
+------------------
 
-Yes, those names are ghastly.
+From: Dave Chinner <dchinner@redhat.com>
 
-Here's an idea: accurately document the functions with code comments. 
-Once this is done, that documentation may well suggest a good name ;)
+[ Please take this patch for -stable in kernels 3.5-3.7. It doesn't have
+  an equivalent upstream commit because the code was removed before the
+  bug was discovered. See f661f1e0bf50 and 7e18530bef6a ]
 
+There is a logic inversion in xfssyncd_worker() which means that the
+log is not periodically forced or idled correctly. This means that
+metadata changes aggregated in memory do not get flushed in a timely
+manner, and hence if filesystem is not cleanly unmounted those
+changes can be lost. This loss can manifest itself even hours after
+the changes were made if the filesystem is left to idle without a
+sync() occurring between the last modification and the
+crash/shutdown occuring.
 
-While we're there, please note that nr_free_buffer_pages() has a *lot*
-of callers.  Generally it's code which is trying to work out what is an
-appropriate size for preallocated caching space, lookup tables, etc. 
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
+[ herton: adjust context ]
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ fs/xfs/xfs_sync.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-That's a rather hopeless objective, given memory hotplug, mlock, etc. 
-But please do take a look at *why* these callers are calling
-nr_free_buffer_pages() and let's ensure that both the implementation
-and name are appropriate to their requirements.
-
-
+diff --git a/fs/xfs/xfs_sync.c b/fs/xfs/xfs_sync.c
+index 1e9ee06..f3b3b3e 100644
+--- a/fs/xfs/xfs_sync.c
++++ b/fs/xfs/xfs_sync.c
+@@ -391,7 +391,7 @@ xfs_sync_worker(
+ 	 * cancel_delayed_work_sync on this work queue before tearing down
+ 	 * the ail and the log in xfs_log_unmount.
+ 	 */
+-	if (!(mp->m_super->s_flags & MS_ACTIVE) &&
++	if ((mp->m_super->s_flags & MS_ACTIVE) &&
+ 	    !(mp->m_flags & XFS_MOUNT_RDONLY)) {
+ 		/* dgc: errors ignored here */
+ 		if (mp->m_super->s_frozen == SB_UNFROZEN &&
+-- 
+1.7.9.5
 
