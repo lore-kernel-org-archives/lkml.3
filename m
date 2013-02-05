@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab3BEUnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 15:43:35 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:46710 "EHLO
+	id S1756801Ab3BEUnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 15:43:43 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:52339 "EHLO
 	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756639Ab3BEUna (ORCPT
+	with ESMTP id S1756363Ab3BEUng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 15:43:30 -0500
+	Tue, 5 Feb 2013 15:43:36 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
@@ -15,9 +15,9 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 22/23] tty: Bracket ldisc release with TTY_DEBUG_HANGUP messages
-Date: Tue,  5 Feb 2013 15:20:37 -0500
-Message-Id: <1360095638-6624-23-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v3 18/23] tty: Remove stale comment re: tty_ldisc_flush_works()
+Date: Tue,  5 Feb 2013 15:20:33 -0500
+Message-Id: <1360095638-6624-19-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
 References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
@@ -29,47 +29,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expected typical log output:
-[    2.437211] tty_open: opening pts1...
-[    2.443376] tty_open: opening pts5...
-[    2.447830] tty_release: ptm0 (tty count=1)...
-[    2.447849] pts0 vhangup...
-[    2.447865] tty_release: ptm0: final close
-[    2.447876] tty_release: ptm0: freeing structure...
-[    2.451634] tty_release: tty1 (tty count=1)...
-[    2.451638] tty_release: tty1: final close
-[    2.451654] tty_release: tty1: freeing structure...
-[    2.452505] tty_release: pts5 (tty count=2)...
-[    2.453029] tty_open: opening pts0...
+Waiting for a pending hangup to complete is not a necessary
+post-operation of using tty_ldisc_halt() and not sufficient to
+guarantee a hangup is not in-progress. As far as the ldisc layer
+is concerned, waiting for a pending hangup is necessary only
+prior to changing the ldisc while handling the TIOCSETD ioctl (and
+only because the tty lock must be released as a precondition
+of halting the ldisc).
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_io.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/tty/tty_ldisc.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 25494fd..f96bf54 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1793,7 +1793,7 @@ int tty_release(struct inode *inode, struct file *filp)
- 		return 0;
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 9599b05..f3cbfb3 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -538,10 +538,6 @@ static int tty_ldisc_wait_idle(struct tty_struct *tty, long timeout)
+  *
+  *	Callers other than tty_ldisc_release() must hold ->ldisc_mutex and
+  *	cannot be holding tty_lock() (aka legacy_mutex).
+- *
+- *	You need to do a 'flush_scheduled_work()' (outside the ldisc_mutex)
+- *	in order to make sure any currently executing ldisc work is also
+- *	flushed.
+  */
  
- #ifdef TTY_DEBUG_HANGUP
--	printk(KERN_DEBUG "%s: freeing tty structure...\n", __func__);
-+	printk(KERN_DEBUG "%s: %s: final close\n", __func__, tty_name(tty, buf));
- #endif
- 	/*
- 	 * Ask the line discipline code to release its structures
-@@ -1805,6 +1805,9 @@ int tty_release(struct inode *inode, struct file *filp)
- 	if (o_tty)
- 		tty_flush_works(o_tty);
- 
-+#ifdef TTY_DEBUG_HANGUP
-+	printk(KERN_DEBUG "%s: %s: freeing structure...\n", __func__, tty_name(tty, buf));
-+#endif
- 	/*
- 	 * The release_tty function takes care of the details of clearing
- 	 * the slots and preserving the termios structure. The tty_unlock_pair
+ static int tty_ldisc_halt(struct tty_struct *tty, struct tty_struct *o_tty,
 -- 
 1.8.1.2
 
