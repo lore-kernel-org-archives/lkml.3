@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab3BERKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:10:09 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:50769 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754925Ab3BERKG (ORCPT
+	id S1756054Ab3BERL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:11:56 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:42585 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984Ab3BERLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:10:06 -0500
-Message-ID: <51113CE3.5090000@gmail.com>
-Date: Wed, 06 Feb 2013 01:09:55 +0800
+	Tue, 5 Feb 2013 12:11:54 -0500
+Message-ID: <51113D4F.6050307@gmail.com>
+Date: Wed, 06 Feb 2013 01:11:43 +0800
 From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
 To: akpm@linux-foundation.org, Linux MM <linux-mm@kvack.org>, mgorman@suse.de,
         minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
         m.szyprowski@samsung.com
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] mm: rename confusing function names
+CC: linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+Subject: [PATCH 1/3] mm: rename nr_free_zone_pages to nr_free_zone_high_pages
+References: <51113CE3.5090000@gmail.com>
+In-Reply-To: <51113CE3.5090000@gmail.com>
 Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function nr_free_zone_pages, nr_free_buffer_pages and nr_free_pagecache_pages
-are horribly badly named, they count present_pages - pages_high within zones
-instead of free pages, so why not rename them to reasonable names, not cofusing
-people.
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-patch2 and patch3 are based on patch1. So please apply patch1 first.
+This function actually counts present_pages - pages_high, so rename
+it to a reasonable name.
 
-Zhang Yanfei (3):
-  mm: rename nr_free_zone_pages to nr_free_zone_high_pages
-  mm: rename nr_free_buffer_pages to nr_free_buffer_high_pages
-  mm: rename nr_free_pagecache_pages to nr_free_pagecache_high_pages
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ mm/page_alloc.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
- arch/ia64/mm/contig.c          |    3 ++-
- arch/ia64/mm/discontig.c       |    3 ++-
- drivers/mmc/card/mmc_test.c    |    4 ++--
- fs/buffer.c                    |    2 +-
- fs/nfsd/nfs4state.c            |    2 +-
- fs/nfsd/nfssvc.c               |    2 +-
- include/linux/swap.h           |    4 ++--
- mm/huge_memory.c               |    2 +-
- mm/memory_hotplug.c            |    4 ++--
- mm/page-writeback.c            |    2 +-
- mm/page_alloc.c                |   22 ++++++++++++----------
- net/9p/trans_virtio.c          |    2 +-
- net/ipv4/tcp.c                 |    4 ++--
- net/ipv4/udp.c                 |    2 +-
- net/netfilter/ipvs/ip_vs_ctl.c |    2 +-
- net/sctp/protocol.c            |    2 +-
- 16 files changed, 33 insertions(+), 29 deletions(-)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index df2022f..4aea19e 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2785,7 +2785,7 @@ void free_pages_exact(void *virt, size_t size)
+ }
+ EXPORT_SYMBOL(free_pages_exact);
+ 
+-static unsigned int nr_free_zone_pages(int offset)
++static unsigned int nr_free_zone_high_pages(int offset)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+@@ -2810,7 +2810,7 @@ static unsigned int nr_free_zone_pages(int offset)
+  */
+ unsigned int nr_free_buffer_pages(void)
+ {
+-	return nr_free_zone_pages(gfp_zone(GFP_USER));
++	return nr_free_zone_high_pages(gfp_zone(GFP_USER));
+ }
+ EXPORT_SYMBOL_GPL(nr_free_buffer_pages);
+ 
+@@ -2819,7 +2819,7 @@ EXPORT_SYMBOL_GPL(nr_free_buffer_pages);
+  */
+ unsigned int nr_free_pagecache_pages(void)
+ {
+-	return nr_free_zone_pages(gfp_zone(GFP_HIGHUSER_MOVABLE));
++	return nr_free_zone_high_pages(gfp_zone(GFP_HIGHUSER_MOVABLE));
+ }
+ 
+ static inline void show_node(struct zone *zone)
+-- 
+1.7.1
+
