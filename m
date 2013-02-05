@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab3BEWLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:11:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48093 "EHLO
+	id S1757679Ab3BEWLD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:11:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48083 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757694Ab3BEWLH (ORCPT
+	with ESMTP id S1757619Ab3BEWK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:11:07 -0500
+	Tue, 5 Feb 2013 17:10:59 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
+Cc: Jerome Glisse <jglisse@redhat.com>,
         Alex Deucher <alexander.deucher@amd.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 55/93] drm/radeon: fix error path in kpage allocation
-Date: Tue,  5 Feb 2013 20:06:44 -0200
-Message-Id: <1360102042-10732-56-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 53/93] drm/radeon: fix cursor corruption on DCE6 and newer
+Date: Tue,  5 Feb 2013 20:06:42 -0200
+Message-Id: <1360102042-10732-54-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,34 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 25d8999780f8c1f53928f4a24a09c01550423109 upstream.
+commit e521a29014794d139cca46396d1af8faf1295a26 upstream.
 
-Index into chunks[] array doesn't look right.
+Aruba and newer gpu does not need the avivo cursor work around,
+quite the opposite this work around lead to corruption.
 
-Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+agd5f: check DCE6 rather than ARUBA since the issue is DCE
+version specific rather than family specific.
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_cs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_cursor.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
-index 66d81ae..c71652b 100644
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -279,8 +279,8 @@ int radeon_cs_parser_init(struct radeon_cs_parser *p, void *data)
- 			p->chunks[p->chunk_ib_idx].kpage[1] = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 			if (p->chunks[p->chunk_ib_idx].kpage[0] == NULL ||
- 			    p->chunks[p->chunk_ib_idx].kpage[1] == NULL) {
--				kfree(p->chunks[i].kpage[0]);
--				kfree(p->chunks[i].kpage[1]);
-+				kfree(p->chunks[p->chunk_ib_idx].kpage[0]);
-+				kfree(p->chunks[p->chunk_ib_idx].kpage[1]);
- 				return -ENOMEM;
- 			}
- 		}
+diff --git a/drivers/gpu/drm/radeon/radeon_cursor.c b/drivers/gpu/drm/radeon/radeon_cursor.c
+index 711e95a..8fb6f41 100644
+--- a/drivers/gpu/drm/radeon/radeon_cursor.c
++++ b/drivers/gpu/drm/radeon/radeon_cursor.c
+@@ -238,7 +238,8 @@ int radeon_crtc_cursor_move(struct drm_crtc *crtc,
+ 		y = 0;
+ 	}
+ 
+-	if (ASIC_IS_AVIVO(rdev)) {
++	/* fixed on DCE6 and newer */
++	if (ASIC_IS_AVIVO(rdev) && !ASIC_IS_DCE6(rdev)) {
+ 		int i = 0;
+ 		struct drm_crtc *crtc_p;
+ 
 -- 
 1.7.9.5
 
