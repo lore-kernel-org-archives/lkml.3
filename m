@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686Ab3BEFff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 00:35:35 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47000 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab3BEFfb (ORCPT
+	id S1751495Ab3BEFgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 00:36:55 -0500
+Received: from relay.parallels.com ([195.214.232.42]:36387 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab3BEFgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 00:35:31 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <511099D5.1020209@jp.fujitsu.com>
-Date: Tue, 5 Feb 2013 14:34:13 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 5 Feb 2013 00:36:54 -0500
+Message-ID: <51109A64.8010904@parallels.com>
+Date: Tue, 5 Feb 2013 09:36:36 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: liguang <lig.fnst@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <x86@kernel.org>, <rientjes@google.com>
-Subject: Re: [PATCH v2 3/4] acpi: add clock_domain field to acpi_srat_cpu_affinity
-References: <1360031838-26898-1-git-send-email-lig.fnst@cn.fujitsu.com> <1360031838-26898-4-git-send-email-lig.fnst@cn.fujitsu.com>
-In-Reply-To: <1360031838-26898-4-git-send-email-lig.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+To: "J. Bruce Fields" <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>
+CC: <Trond.Myklebust@netapp.com>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH v2 0/6] SUNRPC: rework cache upcall to avoid NFSd root
+References: <20130204105728.11633.53621.stgit@localhost.localdomain> <20130204141719.GA815@fieldses.org>
+In-Reply-To: <20130204141719.GA815@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/02/05 11:37, liguang wrote:
-> according to ACPI SPEC v5.0, page 152,
-> 5.2.16.1 Processor Local APIC/SAPIC Affinity Structure,
-> the last member of it is clock_domain.
-> 
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> ---
+04.02.2013 18:17, J. Bruce Fields пишет:
+> On Mon, Feb 04, 2013 at 02:02:29PM +0300, Stanislav Kinsbursky wrote:
+>> swapping
+>>
+>> The main idea of this patch set is to call cache request not on kthread
+>> upcall, but on userspace daemon cache_read call. This fixes the problem with
+>> gaining of wrong dentry path after calling d_path() in kthread root context
+>> (svc_export_request() callback), which always work in init root context, but
+>> containers can work in "root jail" - i.e. have it's own nested root.
+>>
+>> v2:
+>> 1) NFS DNS cache update wasn't done in the firest version. So this patch set
+>> does preparation cleanup of the NFS DNS cache routines.
+>> 2) Also, this patch set doesn't remove cache_upcall helper anymore, because
+>> it's still required for NFS DNS cache.
+>
+> Argh--I really prefer incremental patches once I've already committed
+> something, but OK.
+>
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Sorry. I was thinking about incremental patches. Next time I'll do so.
 
-Thanks,
-Yasuaki Ishimatsu
+> Backing out the old patches, I'll take a look at these.  The first two
+> should probably get an ACK from Trond.
+>
 
->   include/acpi/actbl1.h |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
-> index 280fc45..98031a3 100644
-> --- a/include/acpi/actbl1.h
-> +++ b/include/acpi/actbl1.h
-> @@ -922,7 +922,7 @@ struct acpi_srat_cpu_affinity {
->   	u32 flags;
->   	u8 local_sapic_eid;
->   	u8 proximity_domain_hi[3];
-> -	u32 reserved;		/* Reserved, must be zero */
-> +	u32 clock_domain;
->   };
->   
->   /* Flags */
-> 
+Trond, could you review first two patches, please?
+They are just clean-ups, actually. Nothing special. Required to unify the interfaces for latter patches in the series.
 
-
+-- 
+Best regards,
+Stanislav Kinsbursky
