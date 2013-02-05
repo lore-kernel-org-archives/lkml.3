@@ -1,178 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab3BEVMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 16:12:51 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:33896 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809Ab3BEVMt (ORCPT
+	id S1756765Ab3BEVNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 16:13:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41748 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228Ab3BEVNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 16:12:49 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH] perf: make event_copy local to mmaps
-Date: Tue,  5 Feb 2013 14:12:42 -0700
-Message-Id: <1360098762-61827-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Tue, 5 Feb 2013 16:13:06 -0500
+Date: Tue, 5 Feb 2013 13:13:04 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: mgorman@suse.de, bcrl@kvack.org, viro@zeniv.linux.org.uk,
+        khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
+        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
+        linux-mm@kvack.org, linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tang chen <tangchen@cn.fujitsu.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH 1/2] mm: hotplug: implement non-movable version of
+ get_user_pages() called get_user_pages_non_movable()
+Message-Id: <20130205131304.82a5c4cb.akpm@linux-foundation.org>
+In-Reply-To: <511077E7.4040605@cn.fujitsu.com>
+References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
+	<1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com>
+	<20130204160624.5c20a8a0.akpm@linux-foundation.org>
+	<511077E7.4040605@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am getting segfaults *after* the time sorting of perf samples where
-the event type is off the charts:
+On Tue, 05 Feb 2013 11:09:27 +0800
+Lin Feng <linfeng@cn.fujitsu.com> wrote:
 
-(gdb) bt
-\#0  0x0807b1b2 in hists__inc_nr_events (hists=0x80a99c4, type=1163281902) at util/hist.c:1225
-\#1  0x08070795 in perf_session_deliver_event (session=0x80a9b90, event=0xf7a6aff8, sample=0xffffc318, tool=0xffffc520,
-    file_offset=0) at util/session.c:884
-\#2  0x0806f9b9 in flush_sample_queue (s=0x80a9b90, tool=0xffffc520) at util/session.c:555
-\#3  0x0806fc53 in process_finished_round (tool=0xffffc520, event=0x0, session=0x80a9b90) at util/session.c:645
+> > 
+> >>  struct kvec;
+> >>  int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
+> >>  			struct page **pages);
+> >> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> >> index 73b64a3..5db811e 100644
+> >> --- a/include/linux/mmzone.h
+> >> +++ b/include/linux/mmzone.h
+> >> @@ -838,6 +838,10 @@ static inline int is_normal_idx(enum zone_type idx)
+> >>  	return (idx == ZONE_NORMAL);
+> >>  }
+> >>  
+> >> +static inline int is_movable(struct zone *zone)
+> >> +{
+> >> +	return zone == zone->zone_pgdat->node_zones + ZONE_MOVABLE;
+> >> +}
+> > 
+> > A better name would be zone_is_movable().  We haven't been very
+> > consistent about this in mmzone.h, but zone_is_foo() is pretty common.
+> > 
+> Yes, zone_is_xxx() should be a better name, but there are some analogous
+> definition like is_dma32() and is_normal() etc, if we only use zone_is_movable()
+> for movable zone it will break such naming rules.
+> Should we update other ones in a separate patch later or just keep the old style?
 
-This is bizarre because the event has already been processed once --
-before it was added to the samples queue -- and the event was found to
-be sane at that time.
+I do think the old names were poorly chosen.  Yes, we could fix them up
+sometime but it's hardly a pressing issue.
 
-There seem to be 2 causes:
-1. perf_evlist__mmap_read updates the read location even though there
-are outstanding references to events sitting in the mmap buffers via the
-ordered samples queue.
+> > And a neater implementation would be
+> > 
+> > 	return zone_idx(zone) == ZONE_MOVABLE;
+> > 
+> OK. After your change, should we also update for other ones such as is_normal()..?
 
-2. There is a single evlist->event_copy for all evlist entries. event_copy
-is used to handle an event wrapping at the mmap buffer boundary.
+Sure.
 
-This patch addresses the second problem - making event_copy local to each
-perf_mmap. With this change my highly repeatable use case no longer fails.
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: include-linux-mmzoneh-cleanups-fix
 
-The first problem is much more complicated and will be the subject of a
-future patch.
+use zone_idx() some more, further simplify is_highmem()
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- tools/perf/perf.h        |   26 --------------------------
- tools/perf/util/evlist.c |    4 ++--
- tools/perf/util/evlist.h |   29 ++++++++++++++++++++++++++++-
- 3 files changed, 30 insertions(+), 29 deletions(-)
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 8f3bf38..c2206c8 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -103,32 +103,6 @@
- #include "util/types.h"
- #include <stdbool.h>
- 
--struct perf_mmap {
--	void			*base;
--	int			mask;
--	unsigned int		prev;
--};
+ include/linux/mmzone.h |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
+
+diff -puN include/linux/mmzone.h~include-linux-mmzoneh-cleanups-fix include/linux/mmzone.h
+--- a/include/linux/mmzone.h~include-linux-mmzoneh-cleanups-fix
++++ a/include/linux/mmzone.h
+@@ -859,25 +859,18 @@ static inline int is_normal_idx(enum zon
+  */
+ static inline int is_highmem(struct zone *zone)
+ {
+-#ifdef CONFIG_HIGHMEM
+-	enum zone_type idx = zone_idx(zone);
 -
--static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
--{
--	struct perf_event_mmap_page *pc = mm->base;
--	int head = pc->data_head;
--	rmb();
--	return head;
--}
--
--static inline void perf_mmap__write_tail(struct perf_mmap *md,
--					 unsigned long tail)
--{
--	struct perf_event_mmap_page *pc = md->base;
--
--	/*
--	 * ensure all reads are done before we write the tail out.
--	 */
--	/* mb(); */
--	pc->data_tail = tail;
--}
--
- /*
-  * prctl(PR_TASK_PERF_EVENTS_DISABLE) will (cheaply) disable all
-  * counters in the current task.
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index eddd5eb..8fe4e52 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -376,7 +376,7 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
- 		if ((old & md->mask) + size != ((old + size) & md->mask)) {
- 			unsigned int offset = old;
- 			unsigned int len = min(sizeof(*event), size), cpy;
--			void *dst = &evlist->event_copy;
-+			void *dst = &md->event_copy;
- 
- 			do {
- 				cpy = min(md->mask + 1 - (offset & md->mask), len);
-@@ -386,7 +386,7 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
- 				len -= cpy;
- 			} while (len);
- 
--			event = &evlist->event_copy;
-+			event = &md->event_copy;
- 		}
- 
- 		old += size;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 73579a2..2dd07bd 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -17,6 +17,13 @@ struct perf_record_opts;
- #define PERF_EVLIST__HLIST_BITS 8
- #define PERF_EVLIST__HLIST_SIZE (1 << PERF_EVLIST__HLIST_BITS)
- 
-+struct perf_mmap {
-+	void		 *base;
-+	int		 mask;
-+	unsigned int	 prev;
-+	union perf_event event_copy;
-+};
-+
- struct perf_evlist {
- 	struct list_head entries;
- 	struct hlist_head heads[PERF_EVLIST__HLIST_SIZE];
-@@ -30,7 +37,6 @@ struct perf_evlist {
- 		pid_t	pid;
- 	} workload;
- 	bool		 overwrite;
--	union perf_event event_copy;
- 	struct perf_mmap *mmap;
- 	struct pollfd	 *pollfd;
- 	struct thread_map *threads;
-@@ -136,4 +142,25 @@ static inline struct perf_evsel *perf_evlist__last(struct perf_evlist *evlist)
+-	return idx == ZONE_HIGHMEM ||
+-	       (idx == ZONE_MOVABLE && zone_movable_is_highmem());
+-#else
+-	return 0;
+-#endif
++	return is_highmem_idx(zone_idx(zone));
  }
  
- size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
-+
-+static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
-+{
-+	struct perf_event_mmap_page *pc = mm->base;
-+	int head = pc->data_head;
-+	rmb();
-+	return head;
-+}
-+
-+static inline void perf_mmap__write_tail(struct perf_mmap *md,
-+					 unsigned long tail)
-+{
-+	struct perf_event_mmap_page *pc = md->base;
-+
-+	/*
-+	 * ensure all reads are done before we write the tail out.
-+	 */
-+	/* mb(); */
-+	pc->data_tail = tail;
-+}
-+
- #endif /* __PERF_EVLIST_H */
--- 
-1.7.10.1
+ static inline int is_normal(struct zone *zone)
+ {
+-	return zone == zone->zone_pgdat->node_zones + ZONE_NORMAL;
++	return zone_idx(zone) == ZONE_NORMAL;
+ }
+ 
+ static inline int is_dma32(struct zone *zone)
+ {
+ #ifdef CONFIG_ZONE_DMA32
+-	return zone == zone->zone_pgdat->node_zones + ZONE_DMA32;
++	return zone_idx(zone) == ZONE_DMA32;
+ #else
+ 	return 0;
+ #endif
+@@ -886,7 +879,7 @@ static inline int is_dma32(struct zone *
+ static inline int is_dma(struct zone *zone)
+ {
+ #ifdef CONFIG_ZONE_DMA
+-	return zone == zone->zone_pgdat->node_zones + ZONE_DMA;
++	return zone_idx(zone) == ZONE_DMA;
+ #else
+ 	return 0;
+ #endif
+_
+
+> >> +	/* All pages are non movable, we are done :) */
+> >> +	if (i == ret && list_empty(&pagelist))
+> >> +		return ret;
+> >> +
+> >> +put_page:
+> >> +	/* Undo the effects of former get_user_pages(), we won't pin anything */
+> >> +	for (i = 0; i < ret; i++)
+> >> +		put_page(pages[i]);
+> >> +
+> >> +	if (migrate_pre_flag && !isolate_err) {
+> >> +		ret = migrate_pages(&pagelist, alloc_migrate_target, 1,
+> >> +					false, MIGRATE_SYNC, MR_SYSCALL);
+> >> +		/* Steal pages from non-movable zone successfully? */
+> >> +		if (!ret)
+> >> +			goto retry;
+> > 
+> > This is buggy.  migrate_pages() doesn't empty its `from' argument, so
+> > page_list must be reinitialised here (or, better, at the start of the loop).
+> migrate_pages()
+>   list_for_each_entry_safe()
+>      unmap_and_move()
+>        if (rc != -EAGAIN) {
+>          list_del(&page->lru);
+>        }
+
+ah, OK, there it is.
+
 
