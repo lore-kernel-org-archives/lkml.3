@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3BETte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 14:49:34 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:35997 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756753Ab3BETtY (ORCPT
+	id S1756847Ab3BETth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 14:49:37 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:44252 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756750Ab3BETtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 14:49:24 -0500
+	Tue, 5 Feb 2013 14:49:25 -0500
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, <arm@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 13/14] ARM: ux500: enable AB8500 GPIO for HREF
-Date: Tue, 5 Feb 2013 20:48:34 +0100
-Message-ID: <1360093715-6348-14-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 04/14] mfd: ab8500: allow AB9540 based devices to use ABX500 pinctrl
+Date: Tue, 5 Feb 2013 20:48:25 +0100
+Message-ID: <1360093715-6348-5-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com>
 References: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com>
@@ -26,38 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lee Jones <lee.jones@linaro.org>
 
-The AB8500 GPIO driver has been un-BROKEN and rewritten as a pinctrl
-driver. Now that it's back in use, let's ensure that it's available
-when booting HREF with Device Tree enabled.
+The old AB8500 GPIO driver has been un-BROKEN and converted into a
+multi-platform pinctrl driver. If any AB9540 based devices wish to
+request any GPIO pins that it offers, they can after this patch.
 
-Cc: arm@kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
-Requesting an ACK from the ARM SoC maintainers on this patch.
+Sam, it'd be nice if you could ACK these first four patches,
+the series basically simplifies things a lot by not cascading
+the AB8500 IRQs and duplicate code in the pinctrl driver.
 ---
- arch/arm/boot/dts/hrefprev60.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/mfd/ab8500-core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/hrefprev60.dts b/arch/arm/boot/dts/hrefprev60.dts
-index eec29c4..0c2b975 100644
---- a/arch/arm/boot/dts/hrefprev60.dts
-+++ b/arch/arm/boot/dts/hrefprev60.dts
-@@ -25,6 +25,14 @@
- 	};
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index bad3fe2..a0a3f72 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -1097,7 +1097,8 @@ static struct mfd_cell ab8500_devs[] = {
  
- 	soc-u9500 {
-+		prcmu@80157000 {
-+			ab8500@5 {
-+				ab8500-gpio {
-+					compatible = "stericsson,ab8500-gpio";
-+				};
-+			};
-+		};
-+
- 		i2c@80004000 {
- 			tps61052@33 {
- 				compatible = "tps61052";
+ static struct mfd_cell ab9540_devs[] = {
+ 	{
+-		.name = "ab8500-gpio",
++		.name = "pinctrl-ab9540",
++		.of_compatible = "stericsson,ab9540-gpio",
+ 	},
+ 	{
+ 		.name = "ab9540-usb",
 -- 
 1.7.11.3
 
