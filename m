@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab3BEW7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:59:34 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:34211 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756408Ab3BEW7d (ORCPT
+	id S1756626Ab3BEXD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 18:03:27 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:61863 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755962Ab3BEXD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:59:33 -0500
-Message-ID: <51118ECB.10006@linux.vnet.ibm.com>
-Date: Tue, 05 Feb 2013 14:59:23 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 5 Feb 2013 18:03:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michal Simek <monstr@monstr.eu>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+Date: Tue, 5 Feb 2013 23:03:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        alan@lxorguk.ukuu.org.uk, geert@linux-m68k.org,
+        dahinds@users.sourceforge.net
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <1360066756.4529.6.camel@pasglop> <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+In-Reply-To: <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Linux MM <linux-mm@kvack.org>, David Hansen <dave@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jiang Liu <liuj97@gmail.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Wu Jianguo <wujianguo@huawei.com>, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH v2 0/9] mm: zone & pgdat accessors plus some cleanup
-References: <1358463181-17956-1-git-send-email-cody@linux.vnet.ibm.com> <20130201163924.75edfe40.akpm@linux-foundation.org>
-In-Reply-To: <20130201163924.75edfe40.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020522-5518-0000-0000-00000B5598F1
+Message-Id: <201302052303.01795.arnd@arndb.de>
+X-Provags-ID: V02:K0:scHYPQ7CIL4/AD7549bQO0WoG3cTzCpGWUlwH7wjBIC
+ iBQuIa+kVdlNTNGbrw7pxC5amfpBl+CCPWAlHtiyHXbiO0nFup
+ m6dU4OwYgujEM8Ei98nwOHpc985qH6sZ37ZQor+U3mcWyIet07
+ yjYyXXZJkzL1PBIGorMMeNMQhi5a4i3zPQIUAYhLQt89oR+M5e
+ eoV0gAFHYX2/iwTLOYc17bsz9yMIO7Q6eDVHGzl6gjMs0zU68u
+ LV5L/WMEo76+x1+QityxGjO3v/hPgHrBGqopKZCqej5+JlRZy5
+ f6LJW9ennmXz+C5PBKa/303Gt2V3nE7c9GuCIq8yZC+eFzvW+q
+ coAx+3dbkYBbpUherQXY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2013 04:39 PM, Andrew Morton wrote:
-> On Thu, 17 Jan 2013 14:52:52 -0800
-> Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
->
->> Summaries:
->> 1 - avoid repeating checks for section in page flags by adding a define.
->> 2 - add & switch to zone_end_pfn() and zone_spans_pfn()
->> 3 - adds zone_is_initialized() & zone_is_empty()
->> 4 - adds a VM_BUG using zone_is_initialized() in __free_one_page()
->> 5 - add pgdat_end_pfn() and pgdat_is_empty()
->> 6 - add debugging message to VM_BUG check.
->> 7 - add ensure_zone_is_initialized() (for memory_hotplug)
->> 8 - use the above addition in memory_hotplug
->> 9 - use pgdat_end_pfn()
->
-> Well that's a nice little patchset.
->
-> Some of the patches were marked From:cody@linux.vnet.ibm.com and others
-> were From:jmesmon@gmail.com.  This is strange.  If you want me to fix
-> that up, please let me know which is preferred.
+On Tuesday 05 February 2013, Michal Simek wrote:
+> I want to be sure about this. I have parsed this again with closer look and
+> seems to me that ioread32 is equal to readl and iowrite32 to writel.
+> Arnd: Am I right?
 
-They should all be "From:cody@linux.vnet.ibm.com", other address was me 
-messing up gitconfig (which I've since fixed).
+Correct. On all the architectures you care about (most importantly, not
+x86), readl and ioread32 are defined to have the same semantics. There
+are a few exceptions where ioread32 provides a wrapper for PCI
+PIO accesses that are not memory mapped, making ioread32 slightly
+slower than readl, but for all practical purposes you don't have
+to worry about it ;-)
 
->> As a general concern: spanned_pages & start_pfn (in pgdat & zone) are supposed
->> to be locked (via a seqlock) when read (due to changes to them via
->> memory_hotplug), but very few (only 1?) of their users appear to actually lock
->> them.
->
-> OK, thanks.  Perhaps this is something which the memory-hotplug
-> developers could take a look at?
-
-Yep. It's not immediately clear that not locking on read would do 
-terrible things, but at the least the documentation needs fixing and 
-explanation as to why the locking is not used some (or all) places.
-
+	Arnd
