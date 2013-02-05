@@ -1,284 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab3BERxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:53:09 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:44776 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984Ab3BERxG (ORCPT
+	id S1756272Ab3BERxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:53:17 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:58057 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756114Ab3BERxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:53:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359822572-26009-8-git-send-email-acourbot@nvidia.com>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
-	<1359822572-26009-8-git-send-email-acourbot@nvidia.com>
-Date: Tue, 5 Feb 2013 18:53:05 +0100
-Message-ID: <CACRpkdbib-+pvMiLQN=f6d-1dhK2OK3znJeGoL7rDxDQYuJRuA@mail.gmail.com>
-Subject: Re: [PATCH 6/9] gpiolib: use descriptors internally
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Feb 2013 12:53:14 -0500
+Message-ID: <1360086665.3298.16.camel@thor.lan>
+Subject: [-next-20130204] usb/hcd:  irq 18: nobody cared
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Lan Tianyu <tianyu.lan@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Date: Tue, 05 Feb 2013 12:51:05 -0500
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 2, 2013 at 5:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+With -next-20130204:
 
-> Make sure gpiolib works internally with descriptors and (chip, offset)
-> pairs instead of using the global integer namespace. This prepares the
+[   33.855570] irq 18: nobody cared (try booting with the "irqpoll" option)
+[   33.855580] Pid: 0, comm: swapper/4 Not tainted 3.8.0-next-20130204-xeon #20130204
+[   33.855582] Call Trace:
+[   33.855585]  <IRQ>  [<ffffffff810f1076>] __report_bad_irq+0x36/0xe0
+[   33.855600]  [<ffffffff810f152a>] note_interrupt+0x1aa/0x200
+[   33.855606]  [<ffffffff8101edf2>] ? mwait_idle+0x82/0x1b0
+[   33.855610]  [<ffffffff810eed89>] handle_irq_event_percpu+0xc9/0x260
+[   33.855614]  [<ffffffff810eef68>] handle_irq_event+0x48/0x70
+[   33.855618]  [<ffffffff810f20ba>] handle_fasteoi_irq+0x5a/0x100
+[   33.855624]  [<ffffffff810182f2>] handle_irq+0x22/0x40
+[   33.855630]  [<ffffffff816e2a9a>] do_IRQ+0x5a/0xd0
+[   33.855636]  [<ffffffff816d97ad>] common_interrupt+0x6d/0x6d
+[   33.855638]  <EOI>  [<ffffffff810f8e2a>] ? rcu_eqs_enter_common+0x4a/0x320
+[   33.855646]  [<ffffffff8101edf2>] ? mwait_idle+0x82/0x1b0
+[   33.855649]  [<ffffffff8101ed99>] ? mwait_idle+0x29/0x1b0
+[   33.855653]  [<ffffffff8101f8a6>] cpu_idle+0x116/0x130
+[   33.855658]  [<ffffffff816c0c0f>] start_secondary+0x251/0x258
+[   33.855660] handlers:
+[   33.855664] [<ffffffff814f98a0>] usb_hcd_irq
+[   33.855667] Disabling IRQ #18
 
-Its a numberspace not a namespace right?
+>From earlier in the boot log:
+[    1.297020] uhci_hcd 0000:00:1d.2: setting latency timer to 64
+[    1.297032] uhci_hcd 0000:00:1d.2: UHCI Host Controller
+[    1.297040] uhci_hcd 0000:00:1d.2: new USB bus registered, assigned bus number 4
+[    1.297076] uhci_hcd 0000:00:1d.2: irq 18, io base 0x0000ff40
+[    1.297213] hub 4-0:1.0: USB hub found
+[    1.297221] hub 4-0:1.0: 2 ports detected
 
-> ground for the removal of the global gpio_desc[] array and the
-> introduction of the descriptor-based GPIO API.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+lsusb:
+...
+Bus 004 Device 002: ID 0764:0501 Cyber Power System, Inc. CP1500 AVR UPS
+Bus 004 Device 003: ID 046d:c52b Logitech, Inc. Unifying Receiver
+...
 
-> +/*
-> + * Internal gpiod_* API using descriptors instead of the integer namespace.
-> + * Most of this should eventually go public.
-> + */
-> +static int gpiod_request(struct gpio_desc *desc, const char *label);
-> +static void gpiod_free(struct gpio_desc *desc);
-> +static int gpiod_direction_input(struct gpio_desc *desc);
-> +static int gpiod_direction_output(struct gpio_desc *desc, int value);
-> +static int gpiod_set_debounce(struct gpio_desc *desc, unsigned debounce);
-> +static int gpiod_get_value_cansleep(struct gpio_desc *desc);
-> +static void gpiod_set_value_cansleep(struct gpio_desc *desc, int value);
-> +static int gpiod_get_value(struct gpio_desc *desc);
-> +static void gpiod_set_value(struct gpio_desc *desc, int value);
-> +static int gpiod_cansleep(struct gpio_desc *desc);
-> +static int gpiod_to_irq(struct gpio_desc *desc);
-> +static int gpiod_export(struct gpio_desc *desc, bool direction_may_change);
-> +static int gpiod_export_link(struct device *dev, const char *name,
-> +                            struct gpio_desc *desc);
-> +static int gpiod_sysfs_set_active_low(struct gpio_desc *desc, int value);
-> +static void gpiod_unexport(struct gpio_desc *desc);
+Didn't have this problem with -next-20120125. One of these commits, maybe?
+next/drivers/usb/core$ git log --oneline next-20130125..next-20130204 -- *
+2c2e865 usb: forbid memory allocation with I/O during bus reset
+e9121a8 Merge remote-tracking branch 'usb/usb-next'
+3b2ab2b Revert "usb: Register usb port's acpi power resources"
+da0aa71 USB: add usb_hcd_{start,end}_port_resume
+192fef1 usb: enable usb port device's async suspend.
+f6cced1 usb: expose usb port's pm qos flags to user space
+ad493e5 usb: add usb port auto power off mechanism
+971fcd4 usb: add runtime pm support for usb port device
+88bb965 usb: Register usb port's acpi power resources
+54a3ac0 usb: Using correct way to clear usb3.0 device's remote wakeup feature.
 
-Usually I don't like these upfrons forward-declarations, but in this
-case I *do* because they are here for a reason, to later become
-extern. So I like it!
+I didn't see any changes in the drivers/hid/hid-logitech-dj.c or usbhid
+but maybe it's doing something wrong anyway?
 
-> +/*
-> + * Return the GPIO number of the passed descriptor relative to its chip
-> + */
-> +static int gpio_chip_hwgpio(const struct gpio_desc *desc)
-> +{
-> +       return (desc - &gpio_desc[0]) - desc->chip->base;
-> +}
+I'll open a bugzilla if a bunch more info is necessary.
 
-That was a scary method. But it works as long as the
-descriptors are in a static array I guess...
-
-> +/**
-> + * Convert a GPIO number to its descriptor
-> + */
-> +static struct gpio_desc *gpio_to_desc(unsigned gpio)
-> +{
-> +       if (WARN(!gpio_is_valid(gpio), "invalid GPIO %d\n", gpio))
-> +               return NULL;
-
-Don't we want to return ERR_PTR(-EINVAL); here?
-
-Then you can use IS_ERR() on the pointers later.
-
-This is the approach taken by the external API for clk
-and pins.
-
-> +/**
-> + * Convert a GPIO descriptor to the integer namespace.
-> + * This should disappear in the future but is needed since we still
-> + * use GPIO numbers for error messages and sysfs nodes
-> + */
-> +static int desc_to_gpio(const struct gpio_desc *desc)
-> +{
-> +       return desc - &gpio_desc[0];
-> +}
-
-Aha OK the scary stuff goes away. Good...
-
-> +
-> +
-
-You can never get enough whitespace ;-)
-
->  /* caller holds gpio_lock *OR* gpio is marked as requested */
-
-That comment should be above the *next* function right?
-
-Strictly speaking it does not apply to gpiod_to_chip() if
-I read it right.
-
-> +static struct gpio_chip *gpiod_to_chip(struct gpio_desc *desc)
-> +{
-> +       return desc->chip;
-> +}
-> +
->  struct gpio_chip *gpio_to_chip(unsigned gpio)
->  {
-> -       return gpio_desc[gpio].chip;
-> +       return gpiod_to_chip(gpio_to_desc(gpio));
->  }
-
-...Then follows lots of nice stuff...
-
-(...)
->  static ssize_t gpio_direction_show(struct device *dev,
->                 struct device_attribute *attr, char *buf)
->  {
-> -       const struct gpio_desc  *desc = dev_get_drvdata(dev);
-> -       unsigned                gpio = desc - gpio_desc;
-> +       struct gpio_desc        *desc = dev_get_drvdata(dev);
-
-Why not const anymore?
-
-(Applies to all these similar cases in the patch.)
-
-consting is nice. Especially in subsystem code.
-I know it is hard to get compilation right without warnings
-at times. But it pays off.
-
-In the pinctrl subsystem I spend endless hours reading this
-wiki page:
-
-http://en.wikipedia.org/wiki/Const-correctness
-
-I still don't quite get it. And it also wears off. But I like to use it.
-
-> @@ -594,29 +647,32 @@ static ssize_t export_store(struct class *class,
-> +       desc = gpio_to_desc(gpio);
-
-I hope you have tested this hunk of the patch from userspace?
-
-> @@ -637,17 +694,18 @@ static ssize_t unexport_store(struct class *class,
-
-This too?
-
-(etc for the userspace interfaces)
-
-> @@ -1538,48 +1622,54 @@ int gpio_direction_input(unsigned gpio)
->                 }
->         }
->
-> -       status = chip->direction_input(chip, gpio);
-> +       status = chip->direction_input(chip, offset);
->         if (status == 0)
->                 clear_bit(FLAG_IS_OUT, &desc->flags);
->
-> -       trace_gpio_direction(chip->base + gpio, 1, status);
-> +       trace_gpio_direction(desc_to_gpio(desc), 1, status);
->  lose:
->         return status;
->  fail:
->         spin_unlock_irqrestore(&gpio_lock, flags);
-> -       if (status)
-> +       if (status) {
-> +               int gpio = -1;
-> +               if (desc)
-> +                       gpio = desc_to_gpio(desc);
->                 pr_debug("%s: gpio-%d status %d\n",
->                         __func__, gpio, status);
-> +       }
->         return status;
->  }
-
-So using ERR_PTR/PTR_ERR helps you propagate
-errors in situations like these.
-
-Just:
-
-if (IS_ERR(desc))
-    status = PTR_ERR(desc);
-
-> -int gpio_direction_output(unsigned gpio, int value)
-> +static int gpiod_direction_output(struct gpio_desc *desc, int value)
->  {
->         unsigned long           flags;
->         struct gpio_chip        *chip;
-> -       struct gpio_desc        *desc = &gpio_desc[gpio];
->         int                     status = -EINVAL;
-> +       int offset;
-
-Use hwgpio?
+Regards,
+Peter Hurley
 
 
->         /* Open drain pin should not be driven to 1 */
->         if (value && test_bit(FLAG_OPEN_DRAIN,  &desc->flags))
-> -               return gpio_direction_input(gpio);
-> +               return gpiod_direction_input(desc);
->
->         /* Open source pin should not be driven to 0 */
->         if (!value && test_bit(FLAG_OPEN_SOURCE,  &desc->flags))
-> -               return gpio_direction_input(gpio);
-> +               return gpiod_direction_input(desc);
->
->         spin_lock_irqsave(&gpio_lock, flags);
->
-> -       if (!gpio_is_valid(gpio))
-> +       if (!desc)
 
-if (IS_ERR(desc)) ?
-
-> @@ -1589,11 +1679,12 @@ int gpio_direction_output(unsigned gpio, int value)
->
->         might_sleep_if(chip->can_sleep);
->
-> +       offset = gpio_chip_hwgpio(desc);
-
-Maybe rename to hwgpio? Or is that done later?
-
-We should stick with either hwgpio or offset everywhere or
-it will be a mess.
-
-(...)
->  fail:
->         spin_unlock_irqrestore(&gpio_lock, flags);
-> -       if (status)
-> +       if (status) {
-> +               int gpio = -1;
-> +               if (desc)
-> +                       gpio = desc_to_gpio(desc);
->                 pr_debug("%s: gpio-%d status %d\n",
->                         __func__, gpio, status);
-> +       }
->         return status;
-
-Again IS_ERR()/ERR_PTR(). -1 is not nice.
-
->  /**
-> @@ -1622,24 +1722,22 @@ EXPORT_SYMBOL_GPL(gpio_direction_output);
->   * @gpio: the gpio to set debounce time
->   * @debounce: debounce time is microseconds
->   */
-> -int gpio_set_debounce(unsigned gpio, unsigned debounce)
-> +static int gpiod_set_debounce(struct gpio_desc *desc, unsigned debounce)
->  {
->         unsigned long           flags;
->         struct gpio_chip        *chip;
-> -       struct gpio_desc        *desc = &gpio_desc[gpio];
->         int                     status = -EINVAL;
-> +       int                     offset;
-
-hwgpio?
-
-(then follows some repating cases)
-
-(then some nice code)
-
-> -int gpio_get_value_cansleep(unsigned gpio)
-> +static int gpiod_get_value_cansleep(struct gpio_desc *desc)
->  {
->         struct gpio_chip        *chip;
->         int value;
-> +       int offset;
-
-hwgpio?
-
-Basically the patch is very nice but I'd like you to iron out and proofread
-as per above so we have strong consistency, strong const:ing,
-and stringent naming (offset vs hwgpio come to mind).
-
-Yours,
-Linus Walleij
