@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab3BEMN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 07:13:59 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:63378 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab3BEMN6 (ORCPT
+	id S1754923Ab3BEMPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 07:15:35 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:37073 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab3BEMPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 07:13:58 -0500
-Date: Tue, 5 Feb 2013 13:13:54 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] printk: Support for full dynticks mode
-Message-ID: <20130205121354.GC21455@gmail.com>
-References: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
+	Tue, 5 Feb 2013 07:15:34 -0500
+Message-ID: <5110F7D6.8080203@gmail.com>
+Date: Tue, 05 Feb 2013 20:15:18 +0800
+From: Lai Jiangshan <eag0628@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/13] workqueue: add lock_pool_executing_work()
+References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com> <1359657696-2767-9-git-send-email-laijs@cn.fujitsu.com> <20130204213422.GD27963@mtj.dyndns.org>
+In-Reply-To: <20130204213422.GD27963@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+于 2013/2/5 5:34, Tejun Heo 写道:
+> Hello,
+>
+> On Fri, Feb 01, 2013 at 02:41:31AM +0800, Lai Jiangshan wrote:
+>> +static struct worker_pool *lock_pool_executing_work(struct work_struct *work,
+>> +						    struct worker **worker)
+>> +{
+>> +	unsigned long pool_id = offq_work_pool_id(work);
+>> +	struct worker_pool *pool;
+>> +	struct worker *exec;
+>> +
+>> +	if (pool_id == WORK_OFFQ_POOL_NONE)
+>> +		return NULL;
+>> +
+>> +	pool = worker_pool_by_id(pool_id);
+>> +	if (!pool)
+>> +		return NULL;
+>> +
+>> +	spin_lock(&pool->lock);
+>> +	exec = find_worker_executing_work(pool, work);
+>> +	if (exec) {
+>> +		BUG_ON(pool != exec->pool);
+>> +		*worker = exec;
+>> +		return pool;
+>> +	}
+>> +	spin_unlock(&pool->lock);
+>> +
+>> +	return NULL;
+>> +}
+>
+> So, if a work item is queued on the same CPU and it isn't being
+> executed, it will lock, look up the hash, unlock and then lock again?
+> If this is something improved by later patch, please explain so.
+> There gotta be a better way to do this, right?
+>
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+The caller can't call this function if the work is on queue.
+the caller should call it only when CWQ bit is not set.
 
-> Ingo,
-> 
-> Please pull the support for full dynticks idle mode in printk that
-> can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	nohz/printk-v9
-> 
-> nohz/printk-v8 was the tree that I proposed to Linus. It has been left unpulled
-> though and we got no news from him but the tree has stayed untouched since then,
-> waiting in -next without any issue.
-> 
-> Part of nohz/printk-v8 is now in tip:irq/core, and this pull request contains
-> the rest. I could simply propose you the old branch but since there is a tiny
-> conflict with another recent commit in tip:irq/core, I just made a new branch
-> that contains tip:irq/core with nohz/printk-v8 merged inside which deals
-> with the conflict.
-> 
-> Thanks.
-> ---
-> 
-> Frederic Weisbecker (5):
->       nohz: Add API to check tick state
->       irq_work: Don't stop the tick with pending works
->       irq_work: Make self-IPIs optable
->       printk: Wake up klogd using irq_work
->       Merge branch 'nohz/printk-v8' into irq/core
-> 
-> Steven Rostedt (2):
->       irq_work: Flush work on CPU_DYING
->       irq_work: Warn if there's still work on cpu_down
-> 
->  include/linux/irq_work.h |   20 ++++++++
->  include/linux/printk.h   |    3 -
->  include/linux/tick.h     |   17 +++++++-
->  init/Kconfig             |    1 +
->  kernel/irq_work.c        |  112 +++++++++++++++++++++++++++++++++++-----------
->  kernel/printk.c          |   36 ++++++++-------
->  kernel/time/tick-sched.c |    7 ++-
->  kernel/timer.c           |    1 -
->  8 files changed, 147 insertions(+), 50 deletions(-)
+it is commentted "lock the pool a given offq work is running on",
+sorry, comment is too short.
 
-Pulled, thanks Frederic!
-
-	Ingo
