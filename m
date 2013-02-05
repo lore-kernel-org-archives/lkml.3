@@ -1,128 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab3BERtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:49:31 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:38735 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018Ab3BERt3 (ORCPT
+	id S1755979Ab3BERuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:50:20 -0500
+Received: from mail-da0-f45.google.com ([209.85.210.45]:43507 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984Ab3BERuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:49:29 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hillf Danton <dhillf@gmail.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: next-20130117 - kernel BUG with aio
-In-Reply-To: Your message of "Tue, 05 Feb 2013 09:20:15 -0800."
-             <20130205172015.GA27179@google.com>
-From: Valdis.Kletnieks@vt.edu
-References: <3544.1358774694@turing-police.cc.vt.edu> <CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com> <2553.1358890098@turing-police.cc.vt.edu> <20130131135952.77cf5d3a.akpm@linux-foundation.org> <20130201003727.GK12631@moria.home.lan> <5602.1360079580@turing-police.cc.vt.edu>
-            <20130205172015.GA27179@google.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1360086503_2221P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 05 Feb 2013 12:48:23 -0500
-Message-ID: <16994.1360086503@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.511145E8.00F9,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 5 Feb 2013 12:50:16 -0500
+Date: Tue, 5 Feb 2013 09:52:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 3.8-rc6
+Message-ID: <20130205175226.GA17784@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1360086503_2221P
-Content-Type: text/plain; charset=us-ascii
+The following changes since commit 949db153b6466c6f7cad5a427ecea94985927311:
 
-On Tue, 05 Feb 2013 09:20:15 -0800, Kent Overstreet said:
-> On Tue, Feb 05, 2013 at 10:53:00AM -0500, Valdis.Kletnieks@vt.edu wrote:
-> > On Thu, 31 Jan 2013 16:37:27 -0800, Kent Overstreet said:
-> > > On Thu, Jan 31, 2013 at 01:59:52PM -0800, Andrew Morton wrote:
-> > > > Did this get fixed?
-> >
-> > > With the patches I sent you, yes - not seeing a new linux-next tree yet?
-> >
-> > Well, it's a mixed bag at my end.  Finally got a chance to do some more
-> > testing, and:
-> >
-> > 1) next-20130128 didn't show anything in dmesg, but my VirtualBox Windows 7
-> > images appear to livelock on the way up - the Windows throbber would keep
-> > going, but it never made any actual progress towards booting. (Part of the
-> > delay was fixing a next-20121224 environment, and then discovering it
-> > took Windows *two* reboot cycles to get its act back together after getting
-> > into that hung state).
-> >
-> > 2_ next-20130128 plus the following 3 patches:
-> >
-> > Subject: [PATCH 1/3] aio: Fix a null pointer deref in batch_complete_aio
-> > Subject: [PATCH 3/3] aio-use-cancellation-list-lazily-fix
-> > Subject: [PATCH 2/3] aio-kill-ki_retry-fix-fix
->
-> The "smoosh struct kiocb" patch also needs to be dropped. That causes
-> aio_rw_vect_retry() to check ki_nbytes/ki_left after they've been
-> overwritten by aio_complete(), which causes it to return an error when
-> it shouldn't have, which causes aio_run_iocb() to double complete the
-> iocb causing put_reqs_available() to be called twice and the count
-> screwed up.
+  Linux 3.8-rc5 (2013-01-25 11:57:28 -0800)
 
-Unfortunately, that's not a clean slam-dunk revert:
+are available in the git repository at:
 
-[/usr/src/linux-next] patch -p1 -R --dry-run < ~/Downloads/32-32-aio-Smoosh-struct-kiocb.patch
-checking file fs/aio.c
-Hunk #1 FAILED at 570.
-Hunk #2 FAILED at 634.
-Hunk #3 FAILED at 1246.
-3 out of 3 hunks FAILED
-checking file include/linux/aio.h
-Hunk #1 succeeded at 31 (offset 11 lines).
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.8-rc6
 
-Looks like the above 3 patches introduce conflicts. Not sure what the proper
-resolution is for some of it. For the first hunk, the smoosh patch has near
-line 590:
+for you to fetch changes up to 200e0d994d9d1919b28c87f1a5fb99a8e13b8a0f:
 
--       atomic_set(&req->ki_users, 1);
-+       memset(req, 0, offsetof(struct kiocb, ki_ctx));
-        req->ki_ctx = ctx;
-+       atomic_set(&req->ki_users, 1);
-        return req;
+  USB: storage: optimize to match the Huawei USB storage devices and support new switch command (2013-02-04 10:41:40 -0800)
 
-but after the 3 patches, I have:
+----------------------------------------------------------------
+USB fixes for 3.8-rc6
 
-        memset(req, 0, offsetof(struct kiocb, ki_ctx));
-        req->ki_ctx = ctx;
-        atomic_set(&req->ki_users, 2);
-        return req;
+Here are a few tiny USB fixes for 3.8-rc6.
 
-Easy to fix, except that '2' is too magical for me to understand, so I'm
-not sure I want to smash it to a 1 to make the revert easier. :)
+Nothing major here, some host controller bug fixes to resolve a number
+of bugs that people have reported, and a bunch of additional device ids
+are added to a number of drivers (which caused code to be deleted from
+the usb-storage driver, always nice.)
 
---==_Exmh_1360086503_2221P
-Content-Type: application/pgp-signature
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+----------------------------------------------------------------
+Alan Stern (9):
+      USB: XHCI: fix memory leak of URB-private data
+      USB: EHCI: remove ASS/PSS polling timeout
+      USB: EHCI: unlink one async QH at a time
+      USB: add usb_hcd_{start,end}_port_resume
+      USB: EHCI: notify usbcore about port resumes
+      USB: UHCI: notify usbcore about port resumes
+      USB: EHCI: fix timer bug affecting port resume
+      USB: EHCI: fix for leaking isochronous data
+      USB: EHCI: fix bug in scheduling periodic split transfers
 
-iQIVAwUBURFF5wdmEQWDXROgAQI4xhAAvJCP1BLP9b9PfJpYok19N1E0FmKhAmHc
-XMz0d4/8k2RM3KpRTs9/UZyDD3bjzYQ/gB6UUQD9fat9CGMQ4Lzx5KCAOnFyRyh0
-CGMMb6NlCzC+ca6QPv44TB6SxUgGygrQzDMiZ65j4ZAvFYNcQktoPzYF+hXGPYOL
-Jw3K8Qb3KtCCxg3wo+7Oqlb0WAA5FhFm733U1OV4g0TsLFUTE2S/2/oAqk0Zo3bb
-V2TGY8ZBOBgiyiOgy1reKKyUyuVbDSnPkJKQ8xQizq+RYaXJmPnyisjp5zK+ytSB
-ofTh0/P4D/P5tnjV39v4VKUTFXaonDes2+ZIGy2yjEXJ73XBhCllZ/2729tLk2v6
-d2KVzCZR01EbEfhZLL94DxtROH29P9cwuM1QtoIM2m8bUa2oGLJAyB8AvDP2BQwQ
-zJDQYgzLaDb1stTT1LR4lC+ojssRO6r5bKV5XeguLd0r3z00mSFGPG9XREMVgXbf
-h5yBElvvPN+NkeDlc7Uk7JC1K8+Huh8wnWJW2c4pGZwKLPO/Q/hGf9hGCqv9o5Xu
-x2VR+2K11XrmFg4gSqROJEckUe+ZXez0bjN5P+T7fZ+6FNlNrGZRJJChZ9PJfT3P
-gFg0YrlYYNj8FQot3ef2YxGxOrOeb7Zy6sgN+wKDkJyaFzY/c0Sl4stvbsteHrqd
-RJo0g4eYJas=
-=vAr5
------END PGP SIGNATURE-----
+Bjørn Mork (1):
+      USB: option: add Changhong CH690
 
---==_Exmh_1360086503_2221P--
+Daniele Palmas (2):
+      USB: qcserial: add Telit Gobi QDL device
+      USB: option: add support for Telit LE920
 
+David Moore (1):
+      usb: Prevent dead ports when xhci is not enabled
+
+Greg Kroah-Hartman (1):
+      Merge tag 'for-usb-linus-2012-01-24' of git://git.kernel.org/.../sarah/xhci into usb-linus
+
+Lan Tianyu (1):
+      usb: Using correct way to clear usb3.0 device's remote wakeup feature.
+
+Luis Llorente Campo (1):
+      USB: add OWL CM-160 support to cp210x driver
+
+Nickolai Zeldovich (1):
+      drivers: xhci: fix incorrect bit test
+
+Petr Kubánek (1):
+      USB: ftdi_sio: add Zolix FTDI PID
+
+Sarah Sharp (2):
+      xhci: Fix isoc TD encoding.
+      xhci: Fix TD size for isochronous URBs.
+
+Sven Killig (1):
+      USB: ftdi_sio: add PID/VID entries for ELV WS 300 PC II
+
+fangxiaozhi (2):
+      USB: storage: Define a new macro for USB storage match rules
+      USB: storage: optimize to match the Huawei USB storage devices and support new switch command
+
+ drivers/usb/core/hcd.c             |  44 +++++
+ drivers/usb/core/hub.c             |  70 ++++++--
+ drivers/usb/host/ehci-hcd.c        |   1 +
+ drivers/usb/host/ehci-hub.c        |   9 +-
+ drivers/usb/host/ehci-q.c          |  50 +++---
+ drivers/usb/host/ehci-sched.c      |   9 +-
+ drivers/usb/host/ehci-timer.c      |  29 ++--
+ drivers/usb/host/pci-quirks.c      |   1 +
+ drivers/usb/host/uhci-hub.c        |   3 +
+ drivers/usb/host/xhci-ring.c       |  13 +-
+ drivers/usb/serial/cp210x.c        |   1 +
+ drivers/usb/serial/ftdi_sio.c      |   2 +
+ drivers/usb/serial/ftdi_sio_ids.h  |   9 +-
+ drivers/usb/serial/option.c        |  13 ++
+ drivers/usb/serial/qcserial.c      |   1 +
+ drivers/usb/storage/initializers.c |  76 ++++++++-
+ drivers/usb/storage/initializers.h |   4 +-
+ drivers/usb/storage/unusual_devs.h | 329 +------------------------------------
+ drivers/usb/storage/usb.c          |  12 ++
+ drivers/usb/storage/usual-tables.c |  15 ++
+ include/linux/usb.h                |   2 +
+ include/linux/usb/hcd.h            |   3 +
+ include/uapi/linux/usb/ch9.h       |   6 +
+ 23 files changed, 310 insertions(+), 392 deletions(-)
