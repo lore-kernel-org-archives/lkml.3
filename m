@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab3BEWNC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:13:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48259 "EHLO
+	id S1758033Ab3BEWNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:13:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48263 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab3BEWMz (ORCPT
+	with ESMTP id S1756751Ab3BEWM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:12:55 -0500
+	Tue, 5 Feb 2013 17:12:59 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 84/93] ahci: Add identifiers for ASM106x devices
-Date: Tue,  5 Feb 2013 20:07:13 -0200
-Message-Id: <1360102042-10732-85-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 85/93] module: fix symbol waiting when module fails before init
+Date: Tue,  5 Feb 2013 20:07:14 -0200
+Message-Id: <1360102042-10732-86-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,38 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 7b4f6ecacb14f384adc1a5a67ad95eb082c02bd1 upstream.
+commit 6f13909f4fe9652f189b462c6c98767309000321 upstream.
 
-They don't always appear as AHCI class devices but instead as IDE class.
+We use resolve_symbol_wait(), which blocks if the module containing
+the symbol is still loading.  However:
 
-Based on an initial patch by Hiroaki Nito
+1) The module_wq we use is only woken after calling the modules' init
+   function, but there are other failure paths after the module is
+   placed in the linked list where we need to do the same thing.
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42804
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+2) wake_up() only wakes one waiter, and our waitqueue is shared by all
+   modules, so we need to wake them all.
+
+3) wake_up_all() doesn't imply a memory barrier: I feel happier calling
+   it after we've grabbed and dropped the module_mutex, not just after
+   the state assignment.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/ata/ahci.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/module.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 5d0fb6b..71a4d04 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -406,7 +406,10 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
+diff --git a/kernel/module.c b/kernel/module.c
+index 2a15c59..27e302a 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2984,7 +2984,7 @@ static struct module *load_module(void __user *umod,
+ 	/* Unlink carefully: kallsyms could be walking list. */
+ 	list_del_rcu(&mod->list);
+ 	module_bug_cleanup(mod);
+-
++	wake_up_all(&module_wq);
+  ddebug:
+ 	dynamic_debug_remove(info.debug);
+  unlock:
+@@ -3059,7 +3059,7 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+ 		blocking_notifier_call_chain(&module_notify_list,
+ 					     MODULE_STATE_GOING, mod);
+ 		free_module(mod);
+-		wake_up(&module_wq);
++		wake_up_all(&module_wq);
+ 		return ret;
+ 	}
+ 	if (ret > 0) {
+@@ -3071,9 +3071,8 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+ 		dump_stack();
+ 	}
  
- 	/* Asmedia */
--	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1061 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0601), board_ahci },	/* ASM1060 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0602), board_ahci },	/* ASM1060 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+-	/* Now it's a first class citizen!  Wake up anyone waiting for it. */
++	/* Now it's a first class citizen! */
+ 	mod->state = MODULE_STATE_LIVE;
+-	wake_up(&module_wq);
+ 	blocking_notifier_call_chain(&module_notify_list,
+ 				     MODULE_STATE_LIVE, mod);
  
- 	/* Enmotus */
- 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
+@@ -3096,6 +3095,7 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+ 	mod->init_ro_size = 0;
+ 	mod->init_text_size = 0;
+ 	mutex_unlock(&module_mutex);
++	wake_up_all(&module_wq);
+ 
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
