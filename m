@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab3BEA7E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 19:59:04 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48612 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab3BEA7C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 19:59:02 -0500
-X-AuditID: 9c930179-b7c24ae00000119c-02-51105953d620
-Date: Tue, 5 Feb 2013 09:58:59 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, linux-mm@kvack.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] mm: hotplug: implement non-movable version of
- get_user_pages() to kill long-time pin pages
-Message-ID: <20130205005859.GE2610@blaptop>
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
+	id S1755619Ab3BEBBD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 20:01:03 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41088 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751215Ab3BEBBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 20:01:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nathan Zimmer <nzimmer@sgi.com>, Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 0/2] cpufreq: cpufreq_driver_lock is hot on large systems
+Date: Tue, 05 Feb 2013 02:07:18 +0100
+Message-ID: <2765418.Ft0GYkgNgL@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1360017913-25667-1-git-send-email-nzimmer@sgi.com>
+References: <1360017913-25667-1-git-send-email-nzimmer@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Monday, February 04, 2013 04:45:11 PM Nathan Zimmer wrote:
+> I am noticing the cpufreq_driver_lock is quite hot.
+> On an idle 512 system perf shows me most of the system time is spent on this
+> lock.  This is quite signifigant as top shows 5% of time in system time.
+> My solution was to first convert the lock to a rwlock and then to the rcu.
+> 
+> 
+> Nathan Zimmer (2):
+>   cpufreq: Convert the cpufreq_driver_lock to a rwlock
+>   cpufreq: Convert the cpufreq_driver_lock to use the rcu
+> 
+>  drivers/cpufreq/cpufreq.c | 139 ++++++++++++++++++++++++++--------------------
+>  1 file changed, 79 insertions(+), 60 deletions(-)
 
-On Mon, Feb 04, 2013 at 06:04:06PM +0800, Lin Feng wrote:
-> Currently get_user_pages() always tries to allocate pages from movable zone,
-> as discussed in thread https://lkml.org/lkml/2012/11/29/69, in some case users
-> of get_user_pages() is easy to pin user pages for a long time(for now we found
-> that pages pinned as aio ring pages is such case), which is fatal for memory
-> hotplug/remove framework.
-> 
-> So the 1st patch introduces a new library function called
-> get_user_pages_non_movable() to pin pages only from zone non-movable in memory.
-> It's a wrapper of get_user_pages() but it makes sure that all pages come from
-> non-movable zone via additional page migration.
-> 
-> The 2nd patch gets around the aio ring pages can't be migrated bug caused by
-> get_user_pages() via using the new function. It only works when configed with
-> CONFIG_MEMORY_HOTREMOVE, otherwise it uses the old version of get_user_pages().
+I like these changes.
 
-CMA has same issue but the problem is the driver developers or any subsystem
-using GUP can't know their pages is in CMA area or not in advance.
-So all of client of GUP should use GUP_NM to work them with CMA/MEMORY_HOTPLUG well?
-Even some driver module in embedded side doesn't open their source code.
+Viresh, anyone, any comments?
 
-I would like to make GUP smart so it allocates a page from non-movable/non-cma area
-when memory-hotplug/cma is enabled(CONFIG_MIGRATE_ISOLATE). Yeb. it might hurt GUP
-performance but it is just trade-off for using CMA/memory-hotplug, IMHO. :(
+Rafael
 
-> 
-> Lin Feng (2):
->   mm: hotplug: implement non-movable version of get_user_pages()
->   fs/aio.c: use non-movable version of get_user_pages() to pin ring
->     pages when support memory hotremove
-> 
->  fs/aio.c               |  6 +++++
->  include/linux/mm.h     |  5 ++++
->  include/linux/mmzone.h |  4 ++++
->  mm/memory.c            | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  mm/page_isolation.c    |  5 ++++
->  5 files changed, 83 insertions(+)
-> 
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Kind regards,
-Minchan Kim
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
