@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757136Ab3BEWIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:08:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47858 "EHLO
+	id S1757155Ab3BEWIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:08:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47863 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756999Ab3BEWIM (ORCPT
+	with ESMTP id S1757140Ab3BEWIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:08:12 -0500
+	Tue, 5 Feb 2013 17:08:17 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Frediano Ziglio <frediano.ziglio@citrix.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 10/93] ARM: 7627/1: Predicate preempt logic on PREEMP_COUNT not PREEMPT alone
-Date: Tue,  5 Feb 2013 20:05:59 -0200
-Message-Id: <1360102042-10732-11-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 11/93] xen: Fix stack corruption in xen_failsafe_callback for 32bit PVOPS guests.
+Date: Tue,  5 Feb 2013 20:06:00 -0200
+Message-Id: <1360102042-10732-12-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,86 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Andrew Cooper <andrew.cooper3@citrix.com>
 
-commit 568dca15aa2a0f4ddee255894ec393a159f13147 upstream.
+commit 9174adbee4a9a49d0139f5d71969852b36720809 upstream.
 
-Patrik Kluba reports that the preempt count becomes invalid due
-to the preempt_enable() call being unbalanced with a
-preempt_disable() call in the vfp assembly routines. This happens
-because preempt_enable() and preempt_disable() update preempt
-counts under PREEMPT_COUNT=y but the vfp assembly routines do so
-under PREEMPT=y. In a configuration where PREEMPT=n and
-DEBUG_ATOMIC_SLEEP=y, PREEMPT_COUNT=y and so the preempt_enable()
-call in VFP_bounce() keeps subtracting from the preempt count
-until it goes negative.
+This fixes CVE-2013-0190 / XSA-40
 
-Fix this by always using PREEMPT_COUNT to decided when to update
-preempt counts in the ARM assembly code.
+There has been an error on the xen_failsafe_callback path for failed
+iret, which causes the stack pointer to be wrong when entering the
+iret_exc error path.  This can result in the kernel crashing.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Reported-by: Patrik Kluba <pkluba@dension.com>
-Tested-by: Patrik Kluba <pkluba@dension.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+In the classic kernel case, the relevant code looked a little like:
+
+        popl %eax      # Error code from hypervisor
+        jz 5f
+        addl $16,%esp
+        jmp iret_exc   # Hypervisor said iret fault
+5:      addl $16,%esp
+                       # Hypervisor said segment selector fault
+
+Here, there are two identical addls on either option of a branch which
+appears to have been optimised by hoisting it above the jz, and
+converting it to an lea, which leaves the flags register unaffected.
+
+In the PVOPS case, the code looks like:
+
+        popl_cfi %eax         # Error from the hypervisor
+        lea 16(%esp),%esp     # Add $16 before choosing fault path
+        CFI_ADJUST_CFA_OFFSET -16
+        jz 5f
+        addl $16,%esp         # Incorrectly adjust %esp again
+        jmp iret_exc
+
+It is possible unprivileged userspace applications to cause this
+behaviour, for example by loading an LDT code selector, then changing
+the code selector to be not-present.  At this point, there is a race
+condition where it is possible for the hypervisor to return back to
+userspace from an interrupt, fault on its own iret, and inject a
+failsafe_callback into the kernel.
+
+This bug has been present since the introduction of Xen PVOPS support
+in commit 5ead97c84 (xen: Core Xen implementation), in 2.6.23.
+
+Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+Signed-off-by: Andrew Cooper <andrew.cooper3@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/arm/vfp/entry.S |    6 +++---
- arch/arm/vfp/vfphw.S |    4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/kernel/entry_32.S |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/vfp/entry.S b/arch/arm/vfp/entry.S
-index cc926c9..323ce1a 100644
---- a/arch/arm/vfp/entry.S
-+++ b/arch/arm/vfp/entry.S
-@@ -22,7 +22,7 @@
- @  IRQs disabled.
- @
- ENTRY(do_vfp)
--#ifdef CONFIG_PREEMPT
-+#ifdef CONFIG_PREEMPT_COUNT
- 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
- 	add	r11, r4, #1		@ increment it
- 	str	r11, [r10, #TI_PREEMPT]
-@@ -35,7 +35,7 @@ ENTRY(do_vfp)
- ENDPROC(do_vfp)
- 
- ENTRY(vfp_null_entry)
--#ifdef CONFIG_PREEMPT
-+#ifdef CONFIG_PREEMPT_COUNT
- 	get_thread_info	r10
- 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
- 	sub	r11, r4, #1		@ decrement it
-@@ -53,7 +53,7 @@ ENDPROC(vfp_null_entry)
- 
- 	__INIT
- ENTRY(vfp_testing_entry)
--#ifdef CONFIG_PREEMPT
-+#ifdef CONFIG_PREEMPT_COUNT
- 	get_thread_info	r10
- 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
- 	sub	r11, r4, #1		@ decrement it
-diff --git a/arch/arm/vfp/vfphw.S b/arch/arm/vfp/vfphw.S
-index 3a0efaa..6ff903e 100644
---- a/arch/arm/vfp/vfphw.S
-+++ b/arch/arm/vfp/vfphw.S
-@@ -167,7 +167,7 @@ vfp_hw_state_valid:
- 					@ else it's one 32-bit instruction, so
- 					@ always subtract 4 from the following
- 					@ instruction address.
--#ifdef CONFIG_PREEMPT
-+#ifdef CONFIG_PREEMPT_COUNT
- 	get_thread_info	r10
- 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
- 	sub	r11, r4, #1		@ decrement it
-@@ -191,7 +191,7 @@ look_for_VFP_exceptions:
- 	@ not recognised by VFP
- 
- 	DBGSTR	"not VFP"
--#ifdef CONFIG_PREEMPT
-+#ifdef CONFIG_PREEMPT_COUNT
- 	get_thread_info	r10
- 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
- 	sub	r11, r4, #1		@ decrement it
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 8f8e8ee..2a6919e 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1065,7 +1065,6 @@ ENTRY(xen_failsafe_callback)
+ 	lea 16(%esp),%esp
+ 	CFI_ADJUST_CFA_OFFSET -16
+ 	jz 5f
+-	addl $16,%esp
+ 	jmp iret_exc
+ 5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
+ 	SAVE_ALL
 -- 
 1.7.9.5
 
