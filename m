@@ -1,161 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab3BEAkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 19:40:37 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43493 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab3BEAkg (ORCPT
+	id S1756201Ab3BEAqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 19:46:08 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:54965 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754431Ab3BEAqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 19:40:36 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-19-51105501e64d
-Date: Tue, 5 Feb 2013 09:40:32 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de
-Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high
- memory
-Message-ID: <20130205004032.GD2610@blaptop>
-References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
- <20130204150657.6d05f76a.akpm@linux-foundation.org>
- <CAH9JG2Usd4HJKrBXwX3aEc3i6068zU=F=RjcoQ8E8uxYGrwXgg@mail.gmail.com>
- <20130204234358.GB2610@blaptop>
- <CAH9JG2VDOVv4-QrDs1FeyQNPzEDq+bf+qiSZ0snEqLGSed3PqA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAH9JG2VDOVv4-QrDs1FeyQNPzEDq+bf+qiSZ0snEqLGSed3PqA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 4 Feb 2013 19:46:05 -0500
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH] tools/perf: don't include libio.h in arch's dwarf-regs.c
+Date: Mon,  4 Feb 2013 16:42:05 -0800
+Message-Id: <1360024925-13413-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.1
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020500-5406-0000-0000-000004EB07A7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 08:52:02AM +0900, Kyungmin Park wrote:
-> Hi,
-> 
-> On Tue, Feb 5, 2013 at 8:43 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > Hello,
-> >
-> > On Tue, Feb 05, 2013 at 08:29:26AM +0900, Kyungmin Park wrote:
-> >> On Tue, Feb 5, 2013 at 8:06 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >> > On Mon, 04 Feb 2013 11:27:05 +0100
-> >> > Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> >> >
-> >> >> The total number of low memory pages is determined as
-> >> >> totalram_pages - totalhigh_pages, so without this patch all CMA
-> >> >> pageblocks placed in highmem were accounted to low memory.
-> >> >
-> >> > What are the end-user-visible effects of this bug?
-> >>
-> >> Even though CMA is located at highmem. LowTotal has more than lowmem
-> >> address spaces.
-> >>
-> >> e.g.,
-> >> lowmem  : 0xc0000000 - 0xdf000000   ( 496 MB)
-> >> LowTotal:         555788 kB
-> >>
-> >> >
-> >> > (This information is needed so that others can make patch-scheduling
-> >> > decisions and should be included in all bugfix changelogs unless it is
-> >> > obvious).
-> >>
-> >> CMA Highmem support is new feature. so don't need to go stable tree.
-> >
-> > I would like to clarify it because I remembered alloc_migrate_target have considered
-> > CMA pages could be highmem. Is it really new feature? If so, could you point out
-> > enabling patches for the new feature?
-> >
-> Here's related patch.
-> http://www.spinics.net/lists/arm-kernel/msg222369.html
+Including libio.h causes build failures on uClibc systems (which lack
+libio.h).
 
-Thanks.
+It appears that libio.h was only included to pull in a
+definition for null, so it has been replaced by stddef.h
 
-> 
-> Previous time, it's not fully tested and now we checked it with
-> highmem support patches.
+On powerpc, libio.h was conditionally included, but could be removed
+completely as it is unneeded. Also, the included of stdlib.h was changed
+to stddef.h (as again, only NULL is needed).
 
-I get it. Sigh. then [1] inline attached below wan't good.
-We have to code like this?
+Build tested on powerpc and x86.
 
-[1] 6a6dccba, mm: cma: don't replace lowmem pages with highmem
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ tools/perf/arch/powerpc/util/dwarf-regs.c | 5 +----
+ tools/perf/arch/s390/util/dwarf-regs.c    | 2 +-
+ tools/perf/arch/sh/util/dwarf-regs.c      | 2 +-
+ tools/perf/arch/sparc/util/dwarf-regs.c   | 2 +-
+ tools/perf/arch/x86/util/dwarf-regs.c     | 2 +-
+ 5 files changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index b97cf12..0707e0a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5671,11 +5671,10 @@ static struct page *
- __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
-                             int **resultp)
- {
--       gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
--
--       if (PageHighMem(page))
--               gfp_mask |= __GFP_HIGHMEM;
--
-+       gfp_t gfp_mask = GFP_HIGHUSER_MOVABLE;
-+       struct address_space *mapping = page_mapping(page);
-+       if (mapping)
-+               gfp_mask = mapping_gfp_mask(mapping);
-        return alloc_page(gfp_mask);
- }
-
-
-commit 6a6dccba2fdc2a69f1f36b8f1c0acc8598e7221b
-Author: Rabin Vincent <rabin@rab.in>
-Date:   Thu Jul 5 15:52:23 2012 +0530
-
-    mm: cma: don't replace lowmem pages with highmem
-    
-    The filesystem layer expects pages in the block device's mapping to not
-    be in highmem (the mapping's gfp mask is set in bdget()), but CMA can
-    currently replace lowmem pages with highmem pages, leading to crashes in
-    filesystem code such as the one below:
-    
-      Unable to handle kernel NULL pointer dereference at virtual address 00000400
-      pgd = c0c98000
-      [00000400] *pgd=00c91831, *pte=00000000, *ppte=00000000
-      Internal error: Oops: 817 [#1] PREEMPT SMP ARM
-      CPU: 0    Not tainted  (3.5.0-rc5+ #80)
-      PC is at __memzero+0x24/0x80
-      ...
-      Process fsstress (pid: 323, stack limit = 0xc0cbc2f0)
-      Backtrace:
-      [<c010e3f0>] (ext4_getblk+0x0/0x180) from [<c010e58c>] (ext4_bread+0x1c/0x98)
-      [<c010e570>] (ext4_bread+0x0/0x98) from [<c0117944>] (ext4_mkdir+0x160/0x3bc)
-       r4:c15337f0
-      [<c01177e4>] (ext4_mkdir+0x0/0x3bc) from [<c00c29e0>] (vfs_mkdir+0x8c/0x98)
-      [<c00c2954>] (vfs_mkdir+0x0/0x98) from [<c00c2a60>] (sys_mkdirat+0x74/0xac)
-       r6:00000000 r5:c152eb40 r4:000001ff r3:c14b43f0
-      [<c00c29ec>] (sys_mkdirat+0x0/0xac) from [<c00c2ab8>] (sys_mkdir+0x20/0x24)
-       r6:beccdcf0 r5:00074000 r4:beccdbbc
-      [<c00c2a98>] (sys_mkdir+0x0/0x24) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
-    
-    Fix this by replacing only highmem pages with highmem.
-    
-    Reported-by: Laura Abbott <lauraa@codeaurora.org>
-    Signed-off-by: Rabin Vincent <rabin@rab.in>
-    Acked-by: Michal Nazarewicz <mina86@mina86.com>
-    Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4403009..4a4f921 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5635,7 +5635,12 @@ static struct page *
- __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
-                             int **resultp)
- {
--       return alloc_page(GFP_HIGHUSER_MOVABLE);
-+       gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
-+
-+       if (PageHighMem(page))
-+               gfp_mask |= __GFP_HIGHMEM;
-+
-+       return alloc_page(gfp_mask);
- }
-
+diff --git a/tools/perf/arch/powerpc/util/dwarf-regs.c b/tools/perf/arch/powerpc/util/dwarf-regs.c
+index 7cdd61d..733151c 100644
+--- a/tools/perf/arch/powerpc/util/dwarf-regs.c
++++ b/tools/perf/arch/powerpc/util/dwarf-regs.c
+@@ -9,10 +9,7 @@
+  * 2 of the License, or (at your option) any later version.
+  */
+ 
+-#include <stdlib.h>
+-#ifndef __UCLIBC__
+-#include <libio.h>
+-#endif
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ 
+diff --git a/tools/perf/arch/s390/util/dwarf-regs.c b/tools/perf/arch/s390/util/dwarf-regs.c
+index e19653e..0469df0 100644
+--- a/tools/perf/arch/s390/util/dwarf-regs.c
++++ b/tools/perf/arch/s390/util/dwarf-regs.c
+@@ -6,7 +6,7 @@
+  *
+  */
+ 
+-#include <libio.h>
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ #define NUM_GPRS 16
+diff --git a/tools/perf/arch/sh/util/dwarf-regs.c b/tools/perf/arch/sh/util/dwarf-regs.c
+index a11edb0..0d0897f 100644
+--- a/tools/perf/arch/sh/util/dwarf-regs.c
++++ b/tools/perf/arch/sh/util/dwarf-regs.c
+@@ -19,7 +19,7 @@
+  *
+  */
+ 
+-#include <libio.h>
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ /*
+diff --git a/tools/perf/arch/sparc/util/dwarf-regs.c b/tools/perf/arch/sparc/util/dwarf-regs.c
+index 0ab8848..92eda41 100644
+--- a/tools/perf/arch/sparc/util/dwarf-regs.c
++++ b/tools/perf/arch/sparc/util/dwarf-regs.c
+@@ -9,7 +9,7 @@
+  * 2 of the License, or (at your option) any later version.
+  */
+ 
+-#include <libio.h>
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ #define SPARC_MAX_REGS	96
+diff --git a/tools/perf/arch/x86/util/dwarf-regs.c b/tools/perf/arch/x86/util/dwarf-regs.c
+index a794d30..be22dd4 100644
+--- a/tools/perf/arch/x86/util/dwarf-regs.c
++++ b/tools/perf/arch/x86/util/dwarf-regs.c
+@@ -20,7 +20,7 @@
+  *
+  */
+ 
+-#include <libio.h>
++#include <stddef.h>
+ #include <dwarf-regs.h>
+ 
+ /*
 -- 
-Kind regards,
-Minchan Kim
+1.8.1.1
+
