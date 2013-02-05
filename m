@@ -1,151 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab3BENml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 08:42:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50500 "EHLO mx1.redhat.com"
+	id S1755498Ab3BENtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 08:49:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50721 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754062Ab3BENmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 08:42:39 -0500
-Date: Tue, 5 Feb 2013 15:42:33 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Ortiz, Lance E" <lance.oritz@hp.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
- VFIO-PCI devices
-Message-ID: <20130205134233.GK23213@redhat.com>
-References: <F9E001219150CB45BEDC82A650F360C9014AAF07@G9W0717.americas.hpqcorp.net>
- <CAAu8pHvk_2Mf2F-YTDC-wdyD1Jic-DHUanSQfOa3g0VchTcNig@mail.gmail.com>
- <20130205080436.GV23213@redhat.com>
- <F9E001219150CB45BEDC82A650F360C9014B42EE@G9W0717.americas.hpqcorp.net>
- <20130205092110.GB23213@redhat.com>
- <F9E001219150CB45BEDC82A650F360C9014B43DC@G9W0717.americas.hpqcorp.net>
- <20130205113645.GE23213@redhat.com>
- <F9E001219150CB45BEDC82A650F360C9014B445B@G9W0717.americas.hpqcorp.net>
- <1360071455.11144.552.camel@bling.home>
+	id S1754654Ab3BENtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 08:49:46 -0500
+Date: Tue, 5 Feb 2013 14:49:42 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20130205134937.GA22804@dhcp22.suse.cz>
+References: <20121217192301.829A7020@pobox.sk>
+ <20121217195510.GA16375@dhcp22.suse.cz>
+ <20121218152223.6912832C@pobox.sk>
+ <20121218152004.GA25208@dhcp22.suse.cz>
+ <20121224142526.020165D3@pobox.sk>
+ <20121228162209.GA1455@dhcp22.suse.cz>
+ <20121230020947.AA002F34@pobox.sk>
+ <20121230110815.GA12940@dhcp22.suse.cz>
+ <20130125160723.FAE73567@pobox.sk>
+ <20130125163130.GF4721@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360071455.11144.552.camel@bling.home>
+In-Reply-To: <20130125163130.GF4721@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 06:37:35AM -0700, Alex Williamson wrote:
-> On Tue, 2013-02-05 at 12:05 +0000, Pandarathil, Vijaymohan R wrote:
-> > 
-> > > -----Original Message-----
-> > > From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
-> > > owner@vger.kernel.org] On Behalf Of Gleb Natapov
-> > > Sent: Tuesday, February 05, 2013 3:37 AM
-> > > To: Pandarathil, Vijaymohan R
-> > > Cc: Blue Swirl; Alex Williamson; Bjorn Helgaas; Ortiz, Lance E;
-> > > kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-pci@vger.kernel.org;
-> > > linux-kernel@vger.kernel.org
-> > > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for VFIO-
-> > > PCI devices
-> > > 
-> > > On Tue, Feb 05, 2013 at 10:59:41AM +0000, Pandarathil, Vijaymohan R wrote:
-> > > >
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Gleb Natapov [mailto:gleb@redhat.com]
-> > > > > Sent: Tuesday, February 05, 2013 1:21 AM
-> > > > > To: Pandarathil, Vijaymohan R
-> > > > > Cc: Blue Swirl; Alex Williamson; Bjorn Helgaas; Ortiz, Lance E;
-> > > > > kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-pci@vger.kernel.org;
-> > > > > linux-kernel@vger.kernel.org
-> > > > > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
-> > > VFIO-
-> > > > > PCI devices
-> > > > >
-> > > > > On Tue, Feb 05, 2013 at 09:05:19AM +0000, Pandarathil, Vijaymohan R
-> > > wrote:
-> > > > > >
-> > > > > >
-> > > > > > > -----Original Message-----
-> > > > > > > From: Gleb Natapov [mailto:gleb@redhat.com]
-> > > > > > > Sent: Tuesday, February 05, 2013 12:05 AM
-> > > > > > > To: Blue Swirl
-> > > > > > > Cc: Pandarathil, Vijaymohan R; Alex Williamson; Bjorn Helgaas;
-> > > Ortiz,
-> > > > > Lance
-> > > > > > > E; kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-
-> > > > > pci@vger.kernel.org;
-> > > > > > > linux-kernel@vger.kernel.org
-> > > > > > > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER
-> > > for
-> > > > > VFIO-
-> > > > > > > PCI devices
-> > > > > > >
-> > > > > > > On Sun, Feb 03, 2013 at 04:36:11PM +0000, Blue Swirl wrote:
-> > > > > > > > On Sun, Feb 3, 2013 at 2:10 PM, Pandarathil, Vijaymohan R
-> > > > > > > > <vijaymohan.pandarathil@hp.com> wrote:
-> > > > > > > > >         - Create eventfd per vfio device assigned to a guest
-> > > and
-> > > > > > > register an
-> > > > > > > > >           event handler
-> > > > > > > > >
-> > > > > > > > >         - This fd is passed to the vfio_pci driver through the
-> > > > > SET_IRQ
-> > > > > > > ioctl
-> > > > > > > > >
-> > > > > > > > >         - When the device encounters an error, the eventfd is
-> > > > > signalled
-> > > > > > > > >           and the qemu eventfd handler gets invoked.
-> > > > > > > > >
-> > > > > > > > >         - In the handler decide what action to take. Current
-> > > action
-> > > > > > > taken
-> > > > > > > > >           is to terminate the guest.
-> > > > > > > >
-> > > > > > > > Usually this is not OK, but I guess this is not guest
-> > > triggerable.
-> > > > > > > >
-> > > > > > > Still not OK. Why not stop a guest with appropriate stop reason?
-> > > > > >
-> > > > > > The thinking was that since this is a hardware error, we would want
-> > > to
-> > > > > stop the guest at the earliest. The hw_error() routine which aborts the
-> > > > > qemu process was suggested by Alex and that seemed appropriate. Earlier
-> > > I
-> > > > > was using qemu_system_shutdown_request().  Any suggestions ?
-> > > > > >
-> > > > > I am thinking vm_stop(). Stopping SMP guest (and UP too in fact)
-> > > > > involves sending IPIs to other cpus running guest's vcpus. Both exit()
-> > > > > and vm_stop() will do it, but former is implicitly in the kernel and
-> > > > > later is explicitly in QEMU.
-> > > >
-> > > > I had used vm_stop(RUN_STATE_SHUTDOWN) earlier in my code. But while
-> > > testing, guest ended up in a hang rather than exiting. There seems to some
-> > > cleanup work which is being done as part of vm_stop. In our case, we wanted
-> > > the guest to exit immediately. So use of hw_error() seemed appropriate.
-> > > >
-> > > What makes you think it hang? It stopped, precisely what it should do if
-> > > you call vm_stop(). Now it is possible for vm user to investigate what
-> > > happened and even salvage some data from guest memory.
-> > 
-> > That was ignorance on my part on the expected behavior of vm_stop(). 
-> > So what you are suggesting is to stop the guest displaying an appropriate 
-> > error/next-steps message and have the users do any data-collection/investigation 
-> > and then manually kill the guest, if they so desire. Right ?
-> > 
-> > Sounds reasonable. As long as the guest is not touching the device, it should be okay.
-> > Alex, Any comments ?
+On Fri 25-01-13 17:31:30, Michal Hocko wrote:
+> On Fri 25-01-13 16:07:23, azurIt wrote:
+> > Any news? Thnx!
 > 
-> What's the libvirt behavior when a guest goes to vm_stop?  My only
-> concern would be whether the user is going to be confused by a state
-> where the vm is still up, but not running.  I imagine they'll have to
-> manually stop it and restart it to continue.  Thanks,
-> 
-vm_stop() is already the behaviour on KVM internal errors, so management
-stack knows how to handle those. Of course vfio should use meaningful
-stop reason and not just reuse existing one.
+> Sorry, but I didn't get to this one yet.
 
---
-			Gleb.
+Sorry, to get back to this that late but I was busy as hell since the
+beginning of the year.
+
+Has the issue repeated since then?
+
+You said you didn't apply other than the above mentioned patch. Could
+you apply also debugging part of the patches I have sent?
+In case you don't have it handy then it should be this one:
+---
+>From 1623420d964e7e8bc88e2a6239563052df891bf7 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 3 Dec 2012 16:16:01 +0100
+Subject: [PATCH] more debugging
+
+---
+ mm/huge_memory.c |    6 +++---
+ mm/memcontrol.c  |    1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 470cbb4..01a11f1 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -671,7 +671,7 @@ static inline struct page *alloc_hugepage(int defrag)
+ }
+ #endif
+ 
+-int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
++noinline int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			       unsigned long address, pmd_t *pmd,
+ 			       unsigned int flags)
+ {
+@@ -790,7 +790,7 @@ pgtable_t get_pmd_huge_pte(struct mm_struct *mm)
+ 	return pgtable;
+ }
+ 
+-static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
++static noinline int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+ 					struct vm_area_struct *vma,
+ 					unsigned long address,
+ 					pmd_t *pmd, pmd_t orig_pmd,
+@@ -883,7 +883,7 @@ out_free_pages:
+ 	goto out;
+ }
+ 
+-int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
++noinline int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
+ {
+ 	int ret = 0;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c8425b1..1986c65 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2397,6 +2397,7 @@ done:
+ 	return 0;
+ nomem:
+ 	*ptr = NULL;
++	__WARN_printf("gfp_mask:%u nr_pages:%u oom:%d ret:%d\n", gfp_mask, nr_pages, oom, ret);
+ 	return -ENOMEM;
+ bypass:
+ 	*ptr = NULL;
+-- 
+1.7.10.4
+
+-- 
+Michal Hocko
+SUSE Labs
