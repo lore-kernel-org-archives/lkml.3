@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab3BEPOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 10:14:01 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:50560 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755667Ab3BEPOA (ORCPT
+	id S1755998Ab3BEPOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 10:14:40 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:59605 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab3BEPOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 10:14:00 -0500
+	Tue, 5 Feb 2013 10:14:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359720305-31933-11-git-send-email-blogic@openwrt.org>
+In-Reply-To: <51111E92.601@openwrt.org>
 References: <1359720305-31933-1-git-send-email-blogic@openwrt.org>
-	<1359720305-31933-11-git-send-email-blogic@openwrt.org>
-Date: Tue, 5 Feb 2013 16:13:51 +0100
-Message-ID: <CACRpkdZrd+MiF-+WtyRRgYRAC5LE-CdB8yHaKA+PbftDMYmAYg@mail.gmail.com>
-Subject: Re: [PATCH 11/11] PINCTRL: lantiq: fix pin number in ltq_pmx_gpio_request_enable
+	<CACRpkdY6=LL3LQA6-iO5gcTukd9=vp3+SnVJ7fSSDBGQZ28YSw@mail.gmail.com>
+	<CACRpkdZxXVAGMJmjVzj4ck7VRiLTvdp9gqASdqkd_yNwEJAJXw@mail.gmail.com>
+	<51111E92.601@openwrt.org>
+Date: Tue, 5 Feb 2013 16:14:39 +0100
+Message-ID: <CACRpkdazSs=+xCX=BO0AG5=CGeCoezk13D4uxbbg-XKHHULyZg@mail.gmail.com>
+Subject: Re: [PATCH 01/11] PINCTRL: lantiq: pinconf uses port instead of pin
 From: Linus Walleij <linus.walleij@linaro.org>
 To: John Crispin <blogic@openwrt.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Langer <thomas.langer@lantiq.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 1:05 PM, John Crispin <blogic@openwrt.org> wrote:
-
-> The mapping logic inside ltq_pmx_gpio_request_enable() was broken. This only
-> effected Falcon SoC.
+On Tue, Feb 5, 2013 at 4:00 PM, John Crispin <blogic@openwrt.org> wrote:
+> On 05/02/13 15:59, Linus Walleij wrote:
+>>
+>> Can I just move all these fixes over to the devel
+>> branch?
 >
-> Signed-off-by: Thomas Langer <thomas.langer@lantiq.com>
-> Signed-off-by: John Crispin <blogic@openwrt.org>
+> I don't consider any of this as rc material.
+> sorry I should have put that in a cover letter.
 
-Applied as well.
-
-But now I have no longer any clue on if this is a regression
-or not...
+Ah, OK thanks, I'll put it into the devel branch and
+be happy.
 
 Yours,
 Linus Walleij
