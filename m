@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab3BEUXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 15:23:48 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:53582 "EHLO
+	id S1756689Ab3BEUWb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 15:22:31 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:54265 "EHLO
 	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756714Ab3BEUWk (ORCPT
+	with ESMTP id S1755681Ab3BEUW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 15:22:40 -0500
+	Tue, 5 Feb 2013 15:22:26 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
@@ -15,13 +15,12 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 06/23] tty: Fix ldisc halt sequence on hangup
-Date: Tue,  5 Feb 2013 15:20:21 -0500
-Message-Id: <1360095638-6624-7-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v3 00/23] ldisc fixes
+Date: Tue,  5 Feb 2013 15:20:15 -0500
+Message-Id: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
 References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
- <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 125194 peter@hurleysoftware.com
 X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
@@ -29,95 +28,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Flip buffer work cannot be cancelled until all outstanding ldisc
-references have been released. Convert the ldisc ref wait into
-a full ldisc halt with buffer work cancellation.
+Sorry for the long delay. Yearly gnome desktop upgrade with lots of
+new bugs, holidays, etc.
 
-Note that the legacy mutex is not held while cancelling.
+Alan, I included you in this series because you know more than most about
+how the ldisc layer works. I apologize if you find this unwelcome.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_ldisc.c | 39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
+Greg, I'd like special maintainer dispension for using printk(KERN_DEBUG...) in
+  tty: Bracket ldisc release with TTY_DEBUG_HANGUP messages
+  tty: Add ldisc hangup debug messages
+I think this usage is in keeping with existing form (in any event, one of
+messages is simply being relocated).
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 405e972..8628265 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -551,22 +551,30 @@ static int tty_ldisc_halt(struct tty_struct *tty)
- }
- 
- /**
-- *	tty_ldisc_hangup_wait_idle - wait for the ldisc to become idle
-- *	@tty: tty to wait for
-- *
-- *	Wait for the line discipline to become idle. The discipline must
-- *	have been halted for this to guarantee it remains idle.
-+ *	tty_ldisc_hangup_halt - halt the line discipline for hangup
-+ *	@tty: tty being hung up
-  *
-+ *	Shut down the line discipline and work queue for the tty device
-+ *	being hungup. Clear the TTY_LDISC flag to ensure no further
-+ *	references can be obtained, wait for remaining references to be
-+ *	released, and cancel pending buffer work to ensure no more
-+ *	data is fed to this ldisc.
-  *	Caller must hold legacy and ->ldisc_mutex.
-  *
-  *	NB: tty_set_ldisc() is prevented from changing the ldisc concurrently
-  *	with this function by checking the TTY_HUPPING flag.
-+ *
-+ *	NB: if tty->ldisc is NULL then buffer work does not need to be
-+ *	cancelled because it must already have done as a precondition
-+ *	of closing the ldisc and setting tty->ldisc to NULL
-  */
--static bool tty_ldisc_hangup_wait_idle(struct tty_struct *tty)
-+static bool tty_ldisc_hangup_halt(struct tty_struct *tty)
- {
- 	char cur_n[TASK_COMM_LEN], tty_n[64];
- 	long timeout = 3 * HZ;
- 
-+	clear_bit(TTY_LDISC, &tty->flags);
-+
- 	if (tty->ldisc) {	/* Not yet closed */
- 		tty_unlock(tty);
- 
-@@ -577,6 +585,10 @@ static bool tty_ldisc_hangup_wait_idle(struct tty_struct *tty)
- 				__func__, get_task_comm(cur_n, current),
- 				tty_name(tty, tty_n));
- 		}
-+
-+		cancel_work_sync(&tty->port->buf.work);
-+		set_bit(TTY_LDISC_HALTED, &tty->flags);
-+
- 		/* must reacquire both locks and preserve lock order */
- 		mutex_unlock(&tty->ldisc_mutex);
- 		tty_lock(tty);
-@@ -851,24 +863,11 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	 */
- 	mutex_lock(&tty->ldisc_mutex);
- 
--	/*
--	 * this is like tty_ldisc_halt, but we need to give up
--	 * the BTM before calling cancel_work_sync, which may
--	 * need to wait for another function taking the BTM
--	 */
--	clear_bit(TTY_LDISC, &tty->flags);
--	tty_unlock(tty);
--	cancel_work_sync(&tty->port->buf.work);
--	set_bit(TTY_LDISC_HALTED, &tty->flags);
--	mutex_unlock(&tty->ldisc_mutex);
--	tty_lock(tty);
--	mutex_lock(&tty->ldisc_mutex);
--
- 	/* At this point we have a closed ldisc and we want to
- 	   reopen it. We could defer this to the next open but
- 	   it means auditing a lot of other paths so this is
- 	   a FIXME */
--	if (tty_ldisc_hangup_wait_idle(tty)) {
-+	if (tty_ldisc_hangup_halt(tty)) {
- 		if (reset == 0) {
- 
- 			if (!tty_ldisc_reinit(tty, tty->termios.c_line))
+Changes in v3:
+
+- Because of new changes to the way drivers interact with tty flip
+  buffers, this series no longer purports to prevent the flush_to_ldisc()
+  warning.
+
+  That said, this series does fix the warnings generated by trinity and the
+  various test jigs run without complaint. Ilya's latest stress_test_tty.c
+  runs to completion (with the read and write threads enabled) with no
+  WARNs (or BUGs with the series "tty: Fix parallel master and slave pty opens"
+  -- which just got pushed to -tty-next)
+
+- Since the lock correction initially reported on by
+  Sebastian Andrzej Siewior <bigeasy@linutronix.de> here
+  https://lkml.org/lkml/2012/11/21/267 was fixed by Sebastian in
+  v3 of "tty: don't deadlock while flushing workqueue" and was
+  pushed to -next, the patches
+    "tty: Don't reenable already enable ldisc"
+    "tty: Don't restart ldisc on hangup if racing ldisc kill"
+    "tty: Make core responsible for synchronizing its work"
+  fix the other races which may occur when async hangup races
+  with the tty final close.
+
+  Please re-test with your dummy_hcd/g_nokia testcase, although
+  I'm not convinced that usb gadget is using tty_hangup() appropriately.
+  tty drivers use this for async carrier loss coming from an IRQ
+  which will be disabled if the tty has been shutdown. Does gserial
+  prevent async hangup to a dead tty in a similar fashion?
+
+- Jiri's debug patch was removed to avoid grumblings about using
+  IS_ERR_OR_NULL() --
+  see http://lkml.indiana.edu/hypermail/linux/kernel/1301.1/00913.html
+
+- "tty: WARN if buffer work racing with tty free" was removed
+  because this happens all the time now that drivers can push
+  i/o to a dead tty.
+
+- The false-positive diagnostic reported by Sasha Levin here
+  http://lkml.indiana.edu/hypermail/linux/kernel/1212.2/01017.html
+  was fixed in:
+    "n_tty: Fully initialize ldisc before restarting buffer work"
+
+- Fixed various comments which were either wrong or hadn't followed
+  the code they belonged to (but only after endless hours of
+  auditing various ldisc code paths)
+
+- Added more debug log messages for use with debugging tty hangup
+
+Changes in v2:
+
+- Please review "tty: Don't flush buffer when closing ldisc".
+  This patch replaces the earlier
+  "tty: Don't reschedule buffer work while closing". The text of
+  this commit details why not calling n_tty_flush_buffer() is the
+  correct thing to do, so I won't repeat it here.
+
+- The test jig has been included in the commit message for
+  "tty: Don't flush buffer when closing ldisc" as Alan requested.
+
+- Ilya Zykov was added as the Signed-off-by: for the test jig in
+  that same commit message.
+
+- Sasha Levin was added as the Reported-by: in that same patch.
+
+
+This patch series addresses various causes of flip buffer work
+being scheduled for a dead ldisc & tty.
+
+The most common cause stems from the n_tty_close() path
+flushing (which schedules buffer work), when the ldisc has already
+been halted (meaning userspace has been locked out of further i/o
+and existing users have finished). This is fixed in
+'tty: Don't flush buffer when closing ldisc'
+
+The other causes have a central theme: incorrect order-of-operations
+when halting a line discipline. In general, to prevent buffer work
+from being scheduled requires:
+  1. Disallowing further ldisc references
+  2. Waiting for all existing ldisc references to be released
+  3. Cancelling existing buffer work
+If the wait takes place _after_ cancellation, then new work
+can be scheduled by existing holder(s) of ldisc reference(s). That's
+bad.
+
+Halting the line discipline is performed when,
+ - hanging up the tty (tty_ldisc_hangup())
+ - TIOCSETD ioctl (tty_set_ldisc())
+ - finally closing the tty (pair) (tty_ldisc_release())
+
+Concurrent halts are governed by the following requirements:
+1. tty_ldisc_release is not concurrent with the other two and so
+   does not need lock or state protection during the ldiscs halt.
+2. Accesses through tty->ldisc must be protected by the ldisc_mutex.
+   The wait operation checks the user count (ldisc references)
+   in tty->ldisc->users.
+3. tty_set_ldisc() reschedules buffer work that was pending when
+   the ldiscs were halted. That must be an atomic operation in
+   conjunction with re-enabling the ldisc -- which necessitates
+   locking concurrent halts (tty_ldisc_release is exempt here)
+4. The legacy mutex cannot be held while waiting for ldisc
+   reference(s) release -or- for cancelling buffer work.
+5. Because of #4, the legacy mutex must be dropped prior to or
+   during the halt. Which means reacquiring after the halt. But
+   to preserve lock order the ldisc_mutex must be dropped and
+   reacquired after reacquiring the legacy mutex.
+6. Because of #5, the ldisc state may have changed while the
+   ldisc mutex was dropped.
+
+
+Peter Hurley (23):
+  tty: Add diagnostic for halted line discipline
+  n_tty: Factor packet mode status change for reuse
+  n_tty: Don't flush buffer when closing ldisc
+  tty: Refactor wait for ldisc refs out of tty_ldisc_hangup()
+  tty: Remove unnecessary re-test of ldisc ref count
+  tty: Fix ldisc halt sequence on hangup
+  tty: Strengthen no-subsequent-use guarantee of tty_ldisc_halt()
+  tty: Halt both ldiscs concurrently
+  tty: Remove unnecessary buffer work flush
+  tty: Wait for SAK work before waiting for hangup work
+  n_tty: Correct unthrottle-with-buffer-flush comments
+  tty: Kick waiters _after_ the ldisc is locked
+  n_tty: Fully initialize ldisc before restarting buffer work
+  tty: Don't reenable already enabled ldisc
+  tty: Don't restart ldisc on hangup if racing ldisc kill
+  tty: Make core responsible for synchronizing its work
+  tty: Document lock requirements to halt ldisc
+  tty: Remove stale comment re: tty_ldisc_flush_works()
+  tty: Fix 'deferred reopen' ldisc comment
+  tty: Remove stale comment re: locking in tty_ldisc_release()
+  tty: Re-parent orphaned tty_set_ldisc() comments
+  tty: Bracket ldisc release with TTY_DEBUG_HANGUP messages
+  tty: Add ldisc hangup debug messages
+
+ drivers/tty/n_tty.c     |  62 +++++++-----
+ drivers/tty/tty_io.c    |  23 ++++-
+ drivers/tty/tty_ldisc.c | 248 ++++++++++++++++++++++++++++--------------------
+ include/linux/tty.h     |   1 +
+ 4 files changed, 205 insertions(+), 129 deletions(-)
+
 -- 
 1.8.1.2
 
