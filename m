@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab3BEPFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 10:05:00 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:36492 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab3BEPE7 (ORCPT
+	id S1755825Ab3BEPFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 10:05:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64776 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab3BEPFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 10:04:59 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [GIT PULL] drbd build fix in case CONFIG_CRYPTO_HMAC is not set
-Date: Tue, 05 Feb 2013 16:04:57 +0100
-Message-ID: <2355532.pBFWGRxpbY@fat-tyre>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-36-lowlatency; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20130205131955.GT15092@kernel.dk>
-References: <2148524.Qc3kYa9ye0@fat-tyre> <20130205131955.GT15092@kernel.dk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 5 Feb 2013 10:05:51 -0500
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Prashant Gaikwad <pgaikwad@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] clk: Fix build for Allwinner A1X SoCs
+Date: Tue,  5 Feb 2013 16:05:47 +0100
+Message-Id: <1360076747-2162-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.1.2
+X-Provags-ID: V02:K0:Ai2CC7V9m99/9AEJrNNl7GSwwrnY5UGlqBF5EPaVYO8
+ otLsk+ivaJnTOTnp/koJEzWjXaVqZQRxyMu4MQRj13tza1HxAy
+ 1yKsggCfJJtWDr0UVlQlGPCCS7a/geCGwi1sf6/2+A+V00RHbr
+ FKQbfUSylvUwkL8bwGBj768+RRYhy89UP3oDkArv1XUlZqN1Du
+ bWVcFIv5QitbW5YlENvN16Zx3iT+TeTBPhrVhhVLimcP6g/tnR
+ A6w8iFstsoVMaWh0NAgaSNT1lMD3YvQK75xZWFlxY1dbjoSHnh
+ EDr9zBIVl9Rri43EPv1HaJRoq7YqTTVl/LP0xbiy4wklCZjxEj
+ JoHEOsUT+8F2RieBoj1xOW34YTkpJPtNduyxb/6BU1KzG6i/N6
+ 6vKNc6e7DBxTeJUCc3LZQZGWU+t8nvvk8RORiuhDQafD34cQ5Y
+ bmZ8b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> NOT pulled. Base the branch off my for-linus. When I pull the below into
-> that, I don't get a small patch, I get all changes from 3.7 to 3.8-rc5.
+Commit 85a1819 (clk: sunxi: Use common of_clk_init() function) removed
+the source file but didn't update the Makefile, therefore causing the
+build to break on Allwinner A1X SoCs.
 
-Ok, now based on your for-linus.
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ drivers/clk/Makefile | 1 -
+ 1 file changed, 1 deletion(-)
 
-
-The following changes since commit 1383923d1985cef2bceb8128094fbe5e05de7435:
-
-  Merge branch 'for-jens' of git://git.drbd.org/linux-drbd into for-linus (2013-01-22 08:22:11 -0700)
-
-are available in the git repository at:
-
-
-  git://git.drbd.org/linux-drbd.git for-jens-3.8-fix
-
-for you to fetch changes up to 23c275cba16615ac8cd3815cb1a86fd64cf12aa6:
-
-  drbd: Fix build error when CONFIG_CRYPTO_HMAC is not set (2013-02-05 15:58:34 +0100)
-
-----------------------------------------------------------------
-Philipp Reisner (1):
-      drbd: Fix build error when CONFIG_CRYPTO_HMAC is not set
-
- drivers/block/drbd/drbd_receiver.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index a9eccfc..6e27dde 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -4659,8 +4659,8 @@ static int drbd_do_features(struct drbd_tconn *tconn)
- #if !defined(CONFIG_CRYPTO_HMAC) && !defined(CONFIG_CRYPTO_HMAC_MODULE)
- static int drbd_do_auth(struct drbd_tconn *tconn)
- {
--	dev_err(DEV, "This kernel was build without CONFIG_CRYPTO_HMAC.\n");
--	dev_err(DEV, "You need to disable 'cram-hmac-alg' in drbd.conf.\n");
-+	conn_err(tconn, "This kernel was build without CONFIG_CRYPTO_HMAC.\n");
-+	conn_err(tconn, "You need to disable 'cram-hmac-alg' in drbd.conf.\n");
- 	return -1;
- }
- #else
-
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index ce77077..be9392e 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -25,7 +25,6 @@ endif
+ obj-$(CONFIG_MACH_LOONGSON1)	+= clk-ls1x.o
+ obj-$(CONFIG_ARCH_U8500)	+= ux500/
+ obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
+-obj-$(CONFIG_ARCH_SUNXI)	+= clk-sunxi.o
+ obj-$(CONFIG_ARCH_ZYNQ)		+= clk-zynq.o
+ obj-$(CONFIG_X86)		+= x86/
+ obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
+-- 
+1.8.1.2
 
