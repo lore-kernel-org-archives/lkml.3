@@ -1,128 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab3BEHpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 02:45:22 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50910 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab3BEHpV (ORCPT
+	id S1754265Ab3BEH4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 02:56:37 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38331 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab3BEH4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 02:45:21 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-a7-5110b88ff586
-Date: Tue, 5 Feb 2013 16:45:19 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, linux-mm@kvack.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] mm: hotplug: implement non-movable version of
- get_user_pages() to kill long-time pin pages
-Message-ID: <20130205074519.GB11197@blaptop>
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
- <20130205005859.GE2610@blaptop>
- <51108DC8.4090704@cn.fujitsu.com>
- <20130205052517.GH2610@blaptop>
- <5110A442.5000707@cn.fujitsu.com>
+	Tue, 5 Feb 2013 02:56:34 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5110BB0C.3020004@jp.fujitsu.com>
+Date: Tue, 5 Feb 2013 16:55:56 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5110A442.5000707@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: liguang <lig.fnst@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <x86@kernel.org>, <rientjes@google.com>
+Subject: Re: [PATCH v3 2/4] numa: avoid export acpi_numa variable
+References: <1360049762-6349-1-git-send-email-lig.fnst@cn.fujitsu.com> <1360049762-6349-3-git-send-email-lig.fnst@cn.fujitsu.com>
+In-Reply-To: <1360049762-6349-3-git-send-email-lig.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 02:18:42PM +0800, Lin Feng wrote:
+2013/02/05 16:36, liguang wrote:
+> acpi_numa is used to prevent srat table
+> being parsed, seems a little miss-named,
+> if 'noacpi' was specified by cmdline and
+> CONFIG_ACPI_NUMA was enabled, acpi_numa
+> will be operated directly from everywhere
+> it needed to disable/enable numa in acpi
+> mode which was a bad thing, so, try to
+> export a fuction to get srat table
+> enable/disable info.
 > 
-> 
-> On 02/05/2013 01:25 PM, Minchan Kim wrote:
-> > Hi Lin,
-> > 
-> > On Tue, Feb 05, 2013 at 12:42:48PM +0800, Lin Feng wrote:
-> >> Hi Minchan,
-> >>
-> >> On 02/05/2013 08:58 AM, Minchan Kim wrote:
-> >>> Hello,
-> >>>
-> >>> On Mon, Feb 04, 2013 at 06:04:06PM +0800, Lin Feng wrote:
-> >>>> Currently get_user_pages() always tries to allocate pages from movable zone,
-> >>>> as discussed in thread https://lkml.org/lkml/2012/11/29/69, in some case users
-> >>>> of get_user_pages() is easy to pin user pages for a long time(for now we found
-> >>>> that pages pinned as aio ring pages is such case), which is fatal for memory
-> >>>> hotplug/remove framework.
-> >>>>
-> >>>> So the 1st patch introduces a new library function called
-> >>>> get_user_pages_non_movable() to pin pages only from zone non-movable in memory.
-> >>>> It's a wrapper of get_user_pages() but it makes sure that all pages come from
-> >>>> non-movable zone via additional page migration.
-> >>>>
-> >>>> The 2nd patch gets around the aio ring pages can't be migrated bug caused by
-> >>>> get_user_pages() via using the new function. It only works when configed with
-> >>>> CONFIG_MEMORY_HOTREMOVE, otherwise it uses the old version of get_user_pages().
-> >>>
-> >>> CMA has same issue but the problem is the driver developers or any subsystem
-> >>> using GUP can't know their pages is in CMA area or not in advance.
-> >>> So all of client of GUP should use GUP_NM to work them with CMA/MEMORY_HOTPLUG well?
-> >>> Even some driver module in embedded side doesn't open their source code.
-> >> Yes, it somehow depends on the users of GUP. In MEMORY_HOTPLUG case, as for most users
-> >> of GUP, they will release the pinned pages immediately and to such users they should get
-> >> a good performance, using the old style interface is a smart way. And we had better just
-> >> deal with the cases we have to by using the new interface.
-> > 
-> > Hmm, I think you can't make sure most of user for MEMORY_HOTPLUG will release pinned pages
-> > immediately. Because MEMORY_HOTPLUG could be used for embedded system for reducing power
-> > by PASR and some drivers in embedded could use GUP anytime and anywhere. They can't know
-> > in advance they will use pinned pages long time or release in short time because it depends
-> > on some event like user's response which is very not predetermined.
-> > So for solving it, we can add some WARN_ON in CMA/MEMORY_HOTPLUG part just in case of
-> > failing migration by page count and then, investigate they are really using GUP and it's
-> > REALLY a culprit. If so, yell to them "Please use GUP_NM instead"?
-> > 
-> > Yes. it could be done but it would be rather trobulesome job.
-> Yes WARN_ON may be easy while troubleshooting for finding the immigrate-able page is 
-> a big job.
-> If we want to kill all the potential immigrate-able pages caused by GUP we'd better use the
-> *non_movable* version of GUP.
-> But in some server environment we want to keep the performance but also want to use hotremove
-> feature in case. Maybe patch the place as we need is a trade off for such support.
-> 
-> Mel also said in the last discussion:
-> 
-> On 11/30/2012 07:00 PM, Mel Gorman wrote:> On Thu, Nov 29, 2012 at 11:55:02PM -0800, Andrew Morton wrote:
-> >> Well, that's a fairly low-level implementation detail.  A more typical
-> >> approach would be to add a new get_user_pages_non_movable() or such. 
-> >> That would probably have the same signature as get_user_pages(), with
-> >> one additional argument.  Then get_user_pages() becomes a one-line
-> >> wrapper which passes in a particular value of that argument.
-> >>
-> > 
-> > That is going in the direction that all pinned pages become MIGRATE_UNMOVABLE
-> > allocations.  That will impact THP availability by increasing the number
-> > of MIGRATE_UNMOVABLE blocks that exist and it would hit every user --
-> > not just those that care about ZONE_MOVABLE.
-> > 
-> > I'm likely to NAK such a patch if it's only about node hot-remove because
-> > it's much more of a corner case than wanting to use THP.
-> > 
-> > I would prefer if get_user_pages() checked if the page it was about to
-> > pin was in ZONE_MOVABLE and if so, migrate it at that point before it's
-> > pinned. It'll be expensive but will guarantee ZONE_MOVABLE availability
-> > if that's what they want. The CMA people might also want to take
-> > advantage of this if the page happened to be in the MIGRATE_CMA
-> > pageblock.
-> > 
-> 
-> So it may not a good idea that we all fall into calling the *non_movable* version of
-> GUP when CONFIG_MIGRATE_ISOLATE is on. What do you think?
+> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> ---
 
-Frankly speaking, I can't understand Mel's comment.
-AFAIUC, he said GUP checks the page before get_page and if the page is movable zone,
-then migrate it out of movable zone and get_page again.
-That's exactly what I want. It doesn't introduce GUP_NM.
--- 
-Kind regards,
-Minchan Kim
+Hmm. Did you test the patch?
+By the patch, srat_disable() returns false(0) or 1. As a result,
+acpi_numa_x2apic_affinity_init(), acpi_numa_processor_affinity_init()
+and acpi_numa_memory_affinity_init() go wrong at following if sentence.
+
+---
+	if (srat_disable())
+		return -1;
+---
+
+When you change a return value of function, you should check othe
+functions which use it carefully.
+
+And if you use acpi_numa as bool, you should use "acpi_numa = true"
+instead of "acpi_numa = 1"
+
+Thanks,
+Yasuaki Ishimatsu
+
+>   arch/x86/include/asm/acpi.h |    2 +-
+>   arch/x86/kernel/acpi/srat.c |   17 +++++++++++------
+>   arch/x86/mm/numa.c          |    2 +-
+>   arch/x86/xen/enlighten.c    |    2 +-
+>   4 files changed, 14 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+> index b31bf97..449e12a 100644
+> --- a/arch/x86/include/asm/acpi.h
+> +++ b/arch/x86/include/asm/acpi.h
+> @@ -177,7 +177,7 @@ static inline void disable_acpi(void) { }
+>   #define ARCH_HAS_POWER_INIT	1
+>   
+>   #ifdef CONFIG_ACPI_NUMA
+> -extern int acpi_numa;
+> +extern void disable_acpi_numa(void);
+>   extern int x86_acpi_numa_init(void);
+>   #endif /* CONFIG_ACPI_NUMA */
+>   
+> diff --git a/arch/x86/kernel/acpi/srat.c b/arch/x86/kernel/acpi/srat.c
+> index cdd0da9..8d7f3f8 100644
+> --- a/arch/x86/kernel/acpi/srat.c
+> +++ b/arch/x86/kernel/acpi/srat.c
+> @@ -24,22 +24,27 @@
+>   #include <asm/apic.h>
+>   #include <asm/uv/uv.h>
+>   
+> -int acpi_numa __initdata;
+> +static bool acpi_numa __initdata;
+>   
+>   static __init int setup_node(int pxm)
+>   {
+>   	return acpi_map_pxm_to_node(pxm);
+>   }
+>   
+> -static __init void bad_srat(void)
+> +void __init disable_acpi_numa(void)
+>   {
+> -	printk(KERN_ERR "SRAT: SRAT not used.\n");
+> -	acpi_numa = -1;
+> +	acpi_numa = false;
+>   }
+>   
+> -static __init inline int srat_disabled(void)
+> +static void __init bad_srat(void)
+>   {
+> -	return acpi_numa < 0;
+> +	disable_acpi_numa();
+> +	printk(KERN_ERR "SRAT: SRAT will not be used.\n");
+> +}
+> +
+> +static bool __init srat_disabled(void)
+> +{
+> +	return acpi_numa;
+>   }
+>   
+>   /* Callback for SLIT parsing */
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index 245a4ba..1ebc907 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -47,7 +47,7 @@ static __init int numa_setup(char *opt)
+>   #endif
+>   #ifdef CONFIG_ACPI_NUMA
+>   	if (!strncmp(opt, "noacpi", 6))
+> -		acpi_numa = -1;
+> +		disable_acpi_numa();
+>   #endif
+>   	return 0;
+>   }
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 657eca9..3636bc6 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1447,7 +1447,7 @@ asmlinkage void __init xen_start_kernel(void)
+>   	 * any NUMA information the kernel tries to get from ACPI will
+>   	 * be meaningless.  Prevent it from trying.
+>   	 */
+> -	acpi_numa = -1;
+> +	disable_acpi_numa();
+>   #endif
+>   
+>   	/* Don't do the full vcpu_info placement stuff until we have a
+> 
+
+
