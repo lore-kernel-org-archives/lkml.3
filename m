@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab3BEL1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 06:27:47 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:62924 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab3BEL1o (ORCPT
+	id S1754122Ab3BEL2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 06:28:08 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35587 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814Ab3BEL2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 06:27:44 -0500
+	Tue, 5 Feb 2013 06:28:02 -0500
+Date: Tue, 5 Feb 2013 11:27:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Linus Walleij <linus.walleij@linaro.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "hs@denx.de" <hs@denx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 1/6] pinctrl: pinctrl-single: use arch_initcall and
+	module_exit
+Message-ID: <20130205112731.GK17786@n2100.arm.linux.org.uk>
+References: <1359445134-13323-1-git-send-email-manishv.b@ti.com> <1359445134-13323-2-git-send-email-manishv.b@ti.com> <CACRpkdbf7TwrjfT2rhqQFGc3yh_Nt117RtzQO2y6g5Ddx5Ay_w@mail.gmail.com> <20130201170906.GE22517@atomide.com> <20130201171124.GF22517@atomide.com> <A4887BF146CD57468F700B415D2F47015828C7@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20130205102540.GC9969@gmail.com>
-References: <1360015899-13706-1-git-send-email-dinggnu@gmail.com>
-	<CAH9JG2XSpFJeUvv7cw-JWadmi=X0-4EsN5FFKuDkwo=-mmzHSQ@mail.gmail.com>
-	<20130205000517.GB9969@gmail.com>
-	<CAN1soZwM6qNTJn3vvMdc6TR1eJHc=K+_c0WuWOBBuFYMWB_oCA@mail.gmail.com>
-	<20130205102540.GC9969@gmail.com>
-Date: Tue, 5 Feb 2013 19:27:43 +0800
-Message-ID: <CAN1soZyDLtdjyOFWyVVXN-_ABrChcCR=QbifAo7cz9pYV-nHww@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c: busses/i2c-pxa.c: fix potential null pointer
- dereference error
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Kyungmin Park <kmpark@infradead.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A4887BF146CD57468F700B415D2F47015828C7@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 6:25 PM, Cong Ding <dinggnu@gmail.com> wrote:
-> On Tue, Feb 05, 2013 at 09:14:08AM +0800, Haojian Zhuang wrote:
->> On Tue, Feb 5, 2013 at 8:05 AM, Cong Ding <dinggnu@gmail.com> wrote:
->> > If it goes to eclk through line 1107, the variable res would be NULL. It will
->> > cause a null pointer dereference error if we call release_mem_region.
->> >
->> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
->> > ---
->> >  drivers/i2c/busses/i2c-pxa.c |    3 ++-
->> >  1 file changed, 2 insertions(+), 1 deletion(-)
->> >
->> > diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
->> > index 1034d93..00df535 100644
->> > --- a/drivers/i2c/busses/i2c-pxa.c
->> > +++ b/drivers/i2c/busses/i2c-pxa.c
->> > @@ -1211,7 +1211,8 @@ eremap:
->> >  eclk:
->> >         kfree(i2c);
->> >  emalloc:
->> > -       release_mem_region(res->start, resource_size(res));
->> > +       if (res)
->> > +               release_mem_region(res->start, resource_size(res));
->> >         return ret;
->> >  }
->> >
->> >
->>
->> No. I don't agree on this. Your fix can't resolve all potential issues.
->>
->>         i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
-devm_kzalloc
->>         if (!i2c) {
->>                 ret = -ENOMEM;
->>                 goto emalloc;
-return -ENOMEM;
->>         }
->>
->>         ret = i2c_pxa_probe_dt(dev, i2c, &i2c_type);
->>         if (ret > 0)
->>                 ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
->>         if (ret < 0)
->>                 goto eclk;
-return ret;
->>
->>         res = platform_get_resource(dev, IORESOURCE_MEM, 0);
->>         irq = platform_get_irq(dev, 0);
->>         if (res == NULL || irq < 0) {
->>                 ret = -ENODEV;
->>                 goto eclk;
-ditto
->>         }
->>
->>         if (!request_mem_region(res->start, resource_size(res), res->name)) {
->>                 ret = -ENOMEM;
->>                 goto eclk;
-ditto
->>         }
->>
->> We shouldn't jump to eclk for these error cases. Then we needn't to add
->> checking on res.
-> So what do you suggest to do for these error cases?
->  - cong
->
+On Tue, Feb 05, 2013 at 06:36:34AM +0000, Vishwanathrao Badarkhe, Manish wrote:
+> I made following changes, in order to update "dip->p" pointer with 
+> correct value:
+> 
+> -       if (!dpi->p) {
+> +       if (IS_ERR_OR_NULL(dpi->p)) {
+>                 dpi->p = devm_pinctrl_get(dev);
+> -               if (IS_ERR_OR_NULL(dpi->p)) {
+> -                       int ret = PTR_ERR(dpi->p);
+> -
+> -                       dev_dbg(dev, "no pinctrl handle\n");
+> -                       /* Only return deferrals */
+> -                       if (ret == -EPROBE_DEFER)
+> -                               return ret;
+> -                       return 0;
+> -               }
+> +               ret = PTR_ERR(dpi->p);
+> +               dev_dbg(dev, "no pinctrl handle\n");
+> +               /* Only return deferrals */
+> +               if (ret == -EPROBE_DEFER)
+> +                       return ret;
+> +               return 0;
+> 
+> Is this intended change?
+
+The above looks totally broken to me.
+
+Oh, it's using IS_ERR_OR_NULL(), so it's bound to be broken.
