@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3BED4R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 22:56:17 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:43841 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab3BED4Q (ORCPT
+	id S1756589Ab3BEEBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 23:01:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51774 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab3BEEBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 22:56:16 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Jon Mason <jdmason@kudzu.us>
-CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing0307@gmail.com>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
-        Joe Jin <joe.jin@oracle.com>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH] PCI: update device mps when doing pci hotplug
-Date: Tue, 5 Feb 2013 11:55:20 +0800
-Message-ID: <1360036520-31032-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	Mon, 4 Feb 2013 23:01:14 -0500
+Date: Mon, 4 Feb 2013 20:04:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] printk: Support for full dynticks mode
+Message-Id: <20130204200459.f2a0a1cc.akpm@linux-foundation.org>
+In-Reply-To: <1360032122.27007.4.camel@gandalf.local.home>
+References: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
+	<20130204172001.8bb358b0.akpm@linux-foundation.org>
+	<CAFTL4hxHEknUfv0rt73Tb0YAUrypuGJArvCw4wmEPp_8PF_b0A@mail.gmail.com>
+	<20130204180948.68c206c0.akpm@linux-foundation.org>
+	<1360032122.27007.4.camel@gandalf.local.home>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we dont't update device's mps vaule when doing
-pci device hot-add. The hot-added device's mps will be set
-to default value (128B). But the upstream port device's mps
-may be larger than 128B which was set by firmware during
-system bootup. In this case the new added device may not
-work normally.
+On Mon, 04 Feb 2013 21:42:02 -0500 Steven Rostedt <rostedt@goodmis.org> wrote:
 
-The reference discussion at
-http://marc.info/?l=linux-pci&m=135420434508910&w=2
-and
-http://marc.info/?l=linux-pci&m=134815603407842&w=2
+> On Mon, 2013-02-04 at 18:09 -0800, Andrew Morton wrote:
+> 
+> > I don't think so.  Conceptually printk() should be "inner" to the
+> > scheduler and shouldn't call into sched things at all.  The (afaik
+> > sole) exception to that was the klogd wakeup.
+> > 
+> > Traditionally the deadlock happened when calling printk() with
+> > tasklist_lock (now q->lock) held.  printk() would call wake_up(klogd)
+> > and wake_up() tries to take tasklist_lock and boom.  Moving the
+> > wake_up() out to the tick "thread" fixed that.
+> > 
+> > Maybe there were other deadlock scenarios, dunno.  That knowledge
+> > appears to be disappearing into the mists of time :(
+> 
+> Even without the printk irq_work the current printk method uses a
+> delayed wakeup anyway.
+> 
+> The wake_up_klogd() sets PRINTK_PENDING_WAKEUP, and the wakeup happens
+> at time of the tick. I don't see where there is a deadlock.
+>
+> ...
+>
+> Do we really even need that printk_sched()?
 
-Reported-by: Joe Jin <joe.jin@oracle.com>
-Reported-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Jon Mason <jdmason@kudzu.us>
----
- drivers/pci/probe.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 49 insertions(+), 0 deletions(-)
+3ccf3e8306156a282 ("printk/sched: Introduce special printk_sched() for
+those awkward moments") was added _after_ wake_up_klogd() was switched
+to using the printk_pending->printk_tick() thing.  So presumably there
+were deadlocks other than around wake_up_klogd().
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index bbe4be7..57d9a5b 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1556,6 +1556,52 @@ static int pcie_bus_configure_set(struct pci_dev *dev, void *data)
- 	return 0;
- }
- 
-+static int pcie_bus_update_set(struct pci_dev *dev, void *data)
-+{
-+	int mps, p_mps;
-+
-+	if (!pci_is_pcie(dev) || !dev->bus->self)
-+		return 0;
-+
-+	mps = pcie_get_mps(dev);
-+	p_mps = pcie_get_mps(dev->bus->self);
-+
-+	if (pci_pcie_type(dev->bus->self) != PCI_EXP_TYPE_ROOT_PORT) {
-+		/* update mps when current device mps is not equal to upstream mps */
-+		if (mps != p_mps)
-+			goto update;
-+	} else {
-+		/* update mps when current device mps is smaller than upstream mps */
-+		if (mps < p_mps)
-+			goto update;
-+	}
-+
-+	return 0;
-+
-+update:
-+	/* If current mpss is lager than upstream, use upstream mps to update
-+	 * current mps, otherwise print warning info.
-+	 */
-+	if ((128 << dev->pcie_mpss) >= p_mps)
-+		pcie_write_mps(dev, p_mps);
-+	else
-+		dev_warn(&dev->dev, "MPS %d MPSS %d both smaller than upstream MPS %d\n"
-+				"If necessary, use \"pci=pcie_bus_peer2peer\" boot parameter to avoid this problem\n",
-+				mps, 128 << dev->pcie_mpss, p_mps);
-+	return 0;
-+}
-+
-+static void pcie_bus_update_setting(struct pci_bus *bus)
-+{
-+
-+	/*
-+	 * After hot added a pci device, the device's mps will set to default
-+	 * vaule(128 bytes). But the upstream port mps may be larger than 128B.
-+	 * In this case, we should update this device's mps for better performance.
-+	 */
-+	pci_walk_bus(bus, pcie_bus_update_set, NULL);
-+}
-+
- /* pcie_bus_configure_settings requires that pci_walk_bus work in a top-down,
-  * parents then children fashion.  If this changes, then this code will not
-  * work as designed.
-@@ -1566,6 +1612,9 @@ void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
- 
- 	if (!pci_is_pcie(bus->self))
- 		return;
-+
-+	/* update mps setting for newly hot added device */
-+	pcie_bus_update_setting(bus);
- 
- 	if (pcie_bus_config == PCIE_BUS_TUNE_OFF)
- 		return;
--- 
-1.7.1
+The printk_pending->printk_tick() thing was added by b845b517b5e
+("printk: robustify printk"), four years earlier in 2008.  It says
+"Avoid deadlocks against rq->lock and xtime_lock...".
 
+So what deadlocks was the March 2012 3ccf3e830 ("printk/sched:
+Introduce special printk_sched() for those awkward moments") supposed
+to fix?  grr.  I searched my lkml archives for March 2012 and few
+preceding months, but couldn't find any additional info.
+
+> I added a printk in __sched_setscheduler() where the run queue lock is held,
+> and booted that with full lockdep debugging enabled. No deadlock is
+> detected.
+
+Well, you'd need to enable various printk options to get full coverage.
+For example, that xtime_lock deadlock would only have occurred when
+timestamping is enabled.
 
