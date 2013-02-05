@@ -1,35 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab3BEIdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 03:33:46 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:57801 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab3BEIdp (ORCPT
+	id S1756615Ab3BEIdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 03:33:52 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4295 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756528Ab3BEIdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 03:33:45 -0500
+	Tue, 5 Feb 2013 03:33:47 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 05 Feb 2013 00:33:47 -0800
+Message-ID: <5110C3E5.2010503@nvidia.com>
+Date: Tue, 5 Feb 2013 14:03:41 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Date: Tue, 5 Feb 2013 16:33:43 +0800
-Message-ID: <CAFNq8R7_tr_MJmPvzvvHDv05jx6+QVPx8n3U_TA5-yB4bE-chg@mail.gmail.com>
-Subject: Qestion about page->_count and page reclaim
-From: Li Haifeng <omycle@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2] clk: Add composite clock type
+References: <1359965482-29655-1-git-send-email-pgaikwad@nvidia.com> <20130204.113739.2227266298512077917.hdoyu@nvidia.com>
+In-Reply-To: <20130204.113739.2227266298512077917.hdoyu@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all in kernel.
+On Monday 04 February 2013 03:07 PM, Hiroshi Doyu wrote:
+> Hi Prashant,
+>
+> Prashant Gaikwad <pgaikwad@nvidia.com> wrote @ Mon, 4 Feb 2013 09:11:22 +0100:
+>
+>> +struct clk *clk_register_composite(struct device *dev, const char *name,
+>> +                       const char **parent_names, int num_parents,
+>> +                       struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
+>> +                       struct clk_hw *div_hw, const struct clk_ops *div_ops,
+>> +                       struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
+>> +                       unsigned long flags)
+>> +{
+>> +       struct clk *clk;
+>> +       struct clk_init_data init;
+>> +       struct clk_composite *composite;
+>> +       struct clk_ops *clk_composite_ops;
+>> +
+>> +       composite = kzalloc(sizeof(*composite), GFP_KERNEL);
+>> +       if (!composite) {
+>> +               pr_err("%s: could not allocate composite clk\n", __func__);
+>> +               return ERR_PTR(-ENOMEM);
+>> +       }
+>> +
+>> +       init.name = name;
+>> +       init.flags = flags | CLK_IS_BASIC;
+>> +       init.parent_names = parent_names;
+>> +       init.num_parents = num_parents;
+>> +
+>> +       /* allocate the clock ops */
+>> +       clk_composite_ops = kzalloc(sizeof(*clk_composite_ops), GFP_KERNEL);
+> The members of "clk_composite_ops" seems to be always assigned
+> statically. Istead of dynamically allocating/assigning, can't we just
+> have "clk_composite_ops" statically as below?
+>
+> static struct clk_ops clk_composite_ops = {
+> 	.get_parent = clk_composite_get_parent;
+> 	.set_parent = clk_composite_set_parent;
+> 	.recalc_rate = clk_composite_recalc_rate;
+> 	.round_rate = clk_composite_round_rate;
+> 	.set_rate = clk_composite_set_rate;
+> 	.is_enabled = clk_composite_is_enabled;
+> 	.enable = clk_composite_enable;
+> 	.disable = clk_composite_disable;
+> };
+>
+> struct clk *clk_register_composite(struct device *dev, const char *name,
+> 		       const char **parent_names, int num_parents,
+> 		       struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
+> 		       struct clk_hw *div_hw, const struct clk_ops *div_ops,
+> 		       struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
+> 		       unsigned long flags)
+> {
+> 	.....
+>
+> 	init.ops = &clk_composite_ops;
 
-The page->_count is the page frame's usage count. When page is
-allocated, the page->_cout will be set 1.
+No, clk_ops depends on the clocks you are using. There could be a clock 
+with mux and gate while another one with mux and div.
 
-After be allocated from buddy system, the page will be used by
-process.  get_page and put_page/put_page_testzero will used in pairs.
-is it right?
 
-When the page is reclaimed to buddy system, the page->_count should be
-0. However, Because the initialization of page->_count is 1,
-get_page() and put_page() is called in pairs, I coufused how
-page->_count will be 0?
-
-Thanks.
