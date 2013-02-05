@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab3BEROn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:14:43 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47679 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756000Ab3BEROk (ORCPT
+	id S1756229Ab3BERPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:15:36 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35918 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755246Ab3BERPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:14:40 -0500
-Message-ID: <51113DF6.9040308@gmail.com>
-Date: Wed, 06 Feb 2013 01:14:30 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Tue, 5 Feb 2013 12:15:35 -0500
+Date: Tue, 5 Feb 2013 17:14:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Cyril Chemparathy <cyril@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, balbi@ti.com,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
+        "Nair, Sandeep" <sandeep_n@ti.com>, Chris Ball <cjb@laptop.org>,
+        Matt Porter <mporter@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
+	arm/common
+Message-ID: <20130205171451.GE17852@n2100.arm.linux.org.uk>
+References: <510FF1A6.403@mvista.com> <20130204164712.GB4269@arwen.pp.htv.fi> <510FF5C9.3030600@mvista.com> <20130204170216.GC4269@arwen.pp.htv.fi> <51100A72.6030909@ti.com> <CACRpkdZihnp3_Df==QRWxQupgi7W_YXZxc-MxkusVH6J+Vx56A@mail.gmail.com> <20130204203358.GX4720@opensource.wolfsonmicro.com> <CACRpkdbPyZt8=pLhz-5qcaSSAk6VBn61dPTNp6teU9HksBwN2w@mail.gmail.com> <51102E25.8040107@ti.com> <CACRpkdaUQ60W8Vmg3MpvP5uV+3jD3y4+9V2et4Ni+z-7k=aFTg@mail.gmail.com>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, Linux MM <linux-mm@kvack.org>, mgorman@suse.de,
-        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        m.szyprowski@samsung.com
-CC: linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
-Subject: [PATCH 3/3] mm: rename nr_free_pagecache_pages to nr_free_pagecache_high_pages
-References: <51113CE3.5090000@gmail.com>
-In-Reply-To: <51113CE3.5090000@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaUQ60W8Vmg3MpvP5uV+3jD3y4+9V2et4Ni+z-7k=aFTg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On Tue, Feb 05, 2013 at 04:30:45PM +0100, Linus Walleij wrote:
+> On Mon, Feb 4, 2013 at 10:54 PM, Cyril Chemparathy <cyril@ti.com> wrote:
+> > On 02/04/2013 04:11 PM, Linus Walleij wrote:
+> 
+> >> Cyril, just stack up the cookies and take a sweep over them to see
+> >> which ones are baked when the NAPI poll comes in -> problem
+> >> solved.
+> >
+> > You're assuming that cookies complete in order.  That is not necessarily
+> > true.
+> 
+> So put them on a wait list? Surely you will have a list of pending
+> cookies and pick from the front of the queue if there isn't a hole on
+> queue position 0.
 
-This function actually counts RAM pages that are above high watermark within
-all zones, so rename it to a reasonable name.
+Not quite.  The key is the cookie system DMA engine employs to indicate
+when a cookie is complete.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- include/linux/swap.h |    2 +-
- mm/memory_hotplug.c  |    4 ++--
- mm/page_alloc.c      |    7 ++++---
- 3 files changed, 7 insertions(+), 6 deletions(-)
+Cookies between the "issued sequence" and "completed sequence" are defined
+to be in progress, everything else is defined to be completed.
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 0df8905..9a8ab19 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -217,7 +217,7 @@ extern unsigned long totalram_pages;
- extern unsigned long totalreserve_pages;
- extern unsigned long dirty_balance_reserve;
- extern unsigned int nr_free_buffer_high_pages(void);
--extern unsigned int nr_free_pagecache_pages(void);
-+extern unsigned int nr_free_pagecache_high_pages(void);
- 
- /* Definition of global_page_state not available yet */
- #define nr_free_pages() global_page_state(NR_FREE_PAGES)
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index d04ed87..6e482c7 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -777,7 +777,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
- 	if (onlined_pages)
- 		kswapd_run(zone_to_nid(zone));
- 
--	vm_total_pages = nr_free_pagecache_pages();
-+	vm_total_pages = nr_free_pagecache_high_pages();
- 
- 	writeback_set_ratelimit();
- 
-@@ -1356,7 +1356,7 @@ repeat:
- 	if (arg.status_change_nid >= 0)
- 		kswapd_stop(node);
- 
--	vm_total_pages = nr_free_pagecache_pages();
-+	vm_total_pages = nr_free_pagecache_high_pages();
- 	writeback_set_ratelimit();
- 
- 	memory_notify(MEM_OFFLINE, &arg);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a021d91..6e0d91a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2816,9 +2816,10 @@ unsigned int nr_free_buffer_high_pages(void)
- EXPORT_SYMBOL_GPL(nr_free_buffer_high_pages);
- 
- /*
-- * Amount of free RAM allocatable within all zones
-+ * Amount of free RAM allocatable that is above high watermark
-+ * within all zones
-  */
--unsigned int nr_free_pagecache_pages(void)
-+unsigned int nr_free_pagecache_high_pages(void)
- {
- 	return nr_free_zone_high_pages(gfp_zone(GFP_HIGHUSER_MOVABLE));
- }
-@@ -3649,7 +3650,7 @@ void __ref build_all_zonelists(pg_data_t *pgdat, struct zone *zone)
- 		stop_machine(__build_all_zonelists, pgdat, NULL);
- 		/* cpuset refresh routine should be here */
- 	}
--	vm_total_pages = nr_free_pagecache_pages();
-+	vm_total_pages = nr_free_pagecache_high_pages();
- 	/*
- 	 * Disable grouping by mobility if the number of pages in the
- 	 * system is too low to allow the mechanism to work. It would be
--- 
-1.7.1
+This means that if "completed sequence" is 1, and "issued sequence" is 5,
+then cookies with values 2, 3, 4, 5 are in progress.  You can't mark
+sequence 4 as being complete until 2 and 3 have completed.
 
+If we need out-of-order completion, then that's a problem for the DMA
+engine API, because you'd need to radically change the way "completion"
+is marked.
