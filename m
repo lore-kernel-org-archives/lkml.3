@@ -1,229 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab3BEKXB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:23:01 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13527 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab3BEKW7 convert rfc822-to-8bit (ORCPT
+	id S1751826Ab3BEKZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:25:41 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:55872 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab3BEKZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 05:22:59 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 05 Feb 2013 02:22:58 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Tue, 5 Feb 2013 11:22:52 +0100
-Subject: Re: [PATCH V2] clk: Add composite clock type
-Thread-Topic: [PATCH V2] clk: Add composite clock type
-Thread-Index: Ac4DisJ0TR+q27gqTrybRcC548B9Lg==
-Message-ID: <20130205.122252.570646990867457667.hdoyu@nvidia.com>
-References: <1359965482-29655-1-git-send-email-pgaikwad@nvidia.com><20130204.113739.2227266298512077917.hdoyu@nvidia.com><5110C3E5.2010503@nvidia.com>
-In-Reply-To: <5110C3E5.2010503@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 5 Feb 2013 05:25:38 -0500
+Date: Tue, 5 Feb 2013 11:25:40 +0100
+From: Cong Ding <dinggnu@gmail.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Kyungmin Park <kmpark@infradead.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] i2c: busses/i2c-pxa.c: fix potential null pointer
+ dereference error
+Message-ID: <20130205102540.GC9969@gmail.com>
+References: <1360015899-13706-1-git-send-email-dinggnu@gmail.com>
+ <CAH9JG2XSpFJeUvv7cw-JWadmi=X0-4EsN5FFKuDkwo=-mmzHSQ@mail.gmail.com>
+ <20130205000517.GB9969@gmail.com>
+ <CAN1soZwM6qNTJn3vvMdc6TR1eJHc=K+_c0WuWOBBuFYMWB_oCA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN1soZwM6qNTJn3vvMdc6TR1eJHc=K+_c0WuWOBBuFYMWB_oCA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prashant Gaikwad <pgaikwad@nvidia.com> wrote @ Tue, 5 Feb 2013 09:33:41 +0100:
-
-> > The members of "clk_composite_ops" seems to be always assigned
-> > statically. Istead of dynamically allocating/assigning, can't we just
-> > have "clk_composite_ops" statically as below?
+On Tue, Feb 05, 2013 at 09:14:08AM +0800, Haojian Zhuang wrote:
+> On Tue, Feb 5, 2013 at 8:05 AM, Cong Ding <dinggnu@gmail.com> wrote:
+> > If it goes to eclk through line 1107, the variable res would be NULL. It will
+> > cause a null pointer dereference error if we call release_mem_region.
 > >
-> > static struct clk_ops clk_composite_ops = {
-> > 	.get_parent = clk_composite_get_parent;
-> > 	.set_parent = clk_composite_set_parent;
-> > 	.recalc_rate = clk_composite_recalc_rate;
-> > 	.round_rate = clk_composite_round_rate;
-> > 	.set_rate = clk_composite_set_rate;
-> > 	.is_enabled = clk_composite_is_enabled;
-> > 	.enable = clk_composite_enable;
-> > 	.disable = clk_composite_disable;
-> > };
+> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> > ---
+> >  drivers/i2c/busses/i2c-pxa.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
 > >
-> > struct clk *clk_register_composite(struct device *dev, const char *name,
-> > 		       const char **parent_names, int num_parents,
-> > 		       struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
-> > 		       struct clk_hw *div_hw, const struct clk_ops *div_ops,
-> > 		       struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
-> > 		       unsigned long flags)
-> > {
-> > 	.....
+> > diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+> > index 1034d93..00df535 100644
+> > --- a/drivers/i2c/busses/i2c-pxa.c
+> > +++ b/drivers/i2c/busses/i2c-pxa.c
+> > @@ -1211,7 +1211,8 @@ eremap:
+> >  eclk:
+> >         kfree(i2c);
+> >  emalloc:
+> > -       release_mem_region(res->start, resource_size(res));
+> > +       if (res)
+> > +               release_mem_region(res->start, resource_size(res));
+> >         return ret;
+> >  }
 > >
-> > 	init.ops = &clk_composite_ops;
+> >
 > 
-> No, clk_ops depends on the clocks you are using. There could be a clock 
-> with mux and gate while another one with mux and div.
+> No. I don't agree on this. Your fix can't resolve all potential issues.
+> 
+>         i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
+>         if (!i2c) {
+>                 ret = -ENOMEM;
+>                 goto emalloc;
+>         }
+> 
+>         ret = i2c_pxa_probe_dt(dev, i2c, &i2c_type);
+>         if (ret > 0)
+>                 ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
+>         if (ret < 0)
+>                 goto eclk;
+> 
+>         res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+>         irq = platform_get_irq(dev, 0);
+>         if (res == NULL || irq < 0) {
+>                 ret = -ENODEV;
+>                 goto eclk;
+>         }
+> 
+>         if (!request_mem_region(res->start, resource_size(res), res->name)) {
+>                 ret = -ENOMEM;
+>                 goto eclk;
+>         }
+> 
+> We shouldn't jump to eclk for these error cases. Then we needn't to add
+> checking on res.
+So what do you suggest to do for these error cases?
+ - cong
 
-You are right. What about the following? We don't have to have similar
-copy of clk_composite_ops for each instances.
-
-diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
-index f30fb4b..8f88805 100644
---- a/drivers/clk/clk-composite.c
-+++ b/drivers/clk/clk-composite.c
-@@ -27,6 +27,9 @@ static u8 clk_composite_get_parent(struct clk_hw *hw)
-        const struct clk_ops *mux_ops = composite->mux_ops;
-        struct clk_hw *mux_hw = composite->mux_hw;
- 
-+       if (!mux_hw->clk)
-+	       return -EINVAL;
-+
-        mux_hw->clk = hw->clk;
- 
-        return mux_ops->get_parent(mux_hw);
-@@ -38,6 +41,9 @@ static int clk_composite_set_parent(struct clk_hw *hw, u8 index)
-        const struct clk_ops *mux_ops = composite->mux_ops;
-        struct clk_hw *mux_hw = composite->mux_hw;
- 
-+       if (!mux_hw->clk)
-+	       return -EINVAL;
-+
-        mux_hw->clk = hw->clk;
- 
-        return mux_ops->set_parent(mux_hw, index);
-@@ -50,6 +56,9 @@ static unsigned long clk_composite_recalc_rate(struct clk_hw *hw,
-        const struct clk_ops *div_ops = composite->div_ops;
-        struct clk_hw *div_hw = composite->div_hw;
- 
-+       if (!div_hw->clk)
-+	       return -EINVAL;
-+
-        div_hw->clk = hw->clk;
- 
-        return div_ops->recalc_rate(div_hw, parent_rate);
-@@ -62,6 +71,9 @@ static long clk_composite_round_rate(struct clk_hw *hw, unsigned long rate,
-        const struct clk_ops *div_ops = composite->div_ops;
-        struct clk_hw *div_hw = composite->div_hw;
- 
-+       if (!div_hw->clk)
-+	       return -EINVAL;
-+
-        div_hw->clk = hw->clk;
- 
-        return div_ops->round_rate(div_hw, rate, prate);
-@@ -74,6 +86,9 @@ static int clk_composite_set_rate(struct clk_hw *hw, unsigned long rate,
-        const struct clk_ops *div_ops = composite->div_ops;
-        struct clk_hw *div_hw = composite->div_hw;
- 
-+       if (!div_hw->clk)
-+	       return -EINVAL;
-+
-        div_hw->clk = hw->clk;
- 
-        return div_ops->set_rate(div_hw, rate, parent_rate);
-@@ -85,6 +100,9 @@ static int clk_composite_is_enabled(struct clk_hw *hw)
-        const struct clk_ops *gate_ops = composite->gate_ops;
-        struct clk_hw *gate_hw = composite->gate_hw;
- 
-+       if (!gate_hw->clk)
-+	       return -EINVAL;
-+
-        gate_hw->clk = hw->clk;
- 
-        return gate_ops->is_enabled(gate_hw);
-@@ -96,6 +114,9 @@ static int clk_composite_enable(struct clk_hw *hw)
-        const struct clk_ops *gate_ops = composite->gate_ops;
-        struct clk_hw *gate_hw = composite->gate_hw;
- 
-+       if (!gate_hw->clk)
-+	       return -EINVAL;
-+
-        gate_hw->clk = hw->clk;
- 
-        return gate_ops->enable(gate_hw);
-@@ -107,11 +128,25 @@ static void clk_composite_disable(struct clk_hw *hw)
-        const struct clk_ops *gate_ops = composite->gate_ops;
-        struct clk_hw *gate_hw = composite->gate_hw;
- 
-+       if (!gate_hw->clk)
-+	       return -EINVAL;
-+
-        gate_hw->clk = hw->clk;
- 
-        gate_ops->disable(gate_hw);
- }
- 
-+static struct clk_ops clk_composite_ops = {
-+	.get_parent = clk_composite_get_parent,
-+	.set_parent = clk_composite_set_parent,
-+	.recalc_rate = clk_composite_recalc_rate,
-+	.round_rate = clk_composite_round_rate,
-+	.set_rate = clk_composite_set_rate,
-+	.is_enabled = clk_composite_is_enabled,
-+	.enable = clk_composite_enable,
-+	.disable = clk_composite_disable,
-+};
-+
- struct clk *clk_register_composite(struct device *dev, const char *name,
-                        const char **parent_names, int num_parents,
-                        struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
-@@ -135,14 +170,6 @@ struct clk *clk_register_composite(struct device *dev, const char *name,
-        init.parent_names = parent_names;
-        init.num_parents = num_parents;
- 
--       /* allocate the clock ops */
--       clk_composite_ops = kzalloc(sizeof(*clk_composite_ops), GFP_KERNEL);
--       if (!clk_composite_ops) {
--               pr_err("%s: could not allocate clk ops\n", __func__);
--               kfree(composite);
--               return ERR_PTR(-ENOMEM);
--       }
--
-        if (mux_hw && mux_ops) {
-                if (!mux_ops->get_parent || !mux_ops->set_parent) {
-                        clk = ERR_PTR(-EINVAL);
-@@ -151,8 +178,6 @@ struct clk *clk_register_composite(struct device *dev, const char *name,
- 
-                composite->mux_hw = mux_hw;
-                composite->mux_ops = mux_ops;
--               clk_composite_ops->get_parent = clk_composite_get_parent;
--               clk_composite_ops->set_parent = clk_composite_set_parent;
-        }
- 
-        if (div_hw && div_ops) {
-@@ -164,9 +189,6 @@ struct clk *clk_register_composite(struct device *dev, const char *name,
- 
-                composite->div_hw = div_hw;
-                composite->div_ops = div_ops;
--               clk_composite_ops->recalc_rate = clk_composite_recalc_rate;
--               clk_composite_ops->round_rate = clk_composite_round_rate;
--               clk_composite_ops->set_rate = clk_composite_set_rate;
-        }
- 
-        if (gate_hw && gate_ops) {
-@@ -178,12 +200,9 @@ struct clk *clk_register_composite(struct device *dev, const char *name,
- 
-                composite->gate_hw = gate_hw;
-                composite->gate_ops = gate_ops;
--               clk_composite_ops->is_enabled = clk_composite_is_enabled;
--               clk_composite_ops->enable = clk_composite_enable;
--               clk_composite_ops->disable = clk_composite_disable;
-        }
- 
--       init.ops = clk_composite_ops;
-+       init.ops = &clk_composite_ops;
-        composite->hw.init = &init;
- 
-        clk = clk_register(dev, &composite->hw);
-@@ -202,7 +221,6 @@ struct clk *clk_register_composite(struct device *dev, const char *name,
-        return clk;
- 
- err:
--       kfree(clk_composite_ops);
-        kfree(composite);
-        return clk;
- }
