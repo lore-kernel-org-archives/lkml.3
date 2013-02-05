@@ -1,118 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3BEHLX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 02:11:23 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:41078 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab3BEHLV (ORCPT
+	id S1752083Ab3BEHMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 02:12:37 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:47398 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab3BEHMe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 02:11:21 -0500
-Message-ID: <5110B08D.9080600@linux.vnet.ibm.com>
-Date: Tue, 05 Feb 2013 15:11:09 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 5 Feb 2013 02:12:34 -0500
 MIME-Version: 1.0
-To: Avi Kivity <avi.kivity@gmail.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3] KVM: MMU: lazily drop large spte
+In-Reply-To: <CAKYAXd8Qo44D8sNo8+r21fmV2ZQinSbqk8WmNiip+vgh9Wo6ow@mail.gmail.com>
+References: <1359988901-7384-1-git-send-email-linkinjeon@gmail.com>
+	<CAKYAXd8QsGzz0FHUNZfBt7kskPQprVrTQcuag75oxx09_R22Ow@mail.gmail.com>
+	<1360046719.26950.26.camel@kjgkr>
+	<CAKYAXd8Qo44D8sNo8+r21fmV2ZQinSbqk8WmNiip+vgh9Wo6ow@mail.gmail.com>
+Date: Tue, 5 Feb 2013 16:12:34 +0900
+Message-ID: <CAKYAXd9NqhRs1PO01K4Y8LM4=nAuFNQ-bBs93mKwpa_59e+xdg@mail.gmail.com>
+Subject: Re: [PATCH] f2fs: add compat_ioctl to provide backward compatability
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020507-4790-0000-0000-000006C998BA
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kvm zaps the large spte if write-protected is needed, the later
-read can fault on that spte. Actually, we can make the large spte readonly
-instead of making them un-present, the page fault caused by read access can
-be avoid
+2013/2/5, Namjae Jeon <linkinjeon@gmail.com>:
+> 2013/2/5, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> Hi,
+>>
+>> 2013-02-05 (화), 14:28 +0900, Namjae Jeon:
+>>> Hi Jaegeuk.
+>>>
+>>> Oops!, I was missing include header.
+>>> Sorry, I will send v2 patch again.
+>>
+>> I got a build error, and simply added the following header file in your
+>> patch.
+>>
+>> #include <linux/compat.h>
+>>
+>> Is it correct?
+> Yes, Right :) It should be needed.
+> Sorry for my mistake again. Could you add this header instead of me
+> ?(because I can resend the patch tonight....).
+>
+> Thanks!
+>>
+>> Thanks,
+>>
+Hi Jaegeuk.
+I tried to paste the patch in mail.
+Could you take below patch instead of previous patch ?
 
-The idea is from Avi:
-| As I mentioned before, write-protecting a large spte is a good idea,
-| since it moves some work from protect-time to fault-time, so it reduces
-| jitter.  This removes the need for the return value.
+Thanks.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+
+--------------------------------------------------------------------------------------------------------
+Subject: [PATCH] f2fs: add compat_ioctl to provide backward compatibility
+From: Namjae Jeon <namjae.jeon@samsung.com>
+
+adding compat_ioctl to provide support for backward comptability - 32bit binary
+execution on 64bit kernel.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
-Changelog:
-v3:
-- address Gleb's comments, we make the function return true if flush is
-  needed instead of returning it via pointer to a variable
-- improve the changelog
+ fs/f2fs/f2fs.h |   15 +++++++++++++++
+ fs/f2fs/file.c |   21 +++++++++++++++++++++
+ 2 files changed, 36 insertions(+), 0 deletions(-)
 
- arch/x86/kvm/mmu.c |   23 +++++++----------------
- 1 files changed, 7 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 42ba85c..ff2fc80 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1106,8 +1106,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
-
- /*
-  * Write-protect on the specified @sptep, @pt_protect indicates whether
-- * spte writ-protection is caused by protecting shadow page table.
-- * @flush indicates whether tlb need be flushed.
-+ * spte write-protection is caused by protecting shadow page table.
-  *
-  * Note: write protection is difference between drity logging and spte
-  * protection:
-@@ -1116,10 +1115,9 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
-  * - for spte protection, the spte can be writable only after unsync-ing
-  *   shadow page.
-  *
-- * Return true if the spte is dropped.
-+ * Return true if tlb need be flushed.
-  */
--static bool
--spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
-+static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool pt_protect)
- {
- 	u64 spte = *sptep;
-
-@@ -1129,17 +1127,11 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
-
- 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
-
--	if (__drop_large_spte(kvm, sptep)) {
--		*flush |= true;
--		return true;
--	}
--
- 	if (pt_protect)
- 		spte &= ~SPTE_MMU_WRITEABLE;
- 	spte = spte & ~PT_WRITABLE_MASK;
-
--	*flush |= mmu_spte_update(sptep, spte);
--	return false;
-+	return mmu_spte_update(sptep, spte);
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 5022a7d..e980dd5 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -104,6 +104,20 @@ static inline int update_sits_in_cursum(struct
+f2fs_summary_block *rs, int i)
  }
 
- static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
-@@ -1151,11 +1143,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
-
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
--		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
--			sptep = rmap_get_first(*rmapp, &iter);
--			continue;
--		}
-
-+		flush |= spte_write_protect(kvm, sptep, pt_protect);
- 		sptep = rmap_get_next(&iter);
- 	}
-
-@@ -2611,6 +2600,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 			break;
- 		}
-
-+		drop_large_spte(vcpu, iterator.sptep);
+ /*
++ * ioctl commands
++ */
++#define F2FS_IOC_GETFLAGS               FS_IOC_GETFLAGS
++#define F2FS_IOC_SETFLAGS               FS_IOC_SETFLAGS
 +
- 		if (!is_shadow_present_pte(*iterator.sptep)) {
- 			u64 base_addr = iterator.addr;
++#if defined(__KERNEL__) && defined(CONFIG_COMPAT)
++/*
++ * ioctl commands in 32 bit emulation
++ */
++#define F2FS_IOC32_GETFLAGS             FS_IOC32_GETFLAGS
++#define F2FS_IOC32_SETFLAGS             FS_IOC32_SETFLAGS
++#endif
++
++/*
+  * For INODE and NODE manager
+  */
+ #define XATTR_NODE_OFFSET	(-1)	/*
+@@ -842,6 +856,7 @@ void f2fs_truncate(struct inode *);
+ int f2fs_setattr(struct dentry *, struct iattr *);
+ int truncate_hole(struct inode *, pgoff_t, pgoff_t);
+ long f2fs_ioctl(struct file *, unsigned int, unsigned long);
++long f2fs_compat_ioctl(struct file *, unsigned int, unsigned long);
 
+ /*
+  * inode.c
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 33d1736..de3e533 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -17,6 +17,7 @@
+ #include <linux/types.h>
+ #include <linux/uaccess.h>
+ #include <linux/mount.h>
++#include <linux/compat.h>
+
+ #include "f2fs.h"
+ #include "node.h"
+@@ -634,6 +635,23 @@ out:
+ 	}
+ }
+
++#ifdef CONFIG_COMPAT
++long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	switch (cmd) {
++	case F2FS_IOC32_GETFLAGS:
++		cmd = F2FS_IOC_GETFLAGS;
++		break;
++	case F2FS_IOC32_SETFLAGS:
++		cmd = F2FS_IOC_SETFLAGS;
++		break;
++	default:
++		return -ENOIOCTLCMD;
++	}
++	return f2fs_ioctl(file, cmd, (unsigned long) compat_ptr(arg));
++}
++#endif
++
+ const struct file_operations f2fs_file_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.read		= do_sync_read,
+@@ -645,6 +663,9 @@ const struct file_operations f2fs_file_operations = {
+ 	.fsync		= f2fs_sync_file,
+ 	.fallocate	= f2fs_fallocate,
+ 	.unlocked_ioctl	= f2fs_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl   = f2fs_compat_ioctl,
++#endif
+ 	.splice_read	= generic_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
+ };
 -- 
-1.7.7.6
-
+1.7.2.3
