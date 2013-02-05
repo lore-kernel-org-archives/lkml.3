@@ -1,72 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab3BENcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 08:32:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50056 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754141Ab3BENcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 08:32:51 -0500
-Date: Tue, 5 Feb 2013 13:32:44 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Lin Feng <linfeng@cn.fujitsu.com>, bcrl@kvack.org, viro@zeniv.linux.org.uk,
-        khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
-        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
-        mhocko@suse.cz, linux-mm@kvack.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: hotplug: implement non-movable version of
- get_user_pages() called get_user_pages_non_movable()
-Message-ID: <20130205133244.GH21389@suse.de>
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
- <1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com>
- <20130204160624.5c20a8a0.akpm@linux-foundation.org>
- <20130205115722.GF21389@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130205115722.GF21389@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755333Ab3BENew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 08:34:52 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:36740 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754506Ab3BENev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 08:34:51 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 14/19] spi/atmel: remove incorrect __exit_p()
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@list.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        spi-devel-general@lists.sourceforge.net
+In-Reply-To: <1359123276-15833-15-git-send-email-arnd@arndb.de>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359123276-15833-15-git-send-email-arnd@arndb.de>
+Date: Tue, 05 Feb 2013 13:34:46 +0000
+Message-Id: <20130205133446.4CFC33E0E27@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 11:57:22AM +0000, Mel Gorman wrote:
+On Fri, 25 Jan 2013 14:14:31 +0000, Arnd Bergmann <arnd@arndb.de> wrote:
+> Since we no longer allow building without hotplug, the
+> atmel_spi_remove function is always present and we should
+> not use __exit_p() to refer to it.
 > 
-> > > +				migrate_pre_flag = 1;
-> > > +			}
-> > > +
-> > > +			if (!isolate_lru_page(pages[i])) {
-> > > +				inc_zone_page_state(pages[i], NR_ISOLATED_ANON +
-> > > +						 page_is_file_cache(pages[i]));
-> > > +				list_add_tail(&pages[i]->lru, &pagelist);
-> > > +			} else {
-> > > +				isolate_err = 1;
-> > > +				goto put_page;
-> > > +			}
+> Without this patch, building at91_dt_defconfig results in:
 > 
-> isolate_lru_page() takes the LRU lock every time.
+> drivers/spi/spi-atmel.c:1006:12: warning: 'atmel_spi_remove' defined but not used [-Wunused-function]
 
-Credit to Michal Hocko for bringing this up but with the number of
-other issues I missed that this is also broken with respect to huge page
-handling. hugetlbfs pages will not be on the LRU so the isolation will mess
-up and the migration has to be handled differently.  Ordinarily hugetlbfs
-pages cannot be allocated from ZONE_MOVABLE but it is possible to configure
-it to be allowed via /proc/sys/vm/hugepages_treat_as_movable. If this
-encounters a hugetlbfs page, it'll just blow up.
+Looks good, but I took a deeper look and it is incomplete. I found an
+whole bunch more references. I've crafted a new patch to get rid of
+them. I'll post and commit it to my tree.
 
-The other is that this almost certainly broken for transhuge page
-handling. gup returns the head and tail pages and ordinarily this is ok
-because the caller only cares about the physical address. Migration will
-also split a hugepage if it receives it but you are potentially adding
-tail pages to a list here and then migrating them. The split of the first
-page will get very confused. I'm not exactly sure what the result will be
-but it won't be pretty.
+g.
 
-Was THP enabled when this was tested? Was CONFIG_DEBUG_LIST enabled
-during testing?
-
--- 
-Mel Gorman
-SUSE Labs
