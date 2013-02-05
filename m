@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab3BEJZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:25:40 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37077 "EHLO arroyo.ext.ti.com"
+	id S1754176Ab3BEJ0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:26:09 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37101 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab3BEJZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:25:35 -0500
-Date: Tue, 5 Feb 2013 11:25:24 +0200
+	id S1750844Ab3BEJ0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:26:05 -0500
+Date: Tue, 5 Feb 2013 11:25:54 +0200
 From: Felipe Balbi <balbi@ti.com>
 To: Roger Quadros <rogerq@ti.com>
 CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
@@ -15,127 +15,89 @@ CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
         <javier@dowhile0.org>, <sshtylyov@mvista.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 08/30] mfd: omap-usb-host: Remove PHY reset handling code
-Message-ID: <20130205092523.GQ32118@arwen.pp.htv.fi>
+Subject: Re: [PATCH 09/30] USB: ehci-omap: Use devm_request_and_ioremap()
+Message-ID: <20130205092554.GR32118@arwen.pp.htv.fi>
 Reply-To: <balbi@ti.com>
 References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
- <1359372631-8180-9-git-send-email-rogerq@ti.com>
+ <1359372631-8180-10-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7kD9y3RnPUgTZee0"
+	protocol="application/pgp-signature"; boundary="5xr6Gr0irOxp3+3c"
 Content-Disposition: inline
-In-Reply-To: <1359372631-8180-9-git-send-email-rogerq@ti.com>
+In-Reply-To: <1359372631-8180-10-git-send-email-rogerq@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7kD9y3RnPUgTZee0
+--5xr6Gr0irOxp3+3c
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 28, 2013 at 01:30:09PM +0200, Roger Quadros wrote:
-> PHY reset GPIO handling will be done in the PHY driver
+On Mon, Jan 28, 2013 at 01:30:10PM +0200, Roger Quadros wrote:
+> Make use of devm_request_and_ioremap() and correct comment.
 >=20
 > Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
 Acked-by: Felipe Balbi <balbi@ti.com>
 
 > ---
->  drivers/mfd/omap-usb-host.c |   47 -------------------------------------=
-------
->  1 files changed, 0 insertions(+), 47 deletions(-)
+>  drivers/usb/host/ehci-omap.c |   19 +++++--------------
+>  1 files changed, 5 insertions(+), 14 deletions(-)
 >=20
-> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-> index 0874352..502a779 100644
-> --- a/drivers/mfd/omap-usb-host.c
-> +++ b/drivers/mfd/omap-usb-host.c
-> @@ -430,24 +430,10 @@ static unsigned omap_usbhs_rev2_hostconfig(struct u=
-sbhs_hcd_omap *omap,
->  static void omap_usbhs_init(struct device *dev)
->  {
->  	struct usbhs_hcd_omap		*omap =3D dev_get_drvdata(dev);
-> -	struct usbhs_omap_platform_data	*pdata =3D omap->pdata;
->  	unsigned			reg;
+> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+> index 30fc482..fd2f5450 100644
+> --- a/drivers/usb/host/ehci-omap.c
+> +++ b/drivers/usb/host/ehci-omap.c
+> @@ -216,23 +216,17 @@ static int ehci_hcd_omap_probe(struct platform_devi=
+ce *pdev)
 > =20
->  	dev_dbg(dev, "starting TI HSUSB Controller\n");
-> =20
-> -	if (pdata->phy_reset) {
-> -		if (gpio_is_valid(pdata->reset_gpio_port[0]))
-> -			gpio_request_one(pdata->reset_gpio_port[0],
-> -					 GPIOF_OUT_INIT_LOW, "USB1 PHY reset");
-> -
-> -		if (gpio_is_valid(pdata->reset_gpio_port[1]))
-> -			gpio_request_one(pdata->reset_gpio_port[1],
-> -					 GPIOF_OUT_INIT_LOW, "USB2 PHY reset");
-> -
-> -		/* Hold the PHY in RESET for enough time till DIR is high */
-> -		udelay(10);
+>  	res =3D  platform_get_resource_byname(pdev,
+>  				IORESOURCE_MEM, "ehci");
+> -	if (!res) {
+> -		dev_err(dev, "UHH EHCI get resource failed\n");
+> -		return -ENODEV;
 > -	}
 > -
->  	pm_runtime_get_sync(dev);
+> -	regs =3D ioremap(res->start, resource_size(res));
+> +	regs =3D devm_request_and_ioremap(dev, res);
+>  	if (!regs) {
+> -		dev_err(dev, "UHH EHCI ioremap failed\n");
+> -		return -ENOMEM;
+> +		dev_err(dev, "Resource request/ioremap failed\n");
+> +		return -EADDRNOTAVAIL;
+>  	}
 > =20
->  	reg =3D usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
-> @@ -476,37 +462,8 @@ static void omap_usbhs_init(struct device *dev)
->  	dev_dbg(dev, "UHH setup done, uhh_hostconfig=3D%x\n", reg);
+>  	hcd =3D usb_create_hcd(&ehci_omap_hc_driver, dev,
+>  			dev_name(dev));
+>  	if (!hcd) {
+> -		dev_err(dev, "failed to create hcd with err %d\n", ret);
+> -		ret =3D -ENOMEM;
+> -		goto err_io;
+> +		dev_err(dev, "Failed to create HCD\n");
+> +		return -ENOMEM;
+>  	}
 > =20
+>  	hcd->rsrc_start =3D res->start;
+> @@ -285,8 +279,6 @@ err_pm_runtime:
 >  	pm_runtime_put_sync(dev);
-> -	if (pdata->phy_reset) {
-> -		/* Hold the PHY in RESET for enough time till
-> -		 * PHY is settled and ready
-> -		 */
-> -		udelay(10);
-> -
-> -		if (gpio_is_valid(pdata->reset_gpio_port[0]))
-> -			gpio_set_value_cansleep
-> -				(pdata->reset_gpio_port[0], 1);
-> -
-> -		if (gpio_is_valid(pdata->reset_gpio_port[1]))
-> -			gpio_set_value_cansleep
-> -				(pdata->reset_gpio_port[1], 1);
-> -	}
-> -}
-> -
-> -static void omap_usbhs_deinit(struct device *dev)
-> -{
-> -	struct usbhs_hcd_omap		*omap =3D dev_get_drvdata(dev);
-> -	struct usbhs_omap_platform_data	*pdata =3D omap->pdata;
-> -
-> -	if (pdata->phy_reset) {
-> -		if (gpio_is_valid(pdata->reset_gpio_port[0]))
-> -			gpio_free(pdata->reset_gpio_port[0]);
-> -
-> -		if (gpio_is_valid(pdata->reset_gpio_port[1]))
-> -			gpio_free(pdata->reset_gpio_port[1]);
-> -	}
+>  	usb_put_hcd(hcd);
+> =20
+> -err_io:
+> -	iounmap(regs);
+>  	return ret;
 >  }
 > =20
-> -
->  /**
->   * usbhs_omap_probe - initialize TI-based HCDs
->   *
-> @@ -710,8 +667,6 @@ static int usbhs_omap_probe(struct platform_device *p=
-dev)
->  	return 0;
+> @@ -306,7 +298,6 @@ static int ehci_hcd_omap_remove(struct platform_devic=
+e *pdev)
 > =20
->  err_alloc:
-> -	omap_usbhs_deinit(&pdev->dev);
-> -
->  	for (i =3D 0; i < omap->nports; i++) {
->  		if (!IS_ERR(omap->utmi_clk[i]))
->  			clk_put(omap->utmi_clk[i]);
-> @@ -756,8 +711,6 @@ static int usbhs_omap_remove(struct platform_device *=
-pdev)
->  	struct usbhs_hcd_omap *omap =3D platform_get_drvdata(pdev);
->  	int i;
+>  	usb_remove_hcd(hcd);
+>  	disable_put_regulator(dev->platform_data);
+> -	iounmap(hcd->regs);
+>  	usb_put_hcd(hcd);
 > =20
-> -	omap_usbhs_deinit(&pdev->dev);
-> -
->  	for (i =3D 0; i < omap->nports; i++) {
->  		if (!IS_ERR(omap->utmi_clk[i]))
->  			clk_put(omap->utmi_clk[i]);
+>  	pm_runtime_put_sync(dev);
 > --=20
 > 1.7.4.1
 >=20
@@ -143,26 +105,26 @@ pdev)
 --=20
 balbi
 
---7kD9y3RnPUgTZee0
+--5xr6Gr0irOxp3+3c
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRENADAAoJEIaOsuA1yqREVgAP+gJMc+iMwSeuGMU78KScZUzc
-in5XFWUdngWtijuGEb2KrXOUR2jksTa5qP3jdJKo67l2wQ/m4P3IhAKZPz4GxnR/
-yp3kXnBNbwMfv8NEB0Uov1QliRB4mcmggeuGbz49s5feVBuuWQMhBveFw9hjzXyz
-C3NqEbu/VMqBPcG2wPhtF7gnk6FNRHOSKbtAkeWQBEWfDgo0J4NceNf5MkJEnNAI
-xryyQa0njulSx0cGNm9YwJ0h5IZFFIK9H9OKStYXC+Rs+HU0gCJg7Xsjcy5gDTaG
-rMxRd98O2U5dYPHcdM9KMjJGJCJUkgd+nolQg8v0guMeBfiD/KEwx/GFu2yWC5YL
-TjnFLVHpXwrxo/fDBFWPfkFGw5o83IcOEx2YipxSEEVpUh7TFguKCYgW09SA+bpZ
-dNwQMaCC0GFq7dT4V8q/MmepEPQVenFo4IPTfJEFIaFsJh1D7f4dPxD1gOr+7V8h
-efqBH7DlflDWN5UjUBMGMGmc6T+M+3CFvQOCuvrq1ksy0p4S5fVkzoEkVVzoIvsm
-cynk9foBWFEF/88mlPC5k+YufM1nlPA33AeGXQoxW8mtulD29UVQVj5ts/I4rBob
-R9cjo6OUsGBBLJQ3hFpQM3Fu9tlfEZqzVp2vJMZ5Vd/7Kq3NL9pRzAq5iRfyjjXp
-mSB97hM1yGZjTOU6lv6n
-=eDSc
+iQIcBAEBAgAGBQJRENAiAAoJEIaOsuA1yqREzJUP/3rqnwdmz35GOwBIYLQUVjSK
+yDR3Eew0vKbDXHhhSInr43O7g1gd2D8CJ5yT3Mbe87P5WF0Iucf8NiGhl6Syy2ZD
+S5XqgHsICB+0555hU+AeGz5snz99VjWpmTYdY2fo9QloygH0BZ67gRZnBAF74Ce6
+cr/vNOQpLyIw2z16XHTcNvukZi+E8thh3QBYt0plBfBkSMfUfCMnmV88NiNeFMn2
+kTp9uP5NadccZPbFvnc12JszaTOFriaSwwb2mKMgAE3Y3tkC716kN8pUKi0/m/3a
+oLSvHcmMK4CpbUrj8o8FdKn5Rc7huBtDDlpd0YDPLU7TErg6fSFUcqLdsjLu6LeM
+7EolNAZ651gyMGUwWiZ/mKKGz9QdkgdcGx/9iSzcn9OkmJsRnwmDRB5HfaQbJA5l
+qyFGbtCI7FN7lM1h7FA0qgSqtEHWFj+0WJ4+5Y96iQxQGuyt3AfpFIcTmzdKmmR/
+ggwOLFn4IAXvE0DQR8IKymYOcRq4oBcDCVQ0ON9pr9fIBX0yR5v2Y28Ar0QJOJn9
+pnZvss91hoALyKfeeKPvBdE0yogzL1oeb/w6KU2B+HsP2bC9DZt+QMXdcVCNcsPk
+ts8rN0uNwscYUS+xvRUxpplD2d19k1lA2gxFGL6KHJbGn0C2uYnbe8ia821obhFA
+YFS24KY8UWYTXOghhV+c
+=rfk7
 -----END PGP SIGNATURE-----
 
---7kD9y3RnPUgTZee0--
+--5xr6Gr0irOxp3+3c--
