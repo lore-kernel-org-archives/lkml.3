@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab3BEQuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 11:50:23 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:60994 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731Ab3BEQuV (ORCPT
+	id S1755586Ab3BEQvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 11:51:50 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:56710 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754742Ab3BEQvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 11:50:21 -0500
-Date: Tue, 5 Feb 2013 08:50:16 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <eag0628@gmail.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/13] workqueue: enhance locking and record global
- worker id for work data
-Message-ID: <20130205165016.GB4276@mtj.dyndns.org>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
- <20130204210429.GB27963@mtj.dyndns.org>
- <CACvQF52Lqi2TuXc9oCdGkAzxcpE12YfuX=9-jp5tePsOqPBe6w@mail.gmail.com>
+	Tue, 5 Feb 2013 11:51:46 -0500
+Date: Tue, 5 Feb 2013 11:51:45 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v9 4/4] sd: change to auto suspend mode
+In-Reply-To: <1360051396-3080-5-git-send-email-aaron.lu@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1302051147370.2245-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACvQF52Lqi2TuXc9oCdGkAzxcpE12YfuX=9-jp5tePsOqPBe6w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+On Tue, 5 Feb 2013, Aaron Lu wrote:
 
-On Wed, Feb 06, 2013 at 12:19:26AM +0800, Lai Jiangshan wrote:
-> > Can't we just make get_work_pool_id() do a fast path if OFFQ than
-> > requiring the user to distinguish off and on queue cases?
+> From: Lin Ming <ming.m.lin@intel.com>
 > 
-> old code, get_work_pool_id() is only called when offq.
-> after series applied, offq_work_worker_id() *must* be called only when offq,
-> and we can't offer get_work_worker_id().
-
-Can you please elaborate why we can't offer get_work_worker_id()?
-
-> > While I'm a bit worried about capping total number of workers by the
-> > amount bits left in work->data, if that doesn't cause any practical
-> > issue (how many do we have available on 32bit?), I think this is the
-> > better approach.  We couldn't do this before because work -> worker
-> > relationship could be 1:N but it should now be doable.  Note that we
-> > need RCU no matter what we index (pool or worker) to avoid locking on
-> > each lookup.
+> Uses block layer runtime pm helper functions in
+> scsi_runtime_suspend/resume for devices that take advantage of it.
 > 
-> BUILD_BUG_ON((BITS_PER_LONG != 64) && (WORK_OFFQ_WORKER_SHIFT > 12));
-> 
-> Every worker needs at least 4k memory for its stack, the bits are enough if
-> WORK_OFFQ_WORKER_SHIFT <= 12.
+> Remove scsi_autopm_* from sd open/release path and check_events path.
 
-Ah, so that was what that comment was about, so we always have enough
-bits.  I have to say the comment is a bit cryptic.
+One thing is a little odd here...
 
-> > From past experience, I *think* it's gonna be a bit of struggle for
-> > both of us to get the series in a shape that I would find acceptable
-> > by reviewing and iterating, so I might just swallow it and regurgitate
-> > into a form that I like.  Hmm.... dunno.  Will think about it.
-> 
-> It is not nightmare for me! the work and discusses will consume most
-> time of my night, no night time for nightmare.
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -144,33 +144,78 @@ static int scsi_bus_restore(struct device *dev)
+>  
+>  #ifdef CONFIG_PM_RUNTIME
+>  
+> +static int sdev_blk_runtime_suspend(struct scsi_device *sdev,
+> +					int (*cb)(struct device *))
+> +{
+> +	int err;
+> +
+> +	err = blk_pre_runtime_suspend(sdev->request_queue);
+> +	if (err)
+> +		return err;
+> +	if (cb)
+> +		err = cb(&sdev->sdev_gendev);
+> +	blk_post_runtime_suspend(sdev->request_queue, err);
+> +
+> +	return err;
+> +}
+> +
+> +static int sdev_runtime_suspend(struct device *dev)
+> +{
+> +	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> +	int (*cb)(struct device *) = pm ? pm->runtime_suspend : NULL;
+> +	struct scsi_device *sdev = to_scsi_device(dev);
+> +
+> +	if (sdev->request_queue->dev)
+> +		return sdev_blk_runtime_suspend(sdev, cb);
+> +	else
+> +		return scsi_dev_type_suspend(dev, cb);
+> +}
+> +
+>  static int scsi_runtime_suspend(struct device *dev)
+>  {
+>  	int err = 0;
+> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+>  
+>  	dev_dbg(dev, "scsi_runtime_suspend\n");
+> -	if (scsi_is_sdev_device(dev)) {
+> -		err = scsi_dev_type_suspend(dev,
+> -				pm ? pm->runtime_suspend : NULL);
+> -		if (err == -EAGAIN)
+> -			pm_schedule_suspend(dev, jiffies_to_msecs(
+> -				round_jiffies_up_relative(HZ/10)));
+> -	}
+> +	if (scsi_is_sdev_device(dev))
+> +		err = sdev_runtime_suspend(dev);
 
-Heh, yeah, I didn't say it was a nightmare.  I do like your work.  I
-think most problems are from communication (including description and
-comments).  I guess I can help along for a while.
+The "if (err == -EAGAIN)" test and the call to pm_schedule_suspend seem
+to have been dropped since v8 of this series.  It looks like they ought
+to be moved into sdev_runtime_suspend.
 
-> > Anyways, nice work.
-> >
-> I'm glad you like it. My daughter was born about 3month ago and I left
-> workqueue work then. I think it is time to pick up old pending
-> patches.
+Alan Stern
 
-Big congratulations.  :)
-
-Thanks!
-
--- 
-tejun
