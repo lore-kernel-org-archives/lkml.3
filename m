@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab3BEWTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:19:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48164 "EHLO
+	id S1757878Ab3BEWTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:19:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48149 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757741Ab3BEWLx (ORCPT
+	with ESMTP id S1757836Ab3BEWLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:11:53 -0500
+	Tue, 5 Feb 2013 17:11:40 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Wang YanQing <udknight@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, peterz@infradead.org,
+        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com,
+        Ingo Molnar <mingo@kernel.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 67/93] ALSA: hda - Fix non-snoop page handling
-Date: Tue,  5 Feb 2013 20:06:56 -0200
-Message-Id: <1360102042-10732-68-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 63/93] smp: Fix SMP function call empty cpu mask race
+Date: Tue,  5 Feb 2013 20:06:52 -0200
+Message-Id: <1360102042-10732-64-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,132 +31,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Wang YanQing <udknight@gmail.com>
 
-commit 9ddf1aeb2134e72275c97a2c6ff2e3eb04f2f27a upstream.
+commit f44310b98ddb7f0d06550d73ed67df5865e3eda5 upstream.
 
-For non-snoop mode, we fiddle with the page attributes of CORB/RIRB
-and the position buffer, but also the ring buffers.  The problem is
-that the current code blindly assumes that the buffer is contiguous.
-However, the ring buffers may be SG-buffers, thus a wrong vmapped
-address is passed there, leading to Oops.
+I get the following warning every day with v3.7, once or
+twice a day:
 
-This patch fixes the handling for SG-buffers.
+  [ 2235.186027] WARNING: at /mnt/sda7/kernel/linux/arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x2f/0xb8()
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=800701
+As explained by Linus as well:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ herton: snd_pcm_get_dma_buf doesn't exist on 3.5, pass
-  substream->runtime->dma_buffer_p directly ]
+ |
+ | Once we've done the "list_add_rcu()" to add it to the
+ | queue, we can have (another) IPI to the target CPU that can
+ | now see it and clear the mask.
+ |
+ | So by the time we get to actually send the IPI, the mask might
+ | have been cleared by another IPI.
+ |
+
+This patch also fixes a system hang problem, if the data->cpumask
+gets cleared after passing this point:
+
+        if (WARN_ONCE(!mask, "empty IPI mask"))
+                return;
+
+then the problem in commit 83d349f35e1a ("x86: don't send an IPI to
+the empty set of CPU's") will happen again.
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: peterz@infradead.org
+Cc: mina86@mina86.org
+Cc: srivatsa.bhat@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/20130126075357.GA3205@udknight
+[ Tidied up the changelog and the comment in the code. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- sound/pci/hda/hda_intel.c |   40 ++++++++++++++++++++++++++--------------
- 1 file changed, 26 insertions(+), 14 deletions(-)
+ kernel/smp.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index ff2bf55..d086bbf 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -617,29 +617,43 @@ static char *driver_short_names[] DELAYED_INITDATA_MARK = {
- #define get_azx_dev(substream) (substream->runtime->private_data)
+diff --git a/kernel/smp.c b/kernel/smp.c
+index d0ae5b2..f0bfdcd 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -33,6 +33,7 @@ struct call_function_data {
+ 	struct call_single_data	csd;
+ 	atomic_t		refs;
+ 	cpumask_var_t		cpumask;
++	cpumask_var_t		cpumask_ipi;
+ };
  
- #ifdef CONFIG_X86
--static void __mark_pages_wc(struct azx *chip, void *addr, size_t size, bool on)
-+static void __mark_pages_wc(struct azx *chip, struct snd_dma_buffer *dmab, bool on)
- {
-+	int pages;
-+
- 	if (azx_snoop(chip))
- 		return;
--	if (addr && size) {
--		int pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+	if (!dmab || !dmab->area || !dmab->bytes)
-+		return;
-+
-+#ifdef CONFIG_SND_DMA_SGBUF
-+	if (dmab->dev.type == SNDRV_DMA_TYPE_DEV_SG) {
-+		struct snd_sg_buf *sgbuf = dmab->private_data;
- 		if (on)
--			set_memory_wc((unsigned long)addr, pages);
-+			set_pages_array_wc(sgbuf->page_table, sgbuf->pages);
- 		else
--			set_memory_wb((unsigned long)addr, pages);
-+			set_pages_array_wb(sgbuf->page_table, sgbuf->pages);
-+		return;
- 	}
-+#endif
-+
-+	pages = (dmab->bytes + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+	if (on)
-+		set_memory_wc((unsigned long)dmab->area, pages);
-+	else
-+		set_memory_wb((unsigned long)dmab->area, pages);
- }
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
+@@ -56,6 +57,9 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
+ 				cpu_to_node(cpu)))
+ 			return notifier_from_errno(-ENOMEM);
++		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
++				cpu_to_node(cpu)))
++			return notifier_from_errno(-ENOMEM);
+ 		break;
  
- static inline void mark_pages_wc(struct azx *chip, struct snd_dma_buffer *buf,
- 				 bool on)
- {
--	__mark_pages_wc(chip, buf->area, buf->bytes, on);
-+	__mark_pages_wc(chip, buf, on);
- }
- static inline void mark_runtime_wc(struct azx *chip, struct azx_dev *azx_dev,
--				   struct snd_pcm_runtime *runtime, bool on)
-+				   struct snd_pcm_substream *substream, bool on)
- {
- 	if (azx_dev->wc_marked != on) {
--		__mark_pages_wc(chip, runtime->dma_area, runtime->dma_bytes, on);
-+		__mark_pages_wc(chip, substream->runtime->dma_buffer_p, on);
- 		azx_dev->wc_marked = on;
- 	}
- }
-@@ -650,7 +664,7 @@ static inline void mark_pages_wc(struct azx *chip, struct snd_dma_buffer *buf,
- {
- }
- static inline void mark_runtime_wc(struct azx *chip, struct azx_dev *azx_dev,
--				   struct snd_pcm_runtime *runtime, bool on)
-+				   struct snd_pcm_substream *substream, bool on)
- {
- }
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -65,6 +69,7 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+ 		free_cpumask_var(cfd->cpumask);
++		free_cpumask_var(cfd->cpumask_ipi);
+ 		break;
  #endif
-@@ -1823,11 +1837,10 @@ static int azx_pcm_hw_params(struct snd_pcm_substream *substream,
- {
- 	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
- 	struct azx *chip = apcm->chip;
--	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct azx_dev *azx_dev = get_azx_dev(substream);
- 	int ret;
+ 	};
+@@ -526,6 +531,12 @@ void smp_call_function_many(const struct cpumask *mask,
+ 		return;
+ 	}
  
--	mark_runtime_wc(chip, azx_dev, runtime, false);
-+	mark_runtime_wc(chip, azx_dev, substream, false);
- 	azx_dev->bufsize = 0;
- 	azx_dev->period_bytes = 0;
- 	azx_dev->format_val = 0;
-@@ -1835,7 +1848,7 @@ static int azx_pcm_hw_params(struct snd_pcm_substream *substream,
- 					params_buffer_bytes(hw_params));
- 	if (ret < 0)
- 		return ret;
--	mark_runtime_wc(chip, azx_dev, runtime, true);
-+	mark_runtime_wc(chip, azx_dev, substream, true);
- 	return ret;
- }
++	/*
++	 * After we put an entry into the list, data->cpumask
++	 * may be cleared again when another CPU sends another IPI for
++	 * a SMP function call, so data->cpumask will be zero.
++	 */
++	cpumask_copy(data->cpumask_ipi, data->cpumask);
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+ 	 * Place entry at the _HEAD_ of the list, so that any cpu still
+@@ -549,7 +560,7 @@ void smp_call_function_many(const struct cpumask *mask,
+ 	smp_mb();
  
-@@ -1844,7 +1857,6 @@ static int azx_pcm_hw_free(struct snd_pcm_substream *substream)
- 	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
- 	struct azx_dev *azx_dev = get_azx_dev(substream);
- 	struct azx *chip = apcm->chip;
--	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct hda_pcm_stream *hinfo = apcm->hinfo[substream->stream];
+ 	/* Send a message to all CPUs in the map */
+-	arch_send_call_function_ipi_mask(data->cpumask);
++	arch_send_call_function_ipi_mask(data->cpumask_ipi);
  
- 	/* reset BDL address */
-@@ -1857,7 +1869,7 @@ static int azx_pcm_hw_free(struct snd_pcm_substream *substream)
- 
- 	snd_hda_codec_cleanup(apcm->codec, hinfo, substream);
- 
--	mark_runtime_wc(chip, azx_dev, runtime, false);
-+	mark_runtime_wc(chip, azx_dev, substream, false);
- 	return snd_pcm_lib_free_pages(substream);
- }
- 
+ 	/* Optionally wait for the CPUs to complete */
+ 	if (wait)
 -- 
 1.7.9.5
 
