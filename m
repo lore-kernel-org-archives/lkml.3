@@ -1,200 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab3BERz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:55:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33792 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756232Ab3BERz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:55:56 -0500
-Date: Tue, 5 Feb 2013 17:55:51 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 6/11] ksm: remove old stable nodes more thoroughly
-Message-ID: <20130205175551.GL21389@suse.de>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
- <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
+	id S1756232Ab3BER7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:59:50 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:63826 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab3BER7s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 12:59:48 -0500
+Message-ID: <1360087184.2857.2.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: No sysfs directory for openvswitch module when built-in
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Cong Wang <xiyou.wangcong@gmail.com>, Jesse Gross <jesse@nicira.com>,
+        "David S. Miller" <davem@davemloft.net>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>
+Date: Tue, 5 Feb 2013 17:59:44 +0000
+In-Reply-To: <87boc0liug.fsf@rustcorp.com.au>
+References: <CAM_iQpVgEchb8UsxUP=w6OMbYx=zuP2yv=QwFhe8rPCbNBreVg@mail.gmail.com>
+	 <87boc0liug.fsf@rustcorp.com.au>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1301251800550.29196@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19612.005
+X-TM-AS-Result: No--21.624200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 06:01:59PM -0800, Hugh Dickins wrote:
-> Switching merge_across_nodes after running KSM is liable to oops on stale
-> nodes still left over from the previous stable tree.  It's not something
-> that people will often want to do, but it would be lame to demand a reboot
-> when they're trying to determine which merge_across_nodes setting is best.
+On Mon, 2013-02-04 at 16:29 +1030, Rusty Russell wrote:
+> Cong Wang <xiyou.wangcong@gmail.com> writes:
+> > Hello, Rusty, Jesse,
+> >
+> > I met an interesting problem when I compile openvswitch module as a
+> > built-in (actually I compile ALL kernel modules as built-in), there is
+> > no /sys/module/openvswitch/ directory created by the kernel in this
+> > case.
+> ...
+> > What's worse, the user-space init script thinks openvswitch module is
+> > not loaded by checking the exist of this directory, therefore refuses
+> > to start.
 > 
-> How can this happen?  We only permit switching merge_across_nodes when
-> pages_shared is 0, and usually set run 2 to force that beforehand, which
-> ought to unmerge everything: yet oopses still occur when you then run 1.
+> We only know built-in "modules" exist if we see a parameter or version
+> which mention them.  Looking for /sys/module/openvswitch/ is almost as
+> flawed as looking in /proc/modules.
 > 
+> I hacked up something which lists KBUILD_MODNAME for every element in my
+> kernel which did EXPORT_KERNEL or module_init, and most of them can
+> never be modules, though any could have parameters.  Even if we changed
+> the build system so we could tell things which "could have been a
+> module", it's silly.
+[...]
 
-When reviewing patch 1, I missed that the pages_shared check would prevent
-most of the problems I was envisioning with leftover entries in the
-stable tree. Sorry about that.
+Isn't this information already provided by modules.builtin?
 
-> Three causes:
-> 
-> 1. The old stable tree (built according to the inverse merge_across_nodes)
-> has not been fully torn down.  A stable node lingers until get_ksm_page()
-> notices that the page it references no longer references it: but the page
-> is not necessarily freed as soon as expected, particularly when swapcache.
-> 
-> Fix this with a pass through the old stable tree, applying get_ksm_page()
-> to each of the remaining nodes (most found stale and removed immediately),
-> with forced removal of any left over.  Unless the page is still mapped:
-> I've not seen that case, it shouldn't occur, but better to WARN_ON_ONCE
-> and EBUSY than BUG.
-> 
-> 2. __ksm_enter() has a nice little optimization, to insert the new mm
-> just behind ksmd's cursor, so there's a full pass for it to stabilize
-> (or be removed) before ksmd addresses it.  Nice when ksmd is running,
-> but not so nice when we're trying to unmerge all mms: we were missing
-> those mms forked and inserted behind the unmerge cursor.  Easily fixed
-> by inserting at the end when KSM_RUN_UNMERGE.
-> 
-> 3. It is possible for a KSM page to be faulted back from swapcache into
-> an mm, just after unmerge_and_remove_all_rmap_items() scanned past it.
-> Fix this by copying on fault when KSM_RUN_UNMERGE: but that is private
-> to ksm.c, so dissolve the distinction between ksm_might_need_to_copy()
-> and ksm_does_need_to_copy(), doing it all in the one call into ksm.c.
-> 
-> A long outstanding, unrelated bugfix sneaks in with that third fix:
-> ksm_does_need_to_copy() would copy from a !PageUptodate page (implying
-> I/O error when read in from swap) to a page which it then marks Uptodate.
-> Fix this case by not copying, letting do_swap_page() discover the error.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->  include/linux/ksm.h |   18 ++-------
->  mm/ksm.c            |   83 +++++++++++++++++++++++++++++++++++++++---
->  mm/memory.c         |   19 ++++-----
->  3 files changed, 92 insertions(+), 28 deletions(-)
-> 
-> --- mmotm.orig/include/linux/ksm.h	2013-01-25 14:27:58.220193250 -0800
-> +++ mmotm/include/linux/ksm.h	2013-01-25 14:37:00.764206145 -0800
-> @@ -16,9 +16,6 @@
->  struct stable_node;
->  struct mem_cgroup;
->  
-> -struct page *ksm_does_need_to_copy(struct page *page,
-> -			struct vm_area_struct *vma, unsigned long address);
-> -
->  #ifdef CONFIG_KSM
->  int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
->  		unsigned long end, int advice, unsigned long *vm_flags);
-> @@ -73,15 +70,8 @@ static inline void set_page_stable_node(
->   * We'd like to make this conditional on vma->vm_flags & VM_MERGEABLE,
->   * but what if the vma was unmerged while the page was swapped out?
->   */
-> -static inline int ksm_might_need_to_copy(struct page *page,
-> -			struct vm_area_struct *vma, unsigned long address)
-> -{
-> -	struct anon_vma *anon_vma = page_anon_vma(page);
-> -
-> -	return anon_vma &&
-> -		(anon_vma->root != vma->anon_vma->root ||
-> -		 page->index != linear_page_index(vma, address));
-> -}
-> +struct page *ksm_might_need_to_copy(struct page *page,
-> +			struct vm_area_struct *vma, unsigned long address);
->  
->  int page_referenced_ksm(struct page *page,
->  			struct mem_cgroup *memcg, unsigned long *vm_flags);
-> @@ -113,10 +103,10 @@ static inline int ksm_madvise(struct vm_
->  	return 0;
->  }
->  
-> -static inline int ksm_might_need_to_copy(struct page *page,
-> +static inline struct page *ksm_might_need_to_copy(struct page *page,
->  			struct vm_area_struct *vma, unsigned long address)
->  {
-> -	return 0;
-> +	return page;
->  }
->  
->  static inline int page_referenced_ksm(struct page *page,
-> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
-> +++ mmotm/mm/ksm.c	2013-01-25 14:37:00.768206145 -0800
-> @@ -644,6 +644,57 @@ static int unmerge_ksm_pages(struct vm_a
->  /*
->   * Only called through the sysfs control interface:
->   */
-> +static int remove_stable_node(struct stable_node *stable_node)
-> +{
-> +	struct page *page;
-> +	int err;
-> +
-> +	page = get_ksm_page(stable_node, true);
-> +	if (!page) {
-> +		/*
-> +		 * get_ksm_page did remove_node_from_stable_tree itself.
-> +		 */
-> +		return 0;
-> +	}
-> +
-> +	if (WARN_ON_ONCE(page_mapped(page)))
-> +		err = -EBUSY;
-> +	else {
-> +		/*
-
-It will probably be very obvious to people familiar with ksm.c but even
-so maybe remind the reader that the pages must already have been unmerged
-
-* This page must already have been unmerged and should be stale.
-* It might be in a pagevec waiting to be freed or it might be
-......
-
-
-
-> +		 * This page might be in a pagevec waiting to be freed,
-> +		 * or it might be PageSwapCache (perhaps under writeback),
-> +		 * or it might have been removed from swapcache a moment ago.
-> +		 */
-> +		set_page_stable_node(page, NULL);
-> +		remove_node_from_stable_tree(stable_node);
-> +		err = 0;
-> +	}
-> +
-> +	unlock_page(page);
-> +	put_page(page);
-> +	return err;
-> +}
-> +
-> +static int remove_all_stable_nodes(void)
-> +{
-> +	struct stable_node *stable_node;
-> +	int nid;
-> +	int err = 0;
-> +
-> +	for (nid = 0; nid < nr_node_ids; nid++) {
-> +		while (root_stable_tree[nid].rb_node) {
-> +			stable_node = rb_entry(root_stable_tree[nid].rb_node,
-> +						struct stable_node, node);
-> +			if (remove_stable_node(stable_node)) {
-> +				err = -EBUSY;
-> +				break;	/* proceed to next nid */
-> +			}
-
-If remove_stable_node() returns an error then it's quite possible that it'll
-go boom when that page is encountered later but it's not guaranteed. It'd
-be best effort to continue removing as many of the stable nodes anyway.
-We're in trouble either way of course.
-
-Otherwise I didn't spot a problem so as weak as it is due my familiarity
-with KSM;
-
-Acked-by: Mel Gorman <mgorman@suse.de>
+Ben.
 
 -- 
-Mel Gorman
-SUSE Labs
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
