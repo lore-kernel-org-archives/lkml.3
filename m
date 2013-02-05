@@ -1,126 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab3BEHbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 02:31:42 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:33551 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab3BEHbl (ORCPT
+	id S1754018Ab3BEHeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 02:34:31 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60374 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab3BEHea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 02:31:41 -0500
-Message-ID: <5110B552.9030903@huawei.com>
-Date: Tue, 5 Feb 2013 15:31:30 +0800
-From: Qiang Huang <h.huangqiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 5 Feb 2013 02:34:30 -0500
+X-AuditID: 9c93016f-b7b70ae000000e36-70-5110b604503d
+Date: Tue, 5 Feb 2013 16:34:28 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, kyungmin.park@samsung.com
+Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high
+ memory
+Message-ID: <20130205073428.GA11197@blaptop>
+References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
+ <20130204233430.GA2610@blaptop>
+ <5110B05B.5070109@samsung.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        <peterz@infradead.org>
-Subject: Re: [ANNOUNCE] 3.6.11-rt26
-References: <alpine.LFD.2.02.1302041537230.11905@ionos>
-In-Reply-To: <alpine.LFD.2.02.1302041537230.11905@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.210]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5110B05B.5070109@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/4 22:58, Thomas Gleixner wrote:
-> Dear RT Folks,
-> 
-> I'm pleased to announce the 3.6.11-rt26 release.
-> 
-> Changes since 3.6.11-rt25:
-> 
->    1) Fix the RT highmem implementation on x86
+Hi Marek,
 
-Hi Thomas,
+On Tue, Feb 05, 2013 at 08:10:19AM +0100, Marek Szyprowski wrote:
+> Hello,
+> 
+> On 2/5/2013 12:34 AM, Minchan Kim wrote:
+> >On Mon, Feb 04, 2013 at 11:27:05AM +0100, Marek Szyprowski wrote:
+> >> The total number of low memory pages is determined as
+> >> totalram_pages - totalhigh_pages, so without this patch all CMA
+> >> pageblocks placed in highmem were accounted to low memory.
+> >
+> >So what's the end user effect? With the effect, we have to decide
+> >routing it on stable.
+> >
+> >>
+> >> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> >> ---
+> >>  mm/page_alloc.c |    4 ++++
+> >>  1 file changed, 4 insertions(+)
+> >>
+> >> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >> index f5bab0a..6415d93 100644
+> >> --- a/mm/page_alloc.c
+> >> +++ b/mm/page_alloc.c
+> >> @@ -773,6 +773,10 @@ void __init init_cma_reserved_pageblock(struct page *page)
+> >>  	set_pageblock_migratetype(page, MIGRATE_CMA);
+> >>  	__free_pages(page, pageblock_order);
+> >>  	totalram_pages += pageblock_nr_pages;
+> >> +#ifdef CONFIG_HIGHMEM
+> >
+> >We don't need #ifdef/#endif.
+> 
+> #ifdef is required to let this code compile when highmem is not enabled,
+> becuase totalhigh_pages is defined as 0, see include/linux/highmem.h
 
->From patches-3.6.11-rt28.patch.gz, your patch x86-highmem-make-it-work.patch
-did this work. And you said
-"It had been enabled quite some time, but never really worked."
-
-But I think there is a previous patch mm-rt-kmap-atomic-scheduling.patch did
-the job, so I think RT highmem on x86 should have worked.
-
-Now with your patch, if we use kmap instead of kmap_atomic on RT, do we need
-to revert Peter's patch as well?
-
-I haven't tested it, but if Peter's patch did solved the problem, is his way
-better than use kmap? Because we can use more highmem virtual address,
-although with some switch latency in some small probability scenarios.
+Argh, Sorry for the noise.
+I think it would be better to use accessor but it's a just nitpick. :)
+Thanks!
 
 > 
->    2) Support highmem + RT on ARM
+> >> +	if (PageHighMem(page))
+> >> +		totalhigh_pages += pageblock_nr_pages;
+> >> +#endif
+> >>  }
+> >>  #endif
+> >>
 > 
->    3) Fix an one off error in the generic highmem code (upstream fix
->       did not make it into 3.6.stable)
-> 
->    4) Upstream SLUB fixes (Christoph Lameter)
-> 
->    5) Fix a few RT issues in mmc and amba drivers
-> 
->    6) Initialize local locks in mm/swap.c early
-> 
->    7) Use simple wait queues for completions. This is a performance
->       improvement.
-> 
->       Completions do not have complex callbacks and the wakeup path is
->       disabling interrupts anyway. So using simple wait locks with the
->       raw spinlock is not a latency problem, but the "sleeping lock"
->       in the normal waitqueue is a source for lock bouncing:
-> 
->       T1  	 	   T2
->       lock(WQ)
->       wakeup(T2)
->       ---> preemption
-> 			   lock(WQ)
-> 			   pi_boost(T1)
-> 			   wait_for_lock(WQ)
->       unlock(WQ)
->       deboost(T1)
->       ---> preemption
-> 			   ....
-> 
->       The simple waitqueue reduces this to:
-> 		   
->       T1  	 	   T2
->       raw_lock(WQ)
->       wakeup(T2)
->       raw_unlock(WQ)
->       ---> preemption
-> 			   raw_lock(WQ)	
-> 			   ....
-> 
-> @Steven: Sorry, I forgot the stable tags on:
-> 	 drivers-tty-pl011-irq-disable-madness.patch
-> 	 mmci-remove-bogus-irq-save.patch
-> 	 idle-state.patch
-> 	 might-sleep-check-for-idle.patch
-> 	 mm-swap-fix-initialization.patch
-> 
-> I'm still digging through my mail backlog, so I have not yet decided
-> whether this is the last RT release for 3.6.
+> Best regards
+> -- 
+> Marek Szyprowski
+> Samsung Poland R&D Center
 > 
 > 
-> The delta patch against 3.6.11-rt25 is appended below and can be found
-> here:
-> 
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.11-rt25-rt26.patch.xz
-> 
-> The RT patch against 3.6.11 can be found here:
-> 
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11-rt26.patch.xz
-> 
-> The split quilt queue is available at:
-> 
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.11-rt26.tar.xz
-> 
-> Enjoy,
-> 
-> 	tglx
-> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-
+-- 
+Kind regards,
+Minchan Kim
