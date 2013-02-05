@@ -1,123 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab3BEOOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 09:14:17 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:52202 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007Ab3BEOOP (ORCPT
+	id S1755405Ab3BEOQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 09:16:55 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21568 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab3BEOQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 09:14:15 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [v4 PATCH 00/12] atmel spi controller with dmaengine and device tree support
-To: Wenyou Yang <wenyou.yang@atmel.com>, linux-arm-kernel@lists.infradead.org
-Cc: richard.genoud@gmail.com, JM.Lin@atmel.com, nicolas.ferre@atmel.com,
-        linux-kernel@vger.kernel.org, wenyou.yang@atmel.com,
-        plagnioj@jcrosoft.com
-In-Reply-To: <1358148877-18679-1-git-send-email-wenyou.yang@atmel.com>
-References: <1358148877-18679-1-git-send-email-wenyou.yang@atmel.com>
-Date: Tue, 05 Feb 2013 14:14:10 +0000
-Message-Id: <20130205141410.712493E1265@localhost>
+	Tue, 5 Feb 2013 09:16:53 -0500
+X-Authority-Analysis: v=2.0 cv=C91rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5JNRVNOCx9YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=zaoJEnfNkRYA:10 a=37rDS-QxAAAA:8 a=VwQbUJbxAAAA:8 a=vSVP3YXgkPeEzN0s8Z0A:9 a=PUjeQqilurYA:10 a=Qbg8LneXD70A:10 a=6uQODOVjHeUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1360073811.27007.13.camel@gandalf.local.home>
+Subject: Re: [PATCH] slob: Check for NULL pointer before calling ctor()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Date: Tue, 05 Feb 2013 09:16:51 -0500
+In-Reply-To: <1358442826.23211.18.camel@gandalf.local.home>
+References: <1358442826.23211.18.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jan 2013 15:34:25 +0800, Wenyou Yang <wenyou.yang@atmel.com> wrote:
-> Hi All, 
-> 
-> This set of patches is to add dmaengine and device tree support for atmel spi.
-> The work is based on Nicolas and Richard's work.
-> It is tested on at91sam9x5ek, at91sam9m10g45ek, at91sam9263ek and at91sam9g20ek.
-> 
-> It is based on v3.8-rc3.
+Ping?
 
-Hi Wenyou,
+-- Steve
 
-The patches look fine on a quick look, but I cannot apply them without a
-Signed-off-by line from you since you are the person posting the
-patches. Please read section 12 of Documentation/SubmittingPatches
-(about line #288) and then reply confirming what your signed-off-by line
-should be.
 
+On Thu, 2013-01-17 at 12:13 -0500, Steven Rostedt wrote:
+> [ Sorry for the duplicate email, it's linux-mm@kvack.org not linux-mm@vger.kernel.org ] 
 > 
-> Changelog:
-> v4:
-> 	1./ Take Joe Perches's advance, rewrite atmel_spi_is_v2(struct atmel_spi *as)
-> 	     and atmel_spi_use_dma(struct atmel_spi *as),
-> 	     and remove atmel_spi_use_pdc(struct atmel_spi *as).
+> While doing some code inspection, I noticed that the slob constructor
+> method can be called with a NULL pointer. If memory is tight and slob
+> fails to allocate with slob_alloc() or slob_new_pages() it still calls
+> the ctor() method with a NULL pointer. Looking at the first ctor()
+> method I found, I noticed that it can not handle a NULL pointer (I'm
+> sure others probably can't either):
 > 
-> 	2./ Rebase on v3.8-rc3.
+> static void sighand_ctor(void *data)
+> {
+>         struct sighand_struct *sighand = data;
 > 
-> V3:
-> 	1./ Rebase on v3.8-rc2.
+>         spin_lock_init(&sighand->siglock);
+>         init_waitqueue_head(&sighand->signalfd_wqh);
+> }
 > 
-> 	2./ Remove some Jean-Christophe's patches which has been
-> 	    applied on v3.8-rc2.
+> The solution is to only call the ctor() method if allocation succeeded.
 > 
-> 	3./ Remove spi property "cs-gpios" from the SoC dtsi files
-> 	    to the board dts files to avoid some useless pin conflicts.
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > 
-> v2: 
->    	1./ Remove the patch :PATCH]mtd: m25p80: change the m25p80_read to reading page to page
-> 	    which purpose to fix the BUG: when run "flashcp /bin/busybox /dev/mtdX" in 
-> 	    the at91sam9g25ek with DMA mode, it arises a OOPS. 
-> 	    Now fix it in this patch:
-> 	    [PATHC] spi/atmel_spi: add dmaengine support changing to fix the [BUG].
-> 
-> 	2./ Remove two patches:
->    	    which purpose to read dts property to select SPI IP version and DMA mode
-> 	    Now they will be gat from device tree different compatile.
-> 
-> 	3./ Fix DMA: when enable both spi0 AND spi1, the spi0 doesn't work BUG.
-> 
-> 	4./ Rebase v3.7-rc8.
-> 
-> Best Regards,
-> Wenyou Yang.
-> 
-> Nicolas Ferre (5):
->   spi/atmel_spi: add physical base address
->   spi/atmel_spi: call unmapping on transfers buffers
->   spi/atmel_spi: status information passed through controller data
->   spi/atmel_spi: add flag to controller data for lock operations
->   spi/atmel_spi: add dmaengine support
-> 
-> Richard Genoud (6):
->   spi/atmel_spi: fix spi-atmel driver to adapt to slave_config changes
->   spi/atmel_spi: correct 16 bits transfers using PIO
->   spi/atmel_spi: correct 16 bits transfer with DMA
->   ARM: at91: add clocks for spi dt entries
->   ARM: dts: add spi nodes for atmel SoC
->   ARM: dts: add spi nodes for the atmel boards
-> 
-> Wenyou Yang (1):
->   spi/atmel_spi: update the dt support
-> 
->  arch/arm/boot/dts/at91sam9260.dtsi          |   18 +
->  arch/arm/boot/dts/at91sam9263.dtsi          |   18 +
->  arch/arm/boot/dts/at91sam9263ek.dts         |   14 +
->  arch/arm/boot/dts/at91sam9g20ek_common.dtsi |   14 +
->  arch/arm/boot/dts/at91sam9g45.dtsi          |   18 +
->  arch/arm/boot/dts/at91sam9m10g45ek.dts      |   14 +
->  arch/arm/boot/dts/at91sam9n12.dtsi          |   18 +
->  arch/arm/boot/dts/at91sam9n12ek.dts         |   14 +
->  arch/arm/boot/dts/at91sam9x5.dtsi           |   18 +
->  arch/arm/boot/dts/at91sam9x5ek.dtsi         |   14 +
->  arch/arm/mach-at91/at91sam9260.c            |    2 +
->  arch/arm/mach-at91/at91sam9g45.c            |    2 +
->  arch/arm/mach-at91/at91sam9n12.c            |    2 +
->  arch/arm/mach-at91/at91sam9x5.c             |    2 +
->  drivers/spi/spi-atmel.c                     |  809 ++++++++++++++++++++++++---
->  15 files changed, 908 insertions(+), 69 deletions(-)
-> 
-> -- 
-> 1.7.9.5
+> diff --git a/mm/slob.c b/mm/slob.c
+> index a99fdf7..48fcb90 100644
+> --- a/mm/slob.c
+> +++ b/mm/slob.c
+> @@ -554,7 +554,7 @@ void *kmem_cache_alloc_node(struct kmem_cache *c, gfp_t flags, int node)
+>  					    flags, node);
+>  	}
+>  
+> -	if (c->ctor)
+> +	if (b && c->ctor)
+>  		c->ctor(b);
+>  
+>  	kmemleak_alloc_recursive(b, c->size, 1, c->flags, flags);
 > 
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+
