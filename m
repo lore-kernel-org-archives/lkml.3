@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab3BEWNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:13:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48280 "EHLO
+	id S1757893Ab3BEWOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:14:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48286 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756690Ab3BEWNQ (ORCPT
+	with ESMTP id S1757246Ab3BEWNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:13:16 -0500
+	Tue, 5 Feb 2013 17:13:20 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 89/93] module: fix missing module_mutex unlock
-Date: Tue,  5 Feb 2013 20:07:18 -0200
-Message-Id: <1360102042-10732-90-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 90/93] intel_idle: Don't register CPU notifier if we are not running.
+Date: Tue,  5 Feb 2013 20:07:19 -0200
+Message-Id: <1360102042-10732-91-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,42 +29,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit ee61abb3223e28a1a14a8429c0319755d20d3e40 upstream.
+commit 6f8c2e7933679f54b6478945dc72e59ef9a3d5e0 upstream.
 
-Commit 1fb9341ac348 ("module: put modules in list much earlier") moved
-some of the module initialization code around, and in the process
-changed the exit paths too.  But for the duplicate export symbol error
-case the change made the ddebug_cleanup path jump to after the module
-mutex unlock, even though it happens with the mutex held.
+The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
+But if later on during the module initialization we fail (say
+in cpuidle_register_driver), we stop loading, but we neglect
+to unregister the CPU notifier.  This means that during CPU
+hotplug events the system will fail:
 
-Rusty has some patches to split this function up into some helper
-functions, hopefully the mess of complex goto targets will go away
-eventually.
+calling  intel_idle_init+0x0/0x326 @ 1
+intel_idle: MWAIT substates: 0x1120
+intel_idle: v0.4 model 0x2A
+intel_idle: lapic_timer_reliable_states 0xffffffff
+intel_idle: intel_idle yielding to none
+initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+... some time later, offlining and onlining a CPU:
+
+cpu 3 spinlock event irq 62
+BUG: unable to ] __cpuidle_register_device+0x1c/0x120
+PGD 99b8b067 PUD 99b95067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
+CPU 0
+Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
+RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
+RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
+RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
+RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
+R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
+R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
+FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
+CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
+Stack:
+ ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
+ ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
+ 0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
+Call Trace:
+ [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
+ [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
+ [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
+ [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
+ [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
+ [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
+ [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
+ [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
+ [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
+ [<ffffffff81652e18>] cpu_up+0xd9/0xec
+ [<ffffffff8164a254>] store_online+0x94/0xd0
+ [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
+ [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
+ [<ffffffff811a1024>] vfs_write+0xb4/0x130
+ [<ffffffff811a17ea>] sys_write+0x5a/0xa0
+ [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
+Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
+RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+ RSP <ffff88009dacfcb8>
+
+This patch fixes that by moving the CPU notifier registration
+as the last item to be done by the module.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[bwh: Backported to 3.2: notifier is registered only if we do not have ARAT]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[ herton: the backport also applies to 3.5, with context adjusted ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/module.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/idle/intel_idle.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 19716ac..2ad732d1 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3033,8 +3033,8 @@ again:
- 	/* module_bug_cleanup needs module_mutex protection */
- 	mutex_lock(&module_mutex);
- 	module_bug_cleanup(mod);
--	mutex_unlock(&module_mutex);
-  ddebug_cleanup:
-+	mutex_unlock(&module_mutex);
- 	dynamic_debug_remove(info.debug);
- 	synchronize_sched();
- 	kfree(mod->args);
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index d0f59c3..04eced7 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -405,10 +405,8 @@ static int intel_idle_probe(void)
+ 
+ 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
+ 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+-	else {
++	else
+ 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
+-		register_cpu_notifier(&setup_broadcast_notifier);
+-	}
+ 
+ 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+ 		" model 0x%X\n", boot_cpu_data.x86_model);
+@@ -573,6 +571,9 @@ static int __init intel_idle_init(void)
+ 		}
+ 	}
+ 
++	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
++		register_cpu_notifier(&setup_broadcast_notifier);
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.5
 
