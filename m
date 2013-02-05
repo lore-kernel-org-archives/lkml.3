@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3BENAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 08:00:52 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:55891 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3BENAu (ORCPT
+	id S1755285Ab3BENDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 08:03:11 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:64950 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab3BENDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 08:00:50 -0500
+	Tue, 5 Feb 2013 08:03:08 -0500
+Date: Tue, 5 Feb 2013 13:03:02 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH 05/73] ARM: ux500: Vsmps3 controlled by SysClkReq1
+Message-ID: <20130205130302.GA2042@gmail.com>
+References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+ <1359978868-28736-6-git-send-email-lee.jones@linaro.org>
+ <20130204193737.GU4720@opensource.wolfsonmicro.com>
+ <CACRpkdYWZOa=bbJYpG7owxVJXxPq5sx7jHmo5UpRe8pmPGYKMQ@mail.gmail.com>
+ <20130205120134.GY4720@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <A4887BF146CD57468F700B415D2F47015828C7@DBDE01.ent.ti.com>
-References: <1359445134-13323-1-git-send-email-manishv.b@ti.com>
-	<1359445134-13323-2-git-send-email-manishv.b@ti.com>
-	<CACRpkdbf7TwrjfT2rhqQFGc3yh_Nt117RtzQO2y6g5Ddx5Ay_w@mail.gmail.com>
-	<20130201170906.GE22517@atomide.com>
-	<20130201171124.GF22517@atomide.com>
-	<A4887BF146CD57468F700B415D2F47015828C7@DBDE01.ent.ti.com>
-Date: Tue, 5 Feb 2013 14:00:48 +0100
-Message-ID: <CACRpkdYUBGkRRF_nDbn5tGmtZC_Wucqxz_PjWo0xX_KbnQJ5cw@mail.gmail.com>
-Subject: Re: [PATCH V2 1/6] pinctrl: pinctrl-single: use arch_initcall and module_exit
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "hs@denx.de" <hs@denx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130205120134.GY4720@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 7:36 AM, Vishwanathrao Badarkhe, Manish
-<manishv.b@ti.com> wrote:
+On Tue, 05 Feb 2013, Mark Brown wrote:
 
-> I made following changes, in order to update "dip->p" pointer with
-> correct value:
->
-> -       if (!dpi->p) {
-> +       if (IS_ERR_OR_NULL(dpi->p)) {
->                 dpi->p = devm_pinctrl_get(dev);
-> -               if (IS_ERR_OR_NULL(dpi->p)) {
-> -                       int ret = PTR_ERR(dpi->p);
-> -
-> -                       dev_dbg(dev, "no pinctrl handle\n");
-> -                       /* Only return deferrals */
-> -                       if (ret == -EPROBE_DEFER)
-> -                               return ret;
-> -                       return 0;
-> -               }
-> +               ret = PTR_ERR(dpi->p);
-> +               dev_dbg(dev, "no pinctrl handle\n");
-> +               /* Only return deferrals */
-> +               if (ret == -EPROBE_DEFER)
-> +                       return ret;
-> +               return 0;
+> On Mon, Feb 04, 2013 at 10:21:36PM +0100, Linus Walleij wrote:
+> 
+> > What is needed is some way to model that
+> > electronic relationship into both the regulator
+> > and clock subsystems (Ulf Hansson is working on
+> > the ABx500 clocks as we speak.)
+> 
+> > Maybe the actual place to have it would be
+> > somewhere like drivers/mfd/ab8500-core.c.
+> 
+> > Have you seen similar stuff in other PMICs?
+> 
+> Yes, it's fairly common to at least have hardware enable signals.  If
+> what was going on was actually understood by the driver in some way it
+> might be better but right now...  Especially in a series like this it's
+> really bad to just see loads of patches which boil down to "change the
+> semi-documented magic value" - this just makes the series depressing to
+> read.
 
-This is based on some old code that I wrote ages ago. Check the
-pinctrl tree or linux-next for the latest core pin grabbing code.
-Use that instead.
+I'm currently working on making _slightly_ less depressing - bear with. :)
 
-Yours,
-Linus Walleij
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
