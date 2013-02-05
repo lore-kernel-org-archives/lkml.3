@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3BEJlD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:41:03 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52588 "EHLO comal.ext.ti.com"
+	id S1754033Ab3BEJlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:41:21 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42303 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab3BEJlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:41:00 -0500
-Date: Tue, 5 Feb 2013 11:40:45 +0200
+	id S1751109Ab3BEJlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:41:17 -0500
+Date: Tue, 5 Feb 2013 11:41:07 +0200
 From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
-        <balbi@ti.com>, <stern@rowland.harvard.edu>,
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <sameo@linux.intel.com>, <balbi@ti.com>,
         <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
         <javier@dowhile0.org>, <sshtylyov@mvista.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 30/30] ARM: OMAP: USB: Remove unused fields from struct
- usbhs_omap_platform_data
-Message-ID: <20130205094045.GM32118@arwen.pp.htv.fi>
+Subject: Re: [PATCH 31/31] USB: ehci-omap: Select NOP USB transceiver driver
+Message-ID: <20130205094107.GN32118@arwen.pp.htv.fi>
 Reply-To: <balbi@ti.com>
-References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
- <1359372631-8180-31-git-send-email-rogerq@ti.com>
+References: <1359989205-12879-1-git-send-email-rogerq@ti.com>
+ <Pine.LNX.4.44L0.1302041602350.1756-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ngshnjhd05HsCES+"
+	protocol="application/pgp-signature"; boundary="aWauiwyUFlp3+edf"
 Content-Disposition: inline
-In-Reply-To: <1359372631-8180-31-git-send-email-rogerq@ti.com>
+In-Reply-To: <Pine.LNX.4.44L0.1302041602350.1756-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ngshnjhd05HsCES+
+--aWauiwyUFlp3+edf
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 28, 2013 at 01:30:31PM +0200, Roger Quadros wrote:
-> All users have been adapted to the changes in ehci-omap. We can now
-> get rid of the unused fields from usbhs_omap_platform_data.
+On Mon, Feb 04, 2013 at 04:03:10PM -0500, Alan Stern wrote:
+> On Mon, 4 Feb 2013, Roger Quadros wrote:
 >=20
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> > In PHY mode we need to have the nop-usb-xceiv transceiver
+> > driver to operate, so select it in Kconfig.
+> >=20
+> > CC: Alan Stern <stern@rowland.harvard.edu>
+> > Signed-off-by: Roger Quadros <rogerq@ti.com>
+> > ---
+> >  drivers/usb/host/Kconfig |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >=20
+> > diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> > index 11e102e..2d2975d 100644
+> > --- a/drivers/usb/host/Kconfig
+> > +++ b/drivers/usb/host/Kconfig
+> > @@ -157,6 +157,7 @@ config USB_EHCI_MXC
+> >  config USB_EHCI_HCD_OMAP
+> >  	tristate "EHCI support for OMAP3 and later chips"
+> >  	depends on USB_EHCI_HCD && ARCH_OMAP
+> > +	select NOP_USB_XCEIV
+> >  	default y
+> >  	---help---
+> >  	  Enables support for the on-chip EHCI controller on
+>=20
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
 Acked-by: Felipe Balbi <balbi@ti.com>
 
 --=20
 balbi
 
---ngshnjhd05HsCES+
+--aWauiwyUFlp3+edf
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRENOdAAoJEIaOsuA1yqREVcUQALTT7mPdHDJRlmZUtX3+UsKS
-vn1q5MgC80RJCpLbWFhseQsAyFVmd48+PwsAmT8wVfOJFo5pSKX6eU8U9d4mYtzJ
-CqzRAorloxImuubFeHcc32td3qn+x5cRcB8FTplMZ7Bx86tdkdk1ngpPo0Td162I
-VkmSqil2e75g3gyzB1aT7aJUmeKygtyPfFCE3YqCCKi37mu1KYNomID44kZJAswX
-DOg9K48pI3Uufm4F+93m4om6nJ+x0B+a7Rh2KyIP7mwlEGZi1pNkmZgmIs/Y1v4+
-D5a+6NF05QqGjggfsfgPrvxcW1ydIAlBVeulpm0lmIxuQByJ8y0R6zX7JRV+J098
-6N7z2TI3BooYpzDjrwh3w5yjKAyUqeMdG61anB4da+juRrIN1l4k5E8NGr81V5Cb
-soW1laNCS4afPlCpLu1/ecdc/lzGE4FJrmkwDrCzd8c4bIa7jidHUsbjaqzGo3d0
-kv+xn2hC47RP/kawH8TguVPbU9QgLbhzWCnZHFVh17ra43qcc4npWpuQCwMNiqG4
-134m6BSe3MTu1tz0hObULVdWro/6lbVMKsQ3+lVDRDzza63ZX37ppqdhPe3knJa8
-QeNO1cdgj6pKUPC3V7C2VA7aGAuojOd6mn65TYFST4ljer5bUFpCBqlez2c+9riq
-xSdBHshLAGkSoJ1tB2Qc
-=RFI4
+iQIcBAEBAgAGBQJRENOzAAoJEIaOsuA1yqRELm4P/AocAFALqBpV1Ls94pQcJ0Oo
+T/ayX4caAFOz04XqTwIfRaOocRG6916h2jUsHUZ6oBH7pWvndaKOR6KhghNxW3ci
+6OFFABfFy73couRQjaZuQimNXJkwGljzi1LHPXeOFtBLbS7kGhDqIP40LKkdNvOR
+ITGvQeleOIBJaMYICzLAj2r9YkZlb26jKkZeumBxhWonuezr7nfi38iCXBoNqJPL
+AsD76UzBuuLRpmfjVq+c9jC7c+Zp54FtTpd06BgQL3SxiBUahYQKrD6+lWwlgbgf
+GgRdjErnv/YLJNbRUu5igK7V45c2eSy1WX3iXY6JsdlAdC+QQ99u3PokvtFwahOu
+rMiUpbkJILO/f32SNpknKBVLs81ypRIApWr2Gb+lTuYpr/tFfvD3v0PWK3+6vHR5
+SUOgVF36R3oce9iXPfVRCRmqwo7Ug+Tf06kkDhNyEKzDqjIWs6ia2SHNu6sTx52V
+kc6/Mn17OXfPq2j3RuXYoCkyM74QoYU7BoMEDRusfW4clx6vgJpJevXbSSqOqhqb
+zjGGkiWycljjuzqutRJA1FYYg8e9PCbXrYpbsF7d7b2so42p6VEdzUbata4KZ19g
+VdHkRZxkcdEehZeZjDXVfGhR4X/ssRs6/cEHbrfvL8PsGhPo9W20VS0xdMdzMQFd
+GRajOUowgbgPJZeD1S8Y
+=Pxbc
 -----END PGP SIGNATURE-----
 
---ngshnjhd05HsCES+--
+--aWauiwyUFlp3+edf--
