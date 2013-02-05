@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab3BEWJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:09:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47945 "EHLO
+	id S1757295Ab3BEWJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:09:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47955 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab3BEWJU (ORCPT
+	with ESMTP id S1757358Ab3BEWJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:09:20 -0500
+	Tue, 5 Feb 2013 17:09:27 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Cong Ding <dinggnu@gmail.com>, Steve French <smfrench@gmail.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 27/93] USB: UHCI: fix IRQ race during initialization
-Date: Tue,  5 Feb 2013 20:06:16 -0200
-Message-Id: <1360102042-10732-28-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 29/93] fs/cifs/cifs_dfs_ref.c: fix potential memory leakage
+Date: Tue,  5 Feb 2013 20:06:18 -0200
+Message-Id: <1360102042-10732-30-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,82 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Cong Ding <dinggnu@gmail.com>
 
-commit 0f815a0a700bc10547449bde6c106051a035a1b9 upstream.
+commit 10b8c7dff5d3633b69e77f57d404dab54ead3787 upstream.
 
-This patch (as1644) fixes a race that occurs during startup in
-uhci-hcd.  If the IRQ line is shared with other devices, it's possible
-for the handler routine to be called before the data structures are
-fully initialized.
+When it goes to error through line 144, the memory allocated to *devname is
+not freed, and the caller doesn't free it either in line 250. So we free the
+memroy of *devname in function cifs_compose_mount_options() when it goes to
+error.
 
-The problem is fixed by adding a check to the IRQ handler routine.  If
-the initialization hasn't finished yet, the routine will return
-immediately.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Don Zickus <dzickus@redhat.com>
-Tested-by: "Huang, Adrian (ISS Linux TW)" <adrian.huang@hp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/host/uhci-hcd.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ fs/cifs/cifs_dfs_ref.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
-index e4db350..3fe069f 100644
---- a/drivers/usb/host/uhci-hcd.c
-+++ b/drivers/usb/host/uhci-hcd.c
-@@ -447,6 +447,10 @@ static irqreturn_t uhci_irq(struct usb_hcd *hcd)
- 		return IRQ_NONE;
- 	uhci_writew(uhci, status, USBSTS);		/* Clear it */
+diff --git a/fs/cifs/cifs_dfs_ref.c b/fs/cifs/cifs_dfs_ref.c
+index 6873bb6..2263144 100644
+--- a/fs/cifs/cifs_dfs_ref.c
++++ b/fs/cifs/cifs_dfs_ref.c
+@@ -226,6 +226,8 @@ compose_mount_options_out:
+ compose_mount_options_err:
+ 	kfree(mountdata);
+ 	mountdata = ERR_PTR(rc);
++	kfree(*devname);
++	*devname = NULL;
+ 	goto compose_mount_options_out;
+ }
  
-+	spin_lock(&uhci->lock);
-+	if (unlikely(!uhci->is_initialized))	/* not yet configured */
-+		goto done;
-+
- 	if (status & ~(USBSTS_USBINT | USBSTS_ERROR | USBSTS_RD)) {
- 		if (status & USBSTS_HSE)
- 			dev_err(uhci_dev(uhci), "host system error, "
-@@ -455,7 +459,6 @@ static irqreturn_t uhci_irq(struct usb_hcd *hcd)
- 			dev_err(uhci_dev(uhci), "host controller process "
- 					"error, something bad happened!\n");
- 		if (status & USBSTS_HCH) {
--			spin_lock(&uhci->lock);
- 			if (uhci->rh_state >= UHCI_RH_RUNNING) {
- 				dev_err(uhci_dev(uhci),
- 					"host controller halted, "
-@@ -473,15 +476,15 @@ static irqreturn_t uhci_irq(struct usb_hcd *hcd)
- 				 * pending unlinks */
- 				mod_timer(&hcd->rh_timer, jiffies);
- 			}
--			spin_unlock(&uhci->lock);
- 		}
- 	}
- 
--	if (status & USBSTS_RD)
-+	if (status & USBSTS_RD) {
-+		spin_unlock(&uhci->lock);
- 		usb_hcd_poll_rh_status(hcd);
--	else {
--		spin_lock(&uhci->lock);
-+	} else {
- 		uhci_scan_schedule(uhci);
-+ done:
- 		spin_unlock(&uhci->lock);
- 	}
- 
-@@ -662,9 +665,9 @@ static int uhci_start(struct usb_hcd *hcd)
- 	 */
- 	mb();
- 
-+	spin_lock_irq(&uhci->lock);
- 	configure_hc(uhci);
- 	uhci->is_initialized = 1;
--	spin_lock_irq(&uhci->lock);
- 	start_rh(uhci);
- 	spin_unlock_irq(&uhci->lock);
- 	return 0;
 -- 
 1.7.9.5
 
