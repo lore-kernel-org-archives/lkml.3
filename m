@@ -1,223 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab3BEWeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:34:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47821 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756971Ab3BEWHo (ORCPT
+	id S1756670Ab3BEWyK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:54:10 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:59372 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756073Ab3BEWyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:07:44 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 03/93] PCI: pciehp: Use per-slot workqueues to avoid deadlock
-Date: Tue,  5 Feb 2013 20:05:52 -0200
-Message-Id: <1360102042-10732-4-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 5 Feb 2013 17:54:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: balbi@ti.com
+Subject: Re: [PATCH 12/15] USB: gadget/freescale: disable non-multiplatform drivers
+Date: Tue, 5 Feb 2013 22:54:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        linux-usb@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <20130205170027.GB1081@kroah.com> <20130205213710.GA3739@arwen.pp.htv.fi>
+In-Reply-To: <20130205213710.GA3739@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302052254.00426.arnd@arndb.de>
+X-Provags-ID: V02:K0:gzyER0hnZTdbUIsR/fDgt7PftuUq9lazdMKtLE8ZQW2
+ uz6lm/WrJNFOCAz70czq02QVTcfc9kbdHfw8/ghF0RDcvBw6lj
+ vstabZRx5di5ArBb8z/TWIxw2CSOy6c1ESZtHDIZVaySp9y9pN
+ B5usG546yo6f92z46QrGHpHFqB4kS7xJ9lFMS20BDOjIFBHFuZ
+ ny3k3EBf8+SS2IvvHxg5PAl6MzheKanv5bP3mLG7Ce9nH2JmdR
+ ftXTPGLlcBspgjT4r1afLKQUrNz3bshdmAf4IBDWmjQ+qF432o
+ M2uFuuVy+OOyzcKSg8CQn/YP1l9U2pGawKgy3xJDZ2L58lvNJZ
+ 0VBrewZJNfEke5jieTwE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.5 -stable review patch.  If anyone has any objections, please let me know.
+On Tuesday 05 February 2013, Felipe Balbi wrote:
+> [linus/master] Merge branch 'fix-max-write' of git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm
+> 
+> It's building find for me:
+> 
+> $ crossmake drivers/usb/gadget/fsl_udc_core.o \
+>         drivers/usb/gadget/fsl_mxc_udc.o > /dev/null
+> 
+> (crossmake is an alias to make ARCH=arm)
+> 
+> Arnd, are you maybe missing a merge of v3.8-rc6 ?
+>
+> I can see that imx_udc.c is broken still, but there are no maintainers
+> for that driver. I'm adding Sascha to Cc list, maybe he knows someone
+> who can help, but if this driver isn't fixed in 2 merge windows, I will
+> schedule for removal from tree and someone else will have to
+> re-introduce it later without all the bogus includes.
 
-------------------
+Ah, I see what happened now: I submitted a patch that lumped together
+two patches, disabling both fsl_mxc_udc and imx_udc. You already had
+a fix for the first one, so I dropped my patch, but now I see the
+build error for the second one that my patch was avoiding.
 
-From: Yijing Wang <wangyijing@huawei.com>
+The last patch to imx_udc that seems to have seen more than just
+build testing was probably "USB: gadget: imx_udc: don't queue more
+data when zlp is to be sent", while fsl_mxc_udc looks actively
+maintained. It's not completely clear to me whether these
+are actually two drivers for the same hardware, of whether
+imx_udc is the i.mx1 variant and fsl_mxc_udc is the i.mx2 variant.
 
-commit c2be6f93b383c873a4f9d521afa49b1b67d06085 upstream.
+What I can say is that no platform in the kernel currently defines
+an "imx_udc" platform_device, so it is certainly unused, and has
+been since at least e08300043e in 2010.
 
-When we have a hotplug-capable PCIe port with a second hotplug-capable
-PCIe port below it, removing the device below the upstream port causes
-a deadlock.
+I would suggest that we mark the imx_udc driver as 'depends on
+BROKEN' right away, since no in-tree user needs it, and any
+out of tree user is already broken in 3.8. I also wouldn't
+mind removing the driver unless the imx maintainers have
+a plan for it.
 
-The deadlock happens because we use the pciehp_wq workqueue to run
-pciehp_power_thread(), which uses pciehp_disable_slot() to remove devices
-below the upstream port.  When we remove the downstream PCIe port, we call
-pciehp_remove(), the pciehp driver's .remove() method.  That calls
-flush_workqueue(pciehp_wq), which deadlocks because the
-pciehp_power_thread() work item is still running.
+> ---- build breaks ---
+> 
+> sound/soc/fsl/imx-pcm.c: In function 'snd_imx_pcm_mmap':
+> sound/soc/fsl/imx-pcm.c:28:2: error: 'KBUILD_MODNAME' undeclared (first use in this function)
+> sound/soc/fsl/imx-pcm.c:28:2: note: each undeclared identifier is
+> reported only once for each function it appears in
+> make[3]: *** [sound/soc/fsl/imx-pcm.o] Error 1
+> 
+> drivers/video/omap2/dss/dss.c: In function 'dss_calc_clock_div':
+> drivers/video/omap2/dss/dss.c:572:20: error:
+> 'CONFIG_OMAP2_DSS_MIN_FCK_PER_PCK' undeclared (first use in this function)
+> drivers/video/omap2/dss/dss.c:572:20: note: each undeclared identifier
+> is reported only once for each function it appears in
+> make[4]: *** [drivers/video/omap2/dss/dss.o] Error 1
 
-This patch avoids the deadlock by creating a workqueue for every PCIe port
-and removing the single shared workqueue.
+Yes, I submitted patches for these, too, and like this case, we decided
+to drop my patch in favor of a better fix, which has not yet gone
+in. Today I sent emails about these as well, in the hope that we
+can find a solution.
 
-Here's the call path that leads to the deadlock:
-
-  pciehp_queue_pushbutton_work
-    queue_work(pciehp_wq)                   # queue pciehp_power_thread
-    ...
-
-  pciehp_power_thread
-    pciehp_disable_slot
-      remove_board
-	pciehp_unconfigure_device
-	  pci_stop_and_remove_bus_device
-	    ...
-	      pciehp_remove                 # pciehp driver .remove method
-		pciehp_release_ctrl
-		  pcie_cleanup_slot
-		    flush_workqueue(pciehp_wq)
-
-This is fairly urgent because it can be caused by simply unplugging a
-Thunderbolt adapter, as reported by Daniel below.
-
-[bhelgaas: changelog]
-Reference: http://lkml.kernel.org/r/CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com
-Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
-Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/pci/hotplug/pciehp.h      |    2 +-
- drivers/pci/hotplug/pciehp_core.c |   11 ++---------
- drivers/pci/hotplug/pciehp_ctrl.c |    8 ++++----
- drivers/pci/hotplug/pciehp_hpc.c  |   11 ++++++++++-
- 4 files changed, 17 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
-index 4b7cce1..a321b77 100644
---- a/drivers/pci/hotplug/pciehp.h
-+++ b/drivers/pci/hotplug/pciehp.h
-@@ -44,7 +44,6 @@ extern bool pciehp_poll_mode;
- extern int pciehp_poll_time;
- extern bool pciehp_debug;
- extern bool pciehp_force;
--extern struct workqueue_struct *pciehp_wq;
- 
- #define dbg(format, arg...)						\
- do {									\
-@@ -78,6 +77,7 @@ struct slot {
- 	struct hotplug_slot *hotplug_slot;
- 	struct delayed_work work;	/* work for button event */
- 	struct mutex lock;
-+	struct workqueue_struct *wq;
- };
- 
- struct event_info {
-diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
-index 365c6b9..9e39df9 100644
---- a/drivers/pci/hotplug/pciehp_core.c
-+++ b/drivers/pci/hotplug/pciehp_core.c
-@@ -42,7 +42,6 @@ bool pciehp_debug;
- bool pciehp_poll_mode;
- int pciehp_poll_time;
- bool pciehp_force;
--struct workqueue_struct *pciehp_wq;
- 
- #define DRIVER_VERSION	"0.4"
- #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
-@@ -340,18 +339,13 @@ static int __init pcied_init(void)
- {
- 	int retval = 0;
- 
--	pciehp_wq = alloc_workqueue("pciehp", 0, 0);
--	if (!pciehp_wq)
--		return -ENOMEM;
--
- 	pciehp_firmware_init();
- 	retval = pcie_port_service_register(&hpdriver_portdrv);
-  	dbg("pcie_port_service_register = %d\n", retval);
-   	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
-- 	if (retval) {
--		destroy_workqueue(pciehp_wq);
-+	if (retval)
- 		dbg("Failure to register service\n");
--	}
-+
- 	return retval;
- }
- 
-@@ -359,7 +353,6 @@ static void __exit pcied_cleanup(void)
- {
- 	dbg("unload_pciehpd()\n");
- 	pcie_port_service_unregister(&hpdriver_portdrv);
--	destroy_workqueue(pciehp_wq);
- 	info(DRIVER_DESC " version: " DRIVER_VERSION " unloaded\n");
- }
- 
-diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
-index 27f4429..38f0186 100644
---- a/drivers/pci/hotplug/pciehp_ctrl.c
-+++ b/drivers/pci/hotplug/pciehp_ctrl.c
-@@ -49,7 +49,7 @@ static int queue_interrupt_event(struct slot *p_slot, u32 event_type)
- 	info->p_slot = p_slot;
- 	INIT_WORK(&info->work, interrupt_event_handler);
- 
--	queue_work(pciehp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
- 
- 	return 0;
- }
-@@ -344,7 +344,7 @@ void pciehp_queue_pushbutton_work(struct work_struct *work)
- 		kfree(info);
- 		goto out;
- 	}
--	queue_work(pciehp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
-  out:
- 	mutex_unlock(&p_slot->lock);
- }
-@@ -377,7 +377,7 @@ static void handle_button_press_event(struct slot *p_slot)
- 		if (ATTN_LED(ctrl))
- 			pciehp_set_attention_status(p_slot, 0);
- 
--		queue_delayed_work(pciehp_wq, &p_slot->work, 5*HZ);
-+		queue_delayed_work(p_slot->wq, &p_slot->work, 5*HZ);
- 		break;
- 	case BLINKINGOFF_STATE:
- 	case BLINKINGON_STATE:
-@@ -439,7 +439,7 @@ static void handle_surprise_event(struct slot *p_slot)
- 	else
- 		p_slot->state = POWERON_STATE;
- 
--	queue_work(pciehp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
- }
- 
- static void interrupt_event_handler(struct work_struct *work)
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index a960fae..9dd2c01 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -874,23 +874,32 @@ static void pcie_shutdown_notification(struct controller *ctrl)
- static int pcie_init_slot(struct controller *ctrl)
- {
- 	struct slot *slot;
-+	char name[32];
- 
- 	slot = kzalloc(sizeof(*slot), GFP_KERNEL);
- 	if (!slot)
- 		return -ENOMEM;
- 
-+	snprintf(name, sizeof(name), "pciehp-%u", PSN(ctrl));
-+	slot->wq = alloc_workqueue(name, 0, 0);
-+	if (!slot->wq)
-+		goto abort;
-+
- 	slot->ctrl = ctrl;
- 	mutex_init(&slot->lock);
- 	INIT_DELAYED_WORK(&slot->work, pciehp_queue_pushbutton_work);
- 	ctrl->slot = slot;
- 	return 0;
-+abort:
-+	kfree(slot);
-+	return -ENOMEM;
- }
- 
- static void pcie_cleanup_slot(struct controller *ctrl)
- {
- 	struct slot *slot = ctrl->slot;
- 	cancel_delayed_work(&slot->work);
--	flush_workqueue(pciehp_wq);
-+	destroy_workqueue(slot->wq);
- 	kfree(slot);
- }
- 
--- 
-1.7.9.5
-
+	Arnd
