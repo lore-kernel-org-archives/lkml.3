@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab3BESBf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 13:01:35 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39194 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755283Ab3BESBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 13:01:32 -0500
-Date: Tue, 5 Feb 2013 13:01:16 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tejun Heo <htejun@gmail.com>
-Subject: Re: [PATCH 1/3] memcg: move mem_cgroup_soft_limit_tree_init to
- mem_cgroup_init
-Message-ID: <20130205180116.GA993@cmpxchg.org>
-References: <1360081441-1960-1-git-send-email-mhocko@suse.cz>
- <1360081441-1960-2-git-send-email-mhocko@suse.cz>
+	id S1756497Ab3BESBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 13:01:41 -0500
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:61369 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab3BESBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 13:01:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360081441-1960-2-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1359822572-26009-10-git-send-email-acourbot@nvidia.com>
+References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
+	<1359822572-26009-10-git-send-email-acourbot@nvidia.com>
+Date: Tue, 5 Feb 2013 19:01:34 +0100
+Message-ID: <CACRpkdbXvf8mRgpr2MrmcJcT1gTg4mfBOnF8s3=+jS5iAcMtkQ@mail.gmail.com>
+Subject: Re: [PATCH 8/9] gpiolib: use gpio_chips list in gpio_to_desc
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 05:23:59PM +0100, Michal Hocko wrote:
-> Per-node-zone soft limit tree is currently initialized when the root
-> cgroup is created which is OK but it pointlessly pollutes memcg
-> allocation code with something that can be called when the memcg
-> subsystem is initialized by mem_cgroup_init along with other controller
-> specific parts.
-> 
-> While we are at it let's make mem_cgroup_soft_limit_tree_init void
-> because it doesn't make much sense to report memory failure because if
-> we fail to allocate memory that early during the boot then we are
-> screwed anyway (this saves some code).
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+On Sat, Feb 2, 2013 at 5:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> Parse the list of chips to find the descriptor corresponding to a GPIO
+> number instead of directly picking the entry of the global gpio_desc[]
+> array, which is due to be removed.
+>
+> This turns the complexity of converting a GPIO number into a descriptor
+> from O(1) to O(n) where n is the number of GPIO chips in the system.
+> Since n is ought to be small anyway, there should be no noticeable
+> performance impact. Moreover, GPIO users who care for speed already have
+> implemented their own gpio_get_value() and gpio_set_value() with a
+> fast path for the GPIO numbers that matter and this change does not
+> affect such use cases.
+>
+> The descriptor-based GPIO API, due to be introduced soon, will make this
+> lookup unnecessary.
+>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+
+OK it's a nice stepping stone.
+
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
