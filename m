@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab3BEWMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:12:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48186 "EHLO
+	id S1757937Ab3BEWMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:12:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48193 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729Ab3BEWMG (ORCPT
+	with ESMTP id S1757877Ab3BEWMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:12:06 -0500
+	Tue, 5 Feb 2013 17:12:08 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Colin Ian King <colin.king@canonical.com>,
-        Steve Langasek <steve.langasek@canonical.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 70/93] samsung-laptop: Disable on EFI hardware
-Date: Tue,  5 Feb 2013 20:06:59 -0200
-Message-Id: <1360102042-10732-71-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 71/93] NFS: Fix error reporting in nfs_xdev_mount
+Date: Tue,  5 Feb 2013 20:07:00 -0200
+Message-Id: <1360102042-10732-72-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -32,58 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit e0094244e41c4d0c7ad69920681972fc45d8ce34 upstream.
+commit dee972b967ae111ad5705733de17a3bfc4632311 upstream.
 
-It has been reported that running this driver on some Samsung laptops
-with EFI can cause those machines to become bricked as detailed in the
-following report,
+Currently, nfs_xdev_mount converts all errors from clone_server() to
+ENOMEM, which can then leak to userspace (for instance to 'mount'). Fix that.
+Also ensure that if nfs_fs_mount_common() returns an error, we
+don't dprintk(0)...
 
-	https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
+The regression originated in commit 3d176e3fe4f6dc379b252bf43e2e146a8f7caf01
+(NFS: Use nfs_fs_mount_common() for xdev mounts)
 
-There have also been reports of this driver causing Machine Check
-Exceptions on recent EFI-enabled Samsung laptops,
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=47121
-
-So disable it if booting from EFI since this driver relies on
-grovelling around in the BIOS memory map which isn't going to work.
-
-Cc: Corentin Chary <corentincj@iksaif.net>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Colin Ian King <colin.king@canonical.com>
-Cc: Steve Langasek <steve.langasek@canonical.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-[ herton: adjust context ]
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[ herton: backport for 3.5:
+  * don't change dprintk to print nfs_xdev_mount as we are still in
+    nfs_xdev_mount_common
+  * differing clone_server/nfs_fs_mount_common (function call and
+    arguments), keep the same calls as in 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/platform/x86/samsung-laptop.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/nfs/super.c |   19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index 1afbe5e..de9f432 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -26,6 +26,7 @@
- #include <linux/seq_file.h>
- #include <linux/debugfs.h>
- #include <linux/ctype.h>
-+#include <linux/efi.h>
- #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
- #include <acpi/video.h>
- #endif
-@@ -1527,6 +1528,9 @@ static int __init samsung_init(void)
- 	struct samsung_laptop *samsung;
- 	int ret;
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 2292f7e..f3cc9b6 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2541,7 +2541,6 @@ nfs_xdev_mount_common(struct file_system_type *fs_type, int flags,
+ 	struct nfs_clone_mount *data = mount_info->cloned;
+ 	struct nfs_server *server;
+ 	struct dentry *mntroot = ERR_PTR(-ENOMEM);
+-	int error;
  
-+	if (efi_enabled(EFI_BOOT))
-+		return -ENODEV;
-+
- 	quirks = &samsung_unknown;
- 	if (!force && !dmi_check_system(samsung_dmi_table))
- 		return -ENODEV;
+ 	dprintk("--> nfs_xdev_mount_common()\n");
+ 
+@@ -2549,19 +2548,15 @@ nfs_xdev_mount_common(struct file_system_type *fs_type, int flags,
+ 
+ 	/* create a new volume representation */
+ 	server = nfs_clone_server(NFS_SB(data->sb), data->fh, data->fattr, data->authflavor);
+-	if (IS_ERR(server)) {
+-		error = PTR_ERR(server);
+-		goto out_err;
+-	}
++	if (IS_ERR(server))
++		mntroot = ERR_CAST(server);
++	else
++		mntroot = nfs_fs_mount_common(fs_type, server, flags,
++				dev_name, mount_info);
+ 
+-	mntroot = nfs_fs_mount_common(fs_type, server, flags, dev_name, mount_info);
+-	dprintk("<-- nfs_xdev_mount_common() = 0\n");
+-out:
++	dprintk("<-- nfs_xdev_mount_common() = %ld\n",
++			IS_ERR(mntroot) ? PTR_ERR(mntroot) : 0L);
+ 	return mntroot;
+-
+-out_err:
+-	dprintk("<-- nfs_xdev_mount_common() = %d [error]\n", error);
+-	goto out;
+ }
+ 
+ /*
 -- 
 1.7.9.5
 
