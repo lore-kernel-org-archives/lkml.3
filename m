@@ -1,127 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab3BEOHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 09:07:12 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:64264 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab3BEOHJ (ORCPT
+	id S1755521Ab3BEOHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 09:07:42 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:56354 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754282Ab3BEOHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 09:07:09 -0500
-Message-ID: <51111133.7000105@synopsys.com>
-Date: Tue, 5 Feb 2013 18:03:31 +0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 5 Feb 2013 09:07:40 -0500
 MIME-Version: 1.0
-To: Michal Simek <monstr@monstr.eu>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <alan@lxorguk.ukuu.org.uk>, <geert@linux-m68k.org>,
-        <dahinds@users.sourceforge.net>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <1781360.cmQWHCW5SC@wuerfel> <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com> <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop> <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com> <1360066756.4529.6.camel@pasglop> <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
-In-Reply-To: <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.121.8.107]
+Date: Tue, 5 Feb 2013 16:07:30 +0200
+Message-ID: <CA+ydwtq_4V2rCTzXVSVHBn1PoRaC8uqvO3NA6CK0YXF=iFtvhQ@mail.gmail.com>
+Subject: lockdep circular locking splat: tasklist_lock --> &nonblocking_pool.lock
+ --> &(&new->fa_lock)->rlock
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 04:38 PM, Michal Simek wrote:
-> 2013/2/5 Benjamin Herrenschmidt <benh@kernel.crashing.org>:
->> On Tue, 2013-02-05 at 11:54 +0100, Michal Simek wrote:
->>>
->>> xilinx ppc is big endian
->>> xilinx arm is little endian
->>> xilinx microblaze is little endian and big endian
->>
->> You are talking about the core, why should the xsysace block driver be
->> synthesized with the same endianness as the core ? That's not terribly
->> useful, especially since reverse load/stores on ppc are essentially
->> free...
->
-> It is done by hardware guys and I can do nothing with it.
+Hello,
 
- From this document 
-(http://www.xilinx.com/support/documentation/data_sheets/ds080.pdf) I 
-can tell that Xilinx System ACE CF solution is a chip manufactured in 
-silicon, here's an extract:
-=====
-As shown in Figure 1, the System ACE CompactFlash solution is a chipset, 
-consisting of a controller device (System
-ACE CF controller) and a commercially available CompactFlash storage 
-device.
-=====
+Reporting a lockdep complaint that got triggered after fuzzing with
+Trinity for a few hours:
 
-and its endianess is fixed which is stated in this document 
-(http://www.xilinx.com/support/documentation/ip_documentation/xps_sysace.pdf).
-=====
-The Xilinx System ACE Compact Flash chip is a true little-endian device
-=====
+[77365.024024] ======================================================
+[77365.024871] [ INFO: possible circular locking dependency detected ]
+[77365.024871] 3.8.0-rc6+ #29 Tainted: G        W
+[77365.024871] -------------------------------------------------------
+[77365.028112] trinity-child20/1940 is trying to acquire lock:
+[77365.028112]  (tasklist_lock){.+.+..}, at: [<ffffffff811b19e2>]
+send_sigio+0x52/0x100
+[77365.028112] but task is already holding lock:
+[77365.028112]  (&(&new->fa_lock)->rlock){-.-...}, at:
+[<ffffffff811b1f09>] kill_fasync+0x69/0xe0
+[77365.028112] which lock already depends on the new lock.
+[77365.028112]
+the existing dependency chain (in reverse order) is:
+[77365.028112] -> #3 (&(&new->fa_lock)->rlock){-.-...}:
+[77365.028112]        [<ffffffff810f2f9b>] lock_acquire+0x9b/0x120
+[77365.028112]        [<ffffffff81b60f91>] _raw_spin_lock+0x31/0x40
+[77365.028112]        [<ffffffff81b500b7>] get_partial_node.isra.54+0x45/0x1fb
+[77365.028112]        [<ffffffff81b5040e>] __slab_alloc+0x1a1/0x4f3
+[77365.028112]        [<ffffffff81193284>] kmem_cache_alloc_trace+0xe4/0x140
+[77365.028112]        [<ffffffff81216529>] sysfs_open_file+0xc9/0x270
+[77365.028112]        [<ffffffff8119ea8b>] do_dentry_open+0x1bb/0x250
+[77365.028112]        [<ffffffff8119fa05>] finish_open+0x35/0x50
+[77365.028112]        [<ffffffff811ae01e>] do_last+0x6de/0xe00
+[77365.028112]        [<ffffffff811ae7fc>] path_openat+0xbc/0x4e0
+[77365.028112]        [<ffffffff811aec61>] do_filp_open+0x41/0xa0
+[77365.028112]        [<ffffffff8119fe84>] do_sys_open+0xf4/0x1e0
+[77365.028112]        [<ffffffff8119ff91>] sys_open+0x21/0x30
+[77365.028112]        [<ffffffff81b62819>] system_call_fastpath+0x16/0x1b
+[77365.028112] -> #2 (&nonblocking_pool.lock){..-...}:
+[77365.028112]        [<ffffffff810f2f9b>] lock_acquire+0x9b/0x120
+[77365.028112]        [<ffffffff81b60fee>] _raw_spin_lock_irqsave+0x4e/0x70
+[77365.028112]        [<ffffffff8141fbd9>] mix_pool_bytes.constprop.20+0x49/0xb0
+[77365.028112]        [<ffffffff81420db4>] add_device_randomness+0x64/0x90
+[77365.028112]        [<ffffffff810c0512>] posix_cpu_timers_exit+0x22/0x50
+[77365.028112]        [<ffffffff8109cd80>] release_task+0xe0/0x470
+[77365.028112]        [<ffffffff8109e755>] do_exit+0x5d5/0x9f0
+[77365.028112]        [<ffffffff810b4250>] ____call_usermodehelper+0x110/0x120
+[77365.028112]        [<ffffffff810b427e>] call_helper+0x1e/0x20
+[77365.028112]        [<ffffffff81b6276c>] ret_from_fork+0x7c/0xb0
+[77365.028112] -> #1 (&(&sighand->siglock)->rlock){-.-.-.}:
+[77365.028112]        [<ffffffff810f2f9b>] lock_acquire+0x9b/0x120
+[77365.028112]        [<ffffffff81b60f91>] _raw_spin_lock+0x31/0x40
+[77365.028112]        [<ffffffff81097564>] copy_process.part.32+0xfe4/0x15b0
+[77365.028112]        [<ffffffff81097bf4>] do_fork+0x94/0x360
+[77365.085677]        [<ffffffff81097ee6>] kernel_thread+0x26/0x30
+[77365.085677]        [<ffffffff810bdc60>] kthreadd+0x120/0x160
+[77365.085677]        [<ffffffff81b6276c>] ret_from_fork+0x7c/0xb0
+[77365.085677] -> #0 (tasklist_lock){.+.+..}:
+[77365.085677]        [<ffffffff810f1733>] __lock_acquire+0x1be3/0x1c10
+[77365.085677]        [<ffffffff810f2f9b>] lock_acquire+0x9b/0x120
+[77365.085677]        [<ffffffff81b61274>] _raw_read_lock+0x34/0x50
+[77365.085677]        [<ffffffff811b19e2>] send_sigio+0x52/0x100
+[77365.085677]        [<ffffffff811b1f37>] kill_fasync+0x97/0xe0
+[77365.085677]        [<ffffffff811ec4df>] lease_break_callback+0x1f/0x30
+[77365.085677]        [<ffffffff811ed773>] __break_lease+0x133/0x320
+[77365.085677]        [<ffffffff8119e9f7>] do_dentry_open+0x127/0x250
+[77365.085677]        [<ffffffff8119fa05>] finish_open+0x35/0x50
+[77365.085677]        [<ffffffff811ae01e>] do_last+0x6de/0xe00
+[77365.085677]        [<ffffffff811ae7fc>] path_openat+0xbc/0x4e0
+[77365.085677]        [<ffffffff811aec61>] do_filp_open+0x41/0xa0
+[77365.085677]        [<ffffffff8119fe84>] do_sys_open+0xf4/0x1e0
+[77365.085677]        [<ffffffff8119ff91>] sys_open+0x21/0x30
+[77365.085677]        [<ffffffff81b62819>] system_call_fastpath+0x16/0x1b
+[77365.085677] other info that might help us debug this:
+[77365.085677] Chain exists of:
+  tasklist_lock --> &nonblocking_pool.lock --> &(&new->fa_lock)->rlock
+[77365.085677]  Possible unsafe locking scenario:
+[77365.085677]        CPU0                    CPU1
+[77365.085677]        ----                    ----
+[77365.085677]   lock(&(&new->fa_lock)->rlock);
+[77365.085677]                                lock(&nonblocking_pool.lock);
+[77365.085677]                                lock(&(&new->fa_lock)->rlock);
+[77365.085677]   lock(tasklist_lock);
+[77365.085677]  *** DEADLOCK ***
+[77365.085677] 4 locks held by trinity-child20/1940:
+[77365.085677]  #0:  (file_lock_lock){+.+...}, at:
+[<ffffffff811ec5e5>] lock_flocks+0x15/0x20
+[77365.085677]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff811b1ec1>]
+kill_fasync+0x21/0xe0
+[77365.085677]  #2:  (&(&new->fa_lock)->rlock){-.-...}, at:
+[<ffffffff811b1f09>] kill_fasync+0x69/0xe0
+[77365.085677]  #3:  (&f->f_owner.lock){.?.?..}, at:
+[<ffffffff811b19b4>] send_sigio+0x24/0x100
+[77365.085677] stack backtrace:
+[77365.085677] Pid: 1940, comm: trinity-child20 Tainted: G        W
+3.8.0-rc6+ #29
+[77365.085677] Call Trace:
+[77365.085677]  [<ffffffff81b4da81>] print_circular_bug+0x1fb/0x20c
+[77365.085677]  [<ffffffff810f1733>] __lock_acquire+0x1be3/0x1c10
+[77365.085677]  [<ffffffff810f2f9b>] lock_acquire+0x9b/0x120
+[77365.085677]  [<ffffffff811b19e2>] ? send_sigio+0x52/0x100
+[77365.085677]  [<ffffffff81b61274>] _raw_read_lock+0x34/0x50
+[77365.085677]  [<ffffffff811b19e2>] ? send_sigio+0x52/0x100
+[77365.085677]  [<ffffffff811b19e2>] send_sigio+0x52/0x100
+[77365.085677]  [<ffffffff811b1f37>] kill_fasync+0x97/0xe0
+[77365.085677]  [<ffffffff811b1ec1>] ? kill_fasync+0x21/0xe0
+[77365.085677]  [<ffffffff81b60f99>] ? _raw_spin_lock+0x39/0x40
+[77365.085677]  [<ffffffff811ec4df>] lease_break_callback+0x1f/0x30
+[77365.085677]  [<ffffffff811ed773>] __break_lease+0x133/0x320
+[77365.085677]  [<ffffffff812f1e9a>] ?
+inode_has_perm.isra.27.constprop.67+0x2a/0x30
+[77365.085677]  [<ffffffff8119e9f7>] do_dentry_open+0x127/0x250
+[77365.085677]  [<ffffffff8119fa05>] finish_open+0x35/0x50
+[77365.085677]  [<ffffffff811ae01e>] do_last+0x6de/0xe00
+[77365.085677]  [<ffffffff811aab68>] ? inode_permission+0x18/0x50
+[77365.085677]  [<ffffffff811ac20d>] ? link_path_walk+0x23d/0x890
+[77365.085677]  [<ffffffff811ae7fc>] path_openat+0xbc/0x4e0
+[77365.085677]  [<ffffffff810f1ced>] ? trace_hardirqs_on+0xd/0x10
+[77365.085677]  [<ffffffff811bd6f4>] ? __alloc_fd+0x34/0x140
+[77365.085677]  [<ffffffff811aec61>] do_filp_open+0x41/0xa0
+[77365.085677]  [<ffffffff811bd7a9>] ? __alloc_fd+0xe9/0x140
+[77365.085677]  [<ffffffff8119fe84>] do_sys_open+0xf4/0x1e0
+[77365.085677]  [<ffffffff8119ff91>] sys_open+0x21/0x30
+[77365.085677]  [<ffffffff81b62819>] system_call_fastpath+0x16/0x1b
 
-But in its turn Xilinx System ACE Compact Flash chip is attached to 
-CPU's interface bus via some bridge. Depending on interface bus used it 
-could be BVCI-to-MPU (Microprocessor Interface of the System ACE
-Compact Flash solution peripheral) for ARC, PLB for MicroBlaze etc.
-And this bridge in general may do whatever its (HW) developer wants.
-
-For example for MicroBlaze Xilinx has its XPS Sysace interface 
-controller 
-(http://www.xilinx.com/support/documentation/ip_documentation/xps_sysace.pdf) 
-which does bit-swapping from PLB's big-endian bytes to xsysace 
-CF-controller little-endian bytes (though bytes in words are not swapped):
-=====
-The Xilinx System ACE Compact Flash chip is a true little-endian device 
-and the PLB is a big-endian bus. Therefore the XPS System ACE Interface 
-Controller will do a bit-swap in each byte when connecting the PLB data 
-bus to the System ACE data bus as shown in Table 2.
-
-Note however, that the XPS System ACE Interface Controller does not 
-perform the byte swapping necessary to interface to a little-endian 
-device when configured to use 16-bit mode. Therefore, the software 
-drivers provided for this core will perform the necessary byte-swapping 
-to correctly interface to the Xilinx System ACE Compact Flash chip as 
-shown in Table 3.
-=====
-
-So at this point I'd say that data access should be done differently 
-depending on HW (bridge) used.
-
-Another question is do we know for sure that for particular architecture 
-only 1 interface bridge is used. If so then we may select proper 
-accessors per architecture.
-
->
->>> It is just sharing the same IP across all platforms. Which is better
->>> than create new devices and new device drivers for it. It means that
->>> all of them are register compatible but require access with native
->>> platform endianness as I listed above.
->>
->> Every attempt at doing "native platform endianness" has always been a
->> misguided attempt turning into a trainwreck (see OHCI USB).
->>
->> Just pick one endian for the device and stick to it.
->
-> It is reality and I can't change it. Arnd mentioned it earlier that USB
->
->
->>> It is not a problem to create runtime wrapper and even detect endian
->>> directly in the driver
->>> but the point if this is the proper design.
->>> Also ioread32 and ioread32be shouldn't be used on ARM because there
->>> are missing memory barriers.
->>
->> Then fix them, they shouldn't be, it's a bug, it will break many other
->> drivers. They should be fully equivalent to readl.
->
-> I want to be sure about this. I have parsed this again with closer look and
-> seems to me that ioread32 is equal to readl and iowrite32 to writel.
-> Arnd: Am I right?
->
-> Thanks,
-> Michal
-
--Alexey
+Tommi
