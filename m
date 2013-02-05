@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab3BEQxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 11:53:11 -0500
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:37588 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3BEQxH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 11:53:07 -0500
+	id S1755479Ab3BEQzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 11:55:43 -0500
+Received: from tundra.namei.org ([65.99.196.166]:46072 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753878Ab3BEQzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 11:55:40 -0500
+Date: Wed, 6 Feb 2013 03:49:11 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, peterhuewe@gmx.de,
+        mathias.leblanc@st.com, jgunthorpe@obsidianresearch.com
+Subject: Re: [PULL] tpm drivers: STM i2c driver, documentation and fixes
+In-Reply-To: <20130205154821.GA15966@ennui.austin.ibm.com>
+Message-ID: <alpine.LRH.2.02.1302060348530.5022@tundra.namei.org>
+References: <20130205154821.GA15966@ennui.austin.ibm.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130205122432.GE21455@gmail.com>
-References: <20130204110304.GD24173@gmail.com>
-	<1360009767-3633-1-git-send-email-yinghai@kernel.org>
-	<20130205122432.GE21455@gmail.com>
-Date: Tue, 5 Feb 2013 08:53:05 -0800
-X-Google-Sender-Auth: iopSzBrw3pRNW6SOuqzLfGPbcdg
-Message-ID: <CAE9FiQXn1P0RGD-O3jeFNgAdsfv4EQyH8g7r0x3KBFfh20fF=Q@mail.gmail.com>
-Subject: Re: [PATCH] x86, apic: Check fadt x2apic phys in x2apic_phys_probe()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Stoney Wang <song-bo.wang@hp.com>, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 4:24 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Yinghai Lu <yinghai@kernel.org> wrote:
->
->> From: Stoney Wang <song-bo.wang@hp.com>
->>
->> When HP ProLiant DL980 G7 Server boot without x2apic_phys, there will be
->> intermittent lost interrupts and could result in a hang or data loss.
->
-> What does 'boot without x2apic_phys' mean?
->
-> Does it mean x2apic_phys=0 boot command line? Or, because
-> x2apic_phys is off by default, does it simply mean that if it's
-> booted with a default kernel, without any workaround specified
-> on the boot command line?
+On Tue, 5 Feb 2013, Kent Yoder wrote:
 
-means that user does not append "x2apic_phys" in boot command line.
+> Hi James,
+> 
+> The following changes since commit 0d2a1b2d03dfd5ee79e7ebc59635690c8f08810f:
+> 
+>   mpilib: use DIV_ROUND_UP and remove unused macros (2013-02-01 16:28:32 +1100)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/shpedoikal/linux.git tpmdd-02-05-13
+> 
+> for you to fetch changes up to 6e38bfaad6c83bdd07eb659f9bfd50f8d71a5a46:
+> 
+>   tpm_tis: check pnp_acpi_device return code (2013-02-05 09:38:26 -0600)
+> 
 
-current we have:
 
-        x2apic_phys     [X86-64,APIC] Use x2apic physical mode instead of
-                        default x2apic cluster mode on platforms
-                        supporting x2apic.
+Thanks, applied.
 
-int x2apic_phys;
 
-static int set_x2apic_phys_mode(char *arg)
-{
-        x2apic_phys = 1;
-        return 0;
-}
-early_param("x2apic_phys", set_x2apic_phys_mode);
-
-if the user specify "x2apic_phys=0", kernel still enable x2apic_phys.
-
-Now because system could enable x2apic phys mode via fadt, do we
-need to make "x2apic_phys=0" works as disabling x2apic_phys and
-overriding FADT ?
-
-Thanks
-
-Yinghai
+-- 
+James Morris
+<jmorris@namei.org>
