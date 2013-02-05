@@ -1,86 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab3BEEbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 23:31:53 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:53327 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954Ab3BEEbv (ORCPT
+	id S1755523Ab3BEElk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 23:41:40 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19791 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab3BEEli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 23:31:51 -0500
-From: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
-Subject: RE: [PATCH 1/2] USB: storage: Define a new macro for USB storage
- match rules
-Thread-Topic: [PATCH 1/2] USB: storage: Define a new macro for USB storage
- match rules
-Thread-Index: AQHOAwau4UqI5zgLXkiwzjPJTTAg2phqrIoA
-Date: Tue, 5 Feb 2013 04:30:33 +0000
-Message-ID: <910F9D9E13B84F4C8FA771DC9BDE99F327042DFE@szxeml546-mbx.china.huawei.com>
-References: <fe8caaa7d09.d09fe8caaa7@huawei.com>
- <20130204183929.GA5570@kroah.com>
-In-Reply-To: <20130204183929.GA5570@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.11.34.182]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 4 Feb 2013 23:41:38 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 04 Feb 2013 20:38:36 -0800
+Message-ID: <51108D75.9030302@nvidia.com>
+Date: Mon, 4 Feb 2013 20:41:25 -0800
+From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Arto Merilainen <amerilainen@nvidia.com>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5,RESEND 4/8] gpu: host1x: Add debug support
+References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com> <1358250244-9678-5-git-send-email-tbergstrom@nvidia.com> <20130204110339.GA28134@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130204110339.GA28134@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r154VsbF012372
 
-Dear  Gregï¼š
+On 04.02.2013 03:03, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+> 
+> On Tue, Jan 15, 2013 at 01:44:00PM +0200, Terje Bergstrom wrote:
+>> diff --git a/drivers/gpu/host1x/debug.c b/drivers/gpu/host1x/debug.c
+> [...]
+>> +static pid_t host1x_debug_null_kickoff_pid;
+>> +unsigned int host1x_debug_trace_cmdbuf;
+>> +
+>> +static pid_t host1x_debug_force_timeout_pid;
+>> +static u32 host1x_debug_force_timeout_val;
+>> +static u32 host1x_debug_force_timeout_channel;
+> 
+> Please group static and non-static variables.
 
-	OKï¼Œthank you very much.
+Will do.
 
-Best Regards,
-Franko Fang
+> 
+>> diff --git a/drivers/gpu/host1x/debug.h b/drivers/gpu/host1x/debug.h
+> [...]
+>> +struct output {
+>> +	void (*fn)(void *ctx, const char *str, size_t len);
+>> +	void *ctx;
+>> +	char buf[256];
+>> +};
+> 
+> Do we really need this kind of abstraction? There really should be only
+> one location where debug information is obtained, so I don't see a need
+> for this.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Tuesday, February 05, 2013 2:39 AM
-> To: Fangxiaozhi (Franko)
-> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Xueguiying (Zihan);
-> Linlei (Lei Lin); Yili (Neil); Wangyuhua (Roger, Credit); Huqiao (C); balbi@ti.com;
-> mdharm-usb@one-eyed-alien.net; sebastian@breakpoint.cc
-> Subject: Re: [PATCH 1/2] USB: storage: Define a new macro for USB storage
-> match rules
+This is used by debugfs code to direct to debugfs, and
+nvhost_debug_dump() to send via printk.
+
 > 
-> On Mon, Feb 04, 2013 at 03:14:46PM +0800, fangxiaozhi 00110321 wrote:
-> > +/* Define the device is matched with Vendor ID and interface
-> > +descriptors */ #define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
-> > +			vendorName, productName, useProtocol, useTransport, \
-> > +			initFunction, flags) \
-> > +{ \
-> > +	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-> > +				| USB_DEVICE_ID_MATCH_VENDOR, \
-> > +	.idVendor    = (id_vendor), \
-> > +	.bInterfaceClass = (cl), \
-> > +	.bInterfaceSubClass = (sc), \
-> > +	.bInterfaceProtocol = (pr), \
-> > +	.driver_info = (flags) \
-> > +}
+>> diff --git a/drivers/gpu/host1x/dev.h b/drivers/gpu/host1x/dev.h
+> [...]
+>>  struct host1x_syncpt_ops {
+>>  	void (*reset)(struct host1x_syncpt *);
+>>  	void (*reset_wait_base)(struct host1x_syncpt *);
+>> @@ -117,6 +133,7 @@ struct host1x {
+>>  	struct host1x_channel_ops channel_op;
+>>  	struct host1x_cdma_ops cdma_op;
+>>  	struct host1x_pushbuffer_ops cdma_pb_op;
+>> +	struct host1x_debug_ops debug_op;
+>>  	struct host1x_syncpt_ops syncpt_op;
+>>  	struct host1x_intr_ops intr_op;
 > 
-> I'm not going to reject this given the number of times it has been submitted,
-> but can't you use the USB_VENDOR_AND_INTERFACE_INFO() macro here in
-> this definition?
+> Again, better to pass in a const pointer to the ops structure.
+
+Ok.
+
 > 
-> If so, can you send me an add-on patch that makes that change?
+>> diff --git a/drivers/gpu/host1x/hw/debug_hw.c b/drivers/gpu/host1x/hw/debug_hw.c
 > 
-> thanks,
+>> +static int show_channel_command(struct output *o, u32 addr, u32 val, int *count)
+>> +{
+>> +	unsigned mask;
+>> +	unsigned subop;
+>> +
+>> +	switch (val >> 28) {
+>> +	case 0x0:
 > 
-> greg k-h
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> These can easily be derived by looking at the debug output, but it may
+> still make sense to assign symbolic names to them.
+
+I have another suggestion. In downstream I removed the decoding part and
+I just print out a string of hex. That removes quite a bit bunch of code
+from kernel. It makes the debug output also more compact.
+
+It's much easier to write a user space program to decode than maintain
+it in kernel.
+
+> 
+>> +static void show_channel_word(struct output *o, int *state, int *count,
+>> +		u32 addr, u32 val, struct host1x_cdma *cdma)
+>> +{
+>> +	static int start_count, dont_print;
+> 
+> What if two processes read debug information at the same time?
+
+show_channels() acquires cdma.lock, so that shouldn't happen.
+
+> 
+>> +static void do_show_channel_gather(struct output *o,
+>> +		phys_addr_t phys_addr,
+>> +		u32 words, struct host1x_cdma *cdma,
+>> +		phys_addr_t pin_addr, u32 *map_addr)
+>> +{
+>> +	/* Map dmaget cursor to corresponding mem handle */
+>> +	u32 offset;
+>> +	int state, count, i;
+>> +
+>> +	offset = phys_addr - pin_addr;
+>> +	/*
+>> +	 * Sometimes we're given different hardware address to the same
+>> +	 * page - in these cases the offset will get an invalid number and
+>> +	 * we just have to bail out.
+>> +	 */
+> 
+> Why's that?
+
+Because of a race - memory might've been unpinned and unmapped from
+IOMMU and when we re-map (pin), we are given a new address.
+
+But, I think this comment is a bit stale - we used to dump also old
+gathers. The latest code only dumps jobs in sync queue, so the race
+shouldn't happen.
+
+> 
+>> +	map_addr = host1x_memmgr_mmap(mem);
+>> +	if (!map_addr) {
+>> +		host1x_debug_output(o, "[could not mmap]\n");
+>> +		return;
+>> +	}
+>> +
+>> +	/* Get base address from mem */
+>> +	sgt = host1x_memmgr_pin(mem);
+>> +	if (IS_ERR(sgt)) {
+>> +		host1x_debug_output(o, "[couldn't pin]\n");
+>> +		host1x_memmgr_munmap(mem, map_addr);
+>> +		return;
+>> +	}
+> 
+> Maybe you should stick with one of "could not" or "couldn't". Makes it
+> easier to search for.
+
+I prefer "could not", so I'll use that.
+
+> 
+>> +static void show_channel_gathers(struct output *o, struct host1x_cdma *cdma)
+>> +{
+>> +	struct host1x_job *job;
+>> +
+>> +	list_for_each_entry(job, &cdma->sync_queue, list) {
+>> +		int i;
+>> +		host1x_debug_output(o,
+>> +				"\n%p: JOB, syncpt_id=%d, syncpt_val=%d,"
+>> +				" first_get=%08x, timeout=%d"
+>> +				" num_slots=%d, num_handles=%d\n",
+>> +				job,
+>> +				job->syncpt_id,
+>> +				job->syncpt_end,
+>> +				job->first_get,
+>> +				job->timeout,
+>> +				job->num_slots,
+>> +				job->num_unpins);
+> 
+> This could go on fewer lines.
+
+Yes, will merge.
+
+> 
+>> +static void host1x_debug_show_channel_cdma(struct host1x *m,
+>> +	struct host1x_channel *ch, struct output *o, int chid)
+>> +{
+> [...]
+>> +	switch (cbstat) {
+>> +	case 0x00010008:
+> 
+> Again, symbolic names would be nice.
+
+I propose I remove the decoding from kernel, and save 200 lines.
+
+Terje
