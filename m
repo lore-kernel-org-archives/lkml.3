@@ -1,131 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156Ab3BEFZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 00:25:21 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56969 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab3BEFZT (ORCPT
+	id S1751187Ab3BEF2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 00:28:31 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54366 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786Ab3BEF2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 00:25:19 -0500
-X-AuditID: 9c93016f-b7b70ae000000e36-df-511097bddd3f
-Date: Tue, 5 Feb 2013 14:25:17 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, linux-mm@kvack.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] mm: hotplug: implement non-movable version of
- get_user_pages() to kill long-time pin pages
-Message-ID: <20130205052517.GH2610@blaptop>
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
- <20130205005859.GE2610@blaptop>
- <51108DC8.4090704@cn.fujitsu.com>
+	Tue, 5 Feb 2013 00:28:30 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51109858.8040000@jp.fujitsu.com>
+Date: Tue, 5 Feb 2013 14:27:52 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51108DC8.4090704@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: liguang <lig.fnst@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <x86@kernel.org>, <rientjes@google.com>
+Subject: Re: [PATCH v2 2/4] numa: avoid export acpi_numa variable
+References: <1360031838-26898-1-git-send-email-lig.fnst@cn.fujitsu.com> <1360031838-26898-3-git-send-email-lig.fnst@cn.fujitsu.com>
+In-Reply-To: <1360031838-26898-3-git-send-email-lig.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lin,
+2013/02/05 11:37, liguang wrote:
+> acpi_numa is used to prevent srat table
+> being parsed, seems a little miss-named,
+> if 'noacpi' was specified by cmdline and
+> CONFIG_ACPI_NUMA was enabled, acpi_numa
+> will be operated directly from everywhere
+> it needed to disable/enable numa in acpi
+> mode which was a bad thing, so, try to
+> export a fuction to get srat table
+> enable/disable info.
 
-On Tue, Feb 05, 2013 at 12:42:48PM +0800, Lin Feng wrote:
-> Hi Minchan,
+The patch is wrong.
+By the patch, acpi_numa is set to one of three values, either -1, false(0), 1.
+By this, x86_acpi_numa_init() goes wrong.
+
+How about using bool to acpi_numa?
+
+Thanks,
+Yasuaki Ishimatsu
+
+> Reviewed-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> ---
+>   arch/x86/include/asm/acpi.h |    2 +-
+>   arch/x86/kernel/acpi/srat.c |   15 ++++++++++-----
+>   arch/x86/mm/numa.c          |    2 +-
+>   arch/x86/xen/enlighten.c    |    2 +-
+>   4 files changed, 13 insertions(+), 8 deletions(-)
 > 
-> On 02/05/2013 08:58 AM, Minchan Kim wrote:
-> > Hello,
-> > 
-> > On Mon, Feb 04, 2013 at 06:04:06PM +0800, Lin Feng wrote:
-> >> Currently get_user_pages() always tries to allocate pages from movable zone,
-> >> as discussed in thread https://lkml.org/lkml/2012/11/29/69, in some case users
-> >> of get_user_pages() is easy to pin user pages for a long time(for now we found
-> >> that pages pinned as aio ring pages is such case), which is fatal for memory
-> >> hotplug/remove framework.
-> >>
-> >> So the 1st patch introduces a new library function called
-> >> get_user_pages_non_movable() to pin pages only from zone non-movable in memory.
-> >> It's a wrapper of get_user_pages() but it makes sure that all pages come from
-> >> non-movable zone via additional page migration.
-> >>
-> >> The 2nd patch gets around the aio ring pages can't be migrated bug caused by
-> >> get_user_pages() via using the new function. It only works when configed with
-> >> CONFIG_MEMORY_HOTREMOVE, otherwise it uses the old version of get_user_pages().
-> > 
-> > CMA has same issue but the problem is the driver developers or any subsystem
-> > using GUP can't know their pages is in CMA area or not in advance.
-> > So all of client of GUP should use GUP_NM to work them with CMA/MEMORY_HOTPLUG well?
-> > Even some driver module in embedded side doesn't open their source code.
-> Yes, it somehow depends on the users of GUP. In MEMORY_HOTPLUG case, as for most users
-> of GUP, they will release the pinned pages immediately and to such users they should get
-> a good performance, using the old style interface is a smart way. And we had better just
-> deal with the cases we have to by using the new interface.
-
-Hmm, I think you can't make sure most of user for MEMORY_HOTPLUG will release pinned pages
-immediately. Because MEMORY_HOTPLUG could be used for embedded system for reducing power
-by PASR and some drivers in embedded could use GUP anytime and anywhere. They can't know
-in advance they will use pinned pages long time or release in short time because it depends
-on some event like user's response which is very not predetermined.
-So for solving it, we can add some WARN_ON in CMA/MEMORY_HOTPLUG part just in case of
-failing migration by page count and then, investigate they are really using GUP and it's
-REALLY a culprit. If so, yell to them "Please use GUP_NM instead"?
-
-Yes. it could be done but it would be rather trobulesome job.
-
+> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+> index 0c44630..6b9c861 100644
+> --- a/arch/x86/include/asm/acpi.h
+> +++ b/arch/x86/include/asm/acpi.h
+> @@ -181,7 +181,7 @@ static inline void disable_acpi(void) { }
+>   #define ARCH_HAS_POWER_INIT	1
 >   
-> > 
-> > I would like to make GUP smart so it allocates a page from non-movable/non-cma area
-> > when memory-hotplug/cma is enabled(CONFIG_MIGRATE_ISOLATE). Yeb. it might hurt GUP
-> > performance but it is just trade-off for using CMA/memory-hotplug, IMHO. :(
-> As I debuged the get_user_pages(), I found that some pages is already there and may be
-> allocated before we call get_user_pages(). __get_user_pages() have following logic to
-> handle such case.
-> 1786                         while (!(page = follow_page(vma, start, foll_flags))) {
-> 1787                                 int ret;
-> To such case an additional alloc-flag or such doesn't work, it's difficult to keep GUP
-> as smart as we want :( , so I worked out the migration approach to get around and 
-> avoid messing up the current code :)
-
-I didn't look at your code in detail yet but What's wrong following this?
-
-Change curret GUP with old_GUP.
-
-#ifdef CONFIG_MIGRATE_ISOLATE
-
-int get_user_pages_non_movable()
-{
-        ..
-        old_get_user_pages()
-        ..
-}
-
-int get_user_pages()
-{
-        return get_user_pages_non_movable();
-}
-#else
-int get_user_pages()
-{
-        return old_get_user_pages()
-}
-#endif
-
+>   #ifdef CONFIG_ACPI_NUMA
+> -extern int acpi_numa;
+> +extern void disable_acpi_numa(void);
+>   extern int x86_acpi_numa_init(void);
+>   #endif /* CONFIG_ACPI_NUMA */
+>   
+> diff --git a/arch/x86/kernel/acpi/srat.c b/arch/x86/kernel/acpi/srat.c
+> index 4ddf497..0a4d7ee 100644
+> --- a/arch/x86/kernel/acpi/srat.c
+> +++ b/arch/x86/kernel/acpi/srat.c
+> @@ -24,22 +24,27 @@
+>   #include <asm/apic.h>
+>   #include <asm/uv/uv.h>
+>   
+> -int acpi_numa __initdata;
+> +static bool acpi_numa __initdata;
+>   
+>   static __init int setup_node(int pxm)
+>   {
+>   	return acpi_map_pxm_to_node(pxm);
+>   }
+>   
+> -static __init void bad_srat(void)
+> +void __init disable_acpi_numa(void)
+> +{
+> +	acpi_numa = false;
+> +}
+> +
+> +static void __init bad_srat(void)
+>   {
+> -	printk(KERN_ERR "SRAT: SRAT not used.\n");
+>   	acpi_numa = -1;
+> +	printk(KERN_ERR "SRAT: SRAT will not be used.\n");
+>   }
+>   
+> -static __init inline int srat_disabled(void)
+> +static bool __init srat_disabled(void)
+>   {
+> -	return acpi_numa < 0;
+> +	return acpi_numa;
+>   }
+>   
+>   /* Callback for SLIT parsing */
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index 2d125be..870ca6b 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -47,7 +47,7 @@ static __init int numa_setup(char *opt)
+>   #endif
+>   #ifdef CONFIG_ACPI_NUMA
+>   	if (!strncmp(opt, "noacpi", 6))
+> -		acpi_numa = -1;
+> +		disable_acpi_numa();
+>   #endif
+>   	return 0;
+>   }
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 138e566..a5f6353 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1415,7 +1415,7 @@ asmlinkage void __init xen_start_kernel(void)
+>   	 * any NUMA information the kernel tries to get from ACPI will
+>   	 * be meaningless.  Prevent it from trying.
+>   	 */
+> -	acpi_numa = -1;
+> +	disable_acpi_numa();
+>   #endif
+>   
+>   	/* Don't do the full vcpu_info placement stuff until we have a
 > 
-> thanks,
-> linfeng 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
--- 
-Kind regards,
-Minchan Kim
+
