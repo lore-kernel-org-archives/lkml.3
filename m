@@ -1,53 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab3BEGr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 01:47:59 -0500
-Received: from cs-smtp-2.Stanford.EDU ([171.64.64.26]:54413 "EHLO
-	cs-smtp-2.Stanford.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab3BEGr6 (ORCPT
+	id S1751858Ab3BEGv6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 01:51:58 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:34071 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab3BEGvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 01:47:58 -0500
-X-Greylist: delayed 2379 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Feb 2013 01:47:58 EST
-From: Ben Pfaff <blp@cs.stanford.edu>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jesse Gross <jesse@nicira.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>
-Subject: Re: No sysfs directory for openvswitch module when built-in
-References: <CAM_iQpVgEchb8UsxUP=w6OMbYx=zuP2yv=QwFhe8rPCbNBreVg@mail.gmail.com>
-	<20130204081920.00e9f22e@nehalam.linuxnetplumber.net>
-Reply-To: blp@cs.stanford.edu
-Date: Mon, 04 Feb 2013 22:08:13 -0800
-In-Reply-To: <20130204081920.00e9f22e@nehalam.linuxnetplumber.net> (Stephen
-	Hemminger's message of "Mon, 4 Feb 2013 08:19:20 -0800")
-Message-ID: <87lib3gunm.fsf@blp.benpfaff.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Tue, 5 Feb 2013 01:51:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Spam-Score: -1.0
-X-Scan-Signature: 6bee508a35d8245455fa42c2dd36c733
+In-Reply-To: <CA+Z25wVnFMkXvSOvetipBEFkZgSKe2Qjn1wYf-x5i7skGQ-XSA@mail.gmail.com>
+References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+	<CAJ0PZbTAOdQrUjefOpc2MDam1hHLjSEDLHw3VrP+9=OAbgQ8ug@mail.gmail.com>
+	<CA+Z25wVnFMkXvSOvetipBEFkZgSKe2Qjn1wYf-x5i7skGQ-XSA@mail.gmail.com>
+Date: Tue, 5 Feb 2013 15:51:51 +0900
+Message-ID: <CAJ0PZbT9SEphLvnguhjho=OuoEE4KkQZfz2s4YrsoKwv=VbvEg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PM / devfreq: set min/max freq limit from freq table
+From: MyungJoo Ham <myungjoo.ham@gmail.com>
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Cc: kyungmin.park@samsung.com, mturquette@linaro.org, rjw@sisk.pl,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Hemminger <stephen@networkplumber.org> writes:
-
-> On Tue, 29 Jan 2013 22:15:18 +0800
-> Cong Wang <xiyou.wangcong@gmail.com> wrote:
+On Tue, Jan 15, 2013 at 8:21 PM, Rajagopal Venkat
+<rajagopal.venkat@linaro.org> wrote:
+> On 14 January 2013 20:06, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+>> On Tue, Jan 8, 2013 at 2:50 PM, Rajagopal Venkat
+>> <rajagopal.venkat@linaro.org> wrote:
+>>> Set devfreq device min and max frequency limits when device
+>>> is added to devfreq, provided frequency table is supplied.
+>>> This helps governors to suggest target frequency with in
+>>> limits.
+>>>
+>>> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+>>
+>> Could you please elaborate the benefit of the patch?
+>>
 >
->> Hello, Rusty, Jesse,
->> 
->> I met an interesting problem when I compile openvswitch module as a
->> built-in (actually I compile ALL kernel modules as built-in), there is
->> no /sys/module/openvswitch/ directory created by the kernel in this
->> case.
->> 
->> What's worse, the user-space init script thinks openvswitch module is
->> not loaded by checking the exist of this directory, therefore refuses
->> to start.
->
-> Shouldn't the OVS init script be testing for some other API.
+> When freq table is supplied, it's unreasonable to suggest the target frequency
+> which is - target_freq < min_freq and target_freq > max_freq. It avoids
+> unnecessary checks at devfreq drivers.
 
-I agree that's a bug in the OVS init script.  I will fix it.
+Is it a safety barrier against userspace processes or devfreq governors?
+Users are allowed to enter min_freq and max_freq via sysfs interfaces anyway.
+Also, as mentioned earlier, users are allowed to enter 0 in order to
+"disengage" the min/max_freq.
+If we need "hardware-specific" min/max value, we'd need another sysfs
+interfaces and values (i.e., scaling_min/max_freq vs
+cpuinfo_min/max_freq).
+
+Besides, if you are able to provide "freq_table", it means that you
+are able to provide OPP for the device.
+Then, you can use OPP APIs to avoid unnecessary checks at devfreq
+driver (even you can use the devfreq helper functions)
+
+>
+>> The devfreq device drivers are required to choose proper frequencies
+>> anyway regardless which values the governors may give (hopefully by
+>> choosing the closest value that can support the required performance).
+>>
+>
+> Yes. but then each driver needs to have conditional checks for choosing
+> closet value even though freq table is provided.
+
+Even with this min/max-freq, when governors suggests some values
+between min/max, each driver needs to have checks unless it uses OPP.
+
+>
+>> Besides, the min/max values are to be set by userspace. Users may
+>> enter 0 in order to express that they do not want to limit the
+>> behaviors of governors.
+
+Because of this, this patch will create discrepency from/to userspace
+interfaces.
+
+
+
+
+Cheers,
+MyungJoo.
+
+>>
+>>
+>> Cheers,
+>> MyungJoo.
+>>
+>>> ---
+>>>  drivers/devfreq/devfreq.c |   24 ++++++++++++++++++++++++
+>>>  1 file changed, 24 insertions(+)
+>>>
+>>> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+>>> index a8f0173..5782c9b 100644
+>>> --- a/drivers/devfreq/devfreq.c
+>>> +++ b/drivers/devfreq/devfreq.c
+>>> @@ -69,6 +69,29 @@ static struct devfreq *find_device_devfreq(struct device *dev)
+>>>  }
+>>>
+>>>  /**
+>>> + * devfreq_set_freq_limits() - Set min and max frequency from freq_table
+>>> + * @devfreq:   the devfreq instance
+>>> + */
+>>> +static void devfreq_set_freq_limits(struct devfreq *devfreq)
+>>> +{
+>>> +       int idx;
+>>> +       unsigned long min = ~0, max = 0;
+>>> +
+>>> +       if (!devfreq->profile->freq_table)
+>>> +               return;
+>>> +
+>>> +       for (idx = 0; idx < devfreq->profile->max_state; idx++) {
+>>> +               if (min > devfreq->profile->freq_table[idx])
+>>> +                       min = devfreq->profile->freq_table[idx];
+>>> +               if (max < devfreq->profile->freq_table[idx])
+>>> +                       max = devfreq->profile->freq_table[idx];
+>>> +       }
+>>> +
+>>> +       devfreq->min_freq = min;
+>>> +       devfreq->max_freq = max;
+>>> +}
+>>> +
+>>> +/**
+>>>   * devfreq_get_freq_level() - Lookup freq_table for the frequency
+>>>   * @devfreq:   the devfreq instance
+>>>   * @freq:      the target frequency
+>>> @@ -476,6 +499,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+>>>                                                 devfreq->profile->max_state,
+>>>                                                 GFP_KERNEL);
+>>>         devfreq->last_stat_updated = jiffies;
+>>> +       devfreq_set_freq_limits(devfreq);
+>>>
+>>>         dev_set_name(&devfreq->dev, dev_name(dev));
+>>>         err = device_register(&devfreq->dev);
+>>> --
+>>> 1.7.10.4
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>>
+>> --
+>> MyungJoo Ham, Ph.D.
+>> Mobile Software Platform Lab, DMC Business, Samsung Electronics
+>
+>
+>
+> --
+> Regards,
+> Rajagopal
+
+
+
+-- 
+MyungJoo Ham, Ph.D.
+System S/W Lab, S/W Center, Samsung Electronics
