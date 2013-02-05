@@ -1,290 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab3BEOpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 09:45:55 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:45805 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab3BEOpy (ORCPT
+	id S1755727Ab3BEOqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 09:46:32 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:56662 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab3BEOqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 09:45:54 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH V2] spi: Remove erroneous __init, __exit and __exit_p() references in drivers
-Date: Tue,  5 Feb 2013 14:45:48 +0000
-Message-Id: <1360075548-28705-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 5 Feb 2013 09:46:30 -0500
+X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Feb 2013 09:46:29 EST
+MIME-Version: 1.0
+In-Reply-To: <1360027522-18196-1-git-send-email-tobetter@gmail.com>
+References: <1360027522-18196-1-git-send-email-tobetter@gmail.com>
+Date: Tue, 5 Feb 2013 20:08:08 +0530
+X-Google-Sender-Auth: c-Zndvx1At1a6vCqIeFDmUQux64
+Message-ID: <CAD6zSYPsOG6nzqkJOSeikHB+Sd7A8f+gP2=uQjDU9yGRLQLQRg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] usb: phy: Add USB host phy support on Exyno4412
+From: Praveen Paneri <p.paneri@samsung.com>
+To: Dongjin Kim <tobetter@gmail.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the spi driver module remove hooks were annotated with __exit
-and referenced with __exit_p(). Presumably these were supposed to be
-__devinit, __devexit and __devexit_p() since __init/__exit for a
-probe/remove hook has never been correct. They also got missed during
-the big __devinit/__devexit purge since they didn't match the pattern.
-Remove then now to be rid of it.
+Hi,
 
-v2: purge __init also
+On Tue, Feb 5, 2013 at 6:55 AM, Dongjin Kim <tobetter@gmail.com> wrote:
+> This patch adds host phy support for Samsung's Exynos4412 SoC to
+> samsung-usbphy driver. This patch is created upon "http://git.kernel.org/?p=linux/kernel/git/balbi/usb.git;a=commit;h=2564b526b8cf01e6c36285edfd40a438e683c2b8"
+>
+> Cc: Praveen Paneri <p.paneri@samsung.com>
+> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+> ---
+>  drivers/usb/phy/samsung-usbphy.c |  156 +++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 154 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/usb/phy/samsung-usbphy.c b/drivers/usb/phy/samsung-usbphy.c
+> index 6ea5537..c800fa4 100644
+> --- a/drivers/usb/phy/samsung-usbphy.c
+> +++ b/drivers/usb/phy/samsung-usbphy.c
+> @@ -47,7 +47,7 @@
+>
+>  #define PHYCLK_MODE_USB11                      (0x1 << 6)
+>  #define PHYCLK_EXT_OSC                         (0x1 << 5)
+> -#define PHYCLK_COMMON_ON_N                     (0x1 << 4)
+> +#define PHYCLK_COMMON_ON_N_PHY0                        (0x1 << 4)
+>  #define PHYCLK_ID_PULL                         (0x1 << 2)
+>  #define PHYCLK_CLKSEL_MASK                     (0x3 << 0)
+>  #define PHYCLK_CLKSEL_48M                      (0x0 << 0)
+> @@ -60,6 +60,22 @@
+>  #define RSTCON_HLINK_SWRST                     (0x1 << 1)
+>  #define RSTCON_SWRST                           (0x1 << 0)
+>
+> +/* For Exynos4412 */
+> +#define PHYCLK_COMMON_ON_N_PHY1                        (0x1 << 7)
+> +
+> +#define PHYPWR_NORMAL_MASK_HSIC1               (0x7 << 12)
+> +#define PHYPWR_NORMAL_MASK_HSIC0               (0x7 << 9)
+> +#define PHYPWR_NORMAL_MASK_PHY1                        (0x7 << 6)
+> +
+> +#define PHYPWR_ANALOG_POWERDOWN_PHY1           (0x1 << 7)
+> +
+> +#define RSTCON_HLINK_SWRST_MASK                        (0xf << 7)
+> +#define RSTCON_PHY1_SWRST_MASK                 (0xf << 3)
+> +#define RSTCON_PHY0_SWRST_MASK                 (0x7 << 0)
+> +
+> +#define EXYNOS4_PHY_HSIC_CTRL0                 (0x04)
+> +#define EXYNOS4_PHY_HSIC_CTRL1                 (0x08)
+> +
+>  /* EXYNOS5 */
+>  #define EXYNOS5_PHY_HOST_CTRL0                 (0x00)
+>
+> @@ -174,6 +190,7 @@
+>  enum samsung_cpu_type {
+>         TYPE_S3C64XX,
+>         TYPE_EXYNOS4210,
+> +       TYPE_EXYNOS4412,
+Shouldn't you add it under the TYPE_EXYNOS4X12. We will have to add a
+separate support for 4212 then.
+>         TYPE_EXYNOS5250,
+>  };
+>
+> @@ -322,6 +339,17 @@ static void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, bool on)
+>                         en_mask = sphy->drv_data->hostphy_en_mask;
+>                 }
+>                 break;
+> +       case TYPE_EXYNOS4412:
+> +               if (sphy->phy_type == USB_PHY_TYPE_DEVICE) {
+> +                       reg = sphy->pmuregs +
+> +                               sphy->drv_data->devphy_reg_offset;
+> +                       en_mask = sphy->drv_data->devphy_en_mask;
+> +               } else if (sphy->phy_type == USB_PHY_TYPE_HOST) {
+> +                       reg = sphy->pmuregs +
+> +                               sphy->drv_data->hostphy_reg_offset;
+> +                       en_mask = sphy->drv_data->hostphy_en_mask;
+> +               }
+> +               break;
+>         default:
+>                 dev_err(sphy->dev, "Invalid SoC type\n");
+>                 return;
+> @@ -422,6 +450,29 @@ static int samsung_usbphy_get_refclk_freq(struct samsung_usbphy *sphy)
+>                         refclk_freq = FSEL_CLKSEL_24M;
+>                         break;
+>                 }
+> +       } else if (sphy->drv_data->cpu_type == TYPE_EXYNOS4412) {
+> +               switch (clk_get_rate(ref_clk)) {
+> +               case 9600 * KHZ:
+> +                       refclk_freq = FSEL_CLKSEL_9600K;
+> +                       break;
+> +               case 10 * MHZ:
+> +                       refclk_freq = FSEL_CLKSEL_10M;
+> +                       break;
+> +               case 12 * MHZ:
+> +                       refclk_freq = FSEL_CLKSEL_12M;
+> +                       break;
+> +               case 19200 * KHZ:
+> +                       refclk_freq = FSEL_CLKSEL_19200K;
+> +                       break;
+> +               case 20 * MHZ:
+> +                       refclk_freq = FSEL_CLKSEL_20M;
+> +                       break;
+> +               case 24 * MHZ:
+> +               default:
+> +                       /* default reference clock */
+> +                       refclk_freq = FSEL_CLKSEL_24M;
+> +                       break;
+> +               }
+>         } else {
+>                 switch (clk_get_rate(ref_clk)) {
+>                 case 12 * MHZ:
+> @@ -561,6 +612,69 @@ static void samsung_exynos5_usbphy_enable(struct samsung_usbphy *sphy)
+>         writel(ohcictrl, regs + EXYNOS5_PHY_HOST_OHCICTRL);
+>  }
+>
+> +static bool exynos4_phyhost_is_on(void *regs)
+> +{
+> +       u32 reg;
+> +
+> +       reg = readl(regs + SAMSUNG_PHYPWR);
+> +
+> +       return !(reg & PHYPWR_ANALOG_POWERDOWN_PHY1);
+> +}
+> +
+> +static void samsung_exynos4412_usbphy_enable(struct samsung_usbphy *sphy)
+> +{
+> +       void __iomem *regs = sphy->regs;
+> +       u32 phypwr;
+> +       u32 phyclk;
+> +       u32 rstcon;
+> +
+> +       /*
+> +        * phy_usage helps in keeping usage count for phy
+> +        * so that the first consumer enabling the phy is also
+> +        * the last consumer to disable it.
+> +        */
+> +
+> +       atomic_inc(&sphy->phy_usage);
+> +
+> +       if (exynos4_phyhost_is_on(regs)) {
+> +               dev_info(sphy->dev, "Already power on PHY\n");
+> +               return;
+> +       }
+> +
+> +       writel(EXYNOS_USBPHY_ENABLE, sphy->pmuregs + EXYNOS4_PHY_HSIC_CTRL0);
+> +       writel(EXYNOS_USBPHY_ENABLE, sphy->pmuregs + EXYNOS4_PHY_HSIC_CTRL1);
+> +
+> +       /* Common block configuration during suspend */
+> +       phyclk = sphy->ref_clk_freq
+> +               & ~(PHYCLK_COMMON_ON_N_PHY0 | PHYCLK_COMMON_ON_N_PHY1);
+Why PHY0 here? Shouldn't it come with the support for device phy?
+> +       writel(phyclk, regs + SAMSUNG_PHYCLK);
+> +
+> +       /* set to normal of Device */
+Please edit this comment for better readability. See the existing code.
+> +       phypwr = readl(regs + SAMSUNG_PHYPWR) & ~PHYPWR_NORMAL_MASK_PHY0;
+> +       writel(phypwr, regs + SAMSUNG_PHYPWR);
+> +
+> +       /* set to normal of Host */
+Here as well
+> +       phypwr &= ~(PHYPWR_NORMAL_MASK_HSIC0 | PHYPWR_NORMAL_MASK_HSIC1
+> +                       | PHYPWR_NORMAL_MASK_PHY1);
+> +       writel(phypwr, regs + SAMSUNG_PHYPWR);
+> +
+> +       /* reset both PHY and Link of Device */
+> +       rstcon = readl(regs + SAMSUNG_RSTCON) | RSTCON_PHY0_SWRST_MASK;
+> +       writel(rstcon, regs + SAMSUNG_RSTCON);
+> +       udelay(10);
+> +       rstcon &= ~RSTCON_PHY0_SWRST_MASK;
+> +       writel(rstcon, regs + SAMSUNG_RSTCON);
+Do we really need to reset PHY0 too? As long as PHY0 is not required.
+> +
+> +       /* reset both PHY and Link of Host */
+> +       rstcon = readl(regs + SAMSUNG_RSTCON)
+> +               | (RSTCON_HLINK_SWRST_MASK | RSTCON_PHY1_SWRST_MASK);
+> +       writel(rstcon, regs + SAMSUNG_RSTCON);
+> +       udelay(10);
+> +       rstcon &= ~(RSTCON_HLINK_SWRST_MASK | RSTCON_PHY1_SWRST_MASK);
+> +       writel(rstcon, regs + SAMSUNG_RSTCON);
+> +       udelay(80);
+> +}
+> +
+>  static void samsung_usbphy_enable(struct samsung_usbphy *sphy)
+>  {
+>         void __iomem *regs = sphy->regs;
+> @@ -575,7 +689,7 @@ static void samsung_usbphy_enable(struct samsung_usbphy *sphy)
+>
+>         switch (sphy->drv_data->cpu_type) {
+>         case TYPE_S3C64XX:
+> -               phyclk &= ~PHYCLK_COMMON_ON_N;
+> +               phyclk &= ~PHYCLK_COMMON_ON_N_PHY0;
+>                 phypwr &= ~PHYPWR_NORMAL_MASK;
+>                 rstcon |= RSTCON_SWRST;
+>                 break;
+> @@ -631,6 +745,28 @@ static void samsung_exynos5_usbphy_disable(struct samsung_usbphy *sphy)
+>         writel(phyotg, regs + EXYNOS5_PHY_OTG_SYS);
+>  }
+>
+> +static void samsung_exynos4412_usbphy_disable(struct samsung_usbphy *sphy)
+> +{
+> +       void __iomem *regs = sphy->regs;
+> +       u32 phypwr;
+> +
+> +       if (atomic_dec_return(&sphy->phy_usage) > 0) {
+> +               dev_info(sphy->dev, "still being used\n");
+> +               return;
+> +       }
+> +
+> +       /* unset to normal of Host and Device */
+> +       phypwr = readl(regs + SAMSUNG_PHYPWR);
+> +       phypwr |= (PHYPWR_NORMAL_MASK_HSIC0
+> +                       | PHYPWR_NORMAL_MASK_HSIC1
+> +                       | PHYPWR_NORMAL_MASK_PHY1
+> +                       | PHYPWR_NORMAL_MASK_PHY0);
+PHY0?
+> +       writel(phypwr, regs + SAMSUNG_PHYPWR);
+> +
+> +       writel(0, sphy->pmuregs + EXYNOS4_PHY_HSIC_CTRL0);
+> +       writel(0, sphy->pmuregs + EXYNOS4_PHY_HSIC_CTRL1);
+> +}
+> +
+>  static void samsung_usbphy_disable(struct samsung_usbphy *sphy)
+>  {
+>         void __iomem *regs = sphy->regs;
+> @@ -696,6 +832,8 @@ static int samsung_usbphy_init(struct usb_phy *phy)
+>         /* Initialize usb phy registers */
+>         if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
+>                 samsung_exynos5_usbphy_enable(sphy);
+> +       else if (sphy->drv_data->cpu_type == TYPE_EXYNOS4412)
+> +               samsung_exynos4412_usbphy_enable(sphy);
+>         else
+>                 samsung_usbphy_enable(sphy);
+>
+> @@ -739,6 +877,8 @@ static void samsung_usbphy_shutdown(struct usb_phy *phy)
+>         /* De-initialize usb phy registers */
+>         if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
+>                 samsung_exynos5_usbphy_disable(sphy);
+> +       else if (sphy->drv_data->cpu_type == TYPE_EXYNOS4412)
+> +               samsung_exynos4412_usbphy_disable(sphy);
+>         else
+>                 samsung_usbphy_disable(sphy);
+>
+> @@ -872,6 +1012,12 @@ static const struct samsung_usbphy_drvdata usbphy_exynos4 = {
+>         .hostphy_en_mask        = EXYNOS_USBPHY_ENABLE,
+>  };
+>
+> +static const struct samsung_usbphy_drvdata usbphy_exynos4412 = {
+> +       .cpu_type               = TYPE_EXYNOS4412,
+> +       .devphy_en_mask         = EXYNOS_USBPHY_ENABLE,
+> +       .hostphy_en_mask        = EXYNOS_USBPHY_ENABLE,
+> +};
+> +
+>  static struct samsung_usbphy_drvdata usbphy_exynos5 = {
+>         .cpu_type               = TYPE_EXYNOS5250,
+>         .hostphy_en_mask        = EXYNOS_USBPHY_ENABLE,
+> @@ -887,6 +1033,9 @@ static const struct of_device_id samsung_usbphy_dt_match[] = {
+>                 .compatible = "samsung,exynos4210-usbphy",
+>                 .data = &usbphy_exynos4,
+>         }, {
+> +               .compatible = "samsung,exynos4412-usbphy",
+> +               .data = &usbphy_exynos4412,
+> +       }, {
+>                 .compatible = "samsung,exynos5250-usbphy",
+>                 .data = &usbphy_exynos5
+>         },
+> @@ -903,6 +1052,9 @@ static struct platform_device_id samsung_usbphy_driver_ids[] = {
+>                 .name           = "exynos4210-usbphy",
+>                 .driver_data    = (unsigned long)&usbphy_exynos4,
+>         }, {
+> +               .name           = "exynos4412-usbphy",
+> +               .driver_data    = (unsigned long)&usbphy_exynos4412,
+> +       }, {
+>                 .name           = "exynos5250-usbphy",
+>                 .driver_data    = (unsigned long)&usbphy_exynos5,
+>         },
+> --
+> 1.7.10.4
+I am not sure if you were following this.
+http://permalink.gmane.org/gmane.linux.kernel.samsung-soc/15296
 
-Reported-by: Arnd Bergmann <arnd@arndb.de>
-[Arnd set a patch cleaning up one, and then I found more]
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/spi/spi-atmel.c      |    2 +-
- drivers/spi/spi-au1550.c     |    8 ++++----
- drivers/spi/spi-bfin5xx.c    |    2 +-
- drivers/spi/spi-omap-100k.c  |    6 +++---
- drivers/spi/spi-omap-uwire.c |    6 +++---
- drivers/spi/spi-orion.c      |    8 ++++----
- drivers/spi/spi-ppc4xx.c     |    6 +++---
- drivers/spi/spi-s3c64xx.c    |    2 +-
- drivers/spi/spi-txx9.c       |    6 +++---
- 9 files changed, 23 insertions(+), 23 deletions(-)
+Tomasz,
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index ab34497..656d137 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -1088,7 +1088,7 @@ static struct platform_driver atmel_spi_driver = {
- 	.suspend	= atmel_spi_suspend,
- 	.resume		= atmel_spi_resume,
- 	.probe		= atmel_spi_probe,
--	.remove		= __exit_p(atmel_spi_remove),
-+	.remove		= atmel_spi_remove,
- };
- module_platform_driver(atmel_spi_driver);
- 
-diff --git a/drivers/spi/spi-au1550.c b/drivers/spi/spi-au1550.c
-index 4de66d1c..44dd34b 100644
---- a/drivers/spi/spi-au1550.c
-+++ b/drivers/spi/spi-au1550.c
-@@ -717,7 +717,7 @@ static void au1550_spi_bits_handlers_set(struct au1550_spi *hw, int bpw)
- 	}
- }
- 
--static void __init au1550_spi_setup_psc_as_spi(struct au1550_spi *hw)
-+static void au1550_spi_setup_psc_as_spi(struct au1550_spi *hw)
- {
- 	u32 stat, cfg;
- 
-@@ -766,7 +766,7 @@ static void __init au1550_spi_setup_psc_as_spi(struct au1550_spi *hw)
- }
- 
- 
--static int __init au1550_spi_probe(struct platform_device *pdev)
-+static int au1550_spi_probe(struct platform_device *pdev)
- {
- 	struct au1550_spi *hw;
- 	struct spi_master *master;
-@@ -968,7 +968,7 @@ err_nomem:
- 	return err;
- }
- 
--static int __exit au1550_spi_remove(struct platform_device *pdev)
-+static int au1550_spi_remove(struct platform_device *pdev)
- {
- 	struct au1550_spi *hw = platform_get_drvdata(pdev);
- 
-@@ -997,7 +997,7 @@ static int __exit au1550_spi_remove(struct platform_device *pdev)
- MODULE_ALIAS("platform:au1550-spi");
- 
- static struct platform_driver au1550_spi_drv = {
--	.remove = __exit_p(au1550_spi_remove),
-+	.remove = au1550_spi_remove,
- 	.driver = {
- 		.name = "au1550-spi",
- 		.owner = THIS_MODULE,
-diff --git a/drivers/spi/spi-bfin5xx.c b/drivers/spi/spi-bfin5xx.c
-index 7d7c991..317f564 100644
---- a/drivers/spi/spi-bfin5xx.c
-+++ b/drivers/spi/spi-bfin5xx.c
-@@ -1273,7 +1273,7 @@ static int bfin_spi_destroy_queue(struct bfin_spi_master_data *drv_data)
- 	return 0;
- }
- 
--static int __init bfin_spi_probe(struct platform_device *pdev)
-+static int bfin_spi_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct bfin5xx_spi_master *platform_info;
-diff --git a/drivers/spi/spi-omap-100k.c b/drivers/spi/spi-omap-100k.c
-index 3aef7fa..78d29a1 100644
---- a/drivers/spi/spi-omap-100k.c
-+++ b/drivers/spi/spi-omap-100k.c
-@@ -481,7 +481,7 @@ static int omap1_spi100k_transfer(struct spi_device *spi, struct spi_message *m)
- 	return 0;
- }
- 
--static int __init omap1_spi100k_reset(struct omap1_spi100k *spi100k)
-+static int omap1_spi100k_reset(struct omap1_spi100k *spi100k)
- {
- 	return 0;
- }
-@@ -560,7 +560,7 @@ err1:
- 	return status;
- }
- 
--static int __exit omap1_spi100k_remove(struct platform_device *pdev)
-+static int omap1_spi100k_remove(struct platform_device *pdev)
- {
- 	struct spi_master       *master;
- 	struct omap1_spi100k    *spi100k;
-@@ -604,7 +604,7 @@ static struct platform_driver omap1_spi100k_driver = {
- 		.name		= "omap1_spi100k",
- 		.owner		= THIS_MODULE,
- 	},
--	.remove		= __exit_p(omap1_spi100k_remove),
-+	.remove		= omap1_spi100k_remove,
- };
- 
- 
-diff --git a/drivers/spi/spi-omap-uwire.c b/drivers/spi/spi-omap-uwire.c
-index 0a94d9d..102b233 100644
---- a/drivers/spi/spi-omap-uwire.c
-+++ b/drivers/spi/spi-omap-uwire.c
-@@ -476,7 +476,7 @@ static void uwire_off(struct uwire_spi *uwire)
- 	spi_master_put(uwire->bitbang.master);
- }
- 
--static int __init uwire_probe(struct platform_device *pdev)
-+static int uwire_probe(struct platform_device *pdev)
- {
- 	struct spi_master	*master;
- 	struct uwire_spi	*uwire;
-@@ -536,7 +536,7 @@ static int __init uwire_probe(struct platform_device *pdev)
- 	return status;
- }
- 
--static int __exit uwire_remove(struct platform_device *pdev)
-+static int uwire_remove(struct platform_device *pdev)
- {
- 	struct uwire_spi	*uwire = dev_get_drvdata(&pdev->dev);
- 	int			status;
-@@ -557,7 +557,7 @@ static struct platform_driver uwire_driver = {
- 		.name		= "omap_uwire",
- 		.owner		= THIS_MODULE,
- 	},
--	.remove		= __exit_p(uwire_remove),
-+	.remove		= uwire_remove,
- 	// suspend ... unuse ck
- 	// resume ... use ck
- };
-diff --git a/drivers/spi/spi-orion.c b/drivers/spi/spi-orion.c
-index b7e7182..6a3cdc7 100644
---- a/drivers/spi/spi-orion.c
-+++ b/drivers/spi/spi-orion.c
-@@ -366,7 +366,7 @@ msg_done:
- 	return 0;
- }
- 
--static int __init orion_spi_reset(struct orion_spi *orion_spi)
-+static int orion_spi_reset(struct orion_spi *orion_spi)
- {
- 	/* Verify that the CS is deasserted */
- 	orion_spi_set_cs(orion_spi, 0);
-@@ -396,7 +396,7 @@ static int orion_spi_setup(struct spi_device *spi)
- 	return 0;
- }
- 
--static int __init orion_spi_probe(struct platform_device *pdev)
-+static int orion_spi_probe(struct platform_device *pdev)
- {
- 	struct spi_master *master;
- 	struct orion_spi *spi;
-@@ -479,7 +479,7 @@ out:
- }
- 
- 
--static int __exit orion_spi_remove(struct platform_device *pdev)
-+static int orion_spi_remove(struct platform_device *pdev)
- {
- 	struct spi_master *master;
- 	struct resource *r;
-@@ -513,7 +513,7 @@ static struct platform_driver orion_spi_driver = {
- 		.owner	= THIS_MODULE,
- 		.of_match_table = of_match_ptr(orion_spi_of_match_table),
- 	},
--	.remove		= __exit_p(orion_spi_remove),
-+	.remove		= orion_spi_remove,
- };
- 
- static int __init orion_spi_init(void)
-diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
-index 7a85f22..424b333 100644
---- a/drivers/spi/spi-ppc4xx.c
-+++ b/drivers/spi/spi-ppc4xx.c
-@@ -389,7 +389,7 @@ static void free_gpios(struct ppc4xx_spi *hw)
- /*
-  * platform_device layer stuff...
-  */
--static int __init spi_ppc4xx_of_probe(struct platform_device *op)
-+static int spi_ppc4xx_of_probe(struct platform_device *op)
- {
- 	struct ppc4xx_spi *hw;
- 	struct spi_master *master;
-@@ -560,7 +560,7 @@ free_master:
- 	return ret;
- }
- 
--static int __exit spi_ppc4xx_of_remove(struct platform_device *op)
-+static int spi_ppc4xx_of_remove(struct platform_device *op)
- {
- 	struct spi_master *master = dev_get_drvdata(&op->dev);
- 	struct ppc4xx_spi *hw = spi_master_get_devdata(master);
-@@ -583,7 +583,7 @@ MODULE_DEVICE_TABLE(of, spi_ppc4xx_of_match);
- 
- static struct platform_driver spi_ppc4xx_of_driver = {
- 	.probe = spi_ppc4xx_of_probe,
--	.remove = __exit_p(spi_ppc4xx_of_remove),
-+	.remove = spi_ppc4xx_of_remove,
- 	.driver = {
- 		.name = DRIVER_NAME,
- 		.owner = THIS_MODULE,
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index d8928d0..8f492ed 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -1191,7 +1191,7 @@ static inline struct s3c64xx_spi_port_config *s3c64xx_spi_get_port_config(
- 			 platform_get_device_id(pdev)->driver_data;
- }
- 
--static int __init s3c64xx_spi_probe(struct platform_device *pdev)
-+static int s3c64xx_spi_probe(struct platform_device *pdev)
- {
- 	struct resource	*mem_res;
- 	struct s3c64xx_spi_driver_data *sdd;
-diff --git a/drivers/spi/spi-txx9.c b/drivers/spi/spi-txx9.c
-index 550b5f4..adb8530 100644
---- a/drivers/spi/spi-txx9.c
-+++ b/drivers/spi/spi-txx9.c
-@@ -335,7 +335,7 @@ static int txx9spi_transfer(struct spi_device *spi, struct spi_message *m)
- 	return 0;
- }
- 
--static int __init txx9spi_probe(struct platform_device *dev)
-+static int txx9spi_probe(struct platform_device *dev)
- {
- 	struct spi_master *master;
- 	struct txx9spi *c;
-@@ -430,7 +430,7 @@ exit:
- 	return ret;
- }
- 
--static int __exit txx9spi_remove(struct platform_device *dev)
-+static int txx9spi_remove(struct platform_device *dev)
- {
- 	struct spi_master *master = spi_master_get(platform_get_drvdata(dev));
- 	struct txx9spi *c = spi_master_get_devdata(master);
-@@ -448,7 +448,7 @@ static int __exit txx9spi_remove(struct platform_device *dev)
- MODULE_ALIAS("platform:spi_txx9");
- 
- static struct platform_driver txx9spi_driver = {
--	.remove = __exit_p(txx9spi_remove),
-+	.remove = txx9spi_remove,
- 	.driver = {
- 		.name = "spi_txx9",
- 		.owner = THIS_MODULE,
--- 
-1.7.10.4
+Would you like to add something here?
 
+regards,
+Praveen
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
