@@ -1,106 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3BELgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 06:36:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab3BELgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 06:36:50 -0500
-Date: Tue, 5 Feb 2013 13:36:45 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-Cc: Blue Swirl <blauwirbel@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Ortiz, Lance E" <lance.oritz@hp.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
- VFIO-PCI devices
-Message-ID: <20130205113645.GE23213@redhat.com>
-References: <F9E001219150CB45BEDC82A650F360C9014AAF07@G9W0717.americas.hpqcorp.net>
- <CAAu8pHvk_2Mf2F-YTDC-wdyD1Jic-DHUanSQfOa3g0VchTcNig@mail.gmail.com>
- <20130205080436.GV23213@redhat.com>
- <F9E001219150CB45BEDC82A650F360C9014B42EE@G9W0717.americas.hpqcorp.net>
- <20130205092110.GB23213@redhat.com>
- <F9E001219150CB45BEDC82A650F360C9014B43DC@G9W0717.americas.hpqcorp.net>
+	id S1754961Ab3BELiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 06:38:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32418 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab3BELiL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 06:38:11 -0500
+Date: Tue, 5 Feb 2013 14:37:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, kbuild@01.org
+Subject: [patch] sched: signedness bug in yield_to()
+Message-ID: <20130205113751.GA20521@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F9E001219150CB45BEDC82A650F360C9014B43DC@G9W0717.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 10:59:41AM +0000, Pandarathil, Vijaymohan R wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Gleb Natapov [mailto:gleb@redhat.com]
-> > Sent: Tuesday, February 05, 2013 1:21 AM
-> > To: Pandarathil, Vijaymohan R
-> > Cc: Blue Swirl; Alex Williamson; Bjorn Helgaas; Ortiz, Lance E;
-> > kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-pci@vger.kernel.org;
-> > linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for VFIO-
-> > PCI devices
-> > 
-> > On Tue, Feb 05, 2013 at 09:05:19AM +0000, Pandarathil, Vijaymohan R wrote:
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Gleb Natapov [mailto:gleb@redhat.com]
-> > > > Sent: Tuesday, February 05, 2013 12:05 AM
-> > > > To: Blue Swirl
-> > > > Cc: Pandarathil, Vijaymohan R; Alex Williamson; Bjorn Helgaas; Ortiz,
-> > Lance
-> > > > E; kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-
-> > pci@vger.kernel.org;
-> > > > linux-kernel@vger.kernel.org
-> > > > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
-> > VFIO-
-> > > > PCI devices
-> > > >
-> > > > On Sun, Feb 03, 2013 at 04:36:11PM +0000, Blue Swirl wrote:
-> > > > > On Sun, Feb 3, 2013 at 2:10 PM, Pandarathil, Vijaymohan R
-> > > > > <vijaymohan.pandarathil@hp.com> wrote:
-> > > > > >         - Create eventfd per vfio device assigned to a guest and
-> > > > register an
-> > > > > >           event handler
-> > > > > >
-> > > > > >         - This fd is passed to the vfio_pci driver through the
-> > SET_IRQ
-> > > > ioctl
-> > > > > >
-> > > > > >         - When the device encounters an error, the eventfd is
-> > signalled
-> > > > > >           and the qemu eventfd handler gets invoked.
-> > > > > >
-> > > > > >         - In the handler decide what action to take. Current action
-> > > > taken
-> > > > > >           is to terminate the guest.
-> > > > >
-> > > > > Usually this is not OK, but I guess this is not guest triggerable.
-> > > > >
-> > > > Still not OK. Why not stop a guest with appropriate stop reason?
-> > >
-> > > The thinking was that since this is a hardware error, we would want to
-> > stop the guest at the earliest. The hw_error() routine which aborts the
-> > qemu process was suggested by Alex and that seemed appropriate. Earlier I
-> > was using qemu_system_shutdown_request().  Any suggestions ?
-> > >
-> > I am thinking vm_stop(). Stopping SMP guest (and UP too in fact)
-> > involves sending IPIs to other cpus running guest's vcpus. Both exit()
-> > and vm_stop() will do it, but former is implicitly in the kernel and
-> > later is explicitly in QEMU.
-> 
-> I had used vm_stop(RUN_STATE_SHUTDOWN) earlier in my code. But while testing, guest ended up in a hang rather than exiting. There seems to some cleanup work which is being done as part of vm_stop. In our case, we wanted the guest to exit immediately. So use of hw_error() seemed appropriate.
-> 
-What makes you think it hang? It stopped, precisely what it should do if
-you call vm_stop(). Now it is possible for vm user to investigate what
-happened and even salvage some data from guest memory.
+In 7b270f6099 "sched: Bail out of yield_to when source and target
+runqueue has one task" we changed this to store -ESRCH so it needs to
+be signed.
 
---
-			Gleb.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3e7b280..7ba7ea5 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4384,7 +4384,7 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+ 	struct task_struct *curr = current;
+ 	struct rq *rq, *p_rq;
+ 	unsigned long flags;
+-	bool yielded = 0;
++	int yielded = 0;
+ 
+ 	local_irq_save(flags);
+ 	rq = this_rq();
