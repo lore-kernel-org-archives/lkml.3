@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab3BEWIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:08:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47863 "EHLO
+	id S1757231Ab3BEWIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:08:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47895 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757140Ab3BEWIR (ORCPT
+	with ESMTP id S1756268Ab3BEWIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:08:17 -0500
+	Tue, 5 Feb 2013 17:08:43 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Frediano Ziglio <frediano.ziglio@citrix.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 11/93] xen: Fix stack corruption in xen_failsafe_callback for 32bit PVOPS guests.
-Date: Tue,  5 Feb 2013 20:06:00 -0200
-Message-Id: <1360102042-10732-12-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 17/93] USB: option: add TP-LINK HSUPA Modem MA180
+Date: Tue,  5 Feb 2013 20:06:06 -0200
+Message-Id: <1360102042-10732-18-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,68 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Cooper <andrew.cooper3@citrix.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 9174adbee4a9a49d0139f5d71969852b36720809 upstream.
+commit 99beb2e9687ffd61c92a9875141eabe6f57a71b9 upstream.
 
-This fixes CVE-2013-0190 / XSA-40
+The driver description files gives these names to the vendor specific
+functions on this modem:
 
-There has been an error on the xen_failsafe_callback path for failed
-iret, which causes the stack pointer to be wrong when entering the
-iret_exc error path.  This can result in the kernel crashing.
+ Diagnostics VID_2357&PID_0201&MI_00
+ NMEA        VID_2357&PID_0201&MI_01
+ Modem       VID_2357&PID_0201&MI_03
+ Networkcard VID_2357&PID_0201&MI_04
 
-In the classic kernel case, the relevant code looked a little like:
-
-        popl %eax      # Error code from hypervisor
-        jz 5f
-        addl $16,%esp
-        jmp iret_exc   # Hypervisor said iret fault
-5:      addl $16,%esp
-                       # Hypervisor said segment selector fault
-
-Here, there are two identical addls on either option of a branch which
-appears to have been optimised by hoisting it above the jz, and
-converting it to an lea, which leaves the flags register unaffected.
-
-In the PVOPS case, the code looks like:
-
-        popl_cfi %eax         # Error from the hypervisor
-        lea 16(%esp),%esp     # Add $16 before choosing fault path
-        CFI_ADJUST_CFA_OFFSET -16
-        jz 5f
-        addl $16,%esp         # Incorrectly adjust %esp again
-        jmp iret_exc
-
-It is possible unprivileged userspace applications to cause this
-behaviour, for example by loading an LDT code selector, then changing
-the code selector to be not-present.  At this point, there is a race
-condition where it is possible for the hypervisor to return back to
-userspace from an interrupt, fault on its own iret, and inject a
-failsafe_callback into the kernel.
-
-This bug has been present since the introduction of Xen PVOPS support
-in commit 5ead97c84 (xen: Core Xen implementation), in 2.6.23.
-
-Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-Signed-off-by: Andrew Cooper <andrew.cooper3@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/x86/kernel/entry_32.S |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/serial/option.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 8f8e8ee..2a6919e 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1065,7 +1065,6 @@ ENTRY(xen_failsafe_callback)
- 	lea 16(%esp),%esp
- 	CFI_ADJUST_CFA_OFFSET -16
- 	jz 5f
--	addl $16,%esp
- 	jmp iret_exc
- 5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index ed1fe86..bafe6b9 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -449,6 +449,10 @@ static void option_instat_callback(struct urb *urb);
+ #define PETATEL_VENDOR_ID			0x1ff4
+ #define PETATEL_PRODUCT_NP10T			0x600e
+ 
++/* TP-LINK Incorporated products */
++#define TPLINK_VENDOR_ID			0x2357
++#define TPLINK_PRODUCT_MA180			0x0201
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1312,6 +1316,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+ 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
++	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 -- 
 1.7.9.5
 
