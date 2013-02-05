@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab3BECmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 21:42:07 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21683 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab3BECmG (ORCPT
+	id S1756584Ab3BECm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 21:42:27 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:42045 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333Ab3BECm0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 21:42:06 -0500
-X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=-mX8_mtaSd8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=BnJ6rni4RVIA:10 a=uOf1YziIQF0kGRSXqWQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360032122.27007.4.camel@gandalf.local.home>
-Subject: Re: [GIT PULL] printk: Support for full dynticks mode
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 04 Feb 2013 21:42:02 -0500
-In-Reply-To: <20130204180948.68c206c0.akpm@linux-foundation.org>
-References: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
-	 <20130204172001.8bb358b0.akpm@linux-foundation.org>
-	 <CAFTL4hxHEknUfv0rt73Tb0YAUrypuGJArvCw4wmEPp_8PF_b0A@mail.gmail.com>
-	 <20130204180948.68c206c0.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 21:42:26 -0500
+Date: Mon, 04 Feb 2013 20:42:21 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: William Hubbs <w.d.hubbs@gmail.com>, linux-kernel@vger.kernel.org,
+        mpagano@gentoo.org
+References: <1359672699-23540-1-git-send-email-w.d.hubbs@gmail.com>
+	<510AFCA1.5000700@zytor.com>
+In-Reply-To: <510AFCA1.5000700@zytor.com> (from hpa@zytor.com on Thu Jan 31
+	17:22:09 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1360032141.12062.12@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-04 at 18:09 -0800, Andrew Morton wrote:
-
-> I don't think so.  Conceptually printk() should be "inner" to the
-> scheduler and shouldn't call into sched things at all.  The (afaik
-> sole) exception to that was the klogd wakeup.
+On 01/31/2013 05:22:09 PM, H. Peter Anvin wrote:
+> On 01/31/2013 02:51 PM, William Hubbs wrote:
+> > On a system that does not use an initramfs, /dev/root was always
+> > listed in /proc/mounts. This breaks software which scans  
+> /proc/mounts to
+> > determine which file systems are mounted since /dev/root is not a  
+> valid
+> > device name.
+> >
+> > This changes that processing so that "/dev/root" is only added to
+> > /proc/mounts if a root device is not specified with the root=  
+> option on
+> > the kernel command line.
+> >
+> > Signed-off-by: William Hubbs <w.d.hubbs@gmail.com>
 > 
-> Traditionally the deadlock happened when calling printk() with
-> tasklist_lock (now q->lock) held.  printk() would call wake_up(klogd)
-> and wake_up() tries to take tasklist_lock and boom.  Moving the
-> wake_up() out to the tick "thread" fixed that.
-> 
-> Maybe there were other deadlock scenarios, dunno.  That knowledge
-> appears to be disappearing into the mists of time :(
+> Let me also point out that most of the time, the kernel actually has a
+> udev device name for an actual device...
 
-Even without the printk irq_work the current printk method uses a
-delayed wakeup anyway.
+So your software is broken by overmounts? /dev/root is just one example  
+of this. (And you can specify a root= on the kernel command line and  
+have that be parsed by initramfs. I vaguely recall klibc does this...)
 
-The wake_up_klogd() sets PRINTK_PENDING_WAKEUP, and the wakeup happens
-at time of the tick. I don't see where there is a deadlock. I added a
-printk in __sched_setscheduler() where the run queue lock is held, and
-booted that with full lockdep debugging enabled. No deadlock is
-detected.
+For an example of how to parse this stuff, how about:
 
-Do we really even need that printk_sched()?
+   http://landley.net/hg/toybox/file/4ffb735aea59/toys/posix/df.c
 
--- Steve
+I.E. parse from the end of the list (most recent match is the  
+overmount), and eliminate synthetic filesystems. Note that code is from  
+2006, other people have managed to cope all this time...
 
-
+Rob
