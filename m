@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017Ab3BEWMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:12:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48250 "EHLO
+	id S1758025Ab3BEWNC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:13:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48259 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab3BEWMs (ORCPT
+	with ESMTP id S1754383Ab3BEWMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:12:48 -0500
+	Tue, 5 Feb 2013 17:12:55 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 82/93] wake_up_process() should be never used to wakeup a TASK_STOPPED/TRACED task
-Date: Tue,  5 Feb 2013 20:07:11 -0200
-Message-Id: <1360102042-10732-83-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 84/93] ahci: Add identifiers for ASM106x devices
+Date: Tue,  5 Feb 2013 20:07:13 -0200
+Message-Id: <1360102042-10732-85-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,36 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 9067ac85d533651b98c2ff903182a20cbb361fcb upstream.
+commit 7b4f6ecacb14f384adc1a5a67ad95eb082c02bd1 upstream.
 
-wake_up_process() should never wakeup a TASK_STOPPED/TRACED task.
-Change it to use TASK_NORMAL and add the WARN_ON().
+They don't always appear as AHCI class devices but instead as IDE class.
 
-TASK_ALL has no other users, probably can be killed.
+Based on an initial patch by Hiroaki Nito
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42804
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/sched/core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/ata/ahci.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9f81a3a..3231df8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1686,7 +1686,8 @@ out:
-  */
- int wake_up_process(struct task_struct *p)
- {
--	return try_to_wake_up(p, TASK_ALL, 0);
-+	WARN_ON(task_is_stopped_or_traced(p));
-+	return try_to_wake_up(p, TASK_NORMAL, 0);
- }
- EXPORT_SYMBOL(wake_up_process);
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 5d0fb6b..71a4d04 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -406,7 +406,10 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
  
+ 	/* Asmedia */
+-	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1061 */
++	{ PCI_VDEVICE(ASMEDIA, 0x0601), board_ahci },	/* ASM1060 */
++	{ PCI_VDEVICE(ASMEDIA, 0x0602), board_ahci },	/* ASM1060 */
++	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
++	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+ 
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
 -- 
 1.7.9.5
 
