@@ -1,205 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3BEJQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:16:11 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:60138 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab3BEJQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:16:04 -0500
-Date: Tue, 5 Feb 2013 10:15:56 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
-Cc: Arto Merilainen <amerilainen@nvidia.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5,RESEND 4/8] gpu: host1x: Add debug support
-Message-ID: <20130205091555.GC20437@avionic-0098.mockup.avionic-design.de>
-References: <1358250244-9678-1-git-send-email-tbergstrom@nvidia.com>
- <1358250244-9678-5-git-send-email-tbergstrom@nvidia.com>
- <20130204110339.GA28134@avionic-0098.mockup.avionic-design.de>
- <51108D75.9030302@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="raC6veAxrt5nqIoY"
-Content-Disposition: inline
-In-Reply-To: <51108D75.9030302@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:kCr4onstDq/JaAWDhPJ5S8FjJIAJvx/EGXe78ezA0gn
- P45Z9LNR3mUgw522PqzZ/YX2iqH1pAXDs2zJmxNXcHdit4n4II
- ScQN9taX/euFVrGVBmfHhruukFpjJm6hc6HanRBG2iBBXVRRv0
- 8GMjsLwdQFrmDNnEnTSgA7CqPF2ujwLeJZAKHbWjQ424SpoFlT
- Z5s9Uo1oJk2t2Wb3i8UuBeZ3j/Tdeoko87GfbSAA4Y8Fr3pvlw
- Ejw0ve0P6Ac2DVuivmrnw3RI5ioN2TvBQwlDYiuhRETLhQQbB6
- xYMOHNID6DCZUBON+KoCYs1en7d9x5EZYayrO9qjGhHTz3jWmg
- R5Rs4ASg5emvPPdDMKBGQH2XlAHi3R/py+HWfXCMt1EyX+X72V
- AzDEhHYuWooY5+IebRspSxeFcyBEHZq5Fc=
+	id S1754062Ab3BEJQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:16:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21944 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753914Ab3BEJMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:12:45 -0500
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH v2 13/18] ext4: use ext4_zero_partial_blocks in punch_hole
+Date: Tue,  5 Feb 2013 10:12:06 +0100
+Message-Id: <1360055531-26309-14-git-send-email-lczerner@redhat.com>
+In-Reply-To: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
+References: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We're doing to get rid of ext4_discard_partial_page_buffers() since it is
+duplicating some code and also partially duplicating work of
+truncate_pagecache_range(), moreover the old implementation was much
+clearer.
 
---raC6veAxrt5nqIoY
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Now when the truncate_inode_pages_range() can handle truncating non page
+aligned regions we can use this to invalidate and zero out block aligned
+region of the punched out range and then use ext4_block_truncate_page()
+to zero the unaligned blocks on the start and end of the range. This
+will greatly simplify the punch hole code. Moreover after this commit we
+can get rid of the ext4_discard_partial_page_buffers() completely.
 
-On Mon, Feb 04, 2013 at 08:41:25PM -0800, Terje Bergstr=C3=B6m wrote:
-> On 04.02.2013 03:03, Thierry Reding wrote:
-> > On Tue, Jan 15, 2013 at 01:44:00PM +0200, Terje Bergstrom wrote:
-> >> diff --git a/drivers/gpu/host1x/debug.h b/drivers/gpu/host1x/debug.h
-> > [...]
-> >> +struct output {
-> >> +	void (*fn)(void *ctx, const char *str, size_t len);
-> >> +	void *ctx;
-> >> +	char buf[256];
-> >> +};
-> >=20
-> > Do we really need this kind of abstraction? There really should be only
-> > one location where debug information is obtained, so I don't see a need
-> > for this.
->=20
-> This is used by debugfs code to direct to debugfs, and
-> nvhost_debug_dump() to send via printk.
+This has been tested on ppc64 with 1k block size with fsx and xfstests
+without any problems.
 
-Yes, that was precisely my point. Why bother providing the same data via
-several output methods. debugfs is good for showing large amounts of
-data such as register dumps or a tabular representation of syncpoints
-for instance.
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+---
+ fs/ext4/ext4.h    |    2 +
+ fs/ext4/extents.c |   79 ++++++-----------------------------------------------
+ fs/ext4/inode.c   |   31 +++++++++++++++++++++
+ 3 files changed, 42 insertions(+), 70 deletions(-)
 
-If, however, you want to interactively show debug information using
-printk the same format isn't very useful and something more reduced is
-often better.
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 4246a55..665b975 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2090,6 +2090,8 @@ extern int ext4_block_truncate_page(handle_t *handle,
+ 		struct address_space *mapping, loff_t from);
+ extern int ext4_block_zero_page_range(handle_t *handle,
+ 		struct address_space *mapping, loff_t from, loff_t length);
++extern int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
++			     loff_t lstart, loff_t lend);
+ extern int ext4_discard_partial_page_buffers(handle_t *handle,
+ 		struct address_space *mapping, loff_t from,
+ 		loff_t length, int flags);
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 5ce5a14..7b44dc1 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4639,7 +4639,6 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
+ 	ext4_lblk_t first_block, stop_block;
+ 	struct address_space *mapping = inode->i_mapping;
+ 	handle_t *handle;
+-	loff_t first_page, last_page, page_len;
+ 	loff_t first_page_offset, last_page_offset;
+ 	int credits, err = 0;
+ 
+@@ -4680,17 +4679,13 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
+ 		   offset;
+ 	}
+ 
+-	first_page = (offset + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+-	last_page = (offset + length) >> PAGE_CACHE_SHIFT;
++	first_page_offset = round_up(offset, sb->s_blocksize);
++	last_page_offset = round_down((offset + length), sb->s_blocksize) - 1;
+ 
+-	first_page_offset = first_page << PAGE_CACHE_SHIFT;
+-	last_page_offset = last_page << PAGE_CACHE_SHIFT;
+-
+-	/* Now release the pages */
+-	if (last_page_offset > first_page_offset) {
++	/* Now release the pages and zero block aligned part of pages*/
++	if (last_page_offset > first_page_offset)
+ 		truncate_pagecache_range(inode, first_page_offset,
+-					 last_page_offset - 1);
+-	}
++					 last_page_offset);
+ 
+ 	/* Wait all existing dio workers, newcomers will block on i_mutex */
+ 	ext4_inode_block_unlocked_dio(inode);
+@@ -4707,66 +4702,10 @@ int ext4_ext_punch_hole(struct file *file, loff_t offset, loff_t length)
+ 	}
+ 
+ 
+-	/*
+-	 * Now we need to zero out the non-page-aligned data in the
+-	 * pages at the start and tail of the hole, and unmap the buffer
+-	 * heads for the block aligned regions of the page that were
+-	 * completely zeroed.
+-	 */
+-	if (first_page > last_page) {
+-		/*
+-		 * If the file space being truncated is contained within a page
+-		 * just zero out and unmap the middle of that page
+-		 */
+-		err = ext4_discard_partial_page_buffers(handle,
+-			mapping, offset, length, 0);
+-
+-		if (err)
+-			goto out;
+-	} else {
+-		/*
+-		 * zero out and unmap the partial page that contains
+-		 * the start of the hole
+-		 */
+-		page_len  = first_page_offset - offset;
+-		if (page_len > 0) {
+-			err = ext4_discard_partial_page_buffers(handle, mapping,
+-						   offset, page_len, 0);
+-			if (err)
+-				goto out;
+-		}
+-
+-		/*
+-		 * zero out and unmap the partial page that contains
+-		 * the end of the hole
+-		 */
+-		page_len = offset + length - last_page_offset;
+-		if (page_len > 0) {
+-			err = ext4_discard_partial_page_buffers(handle, mapping,
+-					last_page_offset, page_len, 0);
+-			if (err)
+-				goto out;
+-		}
+-	}
+-
+-	/*
+-	 * If i_size is contained in the last page, we need to
+-	 * unmap and zero the partial page after i_size
+-	 */
+-	if (inode->i_size >> PAGE_CACHE_SHIFT == last_page &&
+-	   inode->i_size % PAGE_CACHE_SIZE != 0) {
+-
+-		page_len = PAGE_CACHE_SIZE -
+-			(inode->i_size & (PAGE_CACHE_SIZE - 1));
+-
+-		if (page_len > 0) {
+-			err = ext4_discard_partial_page_buffers(handle,
+-			  mapping, inode->i_size, page_len, 0);
+-
+-			if (err)
+-				goto out;
+-		}
+-	}
++	err = ext4_zero_partial_blocks(handle, inode, offset,
++				       offset + length - 1);
++	if (err)
++		goto out;
+ 
+ 	first_block = (offset + sb->s_blocksize - 1) >>
+ 		EXT4_BLOCK_SIZE_BITS(sb);
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 5ccf556..5df9716 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3672,6 +3672,37 @@ unlock:
+ 	return err;
+ }
+ 
++int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
++			     loff_t lstart, loff_t lend)
++{
++	struct super_block *sb = inode->i_sb;
++	struct address_space *mapping = inode->i_mapping;
++	unsigned partial = lstart & (sb->s_blocksize - 1);
++	ext4_fsblk_t start = lstart >> sb->s_blocksize_bits;
++	ext4_fsblk_t end = lend >> sb->s_blocksize_bits;
++	int err = 0;
++
++	/* Handle partial zero within the single block */
++	if (start == end) {
++		err = ext4_block_zero_page_range(handle, mapping,
++						 lstart, lend - lstart + 1);
++		return err;
++	}
++	/* Handle partial zero out on the start of the range */
++	if (partial) {
++		err = ext4_block_zero_page_range(handle, mapping,
++						 lstart, sb->s_blocksize);
++		if (err)
++			return err;
++	}
++	/* Handle partial zero out on the end of the range */
++	partial = lend & (sb->s_blocksize - 1);
++	if (partial != sb->s_blocksize - 1)
++		err = ext4_block_zero_page_range(handle, mapping,
++						 lend - partial, partial + 1);
++	return err;
++}
++
+ int ext4_can_truncate(struct inode *inode)
+ {
+ 	if (S_ISREG(inode->i_mode))
+-- 
+1.7.7.6
 
-> >> diff --git a/drivers/gpu/host1x/hw/debug_hw.c b/drivers/gpu/host1x/hw/=
-debug_hw.c
-> >=20
-> >> +static int show_channel_command(struct output *o, u32 addr, u32 val, =
-int *count)
-> >> +{
-> >> +	unsigned mask;
-> >> +	unsigned subop;
-> >> +
-> >> +	switch (val >> 28) {
-> >> +	case 0x0:
-> >=20
-> > These can easily be derived by looking at the debug output, but it may
-> > still make sense to assign symbolic names to them.
->=20
-> I have another suggestion. In downstream I removed the decoding part and
-> I just print out a string of hex. That removes quite a bit bunch of code
-> from kernel. It makes the debug output also more compact.
->=20
-> It's much easier to write a user space program to decode than maintain
-> it in kernel.
-
-I don't know. I think if you use in-kernel debugging facilities such as
-debugfs or printk, then the output should be self-explanatory. However I
-do see the usefulness of having a binary dump that can be decoded in
-userspace. But I think if we want to go that way we should make that a
-separate interface. USB provides something like that, which can then be
-fed to libpcap or wireshark to capture and analyze USB traffic. If done
-properly you get replay functionality for free. I don't know what infra-
-structure exists to help with implementing something similar.
-
-So I think having debugfs output some data about syncpoints or the state
-of channels might be useful to quickly diagnose a certain set of
-problems but for anything more involved maybe a complete binary dump may
-be better.
-
-I'm not sure whether doing this would be acceptable though. Maybe Dave
-or somebody else on the lists can answer that. An alternative way to
-achieve the same would be to hook ioctl() from userspace and not do any
-of it in kernel space.
-
-> >> +static void show_channel_word(struct output *o, int *state, int *coun=
-t,
-> >> +		u32 addr, u32 val, struct host1x_cdma *cdma)
-> >> +{
-> >> +	static int start_count, dont_print;
-> >=20
-> > What if two processes read debug information at the same time?
->=20
-> show_channels() acquires cdma.lock, so that shouldn't happen.
-
-Okay. Another solution would be to pass around a debug context which
-keeps track of the variables. But if we opt for a more involved dump
-interface as discussed above this will no longer be relevant.
-
-> >> +static void do_show_channel_gather(struct output *o,
-> >> +		phys_addr_t phys_addr,
-> >> +		u32 words, struct host1x_cdma *cdma,
-> >> +		phys_addr_t pin_addr, u32 *map_addr)
-> >> +{
-> >> +	/* Map dmaget cursor to corresponding mem handle */
-> >> +	u32 offset;
-> >> +	int state, count, i;
-> >> +
-> >> +	offset =3D phys_addr - pin_addr;
-> >> +	/*
-> >> +	 * Sometimes we're given different hardware address to the same
-> >> +	 * page - in these cases the offset will get an invalid number and
-> >> +	 * we just have to bail out.
-> >> +	 */
-> >=20
-> > Why's that?
->=20
-> Because of a race - memory might've been unpinned and unmapped from
-> IOMMU and when we re-map (pin), we are given a new address.
->=20
-> But, I think this comment is a bit stale - we used to dump also old
-> gathers. The latest code only dumps jobs in sync queue, so the race
-> shouldn't happen.
-
-Okay. In the context of a channel dump interface this may not be
-relevant anymore. Can you think of any issue that wouldn't be detectable
-or debuggable by analyzing a binary dump of the data within a channel?
-I'm asking because at that point we wouldn't be able to access any of
-the in-kernel data structures but would have to rely on the data itself
-for diagnostics. IOMMU virtual addresses won't be available and so on.
-
-> >> +static void host1x_debug_show_channel_cdma(struct host1x *m,
-> >> +	struct host1x_channel *ch, struct output *o, int chid)
-> >> +{
-> > [...]
-> >> +	switch (cbstat) {
-> >> +	case 0x00010008:
-> >=20
-> > Again, symbolic names would be nice.
->=20
-> I propose I remove the decoding from kernel, and save 200 lines.
-
-I think it could be more than 200 lines. If all we provide in the kernel
-is some statistics about syncpoint usage or channel state that should be
-a lot less code than we have now.
-
-However that would make it necessary to provide userspace tools that can
-provide the same quality of diagnostics, so I'm not sure if it's doable
-without access to the in-kernel data structures.
-
-Thierry
-
---raC6veAxrt5nqIoY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREM3LAAoJEN0jrNd/PrOhxUoP/ixZUIGbbE68gg+Vq295E/Sb
-Gy7vUt/y/QCd19CJJ7FKBJZs+Wo1HJ3sBm04+t7a52fnjyvyabAgSmcskt0EJqh4
-jSFso5IcmI0rgc6HBYaN3vp8TyQs2yEaSAJO26K0F7oZL+6YUR7qLBW2LAKAn6c2
-Hd8LBCF6q4wtLkS4s/KNu90w4dbTeLVlKXdoJrkg+Q6DSUgoSm7vkid+/ZNmn7ZP
-Rcij+qrIXfdbXlj3OE6uNzQ5lRhrIVvPTmWXoqXzkxxaD6ZO9qrrZe5Mrmdb0CYf
-mK+sX3OTkctKZqAygBrrLIQv0tpnOWtZaGhsSRJ/pVm0NOsIfJ6cG1hTLqOz4bQ4
-mxYqBT86Pkh5iF61MA+RlImh/gnNUVH/up3/NbM2wgjtxR/fKk8SHWldelKG7M69
-gVpB5hj+SyyG4HJfhQXf3r7aki8x+RxBvaSVLKCyEHYGfdTPkymI6ihNx1zwNgOm
-36S2QfAdWzXbCmMIh0YHCrf3ZClZY+er/j5/RgrIGpWX94+Ub/MKFbX0vqCl8JH7
-b37AiLxKFgEQiSXTsUJA96TvBhNk2nYt5l568yMDF+M1dYAxgHSELm91qwsZZqkg
-rw9A/3969kkkm5LWwGIVaUUIyAGq1mzkN68B1ykOifYdUFi5s2s4tRkiehyeLUJI
-C1aceWMdx8AsfKAVzhQq
-=hsgL
------END PGP SIGNATURE-----
-
---raC6veAxrt5nqIoY--
