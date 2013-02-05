@@ -1,136 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab3BEJO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:14:29 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36610 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753323Ab3BEJOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:14:24 -0500
-Date: Tue, 5 Feb 2013 11:14:12 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
-        <balbi@ti.com>, <stern@rowland.harvard.edu>,
-        <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 02/30] usb: phy: nop: use devm_kzalloc()
-Message-ID: <20130205091412.GK32118@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
- <1359372631-8180-3-git-send-email-rogerq@ti.com>
+	id S1754473Ab3BEJOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:14:53 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:10845
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753929Ab3BEJOr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:14:47 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946hbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Joerg Roedel <joro@8bytes.org>, Stuart Yoder <b08248@gmail.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wood Scott-B07421 <B07421@freescale.com>
+Subject: RE: [PATCH 5/5] iommu: Add DOMAIN_ATTR_WINDOWS domain attribute
+Thread-Topic: [PATCH 5/5] iommu: Add DOMAIN_ATTR_WINDOWS domain attribute
+Thread-Index: AQHOAto2wzGTacmHgEKF4kls7teXNphq9JTw
+Date: Tue, 5 Feb 2013 09:14:40 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D373D2B@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1359983924-28952-1-git-send-email-joro@8bytes.org>
+ <1359983924-28952-6-git-send-email-joro@8bytes.org>
+In-Reply-To: <1359983924-28952-6-git-send-email-joro@8bytes.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.132.45]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mPOSj6iWmtyhwOMz"
-Content-Disposition: inline
-In-Reply-To: <1359372631-8180-3-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mPOSj6iWmtyhwOMz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Joerg,
+In case of PAMU, geometry would be meaningless without specifying the number of subwindows. If the API user specifies a geometry but fails to specify the number of required subwindows, we would assume a default (max supported) value, which may be incorrect. It's going to be really ugly. I think we should add the number of sub windows to the domain geometry. This parameter would be used in case of a window based iommu. So, a separate set_window API wouldn't be required.
 
-On Mon, Jan 28, 2013 at 01:30:03PM +0200, Roger Quadros wrote:
-> Use resource managed kzalloc.
->=20
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+We can still implement the get_windows API for getting the maximum number of subwindows supported by the window based IOMMU.
+
+Regards
+Varun
+
+> -----Original Message-----
+> From: Joerg Roedel [mailto:joro@8bytes.org]
+> Sent: Monday, February 04, 2013 6:49 PM
+> To: Sethi Varun-B16395; Stuart Yoder
+> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org; Joerg
+> Roedel
+> Subject: [PATCH 5/5] iommu: Add DOMAIN_ATTR_WINDOWS domain attribute
+> 
+> This attribute can be used to set and get the number of subwindows on
+> IOMMUs that are window-based.
+> 
+> Signed-off-by: Joerg Roedel <joro@8bytes.org>
 > ---
-
-Acked-by: Felipe Balbi <balbi@ti.com>
-
->  drivers/usb/otg/nop-usb-xceiv.c |   16 ++++------------
->  1 files changed, 4 insertions(+), 12 deletions(-)
->=20
-> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xc=
-eiv.c
-> index a3ce24b..7ffb0c8 100644
-> --- a/drivers/usb/otg/nop-usb-xceiv.c
-> +++ b/drivers/usb/otg/nop-usb-xceiv.c
-> @@ -100,15 +100,13 @@ static int nop_usb_xceiv_probe(struct platform_devi=
-ce *pdev)
->  	enum usb_phy_type	type =3D USB_PHY_TYPE_USB2;
->  	int err;
-> =20
-> -	nop =3D kzalloc(sizeof *nop, GFP_KERNEL);
-> +	nop =3D devm_kzalloc(&pdev->dev, sizeof *nop, GFP_KERNEL);
->  	if (!nop)
->  		return -ENOMEM;
-> =20
-> -	nop->phy.otg =3D kzalloc(sizeof *nop->phy.otg, GFP_KERNEL);
-> -	if (!nop->phy.otg) {
-> -		kfree(nop);
-> +	nop->phy.otg =3D devm_kzalloc(&pdev->dev, sizeof *nop->phy.otg, GFP_KER=
-NEL);
-> +	if (!nop->phy.otg)
->  		return -ENOMEM;
-> -	}
-> =20
->  	if (pdata)
->  		type =3D pdata->type;
-> @@ -127,7 +125,7 @@ static int nop_usb_xceiv_probe(struct platform_device=
- *pdev)
->  	if (err) {
->  		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
->  			err);
-> -		goto exit;
-> +		return err;
->  	}
-> =20
->  	platform_set_drvdata(pdev, nop);
-> @@ -135,10 +133,6 @@ static int nop_usb_xceiv_probe(struct platform_devic=
-e *pdev)
->  	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
-> =20
->  	return 0;
-> -exit:
-> -	kfree(nop->phy.otg);
-> -	kfree(nop);
-> -	return err;
+>  drivers/iommu/iommu.c |   33 ++++++++++++++++++++++++++++++---
+>  include/linux/iommu.h |    5 +++++
+>  2 files changed, 35 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c index
+> 0fdb7db..66402f7 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -891,6 +891,7 @@ int iommu_domain_get_attr(struct iommu_domain
+> *domain,
+>  	struct iommu_domain_geometry *geometry;
+>  	bool *paging;
+>  	int ret = 0;
+> +	u32 *count;
+> 
+>  	switch (attr) {
+>  	case DOMAIN_ATTR_GEOMETRY:
+> @@ -902,6 +903,15 @@ int iommu_domain_get_attr(struct iommu_domain
+> *domain,
+>  		paging  = data;
+>  		*paging = (domain->ops->pgsize_bitmap != 0UL);
+>  		break;
+> +	case DOMAIN_ATTR_WINDOWS:
+> +		count = data;
+> +
+> +		if (domain->ops->domain_get_windows != NULL)
+> +			*count = domain->ops->domain_get_windows(domain);
+> +		else
+> +			ret = -ENODEV;
+> +
+> +		break;
+>  	default:
+>  		if (!domain->ops->domain_get_attr)
+>  			return -EINVAL;
+> @@ -916,9 +926,26 @@ EXPORT_SYMBOL_GPL(iommu_domain_get_attr);
+>  int iommu_domain_set_attr(struct iommu_domain *domain,
+>  			  enum iommu_attr attr, void *data)
+>  {
+> -	if (!domain->ops->domain_set_attr)
+> -		return -EINVAL;
+> +	int ret = 0;
+> +	u32 *count;
+> +
+> +	switch (attr) {
+> +	case DOMAIN_ATTR_WINDOWS:
+> +		count = data;
+> +
+> +		if (domain->ops->domain_set_windows != NULL)
+> +			ret = domain->ops->domain_set_windows(domain, *count);
+> +		else
+> +			ret = -ENODEV;
+> 
+> -	return domain->ops->domain_set_attr(domain, attr, data);
+> +		break;
+> +	default:
+> +		if (domain->ops->domain_set_attr == NULL)
+> +			return -EINVAL;
+> +
+> +		ret = domain->ops->domain_set_attr(domain, attr, data);
+> +	}
+> +
+> +	return ret;
 >  }
-> =20
->  static int nop_usb_xceiv_remove(struct platform_device *pdev)
-> @@ -148,8 +142,6 @@ static int nop_usb_xceiv_remove(struct platform_devic=
-e *pdev)
->  	usb_remove_phy(&nop->phy);
-> =20
->  	platform_set_drvdata(pdev, NULL);
-> -	kfree(nop->phy.otg);
-> -	kfree(nop);
-> =20
->  	return 0;
->  }
-> --=20
-> 1.7.4.1
->=20
+>  EXPORT_SYMBOL_GPL(iommu_domain_set_attr);
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h index
+> 0cba2d8..8330df1 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -60,6 +60,7 @@ struct iommu_domain {
+>  enum iommu_attr {
+>  	DOMAIN_ATTR_GEOMETRY,
+>  	DOMAIN_ATTR_PAGING,
+> +	DOMAIN_ATTR_WINDOWS,
+>  	DOMAIN_ATTR_MAX,
+>  };
+> 
+> @@ -106,6 +107,10 @@ struct iommu_ops {
+>  	int (*domain_window_enable)(struct iommu_domain *domain, u32
+> wnd_nr,
+>  				    phys_addr_t paddr, size_t size);
+>  	void (*domain_window_disable)(struct iommu_domain *domain, u32
+> wnd_nr);
+> +	/* Set the numer of window per domain */
+> +	int (*domain_set_windows)(struct iommu_domain *domain, u32
+> w_count);
+> +	/* Get the numer of window per domain */
+> +	u32 (*domain_get_windows)(struct iommu_domain *domain);
+> 
+>  	unsigned long pgsize_bitmap;
+>  };
+> --
+> 1.7.9.5
+> 
+> 
 
---=20
-balbi
 
---mPOSj6iWmtyhwOMz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREM1jAAoJEIaOsuA1yqREHhQQAKeYF7jzHYEMq+zZNdWeBJkC
-aJfpdW3zJHciLLCOcimDVuzpAjq8X6+4IP4cFtxa9glK9UHp07bQh8Cg1fw42lBX
-eiWnn5mSxrEh3od8KjlCfPWlzRAPMTHQsLFg9aXCLbdLBpqivx6coXgXV3sAmMNc
-vSLEnd5j5qnFwcBmgFaDLZP2SKmcBF4D04s6U0DdfdluKAs1GSfM8u1JV/VVPfQJ
-MluMuloq8YTD/ljhDGbrcGM88yRHPTobOA8ASBxqI6MyeO+1mqIJBBo1lG2B+K3p
-WsiGQXOcAtpJyA1GCiO9ONfGiMiQJQj8wRJVv3JMqsdAnTOsoDu8PLK7WotEkGTw
-+HY530hIgY4SnzdAl7d94o4fmyZ4Kq009QoXbeKN2wb2JigmbJA7qFFev+BnPHBa
-85/qx/9J02VcSVrNjYj0M+N/4mWPfuj/UtIT+BJcwS/ke7gCFIXk92UDslEf4acj
-7lAyzTxcn/jPC3GmvvKOf+6FBln6jySj8nBcFcL3WN93aSVLTKjsvXgGKhclAYd/
-IrEq3CIlGYYJ/jdsMmt4eKEJngOPOmc/HrbqPqc97J5oCrbVpfp9Lz1BDxTol5lY
-CprmxFzFDmHzkmn+JrrTPiCoFBzDLTxiaID9ILirWdgBfSQLhvHHbhP/wT0QHoNd
-2WoSNswIbTwQRtPvVnqP
-=WH7C
------END PGP SIGNATURE-----
-
---mPOSj6iWmtyhwOMz--
