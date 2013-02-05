@@ -1,206 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab3BEVzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 16:55:44 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:47642 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756670Ab3BEVzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 16:55:40 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 1/3] PM: make VT switching to the suspend console optional v3
-Date: Tue, 05 Feb 2013 23:01:56 +0100
-Message-ID: <1429708.L8M6zrl2l6@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1359985042-2610-1-git-send-email-jbarnes@virtuousgeek.org>
-References: <1359985042-2610-1-git-send-email-jbarnes@virtuousgeek.org>
+	id S1756956Ab3BEVz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 16:55:57 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:59378 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756849Ab3BEVzy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 16:55:54 -0500
+Date: Tue, 5 Feb 2013 13:36:37 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org, rbraun@sceen.net,
+        zhong@linux.vnet.ibm.com, markus@trippelsdorf.de,
+        sasha.levin@oracle.com, cody@linux.vnet.ibm.com,
+        dave@linux.vnet.ibm.com, fweisbec@gmail.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.9
+Message-ID: <20130205213637.GR2632@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130204171817.GA18332@linux.vnet.ibm.com>
+ <20130204180734.GA10022@gmail.com>
+ <20130204193041.GA16853@gmail.com>
+ <20130204202523.GZ2632@linux.vnet.ibm.com>
+ <20130205141124.GA12785@linux.vnet.ibm.com>
+ <1360093950.2621.1.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360093950.2621.1.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020521-2398-0000-0000-000010C17C9C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 04, 2013 01:37:20 PM Jesse Barnes wrote:
-> KMS drivers can potentially restore the display configuration without
-> userspace help.  Such drivers can can call a new funciton,
-> pm_vt_switch_required(false) if they support this feature.  In that
-> case, the PM layer won't VT switch to the suspend console at suspend
-> time and then back to the original VT on resume, but rather leave things
-> alone for a nicer looking suspend and resume sequence.
+On Tue, Feb 05, 2013 at 02:52:30PM -0500, Steven Rostedt wrote:
+> On Tue, 2013-02-05 at 06:11 -0800, Paul E. McKenney wrote:
 > 
-> v2: make a function so we can handle multiple drivers (Alan)
-> v3: use a list to track device requests (Rafael)
+> > Steven Rostedt (1):
+> >       rcu: Allow rcutorture to be built at low optimization levels
 > 
-> Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> I wish git had dual (or more) authorship, as I started with your patch
+> and added on to it. We are really both responsible for that change.
 
-Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+We have both our Signed-off-by tags on it, so close enough for me!  ;-)
 
-> ---
->  include/linux/pm.h     |    4 ++
->  kernel/power/console.c |  115 ++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 119 insertions(+)
-> 
-> diff --git a/include/linux/pm.h b/include/linux/pm.h
-> index 03d7bb1..98310eb 100644
-> --- a/include/linux/pm.h
-> +++ b/include/linux/pm.h
-> @@ -35,6 +35,10 @@ extern void (*pm_idle)(void);
->  extern void (*pm_power_off)(void);
->  extern void (*pm_power_off_prepare)(void);
->  
-> +struct device; /* we have a circular dep with device.h */
-> +extern void pm_vt_switch_required(struct device *dev, bool required);
-> +extern void pm_vt_switch_unregister(struct device *dev);
-> +
->  /*
->   * Device power management
->   */
-> diff --git a/kernel/power/console.c b/kernel/power/console.c
-> index b1dc456..4871ca9 100644
-> --- a/kernel/power/console.c
-> +++ b/kernel/power/console.c
-> @@ -4,6 +4,7 @@
->   * Originally from swsusp.
->   */
->  
-> +#include <linux/console.h>
->  #include <linux/vt_kern.h>
->  #include <linux/kbd_kern.h>
->  #include <linux/vt.h>
-> @@ -14,8 +15,119 @@
->  
->  static int orig_fgconsole, orig_kmsg;
->  
-> +DEFINE_MUTEX(vt_switch_mutex);
-> +
-> +struct pm_vt_switch {
-> +	struct list_head head;
-> +	struct device *dev;
-> +	bool required;
-> +};
-> +
-> +LIST_HEAD(pm_vt_switch_list);
-> +
-> +
-> +/**
-> + * pm_vt_switch_required - indicate VT switch at suspend requirements
-> + * @dev: device
-> + * @required: if true, caller needs VT switch at suspend/resume time
-> + *
-> + * The different console drivers may or may not require VT switches across
-> + * suspend/resume, depending on how they handle restoring video state and
-> + * what may be running.
-> + *
-> + * Drivers can indicate support for switchless suspend/resume, which can
-> + * save time and flicker, by using this routine and passing 'false' as
-> + * the argument.  If any loaded driver needs VT switching, or the
-> + * no_console_suspend argument has been passed on the command line, VT
-> + * switches will occur.
-> + */
-> +void pm_vt_switch_required(struct device *dev, bool required)
-> +{
-> +	struct pm_vt_switch *entry, *tmp;
-> +
-> +	mutex_lock(&vt_switch_mutex);
-> +	list_for_each_entry(tmp, &pm_vt_switch_list, head) {
-> +		if (tmp->dev == dev) {
-> +			/* already registered, update requirement */
-> +			tmp->required = required;
-> +			goto out;
-> +		}
-> +	}
-> +
-> +	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
-> +	if (!entry)
-> +		goto out;
-> +
-> +	entry->required = required;
-> +	entry->dev = dev;
-> +
-> +	list_add(&entry->head, &pm_vt_switch_list);
-> +out:
-> +	mutex_unlock(&vt_switch_mutex);
-> +}
-> +EXPORT_SYMBOL(pm_vt_switch_required);
-> +
-> +/**
-> + * pm_vt_switch_unregister - stop tracking a device's VT switching needs
-> + * @dev: device
-> + *
-> + * Remove @dev from the vt switch list.
-> + */
-> +void pm_vt_switch_unregister(struct device *dev)
-> +{
-> +	struct pm_vt_switch *tmp;
-> +
-> +	mutex_lock(&vt_switch_mutex);
-> +	list_for_each_entry(tmp, &pm_vt_switch_list, head) {
-> +		if (tmp->dev == dev) {
-> +			list_del(&tmp->head);
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&vt_switch_mutex);
-> +}
-> +
-> +/*
-> + * There are three cases when a VT switch on suspend/resume are required:
-> + *   1) no driver has indicated a requirement one way or another, so preserve
-> + *      the old behavior
-> + *   2) console suspend is disabled, we want to see debug messages across
-> + *      suspend/resume
-> + *   3) any registered driver indicates it needs a VT switch
-> + *
-> + * If none of these conditions is present, meaning we have at least one driver
-> + * that doesn't need the switch, and none that do, we can avoid it to make
-> + * resume look a little prettier (and suspend too, but that's usually hidden,
-> + * e.g. when closing the lid on a laptop).
-> + */
-> +static bool pm_vt_switch(void)
-> +{
-> +	struct pm_vt_switch *entry;
-> +	bool ret = true;
-> +
-> +	mutex_lock(&vt_switch_mutex);
-> +	if (list_empty(&pm_vt_switch_list))
-> +		goto out;
-> +
-> +	if (!console_suspend_enabled)
-> +		goto out;
-> +
-> +	list_for_each_entry(entry, &pm_vt_switch_list, head) {
-> +		if (entry->required)
-> +			goto out;
-> +	}
-> +
-> +	ret = false;
-> +out:
-> +	mutex_unlock(&vt_switch_mutex);
-> +	return ret;
-> +}
-> +
->  int pm_prepare_console(void)
->  {
-> +	if (!pm_vt_switch())
-> +		return 0;
-> +
->  	orig_fgconsole = vt_move_to_console(SUSPEND_CONSOLE, 1);
->  	if (orig_fgconsole < 0)
->  		return 1;
-> @@ -26,6 +138,9 @@ int pm_prepare_console(void)
->  
->  void pm_restore_console(void)
->  {
-> +	if (!pm_vt_switch())
-> +		return;
-> +
->  	if (orig_fgconsole >= 0) {
->  		vt_move_to_console(orig_fgconsole, 0);
->  		vt_kmsg_redirect(orig_kmsg);
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+							Thanx, Paul
+
