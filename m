@@ -1,63 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab3BEIVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 03:21:37 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:28115
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754037Ab3BEIVg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 03:21:36 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dIc89bh146fI1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h1155h)
-Message-ID: <5110C10B.5090502@freescale.com>
-Date: Tue, 5 Feb 2013 16:21:31 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1754720Ab3BEIYL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 03:24:11 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38256 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751426Ab3BEIYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 03:24:09 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <nsekhar@ti.com>, <khilman@deeprootsystems.com>, <ben-linux@fluff.org>,
+        <w.sang@pengutronix.de>, <manishv.b@ti.com>
+Subject: [PATCH] i2c: davinci: update to devm_* API
+Date: Tue, 5 Feb 2013 13:54:59 +0530
+Message-ID: <1360052699-1985-1-git-send-email-manishv.b@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Ricard Wanderlof <ricard.wanderlof@axis.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>
-Subject: Re: [PATCH 2/2] mtd: torturetest: add the support for random data
- pattern
-References: <1360030820-21491-1-git-send-email-b32955@freescale.com> <1360030820-21491-2-git-send-email-b32955@freescale.com> <alpine.DEB.2.00.1302050900010.3736@lnxricardw.se.axis.com>
-In-Reply-To: <alpine.DEB.2.00.1302050900010.3736@lnxricardw.se.axis.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年02月05日 16:05, Ricard Wanderlof 写道:
->
-> On Tue, 5 Feb 2013, Huang Shijie wrote:
->
->> Add a new module parameter 'pattern'. If it is set to zero, we will 
->> use the 55/AA pattern to torture the nand blocks; if it is set to a 
->> non-zero value, we will use the random data pattern.
->
-> Not a big issue in any way, but if you're using a numeric parameter 
-> value anyway, could not one use a range of the permissable values to 
-> set a seed for the random generation, so that the test can be repeated 
-> with the same set of random numbers?
-It's ok to provide a seed to the mtd_torturetest.
+Update the code to use devm_* API so that driver
+core will manage resources.
 
+Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+---
+:100644 100644 6a0a553... f3dfffb... M	drivers/i2c/busses/i2c-davinci.c
+ drivers/i2c/busses/i2c-davinci.c |   41 +++++++++++--------------------------
+ 1 files changed, 12 insertions(+), 29 deletions(-)
 
->
-> Something like
->
-> 0 => 55/AA
-> -1 => random
-> 1 and up => random, specifying seed for random number generator.
->
-I will add it in next version.
-
-thanks for your review.
-
-Huang Shijie
-
-
+diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+index 6a0a553..f3dfffb 100644
+--- a/drivers/i2c/busses/i2c-davinci.c
++++ b/drivers/i2c/busses/i2c-davinci.c
+@@ -643,7 +643,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ {
+ 	struct davinci_i2c_dev *dev;
+ 	struct i2c_adapter *adap;
+-	struct resource *mem, *irq, *ioarea;
++	struct resource *mem, *irq;
+ 	int r;
+ 
+ 	/* NOTE: driver uses the static register mapping */
+@@ -659,17 +659,11 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	ioarea = request_mem_region(mem->start, resource_size(mem),
+-				    pdev->name);
+-	if (!ioarea) {
+-		dev_err(&pdev->dev, "I2C region already claimed\n");
+-		return -EBUSY;
+-	}
+-
+-	dev = kzalloc(sizeof(struct davinci_i2c_dev), GFP_KERNEL);
++	dev = devm_kzalloc(&pdev->dev, sizeof(struct davinci_i2c_dev),
++			GFP_KERNEL);
+ 	if (!dev) {
+-		r = -ENOMEM;
+-		goto err_release_region;
++		dev_err(&pdev->dev, "Memory allocation failed\n");
++		return -ENOMEM;
+ 	}
+ 
+ 	init_completion(&dev->cmd_complete);
+@@ -706,15 +700,17 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ 	}
+ 	clk_prepare_enable(dev->clk);
+ 
+-	dev->base = ioremap(mem->start, resource_size(mem));
++	dev->base = devm_request_and_ioremap(&pdev->dev, mem);
+ 	if (!dev->base) {
+ 		r = -EBUSY;
+-		goto err_mem_ioremap;
++		dev_err(&pdev->dev, "I2C region already claimed\n");
++		goto err_unuse_clocks;
+ 	}
+ 
+ 	i2c_davinci_init(dev);
+ 
+-	r = request_irq(dev->irq, i2c_davinci_isr, 0, pdev->name, dev);
++	r = devm_request_irq(&pdev->dev, dev->irq, i2c_davinci_isr, 0,
++			pdev->name, dev);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "failure requesting irq %i\n", dev->irq);
+ 		goto err_unuse_clocks;
+@@ -723,7 +719,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ 	r = i2c_davinci_cpufreq_register(dev);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "failed to register cpufreq\n");
+-		goto err_free_irq;
++		goto err_unuse_clocks;
+ 	}
+ 
+ 	adap = &dev->adapter;
+@@ -740,26 +736,19 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+ 	r = i2c_add_numbered_adapter(adap);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "failure adding adapter\n");
+-		goto err_free_irq;
++		goto err_unuse_clocks;
+ 	}
+ 	of_i2c_register_devices(adap);
+ 
+ 	return 0;
+ 
+-err_free_irq:
+-	free_irq(dev->irq, dev);
+ err_unuse_clocks:
+-	iounmap(dev->base);
+-err_mem_ioremap:
+ 	clk_disable_unprepare(dev->clk);
+ 	clk_put(dev->clk);
+ 	dev->clk = NULL;
+ err_free_mem:
+ 	platform_set_drvdata(pdev, NULL);
+ 	put_device(&pdev->dev);
+-	kfree(dev);
+-err_release_region:
+-	release_mem_region(mem->start, resource_size(mem));
+ 
+ 	return r;
+ }
+@@ -767,7 +756,6 @@ err_release_region:
+ static int davinci_i2c_remove(struct platform_device *pdev)
+ {
+ 	struct davinci_i2c_dev *dev = platform_get_drvdata(pdev);
+-	struct resource *mem;
+ 
+ 	i2c_davinci_cpufreq_deregister(dev);
+ 
+@@ -780,12 +768,7 @@ static int davinci_i2c_remove(struct platform_device *pdev)
+ 	dev->clk = NULL;
+ 
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, 0);
+-	free_irq(dev->irq, dev);
+-	iounmap(dev->base);
+-	kfree(dev);
+ 
+-	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(mem->start, resource_size(mem));
+ 	return 0;
+ }
+ 
+-- 
+1.7.4.1
 
