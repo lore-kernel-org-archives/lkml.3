@@ -1,81 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab3BEEBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 23:01:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51774 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab3BEEBO (ORCPT
+	id S1756645Ab3BEEIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 23:08:13 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:60481 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab3BEEIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 23:01:14 -0500
-Date: Mon, 4 Feb 2013 20:04:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] printk: Support for full dynticks mode
-Message-Id: <20130204200459.f2a0a1cc.akpm@linux-foundation.org>
-In-Reply-To: <1360032122.27007.4.camel@gandalf.local.home>
-References: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
-	<20130204172001.8bb358b0.akpm@linux-foundation.org>
-	<CAFTL4hxHEknUfv0rt73Tb0YAUrypuGJArvCw4wmEPp_8PF_b0A@mail.gmail.com>
-	<20130204180948.68c206c0.akpm@linux-foundation.org>
-	<1360032122.27007.4.camel@gandalf.local.home>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Feb 2013 23:08:11 -0500
+Date: Mon, 4 Feb 2013 23:08:08 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        js1304@gmail.com, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v5 2/3] ARM: ioremap: introduce an infrastructure for
+ static mapped area
+In-Reply-To: <1360024314-1895-3-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.LFD.2.02.1302042305140.6300@xanadu.home>
+References: <1360024314-1895-1-git-send-email-iamjoonsoo.kim@lge.com> <1360024314-1895-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 04 Feb 2013 21:42:02 -0500 Steven Rostedt <rostedt@goodmis.org> wrote:
+On Tue, 5 Feb 2013, Joonsoo Kim wrote:
 
-> On Mon, 2013-02-04 at 18:09 -0800, Andrew Morton wrote:
+> In current implementation, we used ARM-specific flag, that is,
+> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+> The purpose of static mapped area is to re-use static mapped area when
+> entire physical address range of the ioremap request can be covered
+> by this area.
 > 
-> > I don't think so.  Conceptually printk() should be "inner" to the
-> > scheduler and shouldn't call into sched things at all.  The (afaik
-> > sole) exception to that was the klogd wakeup.
-> > 
-> > Traditionally the deadlock happened when calling printk() with
-> > tasklist_lock (now q->lock) held.  printk() would call wake_up(klogd)
-> > and wake_up() tries to take tasklist_lock and boom.  Moving the
-> > wake_up() out to the tick "thread" fixed that.
-> > 
-> > Maybe there were other deadlock scenarios, dunno.  That knowledge
-> > appears to be disappearing into the mists of time :(
+> This implementation causes needless overhead for some cases.
+> For example, assume that there is only one static mapped area and
+> vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+> deciding whether it is matched or not. Moreover, even if there is
+> no static mapped area and vmlist has 300 areas, every time we call
+> ioremap, we check 300 areas in now.
 > 
-> Even without the printk irq_work the current printk method uses a
-> delayed wakeup anyway.
+> If we construct a extra list for static mapped area, we can eliminate
+> above mentioned overhead.
+> With a extra list, if there is one static mapped area,
+> we just check only one area and proceed next operation quickly.
 > 
-> The wake_up_klogd() sets PRINTK_PENDING_WAKEUP, and the wakeup happens
-> at time of the tick. I don't see where there is a deadlock.
->
-> ...
->
-> Do we really even need that printk_sched()?
+> In fact, it is not a critical problem, because ioremap is not frequently
+> used. But reducing overhead is better idea.
+> 
+> Another reason for doing this work is for removing architecture dependency
+> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
+> structure for vmalloc layer. Some codes for debugging and stat inevitably
+> use vmlist and vmlist_lock. But it is preferable that they are used
+> as least as possible in outside of vmalloc.c
+> 
+> Now, I introduce an ARM-specific infrastructure for static mapped area. In
+> the following patch, we will use this and resolve above mentioned problem.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-3ccf3e8306156a282 ("printk/sched: Introduce special printk_sched() for
-those awkward moments") was added _after_ wake_up_klogd() was switched
-to using the printk_pending->printk_tick() thing.  So presumably there
-were deadlocks other than around wake_up_klogd().
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
 
-The printk_pending->printk_tick() thing was added by b845b517b5e
-("printk: robustify printk"), four years earlier in 2008.  It says
-"Avoid deadlocks against rq->lock and xtime_lock...".
 
-So what deadlocks was the March 2012 3ccf3e830 ("printk/sched:
-Introduce special printk_sched() for those awkward moments") supposed
-to fix?  grr.  I searched my lkml archives for March 2012 and few
-preceding months, but couldn't find any additional info.
-
-> I added a printk in __sched_setscheduler() where the run queue lock is held,
-> and booted that with full lockdep debugging enabled. No deadlock is
-> detected.
-
-Well, you'd need to enable various printk options to get full coverage.
-For example, that xtime_lock deadlock would only have occurred when
-timestamping is enabled.
-
+> 
+> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+> index 88fd86c..904c15e 100644
+> --- a/arch/arm/mm/ioremap.c
+> +++ b/arch/arm/mm/ioremap.c
+> @@ -39,6 +39,70 @@
+>  #include <asm/mach/pci.h>
+>  #include "mm.h"
+>  
+> +
+> +LIST_HEAD(static_vmlist);
+> +
+> +static struct static_vm *find_static_vm_paddr(phys_addr_t paddr,
+> +			size_t size, unsigned int mtype)
+> +{
+> +	struct static_vm *svm;
+> +	struct vm_struct *vm;
+> +
+> +	list_for_each_entry(svm, &static_vmlist, list) {
+> +		vm = &svm->vm;
+> +		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
+> +			continue;
+> +		if ((vm->flags & VM_ARM_MTYPE_MASK) != VM_ARM_MTYPE(mtype))
+> +			continue;
+> +
+> +		if (vm->phys_addr > paddr ||
+> +			paddr + size - 1 > vm->phys_addr + vm->size - 1)
+> +			continue;
+> +
+> +		return svm;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +struct static_vm *find_static_vm_vaddr(void *vaddr)
+> +{
+> +	struct static_vm *svm;
+> +	struct vm_struct *vm;
+> +
+> +	list_for_each_entry(svm, &static_vmlist, list) {
+> +		vm = &svm->vm;
+> +
+> +		/* static_vmlist is ascending order */
+> +		if (vm->addr > vaddr)
+> +			break;
+> +
+> +		if (vm->addr <= vaddr && vm->addr + vm->size > vaddr)
+> +			return svm;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +void __init add_static_vm_early(struct static_vm *svm)
+> +{
+> +	struct static_vm *curr_svm;
+> +	struct vm_struct *vm;
+> +	void *vaddr;
+> +
+> +	vm = &svm->vm;
+> +	vm_area_add_early(vm);
+> +	vaddr = vm->addr;
+> +
+> +	list_for_each_entry(curr_svm, &static_vmlist, list) {
+> +		vm = &curr_svm->vm;
+> +
+> +		if (vm->addr > vaddr)
+> +			break;
+> +	}
+> +	list_add_tail(&svm->list, &curr_svm->list);
+> +}
+> +
+>  int ioremap_page(unsigned long virt, unsigned long phys,
+>  		 const struct mem_type *mtype)
+>  {
+> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+> index a8ee92d..d5a4e9a 100644
+> --- a/arch/arm/mm/mm.h
+> +++ b/arch/arm/mm/mm.h
+> @@ -1,4 +1,6 @@
+>  #ifdef CONFIG_MMU
+> +#include <linux/list.h>
+> +#include <linux/vmalloc.h>
+>  
+>  /* the upper-most page table pointer */
+>  extern pmd_t *top_pmd;
+> @@ -65,6 +67,16 @@ extern void __flush_dcache_page(struct address_space *mapping, struct page *page
+>  /* consistent regions used by dma_alloc_attrs() */
+>  #define VM_ARM_DMA_CONSISTENT	0x20000000
+>  
+> +
+> +struct static_vm {
+> +	struct vm_struct vm;
+> +	struct list_head list;
+> +};
+> +
+> +extern struct list_head static_vmlist;
+> +extern struct static_vm *find_static_vm_vaddr(void *vaddr);
+> +extern __init void add_static_vm_early(struct static_vm *svm);
+> +
+>  #endif
+>  
+>  #ifdef CONFIG_ZONE_DMA
+> -- 
+> 1.7.9.5
+> 
