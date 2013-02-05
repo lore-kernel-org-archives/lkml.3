@@ -1,137 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab3BEJpu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:45:50 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:56257 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab3BEJpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:45:47 -0500
-X-AuditID: cbfee61a-b7f7d6d000000f4e-58-5110d4c9d8a0
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: rafael.j.wysocki@intel.com, rajagopal.venkat@linaro.org, nm@ti.com,
-        a.kesavan@samsung.com, jonghwa3.lee@samsung.com,
-        sangjung.woo@samsung.com, myungjoo.ham@gmail.com
-Subject: [PATCH] PM / devfreq: add comments and Documentation
-Date: Tue, 05 Feb 2013 18:45:55 +0900
-Message-id: <1360057555-10279-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t8zTd2TVwQCDQ5sELS4vGsOm8Xn3iOM
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGVsf3KOqeCtVMXc5wUNjFPFuhg5OSQETCQ+XdrGDGGL
-	SVy4t54NxBYSWMYo8eu9AUzNm+/HmLoYuYDi0xklrvx5xwLhtDBJrLy0mRWkik1AV2Lrhrss
-	ILaIgJXE6f8dzCBFzAJrGSV+nrwDlhAWsJU41fAVzGYRUJVYf/422DpeAQ+Jl/1f2SHWKUj8
-	OrKKFaRZQuAAm8SuaZuYIBoEJL5NPgTUzAGUkJXYdADqbEmJgytusExgFFzAyLCKUTS1ILmg
-	OCk911CvODG3uDQvXS85P3cTIyS4pHYwrmywOMQowMGoxMP74zJ/oBBrYllxZe4hRgkOZiUR
-	3o83gEK8KYmVValF+fFFpTmpxYcYk4GWT2SWEk3OBwZ+Xkm8obGBsaGhpaGZqaWpAWnCSuK8
-	jKeeBAgJpCeWpGanphakFsFsYeLglGpgdG19k93CKTFZNrHA+VP/WvuLH0pi03lnCxiY5TAz
-	pkyeYeuRduxBxiG72iV++oEabRpbtSW8e61W8BRGrepTCWTZas8vcFfqh9rGO3krWx67tLv8
-	OXa35bKyzN6UqtJHWp9mrH/3c1KmwMTC/wUfyzZzce7O/iApOTkseJaN4IMF/5axTL6mxFKc
-	kWioxVxUnAgATAbkqXICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42I5/e+xoO7JKwKBBt13WCwu75rDZvG59wij
-	A5PH501yAYxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4B
-	um6ZOUCjlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZ25+cYyp4K1Ux
-	93lBA+NUsS5GTg4JAROJN9+PMUHYYhIX7q1n62Lk4hASmM4oceXPOxYIp4VJYuWlzawgVWwC
-	uhJbN9xlAbFFBKwkTv/vYAYpYhZYyyjx8+QdsISwgK3EqYavYDaLgKrE+vO32UBsXgEPiZf9
-	X9kh1ilI/DqyinUCI/cCRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHB+0xqB+PKBotD
-	jAIcjEo8vD8u8wcKsSaWFVfmHmKU4GBWEuH9eAMoxJuSWFmVWpQfX1Sak1p8iDEZaPtEZinR
-	5HxgZOWVxBsam5gZWRqZGZuYGxuTJqwkzst46kmAkEB6YklqdmpqQWoRzBYmDk6pBsZ5Qv/m
-	Z1t3+z1s6cpaI/7U5sVVje3RCyxP5uaEM3R+5O/lnvXFOkLi2bOvi55knDH5P8FpsajksePH
-	xRVfMU4u7pu5K9hk/sE3cTcmyL+91tufs45hpYjP6u8rln/uaG9nX9j657+QQV3gj6VsqrYX
-	/aWVt2/7dfuPLHuqB9c6yTVbfm9Y8qZeiaU4I9FQi7moOBEAF4sKCaICAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751815Ab3BEJrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:47:10 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42597 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844Ab3BEJrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:47:05 -0500
+Date: Tue, 5 Feb 2013 11:46:51 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: kishon <kishon@ti.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
+        <b-cousson@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <gg@slimlogic.co.uk>,
+        <s-guiriec@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 4/6] ARM: dts: omap5: add dwc3 omap dt data
+Message-ID: <20130205094650.GO32118@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1359112312-6918-1-git-send-email-kishon@ti.com>
+ <1359112312-6918-5-git-send-email-kishon@ti.com>
+ <510432BF.80808@mvista.com>
+ <5110C2E6.30504@ti.com>
+ <20130205083828.GE32118@arwen.pp.htv.fi>
+ <5110C6EC.6050606@ti.com>
+ <5110CBB9.5080307@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G23JYFG0d77Z6i/3"
+Content-Disposition: inline
+In-Reply-To: <5110CBB9.5080307@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Added missing ABI documents
-- Added comments to clarify the objectives of functions
+--G23JYFG0d77Z6i/3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
----
- Documentation/ABI/testing/sysfs-class-devfreq |   20 ++++++++++++++++++++
- drivers/devfreq/devfreq.c                     |   10 ++++++++++
- include/linux/devfreq.h                       |    2 ++
- 3 files changed, 32 insertions(+), 0 deletions(-)
+On Tue, Feb 05, 2013 at 02:37:05PM +0530, Santosh Shilimkar wrote:
+> On Tuesday 05 February 2013 02:16 PM, kishon wrote:
+> >Hi,
+> >
+> >On Tuesday 05 February 2013 02:08 PM, Felipe Balbi wrote:
+> >>On Tue, Feb 05, 2013 at 01:59:26PM +0530, kishon wrote:
+> >>>On Sunday 27 January 2013 01:17 AM, Sergei Shtylyov wrote:
+> >>>>Hello.
+> >>>>
+> >>>>On 25-01-2013 15:11, Kishon Vijay Abraham I wrote:
+> >>>>
+> >>>>>Add dwc3 omap glue data to the omap5 dt data file. The information
+> >>>>>about
+> >>>>>the dt node added here is available @
+> >>>>>Documentation/devicetree/bindings/usb/omap-usb.txt
+> >>>>
+> >>>>>Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> >>>>>---
+> >>>>>  arch/arm/boot/dts/omap5.dtsi |   11 +++++++++++
+> >>>>>  1 file changed, 11 insertions(+)
+> >>>>
+> >>>>>diff --git a/arch/arm/boot/dts/omap5.dtsi
+> >>>>>b/arch/arm/boot/dts/omap5.dtsi
+> >>>>>index 5f59bf2..1703a72 100644
+> >>>>>--- a/arch/arm/boot/dts/omap5.dtsi
+> >>>>>+++ b/arch/arm/boot/dts/omap5.dtsi
+> >>>>>@@ -513,6 +513,17 @@
+> >>>>>              ti,type =3D <2>;
+> >>>>>          };
+> >>>>>
+> >>>>>+        omap_dwc3@4a020000 {
+> >>>>>+            compatible =3D "ti,dwc3";
+> >>>>>+            ti,hwmods =3D "usb_otg_ss";
+> >>>>>+            reg =3D <0x4a020000 0x1ff>;
+> >>>>
+> >>>>    Shoudn't the "reg" length be 0x200 here? It's length, not limit.
+> >>>
+> >>>I think 0x1ff is correct. I got the data from hwmod data.
+> >>
+> >>hwmod is utterly wrong. Looking at TRM, it says the size here is 64KiB
+> >>(0x10000), so is the size for dwc3 itself. Please don't blindly trust
+> >>hwmod, make sure you read data from TRM ;-)
+> >
+> >hmm..ok. But it has only 17 registers :-D
+> >
+> As Felipe said, it should be 0x200. And if you are
+> interested in lesser space, there is no need to map entire 64 KB
+> address space if it isn't being used.
 
-diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
-index 0ba6ea2..ee39aca 100644
---- a/Documentation/ABI/testing/sysfs-class-devfreq
-+++ b/Documentation/ABI/testing/sysfs-class-devfreq
-@@ -78,3 +78,23 @@ Contact:	Nishanth Menon <nm@ti.com>
- Description:
- 		The /sys/class/devfreq/.../available_governors shows
- 		currently available governors in the system.
-+
-+What:		/sys/class/devfreq/.../min_freq
-+Date:		January 2013
-+Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
-+Description:
-+		The /sys/class/devfreq/.../min_freq shows and stores
-+		the minimum frequency requested by users. It is 0 if
-+		the user does not care. min_freq overrides the
-+		frequency requested by governors.
-+
-+What:		/sys/class/devfreq/.../max_freq
-+Date:		January 2013
-+Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
-+Description:
-+		The /sys/class/devfreq/.../max_freq shows and stores
-+		the maximum frequency requested by users. It is 0 if
-+		the user does not care. max_freq overrides the
-+		frequency requested by governors and min_freq.
-+		The max_freq overrides min_freq because max_freq may be
-+		used to throttle devices to avoid overheating.
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index abfa14d..44c4079 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -527,6 +527,8 @@ EXPORT_SYMBOL(devfreq_add_device);
- /**
-  * devfreq_remove_device() - Remove devfreq feature from a device.
-  * @devfreq:	the devfreq instance to be removed
-+ *
-+ * The opposite of devfreq_add_device().
-  */
- int devfreq_remove_device(struct devfreq *devfreq)
- {
-@@ -542,6 +544,10 @@ EXPORT_SYMBOL(devfreq_remove_device);
- /**
-  * devfreq_suspend_device() - Suspend devfreq of a device.
-  * @devfreq: the devfreq instance to be suspended
-+ *
-+ * This function is intended to be called by the pm callbacks
-+ * (e.g., runtime_suspend, suspend) of the device driver that
-+ * holds the devfreq.
-  */
- int devfreq_suspend_device(struct devfreq *devfreq)
- {
-@@ -559,6 +565,10 @@ EXPORT_SYMBOL(devfreq_suspend_device);
- /**
-  * devfreq_resume_device() - Resume devfreq of a device.
-  * @devfreq: the devfreq instance to be resumed
-+ *
-+ * This function is intended to be called by the pm callbacks
-+ * (e.g., runtime_resume, resume) of the device driver that
-+ * holds the devfreq.
-  */
- int devfreq_resume_device(struct devfreq *devfreq)
- {
-diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-index e83ef39..04ad61d 100644
---- a/include/linux/devfreq.h
-+++ b/include/linux/devfreq.h
-@@ -181,6 +181,8 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
- 				  const char *governor_name,
- 				  void *data);
- extern int devfreq_remove_device(struct devfreq *devfreq);
-+
-+/* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
- extern int devfreq_suspend_device(struct devfreq *devfreq);
- extern int devfreq_resume_device(struct devfreq *devfreq);
- 
--- 
-1.7.5.4
+We get really close to using all of it. For DWC3, the last address is at
+0xcc10 (a 32-bit register).
 
+For dwc3-wrapper, then it's correct, we don't use it, I would still map
+the whole thing to make it future proof.
+
+Any draw-backs from mapping all 64K ?
+
+--=20
+balbi
+
+--G23JYFG0d77Z6i/3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRENUKAAoJEIaOsuA1yqREm5kQAKHEtm1CcMceK3bB2JTyaxDe
+P+cMlkSXLNo67MR0fnLketFIwy/ELQIwARg1uBTj/wIwRTa2YmW/AGmos1vG7wO/
+nA6tDD8Pbp+apdtkyLBudq6IDk5aEIGcFv9pl6fDTyV2mQB9m+HiYDRfsJhoPPGy
+K1rEDzvKkNJc7TMr0ZwYgzcJmNabezjpyXMsfPrKisncaz5zKHOAHVzfAMcsuwZO
+1M8ja/fpLfXRW9zgs1rCMz3jyyvWKrs0fmAiAzkqFJfRxV7kZJoT9j2nPPX/milZ
+oTj2UPNAYjcugZcB4ABBzLb64FzjV040pF8PMKulZ0/fjHBfFdRjBkii8psYE2nU
+yoIRV3HguGXJhbBY4mkAIDyO5XeYj6euosC39C6HAIuwQJ6dOg1NtiJgfcn0ojK0
+Duh7I6GATPwTg3YISvpV3vMaZ0dJPpyyWot2sfAAocnWc9uduLkocn+n35YhgwXQ
+Nppn1X5OddfJ40jmCuqe9qj3D46+YdnfMO23X5iCsuu0sxFwuxFS/JQd4bQUmI1a
+6fICTd2n9t6c7RVfDUXl5uHthg5mVMPO6VDiJ7XBn9/X5HH9kGHKq1sUx4fS8Mqo
+jQ0fBIWhz9fJkIRRkEhsRun48T+slWDUQ4lTs9xfQgZmhpjHM+Uh/zMrwD20OI7m
+AAIW8fQLotUotP8VVL6q
+=yRok
+-----END PGP SIGNATURE-----
+
+--G23JYFG0d77Z6i/3--
