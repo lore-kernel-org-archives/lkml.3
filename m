@@ -1,150 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab3BEUg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 15:36:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54995 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756226Ab3BEUg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 15:36:57 -0500
-Message-ID: <1360096613.11144.612.camel@bling.home>
-Subject: Re: DMAR faults from unrelated device when vfio is used
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gstir <david@sigma-star.at>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, richard@sigma-star.at
-Date: Tue, 05 Feb 2013 13:36:53 -0700
-In-Reply-To: <1360078648.11144.558.camel@bling.home>
-References: <1359972630.2498.21.camel@riven-lux.site>
-	 <1359992968.11144.414.camel@bling.home>
-	 <1360071110.6200.19.camel@riven-lux.site>
-	 <1360078648.11144.558.camel@bling.home>
-Content-Type: text/plain; charset="UTF-8"
+	id S1756315Ab3BEUil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 15:38:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41398 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755778Ab3BEUik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 15:38:40 -0500
+Date: Tue, 5 Feb 2013 12:38:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, jslaby@suse.cz,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2] printk: Avoid softlockups in console_unlock()
+Message-Id: <20130205123838.146a5371.akpm@linux-foundation.org>
+In-Reply-To: <1360016230-26696-1-git-send-email-jack@suse.cz>
+References: <1360016230-26696-1-git-send-email-jack@suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-05 at 08:37 -0700, Alex Williamson wrote:
-> On Tue, 2013-02-05 at 14:31 +0100, David Gstir wrote:
-> > Am Montag, den 04.02.2013, 08:49 -0700 schrieb Alex Williamson:
-> > 
-> > > Can you clarify what you mean by assign?  Are you actually assigning the
-> > > root ports to the qemu guest (1c.0 & 1c.6)?  vfio will require they be
-> > > owned by vfio-pci to make use of 3:00.0, but assigning them to the guest
-> > > is not recommended.  Can you provided your qemu command line?  
-> > 
-> > I did hand all of them to the guest OS. Removing 1c.0 & 1c.6 from the qemu 
-> > command line seems to have done the trick. Thanks!
-> 
-> Great, though I'm still not sure how we were generating those DMAR
-> faults.
-> 
-> > Here's my working qemu command line:
-> > qemu-kvm -no-reboot -enable-kvm -cpu host -smp 4 -m 6G \
-> >   -drive file=/home/test/qemu/images/win7_base_updated.qcow2,if=virtio,cache=none,media=disk,format=qcow2,index=0 \
-> >   -full-screen -no-quit -no-frame -display sdl -vnc :1 -k de -usbdevice tablet \
-> >   -vga std -global VGA.vgamem_mb=256 \
-> >   -netdev tap,id=guest0,ifname=tap0,script=no,downscript=no \
-> >   -net nic,netdev=guest0,model=virtio,macaddr=00:16:35:BE:EF:12  \
-> >   -rtc base=localtime \
-> >   -device vfio-pci,host=00:1b.0,id=audio \
-> >   -device vfio-pci,host=00:1a.0,id=ehci1 \
-> >   -device vfio-pci,host=00:1d.0,id=ehci2 \
-> >   -device vfio-pci,host=03:00.0,id=xhci1 \
-> >   -monitor tcp::5555,server,nowait
-> > 
-> > 
-> > > We need
-> > > to re-visit how to handle pcieport devices with vfio-pci, perhaps
-> > > white-listing it as a vfio "compatible" driver, but this still should
-> > > not interfere with devices external to the group.
-> > > 
-> > > The DMAR fault address looks pretty bogus unless you happen to have
-> > > 100GB+ of ram in the system.
-> > 
-> > Nope, definitely not. :)
-> > 
-> > > vfio makes use of the IOMMU API for programming DMA translations, so an
-> > > reserved fields would have to be programmed by intel-iommu itself.  We
-> > > could of course be passing some kind of bogus data that intel-iommu
-> > > isn't catching.  If you're assigning the root ports to the guest, I'd
-> > > start with that, don't do it.  Attach them to vfio, but don't give them
-> > > to the guest.  Maybe that'll give us a hint.  I also notice that your
-> > > USB 3 controller is dead:
-> > > 
-> > > 03:00.0 USB controller: NEC Corporation uPD720200 USB 3.0 Host Controller (rev ff) (prog-if ff)
-> > > 	!!! Unknown header type 7f
-> > > 
-> > > We only see unknown header type 7f when the read from the device returns
-> > > -1.  This might have something to do with the root port above it (1c.6)
-> > > being in state D3.  Windows likes to put unused devices in D3, which
-> > > leads me to suspect you are giving it to the guest.  
-> > 
-> > There error does no longer occur. lspci now shows this:
-> > 
-> > -- snip --
-> > 03:00.0 USB controller: NEC Corporation uPD720200 USB 3.0 Host Controller (rev 04) (prog-if 30 [XHCI])
-> > 	Subsystem: Intel Corporation Device 2008
-> > 	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
-> > 	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort+ >SERR- <PERR- INTx-
-> > 	Interrupt: pin A routed to IRQ 18
-> > 	Region 0: Memory at fe500000 (64-bit, non-prefetchable) [disabled] [size=8K]
-> > 	Capabilities: [50] Power Management version 3
-> > 		Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> > 		Status: D3 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-> > 	Capabilities: [70] MSI: Enable- Count=1/8 Maskable- 64bit+
-> > 		Address: 0000000000000000  Data: 0000
-> > 	Capabilities: [90] MSI-X: Enable- Count=8 Masked-
-> > 		Vector table: BAR=0 offset=00001000
-> > 		PBA: BAR=0 offset=00001080
-> > 	Capabilities: [a0] Express (v2) Endpoint, MSI 00
-> > 		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s unlimited, L1 unlimited
-> > 			ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-> > 		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> > 			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop+
-> > 			MaxPayload 128 bytes, MaxReadReq 128 bytes
-> > 		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-> > 		LnkCap:	Port #0, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <4us, L1 unlimited
-> > 			ClockPM+ Surprise- LLActRep- BwNot-
-> > 		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-> > 			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
-> > 		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-> > 		DevCap2: Completion Timeout: Not Supported, TimeoutDis+
-> > 		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
-> > 		LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
-> > 			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
-> > 			 Compliance De-emphasis: -6dB
-> > 		LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-, EqualizationPhase1-
-> > 			 EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
-> > 	Capabilities: [100 v1] Advanced Error Reporting
-> > 		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-> > 		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-> > 		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
-> > 		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-> > 		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-> > 		AERCap:	First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
-> > 	Capabilities: [140 v1] Device Serial Number ff-ff-ff-ff-ff-ff-ff-ff
-> > 	Capabilities: [150 v1] Latency Tolerance Reporting
-> > 		Max snoop latency: 0ns
-> > 		Max no snoop latency: 0ns
-> > 	Kernel driver in use: vfio-pci
-> > -- snip --
-> > 
-> > Most likely because I don't hand the root ports over to the guest anymore. 
-> > However, there seems to be another issue with the USB 3 controller since 
-> > windows 7 can't start the device (error 10 in windows device manager). Using 
-> > these USB ports in the host linux worked fine. Could this issue be related to 
-> > pci-express?
-> 
-> Ugh, the infamous and useless error 10.  It could be anything.  I've got
-> a system with onboard usb3, let me see what windows does with it here
-> first.  Thanks,
+On Mon,  4 Feb 2013 23:17:10 +0100
+Jan Kara <jack@suse.cz> wrote:
 
-Well, I've got an Etron USB3 HBA and (un)fortunately it works just fine
-with a Win7 guest.  There's really nothing special about USB controllers
-from a PCI device assignment perspective.  Have you tried the latest
-upstream qemu bits?  Thanks,
+> A CPU can be caught in console_unlock() for a long time (tens of seconds are
+> reported by our customers) when other CPUs are using printk heavily and serial
+> console makes printing slow. Despite serial console drivers are calling
+> touch_nmi_watchdog() this triggers softlockup warnings because
+> interrupts are disabled for the whole time console_unlock() runs (e.g.
+> vprintk() calls console_unlock() with interrupts disabled). Thus IPIs
+> cannot be processed and other CPUs get stuck spinning in calls like
+> smp_call_function_many(). Also RCU eventually starts reporting lockups.
+> 
+> In my artifical testing I also managed to trigger a situation when disk
+> disappeared from the system apparently because commands to / from it
+> could not be delivered for long enough. This is why just silencing
+> watchdogs isn't a reliable solution to the problem and we simply have to
+> avoid spending too long in console_unlock().
+> 
+> We fix the issue by limiting the time we spend in console_unlock() to
+> watchdog_thresh() / 4 (unless we are in an early boot stage or oops is
+> happening). The rest of the buffer will be printed either by further
+> callers to printk() or by a queued work.
 
-Alex
+I still hate the patch :(
+
+> ...
+>
+> +void console_unlock(void)
+> +{
+> +	if (__console_unlock()) {
+> +		/* Let worker do the rest of printing */
+> +		schedule_work(&printk_work);
+> +	}
+>  }
+
+This creates another place from where we cannot call printk(): anywhere
+where worker_pool.lock is held.
+
+And as schedule_work() can do a wakeup it creates a third reason why
+the sched code cannot call printk (along with rq->lock taken by
+wake_up(klogd) and rq->lock taken by up(&console_sem).  Hence
+printk_sched().  See the lkml thread "[GIT PULL] printk: Support for
+full dynticks mode".
+
+We already have machinery for doing async tickling in printk: the
+printk_pending stuff.  Did you consider adding another
+PRINTK_PENDING_foo in some fashion?
 
 
