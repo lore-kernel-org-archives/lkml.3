@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab3BEQme (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 11:42:34 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:53451 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab3BEQmc (ORCPT
+	id S1755093Ab3BEQpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 11:45:30 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:34459 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab3BEQpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 11:42:32 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] ASoC: fsl: fix allyesconfig build for imx-pcm
-Date: Tue, 5 Feb 2013 16:42:25 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <20130122063331.GA1766@opensource.wolfsonmicro.com> <201302051621.12320.arnd@arndb.de>
-In-Reply-To: <201302051621.12320.arnd@arndb.de>
+	Tue, 5 Feb 2013 11:45:25 -0500
+Date: Tue, 5 Feb 2013 08:45:20 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <eag0628@gmail.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/13] workqueue: don't set work cwq until we queued it
+ on pool
+Message-ID: <20130205164520.GA4276@mtj.dyndns.org>
+References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
+ <1359657696-2767-4-git-send-email-laijs@cn.fujitsu.com>
+ <20130204212808.GC27963@mtj.dyndns.org>
+ <51111E9A.4000504@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302051642.25361.arnd@arndb.de>
-X-Provags-ID: V02:K0:c1IaMVRP87obXeLX4kTMw4upwSxNzFyNjq3BpzPt1CS
- QCKBjGbJp5SRjpgnT4RCCaVz/zdU2pYH0ByWLJrt6Y1a1yLxQo
- 31ATeHr1rFqCxXbZCtUCQ69Ykvm/cCOfLcD+EuPJv3y3E/40Oq
- Ydm2RzpZtS/7dMH0hss1kSwpxYqFXqUcAEZIK+0QzYorKdONx3
- 9ojuKfz1pVEhOufxbW+5I/5ih9wOlGEZJ+DLxnRH4riQP2Gk8F
- h/gCAf3s+F10xWjSpT69fVMpgFlIQwv+4KqM3JYgLo37sqSww/
- uFDPfGgGZO2YGO8dr29hBxXsnlhmhc+A4f40nQxHg39/A1limd
- 3r/SoUZMhNhJommmz6A0=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51111E9A.4000504@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 25b8d314 "ASoC: fsl: fix multiple definition of init_module changed
-the Makefile for imx-pcm.ko to build two modules that both contain the
-imx-pcm.c file, which nicely solves the problem of building both versions
-of the driver as modules, but it causes two new problems:
+Hey, Lai.
 
-1. Since imx-pcm.c is now used in two different modules, Kbuild no longer
-sets the KBUILD_MODNAME symbol when building the object file, which makes
-it impossible to use dynamic pr_debug code, resulting in this error
+On Tue, Feb 05, 2013 at 11:00:42PM +0800, Lai Jiangshan wrote:
+> The @cpu can be WORK_CPU_UNBOUND, and the current code will delay
+> to determine on which cpu should this work be queued until timeout,
+> I didn't want to change this behavior when I wrote the patch.
 
-sound/soc/fsl/imx-pcm.c: In function 'snd_imx_pcm_mmap':
-sound/soc/fsl/imx-pcm.c:28:121: error: 'KBUILD_MODNAME' undeclared (first use in this function)
-sound/soc/fsl/imx-pcm.c:28:121: note: each undeclared identifier is reported only once for each function it appears insound/soc/fsl/snd-soc-imx-pcm-dma.o: In function `imx_pcm_free':
+Hmmm?  The current code determines the CPU on queue_delayed_work().
 
-2. If we don't use the dynamic debug code, we get a link error since we now
-try to link together the same file into built-in.o twice:
+       	/*
+	 * If we cannot get the last pool from @work directly,
+	 * select the last CPU such that it avoids unnecessarily
+	 * triggering non-reentrancy check in __queue_work().
+	 */
+	lcpu = cpu;
+	if (pool)
+		lcpu = pool->cpu;
+	if (lcpu == WORK_CPU_UNBOUND)
+		lcpu = raw_smp_processor_id();
 
-sound/soc/fsl/imx-pcm.c:80: multiple definition of `imx_pcm_free'
-sound/soc/fsl/snd-soc-imx-pcm-fiq.o:/sound/soc/fsl/imx-pcm.c:80: first defined here
-sound/soc/fsl/snd-soc-imx-pcm-dma.o: In function `snd_imx_pcm_mmap':
-sound/soc/fsl/imx-pcm.c:21: multiple definition of `snd_imx_pcm_mmap'
-sound/soc/fsl/snd-soc-imx-pcm-fiq.o:/sound/soc/fsl/imx-pcm.c:21: first defined here
-sound/soc/fsl/snd-soc-imx-pcm-dma.o: In function `imx_pcm_new':
-sound/soc/fsl/imx-pcm.c:52: multiple definition of `imx_pcm_new'
-sound/soc/fsl/snd-soc-imx-pcm-fiq.o:/sound/soc/fsl/imx-pcm.c:52: first defined here
+@lcpu is never WORK_CPU_UNBOUND for bound workqueues and for unbound
+workqueues we of course have cwq for WORK_CPU_UNBOUND.
 
-I originally suggested disallowing the selection of both the DMA and FIQ
-code in the same kernel. That is not very nice, but it resolves the
-build error for both built-in and modular code.
+> PS, again, @cpu and @wq can be saved/encoded in dwork.work.entry if needed.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-----
-Sorry, the previous version did not apply, it was on top of my older patch accidentally
+If possible, I'd much prefer to keep it inside delayed_work() proper.
 
-diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
-index a210c8d..3f20cb7 100644
---- a/sound/soc/fsl/Kconfig
-+++ b/sound/soc/fsl/Kconfig
-@@ -122,6 +122,7 @@ config SND_SOC_IMX_AUDMUX
- config SND_MXC_SOC_WM1133_EV1
- 	tristate "Audio on the i.MX31ADS with WM1133-EV1 fitted"
- 	depends on MACH_MX31ADS_WM1133_EV1
-+	depends on !SND_SOC_IMX_PCM_DMA
- 	select SND_SOC_WM8350
- 	select SND_SOC_IMX_PCM_FIQ
- 	select SND_SOC_IMX_AUDMUX
-@@ -144,6 +145,7 @@ config SND_SOC_MX27VIS_AIC32X4
- config SND_SOC_PHYCORE_AC97
- 	tristate "SoC Audio support for Phytec phyCORE (and phyCARD) boards"
- 	depends on MACH_PCM043 || MACH_PCA100
-+	depends on !SND_SOC_IMX_PCM_DMA
- 	select SND_SOC_AC97_BUS
- 	select SND_SOC_WM9712
- 	select SND_SOC_IMX_PCM_FIQ
-@@ -160,6 +162,7 @@ config SND_SOC_EUKREA_TLV320
- 		|| MACH_EUKREA_MBIMXSD35_BASEBOARD \
- 		|| MACH_EUKREA_MBIMXSD51_BASEBOARD
- 	depends on I2C
-+	depends on !SND_SOC_IMX_PCM_DMA
- 	select SND_SOC_TLV320AIC23
- 	select SND_SOC_IMX_PCM_FIQ
- 	select SND_SOC_IMX_AUDMUX
-diff --git a/sound/soc/fsl/Makefile b/sound/soc/fsl/Makefile
-index ec14579..ddd9076 100644
---- a/sound/soc/fsl/Makefile
-+++ b/sound/soc/fsl/Makefile
-@@ -30,13 +30,6 @@ obj-$(CONFIG_SND_MPC52xx_SOC_EFIKA) += efika-audio-fabric.o
- # i.MX Platform Support
- snd-soc-imx-ssi-objs := imx-ssi.o
- snd-soc-imx-audmux-objs := imx-audmux.o
--snd-soc-imx-pcm-objs := imx-pcm.o
--ifneq ($(CONFIG_SND_SOC_IMX_PCM_FIQ),)
--	snd-soc-imx-pcm-objs += imx-pcm-fiq.o
--endif
--ifneq ($(CONFIG_SND_SOC_IMX_PCM_DMA),)
--	snd-soc-imx-pcm-objs += imx-pcm-dma.o
--endif
- 
- obj-$(CONFIG_SND_SOC_IMX_SSI) += snd-soc-imx-ssi.o
- obj-$(CONFIG_SND_SOC_IMX_AUDMUX) += snd-soc-imx-audmux.o
+Thanks.
+
+-- 
+tejun
