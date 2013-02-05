@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab3BEVEb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 16:04:31 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:54191 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755778Ab3BEVE3 (ORCPT
+	id S1756723Ab3BEVEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 16:04:40 -0500
+Received: from sema.semaphore.gr ([78.46.194.137]:46964 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755778Ab3BEVEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 16:04:29 -0500
-Message-ID: <1360098260.3298.27.camel@thor.lan>
-Subject: Re: [PATCH v3 16/23] tty: Make core responsible for synchronizing
- its work
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
-Date: Tue, 05 Feb 2013 16:04:20 -0500
-In-Reply-To: <1360095638-6624-17-git-send-email-peter@hurleysoftware.com>
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
-	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-	 <1360095638-6624-17-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
+	Tue, 5 Feb 2013 16:04:35 -0500
+Message-ID: <511173DF.8060308@semaphore.gr>
+Date: Tue, 05 Feb 2013 23:04:31 +0200
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cpufreq: ondemand: Replace down_differential tuner with adj_up_threshold
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-05 at 15:20 -0500, Peter Hurley wrote:
-> The tty core relies on the ldisc layer for synchronizing destruction
-> of the tty. Instead, the final tty release must wait for any pending tty
-> work to complete prior to tty destruction.
-> 
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/tty/tty_io.c    | 17 +++++++++++++++++
->  drivers/tty/tty_ldisc.c | 24 ++++--------------------
->  2 files changed, 21 insertions(+), 20 deletions(-)
+In order to avoid the calculation of up_threshold - down_differential
+every time that the frequency must be decreased, we replace the
+down_differential tuner with the adj_up_threshold which keeps the
+difference across multiple checks.
 
-...
+Update the adj_up_threshold only when the up_theshold is also updated.
 
-> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-> index e0fdfec..c2837b2 100644
-> --- a/drivers/tty/tty_ldisc.c
-> +++ b/drivers/tty/tty_ldisc.c
-> @@ -499,18 +499,6 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
->  }
->  
->  /**
-> - *	tty_ldisc_flush_works	-	flush all works of a tty
-> - *	@tty: tty device to flush works for
-> - *
-> - *	Sync flush all works belonging to @tty.
-> - */
-> -static void tty_ldisc_flush_works(struct tty_struct *tty)
-> -{
-> -	flush_work(&tty->SAK_work);
-> -	flush_work(&tty->hangup_work);
-> -}
-> -
-> -/**
->   *	tty_ldisc_wait_idle	-	wait for the ldisc to become idle
->   *	@tty: tty to wait for
->   *	@timeout: for how long to wait at most
-> @@ -726,13 +714,13 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
->  	retval = tty_ldisc_halt(tty, o_tty, &work, &o_work, 5 * HZ);
->  
->  	/*
-> -	 * Wait for ->hangup_work to terminate.
-> +	 * Wait for hangup to complete, if pending.
->  	 * We must drop the mutex here in case a hangup is also in process.
->  	 */
->  
->  	mutex_unlock(&tty->ldisc_mutex);
->  
-> -	tty_ldisc_flush_works(tty);
-> +	flush_work(&tty->hangup_work);
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
+ drivers/cpufreq/cpufreq_governor.h |  2 +-
+ drivers/cpufreq/cpufreq_ondemand.c | 16 ++++++++++------
+ 2 files changed, 11 insertions(+), 7 deletions(-)
 
-Careful review will note that I dropped waiting for SAK. That's because
-it makes no sense to wait for SAK_work here -- ie., while setting a new
-ldisc. The SAK work can just as easily run at the completion of
-tty_set_ldisc() at tty_unlock().
-
-I believe this is an artifact of the formerly shared code.
-
-But maybe I should note that in the commit message?
-
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index f661654..4250944 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -108,7 +108,7 @@ struct od_dbs_tuners {
+ 	unsigned int sampling_rate;
+ 	unsigned int sampling_down_factor;
+ 	unsigned int up_threshold;
+-	unsigned int down_differential;
++	unsigned int adj_up_threshold;
+ 	unsigned int powersave_bias;
+ 	unsigned int io_is_busy;
+ };
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 7731f7c..2cc76ad 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -47,7 +47,8 @@ static struct cpufreq_governor cpufreq_gov_ondemand;
+ static struct od_dbs_tuners od_tuners = {
+ 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
+ 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
+-	.down_differential = DEF_FREQUENCY_DOWN_DIFFERENTIAL,
++	.adj_up_threshold = DEF_FREQUENCY_UP_THRESHOLD -
++			    DEF_FREQUENCY_DOWN_DIFFERENTIAL,
+ 	.ignore_nice = 0,
+ 	.powersave_bias = 0,
+ };
+@@ -192,11 +193,9 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
+ 	 * support the current CPU usage without triggering the up policy. To be
+ 	 * safe, we focus 10 points under the threshold.
+ 	 */
+-	if (load_freq < (od_tuners.up_threshold - od_tuners.down_differential) *
+-			policy->cur) {
++	if (load_freq < od_tuners.adj_up_threshold * policy->cur) {
+ 		unsigned int freq_next;
+-		freq_next = load_freq / (od_tuners.up_threshold -
+-				od_tuners.down_differential);
++		freq_next = load_freq / od_tuners.adj_up_threshold;
+ 
+ 		/* No longer fully busy, reset rate_mult */
+ 		dbs_info->rate_mult = 1;
+@@ -351,6 +350,10 @@ static ssize_t store_up_threshold(struct kobject *a, struct attribute *b,
+ 			input < MIN_FREQUENCY_UP_THRESHOLD) {
+ 		return -EINVAL;
+ 	}
++	/* Calculate the new adj_up_threshold */
++	od_tuners.adj_up_threshold += input;
++	od_tuners.adj_up_threshold -= od_tuners.up_threshold;
++
+ 	od_tuners.up_threshold = input;
+ 	return count;
+ }
+@@ -507,7 +510,8 @@ static int __init cpufreq_gov_dbs_init(void)
+ 	if (idle_time != -1ULL) {
+ 		/* Idle micro accounting is supported. Use finer thresholds */
+ 		od_tuners.up_threshold = MICRO_FREQUENCY_UP_THRESHOLD;
+-		od_tuners.down_differential = MICRO_FREQUENCY_DOWN_DIFFERENTIAL;
++		od_tuners.adj_up_threshold = MICRO_FREQUENCY_UP_THRESHOLD -
++					     MICRO_FREQUENCY_DOWN_DIFFERENTIAL;
+ 		/*
+ 		 * In nohz/micro accounting case we set the minimum frequency
+ 		 * not depending on HZ, but fixed (very low). The deferred
+-- 
+1.8.1
 
