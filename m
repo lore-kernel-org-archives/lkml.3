@@ -1,145 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3BENho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 08:37:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41088 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755213Ab3BENhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 08:37:40 -0500
-Message-ID: <1360071455.11144.552.camel@bling.home>
-Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
- VFIO-PCI devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Blue Swirl <blauwirbel@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Ortiz, Lance E" <lance.oritz@hp.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 05 Feb 2013 06:37:35 -0700
-In-Reply-To: <F9E001219150CB45BEDC82A650F360C9014B445B@G9W0717.americas.hpqcorp.net>
-References: <F9E001219150CB45BEDC82A650F360C9014AAF07@G9W0717.americas.hpqcorp.net>
-	 <CAAu8pHvk_2Mf2F-YTDC-wdyD1Jic-DHUanSQfOa3g0VchTcNig@mail.gmail.com>
-	 <20130205080436.GV23213@redhat.com>
-	 <F9E001219150CB45BEDC82A650F360C9014B42EE@G9W0717.americas.hpqcorp.net>
-	 <20130205092110.GB23213@redhat.com>
-	 <F9E001219150CB45BEDC82A650F360C9014B43DC@G9W0717.americas.hpqcorp.net>
-	 <20130205113645.GE23213@redhat.com>
-	 <F9E001219150CB45BEDC82A650F360C9014B445B@G9W0717.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755376Ab3BENjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 08:39:41 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:11168 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab3BENjj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 08:39:39 -0500
+X-AuditID: cbfee61b-b7fb06d000000f28-c4-51110b9af8d1
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        gregkh@linuxfoundation.org, balbi@ti.com, kishon@ti.com
+Subject: [PATCH RFC] usb: dwc3: Set GCTL.PrtCapDir based on selected mode.
+Date: Tue, 05 Feb 2013 19:15:58 +0530
+Message-id: <1360071958-20797-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsWyRsSkVncWt2Cgwa7rbBaXd81hs5i9pJ/F
+	YtGyVmYHZo/Pm+QCGKO4bFJSczLLUov07RK4Mn59zy+Ywlsx9cY75gbGp1xdjBwcEgImEo0N
+	pl2MnECmmMSFe+vZuhi5OIQEljJKdHz/xQxTc/W8DkiNkMB0Rok5ryQh7MlMEjdPcIHYbAK6
+	Ek1vdzGC2CICshKHr/xmBrGZBcolVs/cwwpiCwt4Sfx8eIAVZCSLgKrEipWVIGFeAQ+JzZu7
+	WCFOUJB4c/sZM8gJEgJH2CT+Np5nAkmwCAhIfJt8iAXiHFmJTQeYIeolJQ6uuMEygVFwASPD
+	KkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzA4Dr975n0DsZVDRaHGAU4GJV4eH9c5g8UYk0s
+	K67MPcQowcGsJMJb/UUgUIg3JbGyKrUoP76oNCe1+BBjMtDyicxSosn5wMDPK4k3NDYxNzU2
+	tTQyMjM1JU1YSZyX8dSTACGB9MSS1OzU1ILUIpgtTBycUg2MQWIOjcFfinjUlqUk/Hzh98V0
+	5vwXtzSebDLbqcd2ZONk6TCFPytFzttm/1A4Whza1mgutNPdaaLmzOYHSXc0y+te9H3+a5rY
+	I7g5Ou7uPfWm37FZkvOb5hx5v/3h0ywJG1vt+cr9jH2XOKuibt3vva472dt97bmPEUoHSg7U
+	9KlEpHBPZ76jxFKckWioxVxUnAgAH62pInICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42I5/e+xoO5MbsFAg3VrzSwu75rDZjF7ST+L
+	xaJlrcwOzB6fN8kFMEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam
+	2iq5+AToumXmAM1XUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGb8+p5f
+	MIW3YuqNd8wNjE+5uhg5OCQETCSuntfpYuQEMsUkLtxbzwZiCwlMZ5SY80oSwp7MJHHzBBeI
+	zSagK9H0dhcjiC0iICtx+MpvZhCbWaBcYvXMPawgtrCAl8TPhwdYQcazCKhKrFhZCRLmFfCQ
+	2Ly5ixVilYLEm9vPmCcwci9gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERy8z6R3MK5q
+	sDjEKMDBqMTD++Myf6AQa2JZcWXuIUYJDmYlEd7qLwKBQrwpiZVVqUX58UWlOanFhxiTgZZP
+	ZJYSTc4HRlZeSbyhsYm5qbGppYmFiZklacJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCUamCc
+	ckZ+v3KZRP1FlvexgsLSVQvlE9tffPxoZGAxbe/rQxeTr+SdrtvG9Epqxta7Xw4HqhwTELXe
+	c+nsnkPuR+o+3XfW1OZJMzM+9OfN2+hSuwNOF0w+sL+fmLpY563iH/eAjJsvtCbJ8i6T9j0e
+	oiPZpLhrPvvClhX8GctMNGyiwoMM5+j0lf9TYinOSDTUYi4qTgQAFlKqVKICAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-05 at 12:05 +0000, Pandarathil, Vijaymohan R wrote:
-> 
-> > -----Original Message-----
-> > From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
-> > owner@vger.kernel.org] On Behalf Of Gleb Natapov
-> > Sent: Tuesday, February 05, 2013 3:37 AM
-> > To: Pandarathil, Vijaymohan R
-> > Cc: Blue Swirl; Alex Williamson; Bjorn Helgaas; Ortiz, Lance E;
-> > kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-pci@vger.kernel.org;
-> > linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for VFIO-
-> > PCI devices
-> > 
-> > On Tue, Feb 05, 2013 at 10:59:41AM +0000, Pandarathil, Vijaymohan R wrote:
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Gleb Natapov [mailto:gleb@redhat.com]
-> > > > Sent: Tuesday, February 05, 2013 1:21 AM
-> > > > To: Pandarathil, Vijaymohan R
-> > > > Cc: Blue Swirl; Alex Williamson; Bjorn Helgaas; Ortiz, Lance E;
-> > > > kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-pci@vger.kernel.org;
-> > > > linux-kernel@vger.kernel.org
-> > > > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
-> > VFIO-
-> > > > PCI devices
-> > > >
-> > > > On Tue, Feb 05, 2013 at 09:05:19AM +0000, Pandarathil, Vijaymohan R
-> > wrote:
-> > > > >
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Gleb Natapov [mailto:gleb@redhat.com]
-> > > > > > Sent: Tuesday, February 05, 2013 12:05 AM
-> > > > > > To: Blue Swirl
-> > > > > > Cc: Pandarathil, Vijaymohan R; Alex Williamson; Bjorn Helgaas;
-> > Ortiz,
-> > > > Lance
-> > > > > > E; kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-
-> > > > pci@vger.kernel.org;
-> > > > > > linux-kernel@vger.kernel.org
-> > > > > > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER
-> > for
-> > > > VFIO-
-> > > > > > PCI devices
-> > > > > >
-> > > > > > On Sun, Feb 03, 2013 at 04:36:11PM +0000, Blue Swirl wrote:
-> > > > > > > On Sun, Feb 3, 2013 at 2:10 PM, Pandarathil, Vijaymohan R
-> > > > > > > <vijaymohan.pandarathil@hp.com> wrote:
-> > > > > > > >         - Create eventfd per vfio device assigned to a guest
-> > and
-> > > > > > register an
-> > > > > > > >           event handler
-> > > > > > > >
-> > > > > > > >         - This fd is passed to the vfio_pci driver through the
-> > > > SET_IRQ
-> > > > > > ioctl
-> > > > > > > >
-> > > > > > > >         - When the device encounters an error, the eventfd is
-> > > > signalled
-> > > > > > > >           and the qemu eventfd handler gets invoked.
-> > > > > > > >
-> > > > > > > >         - In the handler decide what action to take. Current
-> > action
-> > > > > > taken
-> > > > > > > >           is to terminate the guest.
-> > > > > > >
-> > > > > > > Usually this is not OK, but I guess this is not guest
-> > triggerable.
-> > > > > > >
-> > > > > > Still not OK. Why not stop a guest with appropriate stop reason?
-> > > > >
-> > > > > The thinking was that since this is a hardware error, we would want
-> > to
-> > > > stop the guest at the earliest. The hw_error() routine which aborts the
-> > > > qemu process was suggested by Alex and that seemed appropriate. Earlier
-> > I
-> > > > was using qemu_system_shutdown_request().  Any suggestions ?
-> > > > >
-> > > > I am thinking vm_stop(). Stopping SMP guest (and UP too in fact)
-> > > > involves sending IPIs to other cpus running guest's vcpus. Both exit()
-> > > > and vm_stop() will do it, but former is implicitly in the kernel and
-> > > > later is explicitly in QEMU.
-> > >
-> > > I had used vm_stop(RUN_STATE_SHUTDOWN) earlier in my code. But while
-> > testing, guest ended up in a hang rather than exiting. There seems to some
-> > cleanup work which is being done as part of vm_stop. In our case, we wanted
-> > the guest to exit immediately. So use of hw_error() seemed appropriate.
-> > >
-> > What makes you think it hang? It stopped, precisely what it should do if
-> > you call vm_stop(). Now it is possible for vm user to investigate what
-> > happened and even salvage some data from guest memory.
-> 
-> That was ignorance on my part on the expected behavior of vm_stop(). 
-> So what you are suggesting is to stop the guest displaying an appropriate 
-> error/next-steps message and have the users do any data-collection/investigation 
-> and then manually kill the guest, if they so desire. Right ?
-> 
-> Sounds reasonable. As long as the guest is not touching the device, it should be okay.
-> Alex, Any comments ?
+Now that machines may select the mode of working of DWC3,
+we can set the Port capability direction based on selected mode.
 
-What's the libvirt behavior when a guest goes to vm_stop?  My only
-concern would be whether the user is going to be confused by a state
-where the vm is still up, but not running.  I imagine they'll have to
-manually stop it and restart it to continue.  Thanks,
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
+ drivers/usb/dwc3/core.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-Alex
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index 177f4c6..f4c47f7 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -479,7 +479,6 @@ static int dwc3_probe(struct platform_device *pdev)
+ 
+ 	switch (mode) {
+ 	case DWC3_MODE_DEVICE:
+-		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
+ 		ret = dwc3_gadget_init(dwc);
+ 		if (ret) {
+ 			dev_err(dev, "failed to initialize gadget\n");
+@@ -487,7 +486,6 @@ static int dwc3_probe(struct platform_device *pdev)
+ 		}
+ 		break;
+ 	case DWC3_MODE_HOST:
+-		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_HOST);
+ 		ret = dwc3_host_init(dwc);
+ 		if (ret) {
+ 			dev_err(dev, "failed to initialize host\n");
+@@ -495,7 +493,6 @@ static int dwc3_probe(struct platform_device *pdev)
+ 		}
+ 		break;
+ 	case DWC3_MODE_DRD:
+-		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
+ 		ret = dwc3_host_init(dwc);
+ 		if (ret) {
+ 			dev_err(dev, "failed to initialize host\n");
+@@ -514,6 +511,14 @@ static int dwc3_probe(struct platform_device *pdev)
+ 	}
+ 	dwc->mode = mode;
+ 
++#if IS_ENABLED(CONFIG_USB_DWC3_HOST)
++	dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_HOST);
++#elif IS_ENABLED(CONFIG_USB_DWC3_GADGET)
++	dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
++#else
++	dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
++#endif
++
+ 	ret = dwc3_debugfs_init(dwc);
+ 	if (ret) {
+ 		dev_err(dev, "failed to initialize debugfs\n");
+-- 
+1.7.6.5
 
