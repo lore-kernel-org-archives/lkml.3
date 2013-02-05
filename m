@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3BEWLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:11:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48078 "EHLO
+	id S1757734Ab3BEWLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:11:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48098 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757649Ab3BEWKy (ORCPT
+	with ESMTP id S1757699Ab3BEWLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:10:54 -0500
+	Tue, 5 Feb 2013 17:11:09 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 52/93] ALSA: hda - Add a fixup for Packard-Bell desktop with ALC880
-Date: Tue,  5 Feb 2013 20:06:41 -0200
-Message-Id: <1360102042-10732-53-git-send-email-herton.krzesinski@canonical.com>
+Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 56/93] drm/radeon: fix a rare case of double kfree
+Date: Tue,  5 Feb 2013 20:06:45 -0200
+Message-Id: <1360102042-10732-57-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,34 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
 
-commit 0712eea349d8e2b6d0e44b94a752d999319027fb upstream.
+commit 1da80cfa8727abf404fcee44d04743febea54069 upstream.
 
-A Packard-Bell desktop machine gives no proper pin configuration from
-BIOS.  It's almost equivalent with the 6stack+fp standard config, just
-take the existing fixup.
+If one (but not both) allocations of p->chunks[].kpage[]
+in radeon_cs_parser_init fail, the error path will free
+the successfully allocated page, but leave a stale pointer
+value in the kpage[] field. This will later cause a
+double-free when radeon_cs_parser_fini is called.
+This patch fixes the issue by forcing both pointers to NULL
+after kfree in the error path.
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=901846
+The circumstances under which the problem happens are very
+rare. The card must be AGP and the system must run out of
+kmalloc area just at the right time so that one allocation
+succeeds, while the other fails.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_cs.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index b7039d6..ff6f2e6 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4577,6 +4577,7 @@ static const struct snd_pci_quirk alc880_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1584, 0x9077, "Uniwill P53", ALC880_FIXUP_VOL_KNOB),
- 	SND_PCI_QUIRK(0x161f, 0x203d, "W810", ALC880_FIXUP_W810),
- 	SND_PCI_QUIRK(0x161f, 0x205d, "Medion Rim 2150", ALC880_FIXUP_MEDION_RIM),
-+	SND_PCI_QUIRK(0x1631, 0xe011, "PB 13201056", ALC880_FIXUP_6ST),
- 	SND_PCI_QUIRK(0x1734, 0x107c, "FSC F1734", ALC880_FIXUP_F1734),
- 	SND_PCI_QUIRK(0x1734, 0x1094, "FSC Amilo M1451G", ALC880_FIXUP_FUJITSU),
- 	SND_PCI_QUIRK(0x1734, 0x10ac, "FSC AMILO Xi 1526", ALC880_FIXUP_F1734),
+diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
+index c71652b..a0f3404 100644
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -281,6 +281,8 @@ int radeon_cs_parser_init(struct radeon_cs_parser *p, void *data)
+ 			    p->chunks[p->chunk_ib_idx].kpage[1] == NULL) {
+ 				kfree(p->chunks[p->chunk_ib_idx].kpage[0]);
+ 				kfree(p->chunks[p->chunk_ib_idx].kpage[1]);
++				p->chunks[p->chunk_ib_idx].kpage[0] = NULL;
++				p->chunks[p->chunk_ib_idx].kpage[1] = NULL;
+ 				return -ENOMEM;
+ 			}
+ 		}
 -- 
 1.7.9.5
 
