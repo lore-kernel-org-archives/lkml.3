@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab3BEWI5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:08:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47908 "EHLO
+	id S1757266Ab3BEWJD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:09:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47917 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757060Ab3BEWIx (ORCPT
+	with ESMTP id S1757246Ab3BEWI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:08:53 -0500
+	Tue, 5 Feb 2013 17:08:57 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>,
+Cc: Thomas Schlichter <thomas.schlichter@web.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 19/93] usb: dwc3: gadget: fix ep->maxburst for ep0
-Date: Tue,  5 Feb 2013 20:06:08 -0200
-Message-Id: <1360102042-10732-20-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 21/93] ACPI / processor: Get power info before updating the C-states
+Date: Tue,  5 Feb 2013 20:06:10 -0200
+Message-Id: <1360102042-10732-22-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,32 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pratyush Anand <pratyush.anand@st.com>
+From: Thomas Schlichter <thomas.schlichter@web.de>
 
-commit 6048e4c69d80600baba35856651056860d5d8f5a upstream.
+commit f427e5f1cf75bba84cccdac1d8a90552d9ae1065 upstream.
 
-dwc3_gadget_set_ep_config expects maxburst as incremented by 1. So, by
-default initialize ep->maxburst to 1 for ep0.
+acpi_processor_get_power_info() has to be called before
+acpi_processor_setup_cpuidle_states() to have the latest
+information available. This fixes the missing C-state information
+after AC-->DC transition.
 
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Thomas Schlichter <thomas.schlichter@web.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/dwc3/gadget.c |    1 +
+ drivers/acpi/processor_idle.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index c7721db..1f53210 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1508,6 +1508,7 @@ static int __devinit dwc3_gadget_init_endpoints(struct dwc3 *dwc)
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index 4a33518..3e6150f 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -1236,6 +1236,7 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
+ 		}
  
- 		if (epnum == 0 || epnum == 1) {
- 			dep->endpoint.maxpacket = 512;
-+			dep->endpoint.maxburst = 1;
- 			dep->endpoint.ops = &dwc3_gadget_ep0_ops;
- 			if (!epnum)
- 				dwc->gadget.ep0 = &dep->endpoint;
+ 		/* Populate Updated C-state information */
++		acpi_processor_get_power_info(pr);
+ 		acpi_processor_setup_cpuidle_states(pr);
+ 
+ 		/* Enable all cpuidle devices */
 -- 
 1.7.9.5
 
