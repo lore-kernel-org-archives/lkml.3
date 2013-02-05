@@ -1,99 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab3BEDlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 22:41:09 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:27859 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087Ab3BEDlH (ORCPT
+	id S1755566Ab3BEDqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 22:46:21 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48961 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751151Ab3BEDqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 22:41:07 -0500
-Message-ID: <51107F42.1090401@huawei.com>
-Date: Tue, 5 Feb 2013 11:40:50 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Aaron Durbin <adurbin@google.com>, Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH 1/4] eventfd: introduce eventfd_signal_hangup()
-References: <510CB733.2080904@huawei.com> <510CB744.7000300@huawei.com> <20130202155858.GA13022@shutemov.name> <20130204101521.GA18322@shutemov.name>
-In-Reply-To: <20130204101521.GA18322@shutemov.name>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Mon, 4 Feb 2013 22:46:19 -0500
+Message-ID: <1360035964.32217.9.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 105/128] efi: Make efi_enabled a function to query EFI
+ facilities
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, David Airlie <airlied@linux.ie>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dave Jiang <dave.jiang@intel.com>, Olof Johansson <olof@lixom.net>,
+        Peter Jones <pjones@redhat.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Steve Langasek <steve.langasek@canonical.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Tue, 05 Feb 2013 03:46:04 +0000
+In-Reply-To: <1359996265.7515.180.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <20130203144653.313760856@decadent.org.uk>
+	 <1359904557.1822.2.camel@deadeye.wl.decadent.org.uk>
+	 <1359996265.7515.180.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Bhpj3zX60jyK6cNdJG7C"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/4 18:15, Kirill A. Shutemov wrote:
-> On Sat, Feb 02, 2013 at 05:58:58PM +0200, Kirill A. Shutemov wrote:
->> On Sat, Feb 02, 2013 at 02:50:44PM +0800, Li Zefan wrote:
->>> When an eventfd is closed, a wakeup with POLLHUP will be issued,
->>> but cgroup wants to issue wakeup explicitly, so when a cgroup is
->>> removed userspace can be notified.
->>>
->>> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> 
-> Hm.. Looks like it will break eventfd semantics:
-> 
-> 1. One eventfd can be used for deliver more then one notification from
-> one or more cgroups. POLLHUP on removing one of cgroups is not valid.
-> 
-> 2. It's valid to have eventfd opened only by one userspace application. We
-> should not close it, just because cgroup is removed.
-> 
-> I think problem with multiple threads waiting an event on eventfd should
-> be handled in userspace.
-> 
 
-I didn't realize this.. and if a cgroup is removed, the woken thread may not
-be the thread that is waiting on this cgroup. How crappy.. I don't know how
-userspace is going to deal with all these.
+--=-Bhpj3zX60jyK6cNdJG7C
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-And another bug spotted. We can pass fd of memory.usage_in_bytes of cgroup A
-to cgroup.event_control of cgroup B, and then we won't get memory usage
-notification from A but B! What's worse, if A and B are in different mount
-hierarchy, boom!
+On Mon, 2013-02-04 at 16:44 +0000, Matt Fleming wrote:
+> On Sun, 2013-02-03 at 16:15 +0100, Ben Hutchings wrote:
+> > As you can see this needed quite a lot of work to backport, and I
+> > haven't been able to test it yet.  So I would particularly appreciate
+> > careful review of this.
+>=20
+> Everything looks fine to me but I haven't actually booted with these
+> changes.
 
+Thanks.  I've now tested this on a 64-bit EFI system myself:
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+x86_64 kernel build:
+- Boots successfully
+- x86_efi_facilities =3D 0x3f
+- efifb works
+- efivars can be loaded and creates /sys/firmware/efi/vars
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3d21adf..e496359 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3825,6 +3825,7 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 				      const char *buffer)
- {
- 	struct cgroup_event *event = NULL;
-+	struct cgroup *cgrp_cfile;
- 	unsigned int efd, cfd;
- 	struct file *efile = NULL;
- 	struct file *cfile = NULL;
-@@ -3880,6 +3881,16 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 		goto fail;
- 	}
- 
-+	/*
-+	 * The file to be monitored must be in the same cgroup as
-+	 * cgroup.event_control is.
-+	 */
-+	cgrp_cfile = __d_cgrp(cfile->f_dentry->d_parent);
-+	if (cgrp_cfile != cgrp) {
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+
- 	if (!event->cft->register_event || !event->cft->unregister_event) {
- 		ret = -EINVAL;
- 		goto fail;
--- 
-1.8.0.2
+i386 kernel build:
+- Boots as far as an initramfs shell, but the machine doesn't have an
+i386 installation to continue with
+- x86_efi_facilities =3D 0x21
+- efifb works
+- efivars can be loaded but does nothing
 
+All of which I think is correct.
 
+Ben.
+
+--=20
+Ben Hutchings
+Everything should be made as simple as possible, but not simpler.
+                                                           - Albert Einstei=
+n
+
+--=-Bhpj3zX60jyK6cNdJG7C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAURCAfOe/yOyVhhEJAQqo1xAAi1LyVScMTjypjN9IkqJsq7eJbuV6l7Pb
+Odv3Xoy2SqJsh3bHEfAI+Zcf+CHGEXC5BK6thdAXgZ6lq7QdVRNHgQKHaidke8PZ
+hgAqb9y/pa5UCA3GLzqqwLgVhZ2lQ5mPM+Ilvn94eqzy44iebb+jI6Jwvyovw5xd
+e2OIsi/VlQe5cBKQIZ63m8Z5A0M3OgRi4041mhxVQtgNeHBBbiry1W8t7aGIQnn1
+kPnMCVIEaymsyfVSXSQusRb8QIcX7ZwPbb6rQFVWlQ5mZTokkVaoxb6SSVT0BTgf
+jENeXjL6OWWtDDOq8lcDcB//D0xVMtnIWgV/7JzS5y2F9jVSxv/5Gt/7rDQaIw98
+cyg9isvvg5OvLap+zc7f8qcg1xegll35HfcGYdFpacCt8+impLnRwL8U4swApJRe
+rOAWhIGN1qOGyTj5DG7k5ccW77sIbNVciB5RqcMxhIhl0JoGP4kBhg7tZBji/SUz
+StYE3M5Bp4dALzV3v9iOlXcA7ntdqJEJsIBRo9nytcvHk4YUYoHMnTeOLepgiPJy
+t3lcvN+dBW3GYKmjoEIBm9j1bnn6JxN+D3gUx09jC6109fu73UDmBXhweoOH87Yl
+uM60lE5Q/Mizzu1Yt65Z5fd3ivAgAHCQt56iWscaxgwiS5Kl7tXXz3TOvuY8z97h
+cDXZyfz7xRk=
+=3rpP
+-----END PGP SIGNATURE-----
+
+--=-Bhpj3zX60jyK6cNdJG7C--
