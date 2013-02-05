@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab3BEWKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:10:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48019 "EHLO
+	id S1757654Ab3BEWKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:10:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48074 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757516Ab3BEWKM (ORCPT
+	with ESMTP id S1757618Ab3BEWKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:10:12 -0500
+	Tue, 5 Feb 2013 17:10:49 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 41/93] mac80211: fix FT roaming
-Date: Tue,  5 Feb 2013 20:06:30 -0200
-Message-Id: <1360102042-10732-42-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 51/93] drm/i915: dump UTS_RELEASE into the error_state
+Date: Tue,  5 Feb 2013 20:06:40 -0200
+Message-Id: <1360102042-10732-52-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,57 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 1626e0fa740dec8665a973cf2349405cdfeb46dc upstream.
+commit 4518f611ba21ba165ea3714055938a8984a44ff9 upstream.
 
-During FT roaming, wpa_supplicant attempts to set the
-key before association. This used to be rejected, but
-as a side effect of my commit 66e67e418908442389d3a9e
-("mac80211: redesign auth/assoc") the key was accepted
-causing hardware crypto to not be used for it as the
-station isn't added to the driver yet.
+Useful for statistics or on overflowing bug reports to keep things all
+lined up.
 
-It would be possible to accept the key and then add it
-to the driver when the station has been added. However,
-this may run into issues with drivers using the state-
-based station adding if they accept the key only after
-association like it used to be.
-
-For now, revert to the behaviour from before the auth
-and assoc change.
-
-Reported-by: Cédric Debarge <cedric.debarge@acksys.fr>
-Tested-by: Cédric Debarge <cedric.debarge@acksys.fr>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[ herton: adjusted context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/mac80211/cfg.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_debugfs.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-index 7d5108a..56386f1 100644
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -151,7 +151,17 @@ static int ieee80211_add_key(struct wiphy *wiphy, struct net_device *dev,
- 			sta = sta_info_get(sdata, mac_addr);
- 		else
- 			sta = sta_info_get_bss(sdata, mac_addr);
--		if (!sta) {
-+		/*
-+		 * The ASSOC test makes sure the driver is ready to
-+		 * receive the key. When wpa_supplicant has roamed
-+		 * using FT, it attempts to set the key before
-+		 * association has completed, this rejects that attempt
-+		 * so it will set the key again after assocation.
-+		 *
-+		 * TODO: accept the key if we have a station entry and
-+		 *       add it to the device after the station.
-+		 */
-+		if (!sta || !test_sta_flag(sta, WLAN_STA_ASSOC)) {
- 			ieee80211_key_free(sdata->local, key);
- 			err = -ENOENT;
- 			goto out_unlock;
+diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
+index e4e6ba7..ca472ca 100644
+--- a/drivers/gpu/drm/i915/i915_debugfs.c
++++ b/drivers/gpu/drm/i915/i915_debugfs.c
+@@ -30,6 +30,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
+ #include <linux/export.h>
++#include <generated/utsrelease.h>
+ #include "drmP.h"
+ #include "drm.h"
+ #include "intel_drv.h"
+@@ -709,6 +710,7 @@ static int i915_error_state(struct seq_file *m, void *unused)
+ 
+ 	seq_printf(m, "Time: %ld s %ld us\n", error->time.tv_sec,
+ 		   error->time.tv_usec);
++	seq_printf(m, "Kernel: " UTS_RELEASE);
+ 	seq_printf(m, "PCI ID: 0x%04x\n", dev->pci_device);
+ 	seq_printf(m, "EIR: 0x%08x\n", error->eir);
+ 	seq_printf(m, "IER: 0x%08x\n", error->ier);
 -- 
 1.7.9.5
 
