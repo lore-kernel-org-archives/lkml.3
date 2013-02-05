@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab3BETJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 14:09:08 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:35064 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562Ab3BETJF (ORCPT
+	id S1756651Ab3BETJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 14:09:14 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:52471 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab3BETJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 14:09:05 -0500
-Date: Tue, 5 Feb 2013 20:09:02 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/5] perf, x86: Support full width counting
-Message-ID: <20130205190902.GV30577@one.firstfloor.org>
-References: <1360028954-16946-1-git-send-email-andi@firstfloor.org> <1360028954-16946-5-git-send-email-andi@firstfloor.org> <CABPqkBTyBJwaz+ON20nCM0jyQASoHXRDejtyNLJ1AoBSWS_tPA@mail.gmail.com>
-Mime-Version: 1.0
+	Tue, 5 Feb 2013 14:09:09 -0500
+Date: Tue, 5 Feb 2013 11:09:03 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <eag0628@gmail.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/13] workqueue: add lock_pool_executing_work()
+Message-ID: <20130205190903.GG4276@mtj.dyndns.org>
+References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
+ <1359657696-2767-9-git-send-email-laijs@cn.fujitsu.com>
+ <20130204213422.GD27963@mtj.dyndns.org>
+ <5110F7D6.8080203@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBTyBJwaz+ON20nCM0jyQASoHXRDejtyNLJ1AoBSWS_tPA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <5110F7D6.8080203@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 04:15:26PM +0100, Stephane Eranian wrote:
-> > --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> > @@ -2228,5 +2228,11 @@ __init int intel_pmu_init(void)
-> >                 }
-> >         }
+Hey,
+
+On Tue, Feb 05, 2013 at 08:15:18PM +0800, Lai Jiangshan wrote:
+> >So, if a work item is queued on the same CPU and it isn't being
+> >executed, it will lock, look up the hash, unlock and then lock again?
+> >If this is something improved by later patch, please explain so.
+> >There gotta be a better way to do this, right?
 > >
-> > +       /* Support full width counters using alternative MSR range */
-> > +       if (x86_pmu.intel_cap.fw_write) {
-> > +               x86_pmu.max_period = x86_pmu.cntval_mask;
 > 
-> Something is not clear to me: What happens to the fixed counters with
-> full writes? Were they already full-width? The SDM does not explain what
-> happens to them with this extension. Could you clarify?
+> The caller can't call this function if the work is on queue.
+> the caller should call it only when CWQ bit is not set.
 
-I tested and they always support the full reported width.
+Yeah, but when it's off-queue but was queued on the same CPU the last
+time, we would first lock, look up the hash, find out it's not
+executing, unlock and then lock the same pool again, no?
 
--Andi
+Thanks.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+tejun
