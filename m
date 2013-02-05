@@ -1,118 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab3BERSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:18:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60679 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756136Ab3BERSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:18:09 -0500
-Date: Tue, 5 Feb 2013 17:18:05 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 5/11] ksm: get_ksm_page locked
-Message-ID: <20130205171805.GK21389@suse.de>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
- <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
+	id S1756442Ab3BERSp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:18:45 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:54126 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab3BERSl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 12:18:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1301251759470.29196@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130205142446.1998e92d@infradead.org>
+References: <1357127630-8167-1-git-send-email-prabhakar.lad@ti.com>
+ <1357127630-8167-2-git-send-email-prabhakar.lad@ti.com> <20130205142446.1998e92d@infradead.org>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 5 Feb 2013 22:48:13 +0530
+Message-ID: <CA+V-a8v3_+sg579F6FG3BkuJzzdZVKGWWSK76X4-6rdn0jYpeg@mail.gmail.com>
+Subject: Re: [PATCH] davinci: dm644x: fix enum ccdc_gama_width and enum
+ ccdc_data_size comparision warning
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 06:00:50PM -0800, Hugh Dickins wrote:
-> In some places where get_ksm_page() is used, we need the page to be locked.
-> 
-> When KSM migration is fully enabled, we shall want that to make sure that
-> the page just acquired cannot be migrated beneath us (raised page count is
-> only effective when there is serialization to make sure migration notices).
-> Whereas when navigating through the stable tree, we certainly do not want
-> to lock each node (raised page count is enough to guarantee the memcmps,
-> even if page is migrated to another node).
-> 
-> Since we're about to add another use case, add the locked argument to
-> get_ksm_page() now.
-> 
-> Hmm, what's that rcu_read_lock() about?  Complete misunderstanding, I
-> really got the wrong end of the stick on that!  There's a configuration
-> in which page_cache_get_speculative() can do something cheaper than
-> get_page_unless_zero(), relying on its caller's rcu_read_lock() to have
-> disabled preemption for it.  There's no need for rcu_read_lock() around
-> get_page_unless_zero() (and mapping checks) here.  Cut out that
-> silliness before making this any harder to understand.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->  mm/ksm.c |   23 +++++++++++++----------
->  1 file changed, 13 insertions(+), 10 deletions(-)
-> 
-> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:53.244205966 -0800
-> +++ mmotm/mm/ksm.c	2013-01-25 14:36:58.856206099 -0800
-> @@ -514,15 +514,14 @@ static void remove_node_from_stable_tree
->   * but this is different - made simpler by ksm_thread_mutex being held, but
->   * interesting for assuming that no other use of the struct page could ever
->   * put our expected_mapping into page->mapping (or a field of the union which
-> - * coincides with page->mapping).  The RCU calls are not for KSM at all, but
-> - * to keep the page_count protocol described with page_cache_get_speculative.
-> + * coincides with page->mapping).
->   *
->   * Note: it is possible that get_ksm_page() will return NULL one moment,
->   * then page the next, if the page is in between page_freeze_refs() and
->   * page_unfreeze_refs(): this shouldn't be a problem anywhere, the page
->   * is on its way to being freed; but it is an anomaly to bear in mind.
->   */
-> -static struct page *get_ksm_page(struct stable_node *stable_node)
-> +static struct page *get_ksm_page(struct stable_node *stable_node, bool locked)
->  {
+Hi Mauro,
 
-The naming is unhelpful :(
+On Tue, Feb 5, 2013 at 9:54 PM, Mauro Carvalho Chehab
+<mchehab@infradead.org> wrote:
+> Em Wed,  2 Jan 2013 17:23:50 +0530
+> "Lad, Prabhakar" <prabhakar.csengg@gmail.com> escreveu:
+>
+>> while the effect is harmless this patch
+>
+> I disagree that this is a harmless warning. It is here for a reason:
+> you should not be relying on the enum "magic" value, since the main
+> reason to use an enum is to fill/compare the enum fields only by their
+> names, and not by their number.
+>
+OK
 
-Because the second parameter is called "locked", it implies that the
-caller of this function holds the page lock (which is obviously very
-silly). ret_locked maybe?
+>> fixes following build warning,
+>>
+>> drivers/media/platform/davinci/dm644x_ccdc.c: In function ‘validate_ccdc_param’:
+>> drivers/media/platform/davinci/dm644x_ccdc.c:233:32: warning: comparison between
+>> ‘enum ccdc_gama_width’ and ‘enum ccdc_data_size’ [-Wenum-compare]
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> ---
+>>  drivers/media/platform/davinci/dm644x_ccdc.c |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/media/platform/davinci/dm644x_ccdc.c b/drivers/media/platform/davinci/dm644x_ccdc.c
+>> index ee7942b..42b473a 100644
+>> --- a/drivers/media/platform/davinci/dm644x_ccdc.c
+>> +++ b/drivers/media/platform/davinci/dm644x_ccdc.c
+>> @@ -228,9 +228,12 @@ static void ccdc_readregs(void)
+>>  static int validate_ccdc_param(struct ccdc_config_params_raw *ccdcparam)
+>>  {
+>>       if (ccdcparam->alaw.enable) {
+>> +             u32 gama_wd = ccdcparam->alaw.gama_wd;
+>> +             u32 data_sz = ccdcparam->data_sz;
+>> +
+>>               if ((ccdcparam->alaw.gama_wd > CCDC_GAMMA_BITS_09_0) ||
+>>                   (ccdcparam->alaw.gama_wd < CCDC_GAMMA_BITS_15_6) ||
+>> -                 (ccdcparam->alaw.gama_wd < ccdcparam->data_sz)) {
+>> +                 (gama_wd < data_sz)) {
+>
+> hmm... from include/media/davinci/dm644x_ccdc.h:
+> enum ccdc_gama_width {
+>         CCDC_GAMMA_BITS_15_6,   // 0
+>         CCDC_GAMMA_BITS_14_5,   // 1
+>         CCDC_GAMMA_BITS_13_4,   // 2
+>         CCDC_GAMMA_BITS_12_3,   // 3
+>         CCDC_GAMMA_BITS_11_2,   // 4
+>         CCDC_GAMMA_BITS_10_1,   // 5
+>         CCDC_GAMMA_BITS_09_0    // 6
+> };
+>
+> enum ccdc_data_size {
+>         CCDC_DATA_16BITS,       // 0
+>         CCDC_DATA_15BITS,       // 1
+>         CCDC_DATA_14BITS,       // 2
+>         CCDC_DATA_13BITS,       // 3
+>         CCDC_DATA_12BITS,       // 4
+>         CCDC_DATA_11BITS,       // 5
+>         CCDC_DATA_10BITS,       // 6
+>         CCDC_DATA_8BITS         // 7
+> };
+>
+> That doesn't seem right, as comparing the enum integer value won't
+> warrant that the number of bits of gamma. For example, gamma == 6
+> means 9 bits, while ccdc == 6 means 10 bits.
+>
+> In any case, the code is just crappy, as one could anytime add more
+> values at the enum or reorder.
+>
+yes
 
-As the function is akin to find_lock_page I would  prefer if there was
-a new get_lock_ksm_page() instead of locking depending on the value of a
-parameter. We can do this because expected_mapping is recorded by the
-stable_node and we only need to recalculate it if the page has been
-successfully pinned. We calculate the expected value twice but that's
-not earth shattering. It'd look something like;
+> So, a better fix would be to have an array that would convert from the
+> enum "magic" number into the number of bits.
+>
+> Hmm... wait a moment: why are you using an enum here at the first place???
+>
+> It seems that it would be a way better to just use 2 unsigned integers:
+> ccdc_data_num_bits and ccdc_gama_num_bits, and just fill it with the
+> number of bits, instead of declaring an enum for it.
+>
+I will pick this option :)
 
-/*
- * get_lock_ksm_page: Similar to get_ksm_page except returns with page
- * locked and pinned
- */
-static struct page *get_lock_ksm_page(struct stable_node *stable_node)
-{
-	struct page *page = get_ksm_page(stable_node);
 
-	if (page) {
-  		expected_mapping = (void *)stable_node +
-  				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
-		lock_page(page);
-		if (page->mapping != expected_mapping) {
-			unlock_page(page);
+Regards,
+--Prabhakar
 
-			/* release pin taken by get_ksm_page() */
-			put_page(page);
-			page = NULL;
-		}
-	}
-
-	return page;
-}
-
-Up to you, I'm not going to make a big deal of it.
-
-FWIW, I agree that removing rcu_read_lock() is fine.
-
--- 
-Mel Gorman
-SUSE Labs
+> Another alternative would be to merge them into just one enum, like:
+>
+> enum ccdc_bits {
+>         CCDC_8_BITS = 8,
+>         CCDC_9_BITS = 9,
+>         CCDC_10_BITS = 10,
+>         CCDC_11_BITS = 11,
+>         CCDC_12_BITS = 12,
+>         CCDC_13_BITS = 13,
+>         CCDC_14_BITS = 14,
+>         CCDC_15_BITS = 15,
+>         CCDC_16_BITS = 16,
+> };
+>
+> and replace all occurrences of ccdc_data_size and ccdc_gama_width by
+> the new enum.
+>
+> This way, you could trust on compare one field with the other.
+>
+>>                       dev_dbg(ccdc_cfg.dev, "\nInvalid data line select");
+>>                       return -1;
+>>               }
+>
+> Regards,
+> Mauro
