@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab3BEAVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 19:21:17 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:65065 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594Ab3BEAVP (ORCPT
+	id S1756251Ab3BEAXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 19:23:36 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:43335 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab3BEAXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 19:21:15 -0500
-Message-ID: <1360023672.12336.0.camel@kernel.cn.ibm.com>
-Subject: Re: [PATCH v2] Make frontswap+cleancache and its friend be
- modularized.
+	Mon, 4 Feb 2013 19:23:35 -0500
+Message-ID: <1360023812.12336.1.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH 02/15] mm: frontswap: lazy initialization to allow tmem
+ backends to build/run as modules
 From: Ric Mason <ric.masonn@gmail.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Bob Liu <lliubbo@gmail.com>
 Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, dan.magenheimer@oracle.com,
-        konrad.wilk@oracle.com, gregkh@linuxfoundation.org,
-        akpm@linux-foundation.org, ngupta@vflare.org, rcj@linux.vnet.ibm.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Date: Mon, 04 Feb 2013 18:21:12 -0600
-In-Reply-To: <510FD073.1060307@linux.vnet.ibm.com>
+        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
+        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        ngupta@vflare.org, rcj@linux.vnet.ibm.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Stefan Hengelein <ilendir@googlemail.com>,
+        Florian Schmaus <fschmaus@gmail.com>,
+        Andor Daam <andor.daam@googlemail.com>
+Date: Mon, 04 Feb 2013 18:23:32 -0600
+In-Reply-To: <CAA_GA1fyUTzMDLVjuwVon-o6yL_kCY7RqQNQcAJgKX1QTYkBVA@mail.gmail.com>
 References: <1359750184-23408-1-git-send-email-konrad.wilk@oracle.com>
-	 <1359881520.1328.14.camel@kernel.cn.ibm.com>
-	 <510FD073.1060307@linux.vnet.ibm.com>
+	 <1359750184-23408-3-git-send-email-konrad.wilk@oracle.com>
+	 <1359875271.1328.4.camel@kernel.cn.ibm.com>
+	 <CAA_GA1fyUTzMDLVjuwVon-o6yL_kCY7RqQNQcAJgKX1QTYkBVA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
@@ -30,24 +34,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-04 at 09:14 -0600, Seth Jennings wrote:
-> On 02/03/2013 02:52 AM, Ric Mason wrote:
+On Mon, 2013-02-04 at 13:53 +0800, Bob Liu wrote:
+> On Sun, Feb 3, 2013 at 3:07 PM, Ric Mason <ric.masonn@gmail.com> wrote:
 > > Hi Konrad,
 > > On Fri, 2013-02-01 at 15:22 -0500, Konrad Rzeszutek Wilk wrote:
-> > 
-> > I have already enable frontswap,cleancache,zcache,
-> >  FRONTSWAP [=y]  
-> >  CLEANCACHE [=y]
-> >  ZCACHE [=y]
-> > But all of knode under /sys/kernel/debug/frontswap and cleancache still
-> > zero, my swap device is enable, where I miss?
+> >> From: Dan Magenheimer <dan.magenheimer@oracle.com>
+> >>
+> >> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
+> >> built/loaded as modules rather than built-in and enabled by a boot parameter,
+> >> this patch provides "lazy initialization", allowing backends to register to
+> >> frontswap even after swapon was run. Before a backend registers all calls
+> >> to init are recorded and the creation of tmem_pools delayed until a backend
+> >> registers or until a frontswap put is attempted.
+> >
+> > Do you mean __frontswap_store? It seems that just add fail count if
+> > backend doesn't register, why you said that the creation of tmem_pools
+> > will delay until this time?
+> >
+> >>
+> >> Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
+> >> Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
+> >> Signed-off-by: Andor Daam <andor.daam@googlemail.com>
+> >> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> >> [v1: Fixes per Seth Jennings suggestions]
+> >> [v2: Removed FRONTSWAP_HAS_.. ]
+> >> [v3: Fix up per Bob Liu <lliubbo@gmail.com> recommendations]
+> >> [v4: Fix up per Andrew's comments]
+> >> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >> ---
+> >>  mm/frontswap.c | 95 +++++++++++++++++++++++++++++++++++++++++++++++++++-------
+> >>  1 file changed, 85 insertions(+), 10 deletions(-)
+> >>
+> >> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> >> index 2890e67..c05a9db 100644
+> >> --- a/mm/frontswap.c
+> >> +++ b/mm/frontswap.c
+> >> @@ -80,6 +80,46 @@ static inline void inc_frontswap_succ_stores(void) { }
+> >>  static inline void inc_frontswap_failed_stores(void) { }
+> >>  static inline void inc_frontswap_invalidates(void) { }
+> >>  #endif
+> >> +
+> >> +/*
+> >> + * Due to the asynchronous nature of the backends loading potentially
+> >> + * _after_ the swap system has been activated, we have chokepoints
+> >> + * on all frontswap functions to not call the backend until the backend
+> >> + * has registered.
+> >> + *
+> >> + * Specifically when no backend is registered (nobody called
+> >> + * frontswap_register_ops) all calls to frontswap_init (which is done via
+> >> + * swapon -> enable_swap_info -> frontswap_init) are registered and remembered
+> >> + * (via the setting of need_init bitmap) but fail to create tmem_pools. When a
+> >> + * backend registers with frontswap at some later point the previous
+> >> + * calls to frontswap_init are executed (by iterating over the need_init
+> >> + * bitmap) to create tmem_pools and set the respective poolids. All of that is
+> >> + * guarded by us using atomic bit operations on the 'need_init' bitmap.
+> >> + *
+> >> + * This would not guards us against the user deciding to call swapoff right as
+> >> + * we are calling the backend to initialize (so swapon is in action).
+> >> + * Fortunatly for us, the swapon_mutex has been taked by the callee so we are
+> >> + * OK. The other scenario where calls to frontswap_store (called via
+> >> + * swap_writepage) is racing with frontswap_invalidate_area (called via
+> >> + * swapoff) is again guarded by the swap subsystem.
+> >> + *
+> >> + * While no backend is registered all calls to frontswap_[store|load|
+> >> + * invalidate_area|invalidate_page] are ignored or fail.
+> >> + *
+> >> + * The time between the backend being registered and the swap file system
+> >> + * calling the backend (via the frontswap_* functions) is indeterminate as
+> >> + * backend_registered is not atomic_t (or a value guarded by a spinlock).
+> >> + * That is OK as we are comfortable missing some of these calls to the newly
+> >> + * registered backend.
+> >> + *
+> >> + * Obviously the opposite (unloading the backend) must be done after all
+> >> + * the frontswap_[store|load|invalidate_area|invalidate_page] start
+> >> + * ignorning or failing the requests - at which point backend_registered
+> >> + * would have to be made in some fashion atomic.
+> >> + */
+> >> +static DECLARE_BITMAP(need_init, MAX_SWAPFILES);
+> >> +static bool backend_registered __read_mostly;
+> >> +
+> >>  /*
+> >>   * Register operations for frontswap, returning previous thus allowing
+> >>   * detection of multiple backends and possible nesting.
+> >> @@ -87,9 +127,22 @@ static inline void inc_frontswap_invalidates(void) { }
+> >>  struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
+> >>  {
+> >>       struct frontswap_ops old = frontswap_ops;
+> >> +     int i;
+> >>
+> >>       frontswap_ops = *ops;
+> >>       frontswap_enabled = true;
+> >> +
+> >> +     for (i = 0; i < MAX_SWAPFILES; i++) {
+> >> +             if (test_and_clear_bit(i, need_init))
+> >> +                     (*frontswap_ops.init)(i);
+> >> +     }
+> >> +     /*
+> >> +      * We MUST have backend_registered set _after_ the frontswap_init's
+> >> +      * have been called. Otherwise __frontswap_store might fail. Hence
+> >> +      * the barrier to make sure compiler does not re-order us.
+> >> +      */
+> >> +     barrier();
+> >> +     backend_registered = true;
+> >>       return old;
+> >>  }
+> >>  EXPORT_SYMBOL(frontswap_register_ops);
+> >> @@ -119,10 +172,17 @@ void __frontswap_init(unsigned type)
+> >>  {
+> >>       struct swap_info_struct *sis = swap_info[type];
+> >>
+> >> -     BUG_ON(sis == NULL);
+> >> -     if (sis->frontswap_map == NULL)
+> >> -             return;
+> >> -     frontswap_ops.init(type);
+> >> +     if (backend_registered) {
+> >> +             BUG_ON(sis == NULL);
+> >> +             if (sis->frontswap_map == NULL)
+> >> +                     return;
+> >> +             (*frontswap_ops.init)(type);
+> >> +     }
+> >> +     else {
+> >> +             BUG_ON(type > MAX_SWAPFILES);
+> >> +             set_bit(type, need_init);
+> >> +     }
+> >> +
+> >>  }
+> >>  EXPORT_SYMBOL(__frontswap_init);
+> >>
+> >> @@ -147,6 +207,11 @@ int __frontswap_store(struct page *page)
+> >>       struct swap_info_struct *sis = swap_info[type];
+> >>       pgoff_t offset = swp_offset(entry);
+> >>
+> >> +     if (!backend_registered) {
+> >> +             inc_frontswap_failed_stores();
+> >> +             return ret;
+> >> +     }
+> >> +
+> >>       BUG_ON(!PageLocked(page));
+> >>       BUG_ON(sis == NULL);
+> >>       if (frontswap_test(sis, offset))
+> >> @@ -186,6 +251,9 @@ int __frontswap_load(struct page *page)
+> >>       struct swap_info_struct *sis = swap_info[type];
+> >>       pgoff_t offset = swp_offset(entry);
+> >>
+> >> +     if (!backend_registered)
+> >> +             return ret;
+> >> +
+> >>       BUG_ON(!PageLocked(page));
+> >>       BUG_ON(sis == NULL);
+> >>       if (frontswap_test(sis, offset))
+> >> @@ -209,6 +277,9 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
+> >>  {
+> >>       struct swap_info_struct *sis = swap_info[type];
+> >>
+> >> +     if (!backend_registered)
+> >> +             return;
+> >> +
+> >>       BUG_ON(sis == NULL);
+> >>       if (frontswap_test(sis, offset)) {
+> >>               frontswap_ops.invalidate_page(type, offset);
+> >> @@ -226,12 +297,15 @@ void __frontswap_invalidate_area(unsigned type)
+> >>  {
+> >>       struct swap_info_struct *sis = swap_info[type];
+> >>
+> >> -     BUG_ON(sis == NULL);
+> >> -     if (sis->frontswap_map == NULL)
+> >> -             return;
+> >> -     frontswap_ops.invalidate_area(type);
+> >> -     atomic_set(&sis->frontswap_pages, 0);
+> >> -     memset(sis->frontswap_map, 0, sis->max / sizeof(long));
+> >> +     if (backend_registered) {
+> >> +             BUG_ON(sis == NULL);
+> >> +             if (sis->frontswap_map == NULL)
+> >> +                     return;
+> >> +             (*frontswap_ops.invalidate_area)(type);
+> >> +             atomic_set(&sis->frontswap_pages, 0);
+> >> +             memset(sis->frontswap_map, 0, sis->max / sizeof(long));
+> >> +     }
+> >> +     clear_bit(type, need_init);
+> >>  }
+> >>  EXPORT_SYMBOL(__frontswap_invalidate_area);
+> >>
+> >> @@ -364,6 +438,7 @@ static int __init init_frontswap(void)
+> >>       debugfs_create_u64("invalidates", S_IRUGO,
+> >>                               root, &frontswap_invalidates);
+> >>  #endif
+> >> +     frontswap_enabled = 1;
+> >
+> > Why has this change?
+> >
 > 
-> Did you pass "zcache" in the kernel boot parameters?
+> If don't set frontswap_enabled to 1,  frontswap_init() will return
+> without record the swap type.
+> 
 
-Thanks Seth, I think it should be add to kernel-parameters.txt.
+Yup, thanks.
 
-> 
-> Seth
-> 
 
 
