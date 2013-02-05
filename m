@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3BEAv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 19:51:29 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:64658 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab3BEAv2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 19:51:28 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [GIT PULL] printk: Support for full dynticks mode
-Date: Tue,  5 Feb 2013 01:51:18 +0100
-Message-Id: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1755883Ab3BEA4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 19:56:10 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41044 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751215Ab3BEA4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 19:56:09 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org, akpm@linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug framework
+Date: Tue, 05 Feb 2013 02:02:23 +0100
+Message-ID: <1477324.WRerxpPAK8@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130205000447.GA21782@kroah.com>
+References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com> <7003418.onqVlaaHJS@vostro.rjw.lan> <20130205000447.GA21782@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On Monday, February 04, 2013 04:04:47 PM Greg KH wrote:
+> On Tue, Feb 05, 2013 at 12:52:30AM +0100, Rafael J. Wysocki wrote:
+> > You'd probably never try to hot-remove a disk before unmounting filesystems
+> > mounted from it or failing it as a RAID component and nobody sane wants the
+> > kernel to do things like that automatically when the user presses the eject
+> > button.  In my opinion we should treat memory eject, or CPU package eject, or
+> > PCI host bridge eject in exactly the same way: Don't eject if it is not
+> > prepared for ejecting in the first place.
+> 
+> Bad example, we have disks hot-removed all the time without any
+> filesystems being unmounted, and have supported this since the 2.2 days
+> (although we didn't get it "right" until 2.6.)
 
-Please pull the support for full dynticks idle mode in printk that
-can be found at:
+Well, that wasn't my point.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	nohz/printk-v9
+My point was that we have tools for unmounting filesystems from disks that
+the user wants to hot-remove and the user is supposed to use those tools
+before hot-removing the disks.  At least I wouldn't recommend anyone to
+do otherwise. :-)
 
-nohz/printk-v8 was the tree that I proposed to Linus. It has been left unpulled
-though and we got no news from him but the tree has stayed untouched since then,
-waiting in -next without any issue.
+Now, for memory hot-removal we don't have anything like that, as far as I
+can say, so my point was why don't we add memory "offline" that can be
+done and tested separately from hot-removal and use that before we go and
+hot-remove stuff?  And analogously for PCI host bridges etc.?
 
-Part of nohz/printk-v8 is now in tip:irq/core, and this pull request contains
-the rest. I could simply propose you the old branch but since there is a tiny
-conflict with another recent commit in tip:irq/core, I just made a new branch
-that contains tip:irq/core with nohz/printk-v8 merged inside which deals
-with the conflict.
+[Now, there's a question if an "eject" button on the system case, if there is
+one, should *always* cause the eject to happen even though things are not
+"offline".  My opinion is that not necessarily, because users may not be aware
+that they are doing something wrong.
 
-Thanks.
----
+Quite analogously, does the power button always cause the system to shut down?
+No.  So why the heck should an eject button always cause an eject to happen?
+I see no reason.
 
-Frederic Weisbecker (5):
-      nohz: Add API to check tick state
-      irq_work: Don't stop the tick with pending works
-      irq_work: Make self-IPIs optable
-      printk: Wake up klogd using irq_work
-      Merge branch 'nohz/printk-v8' into irq/core
+That said, the most straightforward approach may be simply to let user space
+disable eject events for specific devices when it wants and only enable them
+when it knows that the given devices are ready for removal.
 
-Steven Rostedt (2):
-      irq_work: Flush work on CPU_DYING
-      irq_work: Warn if there's still work on cpu_down
+But I'm digressing.]
 
- include/linux/irq_work.h |   20 ++++++++
- include/linux/printk.h   |    3 -
- include/linux/tick.h     |   17 +++++++-
- init/Kconfig             |    1 +
- kernel/irq_work.c        |  112 +++++++++++++++++++++++++++++++++++-----------
- kernel/printk.c          |   36 ++++++++-------
- kernel/time/tick-sched.c |    7 ++-
- kernel/timer.c           |    1 -
- 8 files changed, 147 insertions(+), 50 deletions(-)
+> PCI Host bridge eject is the same as PCI eject today, the user asks us
+> to do it, and we can not fail it from happening.  We also can have them
+> removed without us being told about it in the first place, and can
+> properly clean up from it all.
+
+Well, are you sure we'll always clean up?  I kind of have my doubts. :-)
+
+> > And if you think about it, that makes things *massively* simpler, because now
+> > the kernel doesn't heed to worry about all of those "synchronous removal"
+> > scenarions that very well may involve every single device in the system and
+> > the whole problem is nicely split into several separate "implement
+> > offline/online" problems that are subsystem-specific and a single
+> > "eject if everything relevant is offline" problem which is kind of trivial.
+> > Plus the one of exposing information to user space, which is separate too.
+> > 
+> > Now, each of them can be worked on separately, *tested* separately and
+> > debugged separately if need be and it is much easier to isolate failures
+> > and so on.
+> 
+> So you are agreeing with me in that we can not fail hot removing any
+> device, nice :)
+
+That depends on how you define hot-removing.  If you regard the "offline"
+as a separate operation that can be carried out independently and hot-remove
+as the last step causing the device to actually go away, then I agree that
+it can't fail.  The "offline" itself, however, is a different matter (pretty
+much like unmounting a file system).
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
