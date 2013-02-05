@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab3BEVz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 16:55:57 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59378 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849Ab3BEVzy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 16:55:54 -0500
-Date: Tue, 5 Feb 2013 13:36:37 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org, rbraun@sceen.net,
-        zhong@linux.vnet.ibm.com, markus@trippelsdorf.de,
-        sasha.levin@oracle.com, cody@linux.vnet.ibm.com,
-        dave@linux.vnet.ibm.com, fweisbec@gmail.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.9
-Message-ID: <20130205213637.GR2632@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130204171817.GA18332@linux.vnet.ibm.com>
- <20130204180734.GA10022@gmail.com>
- <20130204193041.GA16853@gmail.com>
- <20130204202523.GZ2632@linux.vnet.ibm.com>
- <20130205141124.GA12785@linux.vnet.ibm.com>
- <1360093950.2621.1.camel@gandalf.local.home>
+	id S1756993Ab3BEV4C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 16:56:02 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:47646 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756960Ab3BEVz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 16:55:58 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 1/3] PM: make VT switching to the suspend console optional v3
+Date: Tue, 05 Feb 2013 23:02:17 +0100
+Message-ID: <2155667.rslrpFmW0n@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130205135544.6adab270@jbarnes-t420>
+References: <1359985042-2610-1-git-send-email-jbarnes@virtuousgeek.org> <1452100.EKe1it2LWl@vostro.rjw.lan> <20130205135544.6adab270@jbarnes-t420>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360093950.2621.1.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020521-2398-0000-0000-000010C17C9C
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 02:52:30PM -0500, Steven Rostedt wrote:
-> On Tue, 2013-02-05 at 06:11 -0800, Paul E. McKenney wrote:
+On Tuesday, February 05, 2013 01:55:44 PM Jesse Barnes wrote:
+> On Mon, 04 Feb 2013 21:26:26 +0100
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
-> > Steven Rostedt (1):
-> >       rcu: Allow rcutorture to be built at low optimization levels
+> > On Monday, February 04, 2013 01:37:20 PM Jesse Barnes wrote:
+> > > KMS drivers can potentially restore the display configuration without
+> > > userspace help.  Such drivers can can call a new funciton,
+> > > pm_vt_switch_required(false) if they support this feature.  In that
+> > > case, the PM layer won't VT switch to the suspend console at suspend
+> > > time and then back to the original VT on resume, but rather leave things
+> > > alone for a nicer looking suspend and resume sequence.
+> > > 
+> > > v2: make a function so we can handle multiple drivers (Alan)
+> > > v3: use a list to track device requests (Rafael)
+> > > 
+> > > Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > 
+> > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > for all [1-3/3].
 > 
-> I wish git had dual (or more) authorship, as I started with your patch
-> and added on to it. We are really both responsible for that change.
+> Any chance for an r-b on the PM one at least?  Then Daniel could
+> probably push this through drm-intel-next.
 
-We have both our Signed-off-by tags on it, so close enough for me!  ;-)
+Done.
 
-							Thanx, Paul
+Thanks,
+Rafael
 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
