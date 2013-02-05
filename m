@@ -1,233 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3BEJTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:19:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14263 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751279Ab3BEJM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:12:28 -0500
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH v2 03/18] ext4: use ->invalidatepage() length argument
-Date: Tue,  5 Feb 2013 10:11:56 +0100
-Message-Id: <1360055531-26309-4-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
-References: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
+	id S1754186Ab3BEJUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:20:24 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50958 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab3BEJUS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:20:18 -0500
+Date: Tue, 5 Feb 2013 11:20:01 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
+        <balbi@ti.com>, <stern@rowland.harvard.edu>,
+        <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 04/30] usb: phy: nop: Handle power supply regulator
+ for the PHY
+Message-ID: <20130205092001.GM32118@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+ <1359372631-8180-5-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B9BE8dkJ1pIKavwa"
+Content-Disposition: inline
+In-Reply-To: <1359372631-8180-5-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-->invalidatepage() aop now accepts range to invalidate so we can make
-use of it in all ext4 invalidatepage routines.
+--B9BE8dkJ1pIKavwa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
----
- fs/ext4/inode.c             |   47 ++++++++++++++++++++++++++++++------------
- include/trace/events/ext4.h |   22 +++++++++++---------
- 2 files changed, 45 insertions(+), 24 deletions(-)
+On Mon, Jan 28, 2013 at 01:30:05PM +0200, Roger Quadros wrote:
+> We use "vcc" as the supply name for the PHY's power supply.
+> The power supply will be enabled during .init() and disabled
+> during .shutdown()
+>=20
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index a3be92c..eb61fb7 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1289,21 +1289,28 @@ static void ext4_da_release_space(struct inode *inode, int to_free)
- }
- 
- static void ext4_da_page_release_reservation(struct page *page,
--					     unsigned long offset)
-+					     unsigned int offset,
-+					     unsigned int length)
- {
- 	int to_release = 0;
- 	struct buffer_head *head, *bh;
- 	unsigned int curr_off = 0;
- 	struct inode *inode = page->mapping->host;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+	unsigned int stop = offset + length;
- 	int num_clusters;
- 	ext4_fsblk_t lblk;
- 
-+	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
-+
- 	head = page_buffers(page);
- 	bh = head;
- 	do {
- 		unsigned int next_off = curr_off + bh->b_size;
- 
-+		if (next_off > stop)
-+			break;
-+
- 		if ((offset <= curr_off) && (buffer_delay(bh))) {
- 			to_release++;
- 			clear_buffer_delay(bh);
-@@ -2709,7 +2716,7 @@ static void ext4_da_invalidatepage(struct page *page, unsigned int offset,
- 	if (!page_has_buffers(page))
- 		goto out;
- 
--	ext4_da_page_release_reservation(page, offset);
-+	ext4_da_page_release_reservation(page, offset, length);
- 
- out:
- 	ext4_invalidatepage(page, offset, length);
-@@ -2860,22 +2867,33 @@ ext4_readpages(struct file *file, struct address_space *mapping,
- 	return mpage_readpages(mapping, pages, nr_pages, ext4_get_block);
- }
- 
--static void ext4_invalidatepage_free_endio(struct page *page, unsigned long offset)
-+static void ext4_invalidatepage_free_endio(struct page *page,
-+					   unsigned int offset,
-+					   unsigned int length)
- {
- 	struct buffer_head *head, *bh;
- 	unsigned int curr_off = 0;
-+	unsigned int stop = offset + length;
- 
- 	if (!page_has_buffers(page))
- 		return;
-+
-+	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
-+
- 	head = bh = page_buffers(page);
- 	do {
-+		unsigned int next_off = curr_off + bh->b_size;
-+
-+		if (next_off > stop)
-+			return;
-+
- 		if (offset <= curr_off && test_clear_buffer_uninit(bh)
- 					&& bh->b_private) {
- 			ext4_free_io_end(bh->b_private);
- 			bh->b_private = NULL;
- 			bh->b_end_io = NULL;
- 		}
--		curr_off = curr_off + bh->b_size;
-+		curr_off = next_off;
- 		bh = bh->b_this_page;
- 	} while (bh != head);
- }
-@@ -2883,35 +2901,35 @@ static void ext4_invalidatepage_free_endio(struct page *page, unsigned long offs
- static void ext4_invalidatepage(struct page *page, unsigned int offset,
- 				unsigned int length)
- {
--	trace_ext4_invalidatepage(page, offset);
-+	trace_ext4_invalidatepage(page, offset, length);
- 
- 	/*
- 	 * free any io_end structure allocated for buffers to be discarded
- 	 */
- 	if (ext4_should_dioread_nolock(page->mapping->host))
--		ext4_invalidatepage_free_endio(page, offset);
-+		ext4_invalidatepage_free_endio(page, offset, length);
- 
- 	/* No journalling happens on data buffers when this function is used */
- 	WARN_ON(page_has_buffers(page) && buffer_jbd(page_buffers(page)));
- 
--	block_invalidatepage(page, offset, PAGE_CACHE_SIZE - offset);
-+	block_invalidatepage(page, offset, length);
- }
- 
- static int __ext4_journalled_invalidatepage(struct page *page,
--					    unsigned long offset)
-+					    unsigned int offset,
-+					    unsigned int length)
- {
- 	journal_t *journal = EXT4_JOURNAL(page->mapping->host);
- 
--	trace_ext4_journalled_invalidatepage(page, offset);
-+	trace_ext4_journalled_invalidatepage(page, offset, length);
- 
- 	/*
- 	 * If it's a full truncate we just forget about the pending dirtying
- 	 */
--	if (offset == 0)
-+	if (offset == 0 && length == PAGE_CACHE_SIZE)
- 		ClearPageChecked(page);
- 
--	return jbd2_journal_invalidatepage(journal, page, offset,
--					   PAGE_CACHE_SIZE - offset);
-+	return jbd2_journal_invalidatepage(journal, page, offset, length);
- }
- 
- /* Wrapper for aops... */
-@@ -2919,7 +2937,7 @@ static void ext4_journalled_invalidatepage(struct page *page,
- 					   unsigned int offset,
- 					   unsigned int length)
- {
--	WARN_ON(__ext4_journalled_invalidatepage(page, offset) < 0);
-+	WARN_ON(__ext4_journalled_invalidatepage(page, offset, length) < 0);
- }
- 
- static int ext4_releasepage(struct page *page, gfp_t wait)
-@@ -4351,7 +4369,8 @@ static void ext4_wait_for_tail_page_commit(struct inode *inode)
- 				      inode->i_size >> PAGE_CACHE_SHIFT);
- 		if (!page)
- 			return;
--		ret = __ext4_journalled_invalidatepage(page, offset);
-+		ret = __ext4_journalled_invalidatepage(page, offset,
-+						PAGE_CACHE_SIZE - offset);
- 		unlock_page(page);
- 		page_cache_release(page);
- 		if (ret != -EBUSY)
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index 7e8c36b..6ab6f8a 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -452,16 +452,16 @@ DEFINE_EVENT(ext4__page_op, ext4_releasepage,
- );
- 
- DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
--	TP_PROTO(struct page *page, unsigned long offset),
-+	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
- 
--	TP_ARGS(page, offset),
-+	TP_ARGS(page, offset, length),
- 
- 	TP_STRUCT__entry(
- 		__field(	dev_t,	dev			)
- 		__field(	ino_t,	ino			)
- 		__field(	pgoff_t, index			)
--		__field(	unsigned long, offset		)
--
-+		__field(	unsigned int, offset		)
-+		__field(	unsigned int, length		)
- 	),
- 
- 	TP_fast_assign(
-@@ -469,24 +469,26 @@ DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
- 		__entry->ino	= page->mapping->host->i_ino;
- 		__entry->index	= page->index;
- 		__entry->offset	= offset;
-+		__entry->length	= length;
- 	),
- 
--	TP_printk("dev %d,%d ino %lu page_index %lu offset %lu",
-+	TP_printk("dev %d,%d ino %lu page_index %lu offset %u length %u",
- 		  MAJOR(__entry->dev), MINOR(__entry->dev),
- 		  (unsigned long) __entry->ino,
--		  (unsigned long) __entry->index, __entry->offset)
-+		  (unsigned long) __entry->index,
-+		  __entry->offset, __entry->length)
- );
- 
- DEFINE_EVENT(ext4_invalidatepage_op, ext4_invalidatepage,
--	TP_PROTO(struct page *page, unsigned long offset),
-+	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
- 
--	TP_ARGS(page, offset)
-+	TP_ARGS(page, offset, length)
- );
- 
- DEFINE_EVENT(ext4_invalidatepage_op, ext4_journalled_invalidatepage,
--	TP_PROTO(struct page *page, unsigned long offset),
-+	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
- 
--	TP_ARGS(page, offset)
-+	TP_ARGS(page, offset, length)
- );
- 
- TRACE_EVENT(ext4_discard_blocks,
--- 
-1.7.7.6
+Acked-by: Felipe Balbi <balbi@ti.com>
 
+> ---
+>  drivers/usb/otg/nop-usb-xceiv.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xc=
+eiv.c
+> index 849eb9d..0a9628c 100644
+> --- a/drivers/usb/otg/nop-usb-xceiv.c
+> +++ b/drivers/usb/otg/nop-usb-xceiv.c
+> @@ -33,11 +33,13 @@
+>  #include <linux/usb/nop-usb-xceiv.h>
+>  #include <linux/slab.h>
+>  #include <linux/clk.h>
+> +#include <linux/regulator/consumer.h>
+> =20
+>  struct nop_usb_xceiv {
+>  	struct usb_phy		phy;
+>  	struct device		*dev;
+>  	struct clk		*clk;
+> +	struct regulator	*vcc;
+>  };
+> =20
+>  static struct platform_device *pd;
+> @@ -70,6 +72,11 @@ static int nop_init(struct usb_phy *phy)
+>  {
+>  	struct nop_usb_xceiv *nop =3D dev_get_drvdata(phy->dev);
+> =20
+> +	if (!IS_ERR(nop->vcc)) {
+> +		if (regulator_enable(nop->vcc))
+> +			dev_err(phy->dev, "Failed to enable power\n");
+> +	}
+> +
+>  	if (!IS_ERR(nop->clk))
+>  		clk_enable(nop->clk);
+> =20
+> @@ -82,6 +89,11 @@ static void nop_shutdown(struct usb_phy *phy)
+> =20
+>  	if (!IS_ERR(nop->clk))
+>  		clk_disable(nop->clk);
+> +
+> +	if (!IS_ERR(nop->vcc)) {
+> +		if (regulator_disable(nop->vcc))
+> +			dev_err(phy->dev, "Failed to disable power\n");
+> +	}
+>  }
+> =20
+>  static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *ga=
+dget)
+> @@ -153,6 +165,12 @@ static int nop_usb_xceiv_probe(struct platform_devic=
+e *pdev)
+>  		}
+>  	}
+> =20
+> +	nop->vcc =3D devm_regulator_get(&pdev->dev, "vcc");
+> +	if (IS_ERR(nop->vcc)) {
+> +		dev_dbg(&pdev->dev, "Error getting vcc regulator: %ld\n",
+> +					PTR_ERR(nop->vcc));
+> +	}
+> +
+>  	nop->dev		=3D &pdev->dev;
+>  	nop->phy.dev		=3D nop->dev;
+>  	nop->phy.label		=3D "nop-xceiv";
+> --=20
+> 1.7.4.1
+>=20
+
+--=20
+balbi
+
+--B9BE8dkJ1pIKavwa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJREM7BAAoJEIaOsuA1yqRELcIP/jbJmTLOYRYPrJUmbL69CDm7
+FIb7D0tu0oZ85mrMnYwb+6cCvDisUtzFLZqaqFaRfst6eM4Cd4I6zGwLdvwIsyff
+9gZCY4g6IC4rAt9cn3shNdJyBpPPxaC/fEPIpVOh7LV4PztbeKlz3nxB7MxZxOeV
+IyNJ9NrsJaSrxOrqo0AQYQjGManlU/0NAaigpFzw6Jc/9284bzKZpGkLwPiYpuo5
+quEKoOh7iXfv15jNuq2JpUHRNCJ1uFk6D5ZeEeRRu8+GFu8dRXfKCt8Y6XatyXrw
+95qCIc1PR8uUVpcQF5XjAzzdbsvnmSBarEWJfqpLSrAmYJb3NZiWdzAscNs2y/5b
+9wH0BSQ7MRZ08wU88QQu4TlWkKqQb7HFrPmtVvZJ4ViacDUPPFZbHh2zTVS0AFGX
+4gay/IMwiPQFLm7JY9E5KUohooH4094bjHPOb7WGSDz9tbwBpdWbDNwFmUgbDxnA
+7y5JNrX/MnP1sgNPYgzxrFBGr22FpQ6ZJGBFe8KHHjsSP4EcjWoZ61Lb7PwDjf74
+k4rwi73bxmqzoJj860ovtkKTywftfHm/l1o4Na5Pb8um8f5Y6tdCEcX7W1fLo5wS
+a1oabmNK4lpgq0IgUZ+HeCEERqMJ2wMwB0dkjROfvbnYi042r7PQTbuVd5QW+LwO
+uKI/7O/wRTXmPrK8tS8b
+=eNk6
+-----END PGP SIGNATURE-----
+
+--B9BE8dkJ1pIKavwa--
