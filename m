@@ -1,90 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab3BESTz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 13:19:55 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26357 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754443Ab3BESTw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 13:19:52 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19BZaeHbppIKgUutPK7ILz+
-Date: Tue, 5 Feb 2013 10:19:47 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Cousson, Benoit" <b-cousson@ti.com>
-Cc: kishon <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [GIT PULL] ARM part of USB patches
-Message-ID: <20130205181947.GI25185@atomide.com>
-References: <51112418.5020000@ti.com>
- <51112495.4060908@ti.com>
- <20130205172724.GA1601@kroah.com>
+	id S1756528Ab3BESXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 13:23:12 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:39213 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753934Ab3BESXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 13:23:11 -0500
+Date: Tue, 5 Feb 2013 13:23:01 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: shmem: use new radix tree iterator
+Message-ID: <20130205182301.GD993@cmpxchg.org>
+References: <1359699238-7327-1-git-send-email-hannes@cmpxchg.org>
+ <510CCD88.30200@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130205172724.GA1601@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <510CCD88.30200@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* gregkh@linuxfoundation.org <gregkh@linuxfoundation.org> [130205 09:28]:
-> On Tue, Feb 05, 2013 at 08:56:13PM +0530, kishon wrote:
-> > Hi Tony, Greg,
-> > 
-> > On Tuesday 05 February 2013 08:54 PM, kishon wrote:
-> > >Hi Tony,
-> > >
-> > >As discussed, I'm sending a pull request for the arch/arm part of my USB
-> > >patches. These patches are necessary to get MUSB functional in both dt
-> > >and non-dt boot. Also added dt data for dwc3 present in OMAP. This patch
-> > >series *depends* on some of the patches which are merged in usb-next.
-> > 
-> > This patch series should go in only after USB. Or else it will break
-> > compilation.
+On Sat, Feb 02, 2013 at 12:25:44PM +0400, Konstantin Khlebnikov wrote:
+> Johannes Weiner wrote:
+> >In shmem_find_get_pages_and_swap, use the faster radix tree iterator
+> >construct from 78c1d78 "radix-tree: introduce bit-optimized iterator".
+> >
+> >Signed-off-by: Johannes Weiner<hannes@cmpxchg.org>
 > 
-> Then it probably should go through the USB tree, right?  We don't want
-> to break bisectability.
+> Hmm, ACK. shmem_unuse_inode() also can be redone in this way.
+> I did something similar year ago: https://lkml.org/lkml/2012/2/10/388
+> As result we can rid of radix_tree_locate_item() and shmem_find_get_pages_and_swap()
 
-Looks like this branch needs to be based on at least 01658f0f (usb: phy:
-add a new driver for usb part of control module) to compile. Probably
-needs other USB patches too to make sense.
-
-This branch has a high likelihood of conflicting with .dts files, so
-Kishon, I suggest you do two branches:
-
-1. A branch for Greg based on top of the USB changes
-
-   This branch should contain:
-
-   ARM: OMAP4: remove control module address space from PHY and OTG
-   ARM: OMAP: devices: create device for usb part of control module
-   ARM: OMAP2: MUSB: Specify omap4 has mailbox
-   ARM: OMAP: USB: Add phy binding information
-
-   Naturally please make sure they compile and boot on their own.
-   Looks like this will only cause few trivial include merge conflicts
-   with what I have queued up.
-
-   You can add my Acked-by: Tony Lindgren <tony@atomide.com> for those.
-
-2. A branch for Benoit based on v3.8-rc6
-
-   That branch should contain all the .dts changes as those will
-   most likely cause nasty merge conflicts otherwise with what
-   Benoit has queued up.
-
-Regards,
-
-Tony
+I remember your patches and am working on a totally unrelated series
+that also gets rid of shmem_find_get_pages_and_swap().  Either way,
+this thing's going down, so just I didn't bother with the conversion.
