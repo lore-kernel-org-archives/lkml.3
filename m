@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab3BEMBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 07:01:40 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43065 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750914Ab3BEMBi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 07:01:38 -0500
-Date: Tue, 5 Feb 2013 12:01:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH 05/73] ARM: ux500: Vsmps3 controlled by SysClkReq1
-Message-ID: <20130205120134.GY4720@opensource.wolfsonmicro.com>
-References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
- <1359978868-28736-6-git-send-email-lee.jones@linaro.org>
- <20130204193737.GU4720@opensource.wolfsonmicro.com>
- <CACRpkdYWZOa=bbJYpG7owxVJXxPq5sx7jHmo5UpRe8pmPGYKMQ@mail.gmail.com>
+	id S1754473Ab3BEMBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 07:01:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46400 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab3BEMBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 07:01:42 -0500
+Date: Tue, 5 Feb 2013 12:01:37 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, bcrl@kvack.org, viro@zeniv.linux.org.uk,
+        khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
+        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
+        zab@redhat.com, jmoyer@redhat.com, linux-mm@kvack.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of
+ get_user_pages() called get_user_pages_non_movable()
+Message-ID: <20130205120137.GG21389@suse.de>
+References: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com>
+ <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7tPHY7RFL01rOa8z"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CACRpkdYWZOa=bbJYpG7owxVJXxPq5sx7jHmo5UpRe8pmPGYKMQ@mail.gmail.com>
-X-Cookie: Your domestic life may be harmonious.
+In-Reply-To: <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 05, 2013 at 05:21:52PM +0800, Lin Feng wrote:
+> get_user_pages() always tries to allocate pages from movable zone, which is not
+>  reliable to memory hotremove framework in some case.
+> 
+> This patch introduces a new library function called get_user_pages_non_movable()
+>  to pin pages only from zone non-movable in memory.
+> It's a wrapper of get_user_pages() but it makes sure that all pages come from
+> non-movable zone via additional page migration.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Cc: Jeff Moyer <jmoyer@redhat.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Zach Brown <zab@redhat.com>
+> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
 
---7tPHY7RFL01rOa8z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I already had started the review of V1 before this was sent
+unfortunately. However, I think the feedback I gave for V1 is still
+valid so I'll wait for comments on that review before digging further.
 
-On Mon, Feb 04, 2013 at 10:21:36PM +0100, Linus Walleij wrote:
-
-> What is needed is some way to model that
-> electronic relationship into both the regulator
-> and clock subsystems (Ulf Hansson is working on
-> the ABx500 clocks as we speak.)
-
-> Maybe the actual place to have it would be
-> somewhere like drivers/mfd/ab8500-core.c.
-
-> Have you seen similar stuff in other PMICs?
-
-Yes, it's fairly common to at least have hardware enable signals.  If
-what was going on was actually understood by the driver in some way it
-might be better but right now...  Especially in a series like this it's
-really bad to just see loads of patches which boil down to "change the
-semi-documented magic value" - this just makes the series depressing to
-read.
-
---7tPHY7RFL01rOa8z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREPSYAAoJELSic+t+oim9S1UP/i8ISUj8yYo9M7b9ViaAiqDa
-x5cT8yn6DK0aCeNV2bnva49AhMxbvYOqXlB2tOlkniXperH/coDHdmqqIv1S8TNU
-2/B7d5oNBjBmdtTpG2Kf0Jl3ByBVEnnzaMt96gl7GWLL4qyb0Oem7WWlQ2ybuqBD
-h45cEVY0j3iXgXsfP71oxAJs2IP3B2vBEt77WO/hH1PAhDV4Qi7Hn93+ySE3e/1q
-a9CVk+zJ/Evsn5C2KfXC3qX//y0zqraqz+sZQTfFhzTYRdyAZhb3WslkeBMdFzwm
-mYlA1OkMXYHEZ+V533rwX3mmH0GxZyz2XBQEpYGbfurOBK2ZN6QZUjQX4o/ASGYW
-2i7ielvkspwKs/PAMYvkP2DyHmJlLvka2qWpiltqbXXQIWHmSGQC5exta8UKAiTM
-SRBXX+lbPcpNLHV+lrrY8x0tXPIomRtM6xoc7X9+SzTvDuvPh/yLmsVhbo+Zh1LQ
-8qjG2WeIuOGUP3HtBUN/ida7DxILvsTlbqOlCorWvN/vjnC6EX9xeFzegtbbpj2R
-dxel1yTBaaVKGGZZjP9w5sjqCjQzpAwJMFMdwR1j2N/18bl6Jom9W0pMxCgfpGs1
-YD36ahJhwXXU68dQ+sjD0+5fgRU5LWRVm7o1pRZd3SVmVJ76YLMc1tYBe42LUtzR
-i+UlMUGKCW3iaoO4uW/W
-=FNBK
------END PGP SIGNATURE-----
-
---7tPHY7RFL01rOa8z--
+-- 
+Mel Gorman
+SUSE Labs
