@@ -1,114 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab3BELNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 06:13:50 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:53235 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476Ab3BELNs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 06:13:48 -0500
-From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-To: Gleb Natapov <gleb@redhat.com>
-CC: Blue Swirl <blauwirbel@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Ortiz, Lance E" <lance.oritz@hp.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
- VFIO-PCI devices
-Thread-Topic: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
- VFIO-PCI devices
-Thread-Index: AQHOAhg4taf68fRLz0WTtmu8HI0G/phoVPWAgAKVuwCAAA06UIAACCoAgAAD3bA=
-Date: Tue, 5 Feb 2013 10:59:41 +0000
-Message-ID: <F9E001219150CB45BEDC82A650F360C9014B43DC@G9W0717.americas.hpqcorp.net>
-References: <F9E001219150CB45BEDC82A650F360C9014AAF07@G9W0717.americas.hpqcorp.net>
- <CAAu8pHvk_2Mf2F-YTDC-wdyD1Jic-DHUanSQfOa3g0VchTcNig@mail.gmail.com>
- <20130205080436.GV23213@redhat.com>
- <F9E001219150CB45BEDC82A650F360C9014B42EE@G9W0717.americas.hpqcorp.net>
- <20130205092110.GB23213@redhat.com>
-In-Reply-To: <20130205092110.GB23213@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750985Ab3BELOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 06:14:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44692 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754714Ab3BELOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 06:14:07 -0500
+Date: Tue, 5 Feb 2013 12:13:57 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] Support of Nexio 42" and new default class for
+ hid-multitouch
+In-Reply-To: <20130204115443.GA4405@polaris.bitmath.org>
+Message-ID: <alpine.LNX.2.00.1302051212550.2260@pobox.suse.cz>
+References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com> <20130203130731.GA2677@polaris.bitmath.org> <CAN+gG=GRS+fx4c3Kdba-89+ba8soimMm_rv7HDuaZLZWseQGuQ@mail.gmail.com> <20130204115443.GA4405@polaris.bitmath.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 4 Feb 2013, Henrik Rydberg wrote:
 
-
-> -----Original Message-----
-> From: Gleb Natapov [mailto:gleb@redhat.com]
-> Sent: Tuesday, February 05, 2013 1:21 AM
-> To: Pandarathil, Vijaymohan R
-> Cc: Blue Swirl; Alex Williamson; Bjorn Helgaas; Ortiz, Lance E;
-> kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-pci@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for VFIO-
-> PCI devices
+> > Thanks for the review. However, before sending a new patch series, I'd
+> > like to have your answers to my comments as I mostly disagree on
+> > everything :)
 > 
-> On Tue, Feb 05, 2013 at 09:05:19AM +0000, Pandarathil, Vijaymohan R wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Gleb Natapov [mailto:gleb@redhat.com]
-> > > Sent: Tuesday, February 05, 2013 12:05 AM
-> > > To: Blue Swirl
-> > > Cc: Pandarathil, Vijaymohan R; Alex Williamson; Bjorn Helgaas; Ortiz,
-> Lance
-> > > E; kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-
-> pci@vger.kernel.org;
-> > > linux-kernel@vger.kernel.org
-> > > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
-> VFIO-
-> > > PCI devices
-> > >
-> > > On Sun, Feb 03, 2013 at 04:36:11PM +0000, Blue Swirl wrote:
-> > > > On Sun, Feb 3, 2013 at 2:10 PM, Pandarathil, Vijaymohan R
-> > > > <vijaymohan.pandarathil@hp.com> wrote:
-> > > > >         - Create eventfd per vfio device assigned to a guest and
-> > > register an
-> > > > >           event handler
-> > > > >
-> > > > >         - This fd is passed to the vfio_pci driver through the
-> SET_IRQ
-> > > ioctl
-> > > > >
-> > > > >         - When the device encounters an error, the eventfd is
-> signalled
-> > > > >           and the qemu eventfd handler gets invoked.
-> > > > >
-> > > > >         - In the handler decide what action to take. Current action
-> > > taken
-> > > > >           is to terminate the guest.
-> > > >
-> > > > Usually this is not OK, but I guess this is not guest triggerable.
-> > > >
-> > > Still not OK. Why not stop a guest with appropriate stop reason?
-> >
-> > The thinking was that since this is a hardware error, we would want to
-> stop the guest at the earliest. The hw_error() routine which aborts the
-> qemu process was suggested by Alex and that seemed appropriate. Earlier I
-> was using qemu_system_shutdown_request().  Any suggestions ?
-> >
-> I am thinking vm_stop(). Stopping SMP guest (and UP too in fact)
-> involves sending IPIs to other cpus running guest's vcpus. Both exit()
-> and vm_stop() will do it, but former is implicitly in the kernel and
-> later is explicitly in QEMU.
+> With good reason, apparently. :-) I see no major problem with your
+> patches, although the discussed details show that there is room for
+> some refactoring.
 
-I had used vm_stop(RUN_STATE_SHUTDOWN) earlier in my code. But while testing, guest ended up in a hang rather than exiting. There seems to some cleanup work which is being done as part of vm_stop. In our case, we wanted the guest to exit immediately. So use of hw_error() seemed appropriate.
+Thanks to both of you. As I don't object to the HID core change, I have 
+now applied the patchset, so please send any further additions on top of 
+for-3.9/multitouch branch of my tree.
 
-Thoughts ?
+Also, Benjamin, perhaps it'd make sense to put a link somewhere into 
+in-tree documentation, with pointer to your testing suite?
 
-Vijay
+Thanks,
 
-> 
-> --
-> 			Gleb.
+-- 
+Jiri Kosina
+SUSE Labs
