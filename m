@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab3BEWRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:17:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48208 "EHLO
+	id S1757891Ab3BEWSA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:18:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48201 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729Ab3BEWMT (ORCPT
+	with ESMTP id S1757918Ab3BEWMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:12:19 -0500
+	Tue, 5 Feb 2013 17:12:14 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>, Feng Jin <joe.jin@oracle.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 74/93] drivers/firmware/dmi_scan.c: check dmi version when get system uuid
-Date: Tue,  5 Feb 2013 20:07:03 -0200
-Message-Id: <1360102042-10732-75-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 73/93] NFSv4.1: Handle NFS4ERR_DELAY when resetting the NFSv4.1 session
+Date: Tue,  5 Feb 2013 20:07:02 -0200
+Message-Id: <1360102042-10732-74-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -30,76 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit f1d8e614d74b09531b9a85e812485340f3df7b1c upstream.
+commit c489ee290bdbbace6bb63ebe6ebd4dd605819495 upstream.
 
-As of version 2.6 of the SMBIOS specification, the first 3 fields of the
-UUID are supposed to be little-endian encoded.
+NFS4ERR_DELAY is a legal reply when we call DESTROY_SESSION. It
+usually means that the server is busy handling an unfinished RPC
+request. Just sleep for a second and then retry.
+We also need to be able to handle the NFS4ERR_BACK_CHAN_BUSY return
+value. If the NFS server has outstanding callbacks, we just want to
+similarly sleep & retry.
 
-Also a minor fix to match variable meaning and mute checkpatch.pl
-
-[akpm@linux-foundation.org: tweak code comment]
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: Feng Jin <joe.jin@oracle.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/firmware/dmi_scan.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ fs/nfs/nfs4state.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 2d1539f..b1c2596 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -16,6 +16,7 @@
-  */
- static char dmi_empty_string[] = "        ";
- 
-+static u16 __initdata dmi_ver;
- /*
-  * Catch too early calls to dmi_check_system():
-  */
-@@ -161,8 +162,10 @@ static void __init dmi_save_uuid(const struct dmi_header *dm, int slot, int inde
- 		return;
- 
- 	for (i = 0; i < 16 && (is_ff || is_00); i++) {
--		if(d[i] != 0x00) is_ff = 0;
--		if(d[i] != 0xFF) is_00 = 0;
-+		if (d[i] != 0x00)
-+			is_00 = 0;
-+		if (d[i] != 0xFF)
-+			is_ff = 0;
+diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+index f38300e..9bc63d3 100644
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1767,8 +1767,18 @@ static int nfs4_reset_session(struct nfs_client *clp)
+ 	nfs4_begin_drain_session(clp);
+ 	cred = nfs4_get_exchange_id_cred(clp);
+ 	status = nfs4_proc_destroy_session(clp->cl_session, cred);
+-	if (status && status != -NFS4ERR_BADSESSION &&
+-	    status != -NFS4ERR_DEADSESSION) {
++	switch (status) {
++	case 0:
++	case -NFS4ERR_BADSESSION:
++	case -NFS4ERR_DEADSESSION:
++		break;
++	case -NFS4ERR_BACK_CHAN_BUSY:
++	case -NFS4ERR_DELAY:
++		set_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state);
++		status = 0;
++		ssleep(1);
++		goto out;
++	default:
+ 		status = nfs4_recovery_handle_error(clp, status);
+ 		goto out;
  	}
- 
- 	if (is_ff || is_00)
-@@ -172,7 +175,15 @@ static void __init dmi_save_uuid(const struct dmi_header *dm, int slot, int inde
- 	if (!s)
- 		return;
- 
--	sprintf(s, "%pUB", d);
-+	/*
-+	 * As of version 2.6 of the SMBIOS specification, the first 3 fields of
-+	 * the UUID are supposed to be little-endian encoded.  The specification
-+	 * says that this is the defacto standard.
-+	 */
-+	if (dmi_ver >= 0x0206)
-+		sprintf(s, "%pUL", d);
-+	else
-+		sprintf(s, "%pUB", d);
- 
-         dmi_ident[slot] = s;
- }
-@@ -414,6 +425,7 @@ static int __init dmi_present(const char __iomem *p)
- 		 * DMI version 0.0 means that the real version is taken from
- 		 * the SMBIOS version, which we don't know at this point.
- 		 */
-+		dmi_ver = (buf[14] & 0xf0) << 4 | (buf[14] & 0x0f);
- 		if (buf[14] != 0)
- 			printk(KERN_INFO "DMI %d.%d present.\n",
- 			       buf[14] >> 4, buf[14] & 0xF);
 -- 
 1.7.9.5
 
