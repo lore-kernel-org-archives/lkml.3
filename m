@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab3BEWOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:14:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48286 "EHLO
+	id S1758055Ab3BEWPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:15:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48275 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757246Ab3BEWNU (ORCPT
+	with ESMTP id S1756949Ab3BEWNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:13:20 -0500
+	Tue, 5 Feb 2013 17:13:12 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 90/93] intel_idle: Don't register CPU notifier if we are not running.
-Date: Tue,  5 Feb 2013 20:07:19 -0200
-Message-Id: <1360102042-10732-91-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 88/93] module: put modules in list much earlier.
+Date: Tue,  5 Feb 2013 20:07:17 -0200
+Message-Id: <1360102042-10732-89-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,110 +27,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 6f8c2e7933679f54b6478945dc72e59ef9a3d5e0 upstream.
+commit 1fb9341ac34825aa40354e74d9a2c69df7d2c304 upstream.
 
-The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
-But if later on during the module initialization we fail (say
-in cpuidle_register_driver), we stop loading, but we neglect
-to unregister the CPU notifier.  This means that during CPU
-hotplug events the system will fail:
+Prarit's excellent bug report:
+> In recent Fedora releases (F17 & F18) some users have reported seeing
+> messages similar to
+>
+> [   15.478160] kvm: Could not allocate 304 bytes percpu data
+> [   15.478174] PERCPU: allocation failed, size=304 align=32, alloc from
+> reserved chunk failed
+>
+> during system boot.  In some cases, users have also reported seeing this
+> message along with a failed load of other modules.
+>
+> What is happening is systemd is loading an instance of the kvm module for
+> each cpu found (see commit e9bda3b).  When the module load occurs the kernel
+> currently allocates the modules percpu data area prior to checking to see
+> if the module is already loaded or is in the process of being loaded.  If
+> the module is already loaded, or finishes load, the module loading code
+> releases the current instance's module's percpu data.
 
-calling  intel_idle_init+0x0/0x326 @ 1
-intel_idle: MWAIT substates: 0x1120
-intel_idle: v0.4 model 0x2A
-intel_idle: lapic_timer_reliable_states 0xffffffff
-intel_idle: intel_idle yielding to none
-initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
+Now we have a new state MODULE_STATE_UNFORMED, we can insert the
+module into the list (and thus guarantee its uniqueness) before we
+allocate the per-cpu region.
 
-... some time later, offlining and onlining a CPU:
-
-cpu 3 spinlock event irq 62
-BUG: unable to ] __cpuidle_register_device+0x1c/0x120
-PGD 99b8b067 PUD 99b95067 PMD 0
-Oops: 0000 [#1] SMP
-Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
-CPU 0
-Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
-RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
-RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
-RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
-RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
-RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
-R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
-R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
-FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
-CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
-Stack:
- ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
- ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
- 0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
-Call Trace:
- [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
- [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
- [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
- [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
- [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
- [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
- [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
- [<ffffffff81652e18>] cpu_up+0xd9/0xec
- [<ffffffff8164a254>] store_online+0x94/0xd0
- [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
- [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
- [<ffffffff811a1024>] vfs_write+0xb4/0x130
- [<ffffffff811a17ea>] sys_write+0x5a/0xa0
- [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
-Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
-RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
- RSP <ffff88009dacfcb8>
-
-This patch fixes that by moving the CPU notifier registration
-as the last item to be done by the module.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2: notifier is registered only if we do not have ARAT]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[ herton: the backport also applies to 3.5, with context adjusted ]
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Tested-by: Prarit Bhargava <prarit@redhat.com>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/idle/intel_idle.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ kernel/module.c |   90 ++++++++++++++++++++++++++++++-------------------------
+ lib/bug.c       |    1 +
+ 2 files changed, 50 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index d0f59c3..04eced7 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -405,10 +405,8 @@ static int intel_idle_probe(void)
+diff --git a/kernel/module.c b/kernel/module.c
+index a2bc837..19716ac 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2897,7 +2897,7 @@ static bool finished_loading(const char *name)
+ 	bool ret;
  
- 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
- 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
--	else {
-+	else
- 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
--		register_cpu_notifier(&setup_broadcast_notifier);
--	}
- 
- 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
- 		" model 0x%X\n", boot_cpu_data.x86_model);
-@@ -573,6 +571,9 @@ static int __init intel_idle_init(void)
- 		}
+ 	mutex_lock(&module_mutex);
+-	mod = find_module(name);
++	mod = find_module_all(name, true);
+ 	ret = !mod || mod->state == MODULE_STATE_LIVE
+ 		|| mod->state == MODULE_STATE_GOING;
+ 	mutex_unlock(&module_mutex);
+@@ -2930,10 +2930,36 @@ static struct module *load_module(void __user *umod,
+ 		goto free_copy;
  	}
  
-+	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
-+		register_cpu_notifier(&setup_broadcast_notifier);
++	/*
++	 * We try to place it in the list now to make sure it's unique
++	 * before we dedicate too many resources.  In particular,
++	 * temporary percpu memory exhaustion.
++	 */
++	mod->state = MODULE_STATE_UNFORMED;
++again:
++	mutex_lock(&module_mutex);
++	if ((old = find_module_all(mod->name, true)) != NULL) {
++		if (old->state == MODULE_STATE_COMING
++		    || old->state == MODULE_STATE_UNFORMED) {
++			/* Wait in case it fails to load. */
++			mutex_unlock(&module_mutex);
++			err = wait_event_interruptible(module_wq,
++					       finished_loading(mod->name));
++			if (err)
++				goto free_module;
++			goto again;
++		}
++		err = -EEXIST;
++		mutex_unlock(&module_mutex);
++		goto free_module;
++	}
++	list_add_rcu(&mod->list, &modules);
++	mutex_unlock(&module_mutex);
 +
- 	return 0;
+ 	/* Now module is in final location, initialize linked lists, etc. */
+ 	err = module_unload_init(mod);
+ 	if (err)
+-		goto free_module;
++		goto unlink_mod;
+ 
+ 	/* Now we've got everything in the final locations, we can
+ 	 * find optional sections. */
+@@ -2968,54 +2994,33 @@ static struct module *load_module(void __user *umod,
+ 		goto free_arch_cleanup;
+ 	}
+ 
+-	/* Mark state as coming so strong_try_module_get() ignores us. */
+-	mod->state = MODULE_STATE_COMING;
+-
+-	/* Now sew it into the lists so we can get lockdep and oops
+-	 * info during argument parsing.  No one should access us, since
+-	 * strong_try_module_get() will fail.
+-	 * lockdep/oops can run asynchronous, so use the RCU list insertion
+-	 * function to insert in a way safe to concurrent readers.
+-	 * The mutex protects against concurrent writers.
+-	 */
+-again:
+-	mutex_lock(&module_mutex);
+-	if ((old = find_module(mod->name)) != NULL) {
+-		if (old->state == MODULE_STATE_COMING) {
+-			/* Wait in case it fails to load. */
+-			mutex_unlock(&module_mutex);
+-			err = wait_event_interruptible(module_wq,
+-					       finished_loading(mod->name));
+-			if (err)
+-				goto free_arch_cleanup;
+-			goto again;
+-		}
+-		err = -EEXIST;
+-		goto unlock;
+-	}
+-
+-	/* This has to be done once we're sure module name is unique. */
+ 	dynamic_debug_setup(info.debug, info.num_debug);
+ 
+-	/* Find duplicate symbols */
++	mutex_lock(&module_mutex);
++	/* Find duplicate symbols (must be called under lock). */
+ 	err = verify_export_symbols(mod);
+ 	if (err < 0)
+-		goto ddebug;
++		goto ddebug_cleanup;
+ 
++	/* This relies on module_mutex for list integrity. */
+ 	module_bug_finalize(info.hdr, info.sechdrs, mod);
+-	list_add_rcu(&mod->list, &modules);
++
++	/* Mark state as coming so strong_try_module_get() ignores us,
++	 * but kallsyms etc. can see us. */
++	mod->state = MODULE_STATE_COMING;
++
+ 	mutex_unlock(&module_mutex);
+ 
+ 	/* Module is ready to execute: parsing args may do that. */
+ 	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
+ 			 -32768, 32767, &ddebug_dyndbg_module_param_cb);
+ 	if (err < 0)
+-		goto unlink;
++		goto bug_cleanup;
+ 
+ 	/* Link in to syfs. */
+ 	err = mod_sysfs_setup(mod, &info, mod->kp, mod->num_kp);
+ 	if (err < 0)
+-		goto unlink;
++		goto bug_cleanup;
+ 
+ 	/* Get rid of temporary copy. */
+ 	free_copy(&info);
+@@ -3024,16 +3029,13 @@ again:
+ 	trace_module_load(mod);
+ 	return mod;
+ 
+- unlink:
++ bug_cleanup:
++	/* module_bug_cleanup needs module_mutex protection */
+ 	mutex_lock(&module_mutex);
+-	/* Unlink carefully: kallsyms could be walking list. */
+-	list_del_rcu(&mod->list);
+ 	module_bug_cleanup(mod);
+-	wake_up_all(&module_wq);
+- ddebug:
+-	dynamic_debug_remove(info.debug);
+- unlock:
+ 	mutex_unlock(&module_mutex);
++ ddebug_cleanup:
++	dynamic_debug_remove(info.debug);
+ 	synchronize_sched();
+ 	kfree(mod->args);
+  free_arch_cleanup:
+@@ -3042,6 +3044,12 @@ again:
+ 	free_modinfo(mod);
+  free_unload:
+ 	module_unload_free(mod);
++ unlink_mod:
++	mutex_lock(&module_mutex);
++	/* Unlink carefully: kallsyms could be walking list. */
++	list_del_rcu(&mod->list);
++	wake_up_all(&module_wq);
++	mutex_unlock(&module_mutex);
+  free_module:
+ 	module_deallocate(mod, &info);
+  free_copy:
+diff --git a/lib/bug.c b/lib/bug.c
+index a28c141..d0cdf14 100644
+--- a/lib/bug.c
++++ b/lib/bug.c
+@@ -55,6 +55,7 @@ static inline unsigned long bug_addr(const struct bug_entry *bug)
  }
  
+ #ifdef CONFIG_MODULES
++/* Updates are protected by module mutex */
+ static LIST_HEAD(module_bug_list);
+ 
+ static const struct bug_entry *module_find_bug(unsigned long bugaddr)
 -- 
 1.7.9.5
 
