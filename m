@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab3BETM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 14:12:58 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:37726 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab3BETMy (ORCPT
+	id S1756135Ab3BETQB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 14:16:01 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:46694 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890Ab3BETQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 14:12:54 -0500
-Message-ID: <511159B3.8020000@gmail.com>
-Date: Tue, 05 Feb 2013 13:12:51 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 5 Feb 2013 14:16:00 -0500
+Date: Tue, 5 Feb 2013 11:15:54 -0800
+From: Ben Pfaff <blp@cs.stanford.edu>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jesse Gross <jesse@nicira.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>
+Subject: Re: No sysfs directory for openvswitch module when built-in
+Message-ID: <20130205191554.GA7573@blp.benpfaff.org>
+References: <CAM_iQpVgEchb8UsxUP=w6OMbYx=zuP2yv=QwFhe8rPCbNBreVg@mail.gmail.com>
+ <20130204081920.00e9f22e@nehalam.linuxnetplumber.net>
+ <87lib3gunm.fsf@blp.benpfaff.org>
+ <CAM_iQpXSv7ddFtF53JGu=QdaNgY7c4O9Wuq4PmVRczTBiE_rSg@mail.gmail.com>
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>, js1304@gmail.com,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 3/3] ARM: mm: use static_vm for managing static mapped
- areas
-References: <1360024314-1895-1-git-send-email-iamjoonsoo.kim@lge.com> <1360024314-1895-4-git-send-email-iamjoonsoo.kim@lge.com> <alpine.LFD.2.02.1302042308220.6300@xanadu.home> <51114134.4070503@gmail.com> <alpine.LFD.2.02.1302051304530.6300@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1302051304530.6300@xanadu.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM_iQpXSv7ddFtF53JGu=QdaNgY7c4O9Wuq4PmVRczTBiE_rSg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 12:13 PM, Nicolas Pitre wrote:
-> On Tue, 5 Feb 2013, Rob Herring wrote:
+On Tue, Feb 05, 2013 at 06:49:45PM +0800, Cong Wang wrote:
+> On Tue, Feb 5, 2013 at 2:08 PM, Ben Pfaff <blp@cs.stanford.edu> wrote:
+> > Stephen Hemminger <stephen@networkplumber.org> writes:
+> >
+> >> On Tue, 29 Jan 2013 22:15:18 +0800
+> >> Cong Wang <xiyou.wangcong@gmail.com> wrote:
+> >>
+> >>> Hello, Rusty, Jesse,
+> >>>
+> >>> I met an interesting problem when I compile openvswitch module as a
+> >>> built-in (actually I compile ALL kernel modules as built-in), there is
+> >>> no /sys/module/openvswitch/ directory created by the kernel in this
+> >>> case.
+> >>>
+> >>> What's worse, the user-space init script thinks openvswitch module is
+> >>> not loaded by checking the exist of this directory, therefore refuses
+> >>> to start.
+> >>
+> >> Shouldn't the OVS init script be testing for some other API.
+> >
+> > I agree that's a bug in the OVS init script.  I will fix it.
 > 
->> On 02/04/2013 10:44 PM, Nicolas Pitre wrote:
->>> On Tue, 5 Feb 2013, Joonsoo Kim wrote:
->>>
->>>> A static mapped area is ARM-specific, so it is better not to use
->>>> generic vmalloc data structure, that is, vmlist and vmlist_lock
->>>> for managing static mapped area. And it causes some needless overhead and
->>>> reducing this overhead is better idea.
->>>>
->>>> Now, we have newly introduced static_vm infrastructure.
->>>> With it, we don't need to iterate all mapped areas. Instead, we just
->>>> iterate static mapped areas. It helps to reduce an overhead of finding
->>>> matched area. And architecture dependency on vmalloc layer is removed,
->>>> so it will help to maintainability for vmalloc layer.
->>>>
->>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>
->> [snip]
->>
->>>> @@ -859,17 +864,12 @@ static void __init pci_reserve_io(void)
->>>>  {
->>>>  	struct vm_struct *vm;
->>>>  	unsigned long addr;
->>>> +	struct static_vm *svm;
->>>>  
->>>> -	/* we're still single threaded hence no lock needed here */
->>>> -	for (vm = vmlist; vm; vm = vm->next) {
->>>> -		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
->>>> -			continue;
->>>> -		addr = (unsigned long)vm->addr;
->>>> -		addr &= ~(SZ_2M - 1);
->>>> -		if (addr == PCI_IO_VIRT_BASE)
->>>> -			return;
->>>> +	svm = find_static_vm_vaddr((void *)PCI_IO_VIRT_BASE);
->>>> +	if (svm)
->>>> +		return;
->>>>
->>>> -	}
->>>>  
->>>>  	vm_reserve_area_early(PCI_IO_VIRT_BASE, SZ_2M, pci_reserve_io);
->>>>  }
->>>
->>> The replacement code is not equivalent.  I can't recall why the original 
->>> is as it is, but it doesn't look right to me.  The 2MB round down 
->>> certainly looks suspicious.
->>
->> The PCI mapping is at a fixed, aligned 2MB mapping. If we find any
->> virtual address within that region already mapped, it is an error.
-> 
-> Ah, OK.  This wasn't clear looking at the code.
-> 
->> We probably should have had a WARN here.
-> 
-> Indeed.
-> 
->>>
->>> The replacement code should be better.  However I'd like you to get an 
->>> ACK from Rob Herring as well for this patch.
->>
->> It doesn't appear to me the above case is handled. The virt addr is
->> checked whether it is within an existing mapping, but not whether the
->> new mapping would overlap an existing mapping. It would be good to check
->> for this generically rather than specifically for the PCI i/o mapping.
-> 
-> Agreed.  However that is checked already in vm_area_add_early().  
-> Therefore the overlap test here is redundant.
+> Thanks for taking care of it, Ben!
 
-Ah, right. In that case:
-
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-
-Rob
-
+I posted a patch to ovs-dev for review:
+        http://openvswitch.org/pipermail/dev/2013-February/025128.html
