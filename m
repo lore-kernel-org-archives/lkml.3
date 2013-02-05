@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab3BEMii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 07:38:38 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:38105 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3BEMif (ORCPT
+	id S1754389Ab3BEMjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 07:39:05 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:61677 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954Ab3BEMjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 07:38:35 -0500
-X-AuditID: cbfee61b-b7fb06d000000f28-01-5110fd490fd9
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, kgene.kim@samsung.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, sylvester.nawrocki@gmail.com,
-        tomasz.figa@gmail.com, av.tikhomirov@samsung.com,
-        dianders@chromium.org, p.paneri@samsung.com
-Subject: [PATCH v5 0/2] Adding USB 3.0 DRD-phy support for exynos5250
-Date: Tue, 05 Feb 2013 18:14:14 +0530
-Message-id: <1360068256-19602-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsWyRsSkStfrr0CgwdRCi8u75rBZzDi/j8li
-	0bJWZgdmj8+b5AIYo7hsUlJzMstSi/TtErgy7s8RLnjOWdH8eQFbA+Mf9i5GTg4JAROJtlV7
-	2SBsMYkL99YD2VwcQgJLGSVutm9khSl6vXISE0RiEaPE3893WEASQgKTmSROdAaA2GwCuhJN
-	b3cxgtgiArISh6/8ZgZpYBZ4xCTxZd9zsAZhAVeJC+9egtksAqoSPX0PgNZxcPAKeEhMWJQL
-	sUxB4s3tZ2C9EgJn2CQ+Tj/BBFEvIPFt8iEWkHoJoAWbDjBD1EtKHFxxg2UCo+ACRoZVjKKp
-	BckFxUnpuUZ6xYm5xaV56XrJ+bmbGIEhdvrfM+kdjKsaLA4xCnAwKvHw/rjMHyjEmlhWXJl7
-	iFGCg1lJhLf6i0CgEG9KYmVValF+fFFpTmrxIcZkoOUTmaVEk/OB4Z9XEm9obGJuamxqaWRk
-	ZmpKmrCSOC/jqScBQgLpiSWp2ampBalFMFuYODilGhgbp7RYS9oe8Qr8Udt0v2a5viCfhs8O
-	q5t6B8tkWde4HRMV4XvyaYPu9Nb257MYI12f6unXP2fYtupOs3ma862zZ4ty7S4vETindfHE
-	4+Tta/3U5CzWLqz09bomdyfhzRX5p8YN7Gv+Vtrd3Zq47NuGUpm5Zse3nb6reZPr/buJlrbV
-	kfO1J5QqsRRnJBpqMRcVJwIAFO6OP3UCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t9jAV3PvwKBBmtf6lpc3jWHzWLG+X1M
-	FouWtTI7MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
-	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hxf45w
-	wXPOiubPC9gaGP+wdzFyckgImEi8XjmJCcIWk7hwbz1bFyMXh5DAIkaJv5/vsIAkhAQmM0mc
-	6AwAsdkEdCWa3u5iBLFFBGQlDl/5zQzSwCzwiEniy77nYA3CAq4SF969BLNZBFQlevoeAE3l
-	4OAV8JCYsCgXYpmCxJvbz5gnMHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcws+k
-	dzCuarA4xCjAwajEw/vjMn+gEGtiWXFl7iFGCQ5mJRHe6i8CgUK8KYmVValF+fFFpTmpxYcY
-	k4GWT2SWEk3OB8ZXXkm8obGJuamxqaWJhYmZJWnCSuK8jKeeBAgJpCeWpGanphakFsFsYeLg
-	lGpgNPjHL9R0/d7ZnliF0uJfaxJKdPeqpDZ9sTYUUG1evoSTdecqG03zDw81DHfGv2UU9tk9
-	WdlT94DWDL1Jk/ZdOfr/9U0dcbGrVwK5VlcduOv9urc1/dTpDq8dbRvyLtwr2LmP99XPnP87
-	/h8NVws/ZpT67/lqrTP5LjOX3/f97fh10YLtT7NbDyixFGckGmoxFxUnAgDQUd8npQIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 5 Feb 2013 07:39:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360066756.4529.6.camel@pasglop>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	<1781360.cmQWHCW5SC@wuerfel>
+	<CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+	<201302041724.47331.arnd@arndb.de>
+	<1360031367.14701.47.camel@pasglop>
+	<CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+	<1360066756.4529.6.camel@pasglop>
+Date: Tue, 5 Feb 2013 13:38:58 +0100
+Message-ID: <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+From: Michal Simek <monstr@monstr.eu>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        alan@lxorguk.ukuu.org.uk, geert@linux-m68k.org,
+        dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on 'usb-next'
+2013/2/5 Benjamin Herrenschmidt <benh@kernel.crashing.org>:
+> On Tue, 2013-02-05 at 11:54 +0100, Michal Simek wrote:
+>>
+>> xilinx ppc is big endian
+>> xilinx arm is little endian
+>> xilinx microblaze is little endian and big endian
+>
+> You are talking about the core, why should the xsysace block driver be
+> synthesized with the same endianness as the core ? That's not terribly
+> useful, especially since reverse load/stores on ppc are essentially
+> free...
 
-Changes from v4:
- - Modifying function names and driver names to follow a common
-   naming convention.
-        "usb2phy" for samsung-usb2phy driver
-        "usb3phy" for samsung-usb3phy driver
- - Changing file names "samsung-usb2.c" to "samsung-usb2phy.c" and,
-   "samsung-usb3.c" to "samsung-usb3phy.c"
- - Removing dependencies for SAMSUNG_USB2PHY and SAMSUNG_USB3PHY.
- - Arranging SAMSUNG_USB2PHY and SAMSUNG_USB3PHY to select SAMSUNG_USBPHY,
-   which is the usb-phy helper driver.
+It is done by hardware guys and I can do nothing with it.
 
-Vivek Gautam (2):
-  usb: phy: samsung: Common out the generic stuff
-  usb: phy: samsung: Add PHY support for USB 3.0 controller
+>> It is just sharing the same IP across all platforms. Which is better
+>> than create new devices and new device drivers for it. It means that
+>> all of them are register compatible but require access with native
+>> platform endianness as I listed above.
+>
+> Every attempt at doing "native platform endianness" has always been a
+> misguided attempt turning into a trainwreck (see OHCI USB).
+>
+> Just pick one endian for the device and stick to it.
 
- drivers/usb/phy/Kconfig           |   25 +-
- drivers/usb/phy/Makefile          |    2 +
- drivers/usb/phy/samsung-usb2phy.c |  511 ++++++++++++++++++++++++++
- drivers/usb/phy/samsung-usb3phy.c |  349 ++++++++++++++++++
- drivers/usb/phy/samsung-usbphy.c  |  717 +------------------------------------
- drivers/usb/phy/samsung-usbphy.h  |  328 +++++++++++++++++
- 6 files changed, 1219 insertions(+), 713 deletions(-)
- create mode 100644 drivers/usb/phy/samsung-usb2phy.c
- create mode 100644 drivers/usb/phy/samsung-usb3phy.c
- create mode 100644 drivers/usb/phy/samsung-usbphy.h
+It is reality and I can't change it. Arnd mentioned it earlier that USB
+
+
+>> It is not a problem to create runtime wrapper and even detect endian
+>> directly in the driver
+>> but the point if this is the proper design.
+>> Also ioread32 and ioread32be shouldn't be used on ARM because there
+>> are missing memory barriers.
+>
+> Then fix them, they shouldn't be, it's a bug, it will break many other
+> drivers. They should be fully equivalent to readl.
+
+I want to be sure about this. I have parsed this again with closer look and
+seems to me that ioread32 is equal to readl and iowrite32 to writel.
+Arnd: Am I right?
+
+Thanks,
+Michal
+
+
+
+
+
 
 -- 
-1.7.6.5
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
