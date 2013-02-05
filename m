@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab3BECGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 21:06:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50536 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab3BECGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 21:06:05 -0500
-Date: Mon, 4 Feb 2013 18:09:48 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] printk: Support for full dynticks mode
-Message-Id: <20130204180948.68c206c0.akpm@linux-foundation.org>
-In-Reply-To: <CAFTL4hxHEknUfv0rt73Tb0YAUrypuGJArvCw4wmEPp_8PF_b0A@mail.gmail.com>
-References: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
-	<20130204172001.8bb358b0.akpm@linux-foundation.org>
-	<CAFTL4hxHEknUfv0rt73Tb0YAUrypuGJArvCw4wmEPp_8PF_b0A@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755579Ab3BECOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 21:14:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56744 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114Ab3BECOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 21:14:21 -0500
+Message-ID: <51106AF1.4030804@suse.com>
+Date: Mon, 04 Feb 2013 21:14:09 -0500
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Dave Kleikamp <shaggy@kernel.org>
+Subject: Re: [RFC] setxattr bugs
+References: <20130203043046.GR4503@ZenIV.linux.org.uk>
+In-Reply-To: <20130203043046.GR4503@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013 02:37:54 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> 2013/2/5 Andrew Morton <akpm@linux-foundation.org>:
-> > On Tue,  5 Feb 2013 01:51:18 +0100
-> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >
-> >>       printk: Wake up klogd using irq_work
-> >
-> > That seems reasonable.
-> >
-> > I'm wondering if we can now remove the printk_sched() special-case.
-> > iirc, that was needed because wake_up(klogd) would deadlock when called
-> > from sched internals.  But now that wakeup is punted to the timer tick,
-> > perhaps this is now unnecessary?
+On 2/2/13 11:30 PM, Al Viro wrote:
+> * JFS, since 2005: setxattr(name, "system.posix_acl_access", NULL,
+> 0, 0) succeeds, creating an empty EA with "system.posix_acl_access"
+> as name. Validity checks should apply _after_ if (value == NULL) {
+> /* empty EA, do not remove */ value = ""; value_len = 0; } and not
+> before it. * reiserfs, since 2009: setxattr(name, attr_name, NULL,
+> 0, 0) is treated as removexattr(name, attr_name), not as emptying
+> given xattr.
 > 
-> I fear irq work doesn't change much the picture in this regard. Before
-> irq work, printk() and printk_sched() were already relying on the tick
-> (printk_tick()) to do the wake up on klogd clients. I guess that the
-> deadlocks referenced by Peter were about printk() internals. May be
-> logbuf_lock against some other scheduler lock?
+> The question is, does either of those cross into "established 
+> weirdness in ABI" or are they still at the "bugs to be fixed"
+> stage?
 
-I don't think so.  Conceptually printk() should be "inner" to the
-scheduler and shouldn't call into sched things at all.  The (afaik
-sole) exception to that was the klogd wakeup.
+Since the behavior changed once already in 2009 I'd call it a bug.
+That code was in the SLES kernel for a while before then and I still
+haven't seen a bug report on it.
 
-Traditionally the deadlock happened when calling printk() with
-tasklist_lock (now q->lock) held.  printk() would call wake_up(klogd)
-and wake_up() tries to take tasklist_lock and boom.  Moving the
-wake_up() out to the tick "thread" fixed that.
+- -Jeff
 
-Maybe there were other deadlock scenarios, dunno.  That knowledge
-appears to be disappearing into the mists of time :(
+> FWIW, I'm seriously tempted to stop passing NULL as the third
+> argument of ->setxattr(), essentially taking all those if (!value)
+> value = ""; pieces from individual ->setxattr() instances to
+> __vfs_setxattr_noperm() (all other callers of ->setxattr() never 
+> pass NULL data or 0 size, so it's irrelevant for them).  Would fix 
+> both jfs and reiserfs weirdness....
+> 
+> Objections?
 
+
+
+
+- -- 
+Jeff Mahoney
+SUSE Labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
+Comment: GPGTools - http://gpgtools.org
+
+iQIcBAEBAgAGBQJREGrwAAoJEB57S2MheeWyHvMP/3kpy3Y4U0KNavnPaeL12LXe
+RC6vIb/dPkoSemFiZ5om26aT70M7MdXJY2ZPCwgtlNpKV6aT0NFchtwiWos2lLLN
+XndvFZ4M/kQLd9yDEmlcTDZn7p4fhU2Tn7FYrhPLRmOO3zP6fnUxLozSebOnGTO/
+xEwV7Qtx7D4Au37khFW/hJvsAJE2Q3NrLgueIJLiTmFvSiOourZNmriNcB73MUeb
+vYx5gc/bJexS2oFWeQqD6WiL8UQXg4XEKRk4inNVrJWpLV365w45Kpf2zBlvCQwQ
+W8mdHcHoityOcQJtiXvnVDurUNpFwsthrhVquVgIopovlcvOjNtcpffH8YI9khP/
+yol7+57ZDuVx2TY5DrEOa+TOTUrg5ghqagSSmOVDsOVeMngpdFNs8351QcX0IWBn
+Xt8/eq46g/R7EHI3I1eYJHlMIie0hP1GDc66OP94hcKEWaHbPeKwkSTOlqYH++4h
+ncSJcxHXWLUTGuV4b61whYTlJ2vBWwEvIteVaQmmXKaOTr41lajZBCWZDeUlzna8
+XyJHE5FrcKDLzTNP1R7UNEj863fN0OUma1AKaT/6jNYMqFXOk39emTgZL5QfxP9X
+uLWG1OVDf87uw5nYOKubNQiORpxl8iSIsQWvZeF9SvvmFA/JzpgZgtLlNqYa78Yv
+oEq501m9BSEWVSGKxHcu
+=G2cU
+-----END PGP SIGNATURE-----
