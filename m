@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab3BEJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:18:25 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:39276 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033Ab3BEJSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:18:18 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130205163454.83875fee3a8724fbec4d0987@canb.auug.org.au>
-References: <20130205163454.83875fee3a8724fbec4d0987@canb.auug.org.au>
-Date: Tue, 5 Feb 2013 10:18:17 +0100
-Message-ID: <CA+icZUWzRaBAOgA4oQ11TJz+5oDTQW0VzhPVCNn1k9MK8RFmhQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 5
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754154Ab3BEJS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:18:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12709 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752770Ab3BEJMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:12:32 -0500
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
+        xfs@oss.sgi.com
+Subject: [PATCH v2 05/18] xfs: use ->invalidatepage() length argument
+Date: Tue,  5 Feb 2013 10:11:58 +0100
+Message-Id: <1360055531-26309-6-git-send-email-lczerner@redhat.com>
+In-Reply-To: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
+References: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 6:34 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20130204:
->
-> The powerpc tree still had a build failure.
->
-> The nfsd tree lost its build.
->
-> The sound-asoc tree gained a build failure so I used the version from
-> next-20130204.
->
+->invalidatepage() aop now accepts range to invalidate so we can make
+use of it in xfs_vm_invalidatepage()
 
-Several people ask for inclusion of [1] after having confirmed it
-fixes their issue.
-One guy pointed to the fact the fix [2] is pending in mmot*s* tree.
-When will it go to Linux-Next?
-Read the thread in [3] for more details.
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Cc: xfs@oss.sgi.com
+---
+ fs/xfs/xfs_aops.c  |    5 +++--
+ fs/xfs/xfs_trace.h |   41 ++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 43 insertions(+), 3 deletions(-)
 
-Thanks.
+diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
+index e426796..e8018d3 100644
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -826,8 +826,9 @@ xfs_vm_invalidatepage(
+ 	unsigned int		offset,
+ 	unsigned int		length)
+ {
+-	trace_xfs_invalidatepage(page->mapping->host, page, offset);
+-	block_invalidatepage(page, offset, PAGE_CACHE_SIZE - offset);
++	trace_xfs_invalidatepage(page->mapping->host, page, offset,
++				 length);
++	block_invalidatepage(page, offset, length);
+ }
+ 
+ /*
+diff --git a/fs/xfs/xfs_trace.h b/fs/xfs/xfs_trace.h
+index 16a8129..91d6434 100644
+--- a/fs/xfs/xfs_trace.h
++++ b/fs/xfs/xfs_trace.h
+@@ -991,7 +991,46 @@ DEFINE_EVENT(xfs_page_class, name,	\
+ 	TP_ARGS(inode, page, off))
+ DEFINE_PAGE_EVENT(xfs_writepage);
+ DEFINE_PAGE_EVENT(xfs_releasepage);
+-DEFINE_PAGE_EVENT(xfs_invalidatepage);
++
++TRACE_EVENT(xfs_invalidatepage,
++	TP_PROTO(struct inode *inode, struct page *page, unsigned int off,
++		 unsigned int len),
++	TP_ARGS(inode, page, off, len),
++	TP_STRUCT__entry(
++		__field(dev_t, dev)
++		__field(xfs_ino_t, ino)
++		__field(pgoff_t, pgoff)
++		__field(loff_t, size)
++		__field(unsigned int, offset)
++		__field(unsigned int, length)
++		__field(int, delalloc)
++		__field(int, unwritten)
++	),
++	TP_fast_assign(
++		int delalloc = -1, unwritten = -1;
++
++		if (page_has_buffers(page))
++			xfs_count_page_state(page, &delalloc, &unwritten);
++		__entry->dev = inode->i_sb->s_dev;
++		__entry->ino = XFS_I(inode)->i_ino;
++		__entry->pgoff = page_offset(page);
++		__entry->size = i_size_read(inode);
++		__entry->offset = off;
++		__entry->length = len;
++		__entry->delalloc = delalloc;
++		__entry->unwritten = unwritten;
++	),
++	TP_printk("dev %d:%d ino 0x%llx pgoff 0x%lx size 0x%llx offset %x "
++		  "length %x delalloc %d unwritten %d",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->ino,
++		  __entry->pgoff,
++		  __entry->size,
++		  __entry->offset,
++		  __entry->length,
++		  __entry->delalloc,
++		  __entry->unwritten)
++)
+ 
+ DECLARE_EVENT_CLASS(xfs_imap_class,
+ 	TP_PROTO(struct xfs_inode *ip, xfs_off_t offset, ssize_t count,
+-- 
+1.7.7.6
 
-- Sedat -
-
-[1] http://marc.info/?l=linux-mm&m=135929599505624&w=2
-[2] http://ozlabs.org/~akpm/mmots/broken-out/swap-make-each-swap-partition-have-one-address_space-fix-fix.patch
-[3] http://marc.info/?t=135978145900001&r=1&w=2
