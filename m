@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab3BERUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:20:23 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:60599 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab3BERUU (ORCPT
+	id S1755528Ab3BERUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:20:43 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:57948 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab3BERUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:20:20 -0500
-Date: Tue, 5 Feb 2013 09:20:15 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hillf Danton <dhillf@gmail.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: next-20130117 - kernel BUG with aio
-Message-ID: <20130205172015.GA27179@google.com>
-References: <3544.1358774694@turing-police.cc.vt.edu>
- <CAJd=RBBBbv07aoOTF=PNy1FpCyuRV7fnQEGX_DXEYFSSknKtqQ@mail.gmail.com>
- <2553.1358890098@turing-police.cc.vt.edu>
- <20130131135952.77cf5d3a.akpm@linux-foundation.org>
- <20130201003727.GK12631@moria.home.lan>
- <5602.1360079580@turing-police.cc.vt.edu>
+	Tue, 5 Feb 2013 12:20:41 -0500
+Date: Tue, 5 Feb 2013 09:22:45 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Bernie Thompson <bernie@plugable.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 2/3 v2] fb: udlfb: fix hang at disconnect
+Message-ID: <20130205172245.GA1426@kroah.com>
+References: <51071E21.9030008@ahsoftware.de>
+ <5107A5ED.7020009@ahsoftware.de>
+ <5107AE4F.9000809@ahsoftware.de>
+ <5107F014.4030704@ahsoftware.de>
+ <5108329E.2050802@ahsoftware.de>
+ <20130204011413.GA6413@kroah.com>
+ <510FA409.2080201@ahsoftware.de>
+ <51100930.6080405@ahsoftware.de>
+ <20130204192514.GA32318@kroah.com>
+ <5110AFEC.8020406@ahsoftware.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5602.1360079580@turing-police.cc.vt.edu>
+In-Reply-To: <5110AFEC.8020406@ahsoftware.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 10:53:00AM -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 31 Jan 2013 16:37:27 -0800, Kent Overstreet said:
-> > On Thu, Jan 31, 2013 at 01:59:52PM -0800, Andrew Morton wrote:
-> > > Did this get fixed?
+On Tue, Feb 05, 2013 at 08:08:28AM +0100, Alexander Holler wrote:
+> Am 04.02.2013 20:25, schrieb Greg KH:
+> > On Mon, Feb 04, 2013 at 08:17:04PM +0100, Alexander Holler wrote:
+> >> Am 04.02.2013 13:05, schrieb Alexander Holler:
+> >>> Am 04.02.2013 02:14, schrieb Greg KH:
+> >>>
+> >>>> So you are right in that your driver will wait for forever for a
+> >>>> disconnect() to happen, as it will never be called.  I don't understand
+> >>>> the problem that this is causing when it happens.  What's wrong with
+> >>>> udlfb that having the cpu suddently reset as the powerdown happened
+> >>>> without it knowing about it?
+> >>>
+> >>> There is nothing wrong with that. I've just explained why a problem
+> >>> doesn't occur on shutdown but on disconnect (of the device).
+> >>
+> >> Maybe my explanation before was just to long and I try to explain it
+> >> a bit shorter:
+> >>
+> >> If a device gets disconnected, the disconnect in udlfb might wait
+> >> forever in down_interruptible() (because it waits for an urb it
+> >> never receives). This even prevents a shutdown afterwards, because
+> >> that down_interruptible() never receives a signal (at shutdown,
+> >> because kernel threads don't get such).
+> > 
+> > Where was that urb when the disconnect happened?  The USB core should
+> > call your urb callback for any outstanding urbs at that point in time,
+> > with the proper error flag being set, are you handling that properly?
 > 
-> > With the patches I sent you, yes - not seeing a new linux-next tree yet?
-> 
-> Well, it's a mixed bag at my end.  Finally got a chance to do some more
-> testing, and:
-> 
-> 1) next-20130128 didn't show anything in dmesg, but my VirtualBox Windows 7
-> images appear to livelock on the way up - the Windows throbber would keep
-> going, but it never made any actual progress towards booting. (Part of the
-> delay was fixing a next-20121224 environment, and then discovering it
-> took Windows *two* reboot cycles to get its act back together after getting
-> into that hung state).
-> 
-> 2_ next-20130128 plus the following 3 patches:
-> 
-> Subject: [PATCH 1/3] aio: Fix a null pointer deref in batch_complete_aio
-> Subject: [PATCH 3/3] aio-use-cancellation-list-lazily-fix
-> Subject: [PATCH 2/3] aio-kill-ki_retry-fix-fix
+> I don't know where that urb is as I don't handle it.
 
-The "smoosh struct kiocb" patch also needs to be dropped. That causes
-aio_rw_vect_retry() to check ki_nbytes/ki_left after they've been
-overwritten by aio_complete(), which causes it to return an error when
-it shouldn't have, which causes aio_run_iocb() to double complete the
-iocb causing put_reqs_available() to be called twice and the count
-screwed up.
+What do you mean by that?  The urb is being sent back to your driver,
+right?  If not, that's a bug, but please be sure that your urb callback
+isn't really being called.
 
-> VirtualBox appears to be functional (I did 2 complete boot/shutdown
-> sequences of both a 32-bit and 64-bit Win7 Enterprise image). *HOWEVER*,
-> I saw 3 of these in dmesg:
-> 
-> [  668.278624] WARNING: at fs/aio.c:348 put_ioctx+0x1c0/0x241()
-> 
-> [  668.278652] Call Trace:
-> [  668.278660]  [<ffffffff8102ed10>] warn_slowpath_common+0x7c/0x96
-> [  668.278665]  [<ffffffff8102edc9>] warn_slowpath_null+0x15/0x17
-> [  668.278669]  [<ffffffff8114c562>] put_ioctx+0x1c0/0x241
-> [  668.278673]  [<ffffffff8114d42a>] sys_io_destroy+0x4c/0x5c
-> [  668.278679]  [<ffffffff8160c112>] system_call_fastpath+0x16/0x1b
-> 
-> and the code there says:
-> 
->         WARN_ON(atomic_read(&ctx->reqs_available) > ctx->nr);
-> 
-> which leaves me wondering exactly how we exited the while loop
-> just above - is the intention that it loop until reqs_available == ctx->nr
-> exactly?  Looks like if 'avail' is anything other than exactly 1 in
-> that while loop, we can be at a state where reqs_avail == (ctx->nr -1),
-> get 'avail=2', do the atomic_add, fall out of the loop, and trigger
-> the WARN_ON.
-> 
-> Damned if I see how that can happen though....
-> 
-> 
-> 
-> 
-> 
-> 
-> 
+thanks,
 
-
+greg k-h
