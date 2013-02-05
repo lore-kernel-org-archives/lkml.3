@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab3BEVtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 16:49:47 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:57009 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756924Ab3BEVtm (ORCPT
+	id S1756965Ab3BEVuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 16:50:04 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52669 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756945Ab3BEVtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 16:49:42 -0500
-Subject: [PATCH 3/4] Add the code to send the consigned time from the host
- to the guest
+	Tue, 5 Feb 2013 16:49:55 -0500
+Subject: [PATCH 4/4] Add a timer to allow the separation of consigned from
+ steal time.
 To: linux-kernel@vger.kernel.org
 From: Michael Wolf <mjw@linux.vnet.ibm.com>
 Cc: riel@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
         peterz@infradead.org, mtosatti@redhat.com, glommer@parallels.com,
         mingo@redhat.com, anthony@codemonkey.ws
-Date: Tue, 05 Feb 2013 15:49:30 -0600
-Message-ID: <20130205214930.4615.37337.stgit@lambeau>
+Date: Tue, 05 Feb 2013 15:49:41 -0600
+Message-ID: <20130205214941.4615.29852.stgit@lambeau>
 In-Reply-To: <20130205214818.4615.12937.stgit@lambeau>
 References: <20130205214818.4615.12937.stgit@lambeau>
 User-Agent: StGit/0.16
@@ -23,196 +23,181 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13020521-8256-0000-0000-0000061D5901
+x-cbid: 13020521-4790-0000-0000-000006CC6B38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the paravirt calls that retrieve the steal-time information
-from the host.  Add to it getting the consigned value as well as
-the steal time.
+Add a helper routine to scheduler/core.c to allow the kvm module
+to retrieve the cpu hardlimit settings.  The values will be used
+to set up a timer that is used to separate the consigned from the
+steal time.
 
 Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/kvm_host.h      |    1 +
- arch/x86/include/asm/paravirt.h      |    4 ++--
- arch/x86/include/uapi/asm/kvm_para.h |    3 ++-
- arch/x86/kernel/kvm.c                |    3 ++-
- arch/x86/kernel/paravirt.c           |    4 ++--
- arch/x86/kvm/x86.c                   |    2 ++
- include/linux/kernel_stat.h          |    1 +
- kernel/sched/cputime.c               |   21 +++++++++++++++++++--
- kernel/sched/sched.h                 |    2 ++
- 9 files changed, 33 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    9 ++++++
+ arch/x86/kvm/x86.c              |   62 ++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/core.c             |   20 +++++++++++++
+ 3 files changed, 90 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index dc87b65..fe5a37b 100644
+index fe5a37b..9518613 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -428,6 +428,7 @@ struct kvm_vcpu_arch {
- 		u64 msr_val;
- 		u64 last_steal;
- 		u64 accum_steal;
-+		u64 accum_consigned;
- 		struct gfn_to_hva_cache stime;
- 		struct kvm_steal_time steal;
- 	} st;
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index 9b753ea..77f05e7 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -196,9 +196,9 @@ struct static_key;
- extern struct static_key paravirt_steal_enabled;
- extern struct static_key paravirt_steal_rq_enabled;
+@@ -355,6 +355,15 @@ struct kvm_vcpu_arch {
+ 	bool tpr_access_reporting;
  
--static inline void paravirt_steal_clock(int cpu, u64 *steal)
-+static inline void paravirt_steal_clock(int cpu, u64 *steal, u64 *consigned)
- {
--	PVOP_VCALL2(pv_time_ops.steal_clock, cpu, steal);
-+	PVOP_VCALL3(pv_time_ops.steal_clock, cpu, steal, consigned);
- }
- 
- static inline unsigned long long paravirt_read_pmc(int counter)
-diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
-index 06fdbd9..55d617f 100644
---- a/arch/x86/include/uapi/asm/kvm_para.h
-+++ b/arch/x86/include/uapi/asm/kvm_para.h
-@@ -42,9 +42,10 @@
- 
- struct kvm_steal_time {
- 	__u64 steal;
-+	__u64 consigned;
- 	__u32 version;
- 	__u32 flags;
--	__u32 pad[12];
-+	__u32 pad[10];
- };
- 
- #define KVM_STEAL_ALIGNMENT_BITS 5
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 89e5468..fb52f8a 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -386,7 +386,7 @@ static struct notifier_block kvm_pv_reboot_nb = {
- 	.notifier_call = kvm_pv_reboot_notify,
- };
- 
--static void kvm_steal_clock(int cpu, u64 *steal)
-+static void kvm_steal_clock(int cpu, u64 *steal, u64 *consigned)
- {
- 	struct kvm_steal_time *src;
- 	int version;
-@@ -396,6 +396,7 @@ static void kvm_steal_clock(int cpu, u64 *steal)
- 		version = src->version;
- 		rmb();
- 		*steal = src->steal;
-+		*consigned = src->consigned;
- 		rmb();
- 	} while ((version & 1) || (version != src->version));
- }
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
-index 17fff18..3797683 100644
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -207,9 +207,9 @@ static void native_flush_tlb_single(unsigned long addr)
- struct static_key paravirt_steal_enabled;
- struct static_key paravirt_steal_rq_enabled;
- 
--static u64 native_steal_clock(int cpu)
-+static void native_steal_clock(int cpu, u64 *steal, u64 *consigned)
- {
--	return 0;
-+	*steal = *consigned = 0;
- }
- 
- /* These are in entry.S */
+ 	/*
++	 * timer used to determine if the time should be counted as
++	 * steal time or consigned time.
++	 */
++	struct hrtimer steal_timer;
++	u64 current_consigned;
++	s64 consigned_quota;
++	s64 consigned_period;
++
++	/*
+ 	 * Paging state of the vcpu
+ 	 *
+ 	 * If the vcpu runs in guest mode with two level paging this still saves
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index c243b81..51b63d1 100644
+index 51b63d1..79d144d 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -1867,8 +1867,10 @@ static void record_steal_time(struct kvm_vcpu *vcpu)
+@@ -1848,13 +1848,32 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
+ static void accumulate_steal_time(struct kvm_vcpu *vcpu)
+ {
+ 	u64 delta;
++	u64 steal_delta;
++	u64 consigned_delta;
+ 
+ 	if (!(vcpu->arch.st.msr_val & KVM_MSR_ENABLED))
  		return;
  
- 	vcpu->arch.st.steal.steal += vcpu->arch.st.accum_steal;
-+	vcpu->arch.st.steal.consigned += vcpu->arch.st.accum_consigned;
- 	vcpu->arch.st.steal.version += 2;
- 	vcpu->arch.st.accum_steal = 0;
-+	vcpu->arch.st.accum_consigned = 0;
- 
- 	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.st.stime,
- 		&vcpu->arch.st.steal, sizeof(struct kvm_steal_time));
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index e352052..f58ed0f 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -126,6 +126,7 @@ extern unsigned long long task_delta_exec(struct task_struct *);
- extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
- extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
- extern void account_steal_time(cputime_t);
-+extern void account_consigned_time(cputime_t);
- extern void account_idle_time(cputime_t);
- 
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 0b4f1ec..2a2d4be 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -244,6 +244,18 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+ 	delta = current->sched_info.run_delay - vcpu->arch.st.last_steal;
+ 	vcpu->arch.st.last_steal = current->sched_info.run_delay;
+-	vcpu->arch.st.accum_steal = delta;
++
++	/* split the delta into steal and consigned */
++	if (vcpu->arch.current_consigned < vcpu->arch.consigned_quota) {
++		vcpu->arch.current_consigned += delta;
++		if (vcpu->arch.current_consigned > vcpu->arch.consigned_quota) {
++			steal_delta = vcpu->arch.current_consigned
++						-  vcpu->arch.consigned_quota;
++			consigned_delta = delta - steal_delta;
++		} else {
++			consigned_delta = delta;
++			steal_delta = 0;
++		}
++	} else {
++		consigned_delta = 0;
++		steal_delta = delta;
++	}
++	vcpu->arch.st.accum_steal = steal_delta;
++	vcpu->arch.st.accum_consigned = consigned_delta;
  }
  
- /*
-+ * This accounts for the time that is split out of steal time.
-+ * Consigned time represents the amount of time that the cpu was
-+ * expected to be somewhere else.
-+ */
-+void account_consigned_time(cputime_t cputime)
+ static void record_steal_time(struct kvm_vcpu *vcpu)
+@@ -2629,8 +2648,35 @@ static bool need_emulate_wbinvd(struct kvm_vcpu *vcpu)
+ 		!(vcpu->kvm->arch.iommu_flags & KVM_IOMMU_CACHE_COHERENCY);
+ }
+ 
++extern int sched_use_hard_capping(int cpuid, int num_vcpus, s64 *quota,
++					s64 *period);
++enum hrtimer_restart steal_timer_fn(struct hrtimer *data)
 +{
-+	u64 *cpustat =  kcpustat_this_cpu->cpustat;
++	struct kvm_vcpu *vcpu;
++	struct kvm *kvm;
++	int num_vcpus;
++	ktime_t now;
 +
-+	cpustat[CPUTIME_CONSIGN] += (__force u64) cputime;
++	vcpu = container_of(data, struct kvm_vcpu, arch.steal_timer);
++	kvm = vcpu->kvm;
++	num_vcpus = atomic_read(&kvm->online_vcpus);
++	sched_use_hard_capping(vcpu->cpu, num_vcpus,
++				&vcpu->arch.consigned_quota,
++				&vcpu->arch.consigned_period);
++	vcpu->arch.current_consigned = 0;
++	now = ktime_get();
++	hrtimer_forward(&vcpu->arch.steal_timer, now,
++			ktime_set(0, vcpu->arch.consigned_period));
++
++	return HRTIMER_RESTART;
 +}
 +
-+/*
-  * Account for involuntary wait time.
-  * @cputime: the cpu time spent in involuntary wait
-  */
-@@ -274,15 +286,20 @@ static __always_inline bool steal_account_process_tick(void)
- #ifdef CONFIG_PARAVIRT
- 	if (static_key_false(&paravirt_steal_enabled)) {
- 		u64 steal, st = 0;
-+		u64 consigned, cs = 0;
- 
--		paravirt_steal_clock(smp_processor_id(), &steal);
-+		paravirt_steal_clock(smp_processor_id(), &steal, &consigned);
- 		steal -= this_rq()->prev_steal_time;
-+		consigned -= this_rq()->prev_consigned_time;
- 
- 		st = steal_ticks(steal);
-+		cs = steal_ticks(consigned);
- 		this_rq()->prev_steal_time += st * TICK_NSEC;
-+		this_rq()->prev_consigned_time += cs * TICK_NSEC;
- 
- 		account_steal_time(st);
--		return st;
-+		account_consigned_time(cs);
-+		return st || cs;
+ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ {
++	struct kvm *kvm;
++	int num_vcpus;
++	ktime_t ktime;
++
+ 	/* Address WBINVD may be executed by guest */
+ 	if (need_emulate_wbinvd(vcpu)) {
+ 		if (kvm_x86_ops->has_wbinvd_exit())
+@@ -2670,6 +2716,18 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 			kvm_migrate_timers(vcpu);
+ 		vcpu->cpu = cpu;
  	}
- #endif
- 	return false;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index fc88644..73a9ef2 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -442,9 +442,11 @@ struct rq {
- #endif
- #ifdef CONFIG_PARAVIRT
- 	u64 prev_steal_time;
-+	u64 prev_consigned_time;
- #endif
- #ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
- 	u64 prev_steal_time_rq;
-+	u64 prev_consigned_time_rq;
- #endif
++	/* Initialize and start a timer to capture steal and consigned time */
++	kvm = vcpu->kvm;
++	num_vcpus = atomic_read(&kvm->online_vcpus);
++	num_vcpus = (num_vcpus == 0) ? 1 : num_vcpus;
++	sched_use_hard_capping(vcpu->cpu, num_vcpus,
++				&vcpu->arch.consigned_quota,
++				&vcpu->arch.consigned_period);
++	hrtimer_init(&vcpu->arch.steal_timer, CLOCK_MONOTONIC,
++			HRTIMER_MODE_REL);
++	vcpu->arch.steal_timer.function = &steal_timer_fn;
++	ktime = ktime_set(0, vcpu->arch.consigned_period);
++	hrtimer_start(&vcpu->arch.steal_timer, ktime, HRTIMER_MODE_REL);
  
- 	/* calc_load related fields */
+ 	accumulate_steal_time(vcpu);
+ 	kvm_make_request(KVM_REQ_STEAL_UPDATE, vcpu);
+@@ -2680,6 +2738,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+ 	kvm_x86_ops->vcpu_put(vcpu);
+ 	kvm_put_guest_fpu(vcpu);
+ 	vcpu->arch.last_host_tsc = native_read_tsc();
++	hrtimer_cancel(&vcpu->arch.steal_timer);
+ }
+ 
+ static int kvm_vcpu_ioctl_get_lapic(struct kvm_vcpu *vcpu,
+@@ -6685,6 +6744,7 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
+ {
+ 	int idx;
+ 
++	hrtimer_cancel(&vcpu->arch.steal_timer);
+ 	kvm_pmu_destroy(vcpu);
+ 	kfree(vcpu->arch.mce_banks);
+ 	kvm_free_lapic(vcpu);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index efc2652..133ee47 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -8154,6 +8154,26 @@ void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+ 
+ 	rcu_read_unlock();
+ }
++/*
++ * return 1 if the scheduler is using some form of hard capping
++ * return 0 if there is no capping configured.
++ */
++int sched_use_hard_capping(int cpuid, int num_cpus, long *quota, long *period)
++{
++	struct rq *rq = cpu_rq(cpuid);
++	struct task_struct *curr = rq->curr;
++	struct task_group *tg = curr->sched_task_group;
++	long total_time;
++
++	*period = tg_get_cfs_period(tg);
++	if (*quota == RUNTIME_INF || *quota == -1)
++		return 0;
++	*quota = jiffies_to_usecs(tg_get_cfs_quota(tg)) / num_cpus;
++	total_time = jiffies_to_usecs(*period);
++	*quota = total_time - *quota;
++	return 1;
++}
++EXPORT_SYMBOL_GPL(sched_use_hard_capping);
+ 
+ struct cgroup_subsys cpuacct_subsys = {
+ 	.name = "cpuacct",
 
