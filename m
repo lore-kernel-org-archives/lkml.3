@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab3BETvp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 14:51:45 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:45669 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756727Ab3BETtX (ORCPT
+	id S1756836Ab3BETwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 14:52:09 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:58912 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756633Ab3BETtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 14:49:23 -0500
+	Tue, 5 Feb 2013 14:49:20 -0500
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
         Lee Jones <lee.jones@linaro.org>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 10/14] pinctrl/abx500: add Device Tree support
-Date: Tue, 5 Feb 2013 20:48:31 +0100
-Message-ID: <1360093715-6348-11-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 06/14] pinctrl/abx500: align GPIO cluster boundaries
+Date: Tue, 5 Feb 2013 20:48:27 +0100
+Message-ID: <1360093715-6348-7-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com>
 References: <1360093715-6348-1-git-send-email-linus.walleij@stericsson.com>
@@ -26,100 +26,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lee Jones <lee.jones@linaro.org>
 
-This patch will allow the ABX500 Pinctrl driver to be probed when
-Device Tree is enabled with an appropriate node contained.
+Not quite sure how this ever worked. In ab8500_gpio_to_irq() the
+GPIO for conversion is passed through as the second argument. If
+GPIO13, which is a valid GPIO for IRQ functionality, was received;
+it would be rejected by the following guard:
+
+    GPIO_IRQ_CLUSTER(5, 12, 0); /* GPIO numbers start from 1 */
+
+    if (offset >= cluster->start && offset <= cluster->end)
+        /* Valid GPIO for IRQ use */
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
+[Augmented to account for off-by-one problem]
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/pinctrl/pinctrl-abx500.c | 36 +++++++++++++++++++++++++++++++-----
- 1 file changed, 31 insertions(+), 5 deletions(-)
+ drivers/pinctrl/pinctrl-ab8500.c |  6 +++---
+ drivers/pinctrl/pinctrl-ab8505.c | 10 +++++-----
+ drivers/pinctrl/pinctrl-ab8540.c |  4 ++--
+ drivers/pinctrl/pinctrl-ab9540.c |  8 ++++----
+ drivers/pinctrl/pinctrl-abx500.c |  6 ++++--
+ 5 files changed, 18 insertions(+), 16 deletions(-)
 
+diff --git a/drivers/pinctrl/pinctrl-ab8500.c b/drivers/pinctrl/pinctrl-ab8500.c
+index 2cd424e..67dc942 100644
+--- a/drivers/pinctrl/pinctrl-ab8500.c
++++ b/drivers/pinctrl/pinctrl-ab8500.c
+@@ -456,9 +456,9 @@ struct alternate_functions ab8500_alternate_functions[AB8500_GPIO_MAX_NUMBER + 1
+  *	GPIO36 to GPIO41
+  */
+ struct abx500_gpio_irq_cluster ab8500_gpio_irq_cluster[] = {
+-	GPIO_IRQ_CLUSTER(5, 12, 0), /* GPIO numbers start from 1 */
+-	GPIO_IRQ_CLUSTER(23, 24, 0),
+-	GPIO_IRQ_CLUSTER(35, 40, 0),
++	GPIO_IRQ_CLUSTER(6, 13, 0),
++	GPIO_IRQ_CLUSTER(24, 25, 0),
++	GPIO_IRQ_CLUSTER(36, 41, 0),
+ };
+ 
+ static struct abx500_pinctrl_soc_data ab8500_soc = {
+diff --git a/drivers/pinctrl/pinctrl-ab8505.c b/drivers/pinctrl/pinctrl-ab8505.c
+index 40dc3e1..825710a 100644
+--- a/drivers/pinctrl/pinctrl-ab8505.c
++++ b/drivers/pinctrl/pinctrl-ab8505.c
+@@ -349,11 +349,11 @@ struct alternate_functions ab8505_alternate_functions[AB8505_GPIO_MAX_NUMBER + 1
+  *	GPIO52 to GPIO53
+  */
+ struct abx500_gpio_irq_cluster ab8505_gpio_irq_cluster[] = {
+-	GPIO_IRQ_CLUSTER(9, 10, 0), /* GPIO numbers start from 1 */
+-	GPIO_IRQ_CLUSTER(12, 12, 0),
+-	GPIO_IRQ_CLUSTER(39, 40, 0),
+-	GPIO_IRQ_CLUSTER(49, 49, 0),
+-	GPIO_IRQ_CLUSTER(51, 52, 0),
++	GPIO_IRQ_CLUSTER(10, 11, 0),
++	GPIO_IRQ_CLUSTER(13, 13, 0),
++	GPIO_IRQ_CLUSTER(40, 41, 0),
++	GPIO_IRQ_CLUSTER(50, 50, 0),
++	GPIO_IRQ_CLUSTER(52, 53, 0),
+ };
+ 
+ static struct abx500_pinctrl_soc_data ab8505_soc = {
+diff --git a/drivers/pinctrl/pinctrl-ab8540.c b/drivers/pinctrl/pinctrl-ab8540.c
+index e75310d..0fcd943 100644
+--- a/drivers/pinctrl/pinctrl-ab8540.c
++++ b/drivers/pinctrl/pinctrl-ab8540.c
+@@ -377,8 +377,8 @@ static struct pullud ab8540_pullud = {
+  *	GPIO51 to GPIO54
+  */
+ struct abx500_gpio_irq_cluster ab8540_gpio_irq_cluster[] = {
+-	GPIO_IRQ_CLUSTER(42, 43, 2), /* GPIO numbers start from 1 */
+-	GPIO_IRQ_CLUSTER(50, 53, 0),
++	GPIO_IRQ_CLUSTER(43, 44, 2),
++	GPIO_IRQ_CLUSTER(51, 54, 0),
+ };
+ 
+ static struct abx500_pinctrl_soc_data ab8540_soc = {
+diff --git a/drivers/pinctrl/pinctrl-ab9540.c b/drivers/pinctrl/pinctrl-ab9540.c
+index 31fec3e..28dfb2e 100644
+--- a/drivers/pinctrl/pinctrl-ab9540.c
++++ b/drivers/pinctrl/pinctrl-ab9540.c
+@@ -455,10 +455,10 @@ struct alternate_functions ab9540alternate_functions[AB9540_GPIO_MAX_NUMBER + 1]
+ };
+ 
+ struct abx500_gpio_irq_cluster ab9540_gpio_irq_cluster[] = {
+-	GPIO_IRQ_CLUSTER(9, 12, 0), /* GPIO numbers start from 1 */
+-	GPIO_IRQ_CLUSTER(23, 24, 0),
+-	GPIO_IRQ_CLUSTER(39, 40, 0),
+-	GPIO_IRQ_CLUSTER(49, 53, 0),
++	GPIO_IRQ_CLUSTER(10, 13, 0),
++	GPIO_IRQ_CLUSTER(24, 25, 0),
++	GPIO_IRQ_CLUSTER(40, 41, 0),
++	GPIO_IRQ_CLUSTER(50, 54, 0),
+ };
+ 
+ static struct abx500_pinctrl_soc_data ab9540_soc = {
 diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
-index a0d324b..20f94cf 100644
+index 9bdfcb9..a9e720f 100644
 --- a/drivers/pinctrl/pinctrl-abx500.c
 +++ b/drivers/pinctrl/pinctrl-abx500.c
-@@ -14,6 +14,8 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/err.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/irq.h>
-@@ -825,22 +827,44 @@ static int abx500_get_gpio_num(struct abx500_pinctrl_soc_data *soc)
- 	return npins;
- }
- 
-+static const struct of_device_id abx500_gpio_match[] = {
-+	{ .compatible = "stericsson,ab8500-gpio", .data = (void *)PINCTRL_AB8500, },
-+	{ .compatible = "stericsson,ab8505-gpio", .data = (void *)PINCTRL_AB8505, },
-+	{ .compatible = "stericsson,ab8540-gpio", .data = (void *)PINCTRL_AB8540, },
-+	{ .compatible = "stericsson,ab9540-gpio", .data = (void *)PINCTRL_AB9540, },
-+};
-+
- static int abx500_gpio_probe(struct platform_device *pdev)
+@@ -272,6 +272,8 @@ static int abx500_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ static int abx500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
  {
- 	struct ab8500_platform_data *abx500_pdata =
- 				dev_get_platdata(pdev->dev.parent);
--	struct abx500_gpio_platform_data *pdata;
-+	struct abx500_gpio_platform_data *pdata = NULL;
-+	struct device_node *np = pdev->dev.of_node;
- 	struct abx500_pinctrl *pct;
- 	const struct platform_device_id *platid = platform_get_device_id(pdev);
-+	unsigned int id = -1;
- 	int ret, err;
+ 	struct abx500_pinctrl *pct = to_abx500_pinctrl(chip);
++	/* The AB8500 GPIO numbers are off by one */
++	int gpio = offset + 1;
+ 	int base = pct->irq_base;
  	int i;
  
--	pdata = abx500_pdata->gpio;
-+	if (abx500_pdata)
-+		pdata = abx500_pdata->gpio;
- 	if (!pdata) {
--		dev_err(&pdev->dev, "gpio platform data missing\n");
--		return -ENODEV;
-+		if (np) {
-+			const struct of_device_id *match;
-+
-+			match = of_match_device(abx500_gpio_match, &pdev->dev);
-+			if (!match)
-+				return -ENODEV;
-+			id = (unsigned long)match->data;
-+		} else {
-+			dev_err(&pdev->dev, "gpio dt and platform data missing\n");
-+			return -ENODEV;
-+		}
- 	}
+@@ -279,8 +281,8 @@ static int abx500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ 		struct abx500_gpio_irq_cluster *cluster =
+ 			&pct->irq_cluster[i];
  
-+	if (platid)
-+		id = platid->driver_data;
-+
- 	pct = devm_kzalloc(&pdev->dev, sizeof(struct abx500_pinctrl),
- 				   GFP_KERNEL);
- 	if (pct == NULL) {
-@@ -854,12 +878,13 @@ static int abx500_gpio_probe(struct platform_device *pdev)
- 	pct->chip = abx500gpio_chip;
- 	pct->chip.dev = &pdev->dev;
- 	pct->chip.base = pdata->gpio_base;
-+	pct->chip.base = (np) ? -1 : pdata->gpio_base;
+-		if (offset >= cluster->start && offset <= cluster->end)
+-			return base + offset - cluster->start;
++		if (gpio >= cluster->start && gpio <= cluster->end)
++			return base + gpio - cluster->start;
  
- 	/* initialize the lock */
- 	mutex_init(&pct->lock);
- 
- 	/* Poke in other ASIC variants here */
--	switch (platid->driver_data) {
-+	switch (id) {
- 	case PINCTRL_AB8500:
- 		abx500_pinctrl_ab8500_init(&pct->soc);
- 		break;
-@@ -966,6 +991,7 @@ static struct platform_driver abx500_gpio_driver = {
- 	.driver = {
- 		.name = "abx500-gpio",
- 		.owner = THIS_MODULE,
-+		.of_match_table = abx500_gpio_match,
- 	},
- 	.probe = abx500_gpio_probe,
- 	.remove = abx500_gpio_remove,
+ 		/* Advance by the number of gpios in this cluster */
+ 		base += cluster->end + cluster->offset - cluster->start + 1;
 -- 
 1.7.11.3
 
