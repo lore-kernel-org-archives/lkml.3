@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3BEKzU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:55:20 -0500
-Received: from na3sys010aog108.obsmtp.com ([74.125.245.84]:33455 "HELO
-	na3sys010aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754002Ab3BEKzP (ORCPT
+	id S1755126Ab3BEKzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:55:32 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48504 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962Ab3BEKzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 05:55:15 -0500
-From: "Leonid Shatz" <leonid.shatz@ravellosystems.com>
-To: "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Izik Eidus'" <izik.eidus@ravellosystems.com>
-Cc: "'Andrea Arcangeli'" <aarcange@redhat.com>, <linux-kernel@vger.kernel.org>
-References: <1359981217-389-1-git-send-email-izik.eidus@ravellosystems.com> <alpine.LFD.2.02.1302051138370.11905@ionos>
-In-Reply-To: <alpine.LFD.2.02.1302051138370.11905@ionos>
-Subject: RE: [PATCH] fix hrtimer_enqueue_reprogram race
-Date: Tue, 5 Feb 2013 12:55:17 +0200
-Message-ID: <03b201ce038f$4a2db840$de8928c0$@ravellosystems.com>
+	Tue, 5 Feb 2013 05:55:21 -0500
+Date: Tue, 5 Feb 2013 11:55:19 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+cc: Oleg Nesterov <oleg@redhat.com>, Tommi Rantala <tt.rantala@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: clock_nanosleep() task_struct leak
+In-Reply-To: <20130205103455.GB18313@redhat.com>
+Message-ID: <alpine.LFD.2.02.1302051155000.11905@ionos>
+References: <CA+ydwtqUUAR9zf3dp+N1JRW+if88EZ73i+5BQtuggVPDFVdCBg@mail.gmail.com> <alpine.LFD.2.02.1302011450160.11905@ionos> <20130204193223.GA11910@redhat.com> <20130205103455.GB18313@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQFOdIG7lHacNtBAA3jpV21GXL0XcAIvDDp7mVi6nhA=
-Content-Language: en-us
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The explanation were submitted as possible scenario which could explain how
-the bug in kernel could happen and it does not mean that serious designer
-could do exactly that. As I said before, it's also possible that a race
-between hrtimer_cancel and hrtimer_start can trigger the bug. The idea is to
-have kernel more robust. There are already locks used inside hrtimer code,
-so why should users of the hrtimer add another layer of locks and get
-involved in the intricacy of which cases are protected by internal hrtimer
-lock and which are not?
+On Tue, 5 Feb 2013, Stanislaw Gruszka wrote:
+> On Mon, Feb 04, 2013 at 08:32:23PM +0100, Oleg Nesterov wrote:
+> > On 02/01, Thomas Gleixner wrote:
+> > >
+> > > B1;2601;0cOn Fri, 1 Feb 2013, Tommi Rantala wrote:
+> > >
+> > > > Hello,
+> > > >
+> > > > Trinity discovered a task_struct leak with clock_nanosleep(), reproducible with:
+> > > >
+> > > > -----8<-----8<-----8<-----
+> > > > #include <time.h>
+> > > >
+> > > > static const struct timespec req;
+> > > >
+> > > > int main(void) {
+> > > >         return clock_nanosleep(CLOCK_PROCESS_CPUTIME_ID,
+> > > >                         TIMER_ABSTIME, &req, NULL);
+> > > > }
+> > > > -----8<-----8<-----8<-----
+> > 
+> > posix_cpu_timer_create()->get_task_struct() I guess...
+> > 
+> > Cough. I am not sure I ever understood this code, but now it certainly
+> > looks as if I never saw it before.
+> 
+> Looks on do_cpu_nanosleep() we call posix_cpu_timer_create(), but we do
+> not call posix_cpu_timer_del() at the end. Fix will not be super simple,
+> since we need to care about error cases. I can cook a patch if nobody
+> else want to do this.
 
-Leonid Shatz
+Would be much appreciated!
 
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Tuesday, February 05, 2013 12:44 PM
-> To: Izik Eidus
-> Cc: Andrea Arcangeli; linux-kernel@vger.kernel.org; leonid Shatz
-> Subject: Re: [PATCH] fix hrtimer_enqueue_reprogram race
-> 
-> On Mon, 4 Feb 2013, Izik Eidus wrote:
-> 
-> > From: leonid Shatz <leonid.shatz@ravellosystems.com>
-> >
-> > it seems like hrtimer_enqueue_reprogram contain a race which could
-> > result in timer.base switch during unlock/lock sequence.
-> >
-> > See the code at __hrtimer_start_range_ns where it calls
-> > hrtimer_enqueue_reprogram. The later is releasing lock protecting the
-> > timer base for a short time and timer base switch can occur from a
-> > different CPU thread. Later when __hrtimer_start_range_ns calls
-> > unlock_hrtimer_base, a base switch could have happened and this causes
-> > the bug
-> >
-> > Try to start the same hrtimer from two different threads in kernel
-> > running each one on a different CPU. Eventually one of the calls will
-> > cause timer base switch while another thread is not expecting it.
-> 
-> Aside of the bug in the hrtimer code being a real one, writing code which
-> fiddles with the same resource (hrtimer) unserialized is broken on its
-own.
-> 
-> > This can happen in virtualized environment where one thread can be
-> > delayed by lower hypervisor, and due to time delay a different CPU is
-> > taking care of missed timer start and runs the timer start logic on its
-own.
-> 
-> Without noticing that something else already takes care of it? So you're
-> saying that the code in question relies on magic serialization in the
-hrtimer
-> code. Doesn't look like a brilliant design.
-> 
-> Thanks,
-> 
-> 	tglx
+Thanks,
 
+	tglx
