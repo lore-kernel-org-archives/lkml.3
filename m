@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab3BEEmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 23:42:49 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:36785 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753954Ab3BEEms (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 23:42:48 -0500
-Date: Mon, 4 Feb 2013 20:42:21 -0800 (PST)
-From: Andy King <acking@vmware.com>
-To: David Miller <davem@davemloft.net>
-Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, dtor@vmware.com
-Message-ID: <1979127675.2501555.1360039341169.JavaMail.root@vmware.com>
-In-Reply-To: <20130108.174601.1788895671912734725.davem@davemloft.net>
-Subject: Re: [Pv-drivers] [PATCH 0/6] VSOCK for Linux upstreaming
+	id S1756159Ab3BEEoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 23:44:16 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:17568 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753464Ab3BEEoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 23:44:15 -0500
+X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
+   d="scan'208";a="6689739"
+Message-ID: <51108DC8.4090704@cn.fujitsu.com>
+Date: Tue, 05 Feb 2013 12:42:48 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Minchan Kim <minchan@kernel.org>
+CC: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, linux-mm@kvack.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] mm: hotplug: implement non-movable version of get_user_pages()
+ to kill long-time pin pages
+References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com> <20130205005859.GE2610@blaptop>
+In-Reply-To: <20130205005859.GE2610@blaptop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 12:42:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 12:42:54,
+	Serialize complete at 2013/02/05 12:42:54
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [108.68.97.87]
-X-Mailer: Zimbra 7.2.0_GA_2681 (ZimbraWebClient - GC24 (Mac)/7.2.0_GA_2681)
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Hi Minchan,
 
-> >> Instead, what I remember doing was deferring to the feedback these
-> >> folks received, stating that ideas that the virtio people had
-> >> mentioned should be considered instead.
-> >> 
-> >> http://marc.info/?l=linux-netdev&m=135301515818462&w=2
-> > 
-> > I believe Andy replied to Anthony's AF_VMCHANNEL post and the
-> > differences between the proposed solutions.
+On 02/05/2013 08:58 AM, Minchan Kim wrote:
+> Hello,
 > 
-> I'd much rather see a hypervisor neutral solution than a hypervisor
-> specific one which this certainly is.
+> On Mon, Feb 04, 2013 at 06:04:06PM +0800, Lin Feng wrote:
+>> Currently get_user_pages() always tries to allocate pages from movable zone,
+>> as discussed in thread https://lkml.org/lkml/2012/11/29/69, in some case users
+>> of get_user_pages() is easy to pin user pages for a long time(for now we found
+>> that pages pinned as aio ring pages is such case), which is fatal for memory
+>> hotplug/remove framework.
+>>
+>> So the 1st patch introduces a new library function called
+>> get_user_pages_non_movable() to pin pages only from zone non-movable in memory.
+>> It's a wrapper of get_user_pages() but it makes sure that all pages come from
+>> non-movable zone via additional page migration.
+>>
+>> The 2nd patch gets around the aio ring pages can't be migrated bug caused by
+>> get_user_pages() via using the new function. It only works when configed with
+>> CONFIG_MEMORY_HOTREMOVE, otherwise it uses the old version of get_user_pages().
+> 
+> CMA has same issue but the problem is the driver developers or any subsystem
+> using GUP can't know their pages is in CMA area or not in advance.
+> So all of client of GUP should use GUP_NM to work them with CMA/MEMORY_HOTPLUG well?
+> Even some driver module in embedded side doesn't open their source code.
+Yes, it somehow depends on the users of GUP. In MEMORY_HOTPLUG case, as for most users
+of GUP, they will release the pinned pages immediately and to such users they should get
+a good performance, using the old style interface is a smart way. And we had better just
+deal with the cases we have to by using the new interface.
+  
+> 
+> I would like to make GUP smart so it allocates a page from non-movable/non-cma area
+> when memory-hotplug/cma is enabled(CONFIG_MIGRATE_ISOLATE). Yeb. it might hurt GUP
+> performance but it is just trade-off for using CMA/memory-hotplug, IMHO. :(
+As I debuged the get_user_pages(), I found that some pages is already there and may be
+allocated before we call get_user_pages(). __get_user_pages() have following logic to
+handle such case.
+1786                         while (!(page = follow_page(vma, start, foll_flags))) {
+1787                                 int ret;
+To such case an additional alloc-flag or such doesn't work, it's difficult to keep GUP
+as smart as we want :( , so I worked out the migration approach to get around and 
+avoid messing up the current code :)
 
-We've addressed this with the latest patch series, which I sent earlier
-today.  vSockets now has support for pluggable transports, of which VMCI
-happens to be the first; all transport code is separated out into its
-own module.  So the core is now hypervisor neutral.  Given that, would
-you be willing to re-consider it, please?  If at all possible, we'd like
-to make the current merge window.
-
-Thanks so much!
-- Andy
+thanks,
+linfeng 
