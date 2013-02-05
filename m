@@ -1,125 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab3BEUxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 15:53:09 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:64866 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab3BEUxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 15:53:05 -0500
-Date: Wed, 6 Feb 2013 06:52:55 +1000
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Peter Hurley <peter@hurleysoftware.com>, nouveau@lists.freedesktop.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Daniel J Blueman <daniel@quora.org>,
-        Ben Skeggs <bskeggs@redhat.com>, Arend van Spriel <arend@broadcom.com>
-Subject: Re: [PATCH] drm/nouveau: add lockdep annotations
-Message-ID: <20130205205255.GA10051@localhost.bne.redhat.com>
-References: <CAMVG2svkJruzveuozb8RFK_j1BxqDOwBco=Aida9S680_toNiQ@mail.gmail.com>
- <20130204213041.GA3433@joi.lan>
- <51102F40.2090008@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51102F40.2090008@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756529Ab3BEVCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 16:02:14 -0500
+Received: from gate.crashing.org ([63.228.1.57]:36220 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755625Ab3BEVCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 16:02:12 -0500
+Message-ID: <1360098004.4529.13.camel@pasglop>
+Subject: Re: [PATCH] drivers/block/xsysace - replace
+ in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        alan@lxorguk.ukuu.org.uk, geert@linux-m68k.org,
+        dahinds@users.sourceforge.net
+Date: Wed, 06 Feb 2013 08:00:04 +1100
+In-Reply-To: <51111133.7000105@synopsys.com>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	 <1781360.cmQWHCW5SC@wuerfel>
+	 <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+	 <201302041724.47331.arnd@arndb.de> <1360031367.14701.47.camel@pasglop>
+	 <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+	 <1360066756.4529.6.camel@pasglop>
+	 <CAHTX3dLJy314mv39hprkmZ5XdzYiYGz1ngTERp7w6aAYud+Riw@mail.gmail.com>
+	 <51111133.7000105@synopsys.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 10:59:28PM +0100, Maarten Lankhorst wrote:
-> Op 04-02-13 22:30, Marcin Slusarz schreef:
-> > 1) Lockdep thinks all nouveau subdevs belong to the same class and can be
-> > locked in arbitrary order, which is not true (at least in general case).
-> > Tell it to distinguish subdevs by (o)class type.
-> Apart from this specific case, is there any other reason why we require being able to nest 2 subdev locks?
-I think I tend to prefer Marcin's fix for this actually.  The subdev's
-are completely separate classes of objects and as interaction between
-them increases (PM will be very much like this), we may very well
-require holding multiple subdev mutexes at once.
+On Tue, 2013-02-05 at 18:03 +0400, Alexey Brodkin wrote:
+> =====
+> 
+> and its endianess is fixed which is stated in this document 
+> (http://www.xilinx.com/support/documentation/ip_documentation/xps_sysace.pdf).
+> =====
+> The Xilinx System ACE Compact Flash chip is a true little-endian device
+> =====
 
-Ben.
+So far so good...
 
+> But in its turn Xilinx System ACE Compact Flash chip is attached to 
+> CPU's interface bus via some bridge. Depending on interface bus used it 
+> could be BVCI-to-MPU (Microprocessor Interface of the System ACE
+> Compact Flash solution peripheral) for ARC, PLB for MicroBlaze etc.
+> And this bridge in general may do whatever its (HW) developer wants.
 > 
-> Add a NVOBJ_FLAG_CREATE_EXCLUSIVE flag to nouveau_engctx_create and return -EBUSY if there is any existing object. Problem solved, and lockdep is still generic.
+> For example for MicroBlaze Xilinx has its XPS Sysace interface 
+> controller 
+> (http://www.xilinx.com/support/documentation/ip_documentation/xps_sysace.pdf) 
+> which does bit-swapping from PLB's big-endian bytes to xsysace 
+> CF-controller little-endian bytes (though bytes in words are not swapped):
+> =====
+> The Xilinx System ACE Compact Flash chip is a true little-endian device 
+> and the PLB is a big-endian bus. Therefore the XPS System ACE Interface 
+> Controller will do a bit-swap in each byte when connecting the PLB data 
+> bus to the System ACE data bus as shown in Table 2.
+
+This sounds totally bogus to me. But I'll have a look at the doco to
+understand it better. I'll try to do so later today.
+
+> Note however, that the XPS System ACE Interface Controller does not 
+> perform the byte swapping necessary to interface to a little-endian 
+> device when configured to use 16-bit mode. Therefore, the software 
+> drivers provided for this core will perform the necessary byte-swapping 
+> to correctly interface to the Xilinx System ACE Compact Flash chip as 
+> shown in Table 3.
+> =====
 > 
-> > 2) DRM client can be locked under user client lock - tell lockdep to put DRM
-> > client lock in a separate class.
-> Can you copy paste a typical lockdep splat for this? Also this should be a separate patch. :-)
-> 
-> 
-> > Reported-by: Arend van Spriel <arend@broadcom.com>
-> > Reported-by: Peter Hurley <peter@hurleysoftware.com>
-> > Reported-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> > Reported-by: Daniel J Blueman <daniel@quora.org>
-> > Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-> > Cc: stable@vger.kernel.org [3.7, but needs s/const ofuncs/ofuncs/ to build]
-> > ---
-> > Lightly tested, only on NV4B and NVC1.
-> > ---
-> >  drivers/gpu/drm/nouveau/core/core/subdev.c         | 2 +-
-> >  drivers/gpu/drm/nouveau/core/include/core/object.h | 7 +++++--
-> >  drivers/gpu/drm/nouveau/nouveau_drm.c              | 3 +++
-> >  3 files changed, 9 insertions(+), 3 deletions(-)
+> So at this point I'd say that data access should be done differently 
+> depending on HW (bridge) used.
+
+Well, bytes accesses should never need any swapping whatsoever. 16-bit
+access requires swapping for a LE device for register, never for a data
+port. If it does, the bridge is wired incorrectly.
+
+> Another question is do we know for sure that for particular architecture 
+> only 1 interface bridge is used. If so then we may select proper 
+> accessors per architecture.
+
+There aren't two ways to wire up an interface bridge correctly. I would
+advocate not supporting any incorrect wiring in Linux. Doing so would be
+going back to supporting horrors like IDE wired backward etc... which we
+have mostly gotten rid of.
+
+People need to be educated in this area, and Linux upstream doesn't have
+to support any piece of shit anybody comes up with because they can't be
+bothered understanding what endianness and byte address invariance mean.
+
+> >>> It is just sharing the same IP across all platforms. Which is better
+> >>> than create new devices and new device drivers for it. It means that
+> >>> all of them are register compatible but require access with native
+> >>> platform endianness as I listed above.
+> >>
+> >> Every attempt at doing "native platform endianness" has always been a
+> >> misguided attempt turning into a trainwreck (see OHCI USB).
+> >>
+> >> Just pick one endian for the device and stick to it.
 > >
-> > diff --git a/drivers/gpu/drm/nouveau/core/core/subdev.c b/drivers/gpu/drm/nouveau/core/core/subdev.c
-> > index f74c30a..48f0637 100644
-> > --- a/drivers/gpu/drm/nouveau/core/core/subdev.c
-> > +++ b/drivers/gpu/drm/nouveau/core/core/subdev.c
-> > @@ -99,7 +99,7 @@ nouveau_subdev_create_(struct nouveau_object *parent,
-> >  	if (ret)
-> >  		return ret;
-> >  
-> > -	mutex_init(&subdev->mutex);
-> > +	__mutex_init(&subdev->mutex, subname, &oclass->lock_class_key);
-> >  	subdev->name = subname;
-> >  
-> >  	if (parent) {
-> > diff --git a/drivers/gpu/drm/nouveau/core/include/core/object.h b/drivers/gpu/drm/nouveau/core/include/core/object.h
-> > index 6a90267..62e68ba 100644
-> > --- a/drivers/gpu/drm/nouveau/core/include/core/object.h
-> > +++ b/drivers/gpu/drm/nouveau/core/include/core/object.h
-> > @@ -50,10 +50,13 @@ int  nouveau_object_fini(struct nouveau_object *, bool suspend);
-> >  
-> >  extern struct nouveau_ofuncs nouveau_object_ofuncs;
-> >  
-> > +/* Don't allocate dynamically, because lockdep needs lock_class_keys to be in
-> > + * ".data". */
-> >  struct nouveau_oclass {
-> >  	u32 handle;
-> > -	struct nouveau_ofuncs *ofuncs;
-> > -	struct nouveau_omthds *omthds;
-> > +	struct nouveau_ofuncs * const ofuncs;
-> > +	struct nouveau_omthds * const omthds;
-> > +	struct lock_class_key lock_class_key;
-> >  };
-> >  
-> >  #define nv_oclass(o)    nv_object(o)->oclass
-> > diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-> > index ef1ad21..bc00587 100644
-> > --- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-> > +++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-> > @@ -245,6 +245,8 @@ static int nouveau_drm_probe(struct pci_dev *pdev,
-> >  	return 0;
-> >  }
-> >  
-> > +static struct lock_class_key drm_client_lock_class_key;
-> > +
-> >  static int
-> >  nouveau_drm_load(struct drm_device *dev, unsigned long flags)
-> >  {
-> > @@ -256,6 +258,7 @@ nouveau_drm_load(struct drm_device *dev, unsigned long flags)
-> >  	ret = nouveau_cli_create(pdev, "DRM", sizeof(*drm), (void**)&drm);
-> >  	if (ret)
-> >  		return ret;
-> > +	lockdep_set_class(&drm->client.mutex, &drm_client_lock_class_key);
-> >  
-> >  	dev->dev_private = drm;
-> >  	drm->dev = dev;
+> > It is reality and I can't change it. Arnd mentioned it earlier that USB
+> >
+> >
+> >>> It is not a problem to create runtime wrapper and even detect endian
+> >>> directly in the driver
+> >>> but the point if this is the proper design.
+> >>> Also ioread32 and ioread32be shouldn't be used on ARM because there
+> >>> are missing memory barriers.
+> >>
+> >> Then fix them, they shouldn't be, it's a bug, it will break many other
+> >> drivers. They should be fully equivalent to readl.
+> >
+> > I want to be sure about this. I have parsed this again with closer look and
+> > seems to me that ioread32 is equal to readl and iowrite32 to writel.
+> > Arnd: Am I right?
+> >
+> > Thanks,
+> > Michal
 > 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> -Alexey
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
