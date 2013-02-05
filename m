@@ -1,118 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab3BEP0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 10:26:34 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59794 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754966Ab3BEP0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 10:26:30 -0500
-Message-ID: <51112495.4060908@ti.com>
-Date: Tue, 5 Feb 2013 20:56:13 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1754580Ab3BEPau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 10:30:50 -0500
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:56000 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab3BEPaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 10:30:46 -0500
 MIME-Version: 1.0
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [GIT PULL] ARM part of USB patches
-References: <51112418.5020000@ti.com>
-In-Reply-To: <51112418.5020000@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51102E25.8040107@ti.com>
+References: <510C2A47.1090607@mvista.com>
+	<20130201205600.GA31762@arwen.pp.htv.fi>
+	<20130201213003.GW2637@n2100.arm.linux.org.uk>
+	<20130204154153.GA18237@arwen.pp.htv.fi>
+	<510FF1A6.403@mvista.com>
+	<20130204164712.GB4269@arwen.pp.htv.fi>
+	<510FF5C9.3030600@mvista.com>
+	<20130204170216.GC4269@arwen.pp.htv.fi>
+	<51100A72.6030909@ti.com>
+	<CACRpkdZihnp3_Df==QRWxQupgi7W_YXZxc-MxkusVH6J+Vx56A@mail.gmail.com>
+	<20130204203358.GX4720@opensource.wolfsonmicro.com>
+	<CACRpkdbPyZt8=pLhz-5qcaSSAk6VBn61dPTNp6teU9HksBwN2w@mail.gmail.com>
+	<51102E25.8040107@ti.com>
+Date: Tue, 5 Feb 2013 16:30:45 +0100
+Message-ID: <CACRpkdaUQ60W8Vmg3MpvP5uV+3jD3y4+9V2et4Ni+z-7k=aFTg@mail.gmail.com>
+Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, balbi@ti.com,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, "Nair, Sandeep" <sandeep_n@ti.com>,
+        Chris Ball <cjb@laptop.org>, Matt Porter <mporter@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony, Greg,
+On Mon, Feb 4, 2013 at 10:54 PM, Cyril Chemparathy <cyril@ti.com> wrote:
+> On 02/04/2013 04:11 PM, Linus Walleij wrote:
 
-On Tuesday 05 February 2013 08:54 PM, kishon wrote:
-> Hi Tony,
+>> Cyril, just stack up the cookies and take a sweep over them to see
+>> which ones are baked when the NAPI poll comes in -> problem
+>> solved.
 >
-> As discussed, I'm sending a pull request for the arch/arm part of my USB
-> patches. These patches are necessary to get MUSB functional in both dt
-> and non-dt boot. Also added dt data for dwc3 present in OMAP. This patch
-> series *depends* on some of the patches which are merged in usb-next.
+> You're assuming that cookies complete in order.  That is not necessarily
+> true.
 
-This patch series should go in only after USB. Or else it will break 
-compilation.
+So put them on a wait list? Surely you will have a list of pending
+cookies and pick from the front of the queue if there isn't a hole on
+queue position 0.
 
-Thanks
-Kishon
-
->
-> Thanks
-> Kishon
->
-> The following changes since commit
-> 88b62b915b0b7e25870eb0604ed9a92ba4bfc9f7:
->
->    Linux 3.8-rc6 (2013-02-01 12:08:14 +1100)
->
-> are available in the git repository at:
->
->    git://gitorious.org/linux-usb/linux-usb.git arm-usb-dt
->
-> for you to fetch changes up to 09084a48903c6056e20e27ae5054902958a10275:
->
->    ARM: dts: omap5: add dwc3 core dt data (2013-02-05 20:11:46 +0530)
->
-> ----------------------------------------------------------------
-> Kishon Vijay Abraham I (12):
->        ARM: OMAP4: remove control module address space from PHY and OTG
->        ARM: OMAP: devices: create device for usb part of control module
->        ARM: OMAP2: MUSB: Specify omap4 has mailbox
->        ARM: dts: omap: Add omap control usb data
->        ARM: dts: omap: Add omap-usb2 dt data
->        ARM: dts: omap: Add usb_otg and glue data
->        ARM: OMAP: USB: Add phy binding information
->        ARM: dts: omap5: Add omap control usb data
->        ARM: dts: omap5: Add ocp2scp data
->        ARM: dts: omap5: Add omap-usb3 and omap-usb2 dt data
->        ARM: dts: omap5: add dwc3 omap dt data
->        ARM: dts: omap5: add dwc3 core dt data
->
->   Documentation/devicetree/bindings/usb/omap-usb.txt |    1 +
->   arch/arm/boot/dts/omap3-beagle-xm.dts              |    6 ++++++
->   arch/arm/boot/dts/omap3-evm.dts                    |    6 ++++++
->   arch/arm/boot/dts/omap3-overo.dtsi                 |    6 ++++++
->   arch/arm/boot/dts/omap3.dtsi                       |   12 ++++++++++++
->   arch/arm/boot/dts/omap4-panda.dts                  |    6 ++++++
->   arch/arm/boot/dts/omap4-sdp.dts                    |    6 ++++++
->   arch/arm/boot/dts/omap4.dtsi                       |   26
-> ++++++++++++++++++++++++++
->   arch/arm/boot/dts/omap5.dtsi                       |   48
-> ++++++++++++++++++++++++++++++++++++++++++++++++
->   arch/arm/boot/dts/twl4030.dtsi                     |    2 +-
->   arch/arm/mach-omap2/board-2430sdp.c                |    2 ++
->   arch/arm/mach-omap2/board-3430sdp.c                |    2 ++
->   arch/arm/mach-omap2/board-4430sdp.c                |    2 ++
->   arch/arm/mach-omap2/board-cm-t35.c                 |    2 ++
->   arch/arm/mach-omap2/board-devkit8000.c             |    2 ++
->   arch/arm/mach-omap2/board-igep0020.c               |    2 ++
->   arch/arm/mach-omap2/board-ldp.c                    |    2 ++
->   arch/arm/mach-omap2/board-omap3beagle.c            |    2 ++
->   arch/arm/mach-omap2/board-omap3evm.c               |    2 ++
->   arch/arm/mach-omap2/board-omap3logic.c             |    2 ++
->   arch/arm/mach-omap2/board-omap3pandora.c           |    2 ++
->   arch/arm/mach-omap2/board-omap3stalker.c           |    2 ++
->   arch/arm/mach-omap2/board-omap3touchbook.c         |    2 ++
->   arch/arm/mach-omap2/board-omap4panda.c             |    2 ++
->   arch/arm/mach-omap2/board-overo.c                  |    2 ++
->   arch/arm/mach-omap2/board-rm680.c                  |    2 ++
->   arch/arm/mach-omap2/board-zoom-peripherals.c       |    2 ++
->   arch/arm/mach-omap2/devices.c                      |   45
-> +++++++++++++++++++++++++++++++++++++++++++++
->   arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |   13 -------------
->   arch/arm/mach-omap2/usb-musb.c                     |    3 +++
->   include/linux/usb/musb.h                           |    2 ++
->   31 files changed, 202 insertions(+), 14 deletions(-)
-
+Yours,
+Linus Walleij
