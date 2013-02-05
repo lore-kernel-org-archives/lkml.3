@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab3BELd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 06:33:27 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:34204 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab3BELdW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 06:33:22 -0500
+	id S1754100Ab3BELgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 06:36:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56009 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146Ab3BELgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 06:36:50 -0500
+Date: Tue, 5 Feb 2013 13:36:45 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+Cc: Blue Swirl <blauwirbel@gmail.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Ortiz, Lance E" <lance.oritz@hp.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
+ VFIO-PCI devices
+Message-ID: <20130205113645.GE23213@redhat.com>
+References: <F9E001219150CB45BEDC82A650F360C9014AAF07@G9W0717.americas.hpqcorp.net>
+ <CAAu8pHvk_2Mf2F-YTDC-wdyD1Jic-DHUanSQfOa3g0VchTcNig@mail.gmail.com>
+ <20130205080436.GV23213@redhat.com>
+ <F9E001219150CB45BEDC82A650F360C9014B42EE@G9W0717.americas.hpqcorp.net>
+ <20130205092110.GB23213@redhat.com>
+ <F9E001219150CB45BEDC82A650F360C9014B43DC@G9W0717.americas.hpqcorp.net>
 MIME-Version: 1.0
-In-Reply-To: <20130130221118.GB15584@fieldses.org>
-References: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
-	<20130130221118.GB15584@fieldses.org>
-Date: Tue, 5 Feb 2013 15:33:21 +0400
-X-Google-Sender-Auth: e6urHKY9mpNJLTidji_vgtyPeH8
-Message-ID: <CAKywueQcia1jJfdVJFzfHdc5zQ_86r3T4bmee9cpP18qqbcLFA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] Add O_DENY* support for VFS and CIFS/NFS
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F9E001219150CB45BEDC82A650F360C9014B43DC@G9W0717.americas.hpqcorp.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/31 J. Bruce Fields <bfields@fieldses.org>:
-> On Thu, Jan 17, 2013 at 08:52:09PM +0400, Pavel Shilovsky wrote:
->> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
->>
->> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
->>
->> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
->
-> Maybe that's good enough.  A mount flag might be simpler and give
-> consistent enforcement for all users.
->
->>
->> So, we have four new flags:
->> O_DENYREAD - to prevent other opens with read access,
->> O_DENYWRITE - to prevent other opens with write access,
->> O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
->> O_DENYMAND - to switch on/off three flags above.
->
-> It would be useful to have some really careful documentation of how
-> these are meant to work.  Maybe try updating the open man page?
+On Tue, Feb 05, 2013 at 10:59:41AM +0000, Pandarathil, Vijaymohan R wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Gleb Natapov [mailto:gleb@redhat.com]
+> > Sent: Tuesday, February 05, 2013 1:21 AM
+> > To: Pandarathil, Vijaymohan R
+> > Cc: Blue Swirl; Alex Williamson; Bjorn Helgaas; Ortiz, Lance E;
+> > kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-pci@vger.kernel.org;
+> > linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for VFIO-
+> > PCI devices
+> > 
+> > On Tue, Feb 05, 2013 at 09:05:19AM +0000, Pandarathil, Vijaymohan R wrote:
+> > >
+> > >
+> > > > -----Original Message-----
+> > > > From: Gleb Natapov [mailto:gleb@redhat.com]
+> > > > Sent: Tuesday, February 05, 2013 12:05 AM
+> > > > To: Blue Swirl
+> > > > Cc: Pandarathil, Vijaymohan R; Alex Williamson; Bjorn Helgaas; Ortiz,
+> > Lance
+> > > > E; kvm@vger.kernel.org; qemu-devel@nongnu.org; linux-
+> > pci@vger.kernel.org;
+> > > > linux-kernel@vger.kernel.org
+> > > > Subject: Re: [PATCH v3 3/3] QEMU-AER: Qemu changes to support AER for
+> > VFIO-
+> > > > PCI devices
+> > > >
+> > > > On Sun, Feb 03, 2013 at 04:36:11PM +0000, Blue Swirl wrote:
+> > > > > On Sun, Feb 3, 2013 at 2:10 PM, Pandarathil, Vijaymohan R
+> > > > > <vijaymohan.pandarathil@hp.com> wrote:
+> > > > > >         - Create eventfd per vfio device assigned to a guest and
+> > > > register an
+> > > > > >           event handler
+> > > > > >
+> > > > > >         - This fd is passed to the vfio_pci driver through the
+> > SET_IRQ
+> > > > ioctl
+> > > > > >
+> > > > > >         - When the device encounters an error, the eventfd is
+> > signalled
+> > > > > >           and the qemu eventfd handler gets invoked.
+> > > > > >
+> > > > > >         - In the handler decide what action to take. Current action
+> > > > taken
+> > > > > >           is to terminate the guest.
+> > > > >
+> > > > > Usually this is not OK, but I guess this is not guest triggerable.
+> > > > >
+> > > > Still not OK. Why not stop a guest with appropriate stop reason?
+> > >
+> > > The thinking was that since this is a hardware error, we would want to
+> > stop the guest at the earliest. The hw_error() routine which aborts the
+> > qemu process was suggested by Alex and that seemed appropriate. Earlier I
+> > was using qemu_system_shutdown_request().  Any suggestions ?
+> > >
+> > I am thinking vm_stop(). Stopping SMP guest (and UP too in fact)
+> > involves sending IPIs to other cpus running guest's vcpus. Both exit()
+> > and vm_stop() will do it, but former is implicitly in the kernel and
+> > later is explicitly in QEMU.
+> 
+> I had used vm_stop(RUN_STATE_SHUTDOWN) earlier in my code. But while testing, guest ended up in a hang rather than exiting. There seems to some cleanup work which is being done as part of vm_stop. In our case, we wanted the guest to exit immediately. So use of hw_error() seemed appropriate.
+> 
+What makes you think it hang? It stopped, precisely what it should do if
+you call vm_stop(). Now it is possible for vm user to investigate what
+happened and even salvage some data from guest memory.
 
-Yes, that's a good idea. Do you mean smth like this?
-
-O_DENYMAND - used to inforce a mandatory share reservation scheme of
-the file access. If this flag is passed,
-the open fails with -ETXTBSY in following cases:
-
-1) if O_DENYREAD flag is specified and there is another open with
-O_DENYMAND flag and READ access to the file;
-2) if O_DENYWRITE flag is specified and there is another open with
-O_DENYMAND flag and WRITE access to the file;
-3) if READ access is requested and there is another open with
-O_DENYMAND and O_DENYREAD flags;
-4) if WRITE access is requested and there is another open with
-O_DENYMAND and O_DENYWRITE flags;
-
-Also, if O_DENYDELETE flag is specified and the open succeded, any
-further unlink operation will fail with -ETXTBSY untill this open is
-closed. Now this flag is processed by CIFS filesystems only.
-
--- 
-Best regards,
-Pavel Shilovsky.
+--
+			Gleb.
