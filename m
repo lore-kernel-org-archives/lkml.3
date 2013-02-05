@@ -1,110 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab3BEDut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 22:50:49 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:24510 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab3BEDur (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 22:50:47 -0500
-Message-ID: <51108126.3050905@huawei.com>
-Date: Tue, 5 Feb 2013 11:48:54 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756178Ab3BEDvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 22:51:45 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:22542
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753323Ab3BEDvo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 22:51:44 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I542I1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946hbe9i1155h)
+From: Yoder Stuart-B08248 <B08248@freescale.com>
+To: Wood Scott-B07421 <B07421@freescale.com>, Joerg Roedel <joro@8bytes.org>
+CC: Sethi Varun-B16395 <B16395@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 4/4] iommu: Add domain window handling functions
+Thread-Topic: [PATCH 4/4] iommu: Add domain window handling functions
+Thread-Index: AQHOAzBxxvWr3lRlWEqDAJflSPVsqJhqmj5Q
+Date: Tue, 5 Feb 2013 03:41:03 +0000
+Message-ID: <9F6FE96B71CF29479FF1CDC8046E150354A1DC@039-SN1MPN1-003.039d.mgd.msft.net>
+References: <1359582228-21552-1-git-send-email-joro@8bytes.org>
+	<1359582228-21552-5-git-send-email-joro@8bytes.org>
+	<C5ECD7A89D1DC44195F34B25E172658D3670ED@039-SN2MPN1-013.039d.mgd.msft.net>
+	<20130204130214.GN25591@8bytes.org> <1360020980.14901.17@snotra>
+In-Reply-To: <1360020980.14901.17@snotra>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.249.99]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: "Luck, Tony" <tony.luck@intel.com>, <fenghua.yu@intel.com>,
-        Liujiang <jiang.liu@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-efi@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH] ia64/mm: fix a bad_page bug when crash kernel booting
-References: <51074786.5030007@huawei.com> <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/5 0:32, Matt Fleming wrote:
-
-> On Tue, 2013-01-29 at 11:52 +0800, Xishi Qiu wrote:
->> On ia64 platform, I set "crashkernel=1024M-:600M", and dmesg shows 128M-728M
->> memory is reserved for crash kernel. Then "echo c > /proc/sysrq-trigger" to
->> test kdump.
->>
->> When crash kernel booting, efi_init() will aligns the memory address in
->> IA64_GRANULE_SIZE(16M), so 720M-728M memory will be dropped, It means
->> crash kernel only manage 128M-720M memory.
->>
->> But initrd start and end are fixed in boot loader, it is before efi_init(),
->> so initrd size maybe overflow when free_initrd_mem().
-> 
-> [...]
-> 
->> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
->> index b755ea9..cfdb1eb 100644
->> --- a/arch/ia64/mm/init.c
->> +++ b/arch/ia64/mm/init.c
->> @@ -207,6 +207,17 @@ free_initrd_mem (unsigned long start, unsigned long end)
->>  	start = PAGE_ALIGN(start);
->>  	end = end & PAGE_MASK;
->>
->> +	/*
->> +	 * Initrd size is fixed in boot loader, but kernel parameter max_addr
->> +	 * which aligns in granules is fixed after boot loader, so initrd size
->> +	 * maybe overflow.
->> +	 */
->> +	if (max_addr != ~0UL) {
->> +		end = GRANULEROUNDDOWN(end);
->> +		if (start > end)
->> +			start = end;
->> +	}
->> +
->>  	if (start < end)
->>  		printk(KERN_INFO "Freeing initrd memory: %ldkB freed\n", (end - start) >> 10);
-> 
-> I don't think this is the correct fix.
-> 
-> Now, my ia64-fu is weak, but could it be that there's actually a bug in
-> efi_init() and that the following patch would be the best way to fix
-> this?
-> 
-> ---
-> 
-> diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
-> index f034563..8d579f1 100644
-> --- a/arch/ia64/kernel/efi.c
-> +++ b/arch/ia64/kernel/efi.c
-> @@ -482,7 +482,7 @@ efi_init (void)
->  		if (memcmp(cp, "mem=", 4) == 0) {
->  			mem_limit = memparse(cp + 4, &cp);
->  		} else if (memcmp(cp, "max_addr=", 9) == 0) {
-> -			max_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
-> +			max_addr = GRANULEROUNDUP(memparse(cp + 9, &cp));
->  		} else if (memcmp(cp, "min_addr=", 9) == 0) {
->  			min_addr = GRANULEROUNDDOWN(memparse(cp + 9, &cp));
->  		} else {
-> 
-> 
-
-Hi Matt,
-
-Thanks for your awareness.
-
-I have a question. If we set "crashkernel=1024M-:600M", the log shows 128M-728M memory
-is reserved for crash kernel. So if "max_addr = GRANULEROUNDUP()", when crash kernel boot,
-it uses 128M-736M memory, overflow! (suppose IA64_GRANULE_SIZE=16M).
-
-Thanks,
-Xishi Qiu
-
-> 
-> .
-> 
 
 
+> -----Original Message-----
+> From: Wood Scott-B07421
+> Sent: Monday, February 04, 2013 5:36 PM
+> To: Joerg Roedel
+> Cc: Sethi Varun-B16395; iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org; Wood Scott-
+> B07421; Yoder Stuart-B08248
+> Subject: Re: [PATCH 4/4] iommu: Add domain window handling functions
+> 
+> On 02/04/2013 07:02:14 AM, Joerg Roedel wrote:
+> > On Thu, Jan 31, 2013 at 09:32:26AM +0000, Sethi Varun-B16395 wrote:
+> > > We need a mechanism to determine the maximum number of subwindows
+> > supported by PAMU. How about representing it in the iommu_domain
+> > structure:
+> > > struct  iommu_domain {
+> > > 	struct iommu_ops *ops;
+> > > 	void *priv;
+> > > 	iommu_fault_handler_t handler;
+> > > 	void *handler_token;
+> > > 	struct iommu_domain_geometry geometry;
+> > > 	u32 max_sub_windows; -----> maximum number of sub windows
+> > supported by the hardware.
+> > > }
+> >
+> > I`ll leave that flag to the private-data of the IOMMU domain. Instead
+> > I
+> > added a DOMAIN_ATTR_WINDOWS attribute to get/set the number of
+> > subwindows. I'll post the updated patch-set soon.
+> 
+> If it's private data, how does the caller know what sort of geometry it
+> can request?
+
+The way I thought this could work based on the patch that Joerg posted today
+was that when the domain is created the caller could read the DOMAIN_ATTR_WINDOWS 
+domain_get_windows() to determine the max.  The initial/default value is the
+max.  The caller could then set a smaller value if they wanted to.
+
+Stuart
 
