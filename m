@@ -1,276 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab3BEGce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 01:32:34 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:43300 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab3BEGcb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 01:32:31 -0500
+	id S1751148Ab3BEGfQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 01:35:16 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:3961 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750747Ab3BEGfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 01:35:13 -0500
+X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
+   d="scan'208";a="6690500"
+Message-ID: <5110A442.5000707@cn.fujitsu.com>
+Date: Tue, 05 Feb 2013 14:18:42 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <077e01cdfeae$8fbc2850$af3478f0$@samsung.com>
-References: <1358168377-22919-2-git-send-email-gautam.vivek@samsung.com>
-	<1359368690-30178-1-git-send-email-gautam.vivek@samsung.com>
-	<077e01cdfeae$8fbc2850$af3478f0$@samsung.com>
-Date: Tue, 5 Feb 2013 12:02:29 +0530
-Message-ID: <CAFp+6iGDONL0wMs0uqxyk0JP+H=9Zq7YOsBxo-_s87RojYgTBw@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] usb: phy: samsung: Common out the generic stuff
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
-        tomasz.figa@gmail.com, av.tikhomirov@samsung.com,
-        dianders@chromium.org, p.paneri@samsung.com
+To: Minchan Kim <minchan@kernel.org>
+CC: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, linux-mm@kvack.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] mm: hotplug: implement non-movable version of get_user_pages()
+ to kill long-time pin pages
+References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com> <20130205005859.GE2610@blaptop> <51108DC8.4090704@cn.fujitsu.com> <20130205052517.GH2610@blaptop>
+In-Reply-To: <20130205052517.GH2610@blaptop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 14:18:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 14:33:53,
+	Serialize complete at 2013/02/05 14:33:53
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
 
 
-On Wed, Jan 30, 2013 at 11:26 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Vivek Gautam wrote:
+On 02/05/2013 01:25 PM, Minchan Kim wrote:
+> Hi Lin,
+> 
+> On Tue, Feb 05, 2013 at 12:42:48PM +0800, Lin Feng wrote:
+>> Hi Minchan,
 >>
->> Moving register and structure definitions to header file,
->> and keeping the generic functions to be used across
->> multiple PHYs in common file "samsung-usbphy.c".
->> Also renaming the usb 2.0 phy driver to "samsung-usb2.c"
->
-> Just in my opinion, Samsung-usb2phy is more clear?...In addition, I looked
-> at using SAMSUNG_USB2PHY as a statement.
->
+>> On 02/05/2013 08:58 AM, Minchan Kim wrote:
+>>> Hello,
+>>>
+>>> On Mon, Feb 04, 2013 at 06:04:06PM +0800, Lin Feng wrote:
+>>>> Currently get_user_pages() always tries to allocate pages from movable zone,
+>>>> as discussed in thread https://lkml.org/lkml/2012/11/29/69, in some case users
+>>>> of get_user_pages() is easy to pin user pages for a long time(for now we found
+>>>> that pages pinned as aio ring pages is such case), which is fatal for memory
+>>>> hotplug/remove framework.
+>>>>
+>>>> So the 1st patch introduces a new library function called
+>>>> get_user_pages_non_movable() to pin pages only from zone non-movable in memory.
+>>>> It's a wrapper of get_user_pages() but it makes sure that all pages come from
+>>>> non-movable zone via additional page migration.
+>>>>
+>>>> The 2nd patch gets around the aio ring pages can't be migrated bug caused by
+>>>> get_user_pages() via using the new function. It only works when configed with
+>>>> CONFIG_MEMORY_HOTREMOVE, otherwise it uses the old version of get_user_pages().
+>>>
+>>> CMA has same issue but the problem is the driver developers or any subsystem
+>>> using GUP can't know their pages is in CMA area or not in advance.
+>>> So all of client of GUP should use GUP_NM to work them with CMA/MEMORY_HOTPLUG well?
+>>> Even some driver module in embedded side doesn't open their source code.
+>> Yes, it somehow depends on the users of GUP. In MEMORY_HOTPLUG case, as for most users
+>> of GUP, they will release the pinned pages immediately and to such users they should get
+>> a good performance, using the old style interface is a smart way. And we had better just
+>> deal with the cases we have to by using the new interface.
+> 
+> Hmm, I think you can't make sure most of user for MEMORY_HOTPLUG will release pinned pages
+> immediately. Because MEMORY_HOTPLUG could be used for embedded system for reducing power
+> by PASR and some drivers in embedded could use GUP anytime and anywhere. They can't know
+> in advance they will use pinned pages long time or release in short time because it depends
+> on some event like user's response which is very not predetermined.
+> So for solving it, we can add some WARN_ON in CMA/MEMORY_HOTPLUG part just in case of
+> failing migration by page count and then, investigate they are really using GUP and it's
+> REALLY a culprit. If so, yell to them "Please use GUP_NM instead"?
+> 
+> Yes. it could be done but it would be rather trobulesome job.
+Yes WARN_ON may be easy while troubleshooting for finding the immigrate-able page is 
+a big job.
+If we want to kill all the potential immigrate-able pages caused by GUP we'd better use the
+*non_movable* version of GUP.
+But in some server environment we want to keep the performance but also want to use hotremove
+feature in case. Maybe patch the place as we need is a trade off for such support.
 
-Sure will change the file names as suggested
-samsung-usbphy.c : common PHY controller driver
-samsung-usb2phy.c : USB 2.0 PHY controller driver
+Mel also said in the last discussion:
 
-Will change the names for CONFIG_XX also accordingly.
-
+On 11/30/2012 07:00 PM, Mel Gorman wrote:> On Thu, Nov 29, 2012 at 11:55:02PM -0800, Andrew Morton wrote:
+>> Well, that's a fairly low-level implementation detail.  A more typical
+>> approach would be to add a new get_user_pages_non_movable() or such. 
+>> That would probably have the same signature as get_user_pages(), with
+>> one additional argument.  Then get_user_pages() becomes a one-line
+>> wrapper which passes in a particular value of that argument.
 >>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>
->> Changes from v3:
->>  - Using separate config SAMSUNG_USB2PHY dependent on
->>    SAMSUNG_USBPHY for samsung-usb2 type PHY controller.
->>
->>  drivers/usb/phy/Kconfig          |   14 +-
->>  drivers/usb/phy/Makefile         |    1 +
->>  drivers/usb/phy/samsung-usb2.c   |  511 +++++++++++++++++++++++++++
->>  drivers/usb/phy/samsung-usbphy.c |  714
-> +-------------------------------------
->>  drivers/usb/phy/samsung-usbphy.h |  247 +++++++++++++
->>  5 files changed, 778 insertions(+), 709 deletions(-)
->>  create mode 100644 drivers/usb/phy/samsung-usb2.c
->>  create mode 100644 drivers/usb/phy/samsung-usbphy.h
->>
->> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
->> index fae4d08..cc0d230 100644
->> --- a/drivers/usb/phy/Kconfig
->> +++ b/drivers/usb/phy/Kconfig
->> @@ -48,8 +48,18 @@ config USB_RCAR_PHY
->>
->>  config SAMSUNG_USBPHY
->>       bool "Samsung USB PHY controller Driver"
->> -     depends on USB_S3C_HSOTG || USB_EHCI_S5P ||
->> USB_OHCI_EXYNOS
->
-> So this can be selected without any dependency?
->
+> 
+> That is going in the direction that all pinned pages become MIGRATE_UNMOVABLE
+> allocations.  That will impact THP availability by increasing the number
+> of MIGRATE_UNMOVABLE blocks that exist and it would hit every user --
+> not just those that care about ZONE_MOVABLE.
+> 
+> I'm likely to NAK such a patch if it's only about node hot-remove because
+> it's much more of a corner case than wanting to use THP.
+> 
+> I would prefer if get_user_pages() checked if the page it was about to
+> pin was in ZONE_MOVABLE and if so, migrate it at that point before it's
+> pinned. It'll be expensive but will guarantee ZONE_MOVABLE availability
+> if that's what they want. The CMA people might also want to take
+> advantage of this if the page happened to be in the MIGRATE_CMA
+> pageblock.
+> 
 
-The idea was SAMSUNG_USBPHY is selected for usb2 type PHY as well as
-usb 3 type PHY.
-But this seems to be bad :-(
-Better we do something like this ?
+So it may not a good idea that we all fall into calling the *non_movable* version of
+GUP when CONFIG_MIGRATE_ISOLATE is on. What do you think?
 
-config SAMSUNG_USB2
-        bool "Samsung USB 2.0 PHY controller Driver"
-        select SAMSUNG_USBPHY
-        select USB_OTG_UTILS
-        help
-          Enable this to support Samsung USB 2.0 (High Speed) PHY controller
-          driver for Samsung SoCs.
-
-config SAMSUNG_USBPHY
-        bool "Samsung USB PHY controller Driver"
-        help
-          Enable this to support Samsung USB phy helper driver for Samsung SoCs.
-          This driver provides common interface for Samsung USB 2.0 PHY driver
-          and later for Samsung USB 3.0 PHY driver.
-
->>       select USB_OTG_UTILS
->>       help
->> -       Enable this to support Samsung USB phy controller for samsung
->> +       Enable this to support Samsung USB phy controllers for Samsung
->>         SoCs.
->
-> Hmm, according to above comments, this should be enabled under Samsung SoC?
->
-
-May we just add these configs under USB as mentioned above ?
-
->> +
->> +if SAMSUNG_USBPHY
->
-> Why is this needed here?
->
-
-We will not need this if we change to something like mentioned above.
-
->> +
->> +config SAMSUNG_USB2PHY
->> +     bool "Samsung USB 2.0 PHY controller Driver"
->> +     depends on USB_S3C_HSOTG || USB_EHCI_S5P ||
->> USB_OHCI_EXYNOS
->> +     help
->> +       Enable this to support Samsung USB 2.0 (High Speed) phy controller
->> +       for Samsung SoCs.
->> +
->> +endif
->> diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
->> index ec304f6..7ba9862 100644
->> --- a/drivers/usb/phy/Makefile
->> +++ b/drivers/usb/phy/Makefile
->> @@ -10,3 +10,4 @@ obj-$(CONFIG_MV_U3D_PHY)            +=
->> mv_u3d_phy.o
->>  obj-$(CONFIG_USB_EHCI_TEGRA) += tegra_usb_phy.o
->>  obj-$(CONFIG_USB_RCAR_PHY)           += rcar-phy.o
->>  obj-$(CONFIG_SAMSUNG_USBPHY)         += samsung-usbphy.o
->> +obj-$(CONFIG_SAMSUNG_USB2PHY)                += samsung-usb2.o
->> diff --git a/drivers/usb/phy/samsung-usb2.c b/drivers/usb/phy/samsung-
->> usb2.c
->> new file mode 100644
->> index 0000000..9a9d1d0
->> --- /dev/null
->> +++ b/drivers/usb/phy/samsung-usb2.c
->> @@ -0,0 +1,511 @@
->> +/* linux/drivers/usb/phy/samsung-usb2.c
->> + *
->> + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
->> + *              http://www.samsung.com
->> + *
->> + * Author: Praveen Paneri <p.paneri@samsung.com>
->> + *
->> + * Samsung USB2.0 PHY transceiver; talks to S3C HS OTG controller,
-> EHCI-S5P
->> and
->> + * OHCI-EXYNOS controllers.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/clk.h>
->> +#include <linux/delay.h>
->> +#include <linux/device.h>
->> +#include <linux/err.h>
->> +#include <linux/io.h>
->> +#include <linux/of.h>
->> +#include <linux/usb/otg.h>
->> +#include <linux/usb/samsung_usb_phy.h>
->> +#include <linux/platform_data/samsung-usbphy.h>
->> +
->> +#include "samsung-usbphy.h"
->> +
->> +int samsung_usbphy_set_host(struct usb_otg *otg, struct usb_bus *host)
->
-> For naming, if you want to support usb 2.0 phy here, the name of fuction
-> should be changed to more clear name such as usb2phy or whatever.
->
-> As I'm understanding, the samsung-usbphy.c can be used for common stuff and
-> this is for only usb 2.0 phy.
->
-
-True.
-Will keep the naming as suggested. usb2phy naming for functions
-specific to SAMSUNG_USB2PHY
-
-> [...]
->
->> +#ifdef CONFIG_OF
->> +static const struct of_device_id samsung_usbphy_dt_match[] = {
->> +     {
->> +             .compatible = "samsung,s3c64xx-usbphy",
->> +             .data = &usbphy_s3c64xx,
->> +     }, {
->> +             .compatible = "samsung,exynos4210-usbphy",
->> +             .data = &usbphy_exynos4,
->> +     }, {
->> +             .compatible = "samsung,exynos5250-usbphy",
->> +             .data = &usbphy_exynos5
->> +     },
->> +     {},
->> +};
->> +MODULE_DEVICE_TABLE(of, samsung_usbphy_dt_match);
->> +#endif
->> +
->> +static struct platform_device_id samsung_usbphy_driver_ids[] = {
->> +     {
->> +             .name           = "s3c64xx-usbphy",
->> +             .driver_data    = (unsigned long)&usbphy_s3c64xx,
->> +     }, {
->> +             .name           = "exynos4210-usbphy",
->> +             .driver_data    = (unsigned long)&usbphy_exynos4,
->> +     }, {
->> +             .name           = "exynos5250-usbphy",
->> +             .driver_data    = (unsigned long)&usbphy_exynos5,
->> +     },
->> +     {},
->> +};
->> +
->> +MODULE_DEVICE_TABLE(platform, samsung_usbphy_driver_ids);
->> +
->> +static struct platform_driver samsung_usbphy_driver = {
->> +     .probe          = samsung_usbphy_probe,
->> +     .remove         = samsung_usbphy_remove,
->> +     .id_table       = samsung_usbphy_driver_ids,
->> +     .driver         = {
->> +             .name   = "samsung-usbphy",
->> +             .owner  = THIS_MODULE,
->> +             .of_match_table =
->> of_match_ptr(samsung_usbphy_dt_match),
->> +     },
->> +};
->> +
->> +module_platform_driver(samsung_usbphy_driver);
->> +
->> +MODULE_DESCRIPTION("Samsung USB phy controller");
->
-> USB 2.0 Phy?
->
-
-Yes, will amend this.
-
->> +MODULE_AUTHOR("Praveen Paneri <p.paneri@samsung.com>");
->> +MODULE_LICENSE("GPL");
->> +MODULE_ALIAS("platform:samsung-usbphy");
->
-> Is this for samsung-usbphy or samsung-usb2/samsung-usb2phy?
->
-
-Must be changed to samsung-usb2phy.
-
-> [...]
->
-> I know why you create separated phy file samsung-usbphy.c and samsung-usb2.c
-> here, but I think for that, would be better if you could consider the name
-> and so on.
->
-
-Yes, sure will keep the naming convention as suggested.
+> #ifdef CONFIG_MIGRATE_ISOLATE
+> 
+> int get_user_pages_non_movable()
+> {
+>         ..
+>         old_get_user_pages()
+>         ..
+> }
+> 
+> int get_user_pages()
+> {
+>         return get_user_pages_non_movable();
+> }
+> #else
+> int get_user_pages()
+> {
+>         return old_get_user_pages()
+> }
+> #endif
 
 
--- 
-Thanks & Regards
-Vivek
+thanks,
+linfeng
