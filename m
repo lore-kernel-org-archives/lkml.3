@@ -1,54 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab3BEW0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:26:53 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:45754 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757296Ab3BEW0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757565Ab3BEW04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:26:56 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:50296 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757404Ab3BEW0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Feb 2013 17:26:50 -0500
-Message-Id: <20130205222648.534517884@gulag1.americas.sgi.com>
+Message-Id: <20130205222648.204965172@gulag1.americas.sgi.com>
 User-Agent: quilt/0.47-1
-Date: Tue, 05 Feb 2013 16:26:50 -0600
+Date: Tue, 05 Feb 2013 16:26:48 -0600
 From: Mike Travis <travis@sgi.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>,
-        Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 2/7] x86, UV: UV3 Update ACPI Check
-References: <20130205222648.204965172@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=uv3-update-acpi-check.patch
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/7] x86: SGI UV3 Kernel Updates
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Add UV3 to exclusion list.  Instead of adding every
-	new series of SGI UV systems, just check oem_id to
-	have a prefix of "SGI".
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Acked-by: Russ Anderson <rja@sgi.com>
-Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/x86/pci/mmconfig-shared.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Kernel updates for SGI Ultraviolet system 3 (UV3)
 
---- linux.orig/arch/x86/pci/mmconfig-shared.c
-+++ linux/arch/x86/pci/mmconfig-shared.c
-@@ -548,8 +548,7 @@ static int __init acpi_mcfg_check_entry(
- 	if (cfg->address < 0xFFFFFFFF)
- 		return 0;
- 
--	if (!strcmp(mcfg->header.oem_id, "SGI") ||
--			!strcmp(mcfg->header.oem_id, "SGI2"))
-+	if (!strncmp(mcfg->header.oem_id, "SGI", 3))
- 		return 0;
- 
- 	if (mcfg->header.revision >= 1) {
+The new MMR definitions are added, and then the updates
+to each module are applied.  Afterwards, a "trim" patch
+reduces the size of the MMR definitions file by about
+a third.  This keeps "bi-sectability" in place.
 
