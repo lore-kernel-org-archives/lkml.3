@@ -1,143 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab3BEGhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 01:37:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57848 "EHLO arroyo.ext.ti.com"
+	id S1754008Ab3BEGh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 01:37:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46135 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595Ab3BEGhC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 01:37:02 -0500
-From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Linus Walleij <linus.walleij@linaro.org>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "hs@denx.de" <hs@denx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH V2 1/6] pinctrl: pinctrl-single: use arch_initcall and
- module_exit
-Thread-Topic: [PATCH V2 1/6] pinctrl: pinctrl-single: use arch_initcall and
- module_exit
-Thread-Index: AQHN/fOatoDuxwofTUaND8395mrFe5hfx24AgAUeJgCAAACkAIAF8NDQ
-Date: Tue, 5 Feb 2013 06:36:34 +0000
-Message-ID: <A4887BF146CD57468F700B415D2F47015828C7@DBDE01.ent.ti.com>
-References: <1359445134-13323-1-git-send-email-manishv.b@ti.com>
- <1359445134-13323-2-git-send-email-manishv.b@ti.com>
- <CACRpkdbf7TwrjfT2rhqQFGc3yh_Nt117RtzQO2y6g5Ddx5Ay_w@mail.gmail.com>
- <20130201170906.GE22517@atomide.com> <20130201171124.GF22517@atomide.com>
-In-Reply-To: <20130201171124.GF22517@atomide.com>
-Accept-Language: en-IN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752064Ab3BEGhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 01:37:25 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAMNxYszE1EVRMvAtteckbY5=kga3c7-B9Nyuz+=s4ur7KqW+9A@mail.gmail.com>
+References: <CAMNxYsyRRaHheOPBR18No4EFQ3=sedCmP85X-Hyg2bjapjtw+A@mail.gmail.com> <51109F20.60205@zytor.com> <CAMNxYszE1EVRMvAtteckbY5=kga3c7-B9Nyuz+=s4ur7KqW+9A@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: ISO/IEC 7811 driver for Magnetic Cards.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 04 Feb 2013 22:37:14 -0800
+To: Priyaranjan Das <priyaranjan456789@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Message-ID: <56bede34-86a7-4565-a8c9-54413d410629@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 01, 2013 at 22:41:24, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [130201 09:12]:
-> > * Linus Walleij <linus.walleij@linaro.org> [130129 03:03]:
-> > > On Tue, Jan 29, 2013 at 8:38 AM, Vishwanathrao Badarkhe, Manish 
-> > > <manishv.b@ti.com> wrote:
-> > > 
-> > > > Currently, I2C driver gets probed before pinctrl driver.
-> > > > To achieve I2C pin muxing via pinctrl driver before I2C probe get 
-> > > > called, register pinctrl driver in arch_initcall.
-> > > > Also, add module_exit to unregister pinctrl driver.
-> > > >
-> > > > Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
-> > > 
-> > > So your I2C driver is not returning -EPROBE_DEFER if it cannot find 
-> > > its pins?
-> > > 
-> > > Hm, well I can live with this, if Tony ACKs it.
-> > 
-> > Hmm pinctrl is before i2c in drivers/Makefile.
-> > Making initcalls happen earlier and earlier is usually the wrong way 
-> > to go. Sounds like there's some other issue here that needs to be 
-> > fixed instead.
-> 
-> Let me guess: The i2c driver is wrongly set to run with arch_initcall?
->  
+There is no reason for that to be in the kernel.
 
-Hi Tony
+Priyaranjan Das <priyaranjan456789@gmail.com> wrote:
 
-No, Currently i2c driver is set to subsys_initcall. I have seen some
-problem while using pin control grab functionality. Please see detailed
-explanation as below.
+>Hi Peter,
+>
+>On Tue, Feb 5, 2013 at 11:26 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 02/04/2013 09:08 PM, Priyaranjan Das wrote:
+>>>
+>>> Hi All,
+>>>
+>>> I am working on a Magnetic Card driver which would support ISO/IEC
+>>> 7811 standard for track data. Can anyone tell me if such an
+>>> implementation is available in existing kernel or not? I am
+>basically
+>>> looking for  code that implements the ISO/IEC 7811 standard or any
+>>> similar standards.
+>>>
+>>
+>> You have to write a driver for whatever reader/writer you are using. 
+>A lot
+>> of them simply show up as a USB HID (i.e. a keyboard) and thus don't
+>need
+>> any driver at all.
+>>
+>
+>Thanks for your reply!
+>
+>However my question was more of related to ISO/IEC 7811 standard, As
+>this is the format of the data read from the magnetic card. I wish to
+>know whether any such module is there in the Linux kernel currently
+>which works to decode the data as per as these ISO standards.
+>
+>For e.g,
+>
+>The first track read from a magnetic card could be as per below
+>standard format :
+>
+>Track 1, Format :
+>Start sentinel — one character (generally '%')
+>Format code="B" — one character (alpha only)
+>Primary account number (PAN) — up to 19 characters. Usually, but not
+>always, matches the credit card number printed on the front of the
+>card.
+>Field Separator — one character (generally '^')
+>Name — two to 26 characters
+>Field Separator — one character (generally '^')
+>Expiration date — four characters in the form YYMM.
+>Service code — three characters
+>Discretionary data — may include Pin Verification Key Indicator (PVKI,
+>1 character), PIN Verification Value (PVV, 4 characters), Card
+>Verification Value or Card Verification Code (CVV or CVC, 3
+>characters)
+>End sentinel — one character (generally '?')
+>Longitudinal redundancy check (LRC) — it is one character and a
+>validity character calculated from other data on the track.
 
-Hi Linus
-
-I am using auto grab pin control facility to do pin muxing of I2C0 
-pins and seen problem as below:
-
-Currently, probe of I2C0 driver gets called before pin control driver. 
-Hence, while calling I2C0 probe because of unavailability of  
-pin control node information, its probe get deferred giving following 
-messages:
-
-"i2c_davinci i2c_davinci.1: could not find pctldev for node /soc/pinmux@1c14120
-/pinmux_i2c0_pins, deferring probe"
-
-As I2C0 is in deferred list (as auto grab patch handle this), its probe 
-get called once again, During this second time probe of I2C0, I have 
-observed following crash:
-
-"Unable to handle kernel paging request at virtual address fffffe07"
-
-As per code analysis of auto grab functionality, I have seen in 
-"pinctrl_bind_pin" function, pin control handle (dpi->p) is returned by 
-"devm_pinctrl_get" function.
-
-Pin control handle is assigned with error pointer during 1st time probing of 
-I2C0 (as pin control information is not available at this time). 
-During 2nd time probing (deferred probe) of I2C0, same pin control handle 
-(which was get assigned during 1st probe) is getting used instead of getting 
-updated to correct pin control handle which leads to system crash.
-
-I made following changes, in order to update "dip->p" pointer with 
-correct value:
-
--       if (!dpi->p) {
-+       if (IS_ERR_OR_NULL(dpi->p)) {
-                dpi->p = devm_pinctrl_get(dev);
--               if (IS_ERR_OR_NULL(dpi->p)) {
--                       int ret = PTR_ERR(dpi->p);
--
--                       dev_dbg(dev, "no pinctrl handle\n");
--                       /* Only return deferrals */
--                       if (ret == -EPROBE_DEFER)
--                               return ret;
--                       return 0;
--               }
-+               ret = PTR_ERR(dpi->p);
-+               dev_dbg(dev, "no pinctrl handle\n");
-+               /* Only return deferrals */
-+               if (ret == -EPROBE_DEFER)
-+                       return ret;
-+               return 0;
-
-Is this intended change? or am I missing something in order to use this auto grab
-functionality?
-
-With the above change, now deferred probing is working fine and there is no need
-to register pin control driver in arch_initcall.
-
-
-Regards, 
-Manish
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
