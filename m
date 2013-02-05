@@ -1,37 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab3BERP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:15:59 -0500
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:34987 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab3BERPz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:15:55 -0500
+	id S1756423Ab3BERQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:16:44 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43787 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755978Ab3BERQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 12:16:42 -0500
 MIME-Version: 1.0
-In-Reply-To: <1359822572-26009-6-git-send-email-acourbot@nvidia.com>
-References: <1359822572-26009-1-git-send-email-acourbot@nvidia.com>
-	<1359822572-26009-6-git-send-email-acourbot@nvidia.com>
-Date: Tue, 5 Feb 2013 18:15:54 +0100
-Message-ID: <CACRpkdaC3pu3tBZrw0Az226XEt6+AzJ_NiiCaLwV9o6NUZ8MQw@mail.gmail.com>
-Subject: Re: [PATCH 4/9] gpiolib: use gpio_chips list in sysfs ops
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130205164817.GD2335@fenchurch.internal.datastacks.com>
+References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
+	<7fe9b3a51f3b7172fcb85721cea9162f840aaaa6.1360067333.git.dmitry.kasatkin@intel.com>
+	<20130205164817.GD2335@fenchurch.internal.datastacks.com>
+Date: Tue, 5 Feb 2013 19:16:40 +0200
+Message-ID: <CALLzPKYLqR-rXyf4FFQpo31tTNsKm1=gyfeVi==LPqV6qX8jSw@mail.gmail.com>
+Subject: Re: [RFC 1/2] export unpack_to_rootfs
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Peter Jones <pjones@redhat.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 2, 2013 at 5:29 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-
-> This makes the code both simpler and faster compared to parsing the GPIO
-> number space.
+On Tue, Feb 5, 2013 at 6:48 PM, Peter Jones <pjones@redhat.com> wrote:
+> On Tue, Feb 05, 2013 at 02:34:49PM +0200, Dmitry Kasatkin wrote:
+>> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+>> ---
+>>  init/do_mounts.h |    2 ++
+>>  init/initramfs.c |    2 +-
+>>  2 files changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/init/do_mounts.h b/init/do_mounts.h
+>> index f5b978a..11829eb 100644
+>> --- a/init/do_mounts.h
+>> +++ b/init/do_mounts.h
+>> @@ -74,3 +74,5 @@ void md_run_setup(void);
+>>  static inline void md_run_setup(void) {}
+>>
+>>  #endif
+>> +
+>> +char * __init unpack_to_rootfs(char *buf, unsigned len);
+>> diff --git a/init/initramfs.c b/init/initramfs.c
+>> index 84c6bf1..e32bc06 100644
+>> --- a/init/initramfs.c
+>> +++ b/init/initramfs.c
+>> @@ -421,7 +421,7 @@ static unsigned my_inptr;   /* index of next byte to be processed in inbuf */
+>>
+>>  #include <linux/decompress/generic.h>
+>>
+>> -static char * __init unpack_to_rootfs(char *buf, unsigned len)
+>> +char * __init unpack_to_rootfs(char *buf, unsigned len)
+>>  {
+>>       int written, res;
+>>       decompress_fn decompress;
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Doing this unconditionally seems to be inviting rootkit authors to use a
+> new and shiny tool.  I also don't think it's the best way to do this,
+> but I'll comment on the other patch to explain why.
+>
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Sorry for re-post, but answering from mobile was in HTML and it was blocked.
+Modifying an initramfs gives the same opportunity during boot only.
+But agreed, it might be the part of the primary source code. It was
+very to do it in this way to implement and test a solution.
 
-Yours,
-Linus Walleij
+Thanks.
+
+> --
+>         Peter
