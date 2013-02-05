@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab3BEIrC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 03:47:02 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35487 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab3BEIq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 03:46:58 -0500
-Message-ID: <5110C6EC.6050606@ti.com>
-Date: Tue, 5 Feb 2013 14:16:36 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1755805Ab3BEIrN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 03:47:13 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43992 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335Ab3BEIrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 03:47:09 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-a4-5110c709b365
+Date: Tue, 5 Feb 2013 17:47:05 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de
+Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high
+ memory
+Message-ID: <20130205084705.GC11197@blaptop>
+References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
+ <20130204150657.6d05f76a.akpm@linux-foundation.org>
+ <CAH9JG2Usd4HJKrBXwX3aEc3i6068zU=F=RjcoQ8E8uxYGrwXgg@mail.gmail.com>
+ <20130204234358.GB2610@blaptop>
+ <CAH9JG2VDOVv4-QrDs1FeyQNPzEDq+bf+qiSZ0snEqLGSed3PqA@mail.gmail.com>
+ <20130205004032.GD2610@blaptop>
+ <5110C506.2060209@samsung.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, <b-cousson@ti.com>,
-        <tony@atomide.com>, <linux@arm.linux.org.uk>, <s-guiriec@ti.com>,
-        <gg@slimlogic.co.uk>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/6] ARM: dts: omap5: add dwc3 omap dt data
-References: <1359112312-6918-1-git-send-email-kishon@ti.com> <1359112312-6918-5-git-send-email-kishon@ti.com> <510432BF.80808@mvista.com> <5110C2E6.30504@ti.com> <20130205083828.GE32118@arwen.pp.htv.fi>
-In-Reply-To: <20130205083828.GE32118@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5110C506.2060209@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Feb 05, 2013 at 09:38:30AM +0100, Marek Szyprowski wrote:
+> Hello,
+> 
+> On 2/5/2013 1:40 AM, Minchan Kim wrote:
+> 
+> ...
+> 
+> >> Previous time, it's not fully tested and now we checked it with
+> >> highmem support patches.
+> >
+> >I get it. Sigh. then [1] inline attached below wan't good.
+> >We have to code like this?
+> >
+> >[1] 6a6dccba, mm: cma: don't replace lowmem pages with highmem
+> >
+> >diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >index b97cf12..0707e0a 100644
+> >--- a/mm/page_alloc.c
+> >+++ b/mm/page_alloc.c
+> >@@ -5671,11 +5671,10 @@ static struct page *
+> >  __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
+> >                              int **resultp)
+> >  {
+> >-       gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
+> >-
+> >-       if (PageHighMem(page))
+> >-               gfp_mask |= __GFP_HIGHMEM;
+> >-
+> >+       gfp_t gfp_mask = GFP_HIGHUSER_MOVABLE;
+> >+       struct address_space *mapping = page_mapping(page);
+> >+       if (mapping)
+> >+               gfp_mask = mapping_gfp_mask(mapping);
+> >         return alloc_page(gfp_mask);
+> >  }
+> 
+> Am I right that this code will allocate more pages from himem? Old approach
 
-On Tuesday 05 February 2013 02:08 PM, Felipe Balbi wrote:
-> On Tue, Feb 05, 2013 at 01:59:26PM +0530, kishon wrote:
->> On Sunday 27 January 2013 01:17 AM, Sergei Shtylyov wrote:
->>> Hello.
->>>
->>> On 25-01-2013 15:11, Kishon Vijay Abraham I wrote:
->>>
->>>> Add dwc3 omap glue data to the omap5 dt data file. The information about
->>>> the dt node added here is available @
->>>> Documentation/devicetree/bindings/usb/omap-usb.txt
->>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>>   arch/arm/boot/dts/omap5.dtsi |   11 +++++++++++
->>>>   1 file changed, 11 insertions(+)
->>>
->>>> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
->>>> index 5f59bf2..1703a72 100644
->>>> --- a/arch/arm/boot/dts/omap5.dtsi
->>>> +++ b/arch/arm/boot/dts/omap5.dtsi
->>>> @@ -513,6 +513,17 @@
->>>>               ti,type = <2>;
->>>>           };
->>>>
->>>> +        omap_dwc3@4a020000 {
->>>> +            compatible = "ti,dwc3";
->>>> +            ti,hwmods = "usb_otg_ss";
->>>> +            reg = <0x4a020000 0x1ff>;
->>>
->>>     Shoudn't the "reg" length be 0x200 here? It's length, not limit.
->>
->> I think 0x1ff is correct. I got the data from hwmod data.
->
-> hwmod is utterly wrong. Looking at TRM, it says the size here is 64KiB
-> (0x10000), so is the size for dwc3 itself. Please don't blindly trust
-> hwmod, make sure you read data from TRM ;-)
+Yes.
 
-hmm..ok. But it has only 17 registers :-D
+> never migrate lowmem page to himem, what is now possible as gfp mask
+> is always
+> taken from mapping_gfp flags. I only wonder if forcing GFP_HIGHUSER_MOVABLE
 
-Thanks
-Kishon
+-ENOPARSE. What is not possbile ~~ take from mapping_gfp flags.
+Could you clarify your statement?
+
+> for pages without the mapping is a correct. Shouldn't we use avoid himem in
+
+CMA pages is for pages for user, NOT kernel so HIGHUSER_MOVABLE makes sense.
+
+> such case?
+
+I don't get it. :(
+We have to recomment use of highmem for user space pages.
+Am I missing something?
+
+Sorry, I should go out of office now so forgive my late response.
+
+
+
+> 
+> Best regards
+> -- 
+> Marek Szyprowski
+> Samsung Poland R&D Center
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
