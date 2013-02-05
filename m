@@ -1,356 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab3BEKyD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:54:03 -0500
-Received: from mga14.intel.com ([143.182.124.37]:3483 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754544Ab3BEKwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 05:52:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,602,1355126400"; 
-   d="scan'208";a="252768343"
-From: Durgadoss R <durgadoss.r@intel.com>
-To: rui.zhang@intel.com, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, eduardo.valentin@ti.com,
-        hongbo.zhang@linaro.org, wni@nvidia.com,
-        Durgadoss R <durgadoss.r@intel.com>
-Subject: [PATCH 2/8] Thermal: Create zone level APIs
-Date: Tue,  5 Feb 2013 16:16:17 +0530
-Message-Id: <1360061183-14137-3-git-send-email-durgadoss.r@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
-References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
+	id S1754973Ab3BEKyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:54:33 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:58503 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab3BEKyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 05:54:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360031367.14701.47.camel@pasglop>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	<1781360.cmQWHCW5SC@wuerfel>
+	<CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+	<201302041724.47331.arnd@arndb.de>
+	<1360031367.14701.47.camel@pasglop>
+Date: Tue, 5 Feb 2013 11:54:30 +0100
+Message-ID: <CAHTX3dL4dScmzgGyqbvPH-7UQvFrjQhHu2zh0iZyzWB=spZS+Q@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+From: Michal Simek <monstr@monstr.eu>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        alan@lxorguk.ukuu.org.uk, geert@linux-m68k.org,
+        dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new thermal_zone structure to
-thermal.h. Also, adds zone level APIs to the thermal
-framework.
+2013/2/5 Benjamin Herrenschmidt <benh@kernel.crashing.org>:
+> On Mon, 2013-02-04 at 17:24 +0000, Arnd Bergmann wrote:
+>> On Monday 04 February 2013, Michal Simek wrote:
+>> > >
+>> > > and select the CONFIG_FOO_BIG_ENDIAN and CONFIG_FOO_LITTLE_ENDIAN
+>> > > symbols in Kconfig based on the system you are building for.
+>> >
+>> > Using CONFIG_FOO_BIG/LITTLE is not good because it is just another
+>> > Kconfig option.
+>> > You can easily detect it at runtime and for dedicated hw with fixed
+>> > endians you can just
+>> > handle it in the driver and don't care about global setting.
+>>
+>> The configuration option should not be visible, so it's
+>> not something a user would have to worry about. It's just
+>> sometimes nicer to express the configuration of the platform
+>> in terms of Kconfig syntax than it is in C code if you have
+>> complex platform dependencies.
+>
+> As long as you never have a case where both are needed at runtime...
+>
+>> > > This of course gets further complicated if you require different
+>> > > accessors per architecture, like ARM wanting readl or ioread32
+>> > > and PowerPC wanting in_le32 for a little-endian SoC component.
+>
+> powerpc should never "want" in_le32. ioread32 should work just as well.
+> in_le32 is historical stuff and is never required.
+>
+>> > FYI: I have got two responses on linux-arch from Alan
+>> > "Set the pointers up and pass them as data with your platform device, that
+>> > way the function definitions are buried in your platform code where they
+>> > depend."
+>> >
+>> > and Geert:
+>> > "Or embed a struct io_ops * in struct device, to be set up by the bus driver?
+>> >
+>> > Wasn't David Hinds working on something like this in the context of PCMCIA
+>> > a few decades ago?"
+>> >
+>> > Based on their suggestions one way can be to pass it through void *platform_data
+>> > which is probably not the best and then which make more sense to me is to extend
+>> > struct dev_archdata archdata to add there native read/write functions.
+>> >
+>> > What do you think?
+>>
+>> I worry a little about code size if we have a lot of drivers that go
+>> from one instruction to an indirect function call for each readl/writel.
+>> Using platform_data ss also something that does not work too well with
+>> device tree based platform configuration, which tries hard to leave
+>> all run-time configuration inside of the driver.
+>
+> readl/writel and ioread32/iowrite32 should always be equivalent.
+>
+> So it all boils down to whether your device has different endianness (it
+> should not, doing so is stupid ... but if it really does then make it a
+> runtime wrapper that chooses between ioread32 and ioread32be
 
-A thermal zone is a hot spot on the platform, which
-can have one or more sensors and cooling devices attached
-to it. These sensors can be mapped to a set of cooling
-devices, which when throttled, can help to bring down
-the temperature of the hot spot.
+xilinx ppc is big endian
+xilinx arm is little endian
+xilinx microblaze is little endian and big endian
 
-Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
----
- drivers/thermal/thermal_sys.c |  196 +++++++++++++++++++++++++++++++++++++++++
- include/linux/thermal.h       |   22 +++++
- 2 files changed, 218 insertions(+)
+It is just sharing the same IP across all platforms. Which is better
+than create new devices and new device drivers for it. It means that
+all of them are register compatible but require access with native
+platform endianness
+as I listed above.
 
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index cb94497..838d4fb 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -43,19 +43,46 @@ MODULE_DESCRIPTION("Generic thermal management sysfs support");
- MODULE_LICENSE("GPL");
- 
- static DEFINE_IDR(thermal_tz_idr);
-+static DEFINE_IDR(thermal_zone_idr);
- static DEFINE_IDR(thermal_cdev_idr);
- static DEFINE_IDR(thermal_sensor_idr);
- static DEFINE_MUTEX(thermal_idr_lock);
- 
- static LIST_HEAD(thermal_tz_list);
- static LIST_HEAD(thermal_sensor_list);
-+static LIST_HEAD(thermal_zone_list);
- static LIST_HEAD(thermal_cdev_list);
- static LIST_HEAD(thermal_governor_list);
- 
- static DEFINE_MUTEX(thermal_list_lock);
- static DEFINE_MUTEX(sensor_list_lock);
-+static DEFINE_MUTEX(zone_list_lock);
- static DEFINE_MUTEX(thermal_governor_lock);
- 
-+#define for_each_thermal_sensor(pos) \
-+	list_for_each_entry(pos, &thermal_sensor_list, node)
-+
-+#define for_each_thermal_zone(pos) \
-+	list_for_each_entry(pos, &thermal_zone_list, node)
-+
-+#define GET_INDEX(tz, ptr, type)			\
-+({							\
-+	int i, ret = -EINVAL;				\
-+	do {						\
-+		if (!tz || !ptr)			\
-+			break;				\
-+		mutex_lock(&type##_list_lock);		\
-+		for (i = 0; i < tz->type##_indx; i++) {	\
-+			if (tz->type##s[i] == ptr) {	\
-+				ret = i;		\
-+				break;			\
-+			}				\
-+		}					\
-+		mutex_unlock(&type##_list_lock);	\
-+	} while (0);					\
-+	ret;						\
-+})
-+
- static struct thermal_governor *__find_governor(const char *name)
- {
- 	struct thermal_governor *pos;
-@@ -421,15 +448,44 @@ static void thermal_zone_device_check(struct work_struct *work)
- 	thermal_zone_device_update(tz);
- }
- 
-+static void remove_sensor_from_zone(struct thermal_zone *tz,
-+				struct thermal_sensor *ts)
-+{
-+	int j, indx;
-+
-+	indx = GET_INDEX(tz, ts, sensor);
-+	if (indx < 0)
-+		return;
-+
-+	sysfs_remove_link(&tz->device.kobj, kobject_name(&ts->device.kobj));
-+
-+	/* Shift the entries in the tz->sensors array */
-+	for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++)
-+		tz->sensors[j] = tz->sensors[j + 1];
-+
-+	tz->sensor_indx--;
-+}
-+
- /* sys I/F for thermal zone */
- 
- #define to_thermal_zone(_dev) \
- 	container_of(_dev, struct thermal_zone_device, device)
- 
-+#define to_zone(_dev) \
-+	container_of(_dev, struct thermal_zone, device)
-+
- #define to_thermal_sensor(_dev) \
- 	container_of(_dev, struct thermal_sensor, device)
- 
- static ssize_t
-+zone_name_show(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct thermal_zone *tz = to_zone(dev);
-+
-+	return sprintf(buf, "%s\n", tz->name);
-+}
-+
-+static ssize_t
- sensor_name_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct thermal_sensor *ts = to_thermal_sensor(dev);
-@@ -811,6 +867,8 @@ static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
- static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
- static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
- 
-+static DEVICE_ATTR(zone_name, 0444, zone_name_show, NULL);
-+
- /* sys I/F for cooling device */
- #define to_cooling_device(_dev)	\
- 	container_of(_dev, struct thermal_cooling_device, device)
-@@ -1656,6 +1714,136 @@ static int enable_sensor_thresholds(struct thermal_sensor *ts, int count)
- 	return 0;
- }
- 
-+struct thermal_zone *create_thermal_zone(const char *name, void *devdata)
-+{
-+	struct thermal_zone *tz;
-+	int ret;
-+
-+	if (!name || (name && strlen(name) >= THERMAL_NAME_LENGTH))
-+		return ERR_PTR(-EINVAL);
-+
-+	tz = kzalloc(sizeof(*tz), GFP_KERNEL);
-+	if (!tz)
-+		return ERR_PTR(-ENOMEM);
-+
-+	idr_init(&tz->idr);
-+	ret = get_idr(&thermal_zone_idr, &thermal_idr_lock, &tz->id);
-+	if (ret)
-+		goto exit_free;
-+
-+	strcpy(tz->name, name);
-+	tz->devdata = devdata;
-+	tz->device.class = &thermal_class;
-+
-+	dev_set_name(&tz->device, "zone%d", tz->id);
-+	ret = device_register(&tz->device);
-+	if (ret)
-+		goto exit_idr;
-+
-+	ret = device_create_file(&tz->device, &dev_attr_zone_name);
-+	if (ret)
-+		goto exit_unregister;
-+
-+	/* Add this zone to the global list of thermal zones */
-+	mutex_lock(&zone_list_lock);
-+	list_add_tail(&tz->node, &thermal_zone_list);
-+	mutex_unlock(&zone_list_lock);
-+	return tz;
-+
-+exit_unregister:
-+	device_unregister(&tz->device);
-+exit_idr:
-+	release_idr(&thermal_zone_idr, &thermal_idr_lock, tz->id);
-+exit_free:
-+	kfree(tz);
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL(create_thermal_zone);
-+
-+void remove_thermal_zone(struct thermal_zone *tz)
-+{
-+	struct thermal_zone *pos, *next;
-+	bool found = false;
-+
-+	if (!tz)
-+		return;
-+
-+	mutex_lock(&zone_list_lock);
-+
-+	list_for_each_entry_safe(pos, next, &thermal_zone_list, node) {
-+		if (pos == tz) {
-+			list_del(&tz->node);
-+			found = true;
-+			break;
-+		}
-+	}
-+
-+	if (!found)
-+		goto exit;
-+
-+	device_remove_file(&tz->device, &dev_attr_zone_name);
-+
-+	release_idr(&thermal_zone_idr, &thermal_idr_lock, tz->id);
-+	idr_destroy(&tz->idr);
-+
-+	device_unregister(&tz->device);
-+	kfree(tz);
-+exit:
-+	mutex_unlock(&zone_list_lock);
-+	return;
-+}
-+EXPORT_SYMBOL(remove_thermal_zone);
-+
-+struct thermal_sensor *get_sensor_by_name(const char *name)
-+{
-+	struct thermal_sensor *pos;
-+	struct thermal_sensor *ts = NULL;
-+
-+	mutex_lock(&sensor_list_lock);
-+	for_each_thermal_sensor(pos) {
-+		if (!strnicmp(pos->name, name, THERMAL_NAME_LENGTH)) {
-+			ts = pos;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&sensor_list_lock);
-+	return ts;
-+}
-+EXPORT_SYMBOL(get_sensor_by_name);
-+
-+int add_sensor_to_zone(struct thermal_zone *tz, struct thermal_sensor *ts)
-+{
-+	int ret;
-+
-+	if (!tz || !ts)
-+		return -EINVAL;
-+
-+	mutex_lock(&zone_list_lock);
-+
-+	/* Ensure we are not adding the same sensor again!! */
-+	ret = GET_INDEX(tz, ts, sensor);
-+	if (ret >= 0) {
-+		ret = -EEXIST;
-+		goto exit_zone;
-+	}
-+
-+	mutex_lock(&sensor_list_lock);
-+
-+	ret = sysfs_create_link(&tz->device.kobj, &ts->device.kobj,
-+				kobject_name(&ts->device.kobj));
-+	if (ret)
-+		goto exit_sensor;
-+
-+	tz->sensors[tz->sensor_indx++] = ts;
-+
-+exit_sensor:
-+	mutex_unlock(&sensor_list_lock);
-+exit_zone:
-+	mutex_unlock(&zone_list_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(add_sensor_to_zone);
-+
- /**
-  * thermal_sensor_register - register a new thermal sensor
-  * @name:	name of the thermal sensor
-@@ -1732,6 +1920,7 @@ EXPORT_SYMBOL(thermal_sensor_register);
- void thermal_sensor_unregister(struct thermal_sensor *ts)
- {
- 	int i;
-+	struct thermal_zone *tz;
- 	struct thermal_sensor *pos, *next;
- 	bool found = false;
- 
-@@ -1751,6 +1940,13 @@ void thermal_sensor_unregister(struct thermal_sensor *ts)
- 	if (!found)
- 		return;
- 
-+	mutex_lock(&zone_list_lock);
-+
-+	for_each_thermal_zone(tz)
-+		remove_sensor_from_zone(tz, ts);
-+
-+	mutex_unlock(&zone_list_lock);
-+
- 	for (i = 0; i < ts->thresholds; i++) {
- 		device_remove_file(&ts->device, &ts->thresh_attrs[i].attr);
- 		if (ts->ops->get_hyst) {
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index 5470dae..2194519 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -55,6 +55,8 @@
- #define DEFAULT_THERMAL_GOVERNOR       "user_space"
- #endif
- 
-+#define MAX_SENSORS_PER_ZONE		5
-+
- struct thermal_sensor;
- struct thermal_zone_device;
- struct thermal_cooling_device;
-@@ -202,6 +204,21 @@ struct thermal_zone_device {
- 	struct delayed_work poll_queue;
- };
- 
-+struct thermal_zone {
-+	char name[THERMAL_NAME_LENGTH];
-+	int id;
-+	void *devdata;
-+	struct thermal_zone *ops;
-+	struct thermal_governor *governor;
-+	struct idr idr;
-+	struct device device;
-+	struct list_head node;
-+
-+	/* Sensor level information */
-+	int sensor_indx; /* index into 'sensors' array */
-+	struct thermal_sensor *sensors[MAX_SENSORS_PER_ZONE];
-+};
-+
- /* Structure that holds thermal governor information */
- struct thermal_governor {
- 	char name[THERMAL_NAME_LENGTH];
-@@ -274,6 +291,11 @@ struct thermal_sensor *thermal_sensor_register(const char *, int,
- 				struct thermal_sensor_ops *, void *);
- void thermal_sensor_unregister(struct thermal_sensor *);
- 
-+struct thermal_zone *create_thermal_zone(const char *, void *);
-+void remove_thermal_zone(struct thermal_zone *);
-+int add_sensor_to_zone(struct thermal_zone *, struct thermal_sensor *);
-+struct thermal_sensor *get_sensor_by_name(const char *);
-+
- #ifdef CONFIG_NET
- extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
- 						enum events event);
+It is not a problem to create runtime wrapper and even detect endian
+directly in the driver
+but the point if this is the proper design.
+Also ioread32 and ioread32be shouldn't be used on ARM because there
+are missing memory barriers.
+
+Thanks,
+Michal
+
 -- 
-1.7.9.5
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
