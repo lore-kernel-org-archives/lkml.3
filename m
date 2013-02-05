@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab3BEWWw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:22:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48059 "EHLO
+	id S1757581Ab3BEWKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:10:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48049 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757565Ab3BEWKj (ORCPT
+	with ESMTP id S1757561Ab3BEWKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:10:39 -0500
+	Tue, 5 Feb 2013 17:10:30 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 48/93] drm/i915: Disable AsyncFlip performance optimisations
-Date: Tue,  5 Feb 2013 20:06:37 -0200
-Message-Id: <1360102042-10732-49-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 46/93] ath9k_hw: fix chain swap setting when setting rx chainmask to 5
+Date: Tue,  5 Feb 2013 20:06:35 -0200
+Message-Id: <1360102042-10732-47-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,70 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 1c8c38c588ea91f8deeae21284840459d1bb58e3 upstream.
+commit 24171dd92096fc370b195f3f6bdc0798855dc3f9 upstream.
 
-This is a required workarounds for all products, especially on gen6+
-where it causes the command streamer to fail to parse instructions
-following a WAIT_FOR_EVENT. We use WAIT_FOR_EVENT for synchronising
-between the GPU and the display engines, and so this bit being unset may
-cause hangs.
+Chain swapping should only be enabled when the EEPROM chainmask is set to 5,
+regardless of what the runtime chainmask is.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=52311
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ herton: adjust context ]
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ herton: keep AR_SREV_9462(ah) conditional assignment (tx = 3),
+  present on 3.5 ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h         |    1 +
- drivers/gpu/drm/i915/intel_ringbuffer.c |   19 +++++++++++++------
- 2 files changed, 14 insertions(+), 6 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c |   31 +++++++--------------------
+ 1 file changed, 8 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 8ccfe28..623224c 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -513,6 +513,7 @@
- #define MI_MODE		0x0209c
- # define VS_TIMER_DISPATCH				(1 << 6)
- # define MI_FLUSH_ENABLE				(1 << 12)
-+# define ASYNC_FLIP_PERF_DISABLE			(1 << 14)
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.c b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+index b490b16..ac2aa7a 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -534,33 +534,18 @@ static void ar9003_hw_init_bb(struct ath_hw *ah,
  
- #define GEN6_GT_MODE	0x20d0
- #define   GEN6_GT_MODE_HI	(1 << 9)
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index e5b84ff..78486c7 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -411,13 +411,20 @@ static int init_render_ring(struct intel_ring_buffer *ring)
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int ret = init_ring_common(ring);
- 
--	if (INTEL_INFO(dev)->gen > 3) {
-+	if (INTEL_INFO(dev)->gen > 3)
- 		I915_WRITE(MI_MODE, _MASKED_BIT_ENABLE(VS_TIMER_DISPATCH));
--		if (IS_GEN7(dev))
--			I915_WRITE(GFX_MODE_GEN7,
--				   _MASKED_BIT_DISABLE(GFX_TLB_INVALIDATE_ALWAYS) |
--				   _MASKED_BIT_ENABLE(GFX_REPLAY_MODE));
+ void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
+ {
+-	switch (rx) {
+-	case 0x5:
++	if (ah->caps.tx_chainmask == 5 || ah->caps.rx_chainmask == 5)
+ 		REG_SET_BIT(ah, AR_PHY_ANALOG_SWAP,
+ 			    AR_PHY_SWAP_ALT_CHAIN);
+-	case 0x3:
+-	case 0x1:
+-	case 0x2:
+-	case 0x7:
+-		REG_WRITE(ah, AR_PHY_RX_CHAINMASK, rx);
+-		REG_WRITE(ah, AR_PHY_CAL_CHAINMASK, rx);
+-		break;
+-	default:
+-		break;
 -	}
-+
-+	/* We need to disable the AsyncFlip performance optimisations in order
-+	 * to use MI_WAIT_FOR_EVENT within the CS. It should already be
-+	 * programmed to '1' on all products.
-+	 */
-+	if (INTEL_INFO(dev)->gen >= 6)
-+		I915_WRITE(MI_MODE, _MASKED_BIT_ENABLE(ASYNC_FLIP_PERF_DISABLE));
-+
-+	if (IS_GEN7(dev))
-+		I915_WRITE(GFX_MODE_GEN7,
-+			   _MASKED_BIT_DISABLE(GFX_TLB_INVALIDATE_ALWAYS) |
-+			   _MASKED_BIT_ENABLE(GFX_REPLAY_MODE));
  
- 	if (INTEL_INFO(dev)->gen >= 5) {
- 		ret = init_pipe_control(ring);
+-	if ((ah->caps.hw_caps & ATH9K_HW_CAP_APM) && (tx == 0x7))
+-		REG_WRITE(ah, AR_SELFGEN_MASK, 0x3);
+-	else if (AR_SREV_9462(ah))
+-		/* xxx only when MCI support is enabled */
+-		REG_WRITE(ah, AR_SELFGEN_MASK, 0x3);
+-	else
+-		REG_WRITE(ah, AR_SELFGEN_MASK, tx);
++	REG_WRITE(ah, AR_PHY_RX_CHAINMASK, rx);
++	REG_WRITE(ah, AR_PHY_CAL_CHAINMASK, rx);
+ 
+-	if (tx == 0x5) {
+-		REG_SET_BIT(ah, AR_PHY_ANALOG_SWAP,
+-			    AR_PHY_SWAP_ALT_CHAIN);
+-	}
++	if (((ah->caps.hw_caps & ATH9K_HW_CAP_APM) && (tx == 0x7)) ||
++	    AR_SREV_9462(ah))
++		tx = 3;
++
++	REG_WRITE(ah, AR_SELFGEN_MASK, tx);
+ }
+ 
+ /*
 -- 
 1.7.9.5
 
