@@ -1,134 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab3BEAI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 19:08:57 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:65186 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab3BEAI4 (ORCPT
+	id S1755578Ab3BEAST (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 19:18:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42226 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab3BEASR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 19:08:56 -0500
-X-AuditID: 9c930179-b7c24ae00000119c-87-51104d961986
-Date: Tue, 5 Feb 2013 09:08:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
-Message-ID: <20130205000854.GC2610@blaptop>
-References: <1359937421-19921-1-git-send-email-minchan@kernel.org>
- <20130204185146.GA31284@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130204185146.GA31284@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 4 Feb 2013 19:18:17 -0500
+From: joseph.salisbury@canonical.com
+To: linux-kernel@vger.kernel.org
+Cc: lenb@kernel.org, rjw@sisk.pl, linux-acpi@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [PATCH 1/1] ACPI: Add DMI entry for Sony VGN-FW41E_H
+Date: Mon,  4 Feb 2013 19:16:29 -0500
+Message-Id: <d13ef85181ffd5166cd3cc51fe0b1d2247068dbc.1360010329.git.joseph.salisbury@canonical.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <cover.1360010329.git.joseph.salisbury@canonical.com>
+References: <cover.1360010329.git.joseph.salisbury@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 
-On Mon, Feb 04, 2013 at 10:51:46AM -0800, Greg Kroah-Hartman wrote:
-> On Mon, Feb 04, 2013 at 09:23:41AM +0900, Minchan Kim wrote:
-> > Zsmalloc has two methods 1) copy-based and 2) pte based to access
-> > allocations that span two pages.
-> > You can see history why we supported two approach from [1].
-> > 
-> > But it was bad choice that adding hard coding to select architecture
-> > which want to use pte based method. This patch removed it and adds
-> > new Kconfig to select the approach.
-> > 
-> > This patch is based on next-20130202.
-> > 
-> > [1] https://lkml.org/lkml/2012/7/11/58
-> > 
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > Cc: Nitin Gupta <ngupta@vflare.org>
-> > Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  drivers/staging/zsmalloc/Kconfig         |   12 ++++++++++++
-> >  drivers/staging/zsmalloc/zsmalloc-main.c |   11 -----------
-> >  2 files changed, 12 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> > index 9084565..2359123 100644
-> > --- a/drivers/staging/zsmalloc/Kconfig
-> > +++ b/drivers/staging/zsmalloc/Kconfig
-> > @@ -8,3 +8,15 @@ config ZSMALLOC
-> >  	  non-standard allocator interface where a handle, not a pointer, is
-> >  	  returned by an alloc().  This handle must be mapped in order to
-> >  	  access the allocated space.
-> > +
-> > +config ZSMALLOC_PGTABLE_MAPPING
-> > +        bool "Use page table mapping to access allocations that span two pages"
-> > +        depends on ZSMALLOC
-> > +        default n
-> > +        help
-> > +	  By default, zsmalloc uses a copy-based object mapping method to access
-> > +	  allocations that span two pages. However, if a particular architecture
-> > +	  performs VM mapping faster than copying, then you should select this.
-> > +	  This causes zsmalloc to use page table mapping rather than copying
-> > +	  for object mapping. You can check speed with zsmalloc benchmark[1].
-> > +	  [1] https://github.com/spartacus06/zsmalloc
-> > diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> > index 06f73a9..b161ca1 100644
-> > --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> > +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> > @@ -218,17 +218,6 @@ struct zs_pool {
-> >  #define CLASS_IDX_MASK	((1 << CLASS_IDX_BITS) - 1)
-> >  #define FULLNESS_MASK	((1 << FULLNESS_BITS) - 1)
-> >  
-> > -/*
-> > - * By default, zsmalloc uses a copy-based object mapping method to access
-> > - * allocations that span two pages. However, if a particular architecture
-> > - * performs VM mapping faster than copying, then it should be added here
-> > - * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
-> > - * page table mapping rather than copying for object mapping.
-> > -*/
-> > -#if defined(CONFIG_ARM)
-> > -#define USE_PGTABLE_MAPPING
-> > -#endif
-> 
-> Did you test this?  I don't see the new config value you added actually
-> do anything in this code.  Also, if I select it incorrectly on ARM, or
+BugLink: http://bugs.launchpad.net/bugs/1113547
 
-*slaps self*
+This patch adds a quirk to allow the Sony VGN-FW41E_H suspend/resume properly.
 
-> or other platforms, what is keeping this from doing bad things?
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: lenb@kernel.org
+Cc: rjw@sisk.pl
+Cc: linux-acpi@vger.kernel.org
+Cc: stable@vger.kernel.org
 
-There is no way to prevent it now.
-I thought a way to detect it dynamically by testing performance
-both approaches in booting/module-loading time and select the best choice.
-For it, we should add benchmark code and delay booting/module-loading,
-it's not good for embedded system because they are fighting with 300msec all
-day long.
-So I think best choice we can do is that pass the decision to user by Kconfig
-which includes pointing the benchmark. I intionally removed "ARM" word in help
-because we checked the performance in just three devices of all ARM CPU
-so we can't make sure it does makse sense all ARM CPU.
+---
+ drivers/acpi/sleep.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Of course, I'm open for suggestion. Do you have better idea?
-
-
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index 2fcc67d..df85051 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -177,6 +177,14 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 	},
+ 	{
+ 	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-FW41E_H",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW41E_H"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
+ 	.ident = "Sony Vaio VGN-FW21E",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
 -- 
-Kind regards,
-Minchan Kim
+1.7.9.5
+
