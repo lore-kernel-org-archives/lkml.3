@@ -1,34 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3BEMNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 07:13:44 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:38992 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab3BEMNl (ORCPT
+	id S1754951Ab3BEMN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 07:13:59 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:63378 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab3BEMN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 07:13:41 -0500
-Date: Tue, 5 Feb 2013 13:13:36 +0100
+	Tue, 5 Feb 2013 07:13:58 -0500
+Date: Tue, 5 Feb 2013 13:13:54 +0100
 From: Ingo Molnar <mingo@kernel.org>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Christoph Lameter <cl@linux.com>
-Subject: Re: [GIT PULL] cputime: Full dynticks task/cputime accounting v8
-Message-ID: <20130205121336.GB21455@gmail.com>
-References: <1360020500-32496-1-git-send-email-fweisbec@gmail.com>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] printk: Support for full dynticks mode
+Message-ID: <20130205121354.GC21455@gmail.com>
+References: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360020500-32496-1-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1360025478-32741-1-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -39,123 +33,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 > Ingo,
 > 
-> Please pull the new full dynticks cputime accounting code that
+> Please pull the support for full dynticks idle mode in printk that
 > can be found at:
 > 
 > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->         tags/full-dynticks-cputime-for-mingo
+> 	nohz/printk-v9
 > 
-> It's exactly the same tag/HEAD as in my v7. I'm just making a new pull
-> request in order to restart a fresh thread like you suggested. The old
-> one was filled with a discussion with Steve about what we thought was a bug.
-> We concluded it was actually an unavoidable tiny error margin due to how we
-> consider the boundary between kernel and user space (tick uses user_mode(regs)
-> whereas generic vtime uses context tracking callbacks). The artificial
-> testcase we were using was making this margin visible. No big difference
-> should be found with real workloads though. So Steve gave his Ack on the pull
-> request.
+> nohz/printk-v8 was the tree that I proposed to Linus. It has been left unpulled
+> though and we got no news from him but the tree has stayed untouched since then,
+> waiting in -next without any issue.
 > 
-> Then Christoph reported a build error but it doesn't belong to this tree:
-> it's about an old version of my full dynticks tree.
-> 
-> So in the end I see no opposition for this tree to be pulled. If anybody
-> has any concern, please raise your hand here.
+> Part of nohz/printk-v8 is now in tip:irq/core, and this pull request contains
+> the rest. I could simply propose you the old branch but since there is a tiny
+> conflict with another recent commit in tip:irq/core, I just made a new branch
+> that contains tip:irq/core with nohz/printk-v8 merged inside which deals
+> with the conflict.
 > 
 > Thanks.
-> 
-> ---
-> This implements the cputime accounting on full dynticks CPUs.
-> 
-> Typical cputime stats infrastructure relies on the timer tick and
-> its periodic polling on the CPU to account the amount of time
-> spent by the CPUs and the tasks per high level domains such as
-> userspace, kernelspace, guest, ...
-> 
-> Now we are preparing to implement full  dynticks capability on
-> Linux for Real Time and HPC users who want full CPU isolation.
-> This feature requires a cputime accounting that doesn't depend
-> on the timer tick.
-> 
-> To implement it, this new cputime infrastructure plugs into
-> kernel/user/guest boundaries to take snapshots of cputime and
-> flush these to the stats when needed. This performs pretty
-> much like CONFIG_VIRT_CPU_ACCOUNTING except that context location
-> and cputime snaphots are synchronized between write and read
-> side such that the latter can safely retrieve the pending tickless
-> cputime of a task and add it to its latest cputime snapshot to
-> return the correct result to the user.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > ---
 > 
-> Frederic Weisbecker (8):
->   context_tracking: Export context state for generic vtime
->   cputime: Librarize per nsecs resolution cputime definitions
->   cputime: Move default nsecs_to_cputime() to jiffies based cputime
->     file
->   cputime: Generic on-demand virtual cputime accounting
->   cputime: Allow dynamic switch between tick/virtual based cputime
->     accounting
->   cputime: Use accessors to read task cputime stats
->   kvm: Prepare to add generic guest entry/exit callbacks
->   cputime: Safely read cputime of full dynticks CPUs
+> Frederic Weisbecker (5):
+>       nohz: Add API to check tick state
+>       irq_work: Don't stop the tick with pending works
+>       irq_work: Make self-IPIs optable
+>       printk: Wake up klogd using irq_work
+>       Merge branch 'nohz/printk-v8' into irq/core
 > 
->  arch/alpha/kernel/osf_sys.c                  |    6 +-
->  arch/ia64/include/asm/cputime.h              |   92 +--------
->  arch/ia64/include/asm/thread_info.h          |    4 +-
->  arch/ia64/include/asm/xen/minstate.h         |    2 +-
->  arch/ia64/kernel/asm-offsets.c               |    2 +-
->  arch/ia64/kernel/entry.S                     |   16 +-
->  arch/ia64/kernel/fsys.S                      |    4 +-
->  arch/ia64/kernel/head.S                      |    4 +-
->  arch/ia64/kernel/ivt.S                       |    8 +-
->  arch/ia64/kernel/minstate.h                  |    2 +-
->  arch/ia64/kernel/time.c                      |    5 +-
->  arch/powerpc/configs/chroma_defconfig        |    2 +-
->  arch/powerpc/configs/corenet64_smp_defconfig |    2 +-
->  arch/powerpc/configs/pasemi_defconfig        |    2 +-
->  arch/powerpc/include/asm/cputime.h           |    6 +-
->  arch/powerpc/include/asm/lppaca.h            |    2 +-
->  arch/powerpc/include/asm/ppc_asm.h           |    4 +-
->  arch/powerpc/kernel/entry_64.S               |    4 +-
->  arch/powerpc/kernel/time.c                   |    5 +-
->  arch/powerpc/platforms/pseries/dtl.c         |    6 +-
->  arch/powerpc/platforms/pseries/setup.c       |    6 +-
->  arch/s390/kernel/vtime.c                     |    6 +-
->  arch/x86/kernel/apm_32.c                     |   11 +-
->  drivers/isdn/mISDN/stack.c                   |    7 +-
->  fs/binfmt_elf.c                              |    8 +-
->  fs/binfmt_elf_fdpic.c                        |    7 +-
->  fs/proc/array.c                              |    4 +-
->  include/asm-generic/cputime.h                |   66 +-----
->  include/asm-generic/cputime_jiffies.h        |   72 ++++++
->  include/asm-generic/cputime_nsecs.h          |  104 +++++++++
->  include/linux/context_tracking.h             |   28 +++
->  include/linux/hardirq.h                      |    4 +-
->  include/linux/init_task.h                    |   11 +
->  include/linux/kernel_stat.h                  |    2 +-
->  include/linux/kvm_host.h                     |   55 ++++-
->  include/linux/sched.h                        |   40 ++++
->  include/linux/tsacct_kern.h                  |    3 +
->  include/linux/vtime.h                        |   59 ++++--
->  init/Kconfig                                 |   23 ++-
->  kernel/acct.c                                |    6 +-
->  kernel/context_tracking.c                    |   43 +++--
->  kernel/cpu.c                                 |    4 +-
->  kernel/delayacct.c                           |    7 +-
->  kernel/exit.c                                |   10 +-
->  kernel/fork.c                                |    6 +
->  kernel/posix-cpu-timers.c                    |   28 ++-
->  kernel/sched/core.c                          |    1 +
->  kernel/sched/cputime.c                       |  298 +++++++++++++++++++++++---
->  kernel/signal.c                              |   12 +-
->  kernel/softirq.c                             |    6 +-
->  kernel/time/tick-sched.c                     |    5 +-
->  kernel/tsacct.c                              |   44 +++-
->  52 files changed, 842 insertions(+), 322 deletions(-)
->  create mode 100644 include/asm-generic/cputime_jiffies.h
->  create mode 100644 include/asm-generic/cputime_nsecs.h
+> Steven Rostedt (2):
+>       irq_work: Flush work on CPU_DYING
+>       irq_work: Warn if there's still work on cpu_down
+> 
+>  include/linux/irq_work.h |   20 ++++++++
+>  include/linux/printk.h   |    3 -
+>  include/linux/tick.h     |   17 +++++++-
+>  init/Kconfig             |    1 +
+>  kernel/irq_work.c        |  112 +++++++++++++++++++++++++++++++++++-----------
+>  kernel/printk.c          |   36 ++++++++-------
+>  kernel/time/tick-sched.c |    7 ++-
+>  kernel/timer.c           |    1 -
+>  8 files changed, 147 insertions(+), 50 deletions(-)
 
-Pulled, thanks a lot Frederic!
+Pulled, thanks Frederic!
 
 	Ingo
