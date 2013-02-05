@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957Ab3BEWRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:17:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48220 "EHLO
+	id S1757968Ab3BEWRi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:17:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48208 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757943Ab3BEWMZ (ORCPT
+	with ESMTP id S1757729Ab3BEWMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:12:25 -0500
+	Tue, 5 Feb 2013 17:12:19 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hugh Daschbach <hugh.daschbach@enmotus.com>,
-        Jeff Garzik <jgarzik@redhat.com>,
+Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>, Feng Jin <joe.jin@oracle.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 76/93] [libata] ahci: Add support for Enmotus Bobcat device.
-Date: Tue,  5 Feb 2013 20:07:05 -0200
-Message-Id: <1360102042-10732-77-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 74/93] drivers/firmware/dmi_scan.c: check dmi version when get system uuid
+Date: Tue,  5 Feb 2013 20:07:03 -0200
+Message-Id: <1360102042-10732-75-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,55 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Daschbach <hugh.daschbach@enmotus.com>
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
 
-commit 7f9c9f8e24590e7dcd26ca408458c43df5b83e61 upstream.
+commit f1d8e614d74b09531b9a85e812485340f3df7b1c upstream.
 
-Silicon does not support standard AHCI BAR assignment.  Add
-vendor/device exception to force BAR 2.
+As of version 2.6 of the SMBIOS specification, the first 3 fields of the
+UUID are supposed to be little-endian encoded.
 
-Signed-off-by: Hugh Daschbach <hugh.daschbach@enmotus.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Also a minor fix to match variable meaning and mute checkpatch.pl
+
+[akpm@linux-foundation.org: tweak code comment]
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: Feng Jin <joe.jin@oracle.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/ata/ahci.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/firmware/dmi_scan.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 93cbc44..5d0fb6b 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -53,6 +53,7 @@
+diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+index 2d1539f..b1c2596 100644
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -16,6 +16,7 @@
+  */
+ static char dmi_empty_string[] = "        ";
  
- enum {
- 	AHCI_PCI_BAR_STA2X11	= 0,
-+	AHCI_PCI_BAR_ENMOTUS	= 2,
- 	AHCI_PCI_BAR_STANDARD	= 5,
- };
++static u16 __initdata dmi_ver;
+ /*
+  * Catch too early calls to dmi_check_system():
+  */
+@@ -161,8 +162,10 @@ static void __init dmi_save_uuid(const struct dmi_header *dm, int slot, int inde
+ 		return;
  
-@@ -407,6 +408,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	/* Asmedia */
- 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1061 */
+ 	for (i = 0; i < 16 && (is_ff || is_00); i++) {
+-		if(d[i] != 0x00) is_ff = 0;
+-		if(d[i] != 0xFF) is_00 = 0;
++		if (d[i] != 0x00)
++			is_00 = 0;
++		if (d[i] != 0xFF)
++			is_ff = 0;
+ 	}
  
-+	/* Enmotus */
-+	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
-+
- 	/* Generic, PCI class code for AHCI */
- 	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
- 	  PCI_CLASS_STORAGE_SATA_AHCI, 0xffffff, board_ahci },
-@@ -1079,9 +1083,11 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		dev_info(&pdev->dev,
- 			 "PDC42819 can only drive SATA devices with this driver\n");
+ 	if (is_ff || is_00)
+@@ -172,7 +175,15 @@ static void __init dmi_save_uuid(const struct dmi_header *dm, int slot, int inde
+ 	if (!s)
+ 		return;
  
--	/* The Connext uses non-standard BAR */
-+	/* Both Connext and Enmotus devices use non-standard BARs */
- 	if (pdev->vendor == PCI_VENDOR_ID_STMICRO && pdev->device == 0xCC06)
- 		ahci_pci_bar = AHCI_PCI_BAR_STA2X11;
-+	else if (pdev->vendor == 0x1c44 && pdev->device == 0x8000)
-+		ahci_pci_bar = AHCI_PCI_BAR_ENMOTUS;
+-	sprintf(s, "%pUB", d);
++	/*
++	 * As of version 2.6 of the SMBIOS specification, the first 3 fields of
++	 * the UUID are supposed to be little-endian encoded.  The specification
++	 * says that this is the defacto standard.
++	 */
++	if (dmi_ver >= 0x0206)
++		sprintf(s, "%pUL", d);
++	else
++		sprintf(s, "%pUB", d);
  
- 	/* acquire resources */
- 	rc = pcim_enable_device(pdev);
+         dmi_ident[slot] = s;
+ }
+@@ -414,6 +425,7 @@ static int __init dmi_present(const char __iomem *p)
+ 		 * DMI version 0.0 means that the real version is taken from
+ 		 * the SMBIOS version, which we don't know at this point.
+ 		 */
++		dmi_ver = (buf[14] & 0xf0) << 4 | (buf[14] & 0x0f);
+ 		if (buf[14] != 0)
+ 			printk(KERN_INFO "DMI %d.%d present.\n",
+ 			       buf[14] >> 4, buf[14] & 0xF);
 -- 
 1.7.9.5
 
