@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab3BEWKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:10:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48015 "EHLO
+	id S1757506Ab3BEWKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:10:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48010 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757250Ab3BEWKI (ORCPT
+	with ESMTP id S1757491Ab3BEWKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:10:08 -0500
+	Tue, 5 Feb 2013 17:10:05 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Rattray <crattray@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 40/93] ASoC: wm2200: correct mixer values and text
-Date: Tue,  5 Feb 2013 20:06:29 -0200
-Message-Id: <1360102042-10732-41-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 39/93] ath9k: disable the tasklet before taking the PCU lock
+Date: Tue,  5 Feb 2013 20:06:28 -0200
+Message-Id: <1360102042-10732-40-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,38 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Rattray <crattray@opensource.wolfsonmicro.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit a80cc734282805e15b5e023751a4d02f7ffbcc91 upstream.
+commit 4668cce527acb3bd048c5e6c99b157a14b214671 upstream.
 
-Signed-off-by: Chris Rattray <crattray@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Fixes a reported CPU soft lockup where the tasklet tries to acquire the
+lock and blocks while ath_prepare_reset (holding the lock) waits for it
+to complete.
+
+Reported-by: Robert Shade <robert.shade@gmail.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- sound/soc/codecs/wm2200.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/sound/soc/codecs/wm2200.c b/sound/soc/codecs/wm2200.c
-index 86b84a1..8e0cf14 100644
---- a/sound/soc/codecs/wm2200.c
-+++ b/sound/soc/codecs/wm2200.c
-@@ -897,8 +897,6 @@ static const char *wm2200_mixer_texts[] = {
- 	"EQR",
- 	"LHPF1",
- 	"LHPF2",
--	"LHPF3",
--	"LHPF4",
- 	"DSP1.1",
- 	"DSP1.2",
- 	"DSP1.3",
-@@ -931,7 +929,6 @@ static int wm2200_mixer_values[] = {
- 	0x25,
- 	0x50,   /* EQ */
- 	0x51,
--	0x52,
- 	0x60,   /* LHPF1 */
- 	0x61,   /* LHPF2 */
- 	0x68,   /* DSP1 */
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index e5c9575..68dd853 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -250,16 +250,12 @@ static bool ath_prepare_reset(struct ath_softc *sc, bool retry_tx)
+ 	ath9k_debug_samp_bb_mac(sc);
+ 	ath9k_hw_disable_interrupts(ah);
+ 
+-	tasklet_disable(&sc->intr_tq);
+-
+ 	if (!ath_stoprecv(sc))
+ 		ret = false;
+ 
+ 	if (!ath_drain_all_txq(sc, retry_tx))
+ 		ret = false;
+ 
+-	tasklet_enable(&sc->intr_tq);
+-
+ 	return ret;
+ }
+ 
+@@ -321,6 +317,7 @@ static int ath_reset_internal(struct ath_softc *sc, struct ath9k_channel *hchan,
+ 
+ 	__ath_cancel_work(sc);
+ 
++	tasklet_disable(&sc->intr_tq);
+ 	spin_lock_bh(&sc->sc_pcu_lock);
+ 
+ 	if (!(sc->sc_flags & SC_OP_OFFCHANNEL)) {
+@@ -351,6 +348,8 @@ static int ath_reset_internal(struct ath_softc *sc, struct ath9k_channel *hchan,
+ 
+ out:
+ 	spin_unlock_bh(&sc->sc_pcu_lock);
++	tasklet_enable(&sc->intr_tq);
++
+ 	return r;
+ }
+ 
 -- 
 1.7.9.5
 
