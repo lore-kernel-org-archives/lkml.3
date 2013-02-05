@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3BEWM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:12:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48215 "EHLO
+	id S1757964Ab3BEWMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:12:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48225 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877Ab3BEWMW (ORCPT
+	with ESMTP id S1754383Ab3BEWMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:12:22 -0500
+	Tue, 5 Feb 2013 17:12:31 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>, Feng Jin <joe.jin@oracle.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Bian Yu <bianyu@kedacom.com>, Jeff Garzik <jgarzik@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 75/93] drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
-Date: Tue,  5 Feb 2013 20:07:04 -0200
-Message-Id: <1360102042-10732-76-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 77/93] [libata] ahci: Fix lack of command retry after a success error handler.
+Date: Tue,  5 Feb 2013 20:07:06 -0200
+Message-Id: <1360102042-10732-78-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -30,150 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+From: Bian Yu <bianyu@kedacom.com>
 
-commit 9f9c9cbb60576a1518d0bf93fb8e499cffccf377 upstream.
+commit 1eaca39a84170b369fe61fb1da3c1e8606859e99 upstream.
 
-The right dmi version is in SMBIOS if it's zero in DMI region
+It should be a mistake introduced by commit 8d899e70c1b3afff.
 
-This issue was originally found from an oracle bug.
-One customer noticed system UUID doesn't match between dmidecode & uek2.
+qc->flags can't be set AC_ERR_*
 
- - HP ProLiant BL460c G6 :
-   # cat /sys/devices/virtual/dmi/id/product_uuid
-   00000000-0000-4C48-3031-4D5030333531
-   # dmidecode | grep -i uuid
-   UUID: 00000000-0000-484C-3031-4D5030333531
-
->From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than
-network byte order.
-
-So we need to get dmi version to distinguish.  If version is 0.0, the
-real version is taken from the SMBIOS version.  This is part of original
-kernel comment in code.
-
-[akpm@linux-foundation.org: checkpatch fixes]
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: Feng Jin <joe.jin@oracle.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bian Yu <bianyu@kedacom.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/firmware/dmi_scan.c |   62 ++++++++++++++++++++++++++++++++-----------
- 1 file changed, 47 insertions(+), 15 deletions(-)
+ drivers/ata/libata-eh.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index b1c2596..982f1f5 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -119,12 +119,12 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
- 	return 0;
- }
- 
--static int __init dmi_checksum(const u8 *buf)
-+static int __init dmi_checksum(const u8 *buf, u8 len)
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index 430a248..85fe5bc 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -2057,7 +2057,7 @@ static unsigned int ata_eh_speed_down(struct ata_device *dev,
+  */
+ static inline int ata_eh_worth_retry(struct ata_queued_cmd *qc)
  {
- 	u8 sum = 0;
- 	int a;
- 
--	for (a = 0; a < 15; a++)
-+	for (a = 0; a < len; a++)
- 		sum += buf[a];
- 
- 	return sum == 0;
-@@ -415,30 +415,57 @@ static int __init dmi_present(const char __iomem *p)
- 	u8 buf[15];
- 
- 	memcpy_fromio(buf, p, 15);
--	if ((memcmp(buf, "_DMI_", 5) == 0) && dmi_checksum(buf)) {
-+	if (dmi_checksum(buf, 15)) {
- 		dmi_num = (buf[13] << 8) | buf[12];
- 		dmi_len = (buf[7] << 8) | buf[6];
- 		dmi_base = (buf[11] << 24) | (buf[10] << 16) |
- 			(buf[9] << 8) | buf[8];
- 
--		/*
--		 * DMI version 0.0 means that the real version is taken from
--		 * the SMBIOS version, which we don't know at this point.
--		 */
--		dmi_ver = (buf[14] & 0xf0) << 4 | (buf[14] & 0x0f);
--		if (buf[14] != 0)
--			printk(KERN_INFO "DMI %d.%d present.\n",
--			       buf[14] >> 4, buf[14] & 0xF);
--		else
--			printk(KERN_INFO "DMI present.\n");
- 		if (dmi_walk_early(dmi_decode) == 0) {
-+			if (dmi_ver)
-+				pr_info("SMBIOS %d.%d present.\n",
-+				       dmi_ver >> 8, dmi_ver & 0xFF);
-+			else {
-+				dmi_ver = (buf[14] & 0xF0) << 4 |
-+					   (buf[14] & 0x0F);
-+				pr_info("Legacy DMI %d.%d present.\n",
-+				       dmi_ver >> 8, dmi_ver & 0xFF);
-+			}
- 			dmi_dump_ids();
- 			return 0;
- 		}
- 	}
-+	dmi_ver = 0;
- 	return 1;
- }
- 
-+static int __init smbios_present(const char __iomem *p)
-+{
-+	u8 buf[32];
-+	int offset = 0;
-+
-+	memcpy_fromio(buf, p, 32);
-+	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
-+		dmi_ver = (buf[6] << 8) + buf[7];
-+
-+		/* Some BIOS report weird SMBIOS version, fix that up */
-+		switch (dmi_ver) {
-+		case 0x021F:
-+		case 0x0221:
-+			pr_debug("SMBIOS version fixup(2.%d->2.%d)\n",
-+			       dmi_ver & 0xFF, 3);
-+			dmi_ver = 0x0203;
-+			break;
-+		case 0x0233:
-+			pr_debug("SMBIOS version fixup(2.%d->2.%d)\n", 51, 6);
-+			dmi_ver = 0x0206;
-+			break;
-+		}
-+		offset = 16;
-+	}
-+	return dmi_present(buf + offset);
-+}
-+
- void __init dmi_scan_machine(void)
- {
- 	char __iomem *p, *q;
-@@ -456,7 +483,7 @@ void __init dmi_scan_machine(void)
- 		if (p == NULL)
- 			goto error;
- 
--		rc = dmi_present(p + 0x10); /* offset of _DMI_ string */
-+		rc = smbios_present(p);
- 		dmi_iounmap(p, 32);
- 		if (!rc) {
- 			dmi_available = 1;
-@@ -474,7 +501,12 @@ void __init dmi_scan_machine(void)
- 			goto error;
- 
- 		for (q = p; q < p + 0x10000; q += 16) {
--			rc = dmi_present(q);
-+			if (memcmp(q, "_SM_", 4) == 0 && q - p <= 0xFFE0)
-+				rc = smbios_present(q);
-+			else if (memcmp(q, "_DMI_", 5) == 0)
-+				rc = dmi_present(q);
-+			else
-+				continue;
- 			if (!rc) {
- 				dmi_available = 1;
- 				dmi_iounmap(p, 0x10000);
+-	if (qc->flags & AC_ERR_MEDIA)
++	if (qc->err_mask & AC_ERR_MEDIA)
+ 		return 0;	/* don't retry media errors */
+ 	if (qc->flags & ATA_QCFLAG_IO)
+ 		return 1;	/* otherwise retry anything from fs stack */
 -- 
 1.7.9.5
 
