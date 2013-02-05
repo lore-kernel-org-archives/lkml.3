@@ -1,64 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab3BEQps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 11:45:48 -0500
-Received: from smtp.opengridcomputing.com ([72.48.136.20]:48681 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754742Ab3BEQpq (ORCPT
+	id S1755492Ab3BEQqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 11:46:23 -0500
+Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:27249 "EHLO
+	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751437Ab3BEQqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 11:45:46 -0500
-Message-ID: <51113743.6050403@opengridcomputing.com>
-Date: Tue, 05 Feb 2013 10:45:55 -0600
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 5 Feb 2013 11:46:20 -0500
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Feb 2013 11:46:20 EST
+Date: Tue, 5 Feb 2013 16:36:47 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: James Hogan <james.hogan@imgtec.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org
+Subject: Re: next-20130204 - bisected slab problem to "slab: Common constants
+ for kmalloc boundaries"
+In-Reply-To: <alpine.DEB.2.02.1302042019170.32396@gentwo.org>
+Message-ID: <0000013cab3780f7-5e49ef46-e41a-4ff2-88f8-46bf216d677e-000000@email.amazonses.com>
+References: <510FE051.7080107@imgtec.com> <51100E79.9080101@wwwdotorg.org> <alpine.DEB.2.02.1302042019170.32396@gentwo.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vipul Pandya <vipul@chelsio.com>
-Subject: Re: infiniband: cxgb4: GCC warnings for 32 bit
-References: <1360059358.1343.37.camel@x61.thuisdomein>  <51112943.3040003@opengridcomputing.com> <1360082216.14826.17.camel@x61.thuisdomein>
-In-Reply-To: <1360082216.14826.17.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.210
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/5/2013 10:36 AM, Paul Bolle wrote:
-> On Tue, 2013-02-05 at 09:46 -0600, Steve Wise wrote:
->> On 2/5/2013 4:15 AM, Paul Bolle wrote:
->>> And why is 'cookie' __u64? Is struct cpl_fw6_msg_ofld_connection_wr_rpl
->>> used in userspace code? Can't 'cookie' be of type "struct sk_buff *"? Is
->>> there a requirement for it to be 64 bits wide on both 32 bit and 64 bit?
->> In general, these fields are __ types to highlight the fact that they
->> define an interface between the host driver and adapter firmware.
-> That's something new for me. Is that a custom for infiniband drivers or
-> is it used throughout the tree?
+OK I was able to reproduce it by setting ARCH_DMA_MINALIGN in slab.h. This
+patch fixes it here:
 
-I'm not too sure how standardized this is.  I think its SOP for Chelsio 
-drivers. :)
 
->> These
->> "cookie" fields are opaque to the firmware.  They are passed to firmware
->> in a work request and then reflected back to the host in the reply to
->> the work request.  Given this, I think there are two issues:
->>
->> 1) no swapping is really needed.  The values are opaque to firmware, and
->> thus can stay in host byte order.
->>
->> 2) to remove the warning, we need something like:
->>
->> req->cookie = (unsigned long)skb;
->>
->> and
->>    
->> rpl_skb = (struct sk_buff *)(unsigned long)req->cookie;
-> That's is exactly what I came up with to silence these warnings. But I
-> didn't dare to submit it because I was too puzzled with the current
-> code. Anyhow, should I submit the (trivial) patch to fix this?
+Subject: slab: Handle ARCH_DMA_MINALIGN correctly
 
-Sure.  Thanks.
+A fixed KMALLOC_SHIFT_LOW does not work for arches with higher alignment
+requirements.
 
-Steve.
+Determine KMALLOC_SHIFT_LOW from ARCH_DMA_MINALIGN instead.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/include/linux/slab.h
+===================================================================
+--- linux.orig/include/linux/slab.h	2013-02-05 10:30:53.917724146 -0600
++++ linux/include/linux/slab.h	2013-02-05 10:31:01.181836707 -0600
+@@ -133,6 +133,19 @@ void kfree(const void *);
+ void kzfree(const void *);
+ size_t ksize(const void *);
+
++/*
++ * Some archs want to perform DMA into kmalloc caches and need a guaranteed
++ * alignment larger than the alignment of a 64-bit integer.
++ * Setting ARCH_KMALLOC_MINALIGN in arch headers allows that.
++ */
++#if defined(ARCH_DMA_MINALIGN) && ARCH_DMA_MINALIGN > 8
++#define ARCH_KMALLOC_MINALIGN ARCH_DMA_MINALIGN
++#define KMALLOC_MIN_SIZE ARCH_DMA_MINALIGN
++#define KMALLOC_SHIFT_LOW ilog2(ARCH_DMA_MINALIGN)
++#else
++#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
++#endif
++
+ #ifdef CONFIG_SLOB
+ /*
+  * Common fields provided in kmem_cache by all slab allocators
+@@ -179,7 +192,9 @@ struct kmem_cache {
+ #define KMALLOC_SHIFT_HIGH	((MAX_ORDER + PAGE_SHIFT - 1) <= 25 ? \
+ 				(MAX_ORDER + PAGE_SHIFT - 1) : 25)
+ #define KMALLOC_SHIFT_MAX	KMALLOC_SHIFT_HIGH
++#ifndef KMALLOC_SHIFT_LOW
+ #define KMALLOC_SHIFT_LOW	5
++#endif
+ #else
+ /*
+  * SLUB allocates up to order 2 pages directly and otherwise
+@@ -187,8 +202,10 @@ struct kmem_cache {
+  */
+ #define KMALLOC_SHIFT_HIGH	(PAGE_SHIFT + 1)
+ #define KMALLOC_SHIFT_MAX	(MAX_ORDER + PAGE_SHIFT)
++#ifndef KMALLOC_SHIFT_LOW
+ #define KMALLOC_SHIFT_LOW	3
+ #endif
++#endif
+
+ /* Maximum allocatable size */
+ #define KMALLOC_MAX_SIZE	(1UL << KMALLOC_SHIFT_MAX)
+@@ -200,9 +217,7 @@ struct kmem_cache {
+ /*
+  * Kmalloc subsystem.
+  */
+-#if defined(ARCH_DMA_MINALIGN) && ARCH_DMA_MINALIGN > 8
+-#define KMALLOC_MIN_SIZE ARCH_DMA_MINALIGN
+-#else
++#ifndef KMALLOC_MIN_SIZE
+ #define KMALLOC_MIN_SIZE (1 << KMALLOC_SHIFT_LOW)
+ #endif
+
+@@ -285,17 +300,6 @@ static __always_inline int kmalloc_size(
+ #endif /* !CONFIG_SLOB */
+
+ /*
+- * Some archs want to perform DMA into kmalloc caches and need a guaranteed
+- * alignment larger than the alignment of a 64-bit integer.
+- * Setting ARCH_KMALLOC_MINALIGN in arch headers allows that.
+- */
+-#ifdef ARCH_DMA_MINALIGN
+-#define ARCH_KMALLOC_MINALIGN ARCH_DMA_MINALIGN
+-#else
+-#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
+-#endif
+-
+-/*
+  * Setting ARCH_SLAB_MINALIGN in arch headers allows a different alignment.
+  * Intended for arches that get misalignment faults even for 64 bit integer
+  * aligned buffers.
