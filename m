@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3BELph (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 06:45:37 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:44000 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab3BELpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 06:45:32 -0500
+	id S1754421Ab3BELrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 06:47:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43487 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab3BELrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 06:47:19 -0500
+Date: Tue, 5 Feb 2013 13:47:16 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 0/3] KVM: MMU: simple cleanups
+Message-ID: <20130205114716.GF23213@redhat.com>
+References: <5110B41D.3090605@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130130221602.GC15584@fieldses.org>
-References: <1358441584-8783-1-git-send-email-piastry@etersoft.ru>
-	<1358441584-8783-3-git-send-email-piastry@etersoft.ru>
-	<20130130221602.GC15584@fieldses.org>
-Date: Tue, 5 Feb 2013 15:45:31 +0400
-X-Google-Sender-Auth: u9MMt-bewxHxyimCHNABu8BBTcQ
-Message-ID: <CAKywueRh++TBazK8_kRN7AUb=EFhGv=Sv2CV0BESkfLFy+g5wA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/8] vfs: Add O_DENYREAD/WRITE flags support for open syscall
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5110B41D.3090605@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/31 J. Bruce Fields <bfields@fieldses.org>:
-> On Thu, Jan 17, 2013 at 08:52:59PM +0400, Pavel Shilovsky wrote:
->> If O_DENYMAND flag is specified, O_DENYREAD/WRITE/MAND flags are
->> translated to flock's flags:
->>
->> !O_DENYREAD  -> LOCK_READ
->> !O_DENYWRITE -> LOCK_WRITE
->> O_DENYMAND   -> LOCK_MAND
->>
->> and set through flock_lock_file on a file.
->>
->> This change only affects opens that use O_DENYMAND flag - all other
->> native Linux opens don't care about these flags. It allow us to
->> enable this feature for applications that need it (e.g. NFS and
->> Samba servers that export the same directory for Windows clients,
->> or Wine applications that access the same files simultaneously).
->
-> The use of an is_conflict callback seems unnecessarily convoluted.
->
-> If we need two different behaviors, let's just use another flag (or an
-> extra boolean argument if we need to, or something).
+On Tue, Feb 05, 2013 at 03:26:21PM +0800, Xiao Guangrong wrote:
+> There are the simple cleanups for MMU, no function / logic changed.
+> 
+> Marcelo, Gleb, please apply them after applying
+> "[PATCH v3] KVM: MMU: lazily drop large spte"
+> 
+> Changelog:
+> no change, just split them from the previous patchset for good review.
+> 
+> Thanks!
+Reviewed-by: Gleb Natapov <gleb@redhat.com>
 
-Ok, we can pass "bool is_mand" to flock_lock_file that will pass it
-further to flock_locks_conflict.
-
->
-> The only caller for this new deny_lock_file is in the nfs code--I'm a
-> little unclear why that is.
-
-deny_lock_file is called not only in the nfs code but also in 2 places
-of fs/namei.c -- that enable this logic for VFS.
-
--- 
-Best regards,
-Pavel Shilovsky.
+--
+			Gleb.
