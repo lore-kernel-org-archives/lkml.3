@@ -1,137 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab3BEJXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:23:03 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:41309 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842Ab3BEJW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:22:58 -0500
-Date: Tue, 5 Feb 2013 11:22:47 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <sameo@linux.intel.com>,
-        <balbi@ti.com>, <stern@rowland.harvard.edu>,
-        <gregkh@linuxfoundation.org>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <sshtylyov@mvista.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 05/30] usb: phy: nop: Handle RESET for the PHY
-Message-ID: <20130205092247.GN32118@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
- <1359372631-8180-6-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Zbynv6TNPa9FrOf6"
-Content-Disposition: inline
-In-Reply-To: <1359372631-8180-6-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754037Ab3BEJXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:23:34 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:20465 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751826Ab3BEJXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:23:20 -0500
+X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
+   d="scan'208";a="6691733"
+From: Lin Feng <linfeng@cn.fujitsu.com>
+To: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
+        viro@zeniv.linux.org.uk
+Cc: khlebnikov@openvz.org, walken@google.com, kamezawa.hiroyu@jp.fujitsu.com,
+        minchan@kernel.org, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lin Feng <linfeng@cn.fujitsu.com>
+Subject: [PATCH V2 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable()
+Date: Tue, 5 Feb 2013 17:21:52 +0800
+Message-Id: <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com>
+References: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 17:21:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 17:22:00,
+	Serialize complete at 2013/02/05 17:22:00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Zbynv6TNPa9FrOf6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+get_user_pages() always tries to allocate pages from movable zone, which is not
+ reliable to memory hotremove framework in some case.
 
-On Mon, Jan 28, 2013 at 01:30:06PM +0200, Roger Quadros wrote:
-> We expect the RESET line to be modeled as a regulator with supply
-> name "reset". The regulator should be modeled such that enabling
-> the regulator brings the PHY device out of RESET and disabling the
-> regulator holds the device in RESET.
->=20
-> They PHY will be held in RESET in .shutdown() and brought out of
-> RESET in .init().
->=20
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+This patch introduces a new library function called get_user_pages_non_movable()
+ to pin pages only from zone non-movable in memory.
+It's a wrapper of get_user_pages() but it makes sure that all pages come from
+non-movable zone via additional page migration.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Zach Brown <zab@redhat.com>
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+---
+ include/linux/mm.h     |    3 ++
+ include/linux/mmzone.h |    4 ++
+ mm/memory.c            |   83 ++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/page_isolation.c    |    5 +++
+ 4 files changed, 95 insertions(+), 0 deletions(-)
 
-> ---
->  drivers/usb/otg/nop-usb-xceiv.c |   19 +++++++++++++++++++
->  1 files changed, 19 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xc=
-eiv.c
-> index 0a9628c..3060ed0 100644
-> --- a/drivers/usb/otg/nop-usb-xceiv.c
-> +++ b/drivers/usb/otg/nop-usb-xceiv.c
-> @@ -40,6 +40,7 @@ struct nop_usb_xceiv {
->  	struct device		*dev;
->  	struct clk		*clk;
->  	struct regulator	*vcc;
-> +	struct regulator	*reset;
->  };
-> =20
->  static struct platform_device *pd;
-> @@ -80,6 +81,12 @@ static int nop_init(struct usb_phy *phy)
->  	if (!IS_ERR(nop->clk))
->  		clk_enable(nop->clk);
-> =20
-> +	if (!IS_ERR(nop->reset)) {
-> +		/* De-assert RESET */
-> +		if (regulator_enable(nop->reset))
-> +			dev_err(phy->dev, "Failed to de-assert reset\n");
-> +	}
-> +
->  	return 0;
->  }
-> =20
-> @@ -87,6 +94,12 @@ static void nop_shutdown(struct usb_phy *phy)
->  {
->  	struct nop_usb_xceiv *nop =3D dev_get_drvdata(phy->dev);
-> =20
-> +	if (!IS_ERR(nop->reset)) {
-> +		/* Assert RESET */
-> +		if (regulator_disable(nop->reset))
-> +			dev_err(phy->dev, "Failed to assert reset\n");
-> +	}
-> +
->  	if (!IS_ERR(nop->clk))
->  		clk_disable(nop->clk);
-> =20
-> @@ -171,6 +184,12 @@ static int nop_usb_xceiv_probe(struct platform_devic=
-e *pdev)
->  					PTR_ERR(nop->vcc));
->  	}
-> =20
-> +	nop->reset =3D devm_regulator_get(&pdev->dev, "reset");
-> +	if (IS_ERR(nop->reset)) {
-> +		dev_dbg(&pdev->dev, "Error getting reset regulator: %ld\n",
-> +					PTR_ERR(nop->reset));
-> +	}
-> +
->  	nop->dev		=3D &pdev->dev;
->  	nop->phy.dev		=3D nop->dev;
->  	nop->phy.label		=3D "nop-xceiv";
-> --=20
-> 1.7.4.1
->=20
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 12f5a09..3ff9eba 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1049,6 +1049,9 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 			struct page **pages, struct vm_area_struct **vmas);
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
++int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
++		unsigned long start, int nr_pages, int write, int force,
++		struct page **pages, struct vm_area_struct **vmas);
+ struct kvec;
+ int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
+ 			struct page **pages);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index e25ab6f..1506351 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -841,6 +841,10 @@ static inline int is_normal_idx(enum zone_type idx)
+ 	return (idx == ZONE_NORMAL);
+ }
+ 
++static inline int zone_is_movable(struct zone *zone)
++{
++	return zone_idx(zone) == ZONE_MOVABLE;
++}
+ /**
+  * is_highmem - helper function to quickly check if a struct zone is a 
+  *              highmem zone or not.  This is an attempt to keep references
+diff --git a/mm/memory.c b/mm/memory.c
+index bb1369f..ede53cc 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -58,6 +58,8 @@
+ #include <linux/elf.h>
+ #include <linux/gfp.h>
+ #include <linux/migrate.h>
++#include <linux/page-isolation.h>
++#include <linux/mm_inline.h>
+ #include <linux/string.h>
+ 
+ #include <asm/io.h>
+@@ -1995,6 +1997,87 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ }
+ EXPORT_SYMBOL(get_user_pages);
+ 
++#ifdef CONFIG_MEMORY_HOTREMOVE
++/**
++ * It's a wrapper of get_user_pages() but it makes sure that all pages come from
++ * non-movable zone via additional page migration. It's designed for memory
++ * hotremove framework.
++ *
++ * Currently get_user_pages() always tries to allocate pages from movable zone,
++ * in some case users of get_user_pages() is easy to pin user pages for a long
++ *  time(for now we found that pages pinned as aio ring pages is such case),
++ * which is fatal for memory hotremove framework.
++ *
++ * This function first calls get_user_pages() to get the candidate pages, and
++ * then check to ensure all pages are from non movable zone. Otherwise migrate
++ * them to non movable zone, then retry. It will at most retry once.
++ */
++int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
++		unsigned long start, int nr_pages, int write, int force,
++		struct page **pages, struct vm_area_struct **vmas)
++{
++	int ret, i, isolate_err, migrate_pre_flag;
++	LIST_HEAD(pagelist);
++
++retry:
++	ret = get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
++				vmas);
++	if (ret <= 0)
++		return ret;
++
++	isolate_err = 0;
++	migrate_pre_flag = 0;
++
++	for (i = 0; i < ret; i++) {
++		if (zone_is_movable(page_zone(pages[i]))) {
++			if (!migrate_pre_flag) {
++				if (migrate_prep())
++					goto release_page;
++				migrate_pre_flag = 1;
++			}
++
++			if (!isolate_lru_page(pages[i])) {
++				inc_zone_page_state(pages[i], NR_ISOLATED_ANON +
++						 page_is_file_cache(pages[i]));
++				list_add_tail(&pages[i]->lru, &pagelist);
++			} else {
++				isolate_err = 1;
++				goto release_page;
++			}
++		}
++	}
++
++	/* All pages are non movable, we are done :) */
++	if (i == ret && list_empty(&pagelist))
++		return ret;
++
++release_page:
++	/* Undo the effects of former get_user_pages(), we won't pin anything */
++	release_pages(pages, ret, 1);
++
++	if (migrate_pre_flag && !isolate_err) {
++		ret = migrate_pages(&pagelist, alloc_migrate_target, 1,
++					false, MIGRATE_SYNC, MR_SYSCALL);
++		/* Steal pages from non-movable zone successfully? */
++		if (!ret)
++			goto retry;
++	}
++
++	putback_lru_pages(&pagelist);
++	/* Migration failed, we pin 0 page, tell caller the truth */
++	return 0;
++}
++#else
++inline int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
++		unsigned long start, int nr_pages, int write, int force,
++		struct page **pages, struct vm_area_struct **vmas)
++{
++	return get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
++				vmas);
++}
++#endif
++EXPORT_SYMBOL(get_user_pages_non_movable);
++
+ /**
+  * get_dump_page() - pin user page in memory while writing it to core dump
+  * @addr: user address
+diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+index 383bdbb..1b7bd17 100644
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -247,6 +247,9 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
+ 	return ret ? 0 : -EBUSY;
+ }
+ 
++/**
++ * @private: 0 means page can be alloced from movable zone, otherwise forbidden
++ */
+ struct page *alloc_migrate_target(struct page *page, unsigned long private,
+ 				  int **resultp)
+ {
+@@ -254,6 +257,8 @@ struct page *alloc_migrate_target(struct page *page, unsigned long private,
+ 
+ 	if (PageHighMem(page))
+ 		gfp_mask |= __GFP_HIGHMEM;
++	if (unlikely(private != 0))
++		gfp_mask &= ~__GFP_MOVABLE;
+ 
+ 	return alloc_page(gfp_mask);
+ }
+-- 
+1.7.1
 
---=20
-balbi
-
---Zbynv6TNPa9FrOf6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREM9nAAoJEIaOsuA1yqRETIYP/0FLhACp1bJX58CrAWW0GrQe
-q1cXZQDAuhHUgeGIypj+Yojpyw2X2slOvXM2FVtFd24o27o5YOOfKZMky1BRPeh9
-+y1abcdXY8EgbqkN6cyFSpYFCEL/Wqh64lQBOUuhcV0pTdm5YgVVfHt8S5Y1I0pR
-L6+6y85n/hAp83XtE9l71WQMYrE1ZPChjpXy+/tuuPC/zKtSbv1ehxfu3ylLzHLJ
-sU0AQ2eEw2OxgW1H0NXskEj6rtdPQCNQliV8V9skQwyrGHGsbARvj6SPG/DA7eKv
-t3mfVedD75WK4rTFAmx1ZNAm0+gQRGDoiQ2ZcW4AVhSNetDoutlLmYfK+qSDMGUL
-lj9QNmYxMDpXTsEMo1rUXbeaRvsxso/K365uCxZciegTk5+C6MIA0iXywR6wrZ4Y
-Z7clT/23eHH7lU/qG5Jsd8B4rNRffws3djhPJow1bhx79MqOlshosHLhqr8xLb8V
-C9w1itrHClDw6EMd28uxWrTXI+WTqBQXKFIu/PsCia24br5D7BkYCOik/NqS4oKq
-KKq4GGl491e7LZ19iRgnO/V7x40E6FM8gyijaLaeZ93v4dK+dmKcbmE/TUwsusDS
-AEFPtKP4cULEtTQipeLZ6nDTsQ3dzwk2kjnr/Xqhm5zEsokGL8cf1fASwyDV99Yo
-rAXzX1tPqEyuHh+zo/sE
-=Uuls
------END PGP SIGNATURE-----
-
---Zbynv6TNPa9FrOf6--
