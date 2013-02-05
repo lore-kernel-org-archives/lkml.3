@@ -1,117 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab3BEPim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 10:38:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45817 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab3BEPij (ORCPT
+	id S1756005Ab3BEPjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 10:39:54 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:50174 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab3BEPju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 10:38:39 -0500
-Message-ID: <5111277B.5020607@canonical.com>
-Date: Tue, 05 Feb 2013 16:38:35 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>
-CC: Michal Marek <mmarek@suse.cz>
-Subject: [PATCH v2] drm/nouveau: always select ACPI_VIDEO if ACPI is enabled.
-References: <20130204152344.GG13909@pd.tnic> <510FD6A2.80101@canonical.com> <20130205145232.GI4827@pd.tnic>
-In-Reply-To: <20130205145232.GI4827@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Feb 2013 10:39:50 -0500
+Date: Tue, 5 Feb 2013 23:39:44 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: "Jens Axboe" <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: Re: Re: For the condition "file->f_mode", when it failed, it should return EACCES rather than EBADF.
+References: <2013020410070150879010@gmail.com>, 
+	<20130205132117.GU15092@kernel.dk>
+X-Priority: 3
+X-GUID: A308D1DF-9DB7-4B97-9CAA-EE55E502D749
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[cn]
+Mime-Version: 1.0
+Message-ID: <201302052339385271010@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r15Fdt3k015449
 
-Op 05-02-13 15:52, Borislav Petkov schreef:
-> On Mon, Feb 04, 2013 at 04:41:22PM +0100, Maarten Lankhorst wrote:
->> Hey,
->>
->> Op 04-02-13 16:23, Borislav Petkov schreef:
->>> Hi,
->>>
->>> I'm guessing someone has already triggered this on latest Linus' tree
->>> and has a fix?
->>>
->>> drivers/built-in.o: In function `nouveau_acpi_edid':
->>> /w/kernel/linux/drivers/gpu/drm/nouveau/nouveau_acpi.c:420: undefined reference to `acpi_video_get_edid'
->>> make: *** [vmlinux] Error 1
->>>
->>> Btw, I got CONFIG_ACPI_VIDEO=m while CONFIG_DRM_NOUVEAU=y and this is
->>> probably the reason for the vmlinux link error.
->>>
->>> Thanks.
->>>
->> Does this fix things?
->>
->> -->8
->> Having nouveau builtin would still allow ACPI_VIDEO to be used as external module if some of the deps for acpi_video
->> have not been met, which would result in a linking failure. Solve this by only requiring ACPI && X86 to select ACPI_VIDEO.
->>
->> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->>
->> ---
->> diff --git a/drivers/gpu/drm/nouveau/Kconfig b/drivers/gpu/drm/nouveau/Kconfig
->> index 8a55bee..f08b9b6 100644
->> --- a/drivers/gpu/drm/nouveau/Kconfig
->> +++ b/drivers/gpu/drm/nouveau/Kconfig
->> @@ -10,7 +10,7 @@ config DRM_NOUVEAU
->>  	select FB
->>  	select FRAMEBUFFER_CONSOLE if !EXPERT
->>  	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
->> -	select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
->> +	select ACPI_VIDEO if ACPI && X86
->>  	select ACPI_WMI if ACPI
->>  	select MXM_WMI if ACPI
->>  	select POWER_SUPPLY
-> Not really.
+>On Sun, Feb 03 2013, majianpeng wrote:
+>> Hi all,
+>> 	When I wanted to do discard operations,but i set the  openflag was O_RDONLY,it returned a EBADF rather than EACCES or EPERM.
+>> I searched the code and found:
+>> >case BLKDISCARD:
+>> >case BLKSECDISCARD: {
+>> >		uint64_t range[2];
+>> 
+>> >		if (!(mode & FMODE_WRITE))
+>> >			return -EBADF;
+>> Initial i thought there was error.But i searched all code of kernel and found some places like this.
+>> 
+>> The description of EBADF is "Bad file numbe". There are some places where returned EBADF like,
+>> >if (!f.file)
+>> >		return -EBADF;
+>> 
+>> So i think for checking file->f_mode when failed, it should return EACCESS.
 >
-> drivers/built-in.o: In function `acpi_video_bus_put_one_device':
-> /root/kernel/linux/drivers/acpi/video.c:1407: undefined reference to `thermal_cooling_device_unregister'
-> drivers/built-in.o: In function `acpi_video_device_find_cap':
-> /root/kernel/linux/drivers/acpi/video.c:842: undefined reference to `thermal_cooling_device_register'
-> make: *** [vmlinux] Error 1
+>But that would break the ABI at this point. I agree with you, though,
+>EBADF is not the right error for this case.
 >
-> It is CONFIG_THERMAL=m this time.
+>-- 
+>Jens Axboe
 >
-> Thanks.
->
-Argh, next attempt, based on i915's Kconfig.
+Sorry, can you explain in detail? Why can it break the ABI ?
 
-It seems that not only I have to select ACPI_VIDEO, I also have to select all the dependencies.
-Is this a Kconfig bug or working as intended? i915 seems to have a workaround, so I copied it from
-there. Except it's currently missing select THERMAL, so I guess it didn't get updated when that got
-added.
-
----->8
-Having nouveau builtin would still allow ACPI_VIDEO to be used as external module
-if some of the deps for acpi_video have not been met, which would result in a linking
-failure. Solve this by selecting all dependencies as well.
-
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-
----
-diff --git a/drivers/gpu/drm/nouveau/Kconfig b/drivers/gpu/drm/nouveau/Kconfig
-index 8a55bee..e84763a 100644
---- a/drivers/gpu/drm/nouveau/Kconfig
-+++ b/drivers/gpu/drm/nouveau/Kconfig
-@@ -10,10 +10,16 @@ config DRM_NOUVEAU
- 	select FB
- 	select FRAMEBUFFER_CONSOLE if !EXPERT
- 	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
--	select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
- 	select ACPI_WMI if ACPI
- 	select MXM_WMI if ACPI
- 	select POWER_SUPPLY
-+	# Similar to i915, we need to select ACPI_VIDEO and it's dependencies
-+	select BACKLIGHT_LCD_SUPPORT if ACPI && X86
-+	select BACKLIGHT_CLASS_DEVICE if ACPI && X86
-+	select VIDEO_OUTPUT_CONTROL if ACPI && X86
-+	select INPUT if ACPI && X86
-+	select THERMAL if ACPI && X86
-+	select ACPI_VIDEO if ACPI && X86
- 	help
- 	  Choose this option for open-source nVidia support.
- 
-
+Thanks!
+Jianpeng Maÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
