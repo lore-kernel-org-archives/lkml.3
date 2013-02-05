@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab3BEWHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:07:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47809 "EHLO
+	id S1757190Ab3BEWeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:34:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47821 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849Ab3BEWHi (ORCPT
+	with ESMTP id S1756971Ab3BEWHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:07:38 -0500
+	Tue, 5 Feb 2013 17:07:44 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Graf <agraf@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 01/93] virtio-blk: Don't free ida when disk is in use
-Date: Tue,  5 Feb 2013 20:05:50 -0200
-Message-Id: <1360102042-10732-2-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 03/93] PCI: pciehp: Use per-slot workqueues to avoid deadlock
+Date: Tue,  5 Feb 2013 20:05:52 -0200
+Message-Id: <1360102042-10732-4-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,60 +27,197 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Graf <agraf@suse.de>
+From: Yijing Wang <wangyijing@huawei.com>
 
-commit f4953fe6c4aeada2d5cafd78aa97587a46d2d8f9 upstream.
+commit c2be6f93b383c873a4f9d521afa49b1b67d06085 upstream.
 
-When a file system is mounted on a virtio-blk disk, we then remove it
-and then reattach it, the reattached disk gets the same disk name and
-ids as the hot removed one.
+When we have a hotplug-capable PCIe port with a second hotplug-capable
+PCIe port below it, removing the device below the upstream port causes
+a deadlock.
 
-This leads to very nasty effects - mostly rendering the newly attached
-device completely unusable.
+The deadlock happens because we use the pciehp_wq workqueue to run
+pciehp_power_thread(), which uses pciehp_disable_slot() to remove devices
+below the upstream port.  When we remove the downstream PCIe port, we call
+pciehp_remove(), the pciehp driver's .remove() method.  That calls
+flush_workqueue(pciehp_wq), which deadlocks because the
+pciehp_power_thread() work item is still running.
 
-Trying what happens when I do the same thing with a USB device, I saw
-that the sd node simply doesn't get free'd when a device gets forcefully
-removed.
+This patch avoids the deadlock by creating a workqueue for every PCIe port
+and removing the single shared workqueue.
 
-Imitate the same behavior for vd devices. This way broken vd devices
-simply are never free'd and newly attached ones keep working just fine.
+Here's the call path that leads to the deadlock:
 
-Signed-off-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+  pciehp_queue_pushbutton_work
+    queue_work(pciehp_wq)                   # queue pciehp_power_thread
+    ...
+
+  pciehp_power_thread
+    pciehp_disable_slot
+      remove_board
+	pciehp_unconfigure_device
+	  pci_stop_and_remove_bus_device
+	    ...
+	      pciehp_remove                 # pciehp driver .remove method
+		pciehp_release_ctrl
+		  pcie_cleanup_slot
+		    flush_workqueue(pciehp_wq)
+
+This is fairly urgent because it can be caused by simply unplugging a
+Thunderbolt adapter, as reported by Daniel below.
+
+[bhelgaas: changelog]
+Reference: http://lkml.kernel.org/r/CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com
+Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
+Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/block/virtio_blk.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/pci/hotplug/pciehp.h      |    2 +-
+ drivers/pci/hotplug/pciehp_core.c |   11 ++---------
+ drivers/pci/hotplug/pciehp_ctrl.c |    8 ++++----
+ drivers/pci/hotplug/pciehp_hpc.c  |   11 ++++++++++-
+ 4 files changed, 17 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 774c31d..98bb43f 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -573,6 +573,7 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
+index 4b7cce1..a321b77 100644
+--- a/drivers/pci/hotplug/pciehp.h
++++ b/drivers/pci/hotplug/pciehp.h
+@@ -44,7 +44,6 @@ extern bool pciehp_poll_mode;
+ extern int pciehp_poll_time;
+ extern bool pciehp_debug;
+ extern bool pciehp_force;
+-extern struct workqueue_struct *pciehp_wq;
+ 
+ #define dbg(format, arg...)						\
+ do {									\
+@@ -78,6 +77,7 @@ struct slot {
+ 	struct hotplug_slot *hotplug_slot;
+ 	struct delayed_work work;	/* work for button event */
+ 	struct mutex lock;
++	struct workqueue_struct *wq;
+ };
+ 
+ struct event_info {
+diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+index 365c6b9..9e39df9 100644
+--- a/drivers/pci/hotplug/pciehp_core.c
++++ b/drivers/pci/hotplug/pciehp_core.c
+@@ -42,7 +42,6 @@ bool pciehp_debug;
+ bool pciehp_poll_mode;
+ int pciehp_poll_time;
+ bool pciehp_force;
+-struct workqueue_struct *pciehp_wq;
+ 
+ #define DRIVER_VERSION	"0.4"
+ #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
+@@ -340,18 +339,13 @@ static int __init pcied_init(void)
  {
- 	struct virtio_blk *vblk = vdev->priv;
- 	int index = vblk->index;
-+	int refc;
+ 	int retval = 0;
  
- 	/* Prevent config work handler from accessing the device. */
- 	mutex_lock(&vblk->config_lock);
-@@ -587,11 +588,15 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
- 
- 	flush_work(&vblk->config_work);
- 
-+	refc = atomic_read(&disk_to_dev(vblk->disk)->kobj.kref.refcount);
- 	put_disk(vblk->disk);
- 	mempool_destroy(vblk->pool);
- 	vdev->config->del_vqs(vdev);
- 	kfree(vblk);
--	ida_simple_remove(&vd_index_ida, index);
+-	pciehp_wq = alloc_workqueue("pciehp", 0, 0);
+-	if (!pciehp_wq)
+-		return -ENOMEM;
+-
+ 	pciehp_firmware_init();
+ 	retval = pcie_port_service_register(&hpdriver_portdrv);
+  	dbg("pcie_port_service_register = %d\n", retval);
+   	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
+- 	if (retval) {
+-		destroy_workqueue(pciehp_wq);
++	if (retval)
+ 		dbg("Failure to register service\n");
+-	}
 +
-+	/* Only free device id if we don't have any users */
-+	if (refc == 1)
-+		ida_simple_remove(&vd_index_ida, index);
+ 	return retval;
  }
  
- #ifdef CONFIG_PM
+@@ -359,7 +353,6 @@ static void __exit pcied_cleanup(void)
+ {
+ 	dbg("unload_pciehpd()\n");
+ 	pcie_port_service_unregister(&hpdriver_portdrv);
+-	destroy_workqueue(pciehp_wq);
+ 	info(DRIVER_DESC " version: " DRIVER_VERSION " unloaded\n");
+ }
+ 
+diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
+index 27f4429..38f0186 100644
+--- a/drivers/pci/hotplug/pciehp_ctrl.c
++++ b/drivers/pci/hotplug/pciehp_ctrl.c
+@@ -49,7 +49,7 @@ static int queue_interrupt_event(struct slot *p_slot, u32 event_type)
+ 	info->p_slot = p_slot;
+ 	INIT_WORK(&info->work, interrupt_event_handler);
+ 
+-	queue_work(pciehp_wq, &info->work);
++	queue_work(p_slot->wq, &info->work);
+ 
+ 	return 0;
+ }
+@@ -344,7 +344,7 @@ void pciehp_queue_pushbutton_work(struct work_struct *work)
+ 		kfree(info);
+ 		goto out;
+ 	}
+-	queue_work(pciehp_wq, &info->work);
++	queue_work(p_slot->wq, &info->work);
+  out:
+ 	mutex_unlock(&p_slot->lock);
+ }
+@@ -377,7 +377,7 @@ static void handle_button_press_event(struct slot *p_slot)
+ 		if (ATTN_LED(ctrl))
+ 			pciehp_set_attention_status(p_slot, 0);
+ 
+-		queue_delayed_work(pciehp_wq, &p_slot->work, 5*HZ);
++		queue_delayed_work(p_slot->wq, &p_slot->work, 5*HZ);
+ 		break;
+ 	case BLINKINGOFF_STATE:
+ 	case BLINKINGON_STATE:
+@@ -439,7 +439,7 @@ static void handle_surprise_event(struct slot *p_slot)
+ 	else
+ 		p_slot->state = POWERON_STATE;
+ 
+-	queue_work(pciehp_wq, &info->work);
++	queue_work(p_slot->wq, &info->work);
+ }
+ 
+ static void interrupt_event_handler(struct work_struct *work)
+diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+index a960fae..9dd2c01 100644
+--- a/drivers/pci/hotplug/pciehp_hpc.c
++++ b/drivers/pci/hotplug/pciehp_hpc.c
+@@ -874,23 +874,32 @@ static void pcie_shutdown_notification(struct controller *ctrl)
+ static int pcie_init_slot(struct controller *ctrl)
+ {
+ 	struct slot *slot;
++	char name[32];
+ 
+ 	slot = kzalloc(sizeof(*slot), GFP_KERNEL);
+ 	if (!slot)
+ 		return -ENOMEM;
+ 
++	snprintf(name, sizeof(name), "pciehp-%u", PSN(ctrl));
++	slot->wq = alloc_workqueue(name, 0, 0);
++	if (!slot->wq)
++		goto abort;
++
+ 	slot->ctrl = ctrl;
+ 	mutex_init(&slot->lock);
+ 	INIT_DELAYED_WORK(&slot->work, pciehp_queue_pushbutton_work);
+ 	ctrl->slot = slot;
+ 	return 0;
++abort:
++	kfree(slot);
++	return -ENOMEM;
+ }
+ 
+ static void pcie_cleanup_slot(struct controller *ctrl)
+ {
+ 	struct slot *slot = ctrl->slot;
+ 	cancel_delayed_work(&slot->work);
+-	flush_workqueue(pciehp_wq);
++	destroy_workqueue(slot->wq);
+ 	kfree(slot);
+ }
+ 
 -- 
 1.7.9.5
 
