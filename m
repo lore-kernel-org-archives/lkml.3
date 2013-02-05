@@ -1,144 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab3BEA4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 19:56:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:20615 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755566Ab3BEA4u convert rfc822-to-8bit (ORCPT
+	id S1755498Ab3BEA7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 19:59:04 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48612 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215Ab3BEA7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 19:56:50 -0500
-X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
-   d="scan'208";a="6688653"
-Subject: Re: [PATCH 1/5] numa: avoid export acpi_numa variable
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-In-Reply-To: <alpine.DEB.2.02.1302041127540.10378@chino.kir.corp.google.com>
-References: <1359967426-32629-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <1359967426-32629-2-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <alpine.DEB.2.02.1302041127540.10378@chino.kir.corp.google.com>
-Date: Tue, 05 Feb 2013 08:56:33 +0800
-Message-ID: <1360025793.4449.6.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/05 08:55:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/05 08:55:31,
-	Serialize complete at 2013/02/05 08:55:31
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 4 Feb 2013 19:59:02 -0500
+X-AuditID: 9c930179-b7c24ae00000119c-02-51105953d620
+Date: Tue, 5 Feb 2013 09:58:59 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, linux-mm@kvack.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] mm: hotplug: implement non-movable version of
+ get_user_pages() to kill long-time pin pages
+Message-ID: <20130205005859.GE2610@blaptop>
+References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-02-04一的 11:31 -0800，David Rientjes写道：
-> On Mon, 4 Feb 2013, liguang wrote:
-> 
-> > diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-> > index 0c44630..c4e0875 100644
-> > --- a/arch/x86/include/asm/acpi.h
-> > +++ b/arch/x86/include/asm/acpi.h
-> > @@ -181,7 +181,8 @@ static inline void disable_acpi(void) { }
-> >  #define ARCH_HAS_POWER_INIT	1
-> >  
-> >  #ifdef CONFIG_ACPI_NUMA
-> > -extern int acpi_numa;
-> > +extern void bad_srat(void);
-> > +extern bool srat_disabled(void);
-> 
-> So anything that wants to disable acpi_numa, such as xen, must call a 
-> function named bad_srat()?  That seems a little misnamed itself.
+Hello,
 
-I would assume every caller have the sense of what SRAT is.
-(may be a little bold assumption)
-
+On Mon, Feb 04, 2013 at 06:04:06PM +0800, Lin Feng wrote:
+> Currently get_user_pages() always tries to allocate pages from movable zone,
+> as discussed in thread https://lkml.org/lkml/2012/11/29/69, in some case users
+> of get_user_pages() is easy to pin user pages for a long time(for now we found
+> that pages pinned as aio ring pages is such case), which is fatal for memory
+> hotplug/remove framework.
 > 
-> >  extern int x86_acpi_numa_init(void);
-> >  #endif /* CONFIG_ACPI_NUMA */
-> >  
-> > diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> > index 2d125be..92986d8 100644
-> > --- a/arch/x86/mm/numa.c
-> > +++ b/arch/x86/mm/numa.c
-> > @@ -47,7 +47,7 @@ static __init int numa_setup(char *opt)
-> >  #endif
-> >  #ifdef CONFIG_ACPI_NUMA
-> >  	if (!strncmp(opt, "noacpi", 6))
-> > -		acpi_numa = -1;
-> > +		bad_srat();
+> So the 1st patch introduces a new library function called
+> get_user_pages_non_movable() to pin pages only from zone non-movable in memory.
+> It's a wrapper of get_user_pages() but it makes sure that all pages come from
+> non-movable zone via additional page migration.
 > 
-> This will print an error line saying "SRAT: SRAT not used." which wasn't 
-> emitted before.  I don't think that's the desire.
+> The 2nd patch gets around the aio ring pages can't be migrated bug caused by
+> get_user_pages() via using the new function. It only works when configed with
+> CONFIG_MEMORY_HOTREMOVE, otherwise it uses the old version of get_user_pages().
 
-yes, you're right.
+CMA has same issue but the problem is the driver developers or any subsystem
+using GUP can't know their pages is in CMA area or not in advance.
+So all of client of GUP should use GUP_NM to work them with CMA/MEMORY_HOTPLUG well?
+Even some driver module in embedded side doesn't open their source code.
+
+I would like to make GUP smart so it allocates a page from non-movable/non-cma area
+when memory-hotplug/cma is enabled(CONFIG_MIGRATE_ISOLATE). Yeb. it might hurt GUP
+performance but it is just trade-off for using CMA/memory-hotplug, IMHO. :(
 
 > 
-> >  #endif
-> >  	return 0;
-> >  }
-> > diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-> > index 4ddf497..a837c95 100644
-> > --- a/arch/x86/mm/srat.c
-> > +++ b/arch/x86/mm/srat.c
-> > @@ -24,22 +24,22 @@
-> >  #include <asm/apic.h>
-> >  #include <asm/uv/uv.h>
-> >  
-> > -int acpi_numa __initdata;
-> > +static bool acpi_numa __initdata;
-> >  
+> Lin Feng (2):
+>   mm: hotplug: implement non-movable version of get_user_pages()
+>   fs/aio.c: use non-movable version of get_user_pages() to pin ring
+>     pages when support memory hotremove
 > 
-> You've changed this to be type bool but didn't update the existing code 
-> that still does "acpi_numa = 1".
-
-good catch!
-
+>  fs/aio.c               |  6 +++++
+>  include/linux/mm.h     |  5 ++++
+>  include/linux/mmzone.h |  4 ++++
+>  mm/memory.c            | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/page_isolation.c    |  5 ++++
+>  5 files changed, 83 insertions(+)
 > 
-> >  static __init int setup_node(int pxm)
-> >  {
-> >  	return acpi_map_pxm_to_node(pxm);
-> >  }
-> >  
-> > -static __init void bad_srat(void)
-> > +void __init bad_srat(void)
-> >  {
-> >  	printk(KERN_ERR "SRAT: SRAT not used.\n");
-> > -	acpi_numa = -1;
-> > +	acpi_numa = false;
-> >  }
-> >  
-> > -static __init inline int srat_disabled(void)
-> > +bool __init srat_disabled(void)
-> >  {
-> > -	return acpi_numa < 0;
-> > +	return acpi_numa;
-> >  }
-> >  
-> >  /* Callback for SLIT parsing */
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index 138e566..94c8c70 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -1415,7 +1415,7 @@ asmlinkage void __init xen_start_kernel(void)
-> >  	 * any NUMA information the kernel tries to get from ACPI will
-> >  	 * be meaningless.  Prevent it from trying.
-> >  	 */
-> > -	acpi_numa = -1;
-> > +	bad_srat();
+> -- 
+> 1.7.11.7
 > 
-> Same as before.  It seems like you want to introduce a new function 
-> specifically to disable it:
-> 
-> 	void acpi_numa_disable(void)
-> 	{
-> 		acpi_numa = false;
-> 	}
-> 
-> and then bad_srat() should call into it?
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-good idea, Thanks!
-
-
-
-
+-- 
+Kind regards,
+Minchan Kim
