@@ -1,122 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab3BEUYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 15:24:10 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:34334 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755681Ab3BEUWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 15:22:32 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 04/23] tty: Refactor wait for ldisc refs out of tty_ldisc_hangup()
-Date: Tue,  5 Feb 2013 15:20:19 -0500
-Message-Id: <1360095638-6624-5-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
- <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	id S1756824Ab3BEUYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 15:24:15 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44175 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755681Ab3BEUYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 15:24:11 -0500
+Message-ID: <1360094930.3859.90.camel@falcor1>
+Subject: Re: [RFC 2/2] initramfs with digital signature protection
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Peter Jones <pjones@redhat.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 05 Feb 2013 15:08:50 -0500
+In-Reply-To: <20130205180300.GE2335@fenchurch.internal.datastacks.com>
+References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
+	 <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+	 <20130205180300.GE2335@fenchurch.internal.datastacks.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020520-5806-0000-0000-00001F39A005
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor tty_ldisc_hangup() to extract standalone function,
-tty_ldisc_hangup_wait_idle(), to wait for ldisc references
-to be released.
+On Tue, 2013-02-05 at 13:03 -0500, Peter Jones wrote:
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_ldisc.c | 54 ++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 36 insertions(+), 18 deletions(-)
+> It's not clear to me why we need this encapsulation - wouldn't it be
+> better to add another [pointer,size] pair to the bootloader protocol
+> with a structure like:
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 904bf75..70d2b86 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -551,6 +551,41 @@ static int tty_ldisc_halt(struct tty_struct *tty)
- }
- 
- /**
-+ *	tty_ldisc_hangup_wait_idle - wait for the ldisc to become idle
-+ *	@tty: tty to wait for
-+ *
-+ *	Wait for the line discipline to become idle. The discipline must
-+ *	have been halted for this to guarantee it remains idle.
-+ *
-+ *	Caller must hold legacy and ->ldisc_mutex.
-+ */
-+static bool tty_ldisc_hangup_wait_idle(struct tty_struct *tty)
-+{
-+	while (tty->ldisc) {	/* Not yet closed */
-+		if (atomic_read(&tty->ldisc->users) != 1) {
-+			char cur_n[TASK_COMM_LEN], tty_n[64];
-+			long timeout = 3 * HZ;
-+			tty_unlock(tty);
-+
-+			while (tty_ldisc_wait_idle(tty, timeout) == -EBUSY) {
-+				timeout = MAX_SCHEDULE_TIMEOUT;
-+				printk_ratelimited(KERN_WARNING
-+					"%s: waiting (%s) for %s took too long, but we keep waiting...\n",
-+					__func__, get_task_comm(cur_n, current),
-+					tty_name(tty, tty_n));
-+			}
-+			/* must reacquire both locks and preserve lock order */
-+			mutex_unlock(&tty->ldisc_mutex);
-+			tty_lock(tty);
-+			mutex_lock(&tty->ldisc_mutex);
-+			continue;
-+		}
-+		break;
-+	}
-+	return !!(tty->ldisc);
-+}
-+
-+/**
-  *	tty_set_ldisc		-	set line discipline
-  *	@tty: the terminal to set
-  *	@ldisc: the line discipline
-@@ -826,7 +861,6 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	cancel_work_sync(&tty->port->buf.work);
- 	set_bit(TTY_LDISC_HALTED, &tty->flags);
- 	mutex_unlock(&tty->ldisc_mutex);
--retry:
- 	tty_lock(tty);
- 	mutex_lock(&tty->ldisc_mutex);
- 
-@@ -834,23 +868,7 @@ retry:
- 	   reopen it. We could defer this to the next open but
- 	   it means auditing a lot of other paths so this is
- 	   a FIXME */
--	if (tty->ldisc) {	/* Not yet closed */
--		if (atomic_read(&tty->ldisc->users) != 1) {
--			char cur_n[TASK_COMM_LEN], tty_n[64];
--			long timeout = 3 * HZ;
--			tty_unlock(tty);
--
--			while (tty_ldisc_wait_idle(tty, timeout) == -EBUSY) {
--				timeout = MAX_SCHEDULE_TIMEOUT;
--				printk_ratelimited(KERN_WARNING
--					"%s: waiting (%s) for %s took too long, but we keep waiting...\n",
--					__func__, get_task_comm(cur_n, current),
--					tty_name(tty, tty_n));
--			}
--			mutex_unlock(&tty->ldisc_mutex);
--			goto retry;
--		}
--
-+	if (tty_ldisc_hangup_wait_idle(tty)) {
- 		if (reset == 0) {
- 
- 			if (!tty_ldisc_reinit(tty, tty->termios.c_line))
--- 
-1.8.1.2
+https://lkml.org/lkml/2013/1/30/68 was in response to the assumption
+that the initramfs is measured/appraised.  These patches attempt to
+address those concerns.
+
+Mimi
 
