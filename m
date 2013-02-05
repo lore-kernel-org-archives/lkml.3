@@ -1,93 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab3BECaS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 21:30:18 -0500
-Received: from gate.crashing.org ([63.228.1.57]:34743 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab3BECaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 21:30:16 -0500
-Message-ID: <1360031367.14701.47.camel@pasglop>
-Subject: Re: [PATCH] drivers/block/xsysace - replace
- in(out)_8/in(out)_be16/in(out)_le16 with generic iowrite(read)8/16(be)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Michal Simek <monstr@monstr.eu>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        alan@lxorguk.ukuu.org.uk, geert@linux-m68k.org,
-        dahinds@users.sourceforge.net
-Date: Tue, 05 Feb 2013 13:29:27 +1100
-In-Reply-To: <201302041724.47331.arnd@arndb.de>
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
-	 <1781360.cmQWHCW5SC@wuerfel>
-	 <CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
-	 <201302041724.47331.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756336Ab3BEChm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 21:37:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:19171 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755106Ab3BEChi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 21:37:38 -0500
+X-IronPort-AV: E=Sophos;i="4.84,603,1355068800"; 
+   d="scan'208";a="6689141"
+From: liguang <lig.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
+Cc: rientjes@google.com, liguang <lig.fnst@cn.fujitsu.com>
+Subject: [PATCH v2 2/4] numa: avoid export acpi_numa variable
+Date: Tue, 5 Feb 2013 10:37:16 +0800
+Message-Id: <1360031838-26898-3-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1360031838-26898-1-git-send-email-lig.fnst@cn.fujitsu.com>
+References: <1360031838-26898-1-git-send-email-lig.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 10:36:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/05 10:36:20,
+	Serialize complete at 2013/02/05 10:36:20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-04 at 17:24 +0000, Arnd Bergmann wrote:
-> On Monday 04 February 2013, Michal Simek wrote:
-> > >
-> > > and select the CONFIG_FOO_BIG_ENDIAN and CONFIG_FOO_LITTLE_ENDIAN
-> > > symbols in Kconfig based on the system you are building for.
-> > 
-> > Using CONFIG_FOO_BIG/LITTLE is not good because it is just another
-> > Kconfig option.
-> > You can easily detect it at runtime and for dedicated hw with fixed
-> > endians you can just
-> > handle it in the driver and don't care about global setting.
-> 
-> The configuration option should not be visible, so it's
-> not something a user would have to worry about. It's just
-> sometimes nicer to express the configuration of the platform
-> in terms of Kconfig syntax than it is in C code if you have
-> complex platform dependencies.
+acpi_numa is used to prevent srat table
+being parsed, seems a little miss-named,
+if 'noacpi' was specified by cmdline and
+CONFIG_ACPI_NUMA was enabled, acpi_numa
+will be operated directly from everywhere
+it needed to disable/enable numa in acpi
+mode which was a bad thing, so, try to
+export a fuction to get srat table
+enable/disable info.
 
-As long as you never have a case where both are needed at runtime...
+Reviewed-by: David Rientjes <rientjes@google.com>
+Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+---
+ arch/x86/include/asm/acpi.h |    2 +-
+ arch/x86/kernel/acpi/srat.c |   15 ++++++++++-----
+ arch/x86/mm/numa.c          |    2 +-
+ arch/x86/xen/enlighten.c    |    2 +-
+ 4 files changed, 13 insertions(+), 8 deletions(-)
 
-> > > This of course gets further complicated if you require different
-> > > accessors per architecture, like ARM wanting readl or ioread32
-> > > and PowerPC wanting in_le32 for a little-endian SoC component.
-
-powerpc should never "want" in_le32. ioread32 should work just as well.
-in_le32 is historical stuff and is never required.
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 0c44630..6b9c861 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -181,7 +181,7 @@ static inline void disable_acpi(void) { }
+ #define ARCH_HAS_POWER_INIT	1
  
-> > FYI: I have got two responses on linux-arch from Alan
-> > "Set the pointers up and pass them as data with your platform device, that
-> > way the function definitions are buried in your platform code where they
-> > depend."
-> > 
-> > and Geert:
-> > "Or embed a struct io_ops * in struct device, to be set up by the bus driver?
-> > 
-> > Wasn't David Hinds working on something like this in the context of PCMCIA
-> > a few decades ago?"
-> > 
-> > Based on their suggestions one way can be to pass it through void *platform_data
-> > which is probably not the best and then which make more sense to me is to extend
-> > struct dev_archdata archdata to add there native read/write functions.
-> > 
-> > What do you think?
-> 
-> I worry a little about code size if we have a lot of drivers that go
-> from one instruction to an indirect function call for each readl/writel.
-> Using platform_data ss also something that does not work too well with
-> device tree based platform configuration, which tries hard to leave
-> all run-time configuration inside of the driver.
-
-readl/writel and ioread32/iowrite32 should always be equivalent.
-
-So it all boils down to whether your device has different endianness (it
-should not, doing so is stupid ... but if it really does then make it a
-runtime wrapper that chooses between ioread32 and ioread32be
-
-Cheers,
-Ben.
-
-
+ #ifdef CONFIG_ACPI_NUMA
+-extern int acpi_numa;
++extern void disable_acpi_numa(void);
+ extern int x86_acpi_numa_init(void);
+ #endif /* CONFIG_ACPI_NUMA */
+ 
+diff --git a/arch/x86/kernel/acpi/srat.c b/arch/x86/kernel/acpi/srat.c
+index 4ddf497..0a4d7ee 100644
+--- a/arch/x86/kernel/acpi/srat.c
++++ b/arch/x86/kernel/acpi/srat.c
+@@ -24,22 +24,27 @@
+ #include <asm/apic.h>
+ #include <asm/uv/uv.h>
+ 
+-int acpi_numa __initdata;
++static bool acpi_numa __initdata;
+ 
+ static __init int setup_node(int pxm)
+ {
+ 	return acpi_map_pxm_to_node(pxm);
+ }
+ 
+-static __init void bad_srat(void)
++void __init disable_acpi_numa(void)
++{
++	acpi_numa = false;
++}
++
++static void __init bad_srat(void)
+ {
+-	printk(KERN_ERR "SRAT: SRAT not used.\n");
+ 	acpi_numa = -1;
++	printk(KERN_ERR "SRAT: SRAT will not be used.\n");
+ }
+ 
+-static __init inline int srat_disabled(void)
++static bool __init srat_disabled(void)
+ {
+-	return acpi_numa < 0;
++	return acpi_numa;
+ }
+ 
+ /* Callback for SLIT parsing */
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 2d125be..870ca6b 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -47,7 +47,7 @@ static __init int numa_setup(char *opt)
+ #endif
+ #ifdef CONFIG_ACPI_NUMA
+ 	if (!strncmp(opt, "noacpi", 6))
+-		acpi_numa = -1;
++		disable_acpi_numa();
+ #endif
+ 	return 0;
+ }
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 138e566..a5f6353 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1415,7 +1415,7 @@ asmlinkage void __init xen_start_kernel(void)
+ 	 * any NUMA information the kernel tries to get from ACPI will
+ 	 * be meaningless.  Prevent it from trying.
+ 	 */
+-	acpi_numa = -1;
++	disable_acpi_numa();
+ #endif
+ 
+ 	/* Don't do the full vcpu_info placement stuff until we have a
+-- 
+1.7.2.5
 
