@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab3BEL0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 06:26:08 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:51046 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab3BEL0F (ORCPT
+	id S1753541Ab3BEL1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 06:27:47 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:62924 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab3BEL1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 06:26:05 -0500
+	Tue, 5 Feb 2013 06:27:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130205111918.GD4827@pd.tnic>
-References: <20130204150511.GF13909@pd.tnic>
-	<CAKohpokt0xtsj1eQDMw6JgvQVp4rgFyU-vUrtuuF+0jjOVNHRQ@mail.gmail.com>
-	<20130204165057.GH13909@pd.tnic>
-	<CAOh2x==fyfYwz+eXmPhBJTE+_q_fHyx2drXrM789XvCfEqPBUQ@mail.gmail.com>
-	<20130205091532.GA4827@pd.tnic>
-	<CAKohpo=6q+Bcgq0Re=3SXM6zwub5N=vJBO=sTeEgZZ9byFK7=g@mail.gmail.com>
-	<20130205102721.GB4827@pd.tnic>
-	<CAKohpo=_Qq-_Aqy7nZD+f28-B7DY8ioQ5fe8bYKTe64A0RXeGw@mail.gmail.com>
-	<20130205110407.GC4827@pd.tnic>
-	<CAKohponiiVO_P2EDDTUHeoo7j3FG-ELtP8oLwfdEQ3HkgOS77g@mail.gmail.com>
-	<20130205111918.GD4827@pd.tnic>
-Date: Tue, 5 Feb 2013 16:56:03 +0530
-Message-ID: <CAKohpomUsDr0YJmOxjymcAAJnfOxKfzxGL4iHuif1qCAvy0OYA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Borislav Petkov <bp@alien8.de>, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
+In-Reply-To: <20130205102540.GC9969@gmail.com>
+References: <1360015899-13706-1-git-send-email-dinggnu@gmail.com>
+	<CAH9JG2XSpFJeUvv7cw-JWadmi=X0-4EsN5FFKuDkwo=-mmzHSQ@mail.gmail.com>
+	<20130205000517.GB9969@gmail.com>
+	<CAN1soZwM6qNTJn3vvMdc6TR1eJHc=K+_c0WuWOBBuFYMWB_oCA@mail.gmail.com>
+	<20130205102540.GC9969@gmail.com>
+Date: Tue, 5 Feb 2013 19:27:43 +0800
+Message-ID: <CAN1soZyDLtdjyOFWyVVXN-_ABrChcCR=QbifAo7cz9pYV-nHww@mail.gmail.com>
+Subject: Re: [PATCH v2] i2c: busses/i2c-pxa.c: fix potential null pointer
+ dereference error
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Cong Ding <dinggnu@gmail.com>
+Cc: Kyungmin Park <kmpark@infradead.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 February 2013 16:49, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Feb 05, 2013 at 04:42:23PM +0530, Viresh Kumar wrote:
->> Tricky part is the name of this routine: add_additional_sysfs_entries().
+On Tue, Feb 5, 2013 at 6:25 PM, Cong Ding <dinggnu@gmail.com> wrote:
+> On Tue, Feb 05, 2013 at 09:14:08AM +0800, Haojian Zhuang wrote:
+>> On Tue, Feb 5, 2013 at 8:05 AM, Cong Ding <dinggnu@gmail.com> wrote:
+>> > If it goes to eclk through line 1107, the variable res would be NULL. It will
+>> > cause a null pointer dereference error if we call release_mem_region.
+>> >
+>> > Signed-off-by: Cong Ding <dinggnu@gmail.com>
+>> > ---
+>> >  drivers/i2c/busses/i2c-pxa.c |    3 ++-
+>> >  1 file changed, 2 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+>> > index 1034d93..00df535 100644
+>> > --- a/drivers/i2c/busses/i2c-pxa.c
+>> > +++ b/drivers/i2c/busses/i2c-pxa.c
+>> > @@ -1211,7 +1211,8 @@ eremap:
+>> >  eclk:
+>> >         kfree(i2c);
+>> >  emalloc:
+>> > -       release_mem_region(res->start, resource_size(res));
+>> > +       if (res)
+>> > +               release_mem_region(res->start, resource_size(res));
+>> >         return ret;
+>> >  }
+>> >
+>> >
+>>
+>> No. I don't agree on this. Your fix can't resolve all potential issues.
+>>
+>>         i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
+devm_kzalloc
+>>         if (!i2c) {
+>>                 ret = -ENOMEM;
+>>                 goto emalloc;
+return -ENOMEM;
+>>         }
+>>
+>>         ret = i2c_pxa_probe_dt(dev, i2c, &i2c_type);
+>>         if (ret > 0)
+>>                 ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
+>>         if (ret < 0)
+>>                 goto eclk;
+return ret;
+>>
+>>         res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+>>         irq = platform_get_irq(dev, 0);
+>>         if (res == NULL || irq < 0) {
+>>                 ret = -ENODEV;
+>>                 goto eclk;
+ditto
+>>         }
+>>
+>>         if (!request_mem_region(res->start, resource_size(res), res->name)) {
+>>                 ret = -ENOMEM;
+>>                 goto eclk;
+ditto
+>>         }
+>>
+>> We shouldn't jump to eclk for these error cases. Then we needn't to add
+>> checking on res.
+> So what do you suggest to do for these error cases?
+>  - cong
 >
-> Now you're just being silly - this is just an example how to do it. If
-> you want me to do it for ya, you need to send me your monthly salary.
-
-Haha... I don't want you to do it. I don't want such routine to be exposed
-to cpufreq drivers as this belongs to the core code.
-
-Just some kind of indication from platform driver is required about
-how/where it wants its governor directory to be present.
-And the variable suits more here.
-
-Lets discuss it more on the next patch i send :)
-
---
-viresh
