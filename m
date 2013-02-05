@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab3BEKoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:44:25 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48457 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3BEKoW (ORCPT
+	id S1753993Ab3BEKp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:45:59 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:35548 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3BEKp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 05:44:22 -0500
-Date: Tue, 5 Feb 2013 11:44:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Izik Eidus <izik.eidus@ravellosystems.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        leonid Shatz <leonid.shatz@ravellosystems.com>
-Subject: Re: [PATCH] fix hrtimer_enqueue_reprogram race
-In-Reply-To: <1359981217-389-1-git-send-email-izik.eidus@ravellosystems.com>
-Message-ID: <alpine.LFD.2.02.1302051138370.11905@ionos>
-References: <1359981217-389-1-git-send-email-izik.eidus@ravellosystems.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 5 Feb 2013 05:45:56 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <201302041724.47331.arnd@arndb.de>
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com>
+	<1781360.cmQWHCW5SC@wuerfel>
+	<CAHTX3dJpuTRa4Ff29k95quPMVDO2mBiayPoocnw5R15=5ovOHQ@mail.gmail.com>
+	<201302041724.47331.arnd@arndb.de>
+Date: Tue, 5 Feb 2013 11:45:55 +0100
+Message-ID: <CAHTX3dKwo4VyNgXDf1B3aSHk10uy-QDzskvA0qUC2Jurs34TAA@mail.gmail.com>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+From: Michal Simek <monstr@monstr.eu>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        benh@kernel.crashing.org, alan@lxorguk.ukuu.org.uk,
+        geert@linux-m68k.org, dahinds@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Feb 2013, Izik Eidus wrote:
+2013/2/4 Arnd Bergmann <arnd@arndb.de>:
+> On Monday 04 February 2013, Michal Simek wrote:
+>> >
+>> > and select the CONFIG_FOO_BIG_ENDIAN and CONFIG_FOO_LITTLE_ENDIAN
+>> > symbols in Kconfig based on the system you are building for.
+>>
+>> Using CONFIG_FOO_BIG/LITTLE is not good because it is just another
+>> Kconfig option.
+>> You can easily detect it at runtime and for dedicated hw with fixed
+>> endians you can just
+>> handle it in the driver and don't care about global setting.
+>
+> The configuration option should not be visible, so it's
+> not something a user would have to worry about. It's just
+> sometimes nicer to express the configuration of the platform
+> in terms of Kconfig syntax than it is in C code if you have
+> complex platform dependencies.
+>
+>> > This of course gets further complicated if you require different
+>> > accessors per architecture, like ARM wanting readl or ioread32
+>> > and PowerPC wanting in_le32 for a little-endian SoC component.
+>>
+>> FYI: I have got two responses on linux-arch from Alan
+>> "Set the pointers up and pass them as data with your platform device, that
+>> way the function definitions are buried in your platform code where they
+>> depend."
+>>
+>> and Geert:
+>> "Or embed a struct io_ops * in struct device, to be set up by the bus driver?
+>>
+>> Wasn't David Hinds working on something like this in the context of PCMCIA
+>> a few decades ago?"
+>>
+>> Based on their suggestions one way can be to pass it through void *platform_data
+>> which is probably not the best and then which make more sense to me is to extend
+>> struct dev_archdata archdata to add there native read/write functions.
+>>
+>> What do you think?
+>
+> I worry a little about code size if we have a lot of drivers that go
+> from one instruction to an indirect function call for each readl/writel.
+> Using platform_data ss also something that does not work too well with
+> device tree based platform configuration, which tries hard to leave
+> all run-time configuration inside of the driver.
 
-> From: leonid Shatz <leonid.shatz@ravellosystems.com>
-> 
-> it seems like hrtimer_enqueue_reprogram contain a race which could result in
-> timer.base switch during unlock/lock sequence.
-> 
-> See the code at __hrtimer_start_range_ns where it calls
-> hrtimer_enqueue_reprogram. The later is releasing lock protecting the timer
-> base for a short time and timer base switch can occur from a different CPU
-> thread. Later when __hrtimer_start_range_ns calls unlock_hrtimer_base, a base
-> switch could have happened and this causes the bug
-> 
-> Try to start the same hrtimer from two different threads in kernel running
-> each one on a different CPU. Eventually one of the calls will cause timer base
-> switch while another thread is not expecting it.
-
-Aside of the bug in the hrtimer code being a real one, writing code
-which fiddles with the same resource (hrtimer) unserialized is broken
-on its own.
- 
-> This can happen in virtualized environment where one thread can be delayed by
-> lower hypervisor, and due to time delay a different CPU is taking care of
-> missed timer start and runs the timer start logic on its own.
-
-Without noticing that something else already takes care of it? So
-you're saying that the code in question relies on magic serialization
-in the hrtimer code. Doesn't look like a brilliant design.
+As you have seen from the list of architectures all of them uses device tree.
 
 Thanks,
+Michal
 
-	tglx
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
