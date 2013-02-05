@@ -1,536 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab3BEQl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 11:41:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58216 "EHLO mx2.suse.de"
+	id S1755513Ab3BEQlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 11:41:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3861 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142Ab3BEQlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 11:41:23 -0500
-Date: Tue, 5 Feb 2013 16:41:18 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/11] ksm: allow trees per NUMA node
-Message-ID: <20130205164118.GI21389@suse.de>
-References: <alpine.LNX.2.00.1301251747590.29196@eggly.anvils>
- <alpine.LNX.2.00.1301251753380.29196@eggly.anvils>
+	id S1754248Ab3BEQlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 11:41:36 -0500
+Message-ID: <51113637.7070209@redhat.com>
+Date: Tue, 05 Feb 2013 17:41:27 +0100
+From: Gerd Hoffmann <kraxel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1301251753380.29196@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy King <acking@vmware.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+        gregkh@linuxfoundation.org, davem@davemloft.net
+Subject: Re: [PATCH 0/1] VM Sockets for Linux upstreaming
+References: <1360020362-25561-1-git-send-email-acking@vmware.com>
+In-Reply-To: <1360020362-25561-1-git-send-email-acking@vmware.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 05:54:53PM -0800, Hugh Dickins wrote:
-> From: Petr Holasek <pholasek@redhat.com>
-> 
-> Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_across_nodes
-> which control merging pages across different numa nodes.
-> When it is set to zero only pages from the same node are merged,
-> otherwise pages from all nodes can be merged together (default behavior).
-> 
-> Typical use-case could be a lot of KVM guests on NUMA machine
-> and cpus from more distant nodes would have significant increase
-> of access latency to the merged ksm page. Sysfs knob was choosen
-> for higher variability when some users still prefers higher amount
-> of saved physical memory regardless of access latency.
-> 
+  Hi,
 
-This is understandable but it's going to be a fairly obscure option.
-I do not think it can be known in advance if the option should be set.
-The user must either run benchmarks before and after or use perf to
-record the "node-load-misses" event and see if setting the parameter
-reduces the number of remote misses.
+> Unlike previous submissions, where the new socket family was entirely reliant
+> on VMware's VMCI PCI device (and thus VMware's hypervisor), VM Sockets is now
+> *completely* separated out into two parts, each in its own module:
 
-I don't know the internals of ksm.c at all and this is my first time reading
-this series. Everything in this review is subject to being completely
-wrong or due to a major misunderstanding on my part. Delete all feedback
-if desired.
+Some separation still needs to be done:
 
-> Every numa node has its own stable & unstable trees because of faster
-> searching and inserting. Changing of merge_across_nodes value is possible
-> only when there are not any ksm shared pages in system.
-> 
-> I've tested this patch on numa machines with 2, 4 and 8 nodes and
-> measured speed of memory access inside of KVM guests with memory pinned
-> to one of nodes with this benchmark:
-> 
-> http://pholasek.fedorapeople.org/alloc_pg.c
-> 
-> Population standard deviations of access times in percentage of average
-> were following:
-> 
-> merge_across_nodes=1
-> 2 nodes 1.4%
-> 4 nodes 1.6%
-> 8 nodes	1.7%
-> 
-> merge_across_nodes=0
-> 2 nodes	1%
-> 4 nodes	0.32%
-> 8 nodes	0.018%
-> 
-> RFC: https://lkml.org/lkml/2011/11/30/91
-> v1: https://lkml.org/lkml/2012/1/23/46
-> v2: https://lkml.org/lkml/2012/6/29/105
-> v3: https://lkml.org/lkml/2012/9/14/550
-> v4: https://lkml.org/lkml/2012/9/23/137
-> v5: https://lkml.org/lkml/2012/12/10/540
-> v6: https://lkml.org/lkml/2012/12/23/154
-> v7: https://lkml.org/lkml/2012/12/27/225
-> 
-> Hugh notes that this patch brings two problems, whose solution needs
-> further support in mm/ksm.c, which follows in subsequent patches:
-> 1) switching merge_across_nodes after running KSM is liable to oops
->    on stale nodes still left over from the previous stable tree;
-> 2) memory hotremove may migrate KSM pages, but there is no provision
->    here for !merge_across_nodes to migrate nodes to the proper tree.
-> 
-> Signed-off-by: Petr Holasek <pholasek@redhat.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
->  Documentation/vm/ksm.txt |    7 +
->  mm/ksm.c                 |  151 ++++++++++++++++++++++++++++++++-----
->  2 files changed, 139 insertions(+), 19 deletions(-)
-> 
-> --- mmotm.orig/Documentation/vm/ksm.txt	2013-01-25 14:36:31.724205455 -0800
-> +++ mmotm/Documentation/vm/ksm.txt	2013-01-25 14:36:38.608205618 -0800
-> @@ -58,6 +58,13 @@ sleep_millisecs  - how many milliseconds
->                     e.g. "echo 20 > /sys/kernel/mm/ksm/sleep_millisecs"
->                     Default: 20 (chosen for demonstration purposes)
->  
-> +merge_across_nodes - specifies if pages from different numa nodes can be merged.
-> +                   When set to 0, ksm merges only pages which physically
-> +                   reside in the memory area of same NUMA node. It brings
-> +                   lower latency to access to shared page. Value can be
-> +                   changed only when there is no ksm shared pages in system.
-> +                   Default: 1
-> +
->  run              - set 0 to stop ksmd from running but keep merged pages,
->                     set 1 to run ksmd e.g. "echo 1 > /sys/kernel/mm/ksm/run",
->                     set 2 to stop ksmd and unmerge all pages currently merged,
-> --- mmotm.orig/mm/ksm.c	2013-01-25 14:36:31.724205455 -0800
-> +++ mmotm/mm/ksm.c	2013-01-25 14:36:38.608205618 -0800
-> @@ -36,6 +36,7 @@
->  #include <linux/hashtable.h>
->  #include <linux/freezer.h>
->  #include <linux/oom.h>
-> +#include <linux/numa.h>
->  
->  #include <asm/tlbflush.h>
->  #include "internal.h"
-> @@ -139,6 +140,9 @@ struct rmap_item {
->  	struct mm_struct *mm;
->  	unsigned long address;		/* + low bits used for flags below */
->  	unsigned int oldchecksum;	/* when unstable */
-> +#ifdef CONFIG_NUMA
-> +	unsigned int nid;
-> +#endif
->  	union {
->  		struct rb_node node;	/* when node of unstable tree */
->  		struct {		/* when listed from stable tree */
+  CC [M]  net/vmw_vsock/af_vsock.o
+In file included from
+/home/kraxel/projects/linux/net/vmw_vsock/af_vsock.c:102:0:
+/home/kraxel/projects/linux/net/vmw_vsock/af_vsock.h:21:33: fatal error:
+linux/vmw_vmci_defs.h: No such file or directory
+compilation terminated.
+make[4]: *** [net/vmw_vsock/af_vsock.o] Error 1
 
-> @@ -153,8 +157,8 @@ struct rmap_item {
->  #define STABLE_FLAG	0x200	/* is listed from the stable tree */
->  
->  /* The stable and unstable tree heads */
-> -static struct rb_root root_stable_tree = RB_ROOT;
-> -static struct rb_root root_unstable_tree = RB_ROOT;
-> +static struct rb_root root_unstable_tree[MAX_NUMNODES];
-> +static struct rb_root root_stable_tree[MAX_NUMNODES];
->  
+[ with  vmci series from jan 9th applied on top it builds ]
 
-With multiple stable node trees does the comment that begins with
+Module deps are a bit bogous too:
 
- * A few notes about the KSM scanning process,
- * to make it easier to understand the data structures below:
+vmw_vsock_vmci_transport    26162  0
+vsock                  34481  1 vmw_vsock_vmci_transport
+vmw_vmci               61602  2 vsock,vmw_vsock_vmci_transport
 
-need an update?
+Only vmw_vsock_vmci_transport should have a vmw_vmci dependency, not
+vsock ...
 
-It's uninitialised so kernel data size in vmlinux should be unaffected but
-it's an additional runtime cost of around 4K for a standardish enterprise
-distro kernel config.  Small beans on a NUMA machine and maybe not worth
-the hassle of kmalloc for nr_online_nodes and dealing with node memory
-hotplug but it's a pity.
+Nevertheless this should be good enough to start hacking up a virtio
+prototype.
 
->  #define MM_SLOTS_HASH_BITS 10
->  static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
-> @@ -188,6 +192,9 @@ static unsigned int ksm_thread_pages_to_
->  /* Milliseconds ksmd should sleep between batches */
->  static unsigned int ksm_thread_sleep_millisecs = 20;
->  
-> +/* Zeroed when merging across nodes is not allowed */
-> +static unsigned int ksm_merge_across_nodes = 1;
-> +
-
-Nit but initialised data does increase the size of vmlinux so maybe this
-should be the "opposite". i.e. rename it to ksm_merge_within_nodes and
-default it to 0?
-
-__read_mostly?
-
->  #define KSM_RUN_STOP	0
->  #define KSM_RUN_MERGE	1
->  #define KSM_RUN_UNMERGE	2
-> @@ -441,10 +448,25 @@ out:		page = NULL;
->  	return page;
->  }
->  
-> +/*
-> + * This helper is used for getting right index into array of tree roots.
-> + * When merge_across_nodes knob is set to 1, there are only two rb-trees for
-> + * stable and unstable pages from all nodes with roots in index 0. Otherwise,
-> + * every node has its own stable and unstable tree.
-> + */
-> +static inline int get_kpfn_nid(unsigned long kpfn)
-> +{
-> +	if (ksm_merge_across_nodes)
-> +		return 0;
-> +	else
-> +		return pfn_to_nid(kpfn);
-> +}
-> +
-
-If we start with ksm_merge_across_nodes, KSM runs for a while and populates
-the stable node tree for node 0 and then ksm_merge_across_nodes gets set
-then badness happens because this can go anywhere
-
-     nid = get_kpfn_nid(stable_node->kpfn);
-     rb_erase(&stable_node->node, &root_stable_tree[nid]);
-
-Very late in the review I noticed that you comment on this already in the
-changelog and that it is addressed later in the series. I haven't seen
-this patch yet so the following suggestion is very stale but might still
-be relevant.
-
-	We could increase size of root_stable_node[] by 1, have
-	get_kpfn_nid return MAX_NR_NODES if ksm_merge_across_nodes and
-	if ksm_merge_across_nodes gets set to 0 then we walk the stable
-	tree at root_stable_tree[MAX_NR_NODES] and delete the entire
-	tree? It's be disruptive as hell unfortunately and might break
-	entirely if there is not enough memory to unshare the pages.
-
-	Ideally we could take our time walking root_stable_tree[MAX_NR_NODES]
-	without worrying about collisions and fix it up somehow. Dunno
-
->  static void remove_node_from_stable_tree(struct stable_node *stable_node)
->  {
->  	struct rmap_item *rmap_item;
->  	struct hlist_node *hlist;
-> +	int nid;
->  
->  	hlist_for_each_entry(rmap_item, hlist, &stable_node->hlist, hlist) {
->  		if (rmap_item->hlist.next)
-> @@ -456,7 +478,9 @@ static void remove_node_from_stable_tree
->  		cond_resched();
->  	}
->  
-> -	rb_erase(&stable_node->node, &root_stable_tree);
-> +	nid = get_kpfn_nid(stable_node->kpfn);
-> +
-> +	rb_erase(&stable_node->node, &root_stable_tree[nid]);
->  	free_stable_node(stable_node);
->  }
->  
-> @@ -554,7 +578,12 @@ static void remove_rmap_item_from_tree(s
->  		age = (unsigned char)(ksm_scan.seqnr - rmap_item->address);
->  		BUG_ON(age > 1);
->  		if (!age)
-> -			rb_erase(&rmap_item->node, &root_unstable_tree);
-> +#ifdef CONFIG_NUMA
-> +			rb_erase(&rmap_item->node,
-> +					&root_unstable_tree[rmap_item->nid]);
-> +#else
-> +			rb_erase(&rmap_item->node, &root_unstable_tree[0]);
-> +#endif
->  
-
-nit, does rmap_item->nid deserve a getter and setter helper instead?
-
-#ifdef CONFIG_NUMA
-static inline int rmap_item_nid(struct rmap_item *item)
-{
-	return rmap_item->nid;
-}
-
-static inline void set_rmap_item_nid(struct rmap_item *item, int nid)
-{
-	rmap_item->nid = nid;
-}
-#else
-static inline int rmap_item_nid(struct rmap_item *item)
-{
-	return 0;
-}
-
-static inline void set_rmap_item_nid(struct rmap_item *item, int nid)
-{
-}
-#endif
-	
-
->  		ksm_pages_unshared--;
->  		rmap_item->address &= PAGE_MASK;
-> @@ -990,8 +1019,9 @@ static struct page *try_to_merge_two_pag
->   */
->  static struct page *stable_tree_search(struct page *page)
->  {
-> -	struct rb_node *node = root_stable_tree.rb_node;
-> +	struct rb_node *node;
->  	struct stable_node *stable_node;
-> +	int nid;
->  
->  	stable_node = page_stable_node(page);
->  	if (stable_node) {			/* ksm page forked */
-> @@ -999,6 +1029,9 @@ static struct page *stable_tree_search(s
->  		return page;
->  	}
->  
-> +	nid = get_kpfn_nid(page_to_pfn(page));
-> +	node = root_stable_tree[nid].rb_node;
-> +
->  	while (node) {
->  		struct page *tree_page;
->  		int ret;
-> @@ -1033,10 +1066,16 @@ static struct page *stable_tree_search(s
->   */
->  static struct stable_node *stable_tree_insert(struct page *kpage)
->  {
-> -	struct rb_node **new = &root_stable_tree.rb_node;
-> +	int nid;
-> +	unsigned long kpfn;
-> +	struct rb_node **new;
->  	struct rb_node *parent = NULL;
->  	struct stable_node *stable_node;
->  
-> +	kpfn = page_to_pfn(kpage);
-> +	nid = get_kpfn_nid(kpfn);
-> +	new = &root_stable_tree[nid].rb_node;
-> +
->  	while (*new) {
->  		struct page *tree_page;
->  		int ret;
-> @@ -1070,11 +1109,11 @@ static struct stable_node *stable_tree_i
->  		return NULL;
->  
->  	rb_link_node(&stable_node->node, parent, new);
-> -	rb_insert_color(&stable_node->node, &root_stable_tree);
-> +	rb_insert_color(&stable_node->node, &root_stable_tree[nid]);
->  
->  	INIT_HLIST_HEAD(&stable_node->hlist);
->  
-> -	stable_node->kpfn = page_to_pfn(kpage);
-> +	stable_node->kpfn = kpfn;
->  	set_page_stable_node(kpage, stable_node);
->  
->  	return stable_node;
-> @@ -1098,10 +1137,15 @@ static
->  struct rmap_item *unstable_tree_search_insert(struct rmap_item *rmap_item,
->  					      struct page *page,
->  					      struct page **tree_pagep)
-> -
->  {
-> -	struct rb_node **new = &root_unstable_tree.rb_node;
-> +	struct rb_node **new;
-> +	struct rb_root *root;
->  	struct rb_node *parent = NULL;
-> +	int nid;
-> +
-> +	nid = get_kpfn_nid(page_to_pfn(page));
-> +	root = &root_unstable_tree[nid];
-> +	new = &root->rb_node;
->  
->  	while (*new) {
->  		struct rmap_item *tree_rmap_item;
-> @@ -1122,6 +1166,18 @@ struct rmap_item *unstable_tree_search_i
->  			return NULL;
->  		}
->  
-> +		/*
-> +		 * If tree_page has been migrated to another NUMA node, it
-> +		 * will be flushed out and put into the right unstable tree
-> +		 * next time: only merge with it if merge_across_nodes.
-> +		 * Just notice, we don't have similar problem for PageKsm
-> +		 * because their migration is disabled now. (62b61f611e)
-> +		 */
-> +		if (!ksm_merge_across_nodes && page_to_nid(tree_page) != nid) {
-> +			put_page(tree_page);
-> +			return NULL;
-> +		}
-> +
-
-What about this case?
-
-1. ksm_merge_across_nodes==0
-2. pages gets placed on different unstable trees
-3. ksm_merge_across_nodes==1
-
-At that point we should be removing pages from the different unstable
-tree and moving them to root_unstable_tree[0] but this put_page() doesn't
-happen. Does it matter?
-
->  		ret = memcmp_pages(page, tree_page);
->  
->  		parent = *new;
-> @@ -1139,8 +1195,11 @@ struct rmap_item *unstable_tree_search_i
->  
->  	rmap_item->address |= UNSTABLE_FLAG;
->  	rmap_item->address |= (ksm_scan.seqnr & SEQNR_MASK);
-> +#ifdef CONFIG_NUMA
-> +	rmap_item->nid = nid;
-> +#endif
->  	rb_link_node(&rmap_item->node, parent, new);
-> -	rb_insert_color(&rmap_item->node, &root_unstable_tree);
-> +	rb_insert_color(&rmap_item->node, root);
->  
->  	ksm_pages_unshared++;
->  	return NULL;
-> @@ -1154,6 +1213,13 @@ struct rmap_item *unstable_tree_search_i
->  static void stable_tree_append(struct rmap_item *rmap_item,
->  			       struct stable_node *stable_node)
->  {
-> +#ifdef CONFIG_NUMA
-> +	/*
-> +	 * Usually rmap_item->nid is already set correctly,
-> +	 * but it may be wrong after switching merge_across_nodes.
-> +	 */
-> +	rmap_item->nid = get_kpfn_nid(stable_node->kpfn);
-> +#endif
->  	rmap_item->head = stable_node;
->  	rmap_item->address |= STABLE_FLAG;
->  	hlist_add_head(&rmap_item->hlist, &stable_node->hlist);
-> @@ -1283,6 +1349,7 @@ static struct rmap_item *scan_get_next_r
->  	struct mm_slot *slot;
->  	struct vm_area_struct *vma;
->  	struct rmap_item *rmap_item;
-> +	int nid;
->  
->  	if (list_empty(&ksm_mm_head.mm_list))
->  		return NULL;
-> @@ -1301,7 +1368,8 @@ static struct rmap_item *scan_get_next_r
->  		 */
->  		lru_add_drain_all();
->  
-> -		root_unstable_tree = RB_ROOT;
-> +		for (nid = 0; nid < nr_node_ids; nid++)
-> +			root_unstable_tree[nid] = RB_ROOT;
->  
-
-Minor but you shouldn't need to reset tham all if
-ksm_merge_across_nodes==1
-
-Initially this triggered an alarm because it's not immediately obvious
-why you can just discard an rbtree like this. It looks like because the
-unstable tree is also part of a linked list so the rb representation can
-be reset quickly without leaking memory.
-
->  		spin_lock(&ksm_mmlist_lock);
->  		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
-> @@ -1770,15 +1838,19 @@ static struct stable_node *ksm_check_sta
->  						 unsigned long end_pfn)
->  {
->  	struct rb_node *node;
-> +	int nid;
->  
-> -	for (node = rb_first(&root_stable_tree); node; node = rb_next(node)) {
-> -		struct stable_node *stable_node;
-> +	for (nid = 0; nid < nr_node_ids; nid++)
-> +		for (node = rb_first(&root_stable_tree[nid]); node;
-> +				node = rb_next(node)) {
-> +			struct stable_node *stable_node;
-> +
-> +			stable_node = rb_entry(node, struct stable_node, node);
-> +			if (stable_node->kpfn >= start_pfn &&
-> +			    stable_node->kpfn < end_pfn)
-> +				return stable_node;
-> +		}
->  
-> -		stable_node = rb_entry(node, struct stable_node, node);
-> -		if (stable_node->kpfn >= start_pfn &&
-> -		    stable_node->kpfn < end_pfn)
-> -			return stable_node;
-> -	}
->  	return NULL;
->  }
->  
-> @@ -1925,6 +1997,40 @@ static ssize_t run_store(struct kobject
->  }
->  KSM_ATTR(run);
->  
-> +#ifdef CONFIG_NUMA
-> +static ssize_t merge_across_nodes_show(struct kobject *kobj,
-> +				struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "%u\n", ksm_merge_across_nodes);
-> +}
-> +
-> +static ssize_t merge_across_nodes_store(struct kobject *kobj,
-> +				   struct kobj_attribute *attr,
-> +				   const char *buf, size_t count)
-> +{
-> +	int err;
-> +	unsigned long knob;
-> +
-> +	err = kstrtoul(buf, 10, &knob);
-> +	if (err)
-> +		return err;
-> +	if (knob > 1)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&ksm_thread_mutex);
-> +	if (ksm_merge_across_nodes != knob) {
-> +		if (ksm_pages_shared)
-> +			err = -EBUSY;
-> +		else
-> +			ksm_merge_across_nodes = knob;
-> +	}
-> +	mutex_unlock(&ksm_thread_mutex);
-> +
-> +	return err ? err : count;
-> +}
-> +KSM_ATTR(merge_across_nodes);
-> +#endif
-> +
->  static ssize_t pages_shared_show(struct kobject *kobj,
->  				 struct kobj_attribute *attr, char *buf)
->  {
-> @@ -1979,6 +2085,9 @@ static struct attribute *ksm_attrs[] = {
->  	&pages_unshared_attr.attr,
->  	&pages_volatile_attr.attr,
->  	&full_scans_attr.attr,
-> +#ifdef CONFIG_NUMA
-> +	&merge_across_nodes_attr.attr,
-> +#endif
->  	NULL,
->  };
->  
-> @@ -1992,11 +2101,15 @@ static int __init ksm_init(void)
->  {
->  	struct task_struct *ksm_thread;
->  	int err;
-> +	int nid;
->  
->  	err = ksm_slab_init();
->  	if (err)
->  		goto out;
->  
-> +	for (nid = 0; nid < nr_node_ids; nid++)
-> +		root_stable_tree[nid] = RB_ROOT;
-> +
->  	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
->  	if (IS_ERR(ksm_thread)) {
->  		printk(KERN_ERR "ksm: creating kthread failed\n");
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+cheers,
+  Gerd
