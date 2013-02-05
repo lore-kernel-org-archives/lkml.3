@@ -1,130 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab3BEFjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 00:39:13 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:56378 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab3BEFjK (ORCPT
+	id S1751629Ab3BEFk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 00:40:29 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:26022 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab3BEFk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 00:39:10 -0500
-Date: Mon, 4 Feb 2013 21:39:08 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: liguang <lig.fnst@cn.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 2/4] numa: avoid export acpi_numa variable
-In-Reply-To: <1360031838-26898-3-git-send-email-lig.fnst@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1302042135590.31498@chino.kir.corp.google.com>
-References: <1360031838-26898-1-git-send-email-lig.fnst@cn.fujitsu.com> <1360031838-26898-3-git-send-email-lig.fnst@cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 5 Feb 2013 00:40:28 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-d1-51109b4a1795
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Dongjin Kim'" <tobetter@gmail.com>
+Cc: "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1360025290-16278-1-git-send-email-tobetter@gmail.com>
+In-reply-to: <1360025290-16278-1-git-send-email-tobetter@gmail.com>
+Subject: RE: [PATCH] ARM: dts: Adding RTC device node
+Date: Mon, 04 Feb 2013 21:40:14 -0800
+Message-id: <125101ce0363$46e2fe10$d4a8fa30$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGArHU6K6rOOjzOAcRgIEab0kn3t5kFbYmA
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t8zfV2v2QKBBpvviVpc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mn5vPMxa0sFWs3fGfsYHxBUsXIyeHhICJRP/+iWwQtpjEhXvr
+	gWwuDiGBZYwS1z++YIMpun3kNCtEYhGjxPTnuxkhnHlMEofWvgcbxSagIXH4/TN2EFtEQE2i
+	8W8nWAezwBRGidVvvzCBJIQEnCTmnm5lBbE5BZwl9t27xQhiCwuYSkw89R+smUVAVeLHzydg
+	q3kFLCUuTpzDAmELSvyYfA/MZhbQkli/8zgThC0vsXnNW2aIUxUkdpx9zQhxhJHE2+ZnzBA1
+	4hKTHjxkh6hZxC4x/78GxC4BiW+TDwHN5ACKy0psOgA1RlLi4IobLBMYJWYh2TwLyeZZSDbP
+	QrJhASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYyQ6JLawbiyweIQowAHoxIP74/L/IFC
+	rIllxZW5hxglOJiVRHg/3gAK8aYkVlalFuXHF5XmpBYfYkwGOnYis5Rocj4w8vNK4g2NjU3M
+	TExNzC1NzU1JE1YS52U89SRASCA9sSQ1OzW1ILUIZgsTB6dUA6NLPNeMedWb1ZfaxvS+iDiu
+	YeDes/u9CU9/9qQQj5kzxQJXT2PI5qpg3GK0e8Zl6fq9DYYnN6WuLnk/9f6daWeUK6oXCR4R
+	jj9zWE9h3RsL1afMDOoBKyJEnDcumGDn8yyde/vby+8dbr6Ru2bhX6/NzCXk6HRdI/ts8szH
+	B74uk9R5WM/v80OJpTgj0VCLuag4EQC4rW5J8gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xgK7XbIFAgwW7BC0u75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxs/N5xkLWtgq1u74z9jA
+	+IKli5GTQ0LAROL2kdOsELaYxIV769m6GLk4hAQWMUpMf76bEcKZxyRxaO17sA42AQ2Jw++f
+	sYPYIgJqEo1/O1lBipgFpjBKrH77hQkkISTgJDH3dCvYWE4BZ4l9924xgtjCAqYSE0/9B2tm
+	EVCV+PHzCRuIzStgKXFx4hwWCFtQ4sfke2A2s4CWxPqdx5kgbHmJzWveMkOcqiCx4+xrRogj
+	jCTeNj9jhqgRl5j04CH7BEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqX
+	rpecn7uJERy9z6R2MK5ssDjEKMDBqMTD++Myf6AQa2JZcWXuIUYJDmYlEd6PN4BCvCmJlVWp
+	RfnxRaU5qcWHGJOBPp3ILCWanA9MLHkl8YbGJmZGlkZmFkYm5uakCSuJ8zKeehIgJJCeWJKa
+	nZpakFoEs4WJg1OqgTFtWu1FqTllseZ5ep0B+816Rc/m9HMvqP7TcLk95ktYXMaJJDuO/gWy
+	VuF9YjyN+ev0au5GLNQUu6epvaDw5TsRZd9+QybZrbySpTd7Zmpn+OyJi+O5/OpQxEsrxyrJ
+	xaeMJXgnqP/aJPyn/bvH23NyN5/6m7Ndeqp7zWnWr1tsawUXWxY0KLEUZyQaajEXFScCADp8
+	NysiAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013, liguang wrote:
-
-> acpi_numa is used to prevent srat table
-> being parsed, seems a little miss-named,
-> if 'noacpi' was specified by cmdline and
-> CONFIG_ACPI_NUMA was enabled, acpi_numa
-> will be operated directly from everywhere
-> it needed to disable/enable numa in acpi
-> mode which was a bad thing, so, try to
-> export a fuction to get srat table
-> enable/disable info.
+Dongjin Kim wrote:
 > 
-> Reviewed-by: David Rientjes <rientjes@google.com>
-
-Again, this was never reviewed by me, please learn how to use these tags 
-appropriately by reading Documentation/SubmittingPatches.
-
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> This patch enables RTC device node defined in
+> arch/arm/boot/dts/exynos4.dtsi.
+> 
+> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
 > ---
->  arch/x86/include/asm/acpi.h |    2 +-
->  arch/x86/kernel/acpi/srat.c |   15 ++++++++++-----
->  arch/x86/mm/numa.c          |    2 +-
->  arch/x86/xen/enlighten.c    |    2 +-
->  4 files changed, 13 insertions(+), 8 deletions(-)
+>  arch/arm/boot/dts/exynos4412-odroidx.dts |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-> index 0c44630..6b9c861 100644
-> --- a/arch/x86/include/asm/acpi.h
-> +++ b/arch/x86/include/asm/acpi.h
-> @@ -181,7 +181,7 @@ static inline void disable_acpi(void) { }
->  #define ARCH_HAS_POWER_INIT	1
->  
->  #ifdef CONFIG_ACPI_NUMA
-> -extern int acpi_numa;
-> +extern void disable_acpi_numa(void);
->  extern int x86_acpi_numa_init(void);
->  #endif /* CONFIG_ACPI_NUMA */
->  
-> diff --git a/arch/x86/kernel/acpi/srat.c b/arch/x86/kernel/acpi/srat.c
-> index 4ddf497..0a4d7ee 100644
-> --- a/arch/x86/kernel/acpi/srat.c
-> +++ b/arch/x86/kernel/acpi/srat.c
-> @@ -24,22 +24,27 @@
->  #include <asm/apic.h>
->  #include <asm/uv/uv.h>
->  
-> -int acpi_numa __initdata;
-> +static bool acpi_numa __initdata;
->  
->  static __init int setup_node(int pxm)
->  {
->  	return acpi_map_pxm_to_node(pxm);
->  }
->  
-> -static __init void bad_srat(void)
-> +void __init disable_acpi_numa(void)
-> +{
-> +	acpi_numa = false;
-> +}
+> diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts
+> b/arch/arm/boot/dts/exynos4412-odroidx.dts
+> index 54fe32f..85c958a 100644
+> --- a/arch/arm/boot/dts/exynos4412-odroidx.dts
+> +++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
+> @@ -83,6 +83,10 @@
+>  		regulator-boot-on;
+>  	};
+> 
+> +	rtc@10070000 {
+> +		status = "okay";
+> +	};
 > +
-> +static void __init bad_srat(void)
->  {
-> -	printk(KERN_ERR "SRAT: SRAT not used.\n");
->  	acpi_numa = -1;
-> +	printk(KERN_ERR "SRAT: SRAT will not be used.\n");
->  }
->  
-> -static __init inline int srat_disabled(void)
-> +static bool __init srat_disabled(void)
->  {
-> -	return acpi_numa < 0;
-> +	return acpi_numa;
->  }
->  
->  /* Callback for SLIT parsing */
-> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> index 2d125be..870ca6b 100644
-> --- a/arch/x86/mm/numa.c
-> +++ b/arch/x86/mm/numa.c
-> @@ -47,7 +47,7 @@ static __init int numa_setup(char *opt)
->  #endif
->  #ifdef CONFIG_ACPI_NUMA
->  	if (!strncmp(opt, "noacpi", 6))
-> -		acpi_numa = -1;
-> +		disable_acpi_numa();
->  #endif
->  	return 0;
->  }
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 138e566..a5f6353 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1415,7 +1415,7 @@ asmlinkage void __init xen_start_kernel(void)
->  	 * any NUMA information the kernel tries to get from ACPI will
->  	 * be meaningless.  Prevent it from trying.
->  	 */
-> -	acpi_numa = -1;
-> +	disable_acpi_numa();
->  #endif
->  
->  	/* Don't do the full vcpu_info placement stuff until we have a
+>  	sdhci@12530000 {
+>  		bus-width = <4>;
+>  		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_cd &sd2_bus4>;
+> --
+> 1.7.10.4
 
-You've declared disable_acpi_numa() but never defined it so this will 
-fail at link time.  Please compile and test all of your changes with care 
-before posting them or people will start to ignore your contributions.
+Applied, thanks.
+
+- Kukjin
+
