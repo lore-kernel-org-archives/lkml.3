@@ -1,153 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab3BEGhB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 01:37:01 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:39912 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab3BEGg7 (ORCPT
+	id S1751829Ab3BEGhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 01:37:09 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57848 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751595Ab3BEGhC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 01:36:59 -0500
+	Tue, 5 Feb 2013 01:37:02 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Linus Walleij <linus.walleij@linaro.org>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "hs@denx.de" <hs@denx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH V2 1/6] pinctrl: pinctrl-single: use arch_initcall and
+ module_exit
+Thread-Topic: [PATCH V2 1/6] pinctrl: pinctrl-single: use arch_initcall and
+ module_exit
+Thread-Index: AQHN/fOatoDuxwofTUaND8395mrFe5hfx24AgAUeJgCAAACkAIAF8NDQ
+Date: Tue, 5 Feb 2013 06:36:34 +0000
+Message-ID: <A4887BF146CD57468F700B415D2F47015828C7@DBDE01.ent.ti.com>
+References: <1359445134-13323-1-git-send-email-manishv.b@ti.com>
+ <1359445134-13323-2-git-send-email-manishv.b@ti.com>
+ <CACRpkdbf7TwrjfT2rhqQFGc3yh_Nt117RtzQO2y6g5Ddx5Ay_w@mail.gmail.com>
+ <20130201170906.GE22517@atomide.com> <20130201171124.GF22517@atomide.com>
+In-Reply-To: <20130201171124.GF22517@atomide.com>
+Accept-Language: en-IN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <077f01cdfeaf$4f7b8780$ee729680$@samsung.com>
-References: <1358168377-22919-3-git-send-email-gautam.vivek@samsung.com>
-	<1359368782-30224-1-git-send-email-gautam.vivek@samsung.com>
-	<077f01cdfeaf$4f7b8780$ee729680$@samsung.com>
-Date: Tue, 5 Feb 2013 12:06:57 +0530
-Message-ID: <CAFp+6iHOT0Ge4KGn_Nw=4N3ipCeSuMQBy4+cRoH4ODR0Ct2cWQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] usb: phy: samsung: Add PHY support for USB 3.0 controller
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, grant.likely@secretlab.ca, sylvester.nawrocki@gmail.com,
-        tomasz.figa@gmail.com, av.tikhomirov@samsung.com,
-        dianders@chromium.org, p.paneri@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
+On Fri, Feb 01, 2013 at 22:41:24, Tony Lindgren wrote:
+> * Tony Lindgren <tony@atomide.com> [130201 09:12]:
+> > * Linus Walleij <linus.walleij@linaro.org> [130129 03:03]:
+> > > On Tue, Jan 29, 2013 at 8:38 AM, Vishwanathrao Badarkhe, Manish 
+> > > <manishv.b@ti.com> wrote:
+> > > 
+> > > > Currently, I2C driver gets probed before pinctrl driver.
+> > > > To achieve I2C pin muxing via pinctrl driver before I2C probe get 
+> > > > called, register pinctrl driver in arch_initcall.
+> > > > Also, add module_exit to unregister pinctrl driver.
+> > > >
+> > > > Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> > > 
+> > > So your I2C driver is not returning -EPROBE_DEFER if it cannot find 
+> > > its pins?
+> > > 
+> > > Hm, well I can live with this, if Tony ACKs it.
+> > 
+> > Hmm pinctrl is before i2c in drivers/Makefile.
+> > Making initcalls happen earlier and earlier is usually the wrong way 
+> > to go. Sounds like there's some other issue here that needs to be 
+> > fixed instead.
+> 
+> Let me guess: The i2c driver is wrongly set to run with arch_initcall?
+>  
+
+Hi Tony
+
+No, Currently i2c driver is set to subsys_initcall. I have seen some
+problem while using pin control grab functionality. Please see detailed
+explanation as below.
+
+Hi Linus
+
+I am using auto grab pin control facility to do pin muxing of I2C0 
+pins and seen problem as below:
+
+Currently, probe of I2C0 driver gets called before pin control driver. 
+Hence, while calling I2C0 probe because of unavailability of  
+pin control node information, its probe get deferred giving following 
+messages:
+
+"i2c_davinci i2c_davinci.1: could not find pctldev for node /soc/pinmux@1c14120
+/pinmux_i2c0_pins, deferring probe"
+
+As I2C0 is in deferred list (as auto grab patch handle this), its probe 
+get called once again, During this second time probe of I2C0, I have 
+observed following crash:
+
+"Unable to handle kernel paging request at virtual address fffffe07"
+
+As per code analysis of auto grab functionality, I have seen in 
+"pinctrl_bind_pin" function, pin control handle (dpi->p) is returned by 
+"devm_pinctrl_get" function.
+
+Pin control handle is assigned with error pointer during 1st time probing of 
+I2C0 (as pin control information is not available at this time). 
+During 2nd time probing (deferred probe) of I2C0, same pin control handle 
+(which was get assigned during 1st probe) is getting used instead of getting 
+updated to correct pin control handle which leads to system crash.
+
+I made following changes, in order to update "dip->p" pointer with 
+correct value:
+
+-       if (!dpi->p) {
++       if (IS_ERR_OR_NULL(dpi->p)) {
+                dpi->p = devm_pinctrl_get(dev);
+-               if (IS_ERR_OR_NULL(dpi->p)) {
+-                       int ret = PTR_ERR(dpi->p);
+-
+-                       dev_dbg(dev, "no pinctrl handle\n");
+-                       /* Only return deferrals */
+-                       if (ret == -EPROBE_DEFER)
+-                               return ret;
+-                       return 0;
+-               }
++               ret = PTR_ERR(dpi->p);
++               dev_dbg(dev, "no pinctrl handle\n");
++               /* Only return deferrals */
++               if (ret == -EPROBE_DEFER)
++                       return ret;
++               return 0;
+
+Is this intended change? or am I missing something in order to use this auto grab
+functionality?
+
+With the above change, now deferred probing is working fine and there is no need
+to register pin control driver in arch_initcall.
 
 
-On Wed, Jan 30, 2013 at 11:31 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Vivek Gautam wrote:
->>
->> Adding PHY driver support for USB 3.0 controller for Samsung's
->> SoCs.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>
->> Changes from v3:
->>  - Making SAMSUNG_USB3PHY dependent on SAMSUNG_USBPHY.
->>  - Adding USB_DWC3 to dependencies of SAMSUNG_USB2PHY since
->>    dwc3 controller also looks for USB2 type PHY.
->>
->>  drivers/usb/phy/Kconfig          |   11 +-
->>  drivers/usb/phy/Makefile         |    1 +
->>  drivers/usb/phy/samsung-usb3.c   |  349
->> ++++++++++++++++++++++++++++++++++++++
->>  drivers/usb/phy/samsung-usbphy.h |   81 +++++++++
->>  4 files changed, 441 insertions(+), 1 deletions(-)
->>  create mode 100644 drivers/usb/phy/samsung-usb3.c
->>
->> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
->> index cc0d230..9325a95 100644
->> --- a/drivers/usb/phy/Kconfig
->> +++ b/drivers/usb/phy/Kconfig
->> @@ -52,14 +52,23 @@ config SAMSUNG_USBPHY
->>       help
->>         Enable this to support Samsung USB phy controllers for Samsung
->>         SoCs.
->> +       Further enable USB 2.0 type PHY or USB 3.0 type PHY as required
->> +       for USB controllers in use.
->>
->>  if SAMSUNG_USBPHY
->>
->>  config SAMSUNG_USB2PHY
->>       bool "Samsung USB 2.0 PHY controller Driver"
->> -     depends on USB_S3C_HSOTG || USB_EHCI_S5P ||
->> USB_OHCI_EXYNOS
->> +     depends on USB_S3C_HSOTG || USB_EHCI_S5P ||
->> USB_OHCI_EXYNOS || USB_DWC3
->>       help
->>         Enable this to support Samsung USB 2.0 (High Speed) phy controller
->>         for Samsung SoCs.
->>
->> +config SAMSUNG_USB3PHY
->> +     bool "Samsung USB 3.0 PHY controller Driver"
->> +     depends on USB_DWC3
->> +     help
->> +       Enable this to support Samsung USB 3.0 (Super Speed) phy
->> controller
->> +       for samsung SoCs.
->> +
->>  endif
->
-> It mean, when USB_DWC3 is selected, we can select only one USB2PHY or
-> USB3PHY?
->
-
-Actually, DWC3 expects both USB2PHY and USB3PHY, so went this way.
-But this seems bad :-(
-Will remove these dependencies as suggested by Felipe also.
-
-> [...]
->
->> +#ifdef CONFIG_OF
->> +static const struct of_device_id samsung_usbphy_dt_match[] = {
->> +     {
->> +             .compatible = "samsung,exynos5250-usb3-phy",
->> +             .data = &usb3_phy_exynos5
->> +     },
->> +     {},
->> +};
->> +MODULE_DEVICE_TABLE(of, samsung_usbphy_dt_match);
->> +#endif
->> +
->> +static struct platform_device_id samsung_usbphy_driver_ids[] = {
->> +     {
->> +             .name           = "exynos5250-usb3-phy",
->
-> According to the name of file, exynos5250-usb3phy? Just it is imho...
->
-
-Ok, sure will amend this.
-
->> +             .driver_data    = (unsigned long)&usb3_phy_exynos5,
->> +     },
->> +     {},
->> +};
->> +
->> +MODULE_DEVICE_TABLE(platform, samsung_usbphy_driver_ids);
->> +
->> +static struct platform_driver samsung_usb3_phy_driver = {
->> +     .probe          = samsung_usb3_phy_probe,
->> +     .remove         = samsung_usb3_phy_remove,
->> +     .id_table       = samsung_usbphy_driver_ids,
->> +     .driver         = {
->> +             .name   = "samsung-usb3-phy",
->> +             .owner  = THIS_MODULE,
->> +             .of_match_table =
->> of_match_ptr(samsung_usbphy_dt_match),
->> +     },
->> +};
->> +
->> +module_platform_driver(samsung_usb3_phy_driver);
->> +
->> +MODULE_DESCRIPTION("Samsung USB 3.0 phy controller");
->> +MODULE_AUTHOR("Vivek Gautam <gautam.vivek@samsung.com>");
->> +MODULE_LICENSE("GPL");
->> +MODULE_ALIAS("platform:samsung-usb3-phy");
->
-> I want you to use same naming rule.
->
-
-Sure.
-
-
--- 
-Thanks & Regards
-Vivek
+Regards, 
+Manish
