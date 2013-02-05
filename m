@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758047Ab3BEWPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:15:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48267 "EHLO
+	id S1757959Ab3BEWP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:15:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48254 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab3BEWND (ORCPT
+	with ESMTP id S1757951Ab3BEWMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:13:03 -0500
+	Tue, 5 Feb 2013 17:12:52 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 86/93] module: wait when loading a module which is currently initializing.
-Date: Tue,  5 Feb 2013 20:07:15 -0200
-Message-Id: <1360102042-10732-87-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 83/93] drm/i915: Implement WaDisableHiZPlanesWhenMSAAEnabled
+Date: Tue,  5 Feb 2013 20:07:12 -0200
+Message-Id: <1360102042-10732-84-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,82 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 9bb9c3be56834653878f766f471fa1c20e562f4c upstream.
+commit 4283908ef7f11a72c3b80dd4cf026f1a86429f82 upstream.
 
-The original module-init-tools module loader used a fnctl lock on the
-.ko file to avoid attempts to simultaneously load a module.
-Unfortunately, you can't get an exclusive fcntl lock on a read-only
-fd, making this not work for read-only mounted filesystems.
-module-init-tools has a hacky sleep-and-loop for this now.
+Quoting from Bspec, 3D_CHICKEN1, bit 10
 
-It's not that hard to wait in the kernel, and only return -EEXIST once
-the first module has finished loading (or continue loading the module
-if the first one failed to initialize for some reason).  It's also
-consistent with what we do for dependent modules which are still loading.
+This bit needs to be set always to "1", Project: DevSNB "
 
-Suggested-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- kernel/module.c |   28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h |    1 +
+ drivers/gpu/drm/i915/intel_pm.c |    4 ++++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 27e302a..8dd60f4 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2870,6 +2870,20 @@ static int post_relocation(struct module *mod, const struct load_info *info)
- 	return module_finalize(info->hdr, info->sechdrs, mod);
- }
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 623224c..44feabe 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -501,6 +501,7 @@
+  * the enables for writing to the corresponding low bit.
+  */
+ #define _3D_CHICKEN	0x02084
++#define  _3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB	(1 << 10)
+ #define _3D_CHICKEN2	0x0208c
+ /* Disables pipelining of read flushes past the SF-WIZ interface.
+  * Required on all Ironlake steppings according to the B-Spec, but the
+diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
+index f8e332d..b40ce63 100644
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -3307,6 +3307,10 @@ static void gen6_init_clock_gating(struct drm_device *dev)
+ 		   I915_READ(ILK_DISPLAY_CHICKEN2) |
+ 		   ILK_ELPIN_409_SELECT);
  
-+/* Is this module of this name done loading?  No locks held. */
-+static bool finished_loading(const char *name)
-+{
-+	struct module *mod;
-+	bool ret;
++	/* WaDisableHiZPlanesWhenMSAAEnabled */
++	I915_WRITE(_3D_CHICKEN,
++		   _MASKED_BIT_ENABLE(_3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB));
 +
-+	mutex_lock(&module_mutex);
-+	mod = find_module(name);
-+	ret = !mod || mod->state != MODULE_STATE_COMING;
-+	mutex_unlock(&module_mutex);
-+
-+	return ret;
-+}
-+
- /* Allocate and load the module: note that size of section 0 is always
-    zero, and we rely on this for optional sections. */
- static struct module *load_module(void __user *umod,
-@@ -2877,7 +2891,7 @@ static struct module *load_module(void __user *umod,
- 				  const char __user *uargs)
- {
- 	struct load_info info = { NULL, };
--	struct module *mod;
-+	struct module *mod, *old;
- 	long err;
- 
- 	pr_debug("load_module: umod=%p, len=%lu, uargs=%p\n",
-@@ -2943,8 +2957,18 @@ static struct module *load_module(void __user *umod,
- 	 * function to insert in a way safe to concurrent readers.
- 	 * The mutex protects against concurrent writers.
- 	 */
-+again:
- 	mutex_lock(&module_mutex);
--	if (find_module(mod->name)) {
-+	if ((old = find_module(mod->name)) != NULL) {
-+		if (old->state == MODULE_STATE_COMING) {
-+			/* Wait in case it fails to load. */
-+			mutex_unlock(&module_mutex);
-+			err = wait_event_interruptible(module_wq,
-+					       finished_loading(mod->name));
-+			if (err)
-+				goto free_arch_cleanup;
-+			goto again;
-+		}
- 		err = -EEXIST;
- 		goto unlock;
- 	}
+ 	I915_WRITE(WM3_LP_ILK, 0);
+ 	I915_WRITE(WM2_LP_ILK, 0);
+ 	I915_WRITE(WM1_LP_ILK, 0);
 -- 
 1.7.9.5
 
