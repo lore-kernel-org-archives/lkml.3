@@ -1,79 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab3BEQHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 11:07:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43053 "EHLO mx1.redhat.com"
+	id S1756233Ab3BEQJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 11:09:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56875 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754933Ab3BEQG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 11:06:59 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Andrew Jones <drjones@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 1/2] perf scripts: Fix SIGALRM and pipe read race for rwtop
-Date: Tue,  5 Feb 2013 17:05:50 +0100
-Message-Id: <1360080351-3246-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1360080351-3246-1-git-send-email-jolsa@redhat.com>
-References: <1360080351-3246-1-git-send-email-jolsa@redhat.com>
+	id S1755247Ab3BEQJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 11:09:37 -0500
+Date: Tue, 5 Feb 2013 17:09:34 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20130205160934.GB22804@dhcp22.suse.cz>
+References: <20121218152223.6912832C@pobox.sk>
+ <20121218152004.GA25208@dhcp22.suse.cz>
+ <20121224142526.020165D3@pobox.sk>
+ <20121228162209.GA1455@dhcp22.suse.cz>
+ <20121230020947.AA002F34@pobox.sk>
+ <20121230110815.GA12940@dhcp22.suse.cz>
+ <20130125160723.FAE73567@pobox.sk>
+ <20130125163130.GF4721@dhcp22.suse.cz>
+ <20130205134937.GA22804@dhcp22.suse.cz>
+ <20130205154947.CD6411E2@pobox.sk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130205154947.CD6411E2@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing rwtop script race. The issue is caused by rwtop
-script triggering SIGALRM and underneath pipe reading
-layer reporting error when interrupted.
+On Tue 05-02-13 15:49:47, azurIt wrote:
+[...]
+> Just to be sure - am i supposed to apply this two patches?
+> http://watchdog.sk/lkml/patches/
 
-Fixing this by setting SA_RESTART for rwtop SIGALRM handler,
-which avoids interruption of the pipe reading layer.
-
-The discussion for this issue & fix is here:
-https://lkml.org/lkml/2012/9/18/123
-
-Original-patch-by: Andrew Jones <drjones@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Andrew Jones <drjones@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
+5-memcg-fix-1.patch is not complete. It doesn't contain the folloup I
+mentioned in a follow up email. Here is the full patch:
 ---
- tools/perf/scripts/perl/rwtop.pl | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+>From f2bf8437d5b9bb38a95a432bf39f32c584955171 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 26 Nov 2012 11:47:57 +0100
+Subject: [PATCH] memcg: do not trigger OOM from add_to_page_cache_locked
 
-diff --git a/tools/perf/scripts/perl/rwtop.pl b/tools/perf/scripts/perl/rwtop.pl
-index 4bb3ecd..8b20787 100644
---- a/tools/perf/scripts/perl/rwtop.pl
-+++ b/tools/perf/scripts/perl/rwtop.pl
-@@ -17,6 +17,7 @@ use lib "$ENV{'PERF_EXEC_PATH'}/scripts/perl/Perf-Trace-Util/lib";
- use lib "./Perf-Trace-Util/lib";
- use Perf::Trace::Core;
- use Perf::Trace::Util;
-+use POSIX qw/SIGALRM SA_RESTART/;
+memcg oom killer might deadlock if the process which falls down to
+mem_cgroup_handle_oom holds a lock which prevents other task to
+terminate because it is blocked on the very same lock.
+This can happen when a write system call needs to allocate a page but
+the allocation hits the memcg hard limit and there is nothing to reclaim
+(e.g. there is no swap or swap limit is hit as well and all cache pages
+have been reclaimed already) and the process selected by memcg OOM
+killer is blocked on i_mutex on the same inode (e.g. truncate it).
+
+Process A
+[<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
+[<ffffffff81121c90>] do_last+0x250/0xa30
+[<ffffffff81122547>] path_openat+0xd7/0x440
+[<ffffffff811229c9>] do_filp_open+0x49/0xa0
+[<ffffffff8110f7d6>] do_sys_open+0x106/0x240
+[<ffffffff8110f950>] sys_open+0x20/0x30
+[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+Process B
+[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+[<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+[<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
+[<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
+[<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
+[<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
+[<ffffffff81193a18>] ext3_write_begin+0x88/0x270
+[<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
+[<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
+[<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
+[<ffffffff8111156a>] do_sync_write+0xea/0x130
+[<ffffffff81112183>] vfs_write+0xf3/0x1f0
+[<ffffffff81112381>] sys_write+0x51/0x90
+[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+This is not a hard deadlock though because administrator can still
+intervene and increase the limit on the group which helps the writer to
+finish the allocation and release the lock.
+
+This patch heals the problem by forbidding OOM from page cache charges
+(namely add_ro_page_cache_locked). mem_cgroup_cache_charge_no_oom helper
+function is defined which adds GFP_MEMCG_NO_OOM to the gfp mask which
+then tells mem_cgroup_charge_common that OOM is not allowed for the
+charge. No OOM from this path, except for fixing the bug, also make some
+sense as we really do not want to cause an OOM because of a page cache
+usage.
+As a possibly visible result add_to_page_cache_lru might fail more often
+with ENOMEM but this is to be expected if the limit is set and it is
+preferable than OOM killer IMO.
+
+__GFP_NORETRY is abused for this memcg specific flag because no user
+accounted allocation use this flag except for THP which have memcg oom
+disabled already.
+
+Reported-by: azurIt <azurit@pobox.sk>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/gfp.h        |    3 +++
+ include/linux/memcontrol.h |   13 +++++++++++++
+ mm/filemap.c               |    8 +++++++-
+ mm/memcontrol.c            |   10 ++++++----
+ 4 files changed, 29 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 3a76faf..806fb54 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -146,6 +146,9 @@ struct vm_area_struct;
+ /* 4GB DMA on some platforms */
+ #define GFP_DMA32	__GFP_DMA32
  
- my $default_interval = 3;
- my $nlines = 20;
-@@ -90,7 +91,10 @@ sub syscalls::sys_enter_write
- 
- sub trace_begin
++/* memcg oom killer is not allowed */
++#define GFP_MEMCG_NO_OOM	__GFP_NORETRY
++
+ /* Convert GFP flags to their corresponding migrate type */
+ static inline int allocflags_to_migratetype(gfp_t gfp_flags)
  {
--    $SIG{ALRM} = \&set_print_pending;
-+    my $sa = POSIX::SigAction->new(\&set_print_pending);
-+    $sa->flags(SA_RESTART);
-+    $sa->safe(1);
-+    POSIX::sigaction(SIGALRM, $sa) or die "Can't set SIGALRM handler: $!\n";
-     alarm 1;
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 81572af..bf0e575 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -63,6 +63,13 @@ extern void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *ptr);
+ 
+ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 					gfp_t gfp_mask);
++
++static inline int mem_cgroup_cache_charge_no_oom(struct page *page,
++					struct mm_struct *mm, gfp_t gfp_mask)
++{
++	return mem_cgroup_cache_charge(page, mm, gfp_mask | GFP_MEMCG_NO_OOM);
++}
++
+ extern void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru);
+ extern void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru);
+ extern void mem_cgroup_rotate_reclaimable_page(struct page *page);
+@@ -178,6 +185,12 @@ static inline int mem_cgroup_cache_charge(struct page *page,
+ 	return 0;
  }
  
++static inline int mem_cgroup_cache_charge_no_oom(struct page *page,
++					struct mm_struct *mm, gfp_t gfp_mask)
++{
++	return 0;
++}
++
+ static inline int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 		struct page *page, gfp_t gfp_mask, struct mem_cgroup **ptr)
+ {
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 556858c..ef182a9 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -449,7 +449,13 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 	VM_BUG_ON(!PageLocked(page));
+ 	VM_BUG_ON(PageSwapBacked(page));
+ 
+-	error = mem_cgroup_cache_charge(page, current->mm,
++	/*
++	 * Cannot trigger OOM even if gfp_mask would allow that normally
++	 * because we might be called from a locked context and that
++	 * could lead to deadlocks if the killed process is waiting for
++	 * the same lock.
++	 */
++	error = mem_cgroup_cache_charge_no_oom(page, current->mm,
+ 					gfp_mask & GFP_RECLAIM_MASK);
+ 	if (error)
+ 		goto out;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 1986c65..a68aa08 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2704,7 +2704,7 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+ 	struct mem_cgroup *memcg = NULL;
+ 	unsigned int nr_pages = 1;
+ 	struct page_cgroup *pc;
+-	bool oom = true;
++	bool oom = !(gfp_mask & GFP_MEMCG_NO_OOM);
+ 	int ret;
+ 
+ 	if (PageTransHuge(page)) {
+@@ -2771,6 +2771,7 @@ __mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *memcg,
+ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 				gfp_t gfp_mask)
+ {
++	bool oom = !(gfp_mask & GFP_MEMCG_NO_OOM);
+ 	struct mem_cgroup *memcg = NULL;
+ 	int ret;
+ 
+@@ -2783,7 +2784,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 		mm = &init_mm;
+ 
+ 	if (page_is_file_cache(page)) {
+-		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, true);
++		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, oom);
+ 		if (ret || !memcg)
+ 			return ret;
+ 
+@@ -2819,6 +2820,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 				 struct page *page,
+ 				 gfp_t mask, struct mem_cgroup **ptr)
+ {
++	bool oom = !(mask & GFP_MEMCG_NO_OOM);
+ 	struct mem_cgroup *memcg;
+ 	int ret;
+ 
+@@ -2841,13 +2843,13 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 	if (!memcg)
+ 		goto charge_cur_mm;
+ 	*ptr = memcg;
+-	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, true);
++	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, oom);
+ 	css_put(&memcg->css);
+ 	return ret;
+ charge_cur_mm:
+ 	if (unlikely(!mm))
+ 		mm = &init_mm;
+-	return __mem_cgroup_try_charge(mm, mask, 1, ptr, true);
++	return __mem_cgroup_try_charge(mm, mask, 1, ptr, oom);
+ }
+ 
+ static void
 -- 
-1.7.11.7
+1.7.10.4
 
+
+-- 
+Michal Hocko
+SUSE Labs
