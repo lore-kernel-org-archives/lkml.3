@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab3BEHWb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 02:22:31 -0500
-Received: from forward17.mail.yandex.net ([95.108.253.142]:42240 "EHLO
-	forward17.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab3BEHW3 (ORCPT
+	id S1753992Ab3BEH0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 02:26:34 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:58079 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab3BEH0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 02:22:29 -0500
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Honghui Zhang <zhanghonghui@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re:[PATCH] sched/rt: Decrease number of calls of push_rt_task() in push_rt_tasks()
+	Tue, 5 Feb 2013 02:26:31 -0500
+Message-ID: <5110B41D.3090605@linux.vnet.ibm.com>
+Date: Tue, 05 Feb 2013 15:26:21 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Message-Id: <500221360048944@web26g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 05 Feb 2013 11:22:24 +0400
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 0/3] KVM: MMU: simple cleanups
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13020507-4790-0000-0000-000006C9A7EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There are the simple cleanups for MMU, no function / logic changed.
 
+Marcelo, Gleb, please apply them after applying
+"[PATCH v3] KVM: MMU: lazily drop large spte"
 
-> On 2013/2/1 5:57, Kirill Tkhai wrote:
-> 
->> 31.01.2013, 20:08, "Steven Rostedt" <rostedt@goodmis.org>:
->>
->>> On Mon, 2013-01-28 at 03:46 +0400, Kirill Tkhai wrote:
->>>
->>>> The patch aims to decrease the number of calls of push_rt_task()
->>>> in push_rt_tasks().
->>>>
->>>> It's not necessary to push more than 'num_online_cpus() - 1' tasks.
->>>> If just pushed task doesn't leave its new CPU during our local call
->>>> of push_rt_tasks() than we won't push another task to the CPU.
->>>> If it leave or change priority than it will pull new task by itself.
->>>
->>> I'm curious. Have you hit situations where this was an issue? Or was
->>> this just discovered by code review?
->>
->> No, I did't hit this situation. It's impossible to hook every situation.
->>
->> Thanks for your explanation.
->>
->> Kirill
-> 
-> Suppose we have a large number of cpus(say 4096), with the last one running
-> a low-priority task on it. Is it possible with this patch we will never reach
-> the last cpu in case that previous cpu has complete the pulled task?
+Changelog:
+no change, just split them from the previous patchset for good review.
 
-Yes. But this patch is about several pushable tasks on the same cpu.
+Thanks!
 
-Kirill
-
- -- 
