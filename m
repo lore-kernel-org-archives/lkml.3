@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab3BEJMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 04:12:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15152 "EHLO mx1.redhat.com"
+	id S1754631Ab3BEJRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 04:17:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30332 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab3BEJMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 04:12:37 -0500
+	id S1753718Ab3BEJMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 04:12:43 -0500
 From: Lukas Czerner <lczerner@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
-        cluster-devel@redhat.com
-Subject: [PATCH v2 08/18] gfs2: use ->invalidatepage() length argument
-Date: Tue,  5 Feb 2013 10:12:01 +0100
-Message-Id: <1360055531-26309-9-git-send-email-lczerner@redhat.com>
+        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH v2 12/18] Revert "ext4: fix fsx truncate failure"
+Date: Tue,  5 Feb 2013 10:12:05 +0100
+Message-Id: <1360055531-26309-13-git-send-email-lczerner@redhat.com>
 In-Reply-To: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
 References: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-->invalidatepage() aop now accepts range to invalidate so we can make
-use of it in gfs2_invalidatepage().
+This reverts commit 189e868fa8fdca702eb9db9d8afc46b5cb9144c9.
+
+This commit reintroduces the use of ext4_block_truncate_page() in ext4
+truncate operation instead of ext4_discard_partial_page_buffers().
+
+The statement in the commit description that the truncate operation only
+zero block unaligned portion of the last page is not exactly right,
+since truncate_pagecache_range() also zeroes and invalidate the unaligned
+portion of the page. Then there is no need to zero and unmap it once more
+and ext4_block_truncate_page() was doing the right job, although we
+still need to update the buffer head containing the last block, which is
+exactly what ext4_block_truncate_page() is doing.
+
+Moreover the problem described in the commit is fixed more properly with
+commit
+
+15291164b22a357cb211b618adfef4fa82fc0de3
+	jbd2: clear BH_Delay & BH_Unwritten in journal_unmap_buffer
+
+This was tested on ppc64 machine with block size of 1024 bytes without
+any problems.
 
 Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Cc: cluster-devel@redhat.com
 ---
- fs/gfs2/aops.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ fs/ext4/extents.c  |   13 ++-----------
+ fs/ext4/indirect.c |   13 ++-----------
+ 2 files changed, 4 insertions(+), 22 deletions(-)
 
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 5bd558c..3cf3dc8 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -949,24 +949,29 @@ static void gfs2_invalidatepage(struct page *page, unsigned int offset,
- 				unsigned int length)
- {
- 	struct gfs2_sbd *sdp = GFS2_SB(page->mapping->host);
-+	unsigned int stop = offset + length;
-+	int partial_page = (offset || length < PAGE_CACHE_SIZE);
- 	struct buffer_head *bh, *head;
- 	unsigned long pos = 0;
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 5ae1674..5ce5a14 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4271,7 +4271,6 @@ void ext4_ext_truncate(struct inode *inode)
+ 	struct super_block *sb = inode->i_sb;
+ 	ext4_lblk_t last_block;
+ 	handle_t *handle;
+-	loff_t page_len;
+ 	int err = 0;
  
- 	BUG_ON(!PageLocked(page));
--	if (offset == 0)
-+	if (!partial_page)
- 		ClearPageChecked(page);
- 	if (!page_has_buffers(page))
- 		goto out;
+ 	/*
+@@ -4288,16 +4287,8 @@ void ext4_ext_truncate(struct inode *inode)
+ 	if (IS_ERR(handle))
+ 		return;
  
- 	bh = head = page_buffers(page);
- 	do {
-+		if (pos + bh->b_size > stop)
-+			return;
-+
- 		if (offset <= pos)
- 			gfs2_discard(sdp, bh);
- 		pos += bh->b_size;
- 		bh = bh->b_this_page;
- 	} while (bh != head);
- out:
--	if (offset == 0)
-+	if (!partial_page)
- 		try_to_release_page(page, 0);
- }
+-	if (inode->i_size % PAGE_CACHE_SIZE != 0) {
+-		page_len = PAGE_CACHE_SIZE -
+-			(inode->i_size & (PAGE_CACHE_SIZE - 1));
+-
+-		err = ext4_discard_partial_page_buffers(handle,
+-			mapping, inode->i_size, page_len, 0);
+-
+-		if (err)
+-			goto out_stop;
+-	}
++	if (inode->i_size & (sb->s_blocksize - 1))
++		ext4_block_truncate_page(handle, mapping, inode->i_size);
  
+ 	if (ext4_orphan_add(handle, inode))
+ 		goto out_stop;
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index 20862f9..48d10b2 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -1363,9 +1363,7 @@ void ext4_ind_truncate(struct inode *inode)
+ 	__le32 nr = 0;
+ 	int n = 0;
+ 	ext4_lblk_t last_block, max_block;
+-	loff_t page_len;
+ 	unsigned blocksize = inode->i_sb->s_blocksize;
+-	int err;
+ 
+ 	handle = start_transaction(inode);
+ 	if (IS_ERR(handle))
+@@ -1376,16 +1374,9 @@ void ext4_ind_truncate(struct inode *inode)
+ 	max_block = (EXT4_SB(inode->i_sb)->s_bitmap_maxbytes + blocksize-1)
+ 					>> EXT4_BLOCK_SIZE_BITS(inode->i_sb);
+ 
+-	if (inode->i_size % PAGE_CACHE_SIZE != 0) {
+-		page_len = PAGE_CACHE_SIZE -
+-			(inode->i_size & (PAGE_CACHE_SIZE - 1));
+-
+-		err = ext4_discard_partial_page_buffers(handle,
+-			mapping, inode->i_size, page_len, 0);
+-
+-		if (err)
++	if (inode->i_size & (blocksize - 1))
++		if (ext4_block_truncate_page(handle, mapping, inode->i_size))
+ 			goto out_stop;
+-	}
+ 
+ 	if (last_block != max_block) {
+ 		n = ext4_block_to_path(inode, last_block, offsets, NULL);
 -- 
 1.7.7.6
 
