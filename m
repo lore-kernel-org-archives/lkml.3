@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3BELcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 06:32:47 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:46244 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753814Ab3BELcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 06:32:45 -0500
-Date: Tue, 5 Feb 2013 12:32:42 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-Message-ID: <20130205113242.GF4827@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Viresh Kumar <viresh.kumar@linaro.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linaro-dev@lists.linaro.org, robin.randhawa@arm.com,
-	Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-	Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-References: <20130204165057.GH13909@pd.tnic>
- <CAOh2x==fyfYwz+eXmPhBJTE+_q_fHyx2drXrM789XvCfEqPBUQ@mail.gmail.com>
- <20130205091532.GA4827@pd.tnic>
- <CAKohpo=6q+Bcgq0Re=3SXM6zwub5N=vJBO=sTeEgZZ9byFK7=g@mail.gmail.com>
- <20130205102721.GB4827@pd.tnic>
- <CAKohpo=_Qq-_Aqy7nZD+f28-B7DY8ioQ5fe8bYKTe64A0RXeGw@mail.gmail.com>
- <20130205110407.GC4827@pd.tnic>
- <CAKohponiiVO_P2EDDTUHeoo7j3FG-ELtP8oLwfdEQ3HkgOS77g@mail.gmail.com>
- <20130205111918.GD4827@pd.tnic>
- <CAKohpomUsDr0YJmOxjymcAAJnfOxKfzxGL4iHuif1qCAvy0OYA@mail.gmail.com>
+	id S1754886Ab3BELd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 06:33:27 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:34204 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab3BELdW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 06:33:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAKohpomUsDr0YJmOxjymcAAJnfOxKfzxGL4iHuif1qCAvy0OYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130130221118.GB15584@fieldses.org>
+References: <1358441537-8672-1-git-send-email-piastry@etersoft.ru>
+	<20130130221118.GB15584@fieldses.org>
+Date: Tue, 5 Feb 2013 15:33:21 +0400
+X-Google-Sender-Auth: e6urHKY9mpNJLTidji_vgtyPeH8
+Message-ID: <CAKywueQcia1jJfdVJFzfHdc5zQ_86r3T4bmee9cpP18qqbcLFA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/8] Add O_DENY* support for VFS and CIFS/NFS
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        wine-devel@winehq.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 04:56:03PM +0530, Viresh Kumar wrote:
-> Just some kind of indication from platform driver is required about
-> how/where it wants its governor directory to be present.
+2013/1/31 J. Bruce Fields <bfields@fieldses.org>:
+> On Thu, Jan 17, 2013 at 08:52:09PM +0400, Pavel Shilovsky wrote:
+>> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
+>>
+>> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
+>>
+>> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
+>
+> Maybe that's good enough.  A mount flag might be simpler and give
+> consistent enforcement for all users.
+>
+>>
+>> So, we have four new flags:
+>> O_DENYREAD - to prevent other opens with read access,
+>> O_DENYWRITE - to prevent other opens with write access,
+>> O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
+>> O_DENYMAND - to switch on/off three flags above.
+>
+> It would be useful to have some really careful documentation of how
+> these are meant to work.  Maybe try updating the open man page?
 
-The indication is this:
+Yes, that's a good idea. Do you mean smth like this?
 
-config CPUFREQ_PLATFORM_DRIVER_X
-        ...
-        select CPUFREQ_MULTIPLE_POLICIES
+O_DENYMAND - used to inforce a mandatory share reservation scheme of
+the file access. If this flag is passed,
+the open fails with -ETXTBSY in following cases:
 
-You really need to slow down and really look at what I'm proposing.
+1) if O_DENYREAD flag is specified and there is another open with
+O_DENYMAND flag and READ access to the file;
+2) if O_DENYWRITE flag is specified and there is another open with
+O_DENYMAND flag and WRITE access to the file;
+3) if READ access is requested and there is another open with
+O_DENYMAND and O_DENYREAD flags;
+4) if WRITE access is requested and there is another open with
+O_DENYMAND and O_DENYWRITE flags;
 
-> And the variable suits more here.
-
-And this variable means nothing on other systems so why add it in the
-first place?
+Also, if O_DENYDELETE flag is specified and the open succeded, any
+further unlink operation will fail with -ETXTBSY untill this open is
+closed. Now this flag is processed by CIFS filesystems only.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Best regards,
+Pavel Shilovsky.
