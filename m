@@ -1,60 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab3BEW1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:27:45 -0500
-Received: from mout.gmx.net ([212.227.17.20]:63934 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755710Ab3BEW1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 17:27:43 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX186UDkqoCg6cCiq0+vW2ITl1dgMX7epyvUa5WdZAl
-	KlyfZ4JzMA2rpf
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Forest Bond <forest@alittletooquiet.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        Peter Huewe <peterhuewe@gmx.de>,
-        Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kbuild@01.org
-Subject: [PATCH] staging/vt6656: Fix sparse warning constant 0xffffffff00000000U is so big it is unsigned long
-Date: Tue,  5 Feb 2013 23:31:37 +0100
-Message-Id: <1360103497-4894-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S1757479Ab3BEW0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:26:52 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:56731 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757235Ab3BEW0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 17:26:50 -0500
+Message-Id: <20130205222648.676278532@gulag1.americas.sgi.com>
+User-Agent: quilt/0.47-1
+Date: Tue, 05 Feb 2013 16:26:51 -0600
+From: Mike Travis <travis@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
+Subject: [PATCH 3/7] x86: UV3 Update Hub Info
+References: <20130205222648.204965172@gulag1.americas.sgi.com>
+Content-Disposition: inline; filename=uv3-update-hub-info.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 7c65fa2a4c176c9bfab1ef954c4cef005dd9fb8b
-'staging: vt6656: Remove QWORD from source and replace with u64.'
-a new sparse warning showed up:
+	This patch updates the UV HUB info for UV3.
 
-'drivers/staging/vt6656/card.c:798:26: sparse: constant
- 0xffffffff00000000U is so big it is unsigned long'
-
--> Append L to fix the warning.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Mike Travis <travis@sgi.com>
+Acked-by: Russ Anderson <rja@sgi.com>
+Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
 ---
- drivers/staging/vt6656/card.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/uv/uv_hub.h |   44 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 36 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
-index 7d725bb..f988f07 100644
---- a/drivers/staging/vt6656/card.c
-+++ b/drivers/staging/vt6656/card.c
-@@ -790,7 +790,7 @@ u64 CARDqGetNextTBTT(u64 qwTSF, WORD wBeaconInterval)
- 	if ((~uLowNextTBTT) < uLowRemain)
- 		qwTSF = ((qwTSF >> 32) + 1) << 32;
+--- linux.orig/arch/x86/include/asm/uv/uv_hub.h
++++ linux/arch/x86/include/asm/uv/uv_hub.h
+@@ -5,7 +5,7 @@
+  *
+  * SGI UV architectural definitions
+  *
+- * Copyright (C) 2007-2010 Silicon Graphics, Inc. All rights reserved.
++ * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
+  */
  
--	qwTSF = (qwTSF & 0xffffffff00000000U) |
-+	qwTSF = (qwTSF & 0xffffffff00000000UL) |
- 		(u64)(uLowNextTBTT + uLowRemain);
+ #ifndef _ASM_X86_UV_UV_HUB_H
+@@ -175,6 +175,7 @@ DECLARE_PER_CPU(struct uv_hub_info_s, __
+  */
+ #define UV1_HUB_REVISION_BASE		1
+ #define UV2_HUB_REVISION_BASE		3
++#define UV3_HUB_REVISION_BASE		5
  
-     return (qwTSF);
--- 
-1.7.8.6
+ static inline int is_uv1_hub(void)
+ {
+@@ -183,6 +184,23 @@ static inline int is_uv1_hub(void)
+ 
+ static inline int is_uv2_hub(void)
+ {
++	return ((uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE) &&
++		(uv_hub_info->hub_revision < UV3_HUB_REVISION_BASE));
++}
++
++static inline int is_uv3_hub(void)
++{
++	return uv_hub_info->hub_revision >= UV3_HUB_REVISION_BASE;
++}
++
++static inline int is_uv_hub(void)
++{
++	return uv_hub_info->hub_revision;
++}
++
++/* code common to uv2 and uv3 only */
++static inline int is_uvx_hub(void)
++{
+ 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
+ }
+ 
+@@ -230,14 +248,23 @@ union uvh_apicid {
+ #define UV2_LOCAL_MMR_SIZE		(32UL * 1024 * 1024)
+ #define UV2_GLOBAL_MMR32_SIZE		(32UL * 1024 * 1024)
+ 
+-#define UV_LOCAL_MMR_BASE		(is_uv1_hub() ? UV1_LOCAL_MMR_BASE     \
+-						: UV2_LOCAL_MMR_BASE)
+-#define UV_GLOBAL_MMR32_BASE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_BASE  \
+-						: UV2_GLOBAL_MMR32_BASE)
+-#define UV_LOCAL_MMR_SIZE		(is_uv1_hub() ? UV1_LOCAL_MMR_SIZE :   \
+-						UV2_LOCAL_MMR_SIZE)
++#define UV3_LOCAL_MMR_BASE		0xfa000000UL
++#define UV3_GLOBAL_MMR32_BASE		0xfc000000UL
++#define UV3_LOCAL_MMR_SIZE		(32UL * 1024 * 1024)
++#define UV3_GLOBAL_MMR32_SIZE		(32UL * 1024 * 1024)
++
++#define UV_LOCAL_MMR_BASE		(is_uv1_hub() ? UV1_LOCAL_MMR_BASE : \
++					(is_uv2_hub() ? UV2_LOCAL_MMR_BASE : \
++							UV3_LOCAL_MMR_BASE))
++#define UV_GLOBAL_MMR32_BASE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_BASE :\
++					(is_uv2_hub() ? UV2_GLOBAL_MMR32_BASE :\
++							UV3_GLOBAL_MMR32_BASE))
++#define UV_LOCAL_MMR_SIZE		(is_uv1_hub() ? UV1_LOCAL_MMR_SIZE : \
++					(is_uv2_hub() ? UV2_LOCAL_MMR_SIZE : \
++							UV3_LOCAL_MMR_SIZE))
+ #define UV_GLOBAL_MMR32_SIZE		(is_uv1_hub() ? UV1_GLOBAL_MMR32_SIZE :\
+-						UV2_GLOBAL_MMR32_SIZE)
++					(is_uv2_hub() ? UV2_GLOBAL_MMR32_SIZE :\
++							UV3_GLOBAL_MMR32_SIZE))
+ #define UV_GLOBAL_MMR64_BASE		(uv_hub_info->global_mmr_base)
+ 
+ #define UV_GLOBAL_GRU_MMR_BASE		0x4000000
+@@ -599,6 +626,7 @@ static inline void uv_hub_send_ipi(int p
+  *     1 - UV1 rev 1.0 initial silicon
+  *     2 - UV1 rev 2.0 production silicon
+  *     3 - UV2 rev 1.0 initial silicon
++ *     5 - UV3 rev 1.0 initial silicon
+  */
+ static inline int uv_get_min_hub_revision_id(void)
+ {
 
