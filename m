@@ -1,287 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3BERNj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:13:39 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:41118 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755246Ab3BERNi (ORCPT
+	id S1756170Ab3BEROT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:14:19 -0500
+Received: from nm18-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.23]:44181
+	"EHLO nm18-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755866Ab3BEROP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:13:38 -0500
-Message-ID: <51113DB7.8060706@gmail.com>
-Date: Wed, 06 Feb 2013 01:13:27 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Tue, 5 Feb 2013 12:14:15 -0500
+X-Yahoo-Newman-Id: 4289.94352.bm@smtp107.biz.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: TyZIJ5oVM1kzOt299Rm7nKaR95uAQYQblN9t4M4Sy0MdVFX
+ 9ArE12TcsTSiWBXyU7tOUnZ9C2zuT1c1cDI_RlIvEzMuGfuDtQ2jqOW3FwN1
+ rzpjQBQfs5q2hZk73P.XpA_vGnWNSc0lbRaxqYLM2oW6koAwla92OD2WZZ5r
+ hemVM584qPw2zPkBJ9sow2tVPj4nBtgiKNGK.AP333VuOBaiA8tgSnifgrKI
+ hPMYrcb4myi6Mv3eshS2.I7xJuLjAT_exBXPjwur0mo6UXwumgaHQlJcJ0Md
+ alVb13tjkuio.P.JnY48UDb7VpsP152EfyfHqA4MPfahdS_rm7KATw.Ap69q
+ .eAERdDT.8CmNKj1sRZM4aDxaGteOhq6nQgJUUOJU0IAMuy4pmGds4tmRkI5
+ n0jjwv0Trpg5whnU64rSBTDXF4pC3L9fqHetKW_l_pZxFv6nSeAWIDgH.x.X
+ 0KthGy26GcKvo3QjxBVfHMx8pBn5PamQp7_jLWP3WhBUpYzU9G2ih66GHDzO
+ GeyAcBAl2J9SjYtgO.g3b64wjQnUNH4pluiZ4F0sgDTjqUXOTgO7KiWA-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <51113DE5.10008@schaufler-ca.com>
+Date: Tue, 05 Feb 2013 09:14:13 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, Linux MM <linux-mm@kvack.org>, mgorman@suse.de,
-        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        m.szyprowski@samsung.com
-CC: linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
-Subject: [PATCH 2/3] mm: rename nr_free_buffer_pages to nr_free_buffer_high_pages
-References: <51113CE3.5090000@gmail.com>
-In-Reply-To: <51113CE3.5090000@gmail.com>
-Content-Type: text/plain; charset=GB2312
+To: Jeff Mahoney <jeffm@suse.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Dave Kleikamp <shaggy@kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC] setxattr bugs
+References: <20130203043046.GR4503@ZenIV.linux.org.uk> <51106AF1.4030804@suse.com>
+In-Reply-To: <51106AF1.4030804@suse.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On 2/4/2013 6:14 PM, Jeff Mahoney wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 2/2/13 11:30 PM, Al Viro wrote:
+>> * JFS, since 2005: setxattr(name, "system.posix_acl_access", NULL,
+>> 0, 0) succeeds, creating an empty EA with "system.posix_acl_access"
+>> as name. Validity checks should apply _after_ if (value == NULL) {
+>> /* empty EA, do not remove */ value = ""; value_len = 0; } and not
+>> before it. * reiserfs, since 2009: setxattr(name, attr_name, NULL,
+>> 0, 0) is treated as removexattr(name, attr_name), not as emptying
+>> given xattr.
+>>
+>> The question is, does either of those cross into "established 
+>> weirdness in ABI" or are they still at the "bugs to be fixed"
+>> stage?
+> Since the behavior changed once already in 2009 I'd call it a bug.
+> That code was in the SLES kernel for a while before then and I still
+> haven't seen a bug report on it.
+>
+> - -Jeff
+>
+>> FWIW, I'm seriously tempted to stop passing NULL as the third
+>> argument of ->setxattr(), essentially taking all those if (!value)
+>> value = ""; pieces from individual ->setxattr() instances to
+>> __vfs_setxattr_noperm() (all other callers of ->setxattr() never 
+>> pass NULL data or 0 size, so it's irrelevant for them).  Would fix 
+>> both jfs and reiserfs weirdness....
+>>
+>> Objections?
 
-This function actually counts RAM pages that are above high watermark within
-ZONE_DMA and ZONE_NORMAL, so rename it to a reasonable name.
+None from me. I know of no one using either of those filesystems
+in ways I care about. There's a chance the SELinux crowd may care,
+so I'm adding the LSM list. We're the primary consumer of xattrs.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- arch/ia64/mm/contig.c          |    3 ++-
- arch/ia64/mm/discontig.c       |    3 ++-
- drivers/mmc/card/mmc_test.c    |    4 ++--
- fs/buffer.c                    |    2 +-
- fs/nfsd/nfs4state.c            |    2 +-
- fs/nfsd/nfssvc.c               |    2 +-
- include/linux/swap.h           |    2 +-
- mm/huge_memory.c               |    2 +-
- mm/page-writeback.c            |    2 +-
- mm/page_alloc.c                |    9 +++++----
- net/9p/trans_virtio.c          |    2 +-
- net/ipv4/tcp.c                 |    4 ++--
- net/ipv4/udp.c                 |    2 +-
- net/netfilter/ipvs/ip_vs_ctl.c |    2 +-
- net/sctp/protocol.c            |    2 +-
- 15 files changed, 23 insertions(+), 20 deletions(-)
-
-diff --git a/arch/ia64/mm/contig.c b/arch/ia64/mm/contig.c
-index 1516d1d..a2f45ce 100644
---- a/arch/ia64/mm/contig.c
-+++ b/arch/ia64/mm/contig.c
-@@ -93,7 +93,8 @@ void show_mem(unsigned int filter)
- 	printk(KERN_INFO "%d pages swap cached\n", total_cached);
- 	printk(KERN_INFO "Total of %ld pages in page table cache\n",
- 	       quicklist_total_size());
--	printk(KERN_INFO "%d free buffer pages\n", nr_free_buffer_pages());
-+	printk(KERN_INFO "%d free buffer pages above high watermark\n",
-+	       nr_free_buffer_high_pages());
- }
- 
- 
-diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
-index c641333..cc55453 100644
---- a/arch/ia64/mm/discontig.c
-+++ b/arch/ia64/mm/discontig.c
-@@ -666,7 +666,8 @@ void show_mem(unsigned int filter)
- 	printk(KERN_INFO "%d pages swap cached\n", total_cached);
- 	printk(KERN_INFO "Total of %ld pages in page table cache\n",
- 	       quicklist_total_size());
--	printk(KERN_INFO "%d free buffer pages\n", nr_free_buffer_pages());
-+	printk(KERN_INFO "%d free buffer pages above high watermark\n",
-+	       nr_free_buffer_pages());
- }
- 
- /**
-diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
-index 759714e..8271d4d 100644
---- a/drivers/mmc/card/mmc_test.c
-+++ b/drivers/mmc/card/mmc_test.c
-@@ -16,7 +16,7 @@
- #include <linux/slab.h>
- 
- #include <linux/scatterlist.h>
--#include <linux/swap.h>		/* For nr_free_buffer_pages() */
-+#include <linux/swap.h>		/* For nr_free_buffer_high_pages() */
- #include <linux/list.h>
- 
- #include <linux/debugfs.h>
-@@ -323,7 +323,7 @@ static struct mmc_test_mem *mmc_test_alloc_mem(unsigned long min_sz,
- 	unsigned long min_page_cnt = DIV_ROUND_UP(min_sz, PAGE_SIZE);
- 	unsigned long max_seg_page_cnt = DIV_ROUND_UP(max_seg_sz, PAGE_SIZE);
- 	unsigned long page_cnt = 0;
--	unsigned long limit = nr_free_buffer_pages() >> 4;
-+	unsigned long limit = nr_free_buffer_high_pages() >> 4;
- 	struct mmc_test_mem *mem;
- 
- 	if (max_page_cnt > limit)
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 7a75c3e..c1bcb6d 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -3354,7 +3354,7 @@ void __init buffer_init(void)
- 	/*
- 	 * Limit the bh occupancy to 10% of ZONE_NORMAL
- 	 */
--	nrpages = (nr_free_buffer_pages() * 10) / 100;
-+	nrpages = (nr_free_buffer_high_pages() * 10) / 100;
- 	max_buffer_heads = nrpages * (PAGE_SIZE / sizeof(struct buffer_head));
- 	hotcpu_notifier(buffer_cpu_notify, 0);
- }
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index ac8ed96..cddd447 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -4813,7 +4813,7 @@ set_max_delegations(void)
- 	 * is for a different inode), a delegation could take about 1.5K,
- 	 * giving a worst case usage of about 6% of memory.
- 	 */
--	max_delegations = nr_free_buffer_pages() >> (20 - 2 - PAGE_SHIFT);
-+	max_delegations = nr_free_buffer_high_pages() >> (20 - 2 - PAGE_SHIFT);
- }
- 
- static int nfs4_state_create_net(struct net *net)
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index cee62ab..2820409 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -338,7 +338,7 @@ void nfsd_reset_versions(void)
- static void set_max_drc(void)
- {
- 	#define NFSD_DRC_SIZE_SHIFT	10
--	nfsd_drc_max_mem = (nr_free_buffer_pages()
-+	nfsd_drc_max_mem = (nr_free_buffer_high_pages()
- 					>> NFSD_DRC_SIZE_SHIFT) * PAGE_SIZE;
- 	nfsd_drc_mem_used = 0;
- 	spin_lock_init(&nfsd_drc_lock);
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 68df9c1..0df8905 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -216,7 +216,7 @@ struct swap_list_t {
- extern unsigned long totalram_pages;
- extern unsigned long totalreserve_pages;
- extern unsigned long dirty_balance_reserve;
--extern unsigned int nr_free_buffer_pages(void);
-+extern unsigned int nr_free_buffer_high_pages(void);
- extern unsigned int nr_free_pagecache_pages(void);
- 
- /* Definition of global_page_state not available yet */
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index b5783d8..c483e20 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -127,7 +127,7 @@ static int set_recommended_min_free_kbytes(void)
- 
- 	/* don't ever allow to reserve more than 5% of the lowmem */
- 	recommended_min = min(recommended_min,
--			      (unsigned long) nr_free_buffer_pages() / 20);
-+			      (unsigned long) nr_free_buffer_high_pages() / 20);
- 	recommended_min <<= (PAGE_SHIFT-10);
- 
- 	if (recommended_min > min_free_kbytes)
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 0713bfb..246d0bd 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1640,7 +1640,7 @@ static struct notifier_block __cpuinitdata ratelimit_nb = {
-  *
-  * We used to scale dirty pages according to how total memory
-  * related to pages that could be allocated for buffers (by
-- * comparing nr_free_buffer_pages() to vm_total_pages.
-+ * comparing nr_free_buffer_high_pages() to vm_total_pages.
-  *
-  * However, that was when we used "dirty_ratio" to scale with
-  * all memory, and we don't do that any more. "dirty_ratio"
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4aea19e..a021d91 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2806,13 +2806,14 @@ static unsigned int nr_free_zone_high_pages(int offset)
- }
- 
- /*
-- * Amount of free RAM allocatable within ZONE_DMA and ZONE_NORMAL
-+ * Amount of free RAM allocatable that is above high watermark
-+ * within ZONE_DMA and ZONE_NORMAL
-  */
--unsigned int nr_free_buffer_pages(void)
-+unsigned int nr_free_buffer_high_pages(void)
- {
- 	return nr_free_zone_high_pages(gfp_zone(GFP_USER));
- }
--EXPORT_SYMBOL_GPL(nr_free_buffer_pages);
-+EXPORT_SYMBOL_GPL(nr_free_buffer_high_pages);
- 
- /*
-  * Amount of free RAM allocatable within all zones
-@@ -5351,7 +5352,7 @@ int __meminit init_per_zone_wmark_min(void)
- {
- 	unsigned long lowmem_kbytes;
- 
--	lowmem_kbytes = nr_free_buffer_pages() * (PAGE_SIZE >> 10);
-+	lowmem_kbytes = nr_free_buffer_high_pages() * (PAGE_SIZE >> 10);
- 
- 	min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
- 	if (min_free_kbytes < 128)
-diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-index fd05c81..da5b0bc 100644
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -542,7 +542,7 @@ static int p9_virtio_probe(struct virtio_device *vdev)
- 	init_waitqueue_head(chan->vc_wq);
- 	chan->ring_bufs_avail = 1;
- 	/* Ceiling limit to avoid denial of service attacks */
--	chan->p9_max_pages = nr_free_buffer_pages()/4;
-+	chan->p9_max_pages = nr_free_buffer_high_pages() / 4;
- 
- 	mutex_lock(&virtio_9p_lock);
- 	list_add_tail(&chan->chan_list, &virtio_chan_list);
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 2aa69c8..44a6ace 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3565,7 +3565,7 @@ __setup("thash_entries=", set_thash_entries);
- 
- void tcp_init_mem(struct net *net)
- {
--	unsigned long limit = nr_free_buffer_pages() / 8;
-+	unsigned long limit = nr_free_buffer_high_pages() / 8;
- 	limit = max(limit, 128UL);
- 	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
- 	net->ipv4.sysctl_tcp_mem[1] = limit;
-@@ -3635,7 +3635,7 @@ void __init tcp_init(void)
- 
- 	tcp_init_mem(&init_net);
- 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
--	limit = nr_free_buffer_pages() << (PAGE_SHIFT - 7);
-+	limit = nr_free_buffer_high_pages() << (PAGE_SHIFT - 7);
- 	max_wshare = min(4UL*1024*1024, limit);
- 	max_rshare = min(6UL*1024*1024, limit);
- 
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 1f4d405..cd61b9f 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -2235,7 +2235,7 @@ void __init udp_init(void)
- 	unsigned long limit;
- 
- 	udp_table_init(&udp_table, "UDP");
--	limit = nr_free_buffer_pages() / 8;
-+	limit = nr_free_buffer_high_pages() / 8;
- 	limit = max(limit, 128UL);
- 	sysctl_udp_mem[0] = limit / 4 * 3;
- 	sysctl_udp_mem[1] = limit;
-diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-index ec664cb..a53cfb3 100644
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -3723,7 +3723,7 @@ static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
- 	tbl[idx++].data = &ipvs->sysctl_sync_ver;
- 	ipvs->sysctl_sync_ports = 1;
- 	tbl[idx++].data = &ipvs->sysctl_sync_ports;
--	ipvs->sysctl_sync_qlen_max = nr_free_buffer_pages() / 32;
-+	ipvs->sysctl_sync_qlen_max = nr_free_buffer_high_pages() / 32;
- 	tbl[idx++].data = &ipvs->sysctl_sync_qlen_max;
- 	ipvs->sysctl_sync_sock_size = 0;
- 	tbl[idx++].data = &ipvs->sysctl_sync_sock_size;
-diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-index f898b1c..8c135af 100644
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -1354,7 +1354,7 @@ SCTP_STATIC __init int sctp_init(void)
- 	/* Initialize handle used for association ids. */
- 	idr_init(&sctp_assocs_id);
- 
--	limit = nr_free_buffer_pages() / 8;
-+	limit = nr_free_buffer_high_pages() / 8;
- 	limit = max(limit, 128UL);
- 	sysctl_sctp_mem[0] = limit / 4 * 3;
- 	sysctl_sctp_mem[1] = limit;
--- 
-1.7.1
+>
+> - -- 
+> Jeff Mahoney
+> SUSE Labs
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
+> Comment: GPGTools - http://gpgtools.org
+>
+> iQIcBAEBAgAGBQJREGrwAAoJEB57S2MheeWyHvMP/3kpy3Y4U0KNavnPaeL12LXe
+> RC6vIb/dPkoSemFiZ5om26aT70M7MdXJY2ZPCwgtlNpKV6aT0NFchtwiWos2lLLN
+> XndvFZ4M/kQLd9yDEmlcTDZn7p4fhU2Tn7FYrhPLRmOO3zP6fnUxLozSebOnGTO/
+> xEwV7Qtx7D4Au37khFW/hJvsAJE2Q3NrLgueIJLiTmFvSiOourZNmriNcB73MUeb
+> vYx5gc/bJexS2oFWeQqD6WiL8UQXg4XEKRk4inNVrJWpLV365w45Kpf2zBlvCQwQ
+> W8mdHcHoityOcQJtiXvnVDurUNpFwsthrhVquVgIopovlcvOjNtcpffH8YI9khP/
+> yol7+57ZDuVx2TY5DrEOa+TOTUrg5ghqagSSmOVDsOVeMngpdFNs8351QcX0IWBn
+> Xt8/eq46g/R7EHI3I1eYJHlMIie0hP1GDc66OP94hcKEWaHbPeKwkSTOlqYH++4h
+> ncSJcxHXWLUTGuV4b61whYTlJ2vBWwEvIteVaQmmXKaOTr41lajZBCWZDeUlzna8
+> XyJHE5FrcKDLzTNP1R7UNEj863fN0OUma1AKaT/6jNYMqFXOk39emTgZL5QfxP9X
+> uLWG1OVDf87uw5nYOKubNQiORpxl8iSIsQWvZeF9SvvmFA/JzpgZgtLlNqYa78Yv
+> oEq501m9BSEWVSGKxHcu
+> =G2cU
+> -----END PGP SIGNATURE-----
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
