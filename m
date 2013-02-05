@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab3BEPiB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 10:38:01 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60936 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755302Ab3BEPh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 10:37:59 -0500
-Message-ID: <51112749.10603@ti.com>
-Date: Tue, 5 Feb 2013 10:37:45 -0500
-From: Cyril Chemparathy <cyril@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756178Ab3BEPiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 10:38:13 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:50371 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab3BEPiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 10:38:10 -0500
+Date: Tue, 5 Feb 2013 16:38:07 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Kirkwood: Add missing linux/i2c.h include
+Message-ID: <20130205153807.GA22220@avionic-0098.mockup.avionic-design.de>
+References: <1360077025-8046-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130205153411.GV14746@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, <balbi@ti.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
-        "Nair, Sandeep" <sandeep_n@ti.com>, Chris Ball <cjb@laptop.org>,
-        Matt Porter <mporter@ti.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to arm/common
-References: <510C2A47.1090607@mvista.com> <20130204203358.GX4720@opensource.wolfsonmicro.com> <CACRpkdbPyZt8=pLhz-5qcaSSAk6VBn61dPTNp6teU9HksBwN2w@mail.gmail.com> <201302042147.38407.arnd@arndb.de> <20130205123828.GB17852@n2100.arm.linux.org.uk>
-In-Reply-To: <20130205123828.GB17852@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
+Content-Disposition: inline
+In-Reply-To: <20130205153411.GV14746@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:NyOizw9K8VZnJ5D7yayC4S1HZpqCm15oqDw/SXEyejC
+ yiVwGA9C6lfh5yIk4VqIUexwGXON1ARGg0YDZK8KzG7qjh6zhQ
+ cI9c6KbceyPwRDFINJCutde6Br6p0FrNGiZLKpd1j7lHd/PvQo
+ sLECIVmMth8ErgSy1qGfEFBGCdeN41IUXKOJF9txxwYhXzN0dy
+ EVkUtLFyE2JBtWAGT9j22Vd1cxaqntZe8FZ/+dQHDVH9z+fZS3
+ W9ZJiCyXWhiaA45QK7EmY+YP/SZTzrpDMwV2QrlA6bXS8YXNZ9
+ fNoNDr3UATLWyAuTeY1vy33IuLUkq3r3n0MkOaWZNZWDwmrexo
+ IPKQnVHUPkncN6kxECnIfFuYbUYzFXn6c/JaPLE7HXSZcQDUWs
+ Kq5j/hLy011vh9fcHEbuNYNmkKIcpBN58xmtys2I07Ak+Hgzaf
+ c90k0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 07:38 AM, Russell King - ARM Linux wrote:
-> On Mon, Feb 04, 2013 at 09:47:38PM +0000, Arnd Bergmann wrote:
->> On Monday 04 February 2013, Linus Walleij wrote:
->>> So I think the above concerns are moot. The callback we can
->>> set on cookies is entirely optional, and it's even implemented by
->>> each DMA engine, and some may not even support it but require
->>> polling, and then it won't even be implemented by the driver.
->>
->> Just to ensure that everybody is talking about the same thing here:
->> Is it just the callback that is optional, or also the interrupt
->> coming from the hardware?
->
-> If everyone implements stuff correctly, both.  The callback most certainly
-> is optional as things stand.  The interrupt - that depends on the DMA
-> engine.
->
-> Some DMA engines you can't avoid it because you need to reprogram the
-> hardware with the next+1 transfer upon completion of an existing transfer.
-> Others may allow you to chain transfers in hardware.  That's all up to
-> how the DMA engine driver is implemented and how the hardware behaves.
->
-> Now, there's another problem here: that is, people abuse the API.  People
-> don't pass DMA_CTRL_ACK | DMA_PREP_INTERRUPT into their operations by
-> default.  People like typing '0'.
->
-> The intention of the "DMA_PREP_INTERRUPT" is significant here: it means
-> "ask the hardware to send an interrupt upon completion of this transfer".
->
-> Because soo many people like to type '0' instead in their DMA engine
-> clients, it means that this flag is utterly useless today - you have to
-> ignore it.  So there's _no_ way for client drivers to actually tell the
-> a DMA engine driver which _doesn't_ need to signal interrupts at the end
-> of every transfer not to do so.
->
-> So yes, the DMA engine API supports it.  Whether the _implementations_
-> themselves do is very much hit and miss (and in reality is much more
-> miss than hit.)
->
 
-Don't these assume that the driver can determine the need for an 
-interrupt upfront at prep/submit time?  AFAICT, this assumption doesn't 
-hold true with NAPI.
+--ikeVEW9yuYc//A+q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks
--- Cyril.
+On Tue, Feb 05, 2013 at 10:34:11AM -0500, Jason Cooper wrote:
+> Thierry,
+>=20
+> On Tue, Feb 05, 2013 at 04:10:25PM +0100, Thierry Reding wrote:
+> > The nsa310 board uses I2C_BOARD_INFO and i2c_register_board_info(), both
+> > of which are defined in the linux/i2c.h header file.
+> >=20
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> > ---
+> >  arch/arm/mach-kirkwood/board-nsa310.c | 1 +
+> >  1 file changed, 1 insertion(+)
+>=20
+> What is this based against?  We're in the process of removing this whole
+> file for v3.9 (pinctrl, mv643xx_eth, and i2c)...
+
+It's based on today's linux-next, so if you're going to drop that file
+for 3.9 I guess you can ignore the patch.
+
+Thierry
+
+--ikeVEW9yuYc//A+q
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRESdfAAoJEN0jrNd/PrOhYXQP/ihWioAKeFFeEDg6gQiGrFyM
+WUnBK7VfPvfjDB9tWxFqo25e2B3Vwpph1c0c/EWZE/FMGpnN1JsLg6uybDP3qhA6
+JxISb5Ifw3QyKrmXCMNT/H/9pAW8zi+VfpvyM4RkuHv3PN4z7xrF05C9gYRPooL+
+jfB06LF1HAlkSqP/c4wVVD3Vk5u4T1E9JOlsFDZLd323TetTHfj0xVQ77k6aqkep
+HUVJBRD08E0g4kxPpResoeSbsIK3u+3lj0UUIfSp/JjAi5dWG5skPjifG9Sg9mWE
+1gQV6QjBuyhbyrOlO/w04S3TMQ/BXIVmIQNqQ8oO6EoXz0vPzlJUUTfG3C9oUUsu
+uxskpzGcDpYGLvwqe/kN3sp/S0oqD3KlAtODj/2hoSkCVAwMIidvo2eKRortYVdp
++Uc6ygYCk0RrWly1IX8epnt3gxM9fwIvCVwjVcOfEj7IZrwU3pZtFpH48cBQTFA4
+o3CQlr0vSeBHBZBg4tnXCwhYnTzlvFOOfqYO2npsL7NHfpcPzDnJF0lQqzDEFjzL
+Avx6cDRDBkh23diRHTGCpWLP/SDow8cU0qvtL4C7DWSYggwlk5UDHJvo5rEamF9c
+nUOggkcG7vyX5Ho6Y/DNqizyvP3F6x5MjHH5OlLaaO3Qoo7Wn1W4knmF69hgDTJz
+LL6SvDSul2+aI5wMUCOc
+=A92a
+-----END PGP SIGNATURE-----
+
+--ikeVEW9yuYc//A+q--
