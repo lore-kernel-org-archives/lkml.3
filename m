@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab3BEWX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 17:23:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48041 "EHLO
+	id S1757628Ab3BEWXX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 17:23:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48044 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757342Ab3BEWK2 (ORCPT
+	with ESMTP id S1757559Ab3BEWK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Feb 2013 17:10:28 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 44/93] iwlegacy: fix IBSS cleanup
-Date: Tue,  5 Feb 2013 20:06:33 -0200
-Message-Id: <1360102042-10732-45-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 45/93] ath9k_hw: fix calibration issues on chainmask that don't include chain 0
+Date: Tue,  5 Feb 2013 20:06:34 -0200
+Message-Id: <1360102042-10732-46-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,107 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit fa4cffcba9e13798ed7c6b8526b91b1631ecb53e upstream.
+commit 4a8f199508d79ff8a7d1e22f47b912baaf225336 upstream.
 
-We do not correctly change interface type when switching from
-IBSS mode to STA mode, that results in microcode errors.
-
-Resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=886946
-
-Reported-by: Jaroslav Skarvada <jskarvad@redhat.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/wireless/iwlegacy/common.c |   35 +++++++++++++-------------------
- 1 file changed, 14 insertions(+), 21 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_calib.c |    2 ++
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c   |    2 +-
+ drivers/net/wireless/ath/ath9k/hw.h           |    1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlegacy/common.c b/drivers/net/wireless/iwlegacy/common.c
-index 5d4807c..82374de 100644
---- a/drivers/net/wireless/iwlegacy/common.c
-+++ b/drivers/net/wireless/iwlegacy/common.c
-@@ -3957,17 +3957,21 @@ il_connection_init_rx_config(struct il_priv *il)
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_calib.c b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
+index 9fdd70f..53aeca7 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_calib.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
+@@ -910,6 +910,8 @@ static bool ar9003_hw_init_cal(struct ath_hw *ah,
+ 					  AR_PHY_CL_TAB_1,
+ 					  AR_PHY_CL_TAB_2 };
  
- 	memset(&il->staging, 0, sizeof(il->staging));
- 
--	if (!il->vif) {
-+	switch (il->iw_mode) {
-+	case NL80211_IFTYPE_UNSPECIFIED:
- 		il->staging.dev_type = RXON_DEV_TYPE_ESS;
--	} else if (il->vif->type == NL80211_IFTYPE_STATION) {
-+		break;
-+	case NL80211_IFTYPE_STATION:
- 		il->staging.dev_type = RXON_DEV_TYPE_ESS;
- 		il->staging.filter_flags = RXON_FILTER_ACCEPT_GRP_MSK;
--	} else if (il->vif->type == NL80211_IFTYPE_ADHOC) {
-+		break;
-+	case NL80211_IFTYPE_ADHOC:
- 		il->staging.dev_type = RXON_DEV_TYPE_IBSS;
- 		il->staging.flags = RXON_FLG_SHORT_PREAMBLE_MSK;
- 		il->staging.filter_flags =
- 		    RXON_FILTER_BCON_AWARE_MSK | RXON_FILTER_ACCEPT_GRP_MSK;
--	} else {
-+		break;
-+	default:
- 		IL_ERR("Unsupported interface type %d\n", il->vif->type);
- 		return;
- 	}
-@@ -4550,8 +4554,7 @@ out:
- EXPORT_SYMBOL(il_mac_add_interface);
- 
- static void
--il_teardown_interface(struct il_priv *il, struct ieee80211_vif *vif,
--		      bool mode_change)
-+il_teardown_interface(struct il_priv *il, struct ieee80211_vif *vif)
- {
- 	lockdep_assert_held(&il->mutex);
- 
-@@ -4560,9 +4563,7 @@ il_teardown_interface(struct il_priv *il, struct ieee80211_vif *vif,
- 		il_force_scan_end(il);
- 	}
- 
--	if (!mode_change)
--		il_set_mode(il);
--
-+	il_set_mode(il);
++	ar9003_hw_set_chain_masks(ah, ah->caps.rx_chainmask, ah->caps.tx_chainmask);
++
+ 	if (rtt) {
+ 		if (!ar9003_hw_rtt_restore(ah, chan))
+ 			run_rtt_cal = true;
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.c b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+index 11abb97..b490b16 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -532,7 +532,7 @@ static void ar9003_hw_init_bb(struct ath_hw *ah,
+ 	ath9k_hw_synth_delay(ah, chan, synthDelay);
  }
  
- void
-@@ -4575,8 +4576,8 @@ il_mac_remove_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
+-static void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
++void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
+ {
+ 	switch (rx) {
+ 	case 0x5:
+diff --git a/drivers/net/wireless/ath/ath9k/hw.h b/drivers/net/wireless/ath/ath9k/hw.h
+index 02f5007..ec2835b 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -1008,6 +1008,7 @@ int ar9003_paprd_create_curve(struct ath_hw *ah,
+ int ar9003_paprd_setup_gain_table(struct ath_hw *ah, int chain);
+ int ar9003_paprd_init_table(struct ath_hw *ah);
+ bool ar9003_paprd_is_done(struct ath_hw *ah);
++void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx);
  
- 	WARN_ON(il->vif != vif);
- 	il->vif = NULL;
--
--	il_teardown_interface(il, vif, false);
-+	il->iw_mode = NL80211_IFTYPE_UNSPECIFIED;
-+	il_teardown_interface(il, vif);
- 	memset(il->bssid, 0, ETH_ALEN);
- 
- 	D_MAC80211("leave\n");
-@@ -4685,18 +4686,10 @@ il_mac_change_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
- 	}
- 
- 	/* success */
--	il_teardown_interface(il, vif, true);
- 	vif->type = newtype;
- 	vif->p2p = false;
--	err = il_set_mode(il);
--	WARN_ON(err);
--	/*
--	 * We've switched internally, but submitting to the
--	 * device may have failed for some reason. Mask this
--	 * error, because otherwise mac80211 will not switch
--	 * (and set the interface type back) and we'll be
--	 * out of sync with it.
--	 */
-+	il->iw_mode = newtype;
-+	il_teardown_interface(il, vif);
- 	err = 0;
- 
- out:
+ /* Hardware family op attach helpers */
+ void ar5008_hw_attach_phy_ops(struct ath_hw *ah);
 -- 
 1.7.9.5
 
