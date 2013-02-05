@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab3BERIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:08:51 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:8577 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755246Ab3BERIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:08:49 -0500
-Message-ID: <51113C8A.2060908@imgtec.com>
-Date: Tue, 5 Feb 2013 17:08:26 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756076Ab3BERKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:10:09 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:50769 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754925Ab3BERKG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 12:10:06 -0500
+Message-ID: <51113CE3.5090000@gmail.com>
+Date: Wed, 06 Feb 2013 01:09:55 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        <linux-mm@kvack.org>
-Subject: Re: next-20130204 - bisected slab problem to "slab: Common constants
- for kmalloc boundaries"
-References: <510FE051.7080107@imgtec.com> <51100E79.9080101@wwwdotorg.org> <alpine.DEB.2.02.1302042019170.32396@gentwo.org> <0000013cab3780f7-5e49ef46-e41a-4ff2-88f8-46bf216d677e-000000@email.amazonses.com>
-In-Reply-To: <0000013cab3780f7-5e49ef46-e41a-4ff2-88f8-46bf216d677e-000000@email.amazonses.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: akpm@linux-foundation.org, Linux MM <linux-mm@kvack.org>, mgorman@suse.de,
+        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        m.szyprowski@samsung.com
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] mm: rename confusing function names
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_02_05_17_08_27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/13 16:36, Christoph Lameter wrote:
-> OK I was able to reproduce it by setting ARCH_DMA_MINALIGN in slab.h. This
-> patch fixes it here:
-> 
-> 
-> Subject: slab: Handle ARCH_DMA_MINALIGN correctly
-> 
-> A fixed KMALLOC_SHIFT_LOW does not work for arches with higher alignment
-> requirements.
-> 
-> Determine KMALLOC_SHIFT_LOW from ARCH_DMA_MINALIGN instead.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+Function nr_free_zone_pages, nr_free_buffer_pages and nr_free_pagecache_pages
+are horribly badly named, they count present_pages - pages_high within zones
+instead of free pages, so why not rename them to reasonable names, not cofusing
+people.
 
-Thanks, your patch fixes it for me.
+patch2 and patch3 are based on patch1. So please apply patch1 first.
 
-Cheers
-James
+Zhang Yanfei (3):
+  mm: rename nr_free_zone_pages to nr_free_zone_high_pages
+  mm: rename nr_free_buffer_pages to nr_free_buffer_high_pages
+  mm: rename nr_free_pagecache_pages to nr_free_pagecache_high_pages
 
+ arch/ia64/mm/contig.c          |    3 ++-
+ arch/ia64/mm/discontig.c       |    3 ++-
+ drivers/mmc/card/mmc_test.c    |    4 ++--
+ fs/buffer.c                    |    2 +-
+ fs/nfsd/nfs4state.c            |    2 +-
+ fs/nfsd/nfssvc.c               |    2 +-
+ include/linux/swap.h           |    4 ++--
+ mm/huge_memory.c               |    2 +-
+ mm/memory_hotplug.c            |    4 ++--
+ mm/page-writeback.c            |    2 +-
+ mm/page_alloc.c                |   22 ++++++++++++----------
+ net/9p/trans_virtio.c          |    2 +-
+ net/ipv4/tcp.c                 |    4 ++--
+ net/ipv4/udp.c                 |    2 +-
+ net/netfilter/ipvs/ip_vs_ctl.c |    2 +-
+ net/sctp/protocol.c            |    2 +-
+ 16 files changed, 33 insertions(+), 29 deletions(-)
