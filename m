@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab3BECm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 21:42:27 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:42045 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333Ab3BECm0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 21:42:26 -0500
-Date: Mon, 04 Feb 2013 20:42:21 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: William Hubbs <w.d.hubbs@gmail.com>, linux-kernel@vger.kernel.org,
-        mpagano@gentoo.org
-References: <1359672699-23540-1-git-send-email-w.d.hubbs@gmail.com>
-	<510AFCA1.5000700@zytor.com>
-In-Reply-To: <510AFCA1.5000700@zytor.com> (from hpa@zytor.com on Thu Jan 31
-	17:22:09 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1360032141.12062.12@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	id S1756408Ab3BECsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 21:48:20 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:35064 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753882Ab3BECsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 21:48:18 -0500
+Message-ID: <1360032496.4849.2.camel@joe-AO722>
+Subject: [PATCH] net: core: Remove unnecessary alloc/OOM messages
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 04 Feb 2013 18:48:16 -0800
+In-Reply-To: <20130204.132335.1757403310770538446.davem@davemloft.net>
+References: <cover.1359939012.git.joe@perches.com>
+	 <20130204.132335.1757403310770538446.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 05:22:09 PM, H. Peter Anvin wrote:
-> On 01/31/2013 02:51 PM, William Hubbs wrote:
-> > On a system that does not use an initramfs, /dev/root was always
-> > listed in /proc/mounts. This breaks software which scans  
-> /proc/mounts to
-> > determine which file systems are mounted since /dev/root is not a  
-> valid
-> > device name.
-> >
-> > This changes that processing so that "/dev/root" is only added to
-> > /proc/mounts if a root device is not specified with the root=  
-> option on
-> > the kernel command line.
-> >
-> > Signed-off-by: William Hubbs <w.d.hubbs@gmail.com>
-> 
-> Let me also point out that most of the time, the kernel actually has a
-> udev device name for an actual device...
+alloc failures already get standardized OOM
+messages and a dump_stack.
 
-So your software is broken by overmounts? /dev/root is just one example  
-of this. (And you can specify a root= on the kernel command line and  
-have that be parsed by initramfs. I vaguely recall klibc does this...)
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/core/dev.c            | 14 +++++---------
+ net/core/netprio_cgroup.c |  4 +---
+ 2 files changed, 6 insertions(+), 12 deletions(-)
 
-For an example of how to parse this stuff, how about:
+diff --git a/net/core/dev.c b/net/core/dev.c
+index a87bc74..e04bfdc 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5958,10 +5958,9 @@ static int netif_alloc_rx_queues(struct net_device *dev)
+ 	BUG_ON(count < 1);
+ 
+ 	rx = kcalloc(count, sizeof(struct netdev_rx_queue), GFP_KERNEL);
+-	if (!rx) {
+-		pr_err("netdev: Unable to allocate %u rx queues\n", count);
++	if (!rx)
+ 		return -ENOMEM;
+-	}
++
+ 	dev->_rx = rx;
+ 
+ 	for (i = 0; i < count; i++)
+@@ -5992,10 +5991,9 @@ static int netif_alloc_netdev_queues(struct net_device *dev)
+ 	BUG_ON(count < 1);
+ 
+ 	tx = kcalloc(count, sizeof(struct netdev_queue), GFP_KERNEL);
+-	if (!tx) {
+-		pr_err("netdev: Unable to allocate %u tx queues\n", count);
++	if (!tx)
+ 		return -ENOMEM;
+-	}
++
+ 	dev->_tx = tx;
+ 
+ 	netdev_for_each_tx_queue(dev, netdev_init_one_queue, NULL);
+@@ -6482,10 +6480,8 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
+ 	alloc_size += NETDEV_ALIGN - 1;
+ 
+ 	p = kzalloc(alloc_size, GFP_KERNEL);
+-	if (!p) {
+-		pr_err("alloc_netdev: Unable to allocate device\n");
++	if (!p)
+ 		return NULL;
+-	}
+ 
+ 	dev = PTR_ALIGN(p, NETDEV_ALIGN);
+ 	dev->padded = (char *)dev - (char *)p;
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index 5e67def..0777d0a 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -69,10 +69,8 @@ static int extend_netdev_table(struct net_device *dev, u32 target_idx)
+ 
+ 	/* allocate & copy */
+ 	new = kzalloc(new_sz, GFP_KERNEL);
+-	if (!new) {
+-		pr_warn("Unable to alloc new priomap!\n");
++	if (!new)
+ 		return -ENOMEM;
+-	}
+ 
+ 	if (old)
+ 		memcpy(new->priomap, old->priomap,
 
-   http://landley.net/hg/toybox/file/4ffb735aea59/toys/posix/df.c
 
-I.E. parse from the end of the list (most recent match is the  
-overmount), and eliminate synthetic filesystems. Note that code is from  
-2006, other people have managed to cope all this time...
-
-Rob
