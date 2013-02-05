@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab3BEOZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 09:25:09 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:46203 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab3BEOZH (ORCPT
+	id S1755472Ab3BEO0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 09:26:36 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:26645 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab3BEO0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 09:25:07 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH] f2fs: fix to name f2fs GC task as per partition instead of per device
-Date: Tue,  5 Feb 2013 23:24:53 +0900
-Message-Id: <1360074293-8252-1-git-send-email-linkinjeon@gmail.com>
+	Tue, 5 Feb 2013 09:26:35 -0500
+X-AuditID: cbfee61b-b7fb06d000000f28-65-5111169afa00
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [GIT PULL] DMA-mapping updates for v3.8-rc7
+Date: Tue, 05 Feb 2013 15:26:17 +0100
+Message-id: <1360074377-10348-1-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t9jAd1ZYoKBBm+75S0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGz327mQpeSVTMu7CWtYFxqUgXIyeHhICJxIr1bawQtpjEhXvr
+	2boYuTiEBBYxSnT2PWGHcFYwSXxbsY0ZpIpNwFCi620XG4gtImAk8fnFFbBuZoEqieuHp7KA
+	2MJAU9fNuwVWwyKgKvFs+l8wm1fAQ6KpfwKQzQG0TUFiziSbCYzcCxgZVjGKphYkFxQnpeca
+	6RUn5haX5qXrJefnbmIEe/CZ9A7GVQ0WhxgFOBiVeHh/XOYPFGJNLCuuzD3EKMHBrCTCay4q
+	GCjEm5JYWZValB9fVJqTWnyIUZqDRUmcl/HUkwAhgfTEktTs1NSC1CKYLBMHp1QDo3VD905e
+	Bce7r6z1A5ncTpy5tyD3WeBaRdbDqgFpSh/f7ffOEa1yvlLGZN8TIGqa/3k3310V7rUvRZ/2
+	XAmedf2MT7PJpfJQvazvx9/NDLwnqCOzaEZTbuX0IBFzUYmTAbJq/05cfiYtUFZcdFvzuc22
+	V7sNzm9Nldu6soS7Mttfrs/9+mdJJZbijERDLeai4kQAx/JqktwBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Hi Linus,
 
-After the commit 2184ad190a79ae2b40b5f5db1fbde5c22db6d310, it allowed
-for naming GC threads based on the device.
-i.e., if we have F2FS formatted partition in different devices - we will
-have their GC thread names after the device. But, when we have a case like
-2 or more partitions on the same device having F2FS filesystem.
-In that case we are not able to differentiate between the GC threads.
-So, to differentiate at all possible levels we can use the major/minor of
-the device to have unique identification in the name.
+I would like to ask You for pulling an important bugfix patch set for
+DMA-mapping subsystem for v3.8-rc7.
 
-Before patch:
-root  9726  0.0  0.0  0  0 ?  S  14:32   0:00 [f2fs_gc-8:48]
-root  9736  0.0  0.0  0  0 ?  S  14:32   0:00 [f2fs_gc-8:16]
-root  9892  0.0  0.0  0  0 ?  S  14:33   0:00 [f2fs_gc-8:32]
-root  9907  0.0  0.0  0  0 ?  S  14:34   0:00 [f2fs_gc-8:32]
+The following changes since commit 949db153b6466c6f7cad5a427ecea94985927311:
 
-After Patch:
-root  16756  0.0  0.0  0  0 ?  S  14:57   0:00 [f2fs_gc-8:18]
-root  16765  0.0  0.0  0  0 ?  S  14:57   0:00 [f2fs_gc-8:19]
-root  16806  0.0  0.0  0  0 ?  S  14:58   0:00 [f2fs_gc-8:34]
-root  16817  0.0  0.0  0  0 ?  S  14:58   0:00 [f2fs_gc-8:52]
+  Linux 3.8-rc5 (2013-01-25 11:57:28 -0800)
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- fs/f2fs/gc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+are available in the git repository at:
 
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 742135a..b0c1f8c 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -91,6 +91,7 @@ static int gc_thread_func(void *data)
- int start_gc_thread(struct f2fs_sb_info *sbi)
- {
- 	struct f2fs_gc_kthread *gc_th;
-+	dev_t dev = sbi->sb->s_bdev->bd_dev;
- 
- 	if (!test_opt(sbi, BG_GC))
- 		return 0;
-@@ -101,7 +102,7 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
- 	sbi->gc_thread = gc_th;
- 	init_waitqueue_head(&sbi->gc_thread->gc_wait_queue_head);
- 	sbi->gc_thread->f2fs_gc_task = kthread_run(gc_thread_func, sbi,
--				"f2fs_gc-%s", dev_name(sbi->sb->s_bdi->dev));
-+				"f2fs_gc-%u:%u", MAJOR(dev), MINOR(dev));
- 	if (IS_ERR(gc_th->f2fs_gc_task)) {
- 		kfree(gc_th);
- 		sbi->gc_thread = NULL;
--- 
-1.7.9.5
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-v3.8-rc7
 
+for you to fetch changes up to da57b936ea7b328d1009b37a0a0ad1f14148e104:
+
+  xtensa: Provide dummy dma_mmap_coherent() and dma_get_sgtable() (2013-01-29 08:27:41 +0100)
+
+----------------------------------------------------------------
+
+This pull request contains important bugfix patches for 9 architectures,
+which finally fixes broken allmodconfig builds introduced in v3.8-rc1.
+Those architectures don't use dma_map_ops based implementation and
+require manual update or additional dummy implementations of the missing
+new dma-mapping api functions: dma_mmap_coherent and dma_get_sgtable.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+Patch summary:
+
+Geert Uytterhoeven (9):
+      avr32: Provide dma_mmap_coherent() and dma_get_sgtable()
+      blackfin: Provide dma_mmap_coherent() and dma_get_sgtable()
+      c6x: Provide dummy dma_mmap_coherent() and dma_get_sgtable()
+      cris: Provide dma_mmap_coherent() and dma_get_sgtable()
+      frv: Provide dummy dma_mmap_coherent() and dma_get_sgtable()
+      m68k: Provide dma_mmap_coherent() and dma_get_sgtable()
+      mn10300: Provide dummy dma_mmap_coherent() and dma_get_sgtable()
+      parisc: Provide dummy dma_mmap_coherent() and dma_get_sgtable()
+      xtensa: Provide dummy dma_mmap_coherent() and dma_get_sgtable()
+
+ arch/avr32/include/asm/dma-mapping.h    |   10 ++++++++++
+ arch/blackfin/include/asm/dma-mapping.h |   10 ++++++++++
+ arch/c6x/include/asm/dma-mapping.h      |   15 +++++++++++++++
+ arch/cris/include/asm/dma-mapping.h     |   10 ++++++++++
+ arch/frv/include/asm/dma-mapping.h      |   15 +++++++++++++++
+ arch/m68k/include/asm/dma-mapping.h     |   10 ++++++++++
+ arch/mn10300/include/asm/dma-mapping.h  |   15 +++++++++++++++
+ arch/parisc/include/asm/dma-mapping.h   |   15 +++++++++++++++
+ arch/xtensa/include/asm/dma-mapping.h   |   15 +++++++++++++++
+ 9 files changed, 115 insertions(+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The following changes since commit 29594404d7fe73cd80eaa4ee8c43dcc53970c60e:
+
+  Linux 3.7 (2012-12-10 19:30:57 -0800)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.8
+
+for you to fetch changes up to 4009793e15d44469da1547a46ab129cc08ffa503:
+
+  drivers: cma: represent physical addresses as phys_addr_t (2012-12-11 09:28:09 +0100)
+
+
+Marek Szyprowski (1):
+      mm: dmapool: use provided gfp flags for all dma_alloc_coherent() calls
+
+Vitaly Andrianov (1):
+      drivers: cma: represent physical addresses as phys_addr_t
+
+ drivers/base/dma-contiguous.c  |   24 ++++++++++--------------
+ include/linux/dma-contiguous.h |    4 ++--
+ mm/dmapool.c                   |   31 +++++++------------------------
+ 3 files changed, 19 insertions(+), 40 deletions(-)
