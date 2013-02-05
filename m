@@ -1,108 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab3BERlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 12:41:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59097 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755888Ab3BERlQ (ORCPT
+	id S1755304Ab3BERq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 12:46:59 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:46422 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782Ab3BERq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 12:41:16 -0500
-Date: Tue, 5 Feb 2013 17:41:13 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Cyril Chemparathy <cyril@ti.com>,
-        balbi@ti.com, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
-        "Nair, Sandeep" <sandeep_n@ti.com>, Chris Ball <cjb@laptop.org>,
-        Matt Porter <mporter@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
- arm/common
-Message-ID: <20130205174113.GJ4720@opensource.wolfsonmicro.com>
-References: <510FF1A6.403@mvista.com>
- <20130204164712.GB4269@arwen.pp.htv.fi>
- <510FF5C9.3030600@mvista.com>
- <20130204170216.GC4269@arwen.pp.htv.fi>
- <51100A72.6030909@ti.com>
- <CACRpkdZihnp3_Df==QRWxQupgi7W_YXZxc-MxkusVH6J+Vx56A@mail.gmail.com>
- <5110369B.9060901@ti.com>
- <CACRpkda8xBB35CwuBH76xXcC341TeRs1ZuwzDD0LtuXc4ifQTw@mail.gmail.com>
- <20130205164705.GG4720@opensource.wolfsonmicro.com>
- <20130205170628.GD17852@n2100.arm.linux.org.uk>
+	Tue, 5 Feb 2013 12:46:58 -0500
+Date: Tue, 5 Feb 2013 18:46:51 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20130205174651.GA3959@dhcp22.suse.cz>
+References: <20121224142526.020165D3@pobox.sk>
+ <20121228162209.GA1455@dhcp22.suse.cz>
+ <20121230020947.AA002F34@pobox.sk>
+ <20121230110815.GA12940@dhcp22.suse.cz>
+ <20130125160723.FAE73567@pobox.sk>
+ <20130125163130.GF4721@dhcp22.suse.cz>
+ <20130205134937.GA22804@dhcp22.suse.cz>
+ <20130205154947.CD6411E2@pobox.sk>
+ <20130205160934.GB22804@dhcp22.suse.cz>
+ <xr93wqum4sh4.fsf@gthelen.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ai6NJizWfpRUKxSm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130205170628.GD17852@n2100.arm.linux.org.uk>
-X-Cookie: Your domestic life may be harmonious.
+In-Reply-To: <xr93wqum4sh4.fsf@gthelen.mtv.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 05-02-13 08:48:23, Greg Thelen wrote:
+> On Tue, Feb 05 2013, Michal Hocko wrote:
+> 
+> > On Tue 05-02-13 15:49:47, azurIt wrote:
+> > [...]
+> >> Just to be sure - am i supposed to apply this two patches?
+> >> http://watchdog.sk/lkml/patches/
+> >
+> > 5-memcg-fix-1.patch is not complete. It doesn't contain the folloup I
+> > mentioned in a follow up email. Here is the full patch:
+> > ---
+> > From f2bf8437d5b9bb38a95a432bf39f32c584955171 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Mon, 26 Nov 2012 11:47:57 +0100
+> > Subject: [PATCH] memcg: do not trigger OOM from add_to_page_cache_locked
+> >
+> > memcg oom killer might deadlock if the process which falls down to
+> > mem_cgroup_handle_oom holds a lock which prevents other task to
+> > terminate because it is blocked on the very same lock.
+> > This can happen when a write system call needs to allocate a page but
+> > the allocation hits the memcg hard limit and there is nothing to reclaim
+> > (e.g. there is no swap or swap limit is hit as well and all cache pages
+> > have been reclaimed already) and the process selected by memcg OOM
+> > killer is blocked on i_mutex on the same inode (e.g. truncate it).
+> >
+> > Process A
+> > [<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
+> > [<ffffffff81121c90>] do_last+0x250/0xa30
+> > [<ffffffff81122547>] path_openat+0xd7/0x440
+> > [<ffffffff811229c9>] do_filp_open+0x49/0xa0
+> > [<ffffffff8110f7d6>] do_sys_open+0x106/0x240
+> > [<ffffffff8110f950>] sys_open+0x20/0x30
+> > [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> >
+> > Process B
+> > [<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+> > [<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+> > [<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
+> > [<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
+> > [<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
+> > [<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
+> > [<ffffffff81193a18>] ext3_write_begin+0x88/0x270
+> > [<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
+> > [<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
+> > [<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
+> > [<ffffffff8111156a>] do_sync_write+0xea/0x130
+> > [<ffffffff81112183>] vfs_write+0xf3/0x1f0
+> > [<ffffffff81112381>] sys_write+0x51/0x90
+> > [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> It looks like grab_cache_page_write_begin() passes __GFP_FS into
+> __page_cache_alloc() and mem_cgroup_cache_charge().  Which makes me
+> think that this deadlock is also possible in the page allocator even
+> before getting to add_to_page_cache_lru.  no?
 
---Ai6NJizWfpRUKxSm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Feb 05, 2013 at 05:06:28PM +0000, Russell King - ARM Linux wrote:
-> On Tue, Feb 05, 2013 at 04:47:05PM +0000, Mark Brown wrote:
-> > On Tue, Feb 05, 2013 at 05:21:48PM +0100, Linus Walleij wrote:
-
-> > > For IRQ mode, use the completion callback to push each cookie
-> > > to NAPI, and thus let the IRQ drive the traffic.
-
-> > The whole purpose of NAPI is to avoid taking interrupts for completion
-> > of transfers.  Anything that generates interrupts when NAPI is in
-> > polling mode is defeating the point.
-
-> Yes, but you're missing one very important point.  If your DMA engine
-> is decoupled from the network device, and the DMA engine relies upon
-> interrupts to queue further transfers to move data into RAM, then you
-> have two options:
-
-> 1. Receive these interrupts so you can update the DMA engine for
->    further data transfer.
-> 2. Don't receive these interrupts, and cause the network device to
->    error out with a FIFO overrun because its DMA requests have not
->    been serviced. (which may raise an interrupt.)
-
-There's still the third option of just implementing a non-NAPI driver,
-though I guess we've now built so much infrastructure on top of NAPI
-that it's still useful to pretend we can disable interrupts.
-
---Ai6NJizWfpRUKxSm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREUQyAAoJELSic+t+oim9meMP+wQGjHAZdn1AoszGg81XLikx
-LBO6zM/qUNMedHR83X6Lu0YqpJlWvnFaALFCnL7y4uWZMGWr4vqE5ojTj8jVZeFq
-Seb4cBErx87WQjOP7JIeT3CG1pIlNySfloTB+hECGO7chABjW7ZjrN1mVTTo9yAf
-AvxZ9pQaSZkkyUPuF+goDzQM3aOihXME2rOEsWQ6UT5AG7Bm7hAA9UHs9rlK6VpB
-hXG8HTwXU7if+B7ByH6q/IxxqutcM97WI5c0a6KwKaRzaIRCJBS/AHnxA/8EM+vR
-RF223u9m9Xrp2xayhuv/Md0JwhP7q9vg/YQ7oPnFyKFmEKi6SKkAdR23zV8E2NAk
-hUKf2z/s3az3BCOvtsZvAOx3crUo4CxOfHAlh+nfT1OZw7sHP769tjJP8rGXBbiO
-yW2cyO+5KA/udw6B07U1Lj/ui7FoVhY8/dybQYNOGy6EGYj1gTjOUTG7kJFd+3WE
-w4jOE3qRcZFKOtjV+bhXOyPaOnlj7KBcuNISUuPopIOzm5AY7sPgF5yI8rhE5W2m
-qlle5WAwOxUpZXbHQUIfsXwc0EmgeChxZ2qH66AuQXvI3CoACqsOA3QvwGIOjdta
-vRlztO3L/Cqeg3r6darqaoWrsqFTgqsGhai0L6L2ZF1krHfaW6VrvTmErG/vZixC
-nc+otbZzByvTJvlO86dM
-=TnkV
------END PGP SIGNATURE-----
-
---Ai6NJizWfpRUKxSm--
+I am not that familiar with VFS but i_mutex is a high level lock AFAIR
+and it shouldn't be called from the pageout path so __page_cache_alloc
+should be safe.
+-- 
+Michal Hocko
+SUSE Labs
