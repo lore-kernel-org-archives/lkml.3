@@ -1,195 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab3BEQVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 11:21:09 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:57990 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab3BEQVH (ORCPT
+	id S1756351Ab3BEQVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 11:21:35 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:55022 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab3BEQVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 11:21:07 -0500
+	Tue, 5 Feb 2013 11:21:33 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 05/15] ASoC: fsl: fiq and dma cannot both be modules
+Date: Tue, 5 Feb 2013 16:21:12 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-4-generic; KDE/4.3.2; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+References: <1358788568-11137-1-git-send-email-arnd@arndb.de> <20130122035028.GB29677@S2100-06.ap.freescale.net> <20130122063331.GA1766@opensource.wolfsonmicro.com>
+In-Reply-To: <20130122063331.GA1766@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <cover.1359976493.git.viresh.kumar@linaro.org>
-References: <cover.1359976493.git.viresh.kumar@linaro.org>
-Date: Tue, 5 Feb 2013 21:51:06 +0530
-Message-ID: <CAKohpomK1jZMy=mQJFysbdeXZAuzWJ3gcStA+imYHouGfmcgLw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, Borislav Petkov <bp@alien8.de>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302051621.12320.arnd@arndb.de>
+X-Provags-ID: V02:K0:srfrSNJennB3w3P1d9GvmGOFDm2/ecVrN9RJZ393GZl
+ mNxBS7jBf+P/eyh6/LZ/6ejVQ2V+ytSLNbWbw4H9j3IMiOueB0
+ n1CaMB3URmim2aLJnxK2B5QGCc3d06blnLfovJpSUHPbK/HOfl
+ DM288m/gVEqz3x0+ugTHzNV4OFHCbNUd7QVymImSwdrE5fPBu+
+ kXykT3pv3c9uxrkWistGenKtSj/kuW/d4NK/Ixg9QhletbN7nd
+ Y3JCwYnLcYOoymT7HrJr6fopK312j8PpymlT23CsUWbWzoQWfj
+ m9CutUsUIUDrXgaqI5mOPrxaLafi1WE4mPi0qlvaeN5FS6d9Hb
+ xV4dHHDWzJHHfbESygNI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 February 2013 17:08, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Currently, there can't be multiple instances of single governor_type. If we have
-> a multi-package system, where we have multiple instances of struct policy (per
-> package), we can't have multiple instances of same governor. i.e. We can't have
-> multiple instances of ondemand governor for multiple packages.
->
-> Governors directory in sysfs is created at /sys/devices/system/cpu/cpufreq/
-> governor-name/. Which again reflects that there can be only one instance of a
-> governor_type in the system.
->
-> This is a bottleneck for multicluster system, where we want different packages
-> to use same governor type, but with different tunables.
->
-> This patchset is inclined towards fixing this issue.
+On Tuesday 22 January 2013, Mark Brown wrote:
+>   Show Details
+>   On Tue, Jan 22, 2013 at 11:50:30AM +0800, Shawn Guo wrote:
+> > On Mon, Jan 21, 2013 at 05:15:58PM +0000, Arnd Bergmann wrote:
+> 
+> > > Without this patch, we cannot build the ARM 'allmodconfig', or
+> > > we get this error:
+> 
+> > > sound/soc/fsl/imx-pcm-dma.o: In function `init_module':
+> > > sound/soc/fsl/imx-pcm-dma.c:177: multiple definition of `init_module'
+> > > sound/soc/fsl/imx-pcm-fiq.o:sound/soc/fsl/imx-pcm-fiq.c:334: first defined here
+> > > sound/soc/fsl/imx-pcm-dma.o: In function `cleanup_module':
+> > > sound/soc/fsl/imx-pcm-dma.c:177: multiple definition of `cleanup_module'
+> > > sound/soc/fsl/imx-pcm-fiq.o:sound/soc/fsl/imx-pcm-fiq.c:334: first defined here
+> 
+> > I sent a fix [1] for that queued by Mark.
+> 
+> > Mark,
+> 
+> > Is the patch on the way to 3.8-rc?
+> 
+> Yes, should be.
+>   
 
-After a long & hot discussion over the changes made by this patchset, following
-patches came out:
+Hmm, I tried building 3.8-rc again, which contains the fix to make
+'make allmodconfig' work with this code, but it broke 'make allyesconfig', which
+was working before :(
 
---------------x------------------x-------------------
+8<----------
+Subject: [PATCH] ASoC: fsl: fix allyesconfig build for imx-pcm
 
-commit 15b5548c9ccfb8088270f7574710d9d67edfe33b
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Tue Feb 5 21:29:05 2013 +0530
+Patch 25b8d314 "ASoC: fsl: fix multiple definition of init_module changed
+the Makefile for imx-pcm.ko to build two modules that both contain the
+imx-pcm.c file, which nicely solves the problem of building both versions
+of the driver as modules, but it causes two new problems:
 
-    cpufreq: Make governors directory sysfs location based on
-have_multiple_policies
+1. Since imx-pcm.c is now used in two different modules, Kbuild no longer
+sets the KBUILD_MODNAME symbol when building the object file, which makes
+it impossible to use dynamic pr_debug code, resulting in this error
 
-    Until now directory for governors tunables was getting created in
-    cpu/cpufreq/<gov-name>. With the introduction of following patch:
-    "cpufreq: governor: Implement per policy instances of governors"
+sound/soc/fsl/imx-pcm.c: In function 'snd_imx_pcm_mmap':
+sound/soc/fsl/imx-pcm.c:28:121: error: 'KBUILD_MODNAME' undeclared (first use in this function)
+sound/soc/fsl/imx-pcm.c:28:121: note: each undeclared identifier is reported only once for each function it appears insound/soc/fsl/snd-soc-imx-pcm-dma.o: In function `imx_pcm_free':
 
-    this directory would be created in
-cpu/cpu<num>/cpufreq/<gov-name>. This might
-    break userspace of existing platforms. Lets do this change only
-for platforms
-    which need support for multiple policies and thus above mentioned patch.
+2. If we don't use the dynamic debug code, we get a link error since we now
+try to link together the same file into built-in.o twice:
 
-    From now on, such platforms would be require to do following from
-their init()
-    routines:
+sound/soc/fsl/imx-pcm.c:80: multiple definition of `imx_pcm_free'
+sound/soc/fsl/snd-soc-imx-pcm-fiq.o:/sound/soc/fsl/imx-pcm.c:80: first defined here
+sound/soc/fsl/snd-soc-imx-pcm-dma.o: In function `snd_imx_pcm_mmap':
+sound/soc/fsl/imx-pcm.c:21: multiple definition of `snd_imx_pcm_mmap'
+sound/soc/fsl/snd-soc-imx-pcm-fiq.o:/sound/soc/fsl/imx-pcm.c:21: first defined here
+sound/soc/fsl/snd-soc-imx-pcm-dma.o: In function `imx_pcm_new':
+sound/soc/fsl/imx-pcm.c:52: multiple definition of `imx_pcm_new'
+sound/soc/fsl/snd-soc-imx-pcm-fiq.o:/sound/soc/fsl/imx-pcm.c:52: first defined here
 
-        policy->have_multiple_policies = true;
+I originally suggested disallowing the selection of both the DMA and FIQ
+code in the same kernel. That is not very nice, but it resolves the
+build error for both built-in and modular code.
 
-    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq_governor.c |  2 +-
- include/linux/cpufreq.h            | 14 ++++++++++++++
- 2 files changed, 15 insertions(+), 1 deletion(-)
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-diff --git a/drivers/cpufreq/cpufreq_governor.c
-b/drivers/cpufreq/cpufreq_governor.c
-index 545ae24..41ee86f 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -300,7 +300,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
-                                             dbs_data->cdata->gov_dbs_timer);
-                }
-
--               rc = sysfs_create_group(&policy->kobj,
-+               rc = sysfs_create_group(get_governor_parent_kobj(policy),
-                                dbs_data->cdata->attr_group);
-                if (rc) {
-                        mutex_unlock(&dbs_data->mutex);
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 5dae7e6..6e1abd2 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -107,6 +107,11 @@ struct cpufreq_policy {
-        unsigned int            policy; /* see above */
-        struct cpufreq_governor *governor; /* see below */
-        void                    *governor_data;
-+       /* This should be set by init() of platforms having multiple
-+        * clock-domains, i.e.  supporting multiple policies. With this sysfs
-+        * directories of governor would be created in cpu/cpu<num>/cpufreq/
-+        * directory */
-+       bool                    have_multiple_policies;
-
-        struct work_struct      update; /* if update_policy() needs to be
-                                         * called, but you're in IRQ context */
-@@ -134,6 +139,15 @@ static inline bool policy_is_shared(struct
-cpufreq_policy *policy)
-        return cpumask_weight(policy->cpus) > 1;
- }
-
-+static inline struct kobject *
-+get_governor_parent_kobj(struct cpufreq_policy *policy)
-+{
-+       if (policy->have_multiple_policies)
-+               return &policy->kobj;
-+       else
-+               return cpufreq_global_kobject;
-+}
-+
- /******************** cpufreq transition notifiers *******************/
-
- #define CPUFREQ_PRECHANGE      (0)
-
---------------x------------------x-------------------
-
-Plus the following patch, though i am still not in favor of this patch.
-@Rafael: Please share your opinion too on this one. :)
-
---------------x------------------x-------------------
-commit 1c7e9871fce7388136eda1c86ca75a520e4d3b9d
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Tue Feb 5 21:41:40 2013 +0530
-
-    cpufreq: Add Kconfig option to enable/disable have_multiple_policies
-
-    have_multiple_policies is required by platforms having multiple
-clock-domains
-    for cpus, i.e. supporting multiple policies for cpus. This patch adds in a
-    Kconfig option for enabling execution of this code.
-
-    Requested-by: Borislav Petkov <bp@alien8.de>
-    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/Kconfig | 3 +++
- include/linux/cpufreq.h | 4 ++++
- 2 files changed, 7 insertions(+)
-
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index cbcb21e..e6e6939 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -23,6 +23,9 @@ config CPU_FREQ_TABLE
- config CPU_FREQ_GOV_COMMON
-        bool
-
-+config CPU_FREQ_HAVE_MULTIPLE_POLICIES
-+       bool
-+
- config CPU_FREQ_STAT
-        tristate "CPU frequency translation statistics"
-        select CPU_FREQ_TABLE
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 6e1abd2..a092fcb 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -107,11 +107,13 @@ struct cpufreq_policy {
-        unsigned int            policy; /* see above */
-        struct cpufreq_governor *governor; /* see below */
-        void                    *governor_data;
-+#ifdef CONFIG_CPU_FREQ_HAVE_MULTIPLE_POLICIES
-        /* This should be set by init() of platforms having multiple
-         * clock-domains, i.e.  supporting multiple policies. With this sysfs
-         * directories of governor would be created in cpu/cpu<num>/cpufreq/
-         * directory */
-        bool                    have_multiple_policies;
-+#endif
-
-        struct work_struct      update; /* if update_policy() needs to be
-                                         * called, but you're in IRQ context */
-@@ -142,9 +144,11 @@ static inline bool policy_is_shared(struct
-cpufreq_policy *policy)
- static inline struct kobject *
- get_governor_parent_kobj(struct cpufreq_policy *policy)
- {
-+#ifdef CONFIG_CPU_FREQ_HAVE_MULTIPLE_POLICIES
-        if (policy->have_multiple_policies)
-                return &policy->kobj;
-        else
-+#endif
-                return cpufreq_global_kobject;
- }
-
-
---------------x------------------x-------------------
+diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
+index e24e417..3f20cb7 100644
+--- a/sound/soc/fsl/Kconfig
++++ b/sound/soc/fsl/Kconfig
+@@ -122,7 +122,7 @@ config SND_SOC_IMX_AUDMUX
+ config SND_MXC_SOC_WM1133_EV1
+ 	tristate "Audio on the i.MX31ADS with WM1133-EV1 fitted"
+ 	depends on MACH_MX31ADS_WM1133_EV1
+-	depends on !SND_SOC_IMX_PCM_DMA || SND_IMX_SOC=y
++	depends on !SND_SOC_IMX_PCM_DMA
+ 	select SND_SOC_WM8350
+ 	select SND_SOC_IMX_PCM_FIQ
+ 	select SND_SOC_IMX_AUDMUX
+@@ -145,7 +145,7 @@ config SND_SOC_MX27VIS_AIC32X4
+ config SND_SOC_PHYCORE_AC97
+ 	tristate "SoC Audio support for Phytec phyCORE (and phyCARD) boards"
+ 	depends on MACH_PCM043 || MACH_PCA100
+-	depends on !SND_SOC_IMX_PCM_DMA || SND_IMX_SOC=y
++	depends on !SND_SOC_IMX_PCM_DMA
+ 	select SND_SOC_AC97_BUS
+ 	select SND_SOC_WM9712
+ 	select SND_SOC_IMX_PCM_FIQ
+@@ -162,7 +162,7 @@ config SND_SOC_EUKREA_TLV320
+ 		|| MACH_EUKREA_MBIMXSD35_BASEBOARD \
+ 		|| MACH_EUKREA_MBIMXSD51_BASEBOARD
+ 	depends on I2C
+-	depends on !SND_SOC_IMX_PCM_DMA || SND_IMX_SOC=y
++	depends on !SND_SOC_IMX_PCM_DMA
+ 	select SND_SOC_TLV320AIC23
+ 	select SND_SOC_IMX_PCM_FIQ
+ 	select SND_SOC_IMX_AUDMUX
+diff --git a/sound/soc/fsl/Makefile b/sound/soc/fsl/Makefile
+index ec14579..ddd9076 100644
+--- a/sound/soc/fsl/Makefile
++++ b/sound/soc/fsl/Makefile
+@@ -30,13 +30,6 @@ obj-$(CONFIG_SND_MPC52xx_SOC_EFIKA) += efika-audio-fabric.o
+ # i.MX Platform Support
+ snd-soc-imx-ssi-objs := imx-ssi.o
+ snd-soc-imx-audmux-objs := imx-audmux.o
+-snd-soc-imx-pcm-objs := imx-pcm.o
+-ifneq ($(CONFIG_SND_SOC_IMX_PCM_FIQ),)
+-	snd-soc-imx-pcm-objs += imx-pcm-fiq.o
+-endif
+-ifneq ($(CONFIG_SND_SOC_IMX_PCM_DMA),)
+-	snd-soc-imx-pcm-objs += imx-pcm-dma.o
+-endif
+ 
+ obj-$(CONFIG_SND_SOC_IMX_SSI) += snd-soc-imx-ssi.o
+ obj-$(CONFIG_SND_SOC_IMX_AUDMUX) += snd-soc-imx-audmux.o
