@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab3BEVy3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 16:54:29 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:47641 "EHLO hydra.sisk.pl"
+	id S1756912Ab3BEVzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 16:55:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44143 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756737Ab3BEVy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 16:54:26 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Subject: Re: [PATCH 0/2] cpufreq: cpufreq_driver_lock is hot on large systems
-Date: Tue, 05 Feb 2013 23:00:44 +0100
-Message-ID: <4042917.3aPiiW9y2F@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <74F10842A85F514CA8D8C487E74474BB2D2F925E@P-EXMB1-DC21.corp.sgi.com>
-References: <1360017913-25667-1-git-send-email-nzimmer@sgi.com> <1535355.NvOsIhbBYp@vostro.rjw.lan> <74F10842A85F514CA8D8C487E74474BB2D2F925E@P-EXMB1-DC21.corp.sgi.com>
+	id S1756737Ab3BEVzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 16:55:11 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130205183436.GC12853@redhat.com>
+References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
+	<cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+	<20130205181926.GA13942@srcf.ucam.org>
+	<20130205183436.GC12853@redhat.com>
+Date: Tue, 5 Feb 2013 23:55:09 +0200
+Message-ID: <CALLzPKavbsZgHoJrk5iQ0F1fO21SaeEHmCVCh1G1UKCKB3WZZQ@mail.gmail.com>
+Subject: Re: [RFC 2/2] initramfs with digital signature protection
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 05, 2013 02:58:35 PM Nathan Zimmer wrote:
-> Ok, I'll rebase and retest from linux-next then.
+On Tue, Feb 5, 2013 at 8:34 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Tue, Feb 05, 2013 at 06:19:26PM +0000, Matthew Garrett wrote:
+>> On Tue, Feb 05, 2013 at 02:34:50PM +0200, Dmitry Kasatkin wrote:
+>>
+>> > Digitally signed initramfs can be used to provide protected user-space
+>> > environment for initialization purpose. For example, LSM, IMA/EVM can be
+>> > securely initialized using such approach.
+>>
+>> What stops an attacker from simply removing the signed image from the
+>> initramfs and running modified versions of the same tools from the
+>> unsigned image?
+>
+> Looks like having signed initramfs image is mandatory otherwise system
+> panics.
+>
+> +       if (sys_access(initramfs_img, 0))
+> +               panic("signed initramfs image not found (INITRAMFS_SIG is
+> +anabled)\n");
+>
+> Also I am assuming that from signed initramfs, keys will be loaded in
+> appropriate keyrings and then keyring will be locked so that any
+> tools from unsigned initramfs can not load additional keys.
+>
 
-Thanks!
+Exactly like that.
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
