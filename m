@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab3BECsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 21:48:20 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:35064 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753882Ab3BECsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 21:48:18 -0500
-Message-ID: <1360032496.4849.2.camel@joe-AO722>
-Subject: [PATCH] net: core: Remove unnecessary alloc/OOM messages
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 04 Feb 2013 18:48:16 -0800
-In-Reply-To: <20130204.132335.1757403310770538446.davem@davemloft.net>
-References: <cover.1359939012.git.joe@perches.com>
-	 <20130204.132335.1757403310770538446.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1756315Ab3BECyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Feb 2013 21:54:04 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:41817 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab3BECyC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Feb 2013 21:54:02 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r152rF8U020185
+Message-ID: <511073C5.9040300@realtek.com>
+Date: Tue, 5 Feb 2013 10:51:49 +0800
+From: Roger Tseng <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        "cjb@laptop.org" <cjb@laptop.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wei_wang <wei_wang@realsil.com.cn>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/3] MMC: rtsx: remove driving adjustment
+References: <1359963959-2305-1-git-send-email-rogerable@realtek.com> <1359963959-2305-2-git-send-email-rogerable@realtek.com> <20130204084737.GG4937@mwanda>
+In-Reply-To: <20130204084737.GG4937@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc failures already get standardized OOM
-messages and a dump_stack.
+Hi Dan,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/core/dev.c            | 14 +++++---------
- net/core/netprio_cgroup.c |  4 +---
- 2 files changed, 6 insertions(+), 12 deletions(-)
+Correct. I will prevent this kind of breaking in the future.
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index a87bc74..e04bfdc 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5958,10 +5958,9 @@ static int netif_alloc_rx_queues(struct net_device *dev)
- 	BUG_ON(count < 1);
- 
- 	rx = kcalloc(count, sizeof(struct netdev_rx_queue), GFP_KERNEL);
--	if (!rx) {
--		pr_err("netdev: Unable to allocate %u rx queues\n", count);
-+	if (!rx)
- 		return -ENOMEM;
--	}
-+
- 	dev->_rx = rx;
- 
- 	for (i = 0; i < count; i++)
-@@ -5992,10 +5991,9 @@ static int netif_alloc_netdev_queues(struct net_device *dev)
- 	BUG_ON(count < 1);
- 
- 	tx = kcalloc(count, sizeof(struct netdev_queue), GFP_KERNEL);
--	if (!tx) {
--		pr_err("netdev: Unable to allocate %u tx queues\n", count);
-+	if (!tx)
- 		return -ENOMEM;
--	}
-+
- 	dev->_tx = tx;
- 
- 	netdev_for_each_tx_queue(dev, netdev_init_one_queue, NULL);
-@@ -6482,10 +6480,8 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
- 	alloc_size += NETDEV_ALIGN - 1;
- 
- 	p = kzalloc(alloc_size, GFP_KERNEL);
--	if (!p) {
--		pr_err("alloc_netdev: Unable to allocate device\n");
-+	if (!p)
- 		return NULL;
--	}
- 
- 	dev = PTR_ALIGN(p, NETDEV_ALIGN);
- 	dev->padded = (char *)dev - (char *)p;
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index 5e67def..0777d0a 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -69,10 +69,8 @@ static int extend_netdev_table(struct net_device *dev, u32 target_idx)
- 
- 	/* allocate & copy */
- 	new = kzalloc(new_sz, GFP_KERNEL);
--	if (!new) {
--		pr_warn("Unable to alloc new priomap!\n");
-+	if (!new)
- 		return -ENOMEM;
--	}
- 
- 	if (old)
- 		memcpy(new->priomap, old->priomap,
+However, after our analysis the breaking of patch 1/3 and 2/3 should not 
+fail old devices. And since Samuel has applied 2/3 and 3/3, it might be 
+better for Chris to apply patch 1/3 and let all this things appear in 
+kernel v3.9.
 
+Hi Chris,
 
+Would you please apply patch 1/3 for kernel v3.9. Thanks.
+
+Best regards,
+Roger Tseng
+
+On 02/04/2013 04:47 PM, Dan Carpenter wrote:
+> On Mon, Feb 04, 2013 at 03:45:57PM +0800, Roger Tseng wrote:
+>> Several new models of readers use different way to select driving
+>> capability(a necessary adjustment along with voltage change). Removing this
+>> from device-independent rtsx_pci_sdmmc module. It will be implemented in
+>> device-depend calls encapsulated by rtsx_pci_switch_output_voltage().
+>>
+>
+> I'm not sure I understand.
+>
+> Does this patch break things and then "[PATCH 2/3] mfd: rtsx:
+> implement driving adjustment to device-dependent callbacks" fixes
+> things again?  In other words, will all the old devices run if we
+> only apply patch 1/3 and not 2/3?
+>
+> That's not the right idea.  Just merge the two patches into one
+> patch.
+>
+> regards,
+> dan carpenter
+>
+>
+> ------Please consider the environment before printing this e-mail.
+>
+>
