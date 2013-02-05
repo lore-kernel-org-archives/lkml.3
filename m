@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3BEKJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:09:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39196 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751332Ab3BEKJZ (ORCPT
+	id S1753882Ab3BEKQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:16:05 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:55071 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750932Ab3BEKQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 05:09:25 -0500
-Date: Tue, 5 Feb 2013 10:09:23 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: cw00.choi@samsung.com, myungjoo.ham@samsung.com
-Cc: broonie@opensource.wolfsonmicro.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] extcon: arizona: Clear _trig_sts bits after jack
-	detection
-Message-ID: <20130205100923.GA21695@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Tue, 5 Feb 2013 05:16:00 -0500
+Message-ID: <1360059358.1343.37.camel@x61.thuisdomein>
+Subject: infiniband: cxgb4: GCC warnings for 32 bit
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 05 Feb 2013 11:15:58 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 05 Feb 2013 10:15:58.0638 (UTC) FILETIME=[CAB1DCE0:01CE0389]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is important to clear the wake trigger status bits otherwise DCVDD
-will be held high independent of the state of the LDOENA line.
+0) Compiling cm.o for 32 bit triggers these GCC warnings:
+    drivers/infiniband/hw/cxgb4/cm.c: In function ‘passive_ofld_conn_reply’:
+    drivers/infiniband/hw/cxgb4/cm.c:2803:12: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+    drivers/infiniband/hw/cxgb4/cm.c: In function ‘send_fw_pass_open_req’:
+    drivers/infiniband/hw/cxgb4/cm.c:2941:16: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+    [last line repeated a number of times]
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/extcon/extcon-arizona.c       |    7 +++++++
- include/linux/mfd/arizona/registers.h |    8 ++++++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+1) These two lines were added in commit
+1cab775c3e75f1250c965feafd061d696df36e53 ("RDMA/cxgb4: Fix LE hash
+collision bug for passive open connection"). That commit was first
+released in v3.8-rc1. It's not obvious to me how to fix these warnings,
+since these lines are a bit puzzling.
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index 5f91711..5d07a71 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -861,6 +861,13 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
- 				   ARIZONA_MICD_CLAMP_DB | ARIZONA_JD1_DB);
- 	}
- 
-+	/* Clear trig_sts to make sure DCVDD is not forced up */
-+	regmap_write(arizona->regmap, ARIZONA_AOD_WKUP_AND_TRIG,
-+		     ARIZONA_MICD_CLAMP_FALL_TRIG_STS |
-+		     ARIZONA_MICD_CLAMP_RISE_TRIG_STS |
-+		     ARIZONA_JD1_FALL_TRIG_STS |
-+		     ARIZONA_JD1_RISE_TRIG_STS);
-+
- 	mutex_unlock(&info->lock);
- 
- 	pm_runtime_mark_last_busy(info->dev);
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index 79e9dd4..188d89a 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -5267,6 +5267,14 @@
- /*
-  * R3408 (0xD50) - AOD wkup and trig
-  */
-+#define ARIZONA_MICD_CLAMP_FALL_TRIG_STS         0x0080  /* MICD_CLAMP_FALL_TRIG_STS */
-+#define ARIZONA_MICD_CLAMP_FALL_TRIG_STS_MASK    0x0080  /* MICD_CLAMP_FALL_TRIG_STS */
-+#define ARIZONA_MICD_CLAMP_FALL_TRIG_STS_SHIFT        7  /* MICD_CLAMP_FALL_TRIG_STS */
-+#define ARIZONA_MICD_CLAMP_FALL_TRIG_STS_WIDTH        1  /* MICD_CLAMP_FALL_TRIG_STS */
-+#define ARIZONA_MICD_CLAMP_RISE_TRIG_STS         0x0040  /* MICD_CLAMP_RISE_TRIG_STS */
-+#define ARIZONA_MICD_CLAMP_RISE_TRIG_STS_MASK    0x0040  /* MICD_CLAMP_RISE_TRIG_STS */
-+#define ARIZONA_MICD_CLAMP_RISE_TRIG_STS_SHIFT        6  /* MICD_CLAMP_RISE_TRIG_STS */
-+#define ARIZONA_MICD_CLAMP_RISE_TRIG_STS_WIDTH        1  /* MICD_CLAMP_RISE_TRIG_STS */
- #define ARIZONA_GP5_FALL_TRIG_STS                0x0020  /* GP5_FALL_TRIG_STS */
- #define ARIZONA_GP5_FALL_TRIG_STS_MASK           0x0020  /* GP5_FALL_TRIG_STS */
- #define ARIZONA_GP5_FALL_TRIG_STS_SHIFT               5  /* GP5_FALL_TRIG_STS */
--- 
-1.7.2.5
+2) These lines read:
+   rpl_skb = (struct sk_buff *)cpu_to_be64(req->cookie);
+
+and:
+   req->cookie = cpu_to_be64((u64)skb);
+
+3) It is odd that both use cpu_to_be64(). It seems the first one should
+have been be64_to_cpu().
+
+But 'cookie' is of type __u64 (see struct
+cpl_fw6_msg_ofld_connection_wr_rpl in
+drivers/net/ethernet/chelsio/cxgb4/t4_msg.h). So the use of both that
+type and the cpu_to_be64() macro looks a bit odd too.
+
+And why is 'cookie' __u64? Is struct cpl_fw6_msg_ofld_connection_wr_rpl
+used in userspace code? Can't 'cookie' be of type "struct sk_buff *"? Is
+there a requirement for it to be 64 bits wide on both 32 bit and 64 bit?
+
+
+Paul Bolle
 
