@@ -1,57 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab3BEPGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 10:06:33 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:41017 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab3BEPGb convert rfc822-to-8bit (ORCPT
+	id S1755963Ab3BEPHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 10:07:31 -0500
+Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:54999 "EHLO
+	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755667Ab3BEPH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 10:06:31 -0500
+	Tue, 5 Feb 2013 10:07:28 -0500
+X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Feb 2013 10:07:28 EST
+Date: Tue, 5 Feb 2013 14:58:07 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH] slob: Check for NULL pointer before calling ctor()
+In-Reply-To: <1360073811.27007.13.camel@gandalf.local.home>
+Message-ID: <0000013caadd2e2f-3ca39b5e-cc18-4a38-9485-d505a89098af-000000@email.amazonses.com>
+References: <1358442826.23211.18.camel@gandalf.local.home> <1360073811.27007.13.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130204212808.GC27963@mtj.dyndns.org>
-References: <1359657696-2767-1-git-send-email-laijs@cn.fujitsu.com>
-	<1359657696-2767-4-git-send-email-laijs@cn.fujitsu.com>
-	<20130204212808.GC27963@mtj.dyndns.org>
-Date: Tue, 5 Feb 2013 23:06:29 +0800
-Message-ID: <CACvQF50HsspuHAomRXRFBG-PL=2XkAs3j2cpkhND7OhpaBVs4w@mail.gmail.com>
-Subject: Re: [PATCH 03/13] workqueue: don't set work cwq until we queued it on pool
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.210
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/2/5 5:28, Tejun Heo 写道:
-> Hello, again.
->
-> On Fri, Feb 01, 2013 at 02:41:26AM +0800, Lai Jiangshan wrote:
->> @@ -110,6 +110,7 @@ struct delayed_work {
->>   	struct work_struct work;
->>   	struct timer_list timer;
->>   	int cpu;
->> +	struct workqueue_struct *wq;
->
-> Can't we just replace delayed_work->cpu with delayed_work->cwq?  That
-> way, we don't enlarge delayed_work while encoding both wq and cpu in
-> delayed_work proper.
->
-> Thanks.
->
+On Tue, 5 Feb 2013, Steven Rostedt wrote:
 
-The @cpu can be WORK_CPU_UNBOUND, and the current code will delay
-to determine on which cpu should this work be queued until timeout,
-I didn't want to change this behavior when I.
+> Ping?
 
-queue_delayed_work_on(WORK_CPU_UNBOUND, system_wq, dwork, delay);
+Obviously correct.
 
-But there is no "get_cwq(WORK_CPU_UNBOUND, system_wq)".
-So we have to record the @wq to dwork, Or determine the cpu to queue
-earlier which changes the current behavior. I'm OK with this change.
-
-Thanks,
-Lai
-
-PS, again, @cpu and @wq can be saved in dwork.work.entry if needed.
+Acked-by: Christoph Lameter <cl@linux.com>
