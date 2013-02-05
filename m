@@ -1,149 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab3BEKdn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:33:43 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:30661 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab3BEKdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754599Ab3BEKdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:33:55 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:53702 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751849Ab3BEKdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Feb 2013 05:33:39 -0500
-Message-ID: <5110DFEF.8000505@imgtec.com>
-Date: Tue, 5 Feb 2013 10:33:19 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>
-CC: <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        <linux-kbuild@vger.kernel.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Jonas <jonas.bonn@gmail.com>
-Subject: Re: [PATCH 1/1] depmod: pass -P $CONFIG_SYMBOL_PREFIX
-References: <1359625303-11842-1-git-send-email-james.hogan@imgtec.com> <201302030117.26295.vapier@gentoo.org>
-In-Reply-To: <201302030117.26295.vapier@gentoo.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig8AF80F9161654CFAD145A4B6"
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_02_05_10_33_27
+From: Andreas Larsson <andreas@gaisler.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
+Subject: [PATCH 2/2] gpio: Add device driver for GRGPIO cores
+Date: Tue,  5 Feb 2013 11:33:03 +0100
+Message-Id: <1360060383-16880-3-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1360060383-16880-1-git-send-email-andreas@gaisler.com>
+References: <1360060383-16880-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig8AF80F9161654CFAD145A4B6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+This driver supports GRGPIO gpio cores available in the GRLIB VHDL IP core
+library.
 
-Hi Mike,
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
+v2 of the eariler single GRGPIO patch
 
-On 03/02/13 06:17, Mike Frysinger wrote:
-> On Thursday 31 January 2013 04:41:43 James Hogan wrote:
->> --- a/Makefile
->> +++ b/Makefile
->>
->> +ifneq ($(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX)),)
->> +  depmod_args =3D -P $(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
->> +endif
->> ...
->>  # Run depmod only if we have System.map and depmod is executable
->>  quiet_cmd_depmod =3D DEPMOD  $(KERNELRELEASE)
->>        cmd_depmod =3D $(CONFIG_SHELL) $(srctree)/scripts/depmod.sh $(D=
-EPMOD) \
->> -                   $(KERNELRELEASE)
->> +                   $(KERNELRELEASE) $(depmod_args)
->=20
-> scripts/Makefile.lib just does:
-> 	ifdef CONFIG_SYMBOL_PREFIX
-> so you should do the same
+ drivers/gpio/Kconfig       |    8 ++
+ drivers/gpio/Makefile      |    1 +
+ drivers/gpio/gpio-grgpio.c |  244 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 253 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/gpio/gpio-grgpio.c
 
-arch/openrisc/Kconfig now defines SYMBOL_PREFIX as "", so this isn't
-sufficient (arguably it probably shouldn't be defined empty like that?)
-
->=20
-> that said, cmd_depmod is just a shell command.  and you're running anot=
-her=20
-> script helper (depmod.sh).  how about passing it unconditionally ?
-> 	cmd_depmod =3D ... -P "$(CONFIG_SYMBOL_PREFIX)"
->=20
-> since the default will be "no prefix", using -P "" is the same thing.
-
-Yep, I could do this, but depmod.sh would need modifying to drop it if
-the prefix is empty, otherwise you get the following from depmod:
-FATAL: -P only takes a single char
-
-I don't mind adding that, but what do you think?
-
->=20
->> --- a/scripts/depmod.sh
->> +++ b/scripts/depmod.sh
->>
->>  DEPMOD=3D$1
->> -KERNELRELEASE=3D$2
->> +shift
->> +KERNELRELEASE=3D$1
->> +shift
->=20
-> you can do:
-> 	DEPMOD=3D$1
-> 	KERNELRELEASE=3D$2
-> 	shift 2
-
-neat, thanks
-
->=20
->> +# older versions of depmod don't support -P <symbol-prefix>
->> +# support was added in module-init-tools 3.13
->> +if test "$1" =3D "-P"; then
->> +	release=3D$("$DEPMOD" --version)
->> +	package=3D$(echo "$release" | cut -d' ' -f 1)
->> +	if test "$package" =3D "module-init-tools"; then
->> +		version=3D$(echo "$release" | cut -d' ' -f 2)
->> +		later=3D$({ echo "$version"; echo "3.13"; } | sort -V | tail -n 1)
->=20
-> you could do instead:
-> 	later=3D$(printf '%s\n' "$version" "3.13" | sort -V | tail -n 1)
-
-yep, definitely better, thanks
-
->=20
->> +		if test "$later" !=3D "$version"; then
->> +			# module-init-tools < 3.13, drop the next 2 args
->> +			shift
->> +			shift
->> +		fi
->=20
-> shift 2
-
-ok
-
-Thanks for the suggestions
-
-Cheers
-James
-
-
---------------enig8AF80F9161654CFAD145A4B6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREN/2AAoJEKHZs+irPybfpVAQAJPWZzwxyhC9iNkpqkDmp4hB
-hzWv8c2Bxe2C6cp3fhipwCTJ+tkdYVvSE+JcBM1P7uO5PIvdpo1U4P7+CgKIZn3K
-tRHbZZv3lEeU/gZr1kb7x7Urue1kU3dQk1AZegIPEXwbLZHdpKiT17TXKzuf8XzE
-Z2IrJfV/pN8QFScN2mbCq/ZuP8nC+R3YoD5vrP+seaeR/+z5h9L9Zkzk9ywkV/bN
-hlC/6cTf5yOrvB3aHJL6XpZt6K+MPFT/TdLlaKC4PZAdYLinu3m8rUfC0nqSUvY8
-NHK9GKgV75Or+PUBBliUmOYH0pGZ12rhHS+iVrSgO9Dv7sRbJ7d6eBD8GT0012vm
-lglI0OBc3bdsUKu7KU/8p27KmYJt4KjezwafqcJRBjOO3WONCyLNog9s3ykmHD18
-lZWLiu10MWZCz6ETxBFheibB8qwxTaX2OyLkIa21vpKiWeZsk52kB/PwQCsiZuTW
-U9MfQTPQ9BoeShETv7TzM0Ui5Bcix0wUqKr6AtDOV0aRYJEfumkbVjDKv0Tur0Z5
-qrs89ixyDn6HAzejMUDR/9j/fjQAJh9m2rRlygXw5zpprsv36xV3GMr+APTut4Up
-5mjBv5C9zWguDfgWxh3EG/67GpKWsJB0R8nIStJMNFpHMIX2W+VF388atcqlS4dQ
-z1ArrM8MIPTdGaguBjy5
-=aE8K
------END PGP SIGNATURE-----
-
---------------enig8AF80F9161654CFAD145A4B6--
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 682de75..8437ab7 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -298,6 +298,14 @@ config GPIO_GE_FPGA
+ 	  and write pin state) for GPIO implemented in a number of GE single
+ 	  board computers.
+ 
++config GPIO_GRGPIO
++	tristate "Aeroflex Gaisler GRGPIO support"
++	depends on OF
++	select GPIO_GENERIC
++	help
++	  Select this to support Aeroflex Gaisler GRGPIO cores from the GRLIB
++	  VHDL IP core library.
++
+ comment "I2C GPIO expanders:"
+ 
+ config GPIO_ARIZONA
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index c5aebd0..ca5d7a3 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
+ obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
+ obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
+ obj-$(CONFIG_GPIO_GE_FPGA)	+= gpio-ge.o
++obj-$(CONFIG_GPIO_GRGPIO)	+= gpio-grgpio.o
+ obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
+ obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
+diff --git a/drivers/gpio/gpio-grgpio.c b/drivers/gpio/gpio-grgpio.c
+new file mode 100644
+index 0000000..87eca73
+--- /dev/null
++++ b/drivers/gpio/gpio-grgpio.c
+@@ -0,0 +1,244 @@
++/*
++ * Driver for Aeroflex Gaisler GRGPIO General Purpose I/O cores.
++ *
++ * 2013 (c) Aeroflex Gaisler AB
++ *
++ * This driver supports the GRGPIO GPIO core available in the GRLIB VHDL IP core
++ * library.
++ *
++ * Full documentation of the GRGPIO core can be found here:
++ * http://www.gaisler.com/products/grlib/grip.pdf
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ *
++ * Contributors: Andreas Larsson <andreas@gaisler.com>
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/spinlock.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_platform.h>
++#include <linux/of_irq.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/irq.h>
++#include <linux/basic_mmio_gpio.h>
++
++#define DRV_NAME	"grgpio"
++
++#define GRGPIO_MAX_NGPIO 32
++
++struct grgpio_regs {
++	u32 data;	/* 0x00 */
++	u32 output;	/* 0x04 */
++	u32 dir;	/* 0x08 */
++	u32 imask;	/* 0x0c */
++	u32 ipol;	/* 0x10  */
++	u32 iedge;	/* 0x14 */
++	u32 bypass;	/* 0x18 */
++	u32 __reserved;	/* 0x1c */
++	u32 imap[8];	/* 0x20-0x3c */
++};
++
++struct grgpio_priv {
++	struct bgpio_chip bgc;
++	struct grgpio_regs __iomem *regs;
++
++	u32 imask;	/* irq mask shadow register */
++	s32 *irqmap;	/* maps offset to irq or -1 if no irq */
++};
++
++static inline struct grgpio_priv *grgpio_gc_to_priv(struct gpio_chip *gc)
++{
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
++	return container_of(bgc, struct grgpio_priv, bgc);
++}
++
++static void grgpio_set_imask(struct grgpio_priv *priv, unsigned int offset,
++			     int val)
++{
++	struct bgpio_chip *bgc = &priv->bgc;
++	unsigned long mask = bgc->pin2mask(bgc, offset);
++	unsigned long flags;
++
++	spin_lock_irqsave(&bgc->lock, flags);
++
++	if (val)
++		priv->imask |= mask;
++	else
++		priv->imask &= ~mask;
++	bgc->write_reg(&priv->regs->imask, priv->imask);
++
++	spin_unlock_irqrestore(&bgc->lock, flags);
++}
++
++static int grgpio_to_irq(struct gpio_chip *gc, unsigned offset)
++{
++	struct grgpio_priv *priv = grgpio_gc_to_priv(gc);
++	int index, irq;
++
++	if (!priv->irqmap || offset > gc->ngpio)
++		return -ENXIO;
++
++	index = priv->irqmap[offset];
++	if (index < 0)
++		return -ENXIO;
++
++	irq = irq_of_parse_and_map(priv->bgc.gc.dev->of_node, index);
++	if (irq) {
++		/* Enable interrupt and return irq */
++		grgpio_set_imask(priv, offset, 1);
++		return irq;
++	} else {
++		return -ENXIO;
++	}
++}
++
++static void grgpio_free(struct gpio_chip *gc, unsigned offset)
++{
++	struct grgpio_priv *priv = grgpio_gc_to_priv(gc);
++	struct bgpio_chip *bgc = &priv->bgc;
++	unsigned long mask = bgc->pin2mask(bgc, offset);
++
++	if (unlikely(priv->imask & mask))
++		grgpio_set_imask(priv, offset, 0);
++}
++
++static int grgpio_probe(struct platform_device *ofdev)
++{
++	struct device_node *np = ofdev->dev.of_node;
++	struct grgpio_regs __iomem *regs;
++	struct gpio_chip *gc;
++	struct bgpio_chip *bgc;
++	struct grgpio_priv *priv;
++	struct resource *res;
++	int err, i, size;
++	u32 prop;
++	s32 *irqmap;
++	char *label;
++
++	priv = devm_kzalloc(&ofdev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv) {
++		dev_err(&ofdev->dev, "Could not allocate priv\n");
++		return -ENOMEM;
++	}
++
++	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
++	regs = devm_request_and_ioremap(&ofdev->dev, res);
++	if (!regs) {
++		dev_err(&ofdev->dev, "Couldn't map registers\n");
++		return -EADDRNOTAVAIL;
++	}
++
++	bgc = &priv->bgc;
++	err = bgpio_init(bgc, &ofdev->dev, 4, &regs->data, &regs->output, NULL,
++			 &regs->dir, NULL, BGPIOF_BIG_ENDIAN);
++	if (err) {
++		dev_err(&ofdev->dev, "bgpio_init() failed\n");
++		return err;
++	}
++
++	priv->regs = regs;
++	priv->imask = bgc->read_reg(&regs->imask);
++
++	gc = &bgc->gc;
++	gc->of_node = np;
++	gc->owner = THIS_MODULE;
++	gc->to_irq = grgpio_to_irq;
++	gc->free = grgpio_free;
++
++	err = of_property_read_u32(np, "base", &prop);
++	if (err) {
++		dev_dbg(&ofdev->dev, "No base property: use dynamic base\n");
++		gc->base = -1;
++	} else {
++		gc->base = prop;
++	}
++
++	err = of_property_read_u32(np, "nbits", &prop);
++	if (err || prop <= 0 || prop > GRGPIO_MAX_NGPIO) {
++		gc->ngpio = GRGPIO_MAX_NGPIO;
++		dev_dbg(&ofdev->dev,
++			"No or invalid nbits property: assume %d\n", gc->ngpio);
++	} else {
++		gc->ngpio = prop;
++	}
++
++	irqmap = (s32 *)of_get_property(np, "irqmap", &size);
++	if (irqmap) {
++		if (size < gc->ngpio) {
++			dev_err(&ofdev->dev,
++				"irqmap shorter than ngpio (%d < %d)\n",
++				size, gc->ngpio);
++			return -EINVAL;
++		}
++
++		priv->irqmap = devm_kzalloc(&ofdev->dev,
++					    gc->ngpio * sizeof(s32),
++					    GFP_KERNEL);
++		if (!priv->irqmap) {
++			dev_err(&ofdev->dev,
++				"Could not allocate memory for irqmap\n");
++			return -ENOMEM;
++		}
++		for (i = 0; i < gc->ngpio; i++)
++			priv->irqmap[i] = irqmap[i];
++	} else {
++		dev_dbg(&ofdev->dev, "No irqmap\n");
++	}
++
++	label = kstrdup(np->full_name, GFP_KERNEL);
++	if (label)
++		gc->label = label;
++
++	platform_set_drvdata(ofdev, priv);
++
++	err = gpiochip_add(gc);
++	if (err) {
++		dev_err(&ofdev->dev, "Couldn't add gpiochip\n");
++		return err;
++	}
++
++	dev_info(&ofdev->dev, "regs=0x%p, base=%d, npgio=%d\n",
++		 priv->regs, gc->base, gc->ngpio);
++
++	return 0;
++}
++
++static int grgpio_remove(struct platform_device *ofdev)
++{
++	dev_set_drvdata(&ofdev->dev, NULL);
++
++	return 0;
++}
++
++static struct of_device_id grgpio_match[] = {
++	{.name = "GAISLER_GPIO"},
++	{.name = "01_01a"},
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, grgpio_match);
++
++static struct platform_driver grgpio_driver = {
++	.driver = {
++		.name = DRV_NAME,
++		.owner = THIS_MODULE,
++		.of_match_table = grgpio_match,
++	},
++	.probe = grgpio_probe,
++	.remove = grgpio_remove,
++};
++
++module_platform_driver(grgpio_driver);
++
++MODULE_AUTHOR("Aeroflex Gaisler AB.");
++MODULE_DESCRIPTION("Driver for Aeroflex Gaisler GRGPIO");
++MODULE_LICENSE("GPL");
+-- 
+1.7.0.4
 
