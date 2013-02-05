@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab3BEQvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 11:51:50 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:56710 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754742Ab3BEQvq (ORCPT
+	id S1755547Ab3BEQxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 11:53:11 -0500
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:37588 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab3BEQxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 11:51:46 -0500
-Date: Tue, 5 Feb 2013 11:51:45 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Aaron Lu <aaron.lu@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v9 4/4] sd: change to auto suspend mode
-In-Reply-To: <1360051396-3080-5-git-send-email-aaron.lu@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1302051147370.2245-100000@iolanthe.rowland.org>
+	Tue, 5 Feb 2013 11:53:07 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130205122432.GE21455@gmail.com>
+References: <20130204110304.GD24173@gmail.com>
+	<1360009767-3633-1-git-send-email-yinghai@kernel.org>
+	<20130205122432.GE21455@gmail.com>
+Date: Tue, 5 Feb 2013 08:53:05 -0800
+X-Google-Sender-Auth: iopSzBrw3pRNW6SOuqzLfGPbcdg
+Message-ID: <CAE9FiQXn1P0RGD-O3jeFNgAdsfv4EQyH8g7r0x3KBFfh20fF=Q@mail.gmail.com>
+Subject: Re: [PATCH] x86, apic: Check fadt x2apic phys in x2apic_phys_probe()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Stoney Wang <song-bo.wang@hp.com>, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013, Aaron Lu wrote:
+On Tue, Feb 5, 2013 at 4:24 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>> From: Stoney Wang <song-bo.wang@hp.com>
+>>
+>> When HP ProLiant DL980 G7 Server boot without x2apic_phys, there will be
+>> intermittent lost interrupts and could result in a hang or data loss.
+>
+> What does 'boot without x2apic_phys' mean?
+>
+> Does it mean x2apic_phys=0 boot command line? Or, because
+> x2apic_phys is off by default, does it simply mean that if it's
+> booted with a default kernel, without any workaround specified
+> on the boot command line?
 
-> From: Lin Ming <ming.m.lin@intel.com>
-> 
-> Uses block layer runtime pm helper functions in
-> scsi_runtime_suspend/resume for devices that take advantage of it.
-> 
-> Remove scsi_autopm_* from sd open/release path and check_events path.
+means that user does not append "x2apic_phys" in boot command line.
 
-One thing is a little odd here...
+current we have:
 
-> --- a/drivers/scsi/scsi_pm.c
-> +++ b/drivers/scsi/scsi_pm.c
-> @@ -144,33 +144,78 @@ static int scsi_bus_restore(struct device *dev)
->  
->  #ifdef CONFIG_PM_RUNTIME
->  
-> +static int sdev_blk_runtime_suspend(struct scsi_device *sdev,
-> +					int (*cb)(struct device *))
-> +{
-> +	int err;
-> +
-> +	err = blk_pre_runtime_suspend(sdev->request_queue);
-> +	if (err)
-> +		return err;
-> +	if (cb)
-> +		err = cb(&sdev->sdev_gendev);
-> +	blk_post_runtime_suspend(sdev->request_queue, err);
-> +
-> +	return err;
-> +}
-> +
-> +static int sdev_runtime_suspend(struct device *dev)
-> +{
-> +	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> +	int (*cb)(struct device *) = pm ? pm->runtime_suspend : NULL;
-> +	struct scsi_device *sdev = to_scsi_device(dev);
-> +
-> +	if (sdev->request_queue->dev)
-> +		return sdev_blk_runtime_suspend(sdev, cb);
-> +	else
-> +		return scsi_dev_type_suspend(dev, cb);
-> +}
-> +
->  static int scsi_runtime_suspend(struct device *dev)
->  {
->  	int err = 0;
-> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
->  
->  	dev_dbg(dev, "scsi_runtime_suspend\n");
-> -	if (scsi_is_sdev_device(dev)) {
-> -		err = scsi_dev_type_suspend(dev,
-> -				pm ? pm->runtime_suspend : NULL);
-> -		if (err == -EAGAIN)
-> -			pm_schedule_suspend(dev, jiffies_to_msecs(
-> -				round_jiffies_up_relative(HZ/10)));
-> -	}
-> +	if (scsi_is_sdev_device(dev))
-> +		err = sdev_runtime_suspend(dev);
+        x2apic_phys     [X86-64,APIC] Use x2apic physical mode instead of
+                        default x2apic cluster mode on platforms
+                        supporting x2apic.
 
-The "if (err == -EAGAIN)" test and the call to pm_schedule_suspend seem
-to have been dropped since v8 of this series.  It looks like they ought
-to be moved into sdev_runtime_suspend.
+int x2apic_phys;
 
-Alan Stern
+static int set_x2apic_phys_mode(char *arg)
+{
+        x2apic_phys = 1;
+        return 0;
+}
+early_param("x2apic_phys", set_x2apic_phys_mode);
 
+if the user specify "x2apic_phys=0", kernel still enable x2apic_phys.
+
+Now because system could enable x2apic phys mode via fadt, do we
+need to make "x2apic_phys=0" works as disabling x2apic_phys and
+overriding FADT ?
+
+Thanks
+
+Yinghai
