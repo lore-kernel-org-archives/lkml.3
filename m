@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab3BEI4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 03:56:31 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:64975 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3BEI43 (ORCPT
+	id S1756688Ab3BEI53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 03:57:29 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43386 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab3BEI5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 03:56:29 -0500
-X-AuditID: cbfec7f4-b7f6d6d000001620-5b-5110c93bdced
-Message-id: <5110C935.6020308@samsung.com>
-Date: Tue, 05 Feb 2013 09:56:21 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, minchan@kernel.org
-Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high memory
-References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
- <20130204150657.6d05f76a.akpm@linux-foundation.org>
- <CAH9JG2Usd4HJKrBXwX3aEc3i6068zU=F=RjcoQ8E8uxYGrwXgg@mail.gmail.com>
- <20130205082822.GE21389@suse.de>
-In-reply-to: <20130205082822.GE21389@suse.de>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e/4ZV3rkwKBBmuncVtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mu2cLC3p4KxrPPGFqYFzO1cXIwSEhYCJxuYeli5ETyBSTuHBv
-	PVsXIxeHkMBSRonlfRuhnCVMEjta5zCCVPEKaEl8eHyPGaSZRUBV4mNnOUiYTcBQouttFxuI
-	LSoQKrF23xpmiHJBiR+T77GAlIsIKEjMfW8OEmYWmMso0TsdbK+wgL/EkYftTBCrnjNKbD/V
-	AbaKU0BXYklLDxNEg5nEo5Z1zBC2vMTmNW+ZJzAKzEKyYhaSsllIyhYwMq9iFE0tTS4oTkrP
-	NdQrTswtLs1L10vOz93ECAm+LzsYFx+zOsQowMGoxMMbeI0/UIg1say4MvcQowQHs5II78cb
-	QCHelMTKqtSi/Pii0pzU4kOMTBycUg2MKqmW3I+/T2ha/3inSXmPq9uVm75B2xr/PLiw+ccW
-	x3WzDJb/5TuwvyQxOUgt6Z6GRfWKsqSZnnGxC9ufRLvICSSYLug+vTQpsdB52wyDo2K2DqUb
-	551beGs386f+XY812yI5qt76T9My1N1nePmrtYVVe65JpMfut/vEArT2hnbcrNBNrL6uxFKc
-	kWioxVxUnAgAj6kV9BwCAAA=
+	Tue, 5 Feb 2013 03:57:25 -0500
+Message-ID: <1360054634.4612.37.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v8 2/4] misc: Generic on-chip SRAM allocation driver
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org
+Date: Tue, 05 Feb 2013 09:57:14 +0100
+In-Reply-To: <20130204155344.GA14171@linux-sh.org>
+References: <1359977538-5859-1-git-send-email-p.zabel@pengutronix.de>
+	 <1359977538-5859-3-git-send-email-p.zabel@pengutronix.de>
+	 <20130204155344.GA14171@linux-sh.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Am Dienstag, den 05.02.2013, 00:53 +0900 schrieb Paul Mundt:
+> On Mon, Feb 04, 2013 at 12:32:16PM +0100, Philipp Zabel wrote:
+> > This driver requests and remaps a memory region as configured in the
+> > device tree. It serves memory from this region via the genalloc API.
+> > It optionally enables the SRAM clock.
+> > 
+> > Other drivers can retrieve the genalloc pool from a phandle pointing
+> > to this drivers' device node in the device tree.
+> > 
+> > The allocation granularity is hard-coded to 32 bytes for now,
+> > to make the SRAM driver useful for the 6502 remoteproc driver.
+> > There is overhead for bigger SRAMs, where only a much coarser
+> > allocation granularity is needed: At 32 bytes minimum allocation
+> > size, a 256 KiB SRAM needs a 1 KiB bitmap to track allocations.
+> > 
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+> 
+> How exactly is this "generic" if you have randomly hard-coded an
+> allocation granularity that is larger than half of the in-tree SRAM pool
+> users today can even support? Did you even bother to look at in-tree SRAM
+> pool users other than the one you are working on?
 
-On 2/5/2013 9:28 AM, Mel Gorman wrote:
-> On Tue, Feb 05, 2013 at 08:29:26AM +0900, Kyungmin Park wrote:
-> > >
-> > > (This information is needed so that others can make patch-scheduling
-> > > decisions and should be included in all bugfix changelogs unless it is
-> > > obvious).
-> >
-> > CMA Highmem support is new feature. so don't need to go stable tree.
-> >
->
-> You could have given a lot more information to that question!
->
-> How new a feature is it?
+I agree it should be configurable. As stated in the thread pointed out
+by Matt, I'd just like to separate the discussion about the device tree
+bindings for the allocation granularity from this patchset.
 
-ARM DMA-mapping, the only in-kernel client of CMA, will gain himem 
-support in
-v3.9. On the other hand, there might be out of tree clients of
-alloc_contig_migrate_range()/dma_alloc_from_contiguous() API. If you think
-we should care about them, then this patch might need to be backported
-to stable kernels.
+About the "generic" labeling, I had a look around for users of
+gen_pool_create() - I admit to overlooking arch/sh/mm/sram.c, and most
+of the others (except arch/arm/kernel/tcm.c drivers/acpi/apei/ghes.c,
+both of which I didn't consider potential users of the sram driver) seem
+to use a granularity significantly larger than 32 bytes.
 
->   Does this mean that this patch must go in before
-> 3.8 releases or is it a fix against a patch that is only in Andrew's tree?
-> If the patch is only in Andrew's tree, which one is it and should this be
-> folded in as a fix?
->
-> On a semi-related note; is there a plan for backporting highmem support for
-> the LTSI kernel considering it's aimed at embedded and CMA was highlighted
-> in their announcment for 3.4 support?
+> There also doesn't seem to be any real reason for the hard-coding either,
+> this information could easily be fetched via platform data or the device
+> tree,
 
-I've just noticed recently that LTSI released v3.4 kernel with CMA support.
-I've checked that code only briefly and noticed that it didn't have all the
-CMA related patches which are available in v3.8-rc1. I will take a look at
-that code and maybe I will find some time to backport some more patches from
-mainline, but please note that mainline kernel has higher priority.
+True. Although the device tree is supposed to describe the hardware. The
+allocation granularity is an implementation detail of the gen_pool
+allocator (or possibly kind of a hardware detail of the gen_pool user,
+if there are alignment requirements). That is why I didn't want to press
+on with the device tree granularity configuration part yet.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+> and the driver in question would simply need to be able to
+> determine whether the size is suitable for it or not.
 
+Sounds sensible to me. I'd like to follow up with Matt's patch and
+something like this in a second step.
+
+regards
+Philipp
 
