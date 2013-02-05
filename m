@@ -1,91 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab3BEV1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 16:27:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41802 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3BEV1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 16:27:42 -0500
-Date: Tue, 5 Feb 2013 13:27:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Huang Shijie <b32955@freescale.com>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: introduce __linear_page_index()
-Message-Id: <20130205132741.1e1a4e04.akpm@linux-foundation.org>
-In-Reply-To: <1360047819-6669-1-git-send-email-b32955@freescale.com>
-References: <1360047819-6669-1-git-send-email-b32955@freescale.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756607Ab3BEV2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 16:28:42 -0500
+Received: from mout.gmx.net ([212.227.15.19]:54965 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755340Ab3BEV2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 16:28:40 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18LtLcxnXsLJHzwOsODGPtMbLukLpswNGUo3Al523
+	Pabvp/wOyheTud
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Peter Huewe <peterhuewe@gmx.de>,
+        Sam Hansen <solid.se7en@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] staging/xgifb: Remove unused values in XGI340_cr41 and XGI27_cr41
+Date: Tue,  5 Feb 2013 22:32:29 +0100
+Message-Id: <1360099954-8612-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013 15:03:39 +0800
-Huang Shijie <b32955@freescale.com> wrote:
+In the lookup tables XGI340_cr41 and XGI27_cr41 only the first three
+values are used of each 'line', thus the remaining fields can be
+removed.
 
-> There are many places we should get the offset(in PAGE_SIZE unit) of
-> an address within a non-hugetlb vma.
-> 
-> In order to simplify the code, add a new helper __linear_page_index()
-> to do the work.
-> 
+Rationale:
+- vb_init.c uses pVBInfo->ram_type for the 'column' index for
+pVBInfo->CR40.
 
-Seems nice.
+- pVBInfo->ram_type is assigned the return value of
+  XGINew_GetXG20DRAMType which can only be 0, 1 or 2
 
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -310,15 +310,23 @@ static inline loff_t page_file_offset(struct page *page)
->  extern pgoff_t linear_hugepage_index(struct vm_area_struct *vma,
->  				     unsigned long address);
->  
-> -static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
-> +/* The offset for an address within a non-hugetlb vma, in PAGE_SIZE unit. */
+- pVBInfo->CR40 is assigned to either XGI340_cr41 or XGI27_cr41 in
+vb_setmode.c
 
-"The offset into the mapped file for ..."
+-> only the first three values are used.
+This becomes also evident as values 3-7 are all 0.
 
-> +static inline pgoff_t __linear_page_index(struct vm_area_struct *vma,
->  					unsigned long address)
->  {
->  	pgoff_t pgoff;
-> +
-> +	pgoff = (address - vma->vm_start) >> PAGE_SHIFT;
-> +	return pgoff + vma->vm_pgoff;
-> +}
-> +
-> +static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
-> +					unsigned long address)
-> +{
->  	if (unlikely(is_vm_hugetlb_page(vma)))
->  		return linear_hugepage_index(vma, address);
-> -	pgoff = (address - vma->vm_start) >> PAGE_SHIFT;
-> -	pgoff += vma->vm_pgoff;
-> -	return pgoff >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-> +	return __linear_page_index(vma, address) >>
-> +				(PAGE_CACHE_SHIFT - PAGE_SHIFT);
->  }
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/xgifb/vb_struct.h |    2 +-
+ drivers/staging/xgifb/vb_table.h  |  108 ++++++++++++++++++------------------
+ 2 files changed, 55 insertions(+), 55 deletions(-)
 
-I don't think we need bother creating both linear_page_index() and
-__linear_page_index().  Realistically, we won't be supporting
-PAGE_SHIFT!=PAGE_CACHE_SHIFT.  And most (or all?) of the sites which
-you changed should have been using PAGE_CACHE_SHIFT anyway!
-
-> @@ -1201,8 +1199,7 @@ SYSCALL_DEFINE1(shmdt, char __user *, shmaddr)
->  
->  		/* finding a matching vma now does not alter retval */
->  		if ((vma->vm_ops == &shm_vm_ops) &&
-> -			(vma->vm_start - addr)/PAGE_SIZE == vma->vm_pgoff)
-> -
-> +			0 == __linear_page_index(vma, addr))
-
-erk, please don't do this - it makes kernel developers fall over in
-shock.  Let's do
-
-			__linear_page_index(vma, addr) == 0
-
-(This won't compile if someone forgets a `=', so the usual reason for
-the backward comparison isn't valid).
-
+diff --git a/drivers/staging/xgifb/vb_struct.h b/drivers/staging/xgifb/vb_struct.h
+index e570bae..02f3bb5 100644
+--- a/drivers/staging/xgifb/vb_struct.h
++++ b/drivers/staging/xgifb/vb_struct.h
+@@ -158,7 +158,7 @@ struct vb_device_info {
+ 	void __iomem *FBAddr;
+ 
+ 	unsigned char const (*SR15)[8];
+-	unsigned char const (*CR40)[8];
++	unsigned char const (*CR40)[3];
+ 
+ 	struct SiS_MCLKData const *MCLKData;
+ 
+diff --git a/drivers/staging/xgifb/vb_table.h b/drivers/staging/xgifb/vb_table.h
+index 34e1656..a1be751 100644
+--- a/drivers/staging/xgifb/vb_table.h
++++ b/drivers/staging/xgifb/vb_table.h
+@@ -47,60 +47,60 @@ static const unsigned char XGI340_SR13[4][8] = {
+ 	{0x03, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}  /* SR1B */
+ };
+ 
+-static const unsigned char XGI340_cr41[24][8] = {
+-	{0x20, 0x50, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 0 CR41 */
+-	{0xc4, 0x40, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 1 CR8A */
+-	{0xc4, 0x40, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 2 CR8B */
+-	{0xb5, 0xa4, 0xa4, 0x00, 0x00, 0x00, 0x00, 0x00},
+-	{0xf0, 0xf0, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00},
+-	{0x90, 0x90, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 5 CR68 */
+-	{0x77, 0x77, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 6 CR69 */
+-	{0x77, 0x77, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 7 CR6A */
+-	{0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 8 CR6D */
+-	{0x55, 0x55, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 9 CR80 */
+-	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 10 CR81 */
+-	{0x88, 0xa8, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 11 CR82 */
+-	{0x44, 0x44, 0x77, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 12 CR85 */
+-	{0x48, 0x48, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 13 CR86 */
+-	{0x54, 0x54, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 14 CR90 */
+-	{0x54, 0x54, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 15 CR91 */
+-	{0x0a, 0x0a, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 16 CR92 */
+-	{0x44, 0x44, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 17 CR93 */
+-	{0x10, 0x10, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 18 CR94 */
+-	{0x11, 0x11, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 19 CR95 */
+-	{0x05, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 20 CR96 */
+-	{0xf0, 0xf0, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 21 CRC3 */
+-	{0x05, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 22 CRC4 */
+-	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}  /* 23 CRC5 */
+-};
+-
+-static const unsigned char XGI27_cr41[24][8] = {
+-	{0x20, 0x40, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 0 CR41 */
+-	{0xC4, 0x40, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 1 CR8A */
+-	{0xC4, 0x40, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 2 CR8B */
+-	{0xB3, 0x13, 0xa4, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 3 CR40[7],
+-							       CR99[2:0],
+-							       CR45[3:0]*/
+-	{0xf0, 0xf5, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 4 CR59 */
+-	{0x90, 0x90, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 5 CR68 */
+-	{0x77, 0x67, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 6 CR69 */
+-	{0x77, 0x77, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 7 CR6A */
+-	{0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 8 CR6D */
+-	{0x55, 0x55, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 9 CR80 */
+-	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 10 CR81 */
+-	{0x88, 0xcc, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 11 CR82 */
+-	{0x44, 0x88, 0x77, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 12 CR85 */
+-	{0x48, 0x88, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 13 CR86 */
+-	{0x54, 0x32, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 14 CR90 */
+-	{0x54, 0x33, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 15 CR91 */
+-	{0x0a, 0x07, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 16 CR92 */
+-	{0x44, 0x63, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 17 CR93 */
+-	{0x10, 0x14, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 18 CR94 */
+-	{0x11, 0x0B, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 19 CR95 */
+-	{0x05, 0x22, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 20 CR96 */
+-	{0xf0, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 21 CRC3 */
+-	{0x05, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 22 CRC4 */
+-	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}  /* 23 CRC5 */
++static const unsigned char XGI340_cr41[24][3] = {
++	{0x20, 0x50, 0x60}, /* 0 CR41 */
++	{0xc4, 0x40, 0x84}, /* 1 CR8A */
++	{0xc4, 0x40, 0x84}, /* 2 CR8B */
++	{0xb5, 0xa4, 0xa4},
++	{0xf0, 0xf0, 0xf0},
++	{0x90, 0x90, 0x24}, /* 5 CR68 */
++	{0x77, 0x77, 0x44}, /* 6 CR69 */
++	{0x77, 0x77, 0x44}, /* 7 CR6A */
++	{0xff, 0xff, 0xff}, /* 8 CR6D */
++	{0x55, 0x55, 0x55}, /* 9 CR80 */
++	{0x00, 0x00, 0x00}, /* 10 CR81 */
++	{0x88, 0xa8, 0x48}, /* 11 CR82 */
++	{0x44, 0x44, 0x77}, /* 12 CR85 */
++	{0x48, 0x48, 0x88}, /* 13 CR86 */
++	{0x54, 0x54, 0x44}, /* 14 CR90 */
++	{0x54, 0x54, 0x44}, /* 15 CR91 */
++	{0x0a, 0x0a, 0x07}, /* 16 CR92 */
++	{0x44, 0x44, 0x44}, /* 17 CR93 */
++	{0x10, 0x10, 0x0A}, /* 18 CR94 */
++	{0x11, 0x11, 0x0a}, /* 19 CR95 */
++	{0x05, 0x05, 0x05}, /* 20 CR96 */
++	{0xf0, 0xf0, 0xf0}, /* 21 CRC3 */
++	{0x05, 0x00, 0x02}, /* 22 CRC4 */
++	{0x00, 0x00, 0x00}  /* 23 CRC5 */
++};
++
++static const unsigned char XGI27_cr41[24][3] = {
++	{0x20, 0x40, 0x60}, /* 0 CR41 */
++	{0xC4, 0x40, 0x84}, /* 1 CR8A */
++	{0xC4, 0x40, 0x84}, /* 2 CR8B */
++	{0xB3, 0x13, 0xa4}, /* 3 CR40[7],
++				 CR99[2:0],
++				 CR45[3:0]*/
++	{0xf0, 0xf5, 0xf0}, /* 4 CR59 */
++	{0x90, 0x90, 0x24}, /* 5 CR68 */
++	{0x77, 0x67, 0x44}, /* 6 CR69 */
++	{0x77, 0x77, 0x44}, /* 7 CR6A */
++	{0xff, 0xff, 0xff}, /* 8 CR6D */
++	{0x55, 0x55, 0x55}, /* 9 CR80 */
++	{0x00, 0x00, 0x00}, /* 10 CR81 */
++	{0x88, 0xcc, 0x48}, /* 11 CR82 */
++	{0x44, 0x88, 0x77}, /* 12 CR85 */
++	{0x48, 0x88, 0x88}, /* 13 CR86 */
++	{0x54, 0x32, 0x44}, /* 14 CR90 */
++	{0x54, 0x33, 0x44}, /* 15 CR91 */
++	{0x0a, 0x07, 0x07}, /* 16 CR92 */
++	{0x44, 0x63, 0x44}, /* 17 CR93 */
++	{0x10, 0x14, 0x0A}, /* 18 CR94 */
++	{0x11, 0x0B, 0x0C}, /* 19 CR95 */
++	{0x05, 0x22, 0x05}, /* 20 CR96 */
++	{0xf0, 0xf0, 0x00}, /* 21 CRC3 */
++	{0x05, 0x00, 0x02}, /* 22 CRC4 */
++	{0x00, 0x00, 0x00}  /* 23 CRC5 */
+ };
+ 
+ /* CR47,CR48,CR49,CR4A,CR4B,CR4C,CR70,CR71,CR74,CR75,CR76,CR77 */
+-- 
+1.7.8.6
 
