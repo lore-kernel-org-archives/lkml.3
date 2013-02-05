@@ -1,111 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab3BENtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 08:49:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50721 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab3BENtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 08:49:46 -0500
-Date: Tue, 5 Feb 2013 14:49:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20130205134937.GA22804@dhcp22.suse.cz>
-References: <20121217192301.829A7020@pobox.sk>
- <20121217195510.GA16375@dhcp22.suse.cz>
- <20121218152223.6912832C@pobox.sk>
- <20121218152004.GA25208@dhcp22.suse.cz>
- <20121224142526.020165D3@pobox.sk>
- <20121228162209.GA1455@dhcp22.suse.cz>
- <20121230020947.AA002F34@pobox.sk>
- <20121230110815.GA12940@dhcp22.suse.cz>
- <20130125160723.FAE73567@pobox.sk>
- <20130125163130.GF4721@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130125163130.GF4721@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755213Ab3BENzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 08:55:05 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:43951 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab3BENzC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 08:55:02 -0500
+From: Johan Hovold <jhovold@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH resend] ARM: at91/ide: remove unsused at91-ide Kconfig entry
+Date: Tue,  5 Feb 2013 14:53:35 +0100
+Message-Id: <1360072415-6594-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1352892034-18871-1-git-send-email-jhovold@gmail.com>
+References: <1352892034-18871-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 25-01-13 17:31:30, Michal Hocko wrote:
-> On Fri 25-01-13 16:07:23, azurIt wrote:
-> > Any news? Thnx!
-> 
-> Sorry, but I didn't get to this one yet.
+Commit cf844751fb25e ("ARM: at91: drop ide driver in favor of the pata
+one") removed the at91-ide driver but did not remove the Kconfig entry.
 
-Sorry, to get back to this that late but I was busy as hell since the
-beginning of the year.
-
-Has the issue repeated since then?
-
-You said you didn't apply other than the above mentioned patch. Could
-you apply also debugging part of the patches I have sent?
-In case you don't have it handy then it should be this one:
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
->From 1623420d964e7e8bc88e2a6239563052df891bf7 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 3 Dec 2012 16:16:01 +0100
-Subject: [PATCH] more debugging
 
----
- mm/huge_memory.c |    6 +++---
- mm/memcontrol.c  |    1 +
- 2 files changed, 4 insertions(+), 3 deletions(-)
+Resend of patch first posted mid-November with trivial added as CC. Perhaps it
+can go in via the AT91-folks, otherwise?
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 470cbb4..01a11f1 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -671,7 +671,7 @@ static inline struct page *alloc_hugepage(int defrag)
- }
- #endif
+Thanks,
+Johan
+
+
+ drivers/ide/Kconfig | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/drivers/ide/Kconfig b/drivers/ide/Kconfig
+index 5a26584..bfec4e6 100644
+--- a/drivers/ide/Kconfig
++++ b/drivers/ide/Kconfig
+@@ -702,11 +702,6 @@ config BLK_DEV_IDE_TX4939
+ 	depends on SOC_TX4939
+ 	select BLK_DEV_IDEDMA_SFF
  
--int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+noinline int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			       unsigned long address, pmd_t *pmd,
- 			       unsigned int flags)
- {
-@@ -790,7 +790,7 @@ pgtable_t get_pmd_huge_pte(struct mm_struct *mm)
- 	return pgtable;
- }
- 
--static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
-+static noinline int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
- 					struct vm_area_struct *vma,
- 					unsigned long address,
- 					pmd_t *pmd, pmd_t orig_pmd,
-@@ -883,7 +883,7 @@ out_free_pages:
- 	goto out;
- }
- 
--int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+noinline int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
- {
- 	int ret = 0;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index c8425b1..1986c65 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2397,6 +2397,7 @@ done:
- 	return 0;
- nomem:
- 	*ptr = NULL;
-+	__WARN_printf("gfp_mask:%u nr_pages:%u oom:%d ret:%d\n", gfp_mask, nr_pages, oom, ret);
- 	return -ENOMEM;
- bypass:
- 	*ptr = NULL;
+-config BLK_DEV_IDE_AT91
+-	tristate "Atmel AT91 (SAM9, CAP9, AT572D940HF) IDE support"
+-	depends on ARM && ARCH_AT91 && !ARCH_AT91RM9200 && !ARCH_AT91X40
+-	select IDE_TIMINGS
+-
+ config BLK_DEV_IDE_ICSIDE
+ 	tristate "ICS IDE interface support"
+ 	depends on ARM && ARCH_ACORN
 -- 
-1.7.10.4
+1.8.1.1
 
--- 
-Michal Hocko
-SUSE Labs
