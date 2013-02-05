@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab3BEShk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 13:37:40 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51019 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755102Ab3BEShj (ORCPT
+	id S1756589Ab3BESiQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 13:38:16 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:36691 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755575Ab3BESiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 13:37:39 -0500
-Date: Tue, 5 Feb 2013 10:39:48 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org, akpm@linux-foundation.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
-        wency@cn.fujitsu.com, guohanjun@huawei.com, yinghai@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH v2 01/12] Add sys_hotplug.h for system device hotplug
- framework
-Message-ID: <20130205183948.GA19026@kroah.com>
-References: <1357861230-29549-1-git-send-email-toshi.kani@hp.com>
- <7003418.onqVlaaHJS@vostro.rjw.lan>
- <20130205000447.GA21782@kroah.com>
- <4225828.6MQHJn7Yzr@vostro.rjw.lan>
+	Tue, 5 Feb 2013 13:38:13 -0500
+From: Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Robin Randhawa <Robin.Randhawa@arm.com>,
+        Steve Bannister <Steve.Bannister@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>
+Date: Tue, 5 Feb 2013 18:38:07 +0000
+Subject: RE: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
+Thread-Topic: [PATCH 0/4] CPUFreq: Implement per policy instances of
+ governors
+Thread-Index: Ac4DlYU9ZlY6ybHyQXKT/WIBldYV0wAJOwXQ
+Message-ID: <80D6EFE2711DED4189C7C8F0430BFEA86D23DFF1B1@BUNGLE.Emea.Arm.com>
+References: <cover.1359976493.git.viresh.kumar@linaro.org>
+ <5808458.pvV2iHpBWm@vostro.rjw.lan>
+ <CAKohpok7RiJ_HKGi3r0vU26kNEtFKq==pMMoshT6Z2yy9ghemA@mail.gmail.com>
+ <20130204123221.GA22340@pd.tnic>
+ <CAKohpomcrtV3i9fL4zV6Mt0uDza-9pHTOsqTe2=C1t6mE6cpCQ@mail.gmail.com>
+ <20130204130403.GD13909@pd.tnic>
+ <CAKohpokuFC5gnTFcD3+RH3p5XaW8vBtyfq+Kej=d2J8tERdmoQ@mail.gmail.com>
+ <20130204133648.GE13909@pd.tnic>
+ <CAKohpokejWugM+wP5xcqp0F9AggLxuEf9Ox5fDViMxJh1c+kEw@mail.gmail.com>
+ <80D6EFE2711DED4189C7C8F0430BFEA86D23D6A80E@BUNGLE.Emea.Arm.com>
+ <20130205113950.GG4827@pd.tnic>
+In-Reply-To: <20130205113950.GG4827@pd.tnic>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4225828.6MQHJn7Yzr@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MC-Unique: 113020518381002201
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r15IcEnL016513
 
-On Tue, Feb 05, 2013 at 12:11:17PM +0100, Rafael J. Wysocki wrote:
-> On Monday, February 04, 2013 04:04:47 PM Greg KH wrote:
-> > On Tue, Feb 05, 2013 at 12:52:30AM +0100, Rafael J. Wysocki wrote:
-> > > You'd probably never try to hot-remove a disk before unmounting filesystems
-> > > mounted from it or failing it as a RAID component and nobody sane wants the
-> > > kernel to do things like that automatically when the user presses the eject
-> > > button.  In my opinion we should treat memory eject, or CPU package eject, or
-> > > PCI host bridge eject in exactly the same way: Don't eject if it is not
-> > > prepared for ejecting in the first place.
-> > 
-> > Bad example, we have disks hot-removed all the time without any
-> > filesystems being unmounted, and have supported this since the 2.2 days
-> > (although we didn't get it "right" until 2.6.)
-> 
-> I actually don't think it is really bad, because it exposes the problem nicely.
-> 
-> Namely, there are two arguments that can be made here.  The first one is the
-> usability argument: Users should always be allowed to do what they want,
-> because it is [explicit content] annoying if software pretends to know better
-> what to do than the user (it is a convenience argument too, because usually
-> it's *easier* to allow users to do what they want).  The second one is the
-> data integrity argument: Operations that may lead to data loss should never
-> be carried out, because it is [explicit content] disappointing to lose valuable
-> stuff by a stupid mistake if software allows that mistake to be made (that also
-> may be costly in terms of real money).
-> 
-> You seem to believe that we should always follow the usability argument, while
-> Toshi seems to be thinking that (at least in the case of the "system" devices),
-> the data integrity argument is more important.  They are both valid arguments,
-> however, and they are in conflict, so this is a matter of balance.
-> 
-> You're saying that in the case of disks we always follow the usability argument
-> entirely.  I'm fine with that, although I suspect that some people may not be
-> considering this as the right balance.
-> 
-> Toshi seems to be thinking that for the hotplug of memory/CPUs/host bridges we
-> should always follow the data integrity argument entirely, because the users of
-> that feature value their data so much that they pretty much don't care about
-> usability.  That very well may be the case, so I'm fine with that too, although
-> I'm sure there are people who'll argue that this is not the right balance
-> either.
-> 
-> Now, the point is that we *can* do what Toshi is arguing for and that doesn't
-> seem to be overly complicated, so my question is: Why don't we do that, at
-> least to start with?  If it turns out eventually that the users care about
-> usability too, after all, we can add a switch to adjust things more to their
-> liking.  Still, we can very well do that later.
+>
+> On Tue, Feb 05, 2013 at 11:29:04AM +0000, Charles Garcia-Tobin wrote:
+> > Actually shooting myself in the foot here, Krait is not such a great
+> > example because although you can use difference between frequencies
+> > you are less likely to use different tunables (not inconceivable
+> > but unlikely). The best examples systems are multi cluster and
+> > hereterogeneous systems, like the recently announced Samsung Exynos 5
+> > octa http://en.wikipedia.org/wiki/Exynos_(system_on_chip). We will see
+> > more systems like this appearing, sporting low power cores combined
+> > with high performance ones, all running at the same time. I appreciate
+> > this is all very new, but more will come, and the requirement to have
+> > different tunables per cluster is very real. In ARM on our own multi
+> > cluster test chip, using an experimental version of this approach, we
+> > have seen good improvements in power consumption without compromising
+> > performance.
+>
+> Ok, thanks for giving this insight, this is useful.
+>
+> Question: do you need the granularity of that control to be per cpu
+> (with that I mean what linux understands under "cpu," i.e. logical or
+> physical core) or does one governor suffice per a set of cores, or as
+> you call it, a cluster?
+>
 
-Ok, I'd much rather deal with reviewing actual implementations than
-talking about theory at this point in time, so let's see what you all
-can come up with next and I'll be glad to review it.
+Later. Whatever you'd like to call it, but essentially a set of cpus, as linux understands them, that are logically related by the fact that you'd like to be able to use the same tuning policy and same governor across all of them.
 
-thanks,
+Cheers
 
-greg k-h
+Charles
+
+(apologies again for annoying addendums to follow)
+
+
+-- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
