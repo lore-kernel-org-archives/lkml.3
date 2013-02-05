@@ -1,80 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab3BEKmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 05:42:16 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:42808 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab3BEKmO (ORCPT
+	id S1754289Ab3BEKnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 05:43:04 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:51773 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab3BEKm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 05:42:14 -0500
-Date: Tue, 05 Feb 2013 19:42:09 +0900 (JST)
-Message-Id: <20130205.194209.52400155.hdk@igel.co.jp>
-To: joro@8bytes.org
-Cc: lethal@linux-sh.org, magnus.damm@gmail.com, linux@arm.linux.org.uk,
-        horms@verge.net.au, laurent.pinchart@ideasonboard.com,
-        matsu@igel.co.jp, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        dhobsong@igel.co.jp, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 1/4] iommu/shmobile: Add iommu driver for Renesas
- IPMMU modules
-From: Hideki EIRAKU <hdk@igel.co.jp>
-In-Reply-To: <20130201135456.GG25591@8bytes.org>
-References: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
-	<1358765669-14567-2-git-send-email-hdk@igel.co.jp>
-	<20130201135456.GG25591@8bytes.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Feb 2013 05:42:59 -0500
+X-Greylist: delayed 94105 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Feb 2013 05:42:59 EST
+MIME-Version: 1.0
+In-Reply-To: <CAJ0PZbT9SEphLvnguhjho=OuoEE4KkQZfz2s4YrsoKwv=VbvEg@mail.gmail.com>
+References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+	<CAJ0PZbTAOdQrUjefOpc2MDam1hHLjSEDLHw3VrP+9=OAbgQ8ug@mail.gmail.com>
+	<CA+Z25wVnFMkXvSOvetipBEFkZgSKe2Qjn1wYf-x5i7skGQ-XSA@mail.gmail.com>
+	<CAJ0PZbT9SEphLvnguhjho=OuoEE4KkQZfz2s4YrsoKwv=VbvEg@mail.gmail.com>
+Date: Tue, 5 Feb 2013 16:12:58 +0530
+Message-ID: <CA+Z25wW8ZRCsrXbiLLiJPgtgWVWcXgXarHRQo_NCHyJ8fvx8ww@mail.gmail.com>
+Subject: Re: [PATCH 1/3] PM / devfreq: set min/max freq limit from freq table
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: MyungJoo Ham <myungjoo.ham@gmail.com>
+Cc: kyungmin.park@samsung.com, mturquette@linaro.org, rjw@sisk.pl,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg Roedel,
+On 5 February 2013 12:21, MyungJoo Ham <myungjoo.ham@gmail.com> wrote:
+> On Tue, Jan 15, 2013 at 8:21 PM, Rajagopal Venkat
+> <rajagopal.venkat@linaro.org> wrote:
+>> On 14 January 2013 20:06, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+>>> On Tue, Jan 8, 2013 at 2:50 PM, Rajagopal Venkat
+>>> <rajagopal.venkat@linaro.org> wrote:
+>>>> Set devfreq device min and max frequency limits when device
+>>>> is added to devfreq, provided frequency table is supplied.
+>>>> This helps governors to suggest target frequency with in
+>>>> limits.
+>>>>
+>>>> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+>>>
+>>> Could you please elaborate the benefit of the patch?
+>>>
+>>
+>> When freq table is supplied, it's unreasonable to suggest the target frequency
+>> which is - target_freq < min_freq and target_freq > max_freq. It avoids
+>> unnecessary checks at devfreq drivers.
+>
+> Is it a safety barrier against userspace processes or devfreq governors?
+> Users are allowed to enter min_freq and max_freq via sysfs interfaces anyway.
+> Also, as mentioned earlier, users are allowed to enter 0 in order to
+> "disengage" the min/max_freq.
 
-From: Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH v6 1/4] iommu/shmobile: Add iommu driver for Renesas IPMMU modules
-Date: Fri, 1 Feb 2013 14:54:57 +0100
+It doesn't interfere with userspace updates to min_freq/max_freq. The
+min/max limits from freq table are assigned only during the device
+devfreq init, which can be overwritten by userspace.
 
-> On Mon, Jan 21, 2013 at 07:54:26PM +0900, Hideki EIRAKU wrote:
->> This is the Renesas IPMMU driver and IOMMU API implementation.
->> 
->> The IPMMU module supports the MMU function and the PMB function.  The
->> MMU function provides address translation by pagetable compatible with
->> ARMv6.  The PMB function provides address translation including
->> tile-linear translation.  This patch implements the MMU function.
->> 
->> The iommu driver does not register a platform driver directly because:
->> - the register space of the MMU function and the PMB function
->>   have a common register (used for settings flush), so they should ideally
->>   have a way to appropriately share this register.
->> - the MMU function uses the IOMMU API while the PMB function does not.
->> - the two functions may be used independently.
->> 
->> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
-> 
-> The patch looks good in general. Just one question inline.
-> 
->> +static int pgtable_alloc(struct shmobile_iommu_domain_pgtable *pgtable,
->> +			 struct kmem_cache *cache, size_t size)
->> +{
->> +	pgtable->pgtable = kmem_cache_zalloc(cache, GFP_ATOMIC);
->> +	if (!pgtable->pgtable)
->> +		return -ENOMEM;
->> +	pgtable->handle = dma_map_single(NULL, pgtable->pgtable, size,
->> +					 DMA_TO_DEVICE);
->> +	return 0;
->> +}
-> 
-> Why is it necessary to call dma_map_single() for IOMMU page-tables?
-> usually the dma_* functions call into IOMMU drivers, so why are they
-> used inside an IOMMU driver?
+> If we need "hardware-specific" min/max value, we'd need another sysfs
+> interfaces and values (i.e., scaling_min/max_freq vs
+> cpuinfo_min/max_freq).
 
-I use dma_map_single() for flushing the page table to the IOMMU
-device.  The dma_map_ops set by arch/arm/mm/dma-mapping.c are
-per-device (unlike the intel-iommu).  The dma_* functions call into
-IOMMU drivers if the device is attached by arm_iommu_attach_device(),
-but I am using a NULL device here, so that shouldn't happen.
+In my opinion, min_freq and max_freq itself represents the devfreq
+device freq limits. Additional sysfs interfaces may not be required.
+
+>
+> Besides, if you are able to provide "freq_table", it means that you
+> are able to provide OPP for the device.
+> Then, you can use OPP APIs to avoid unnecessary checks at devfreq
+> driver (even you can use the devfreq helper functions)
+
+That's my intention as well. If driver is able to provide freq_table,
+based on the load, let devfreq core suggest only the supported opps
+(not just the limits, but for all intermediate opps). In which case,
+devfreq core must mandate drivers to add OPP table(instead of passing
+freq array) before registering with devfreq.
+
+>
+>>
+>>> The devfreq device drivers are required to choose proper frequencies
+>>> anyway regardless which values the governors may give (hopefully by
+>>> choosing the closest value that can support the required performance).
+>>>
+>>
+>> Yes. but then each driver needs to have conditional checks for choosing
+>> closet value even though freq table is provided.
+>
+> Even with this min/max-freq, when governors suggests some values
+> between min/max, each driver needs to have checks unless it uses OPP.
+
+With above proposal, devfreq should suggest only supported opps.
+
+>
+>>
+>>> Besides, the min/max values are to be set by userspace. Users may
+>>> enter 0 in order to express that they do not want to limit the
+>>> behaviors of governors.
+>
+> Because of this, this patch will create discrepency from/to userspace
+> interfaces.
+
+As said above, there is no conflict of interest between userspace and
+this patch.
+
+In summary, I propose making OPP table mandatory for all devfreq
+drivers, to enable devfreq core to suggest only supported opps. Any
+thoughts?
+
+>
+>
+>
+>
+> Cheers,
+> MyungJoo.
+>
+>>>
+>>>
+>>> Cheers,
+>>> MyungJoo.
+>>>
+>>>> ---
+>>>>  drivers/devfreq/devfreq.c |   24 ++++++++++++++++++++++++
+>>>>  1 file changed, 24 insertions(+)
+>>>>
+>>>> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+>>>> index a8f0173..5782c9b 100644
+>>>> --- a/drivers/devfreq/devfreq.c
+>>>> +++ b/drivers/devfreq/devfreq.c
+>>>> @@ -69,6 +69,29 @@ static struct devfreq *find_device_devfreq(struct device *dev)
+>>>>  }
+>>>>
+>>>>  /**
+>>>> + * devfreq_set_freq_limits() - Set min and max frequency from freq_table
+>>>> + * @devfreq:   the devfreq instance
+>>>> + */
+>>>> +static void devfreq_set_freq_limits(struct devfreq *devfreq)
+>>>> +{
+>>>> +       int idx;
+>>>> +       unsigned long min = ~0, max = 0;
+>>>> +
+>>>> +       if (!devfreq->profile->freq_table)
+>>>> +               return;
+>>>> +
+>>>> +       for (idx = 0; idx < devfreq->profile->max_state; idx++) {
+>>>> +               if (min > devfreq->profile->freq_table[idx])
+>>>> +                       min = devfreq->profile->freq_table[idx];
+>>>> +               if (max < devfreq->profile->freq_table[idx])
+>>>> +                       max = devfreq->profile->freq_table[idx];
+>>>> +       }
+>>>> +
+>>>> +       devfreq->min_freq = min;
+>>>> +       devfreq->max_freq = max;
+>>>> +}
+>>>> +
+>>>> +/**
+>>>>   * devfreq_get_freq_level() - Lookup freq_table for the frequency
+>>>>   * @devfreq:   the devfreq instance
+>>>>   * @freq:      the target frequency
+>>>> @@ -476,6 +499,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+>>>>                                                 devfreq->profile->max_state,
+>>>>                                                 GFP_KERNEL);
+>>>>         devfreq->last_stat_updated = jiffies;
+>>>> +       devfreq_set_freq_limits(devfreq);
+>>>>
+>>>>         dev_set_name(&devfreq->dev, dev_name(dev));
+>>>>         err = device_register(&devfreq->dev);
+>>>> --
+>>>> 1.7.10.4
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>>
+>>>
+>>> --
+>>> MyungJoo Ham, Ph.D.
+>>> Mobile Software Platform Lab, DMC Business, Samsung Electronics
+>>
+>>
+>>
+>> --
+>> Regards,
+>> Rajagopal
+>
+>
+>
+> --
+> MyungJoo Ham, Ph.D.
+> System S/W Lab, S/W Center, Samsung Electronics
+
+
 
 -- 
-Hideki EIRAKU <hdk@igel.co.jp>
+Regards,
+Rajagopal
