@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab3BEXnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 18:43:21 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:63787 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429Ab3BEXnQ (ORCPT
+	id S1753826Ab3BEXp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 18:45:29 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49409 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab3BEXp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 18:43:16 -0500
-From: Sean Paul <seanpaul@chromium.org>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
-        thomas.abraham@linaro.org, inki.dae@samsung.com,
-        t.stanislaws@samsung.com, tomasz.figa@gmail.com,
-        sylvester.nawrocki@gmail.com, olofj@chromium.org,
-        rahul.sharma@samsung.com, Sean Paul <seanpaul@chromium.org>
-Subject: [PATCH v3 2/3] ARM: Change exynos5-hdmi references to exynos4-hdmi
-Date: Tue,  5 Feb 2013 15:42:57 -0800
-Message-Id: <1360107777-17490-3-git-send-email-seanpaul@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1360107777-17490-1-git-send-email-seanpaul@chromium.org>
-References: <1360107777-17490-1-git-send-email-seanpaul@chromium.org>
+	Tue, 5 Feb 2013 18:45:27 -0500
+X-AuditID: 9c930179-b7c24ae00000119c-77-51119994568b
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: fengguang.wu@intel.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH] zram: fix warning of print format
+Date: Wed,  6 Feb 2013 08:45:22 +0900
+Message-Id: <1360107922-21725-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.8.1.1
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the change "drm/exynos: Get HDMI version from device tree",
-exynos5-hdmi is no longer relevant. Update references to exynos4-hdmi
-and update the hdmi compatibility string to accurately reflect the hdmi
-driver.
+kbuild bot whinges due to print format mistmatch caused by
+zram: force disksize setting before using zram.
 
-Signed-off-by: Sean Paul <seanpaul@chromium.org>
+This patch fixes it.
+
+Reported-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/arm/boot/dts/exynos5250.dtsi      |    3 ++-
- arch/arm/mach-exynos/clock-exynos5.c   |    4 ++--
- arch/arm/mach-exynos/mach-exynos5-dt.c |    4 ++--
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/staging/zram/zram_drv.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 3acf594..70464bf 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -573,7 +573,8 @@
- 	};
- 
- 	hdmi {
--		compatible = "samsung,exynos5-hdmi";
-+		compatible = "samsung,exynos5250-hdmi",
-+			     "samsung,exynos4212-hdmi", "samsung,exynos4-hdmi";
- 		reg = <0x14530000 0x70000>;
- 		interrupts = <0 95 0>;
- 	};
-diff --git a/arch/arm/mach-exynos/clock-exynos5.c b/arch/arm/mach-exynos/clock-exynos5.c
-index e9d7b80..6eae39d 100644
---- a/arch/arm/mach-exynos/clock-exynos5.c
-+++ b/arch/arm/mach-exynos/clock-exynos5.c
-@@ -686,12 +686,12 @@ static struct clk exynos5_init_clocks_off[] = {
- 		.ctrlbit	= (1 << 0),
- 	}, {
- 		.name		= "hdmi",
--		.devname	= "exynos5-hdmi",
-+		.devname	= "exynos4-hdmi",
- 		.enable		= exynos5_clk_ip_disp1_ctrl,
- 		.ctrlbit	= (1 << 6),
- 	}, {
- 		.name		= "hdmiphy",
--		.devname	= "exynos5-hdmi",
-+		.devname	= "exynos4-hdmi",
- 		.enable		= exynos5_clk_hdmiphy_ctrl,
- 		.ctrlbit	= (1 << 0),
- 	}, {
-diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-index e99d3d8..0ccda72 100644
---- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-@@ -97,8 +97,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
- 				"exynos-gsc.2", NULL),
- 	OF_DEV_AUXDATA("samsung,exynos5-gsc", EXYNOS5_PA_GSC3,
- 				"exynos-gsc.3", NULL),
--	OF_DEV_AUXDATA("samsung,exynos5-hdmi", 0x14530000,
--				"exynos5-hdmi", NULL),
-+	OF_DEV_AUXDATA("samsung,exynos4-hdmi", 0x14530000,
-+				"exynos4-hdmi", NULL),
- 	OF_DEV_AUXDATA("samsung,exynos5-mixer", 0x14450000,
- 				"exynos5-mixer", NULL),
- 	OF_DEV_AUXDATA("samsung,mfc-v6", 0x11000000, "s5p-mfc-v6", NULL),
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 85055c4..3318b0f 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -519,7 +519,7 @@ int zram_init_device(struct zram *zram)
+ 		"ratio. Note that zram uses about 0.1%% of the size of "
+ 		"the disk when not in use so a huge zram is "
+ 		"wasteful.\n"
+-		"\tMemory Size: %zu kB\n"
++		"\tMemory Size: %lu kB\n"
+ 		"\tSize you selected: %llu kB\n"
+ 		"Continuing anyway ...\n",
+ 		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
 -- 
-1.7.7.3
+1.8.1.1
 
