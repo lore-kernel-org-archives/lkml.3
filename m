@@ -1,84 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab3BFRzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:55:22 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:40891 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757799Ab3BFRzP (ORCPT
+	id S1757354Ab3BFR4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:56:43 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42284 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686Ab3BFR4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:55:15 -0500
+	Wed, 6 Feb 2013 12:56:41 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Anton Vorontsov <anton@enomsg.org>
+Subject: Re: [PATCH] bq27x00_battery: Fix reporting battery temperature
+Date: Wed, 6 Feb 2013 18:56:34 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-23-generic; KDE/4.9.4; x86_64; ; )
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+References: <1359799569-5322-1-git-send-email-pali.rohar@gmail.com> <201302032101.54487@pali> <20130203200557.GA15430@lizard.gateway.2wire.net>
+In-Reply-To: <20130203200557.GA15430@lizard.gateway.2wire.net>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWvmK7N2z19B9ZiMyc_T6cJdpWoWr3mExpuwUA4ogBc3w@mail.gmail.com>
-References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com>
- <1359314629-18651-1-git-send-email-yinghai@kernel.org> <CAErSpo6r_LNEtYB3j5ELb8NdHu0a6_YOVj8S32CmByGFUpSsbg@mail.gmail.com>
- <CAE9FiQXg1YcPPJLCgPbKOKXHk-LRQv4bbBGH9jyuATQa2ANLkg@mail.gmail.com>
- <CAE9FiQX2DbTO0qCzGO4iMTkU_mPM2oZL+R5UoZ5dj=as6MUAsw@mail.gmail.com>
- <CAErSpo7-dULYwWQ=f5CBCxOULKJE9=n6Ha4jkVKd8enspuYjTA@mail.gmail.com> <CAE9FiQWvmK7N2z19B9ZiMyc_T6cJdpWoWr3mExpuwUA4ogBc3w@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 6 Feb 2013 10:54:53 -0700
-Message-ID: <CAErSpo4x-GzGxJOWgwP_DEqNhefDo0V1zTT5GBR30+Q57=E-hg@mail.gmail.com>
-Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart2346359.ABUyHrso7C";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302061856.35366@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 5:47 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Feb 5, 2013 at 4:19 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>
->> Maybe.  I'd rather not introduce for_each_pci_host_bridge() at all, if
->> we can avoid it.  Every place it's used is a place we have to audit to
->> make sure it's safe.  I think your audit above is correct and
->> complete, but it relies on way too much architecture knowledge.  It's
->> better if we can deduce correctness without knowing which arches
->> support hotplug and which CPUs support EDAC.
->>
->> As soon as for_each_pci_host_bridge() is in the tree, those uses can
->> be copied to even more places.  It's a macro, so it's usable by any
->> module, even out-of-tree ones that we'll never see and can't fix.  So
->> we won't really have a good way to deprecate and remove it.
->
-> Now we only have two references in modules.
->
-> drivers/edac/i7core_edac.c:     for_each_pci_host_bridge(host_bridge) {
-> drivers/pci/hotplug/sgi_hotplug.c:      for_each_pci_host_bridge(host_bridge) {
->
-> for the sgi_hotplug.c, it should be same problem that have for acpiphp
-> and pciehp.
-> need to make it support pci host bridge hotplug anyway.
->
-> for edac, we need to check Mauro about their plan.
->
-> After those two are addressed, we can drop that EXPORT_SYMBOL_GPL for
-> pci_get_next_host_bridge.
->
-> We do have pci_get_domain_bus_and_slot() as export symbol.
-> So we export pci_get_next_host_bridge should be ok now.
-> and it would be better than export root buses list.
+--nextPart2346359.ABUyHrso7C
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-I think you're missing the point.
+On Sunday 03 February 2013 21:05:57 Anton Vorontsov wrote:
+> On Sun, Feb 03, 2013 at 09:01:54PM +0100, Pali Roh=C3=A1r wrote:
+> > On Sunday 03 February 2013 04:44:51 Anton Vorontsov wrote:
+> > > On Sat, Feb 02, 2013 at 11:06:09AM +0100, Pali Roh=C3=A1r wrote:
+> > > > Reported temperature can be also negative, so cache
+> > > > value in non negative Kelvin degree.
+> > > >=20
+> > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > > ---
+> > >=20
+> > > Applied, thanks!
+> >=20
+> > Now I looked at bq27x00_battery and rx51_battery drivers and
+> > I see that both drivers reporting temperature in different
+> > units. bq27x00_battery in 1/10 =C2=B0C and rx51_battery in 1/100
+> > =C2=B0C. What is correct degree for kernel power power supply
+> > API? Maybe other kernel drivers have different units too...
+> > Note that my above patch did not changed anything units,
+> > only fixed reporting (possible) negative temperature.
+>=20
+> Per Documentation/power/power_supply_class.txt and
+> power_supply.h:
+>=20
+> /*
+>  * All voltages, currents, charges, energies, time and
+> temperatures in uV, * =C2=B5A, =C2=B5Ah, =C2=B5Wh, seconds and tenths of
+> degree Celsius unless otherwise * stated. It's driver's job
+> to convert its raw values to units in which * this class
+> operates.
+>  */
+>=20
+> Feel free to fix the offending drivers.
+>=20
+> Thanks,
+>=20
+> Anton
 
-Search the tree for uses of "for_each_pci_dev()."  Almost every
-occurrence is a bug because that code doesn't work correctly for
-hot-added devices.  That code gets run for devices that are present at
-boot, but not for devices hot-added later.
+Ok, here is small patch which fixing it in bq27x00_battery driver.
+Tested on Nokia N900 with patched 3.8-rc3 kernel.
+bq27x00_battery reporting "POWER_SUPPLY_TEMP=3D2700"
+and rx51_battery reporting "POWER_SUPPLY_TEMP=3D3590"
 
-You're proposing to add "for_each_pci_host_bridge()."  That will have
-the exact same problem as for_each_pci_dev() already does.  Code that
-uses it will work for host bridges present at boot, but not for
-bridges hot-added later.
+=46rom 43a99615d6d7375770736303f1e000f3d85d75cb Mon Sep 17 00:00:00 2001
+=46rom: =3D?UTF-8?q?Pali=3D20Roh=3DC3=3DA1r?=3D <pali.rohar@gmail.com>
+Date: Sun, 3 Feb 2013 22:06:20 +0100
+Subject: [PATCH] bq27x00_battery: Report temperature in 1/100 degree Celsius
+MIME-Version: 1.0
+Content-Type: text/plain; charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
 
-Why would we want to add an interface when every use of that interface
-will be a design bug?  I think we should fix the existing users of
-pci_root_buses by changing their designs so they will work correctly
-with host bridge hotplug.
+* Documentation/power/power_supply_class.txt say that temperature must be r=
+eported in tenths of degree=20
+Celsius
 
-Bjorn
+Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+=2D--
+ drivers/power/bq27x00_battery.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_batter=
+y.c
+index 5b077af..482755f 100644
+=2D-- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -312,8 +312,10 @@ static int bq27x00_battery_read_temperature(struct bq2=
+7x00_device_info *di)
+ 		return temp;
+ 	}
+=20
+=2D	if (!bq27xxx_is_chip_version_higher(di))
+=2D		temp =3D 5 * temp / 2;
++	if (bq27xxx_is_chip_version_higher(di))
++		temp *=3D 10;
++	else
++		temp *=3D 25;
+=20
+ 	return temp;
+ }
+@@ -640,7 +642,7 @@ static int bq27x00_battery_get_property(struct power_su=
+pply *psy,
+ 	case POWER_SUPPLY_PROP_TEMP:
+ 		ret =3D bq27x00_simple_value(di->cache.temperature, val);
+ 		if (ret =3D=3D 0)
+=2D			val->intval -=3D 2731;
++			val->intval -=3D 27310;
+ 		break;
+ 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW:
+ 		ret =3D bq27x00_simple_value(di->cache.time_to_empty, val);
+=2D-=20
+1.7.10.4
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2346359.ABUyHrso7C
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlESmVMACgkQi/DJPQPkQ1IlngCfbVwX6TgXL7tQLY2wZqUZI/s8
+11kAoLe7BkINK0WUprvwxwsEHdyhzpOH
+=1KQ+
+-----END PGP SIGNATURE-----
+
+--nextPart2346359.ABUyHrso7C--
