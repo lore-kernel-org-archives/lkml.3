@@ -1,74 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055Ab3BFCTo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 21:19:44 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:47075 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731Ab3BFCTm (ORCPT
+	id S1757091Ab3BFCU1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 21:20:27 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:45989 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756778Ab3BFCUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 21:19:42 -0500
-Message-ID: <5111BD28.50407@candelatech.com>
-Date: Tue, 05 Feb 2013 18:17:12 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: Question on lockdep and MAX_LOCK_DEPTH
-References: <5111AD8D.1080005@candelatech.com> <20130206015430.GA9161@home.goodmis.org>
-In-Reply-To: <20130206015430.GA9161@home.goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Feb 2013 21:20:24 -0500
+Date: Wed, 6 Feb 2013 13:20:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Julia Lawall <Julia.Lawall@lip6.fr>
+Subject: linux-next: manual merge of the crypto tree with the net-next tree
+Message-Id: <20130206132011.9084f982f783cd9d298f187d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Feb_2013_13_20_11_+1100_hG_/3vx8/=7B5y+1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 05:54 PM, Steven Rostedt wrote:
+--Signature=_Wed__6_Feb_2013_13_20_11_+1100_hG_/3vx8/=7B5y+1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I'm not sure the swapper task is part of the 'do_each_thread()' loop.
->
-> Perhaps what you want to do is add a:
->
-> 	lockdep_print_held_locks(current);
+Hi Herbert,
 
-I'll add that and test...
+Today's linux-next merge of the crypto tree got a conflict in
+crypto/ctr.c between commit 69d3150cfc20 ("crypto: ctr - make rfc3686
+asynchronous block cipher") from the net-next tree and commit
+3e8afe35c36f ("crypto: use ERR_CAST") from the crypto tree.
 
-> I'm curious. Does your code grab a read lock? If you grab the same read
-> lock multiple times it adds to the list each time. Thus if you have
-> anything like:
->
-> 	for (i = 0; i < 100; i++ ) {
-> 		read_lock(&lock);
-> 	}
->
-> 	for (i = 0; i < 100; i++) {
-> 		read_unlock(&lock);
-> 	}
->
-> That will fill up the held locks quite a bit.
->
-> The above code I showed is ridiculous and I doubt you have it, but if
-> you have something that does lots of recursive reads for some reason,
-> that could be an issue.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-I have only one read/write lock in my module, and it looks like
-I always lock it as a writer (will fix that soon for performance
-reasons, but it should be valid locking I think).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I have no rcu locks at all in my module currently.
+diff --cc crypto/ctr.c
+index 1f2997c,095dcb6..0000000
+--- a/crypto/ctr.c
++++ b/crypto/ctr.c
+@@@ -335,40 -324,18 +335,38 @@@ static void crypto_rfc3686_exit_tfm(str
+ =20
+  static struct crypto_instance *crypto_rfc3686_alloc(struct rtattr **tb)
+  {
+ +	struct crypto_attr_type *algt;
+  	struct crypto_instance *inst;
+  	struct crypto_alg *alg;
+ +	struct crypto_skcipher_spawn *spawn;
+ +	const char *cipher_name;
+  	int err;
+ =20
+ -	err =3D crypto_check_attr_type(tb, CRYPTO_ALG_TYPE_BLKCIPHER);
+ +	algt =3D crypto_get_attr_type(tb);
+- 	err =3D PTR_ERR(algt);
+ +	if (IS_ERR(algt))
+- 		return ERR_PTR(err);
+++		return ERR_CAST(algt);
+ +
+ +	if ((algt->type ^ CRYPTO_ALG_TYPE_BLKCIPHER) & algt->mask)
+ +		return ERR_PTR(-EINVAL);
+ +
+ +	cipher_name =3D crypto_attr_alg_name(tb[1]);
+- 	err =3D PTR_ERR(cipher_name);
+ +	if (IS_ERR(cipher_name))
+- 		return ERR_PTR(err);
+++		return ERR_CAST(cipher_name);
+ +
+ +	inst =3D kzalloc(sizeof(*inst) + sizeof(*spawn), GFP_KERNEL);
+ +	if (!inst)
+ +		return ERR_PTR(-ENOMEM);
+ +
+ +	spawn =3D crypto_instance_ctx(inst);
+ +
+ +	crypto_set_skcipher_spawn(spawn, inst);
+ +	err =3D crypto_grab_skcipher(spawn, cipher_name, 0,
+ +				   crypto_requires_sync(algt->type,
+ +							algt->mask));
+  	if (err)
+ -		return ERR_PTR(err);
+ +		goto err_free_inst;
+ =20
+ -	alg =3D crypto_attr_alg(tb[1], CRYPTO_ALG_TYPE_BLKCIPHER,
+ -				  CRYPTO_ALG_TYPE_MASK);
+ -	if (IS_ERR(alg))
+ -		return ERR_CAST(alg);
+ +	alg =3D crypto_skcipher_spawn_alg(spawn);
+ =20
+  	/* We only support 16-byte blocks. */
+  	err =3D -EINVAL;
 
-I've seen similar lockups on another machine that does not use
-this module, but it uses a hacked up pktgen.  I haven't found
-a test case that reproduces this on a clean upstream build,
-but I am still fairly suspicious that it isn't my code.
-Famous last words I'm sure :)
+--Signature=_Wed__6_Feb_2013_13_20_11_+1100_hG_/3vx8/=7B5y+1
+Content-Type: application/pgp-signature
 
-Thanks,
-Ben
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+iQIcBAEBCAAGBQJREb3bAAoJEECxmPOUX5FExwAP/1+AsMQON4aljhGUNCwC/HEZ
+gg90Bl9WRM6x7rMlVEdUZvFUHFDv/9cEyufR/ZaawdXaH6bg1gbuIHbkc+vigHev
+g5J8rjJSCSMX6N4CtTlPZQI4Uo6rlis4xw5vBnmlz7d+VOFb5sPENykRCy52//wc
+sfAZ9FWv9bcyPOJO5kk0WhRC7gnlJLjuPzMIrhibqwd01wtwjRNFxx2e9pk9paUp
+2r9nB27c66lU9X8FH5Q/8uUGJ4I8MdGHus/Uf/SeT8JOdfEi2tePmeV+UCYIM7MK
+EveqGAzl6HGri0D2BJrU4TiqB7ATUPnHNfc+bcFsYzrO4N/SLwat3+koowVYVk01
+1og8V1FzLZYYV3cOkQNiA3VMUnsT3Z8JPAn9mKwWm1kY8Jz4exeLOwoeUrz3K+v5
+qzoCDE/qZStYeJpeh1aHp8M3AH4iaoJWbmubsrnIGYtEIOi+0dOduoJsFcY1Dhjz
+Mw7P8bYwermzkqg98BjwCDnMC1Kx47rRJtSMKUguReWVuTfRzA0kaY5PxMu5DuvQ
++GebmDrlXD5911Qgsu3Jb9OmGkfkzNI+CUInwCpNKyHtN5UJ/EhorcVkqGQuRSIJ
+a+4ZijOZegdk0w2iT+d7clPjKs3u0cFvNRp2m0nSvtFJiBCgSEv95SeVUiLluKBl
+Y+A5MWLK0xWQELGVBVr4
+=WK/T
+-----END PGP SIGNATURE-----
 
+--Signature=_Wed__6_Feb_2013_13_20_11_+1100_hG_/3vx8/=7B5y+1--
