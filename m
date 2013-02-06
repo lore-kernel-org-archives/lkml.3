@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3BFLER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 06:04:17 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39063 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757160Ab3BFLEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 06:04:09 -0500
-Date: Wed, 6 Feb 2013 13:03:55 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, <gregkh@linuxfoundation.org>,
-        <tony@atomide.com>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <b-cousson@ti.com>, <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 3/5] ARM: OMAP2: MUSB: Specify omap4 has mailbox
-Message-ID: <20130206110355.GH22064@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1360130294-5976-1-git-send-email-kishon@ti.com>
- <1360130294-5976-4-git-send-email-kishon@ti.com>
- <20130206105713.GF17852@n2100.arm.linux.org.uk>
+	id S1757543Ab3BFLEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 06:04:40 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:48089 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756273Ab3BFLEg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 06:04:36 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="82evfD9Ogz2JrdWZ"
-Content-Disposition: inline
-In-Reply-To: <20130206105713.GF17852@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1302051212550.2260@pobox.suse.cz>
+References: <1359649351-11092-1-git-send-email-benjamin.tissoires@gmail.com>
+	<20130203130731.GA2677@polaris.bitmath.org>
+	<CAN+gG=GRS+fx4c3Kdba-89+ba8soimMm_rv7HDuaZLZWseQGuQ@mail.gmail.com>
+	<20130204115443.GA4405@polaris.bitmath.org>
+	<alpine.LNX.2.00.1302051212550.2260@pobox.suse.cz>
+Date: Wed, 6 Feb 2013 12:04:34 +0100
+Message-ID: <CAN+gG=F5KHmq2F_op6RbvXiSp=T0oD_cTgPuBHptXVHyHZwpjA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] Support of Nexio 42" and new default class for hid-multitouch
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---82evfD9Ogz2JrdWZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 5, 2013 at 12:13 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 4 Feb 2013, Henrik Rydberg wrote:
+>
+>> > Thanks for the review. However, before sending a new patch series, I'd
+>> > like to have your answers to my comments as I mostly disagree on
+>> > everything :)
+>>
+>> With good reason, apparently. :-) I see no major problem with your
+>> patches, although the discussed details show that there is room for
+>> some refactoring.
+>
+> Thanks to both of you. As I don't object to the HID core change, I have
+> now applied the patchset, so please send any further additions on top of
+> for-3.9/multitouch branch of my tree.
 
-Hi,
+Ok. Thanks Jiri. I will send the patch in a minute.
 
-On Wed, Feb 06, 2013 at 10:57:13AM +0000, Russell King - ARM Linux wrote:
-> On Wed, Feb 06, 2013 at 11:28:11AM +0530, Kishon Vijay Abraham I wrote:
-> > Added has_mailbox to the musb platform data to specify that omap uses
-> > an external mailbox (in control module) to communicate with the musb
-> > core during device connect and disconnect.
->=20
-> So, I've been through your five patches looking for any other users of
-> "has_mailbox" and I can find none.  You introduce this in this patch,
-> and you set it.  But I don't see anything that uses it.
->=20
-> Write only variables are not useful.
+>
+> Also, Benjamin, perhaps it'd make sense to put a link somewhere into
+> in-tree documentation, with pointer to your testing suite?
 
-looking back at what I sent Greg this was probably my fault. When taking
-Kishon's patches (in particular $SUBJECT) I removed some of arch/arm/
-code and ended up forgetting to add the include file which introduces
-has_mailbox.
+Good idea. However, I prefer removing the dependencies between hid
+drivers and usbhid before including such reference to avoid testers
+getting kernel oops while trying to access the usb layer from the uhid
+device... So, yesterday and this morning, I rebased/updated Henrik's
+patches on this topic. They should be ready soon.
 
-This means that my lack of attention has introduced a compile break on
-Greg's tree. Oh well, s**t happens. In any case, the user is already in
-Greg's tree and there's no way Greg will rebase his tree to amend
-$SUBJECT there, so it will have to go separately.
+Do you mind if I send the usbhid dependency and the pen+multitouch
+series this week, or we are too close to the 3.9 opening window?
 
-I didn't even notice this before because I had the diff in my tree, just
-forgot to git add and/or git reset. Too late now
-
---=20
-balbi
-
---82evfD9Ogz2JrdWZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJREjibAAoJEIaOsuA1yqREA0oP/R2MWF3hea5B7ai98C4pb3Jp
-+maAACPF6IxGXoChq7wBEPHPK8ZsLa3Ca+8/rxgUaECcpYqXsprDf9SUowUtMBs9
-LOyBBT+OPGvnHPD2YsLhp+6HgmHKZRhwXEsl9hxr4s2ZlBORy7+6BR49WnV5yYtK
-SJhvT/bOhs9uENJWmSolw3XB0KcODWVmp3P9jankDj7FoqNGDmsyHZysW0s4jEGs
-Jai4GZOS4+EqAiODiByI5RrgmD95mUT/KTRdJTN0tP1q0/PQjPFAPfJcB9x+NtjX
-mAOOwU9MvOHUdjcSxFMMt4XeMjyhE6AxIIvm6NHL1oq6wvUbMqMiYSzTdE/WZlEL
-bh8rd9H0shRhF3N0LW4FJpooiwGd9v9GhbpHVn2lHJNx5pgWrS6eyO4PewDAyEF/
-vc4ltprY75/EMqkD7qP+jFJiQtC5FeHJMP6qKLEfZAWp5Yp/ezbLpK5WdOOx1GoI
-Xk6JSR+TqKZeqXnk97bzuOuYIr/m/vK7I2Fi+k2o0cdlaltJZjAvhmLA2+N723z6
-F8vFNTjURiKmrajxMSGs9PbVvtmsgdDw5SiA/VtZgM/8cp0+hKp4Yo5h/jJrgW6P
-LhXviYAEs4VCIj1dEojOVqAq4E4GuTcYDAn6bndC1uOoEyWWfFp3/WFF6IOzN7NG
-6C0T54VwBGCx6PdWxnqT
-=+GVp
------END PGP SIGNATURE-----
-
---82evfD9Ogz2JrdWZ--
+Cheers,
+Benjamin
