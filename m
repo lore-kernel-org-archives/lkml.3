@@ -1,121 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab3BFNQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 08:16:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51388 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab3BFNQy (ORCPT
+	id S1754610Ab3BFNRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 08:17:05 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:61605 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab3BFNRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 08:16:54 -0500
-Date: Wed, 6 Feb 2013 11:16:45 -0200
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Frediano Ziglio <frediano.ziglio@citrix.com>
-Cc: Andrew Cooper <Andrew.Cooper3@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 11/93] xen: Fix stack corruption in xen_failsafe_callback
- for 32bit PVOPS guests.
-Message-ID: <20130206131644.GA2952@herton-Z68MA-D2H-B3>
-References: <1360102042-10732-1-git-send-email-herton.krzesinski@canonical.com>
- <1360102042-10732-12-git-send-email-herton.krzesinski@canonical.com>
- <7CE799CC0E4DE04B88D5FDF226E18AC201058D458367@LONPMAILBOX01.citrite.net>
+	Wed, 6 Feb 2013 08:17:00 -0500
+Date: Wed, 6 Feb 2013 14:16:55 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Stoney Wang <song-bo.wang@hp.com>, stable@kernel.org
+Subject: Re: [PATCH] x86, apic: Check fadt x2apic phys in x2apic_phys_probe()
+Message-ID: <20130206131655.GH8696@gmail.com>
+References: <20130204110304.GD24173@gmail.com>
+ <1360009767-3633-1-git-send-email-yinghai@kernel.org>
+ <20130205122432.GE21455@gmail.com>
+ <CAE9FiQXn1P0RGD-O3jeFNgAdsfv4EQyH8g7r0x3KBFfh20fF=Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7CE799CC0E4DE04B88D5FDF226E18AC201058D458367@LONPMAILBOX01.citrite.net>
+In-Reply-To: <CAE9FiQXn1P0RGD-O3jeFNgAdsfv4EQyH8g7r0x3KBFfh20fF=Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 10:18:54AM +0000, Frediano Ziglio wrote:
-> At stated before I'm the author of this patch.
-> 
-> Please change the From: to
-> 
-> From: Frediano Ziglio <frediano.ziglio@citrix.com>
-> 
-> Frediano
 
-I fixed this in my tree now. But note that the real problem is that this
-got submitted, included and pushed in mainline with the wrong author, and
-that's not going to be fixed, since would involve rebasing/rewriting the
-history there. I just cherry-picked the commit as is from mainline
-(Linus tree).
+* Yinghai Lu <yinghai@kernel.org> wrote:
 
+> On Tue, Feb 5, 2013 at 4:24 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Yinghai Lu <yinghai@kernel.org> wrote:
+> >
+> >> From: Stoney Wang <song-bo.wang@hp.com>
+> >>
+> >> When HP ProLiant DL980 G7 Server boot without x2apic_phys, there will be
+> >> intermittent lost interrupts and could result in a hang or data loss.
+> >
+> > What does 'boot without x2apic_phys' mean?
+> >
+> > Does it mean x2apic_phys=0 boot command line? Or, because
+> > x2apic_phys is off by default, does it simply mean that if it's
+> > booted with a default kernel, without any workaround specified
+> > on the boot command line?
 > 
-> 
-> On Tue, 2013-02-05 at 20:06 -0200, Herton Ronaldo Krzesinski wrote:
-> > 3.5.7.5 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Andrew Cooper <andrew.cooper3@citrix.com>
-> > 
-> > commit 9174adbee4a9a49d0139f5d71969852b36720809 upstream.
-> > 
-> > This fixes CVE-2013-0190 / XSA-40
-> > 
-> > There has been an error on the xen_failsafe_callback path for failed
-> > iret, which causes the stack pointer to be wrong when entering the
-> > iret_exc error path.  This can result in the kernel crashing.
-> > 
-> > In the classic kernel case, the relevant code looked a little like:
-> > 
-> >         popl %eax      # Error code from hypervisor
-> >         jz 5f
-> >         addl $16,%esp
-> >         jmp iret_exc   # Hypervisor said iret fault
-> > 5:      addl $16,%esp
-> >                        # Hypervisor said segment selector fault
-> > 
-> > Here, there are two identical addls on either option of a branch which
-> > appears to have been optimised by hoisting it above the jz, and
-> > converting it to an lea, which leaves the flags register unaffected.
-> > 
-> > In the PVOPS case, the code looks like:
-> > 
-> >         popl_cfi %eax         # Error from the hypervisor
-> >         lea 16(%esp),%esp     # Add $16 before choosing fault path
-> >         CFI_ADJUST_CFA_OFFSET -16
-> >         jz 5f
-> >         addl $16,%esp         # Incorrectly adjust %esp again
-> >         jmp iret_exc
-> > 
-> > It is possible unprivileged userspace applications to cause this
-> > behaviour, for example by loading an LDT code selector, then changing
-> > the code selector to be not-present.  At this point, there is a race
-> > condition where it is possible for the hypervisor to return back to
-> > userspace from an interrupt, fault on its own iret, and inject a
-> > failsafe_callback into the kernel.
-> > 
-> > This bug has been present since the introduction of Xen PVOPS support
-> > in commit 5ead97c84 (xen: Core Xen implementation), in 2.6.23.
-> > 
-> > Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-> > Signed-off-by: Andrew Cooper <andrew.cooper3@citrix.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> > ---
-> >  arch/x86/kernel/entry_32.S |    1 -
-> >  1 file changed, 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> > index 8f8e8ee..2a6919e 100644
-> > --- a/arch/x86/kernel/entry_32.S
-> > +++ b/arch/x86/kernel/entry_32.S
-> > @@ -1065,7 +1065,6 @@ ENTRY(xen_failsafe_callback)
-> >  	lea 16(%esp),%esp
-> >  	CFI_ADJUST_CFA_OFFSET -16
-> >  	jz 5f
-> > -	addl $16,%esp
-> >  	jmp iret_exc
-> >  5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
-> >  	SAVE_ALL
-> 
+> means that user does not append "x2apic_phys" in boot command line.
 
--- 
-[]'s
-Herton
+The user does not append a whole lot of other 
+behavior-modification command line options either! There's no 
+apic=0 line either. Nor smp=0.
+
+Adding this essentially irrelevant piece of information to the 
+*FIRST*, most important sentence of the changelog is thus not 
+just confusing but utterly misleading. Communications 101.
+
+Instead it should say something like:
+
+   When a HP ProLiant DL980 G7 Server boots a regular kernel,
+   there will be intermittent lost interrupts which could
+   result in a hang or (in extreme cases) data loss.
+
+   The reason is that this system only supports x2apic physical 
+   mode, while the kernel boots with a logical-cluster default 
+   setting.
+
+   This bug can be worked around by specifying the x2apic_phys=1
+   boot option, but we want to handle this sytem without
+   requiring manual workarounds.
+
+Right? Writing a clean changelog is like writing clean code - 
+you have to learn it if you want to contribute to the kernel 
+smoothly. Think of it as an engineering task: the other required 
+half of modifying kernel code.
+
+Thanks,
+
+	Ingo
