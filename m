@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab3BFFRU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:17:20 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:56992 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750761Ab3BFFRP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:17:15 -0500
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Tony Lindgren <tony@atomide.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Cousson, Benoit" <b-cousson@ti.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [GIT PULL] ARM part of USB patches
-Thread-Topic: [GIT PULL] ARM part of USB patches
-Thread-Index: AQHOA8X4MwwET/F4MkCgwumbyff5LJhrNwKAgAETD5A=
-Date: Wed, 6 Feb 2013 05:16:55 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EC04FF8@DBDE01.ent.ti.com>
-References: <51112418.5020000@ti.com> <51112495.4060908@ti.com>
- <20130205172724.GA1601@kroah.com> <20130205181947.GI25185@atomide.com>
-In-Reply-To: <20130205181947.GI25185@atomide.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751157Ab3BFFUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:20:49 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:20686 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab3BFFUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 00:20:48 -0500
+X-IronPort-AV: E=Sophos;i="4.84,613,1355068800"; 
+   d="scan'208";a="6694956"
+Message-ID: <5111E7D0.5030409@cn.fujitsu.com>
+Date: Wed, 06 Feb 2013 13:19:12 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com
+CC: Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 5/7] vmscan: change type of vm_total_pages to unsigned long
+References: <5111E612.4010907@cn.fujitsu.com>
+In-Reply-To: <5111E612.4010907@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 13:19:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 13:19:29,
+	Serialize complete at 2013/02/06 13:19:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 23:49:47, Tony Lindgren wrote:
-> * gregkh@linuxfoundation.org <gregkh@linuxfoundation.org> [130205 09:28]:
-> > On Tue, Feb 05, 2013 at 08:56:13PM +0530, kishon wrote:
-> > > Hi Tony, Greg,
-> > > 
-> > > On Tuesday 05 February 2013 08:54 PM, kishon wrote:
-> > > >Hi Tony,
-> > > >
-> > > >As discussed, I'm sending a pull request for the arch/arm part of my USB
-> > > >patches. These patches are necessary to get MUSB functional in both dt
-> > > >and non-dt boot. Also added dt data for dwc3 present in OMAP. This patch
-> > > >series *depends* on some of the patches which are merged in usb-next.
-> > > 
-> > > This patch series should go in only after USB. Or else it will break
-> > > compilation.
-> > 
-> > Then it probably should go through the USB tree, right?  We don't want
-> > to break bisectability.
-> 
-> Looks like this branch needs to be based on at least 01658f0f (usb: phy:
-> add a new driver for usb part of control module) to compile. Probably
-> needs other USB patches too to make sense.
-> 
-> This branch has a high likelihood of conflicting with .dts files, so
-> Kishon, I suggest you do two branches:
-> 
-> 1. A branch for Greg based on top of the USB changes
-> 
->    This branch should contain:
-> 
->    ARM: OMAP4: remove control module address space from PHY and OTG
->    ARM: OMAP: devices: create device for usb part of control module
->    ARM: OMAP2: MUSB: Specify omap4 has mailbox
->    ARM: OMAP: USB: Add phy binding information
-> 
->    Naturally please make sure they compile and boot on their own.
->    Looks like this will only cause few trivial include merge conflicts
->    with what I have queued up.
-> 
->    You can add my Acked-by: Tony Lindgren <tony@atomide.com> for those.
-> 
-> 2. A branch for Benoit based on v3.8-rc6
-> 
->    That branch should contain all the .dts changes as those will
->    most likely cause nasty merge conflicts otherwise with what
->    Benoit has queued up.
-> 
+This variable is calculated from nr_free_pagecache_pages so
+change its type to unsigned long.
 
-Tony/Benoit,
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ include/linux/swap.h |    2 +-
+ mm/vmscan.c          |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-There are few AM33xx DTS patches pending from long time, how do you want to 
-take it forward? You want me to put it into one branch and share? OR just 
-provide the list of all patches to you?
-
-Thanks,
-Vaibhav
-> Regards,
-> 
-> Tony
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
-> 
-
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index c238323..fa1f686 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -266,7 +266,7 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+ extern unsigned long shrink_all_memory(unsigned long nr_pages);
+ extern int vm_swappiness;
+ extern int remove_mapping(struct address_space *mapping, struct page *page);
+-extern long vm_total_pages;
++extern unsigned long vm_total_pages;
+ 
+ #ifdef CONFIG_NUMA
+ extern int zone_reclaim_mode;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 196709f..5344a5b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -128,7 +128,7 @@ struct scan_control {
+  * From 0 .. 100.  Higher means more swappy.
+  */
+ int vm_swappiness = 60;
+-long vm_total_pages;	/* The total number of pages which the VM controls */
++unsigned long vm_total_pages;	/* The total number of pages which the VM controls */
+ 
+ static LIST_HEAD(shrinker_list);
+ static DECLARE_RWSEM(shrinker_rwsem);
+-- 
+1.7.1
