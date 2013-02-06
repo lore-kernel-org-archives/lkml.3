@@ -1,140 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab3BFCRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 21:17:17 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50534 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756964Ab3BFCRN (ORCPT
+	id S1757029Ab3BFCSg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 21:18:36 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:50107 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680Ab3BFCSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 21:17:13 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-b1-5111bd26d5bc
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: [PATCH v2] zsmalloc: Add Kconfig for enabling PTE method
-Date: Wed,  6 Feb 2013 11:17:08 +0900
-Message-Id: <1360117028-5625-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.1.1
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 5 Feb 2013 21:18:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360088646-19104-7-git-send-email-dirk.brandewie@gmail.com>
+References: <1360088646-19104-1-git-send-email-dirk.brandewie@gmail.com>
+	<1360088646-19104-7-git-send-email-dirk.brandewie@gmail.com>
+Date: Wed, 6 Feb 2013 07:48:32 +0530
+X-Google-Sender-Auth: meYGmqCRFrcKEJcjf5tt52oKJu0
+Message-ID: <CAOh2x=nzZAgU4MXKVGSbLTT53yfZkMxsLSxA_nihMiBMkBABgQ@mail.gmail.com>
+Subject: Re: [PATCH 6/7] cpufreq_stats: do not remove sysfs files if frequency
+ table is not present
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: dirk.brandewie@gmail.com
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zsmalloc has two methods 1) copy-based and 2) pte-based to access
-allocations that span two pages. You can see history why we supported
-two approach from [1].
+On Tue, Feb 5, 2013 at 11:54 PM,  <dirk.brandewie@gmail.com> wrote:
+> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+>
+> The sysfs files for cpufreq_stats are created in cpufreq_stats_create_table()
+> called from cpufreq_stat_notifier_policy() when a policy is added to
+> the cpu. cpufreq_stats_create_table() will not be called if the
+> scaling driver does not export a frequency table to cpufreq.  Use the
+> same fence on tear down.
+>
+> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> ---
+>  drivers/cpufreq/cpufreq_stats.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index 572124c..fb001e2 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -185,6 +185,11 @@ static void cpufreq_stats_free_table(unsigned int cpu)
+>  static void cpufreq_stats_free_sysfs(unsigned int cpu)
+>  {
+>         struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
+> +       struct cpufreq_frequency_table *table;
+> +
+> +       table = cpufreq_frequency_get_table(cpu);
+> +       if (!table)
+> +               return;
 
-In summary, copy-based method is 3 times fater in x86 while pte-based
-is 6 times faster in ARM.
+Because we aren't using table later on, i would write it as:
 
-But it was bad choice that adding hard coding to select architecture
-which want to use pte based method. This patch removed it and adds
-new Kconfig to select the approach.
-
-This patch is based on next-20130205.
-
-[1] https://lkml.org/lkml/2012/7/11/58
-
-* Changelog from v1
-  * Fix CONFIG_PGTABLE_MAPPING in zsmalloc-main.c - Greg
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zsmalloc/Kconfig         | 12 ++++++++++++
- drivers/staging/zsmalloc/zsmalloc-main.c | 20 +++++---------------
- 2 files changed, 17 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-index 9084565..232b3b6 100644
---- a/drivers/staging/zsmalloc/Kconfig
-+++ b/drivers/staging/zsmalloc/Kconfig
-@@ -8,3 +8,15 @@ config ZSMALLOC
- 	  non-standard allocator interface where a handle, not a pointer, is
- 	  returned by an alloc().  This handle must be mapped in order to
- 	  access the allocated space.
-+
-+config PGTABLE_MAPPING
-+        bool "Use page table mapping to access allocations that span two pages"
-+        depends on ZSMALLOC
-+        default n
-+        help
-+	  By default, zsmalloc uses a copy-based object mapping method to access
-+	  allocations that span two pages. However, if a particular architecture
-+	  performs VM mapping faster than copying, then you should select this.
-+	  This causes zsmalloc to use page table mapping rather than copying
-+	  for object mapping. You can check speed with zsmalloc benchmark[1].
-+	  [1] https://github.com/spartacus06/zsmalloc
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 06f73a9..2c1805c 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -207,6 +207,7 @@ struct zs_pool {
- 	struct size_class size_class[ZS_SIZE_CLASSES];
- 
- 	gfp_t flags;	/* allocation flags used when growing pool */
-+
- };
- 
- /*
-@@ -218,19 +219,8 @@ struct zs_pool {
- #define CLASS_IDX_MASK	((1 << CLASS_IDX_BITS) - 1)
- #define FULLNESS_MASK	((1 << FULLNESS_BITS) - 1)
- 
--/*
-- * By default, zsmalloc uses a copy-based object mapping method to access
-- * allocations that span two pages. However, if a particular architecture
-- * performs VM mapping faster than copying, then it should be added here
-- * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
-- * page table mapping rather than copying for object mapping.
--*/
--#if defined(CONFIG_ARM)
--#define USE_PGTABLE_MAPPING
--#endif
--
- struct mapping_area {
--#ifdef USE_PGTABLE_MAPPING
-+#ifdef CONFIG_PGTABLE_MAPPING
- 	struct vm_struct *vm; /* vm area for mapping object that span pages */
- #else
- 	char *vm_buf; /* copy buffer for objects that span pages */
-@@ -622,7 +612,7 @@ static struct page *find_get_zspage(struct size_class *class)
- 	return page;
- }
- 
--#ifdef USE_PGTABLE_MAPPING
-+#ifdef CONFIG_PGTABLE_MAPPING
- static inline int __zs_cpu_up(struct mapping_area *area)
- {
- 	/*
-@@ -663,7 +653,7 @@ static inline void __zs_unmap_object(struct mapping_area *area,
- 	flush_tlb_kernel_range(addr, end);
- }
- 
--#else /* USE_PGTABLE_MAPPING */
-+#else /* CONFIG_PGTABLE_MAPPING*/
- 
- static inline int __zs_cpu_up(struct mapping_area *area)
- {
-@@ -741,7 +731,7 @@ out:
- 	pagefault_enable();
- }
- 
--#endif /* USE_PGTABLE_MAPPING */
-+#endif /* CONFIG_PGTABLE_MAPPING */
- 
- static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
- 				void *pcpu)
--- 
-1.8.1.1
-
+> +       if (!cpufreq_frequency_get_table(cpu))
+> +               return;
