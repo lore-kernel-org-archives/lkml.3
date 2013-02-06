@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab3BFO6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 09:58:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50169 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755460Ab3BFO5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 09:57:20 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-CC: <grant.likely@secretlab.ca>, <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH 6/8] ARM: dts: omap5: Add omap-usb3 and omap-usb2 dt data
-Date: Wed, 6 Feb 2013 20:26:42 +0530
-Message-ID: <1360162604-14320-7-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360162604-14320-1-git-send-email-kishon@ti.com>
-References: <1360162604-14320-1-git-send-email-kishon@ti.com>
+	id S1757163Ab3BFO7P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 09:59:15 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:53349 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756496Ab3BFO7K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 09:59:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <CAOw_e7bgPLMzvTGczFH+npo+usrSOkHHRrpAGc-3GndVH0uuFw@mail.gmail.com>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+	<CAOw_e7bgPLMzvTGczFH+npo+usrSOkHHRrpAGc-3GndVH0uuFw@mail.gmail.com>
+Date: Wed, 6 Feb 2013 15:59:08 +0100
+Message-ID: <CAJfpegvvF=u9mtZJwcdDZZD0Qwuw-dJSY-KpN2eT2Kw6fPfyZg@mail.gmail.com>
+Subject: Re: [fuse-devel] [PATCH] fuse: make fuse daemon frozen along with
+ kernel threads
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: hanwen@xs4all.nl
+Cc: Li Fei <fei.li@intel.com>, pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com,
+        mingo@redhat.com, peterz@infradead.org, biao.wang@intel.com,
+        linux-pm@vger.kernel.org, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add omap-usb3 and omap-usb2 data node in omap5 device tree file.
-The information for the node added here is available @
-Documentation/devicetree/bindings/usb/usb-phy.txt
+On Wed, Feb 6, 2013 at 10:56 AM, Han-Wen Nienhuys <hanwenn@gmail.com> wrote:
+> On Wed, Feb 6, 2013 at 2:11 AM, Li Fei <fei.li@intel.com> wrote:
+>>
+>> There is well known issue that freezing will fail in case that fuse
+>> daemon is frozen firstly with some requests not handled, as the fuse
+>> usage task is waiting for the response from fuse daemon and can't be
+>> frozen.
+>>
+>> To solve the issue above, make fuse daemon frozen after all all user
+>> space processes frozen and during the kernel threads frozen phase.
+>> PF_FREEZE_DAEMON flag is added to indicate that the current thread is
+>> the fuse daemon, set on connection, and clear on disconnection.
+>> It works as all fuse requests are handled during user space processes
+>> frozen, there will no further fuse request, and it's safe to continue
+>> to freeze fuse daemon together with kernel freezable tasks.
+>
+> Will this work correctly if one FUSE daemon is opening files in from
+> another FUSE filesystem?
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/omap5.dtsi |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+As long as only non-fuse-daemon processes are generating the requests
+(i.e. fuse daemons don't spontaneously generate new requests) it
+should work.
 
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 230b779..bd73257 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -511,6 +511,20 @@
- 			#size-cells = <1>;
- 			ranges;
- 			ti,hwmods = "ocp2scp1";
-+			usb2_phy: usb2phy@4a084000 {
-+				compatible = "ti,omap-usb2";
-+				reg = <0x4a084000 0x7c>;
-+				ctrl-module = <&omap_control_usb>;
-+			};
-+
-+			usb3_phy: usb3phy@4a084400 {
-+				compatible = "ti,omap-usb3";
-+				reg = <0x4a084400 0x80>,
-+				      <0x4a084800 0x64>,
-+				      <0x4a084c00 0x40>;
-+				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
-+				ctrl-module = <&omap_control_usb>;
-+			};
- 		};
- 	};
- };
--- 
-1.7.10.4
+I think more problematic is that userspace processes tend to
+communicate with each other, sometimes in a non-trivial way.  For
+example gethostbyname(3) will turn to nscd(8) for name service cache
+results.  So a fuse daemon that might call gethostbyname() should mark
+nscd with PF_FREEZE_DAEMON but that requires careful audit (or nscd
+might mark itself PF_FREEZE_DAEMON for that reason).
 
+And that's just an example of a most basic C library function.  There
+are many more such hidden interactions that can trip up this scheme.
+
+Thanks,
+Miklos
