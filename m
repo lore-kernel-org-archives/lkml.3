@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3BFPuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:50:39 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:46356 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab3BFPuh (ORCPT
+	id S1757148Ab3BFPvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:51:25 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:41212 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753765Ab3BFPvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:50:37 -0500
-Message-ID: <51127BCA.7070900@mojatatu.com>
-Date: Wed, 06 Feb 2013 10:50:34 -0500
-From: Jamal Hadi Salim <jhs@mojatatu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 6 Feb 2013 10:51:20 -0500
+Date: Wed, 6 Feb 2013 10:51:19 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v9 4/4] sd: change to auto suspend mode
+In-Reply-To: <5111BBA1.4010200@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1302061048180.1893-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Emmanuel Thierry <emmanuel.thierry@telecom-bretagne.eu>
-CC: Steffen Klassert <steffen.klassert@secunet.com>,
-        Romain KUNTZ <r.kuntz@ipflavors.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        herbert@gondor.hengli.com.au,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jamal Hadi Salim <hadi@cyberus.ca>
-Subject: Re: [RFC PATCH] xfrm: fix handling of XFRM policies mark and mask.
-References: <9E57ADA1-5770-47A8-8EBF-7FC262EEF1C7@ipflavors.com> <20130205081232.GF23291@secunet.com> <51125744.3030905@gmail.com> <D4563759-CEC5-4F33-BF0A-9FA10716F8DF@telecom-bretagne.eu> <511268F0.5070808@mojatatu.com> <5D4F2414-B869-46AA-B684-01F9EA88AD03@telecom-bretagne.eu>
-In-Reply-To: <5D4F2414-B869-46AA-B684-01F9EA88AD03@telecom-bretagne.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-02-06 09:39 AM, Emmanuel Thierry wrote:
->
+On Wed, 6 Feb 2013, Aaron Lu wrote:
 
-> I think you misread the example !
+> > The "if (err == -EAGAIN)" test and the call to pm_schedule_suspend seem
+> > to have been dropped since v8 of this series.  It looks like they ought
+> > to be moved into sdev_runtime_suspend.
+> 
+> I thought they were no longer needed...
 
-I did ;->
+You did not mention this in the patch description.
 
-> Marks are both 1, masks are different.
->
-> This case is more complex than a policy
-> with no mark (so mark=0 and mask=0) versus
-> a policy with an exact mark (so mark=1 and mask=0xffffffff),
-> and i wanted to know if the algorithm would take these kind of cases into account.
->
+> For sd, we have request based rutime PM and the PM core will always try
+> to autosuspend the device with the timer; and for sr, the poll will
+> trigger suspend constantly.
 
-Aha. I think this is pushing the envelope a little - are there good use 
-cases for this?
-certainly you could insert with most exact mask first. No such check is 
-made at the moment.
+What if the poll has been disabled?
 
-cheers,
-jamal
+> And for both, we don't return -EAGAIN anyway.
+> So I suppose that code is not necessary?
+
+You could replace it with WARN_ON(err == -EAGAIN).  That way if some 
+SCSI driver does return -EAGAIN in the future, people will know 
+something is wrong.
+
+> BTW, I'll be on vocation till 02/17, and I don't have access to the
+> internet in my hometown, but please feel free to drop any comments and
+> I'll check them when I get back.
+
+I'm going on vacation next week too.  Enjoy your trip.
+
+Alan Stern
+
