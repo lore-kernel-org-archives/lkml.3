@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab3BFRqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:46:18 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40215 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756727Ab3BFRqP (ORCPT
+	id S1757572Ab3BFRsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:48:20 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:40033 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296Ab3BFRsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:46:15 -0500
-X-Sasl-enc: lvxJa+6G4DN+adcxiY7oZOFEMlzwJfkNR2HwL9zMxCU/ 1360172774
-Date: Wed, 6 Feb 2013 09:46:13 -0800
-From: Greg KH <greg@kroah.com>
-To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, zihan@huawei.com,
-        Lin.Lei@huawei.com, neil.yi@huawei.com, wangyuhua@huawei.com,
-        huqiao36@huawei.com, balbi@ti.com, mdharm-usb@one-eyed-alien.net,
-        sebastian@breakpoint.cc
-Subject: Re: [PATCH 1/1]linux-usb: fix the product IDs to be little endian in
- initializers.c
-Message-ID: <20130206174613.GA18681@kroah.com>
-References: <fe6feaa260b9.60b9fe6feaa2@huawei.com>
+	Wed, 6 Feb 2013 12:48:17 -0500
+Date: Wed, 6 Feb 2013 09:48:13 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Roger Quadros <rogerq@ti.com>, linux@arm.linux.org.uk,
+        sameo@linux.intel.com, balbi@ti.com, stern@rowland.harvard.edu,
+        eballetbo@gmail.com, javier@dowhile0.org, sshtylyov@mvista.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Subject: Re: [PATCH v2 00/30] USB: omap-ehci: Move PHY management to PHY
+ driver
+Message-ID: <20130206174813.GB18681@kroah.com>
+References: <1359372631-8180-1-git-send-email-rogerq@ti.com>
+ <5110ECF3.7010908@ti.com>
+ <20130205165851.GA1081@kroah.com>
+ <20130205171743.GG25185@atomide.com>
+ <51122730.5030801@ti.com>
+ <20130206171153.GY25185@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <fe6feaa260b9.60b9fe6feaa2@huawei.com>
+In-Reply-To: <20130206171153.GY25185@atomide.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 05:24:12PM +0800, fangxiaozhi 00110321 wrote:
-> From: fangxiaozhi <huananhu@huawei.com>
+On Wed, Feb 06, 2013 at 09:11:54AM -0800, Tony Lindgren wrote:
+> * Roger Quadros <rogerq@ti.com> [130206 01:53]:
+> > On 02/05/2013 07:17 PM, Tony Lindgren wrote:
+> > > * Greg KH <gregkh@linuxfoundation.org> [130205 09:00]:
+> > >> On Tue, Feb 05, 2013 at 01:28:51PM +0200, Roger Quadros wrote:
+> > >>> Hi Tony & Greg,
+> > >>>
+> > >>> What's the best way to get these patches in?
+> > >>>
+> > >>> All patches have been acked by respective maintainers.
+> > >>>
+> > >>> If Tony can Ack the arch/arm/mach-omap2 stuff then should I send a
+> > >>> pull request directly to Greg? or the other way round?
+> > >>>
+> > >>> Tony, 
+> > >>> fyi, these patches should not interfere with the dw3c/musb stuff
+> > >>> sent by Felipe & Kishon.
+> > >>
+> > >> I'm fine with Tony just taking them all if he wants to.
+> > > 
+> > > OK. Roger, can you please do me a pull request with these
+> > > against v3.8-rc6?
+> > > 
+> > 
+> > Tony,
+> > 
+> > Since this depends on [1] and [2] which are both in linux-next, should
+> > I base it on linux-next?
 > 
-> 1. The idProduct is little endian, so make the product ID's value to be little endian. Make no break on big endian processors.
-> 
-> Signed-off-by: fangxiaozhi <huananhu@huawei.com>
-> --------------------------------------------------------------------
-> 
-> diff -uprN linux-3.8-rc6_orig/drivers/usb/storage/initializers.c linux-3.8-rc6/drivers/usb/storage/initializers.c
-> --- linux-3.8-rc6_orig/drivers/usb/storage/initializers.c	2013-02-06 14:48:51.564355283 +0800
-> +++ linux-3.8-rc6/drivers/usb/storage/initializers.c	2013-02-06 15:11:40.925434289 +0800
-> @@ -152,12 +152,15 @@ static int usb_stor_huawei_dongles_pid(s
->  	 * means the dongle in the single port mode,
->  	 * and a switch command is required to be sent. */
->  	if (idesc && idesc->bInterfaceNumber == 0) {
-> -		if ((idProduct == 0x1001)
-> -			|| (idProduct == 0x1003)
-> -			|| (idProduct == 0x1004)
-> -			|| (idProduct >= 0x1401 && idProduct <= 0x1500)
-> -			|| (idProduct >= 0x1505 && idProduct <= 0x1600)
-> -			|| (idProduct >= 0x1c02 && idProduct <= 0x2202)) {
-> +		if ((idProduct == cpu_to_le16(0x1001))
+> Maybe you can base it on some commit in Greg's USB tree?
+> Just check with Greg that whatever you use as a base is an
+> immutable commit and OK to use as a base.
 
-No, this doesn't fix the sparse warning, and is way too complex (and
-doesn't really work well either.)
-
-Please do the conversion on the value when you assign it to idProduct
-and then you will be fine.
-
-Please run sparse on your patch to ensure you got it right, if you would
-have done so here, it would have been pretty obvious.
+My public git trees should always be immutable and can be used as a
+base.
 
 thanks,
 
