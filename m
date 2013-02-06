@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757835Ab3BFR7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:59:10 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:54393 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756843Ab3BFR7H (ORCPT
+	id S1757869Ab3BFR76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 12:59:58 -0500
+Received: from mail.candelatech.com ([208.74.158.172]:53946 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389Ab3BFR7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:59:07 -0500
-From: Emil Goode <emilgoode@gmail.com>
-To: ptyser@xes-inc.com, sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] mfd: lpc_ich: Fix arguments to kmalloc
-Date: Wed,  6 Feb 2013 19:00:59 +0100
-Message-Id: <1360173659-22409-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 6 Feb 2013 12:59:55 -0500
+Message-ID: <51129A12.6020101@candelatech.com>
+Date: Wed, 06 Feb 2013 09:59:46 -0800
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: Cong Ding <dinggnu@gmail.com>, "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: mac80211/cfg.c: fix error using of sizeof()
+References: <1360167826-29265-1-git-send-email-dinggnu@gmail.com>  (sfid-20130206_172354_765098_665D60D0) <1360168022.7910.22.camel@jlt4.sipsolutions.net> <511298E8.7090801@candelatech.com>
+In-Reply-To: <511298E8.7090801@candelatech.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the order of the arguments to kmalloc,
-the allocation flag should be the second argument.
+On 02/06/2013 09:54 AM, Ben Greear wrote:
+> On 02/06/2013 08:27 AM, Johannes Berg wrote:
+>> On Wed, 2013-02-06 at 17:23 +0100, Cong Ding wrote:
+>>> Using 'sizeof' on array given as function argument returns size of a pointer
+>>> rather than the size of array.
+>>
+>> Oops, yeah, Stephen Hemminger pointed this out a month or so ago and I
+>> forgot to change it, thanks.
+>
+> This needs to be back-ported for 3.7 stable?  Perhaps the code below
+> corresponds (from copy_mesh_setup)?
+>
+>
+>      /* mcast rate setting in Mesh Node */
+>      memcpy(sdata->vif.bss_conf.mcast_rate, setup->mcast_rate,
+>                          sizeof(setup->mcast_rate));
 
-Sparse warnings:
+Nevermind..I think I'm wrong about that..the sizeof probably works fine
+here.  Sorry for the noise.
 
-drivers/mfd/lpc_ich.c:881:24: warning:
-	incorrect type in argument 1 (different base types)
-	drivers/mfd/lpc_ich.c:881:24:
-	expected unsigned long [unsigned] [usertype] size
-	drivers/mfd/lpc_ich.c:881:24:    got restricted gfp_t
+Ben
 
-drivers/mfd/lpc_ich.c:881:36: warning:
-	incorrect type in argument 2 (different base types)
-	drivers/mfd/lpc_ich.c:881:36:
-	expected restricted gfp_t [usertype] flags
-	drivers/mfd/lpc_ich.c:881:36:    got unsigned long
+>
+> Thanks,
+> Ben
+>
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/mfd/lpc_ich.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index a0cfdf9..3af8590 100644
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -878,7 +878,7 @@ static int lpc_ich_probe(struct pci_dev *dev,
- 	int ret;
- 	bool cell_added = false;
- 
--	priv = kmalloc(GFP_KERNEL, sizeof(struct lpc_ich_priv));
-+	priv = kmalloc(sizeof(struct lpc_ich_priv), GFP_KERNEL);
- 	if (!priv)
- 		return -ENOMEM;
- 
 -- 
-1.7.10.4
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
