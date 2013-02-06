@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab3BFK5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 05:57:15 -0500
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:45239 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757131Ab3BFK5B (ORCPT
+	id S1757496Ab3BFK5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 05:57:08 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:43534 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757416Ab3BFKzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 05:57:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130206002704.GA11047@tassilo.jf.intel.com>
-References: <1360028954-16946-1-git-send-email-andi@firstfloor.org>
-	<1360028954-16946-5-git-send-email-andi@firstfloor.org>
-	<CABPqkBTyBJwaz+ON20nCM0jyQASoHXRDejtyNLJ1AoBSWS_tPA@mail.gmail.com>
-	<20130206002704.GA11047@tassilo.jf.intel.com>
-Date: Wed, 6 Feb 2013 11:57:00 +0100
-Message-ID: <CABPqkBSpYVyA0ZtLc12TWOS1AU1=4Kwo_Zx1FndB5XONonoavQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] perf, x86: Support full width counting
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Feb 2013 05:55:20 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: broonie@opensource.wolfsonmicro.com, linus.walleij@linaro.org,
+        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 43/49] regulator: ab8500-ext: Adapt regulator registration for newly changed API
+Date: Wed,  6 Feb 2013 10:54:05 +0000
+Message-Id: <1360148051-7560-44-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
+References: <1360148051-7560-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 1:27 AM, Andi Kleen <ak@linux.intel.com> wrote:
-> Here's an updated patch. I'm not reposting the full series.
-> Also cut down on cc to spare the innocents.
->
-> ---
->
->  perf, x86: Support full width counting v2
->
-> Recent Intel CPUs like Haswell and IvyBridge have a new alternative MSR
-> range for perfctrs that allows writing the full counter width. Enable this
-> range if the hardware reports it using a new capability bit.
->
-> This lowers the overhead of perf stat slightly because it has to do less
-> interrupts to accumulate the counter value. On Haswell it also avoids some
-> problems with TSX aborting when the end of the counter range is reached.
->
-> v2: Print the feature at boot
+From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
 
-Tested okay for me.
-Reviewed-by: Stephane Eranian <eranian@google.com>
+Instead of using a long list of arguments for registering a new
+regulator, the API has changed to accommodate a new structure
+which is to contain the necessary runtime configuration. This
+patch allows the external regulator to follow suit and continue
+to successfully register itself with the Regulator subsystem.
 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
->
-> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-> index 433a59f..af41a77 100644
-> --- a/arch/x86/include/uapi/asm/msr-index.h
-> +++ b/arch/x86/include/uapi/asm/msr-index.h
-> @@ -163,6 +163,9 @@
->  #define MSR_KNC_EVNTSEL0               0x00000028
->  #define MSR_KNC_EVNTSEL1               0x00000029
->
-> +/* Alternative perfctr range with full access. */
-> +#define MSR_IA32_PMC0                  0x000004c1
-> +
->  /* AMD64 MSRs. Not complete. See the architecture manual for a more
->     complete list. */
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index 1567b0d..ce2a863 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -278,6 +278,7 @@ union perf_capabilities {
->                 u64     pebs_arch_reg:1;
->                 u64     pebs_format:4;
->                 u64     smm_freeze:1;
-> +               u64     fw_write:1;
->         };
->         u64     capabilities;
->  };
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index aa48048..06dcc0c 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -2228,5 +2228,12 @@ __init int intel_pmu_init(void)
->                 }
->         }
->
-> +       /* Support full width counters using alternative MSR range */
-> +       if (x86_pmu.intel_cap.fw_write) {
-> +               x86_pmu.max_period = x86_pmu.cntval_mask;
-> +               x86_pmu.perfctr = MSR_IA32_PMC0;
-> +               pr_cont("full-width counters, ");
-> +       }
-> +
->         return 0;
->  }
->
-> --
-> ak@linux.intel.com -- Speaking for myself only
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
+Reviewed-by: Linus WALLEIJ <linus.walleij@stericsson.com>
+---
+ drivers/regulator/ab8500-ext.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index ce1830f..836b5de 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -369,6 +369,7 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+ 	struct ab8500_platform_data *ppdata;
+ 	struct ab8500_regulator_platform_data *pdata;
++	struct regulator_config config = { };
+ 	int i, err;
+ 
+ 	if (!ab8500) {
+@@ -414,6 +415,10 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
+ 		info->cfg = (struct ab8500_ext_regulator_cfg *)
+ 			pdata->ext_regulator[i].driver_data;
+ 
++		config.dev = &pdev->dev;
++		config.init_data = &pdata->ext_regulator[i];
++		config.driver_data = info;
++
+ 		if ((is_ab9540(ab8500)) || (is_ab8540(ab8500))) {
+ 			if (info->desc.id == AB8500_EXT_SUPPLY1)
+ 				info->desc.ops = &ab9540_ext_regulator_ops;
+@@ -426,8 +431,8 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
+ 		}
+ 
+ 		/* register regulator with framework */
+-		info->rdev = regulator_register(&info->desc, &pdev->dev,
+-				&pdata->ext_regulator[i], info, NULL);
++		info->rdev = regulator_register(&info->desc, &config);
++
+ 		if (IS_ERR(info->rdev)) {
+ 			err = PTR_ERR(info->rdev);
+ 			dev_err(&pdev->dev, "failed to register regulator %s\n",
+-- 
+1.7.9.5
+
