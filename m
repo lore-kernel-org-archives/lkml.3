@@ -1,154 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758663Ab3BFWFE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:05:04 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:48682 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758667Ab3BFWEf (ORCPT
+	id S1758846Ab3BFWFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:05:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37286 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758648Ab3BFWFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:04:35 -0500
+	Wed, 6 Feb 2013 17:05:15 -0500
+Date: Wed, 6 Feb 2013 14:04:43 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-553099857702bb77e541c47bde47f6863834d2e2@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
+        tglx@linutronix.de, namhyung@kernel.org, jolsa@redhat.com
+In-Reply-To: <1360130237-9963-2-git-send-email-namhyung@kernel.org>
+References: <1360130237-9963-2-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf sort:
+  Make setup_sorting returns an error code
+Git-Commit-ID: 553099857702bb77e541c47bde47f6863834d2e2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20130206103539.B3B283E1510@localhost>
-References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com>
-	<1360105784-12282-3-git-send-email-ks.giri@samsung.com>
-	<20130206103539.B3B283E1510@localhost>
-Date: Wed, 6 Feb 2013 14:04:34 -0800
-Message-ID: <CAKrE-KdHptPgFkgdU9aJEnDviD73z_OGK27OC-87SSxiUJoTqQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] spi: s3c64xx: added support for polling mode
-From: Girish KS <girishks2000@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:04:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 6, 2013 at 2:35 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue,  5 Feb 2013 15:09:42 -0800, Girish K S <girishks2000@gmail.com> wrote:
->> The 64xx spi driver supports partial polling mode.
->> Only the last chunk of the transfer length is transferred
->> or recieved in polling mode.
->>
->> Some SoC's that adopt this controller might not have have dma
->> interface. This patch adds support for complete polling mode
->> and gives flexibity for the user to select poll/dma mode.
->>
->> Signed-off-by: Girish K S <ks.giri@samsung.com>
->> ---
->>  drivers/spi/spi-s3c64xx.c |   65 +++++++++++++++++++++------------------------
->>  1 file changed, 30 insertions(+), 35 deletions(-)
->>
->> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
->> index b770f88..90770bd 100644
->> --- a/drivers/spi/spi-s3c64xx.c
->> +++ b/drivers/spi/spi-s3c64xx.c
->> @@ -345,19 +348,7 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
->>
->>       chcfg = readl(regs + S3C64XX_SPI_CH_CFG);
->>       chcfg &= ~S3C64XX_SPI_CH_TXCH_ON;
->> -
->> -     if (dma_mode) {
->>               chcfg &= ~S3C64XX_SPI_CH_RXCH_ON;
->> -     } else {
->> -             /* Always shift in data in FIFO, even if xfer is Tx only,
->> -              * this helps setting PCKT_CNT value for generating clocks
->> -              * as exactly needed.
->> -              */
->> -             chcfg |= S3C64XX_SPI_CH_RXCH_ON;
->> -             writel(((xfer->len * 8 / sdd->cur_bpw) & 0xffff)
->> -                                     | S3C64XX_SPI_PACKET_CNT_EN,
->> -                                     regs + S3C64XX_SPI_PACKET_CNT);
->> -     }
->
-> The removes a block of code, but leaves the modification of chcfg where
-> it is without fixing the indentation. I could also use some help
-Yes sorry missed that indentation.
-> understanding why this particular else block is moved down in the
-> function.
-The else block is related only to polling mode, so moved it inside the
-rx block.
-Clock generation and RX is enabled only when there is a valid Rx
-buffer to receive the data from FIFO.
+Commit-ID:  553099857702bb77e541c47bde47f6863834d2e2
+Gitweb:     http://git.kernel.org/tip/553099857702bb77e541c47bde47f6863834d2e2
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 6 Feb 2013 14:57:16 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 6 Feb 2013 18:09:26 -0300
 
->
->>       if (xfer->tx_buf != NULL) {
->>               sdd->state |= TXBUSY;
->> @@ -385,6 +376,10 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
->>
->>       if (xfer->rx_buf != NULL) {
->>               sdd->state |= RXBUSY;
->> +             chcfg |= S3C64XX_SPI_CH_RXCH_ON;
->> +             writel(((xfer->len * 8 / sdd->cur_bpw) & 0xffff)
->> +                             | S3C64XX_SPI_PACKET_CNT_EN,
->> +                             regs + S3C64XX_SPI_PACKET_CNT);
->>
->>               if (sdd->port_conf->high_speed && sdd->cur_speed >= 30000000UL
->>                                       && !(sdd->cur_mode & SPI_CPHA))
->> @@ -392,10 +387,6 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
->>
->>               if (dma_mode) {
->>                       modecfg |= S3C64XX_SPI_MODE_RXDMA_ON;
->> -                     chcfg |= S3C64XX_SPI_CH_RXCH_ON;
->> -                     writel(((xfer->len * 8 / sdd->cur_bpw) & 0xffff)
->> -                                     | S3C64XX_SPI_PACKET_CNT_EN,
->> -                                     regs + S3C64XX_SPI_PACKET_CNT);
->>                       prepare_dma(&sdd->rx_dma, xfer->len, xfer->rx_dma);
->>               }
->>       }
->> @@ -421,6 +412,9 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
->>
->>       cs = spi->controller_data;
->>       gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
->> +
->> +     /* Start the signals */
->> +     writel(0, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
->>  }
->>
->>  static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
->> @@ -480,16 +474,19 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
->>
->>               switch (sdd->cur_bpw) {
->>               case 32:
->> -                     ioread32_rep(regs + S3C64XX_SPI_RX_DATA,
->> -                             xfer->rx_buf, xfer->len / 4);
->> +                     for (val = 0; val < (xfer->len / 4); val++)
->> +                             *((u32 *)xfer->rx_buf + val) =
->> +                                     ioread32(regs + S3C64XX_SPI_RX_DATA);
->>                       break;
->>               case 16:
->> -                     ioread16_rep(regs + S3C64XX_SPI_RX_DATA,
->> -                             xfer->rx_buf, xfer->len / 2);
->> +                     for (val = 0; val < (xfer->len / 2); val++)
->> +                             *((u16 *)xfer->rx_buf + val) =
->> +                                     ioread16(regs + S3C64XX_SPI_RX_DATA);
->>                       break;
->>               default:
->> -                     ioread8_rep(regs + S3C64XX_SPI_RX_DATA,
->> -                             xfer->rx_buf, xfer->len);
->> +                     for (val = 0; val < xfer->len; val++)
->> +                             *((u8 *)xfer->rx_buf + val) =
->> +                                     ioread8(regs + S3C64XX_SPI_RX_DATA);
->
-> What are all of the above lines changed? That seems to have nothing to
-> do with making the driver be albe to do polling transfers. Nor is it
-> described in the patch description.
-As per the original implementation, the polling path is taken only for
-the last chunk of tarnsfer size. The last chunk is always
-<=  all other other previous transfers. so readx_rep can read the FIFO
-data successfully for the given transfer size.
-But in polling mode, readx_rep would read junk if the transfer size is
-more than the threshold limit.
-e.g
-dd if=/dev/mtd0  of=temp.bin bs=512 count=1
-In this case transfer size to receive is 512. The threshold for FIFO
-is 128 bytes (half of FIFO depth, i didnt modify this as it is in DMA
-transfer also)
-Now in the above receive case with repx_read, i always received first
-128 valid bytes and all the rest as junk. With the above modification
-I just make sure i read out all the data whatever is received 1 by 1.
->
-> I think this patch needs some more work. It certainly need to be
-> described better, and it appears that some of the changes really should be
-> in a separate patch.
-sure I will give a clear description of what is done.
+perf sort: Make setup_sorting returns an error code
+
+Currently the setup_sorting() is called for parsing sort keys and exits
+if it failed to add the sort key.  As it's included in libperf it'd be
+better returning an error code rather than exiting application inside of
+the library.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1360130237-9963-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-annotate.c |  3 ++-
+ tools/perf/builtin-diff.c     |  4 +++-
+ tools/perf/builtin-report.c   |  3 ++-
+ tools/perf/builtin-top.c      |  3 ++-
+ tools/perf/tests/hists_link.c |  3 ++-
+ tools/perf/util/sort.c        | 10 ++++++----
+ tools/perf/util/sort.h        |  2 +-
+ 7 files changed, 18 insertions(+), 10 deletions(-)
+
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index dc870cf..95a2ad3 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -309,7 +309,8 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (symbol__init() < 0)
+ 		return -1;
+ 
+-	setup_sorting(annotate_usage, options);
++	if (setup_sorting() < 0)
++		usage_with_options(annotate_usage, options);
+ 
+ 	if (argc) {
+ 		/*
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 4af0b58..d207a97 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -605,7 +605,9 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	ui_init();
+ 
+-	setup_sorting(diff_usage, options);
++	if (setup_sorting() < 0)
++		usage_with_options(diff_usage, options);
++
+ 	setup_pager();
+ 
+ 	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", NULL);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 91555d4..96b5a7f 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -751,7 +751,8 @@ repeat:
+ 
+ 	}
+ 
+-	setup_sorting(report_usage, options);
++	if (setup_sorting() < 0)
++		usage_with_options(report_usage, options);
+ 
+ 	/*
+ 	 * Only in the newt browser we are doing integrated annotation,
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index f561757..72f6eb7 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1129,7 +1129,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (sort_order == default_sort_order)
+ 		sort_order = "dso,symbol";
+ 
+-	setup_sorting(top_usage, options);
++	if (setup_sorting() < 0)
++		usage_with_options(top_usage, options);
+ 
+ 	if (top.use_stdio)
+ 		use_browser = 0;
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 0afd922..1be64a6 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -449,7 +449,8 @@ int test__hists_link(void)
+ 		goto out;
+ 
+ 	/* default sort order (comm,dso,sym) will be used */
+-	setup_sorting(NULL, NULL);
++	if (setup_sorting() < 0)
++		goto out;
+ 
+ 	machines__init(&machines);
+ 
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 03cabe5..d8b4882 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -565,23 +565,25 @@ int sort_dimension__add(const char *tok)
+ 	return -ESRCH;
+ }
+ 
+-void setup_sorting(const char * const usagestr[], const struct option *opts)
++int setup_sorting(void)
+ {
+ 	char *tmp, *tok, *str = strdup(sort_order);
++	int ret = 0;
+ 
+ 	for (tok = strtok_r(str, ", ", &tmp);
+ 			tok; tok = strtok_r(NULL, ", ", &tmp)) {
+-		int ret = sort_dimension__add(tok);
++		ret = sort_dimension__add(tok);
+ 		if (ret == -EINVAL) {
+ 			error("Invalid --sort key: `%s'", tok);
+-			usage_with_options(usagestr, opts);
++			break;
+ 		} else if (ret == -ESRCH) {
+ 			error("Unknown --sort key: `%s'", tok);
+-			usage_with_options(usagestr, opts);
++			break;
+ 		}
+ 	}
+ 
+ 	free(str);
++	return ret;
+ }
+ 
+ void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index e994ad3e..b13e56f6 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -160,7 +160,7 @@ struct sort_entry {
+ extern struct sort_entry sort_thread;
+ extern struct list_head hist_entry__sort_list;
+ 
+-void setup_sorting(const char * const usagestr[], const struct option *opts);
++int setup_sorting(void);
+ extern int sort_dimension__add(const char *);
+ void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+ 			     const char *list_name, FILE *fp);
