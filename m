@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1160995Ab3BFWRv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:17:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37536 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757134Ab3BFWRt (ORCPT
+	id S932188Ab3BFWS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:18:27 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:54294 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758351Ab3BFWSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:17:49 -0500
-Date: Wed, 6 Feb 2013 14:17:27 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-8pf64bsdywg1gl9m55ul77hg@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf python: Link with sysfs.o
-Git-Commit-ID: 88fd2b6a76264e9e14463f532caae09d82a53207
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Feb 2013 17:18:24 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <14690.1359541976@warthog.procyon.org.uk>
+References: <20130117180352.27885.79893.stgit@warthog.procyon.org.uk>
+	<20130117180407.27885.54342.stgit@warthog.procyon.org.uk>
+	<CALLzPKayx83x6KRs9NSjthR1H4VR1PzEcYhnGJU6gnrWMs7_fg@mail.gmail.com>
+	<14690.1359541976@warthog.procyon.org.uk>
+Date: Thu, 7 Feb 2013 00:18:23 +0200
+Message-ID: <CALLzPKbcWxt+tLdoy0Q9xQ-TMtn5XosESHnHOiQzGfW0F61bSQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] KEYS: Add a 'trusted' flag and a 'trusted only' flag
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: David Howells <dhowells@redhat.com>
+Cc: zohar@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:17:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  88fd2b6a76264e9e14463f532caae09d82a53207
-Gitweb:     http://git.kernel.org/tip/88fd2b6a76264e9e14463f532caae09d82a53207
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 6 Feb 2013 17:21:47 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 6 Feb 2013 18:09:28 -0300
+On Wed, Jan 30, 2013 at 12:32 PM, David Howells <dhowells@redhat.com> wrote:
+> Kasatkin, Dmitry <dmitry.kasatkin@intel.com> wrote:
+>
+>> What about the case when running from integrity protected initramfs?
+>> Either embedded into the signed kernel, or verified by the boot loader.
+>> In such case it is possible to assume that all keys which are added by
+>> user space are implicitly trusted.
+>> Later on, before continuing booting normal rootfs, set the key
+>> subsystem state (trust-lock),
+>> so that trusted keyrings accept only explicitly trusted keys...
+>>
+>> Does it make sense?
+>
+> I'm not sure it does.  Initramfs is (re-)fabricated on the machine on which it
+> runs any time you update one of a set of rpms (such as the kernel rpm) because
+> it has machine-specific data and drivers in it.
+>
 
-perf python: Link with sysfs.o
+Based on my latest post on signed initramfs it might make sense.
+But it seems to be that it would be behavior anyway, because "first"
+key added is implicitly should be assumed trusted.
 
-So that we fix this regression:
+- Dmitry
 
-[root@sandy linux]# perf test -v 15
-15: Try 'use perf' in python, checking link problems       :
---- start ---
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol: sysfs_find_mountpoint
----- end ----
-Try 'use perf' in python, checking link problems: FAILED!
-[root@sandy linux]#
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-8pf64bsdywg1gl9m55ul77hg@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/python-ext-sources | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
-index c40c2d3..64536a9 100644
---- a/tools/perf/util/python-ext-sources
-+++ b/tools/perf/util/python-ext-sources
-@@ -18,4 +18,5 @@ util/cgroup.c
- util/debugfs.c
- util/rblist.c
- util/strlist.c
-+util/sysfs.c
- ../../lib/rbtree.c
+> David
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
