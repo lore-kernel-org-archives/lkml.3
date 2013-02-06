@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab3BFQX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:23:56 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:39655 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383Ab3BFQXy (ORCPT
+	id S1757773Ab3BFQYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:24:21 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:58672 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757716Ab3BFQYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:23:54 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] net: mac80211/cfg.c: fix error using of sizeof()
-Date: Wed,  6 Feb 2013 17:23:45 +0100
-Message-Id: <1360167826-29265-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 6 Feb 2013 11:24:17 -0500
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: arnd@arndb.de, axboe@kernel.dk, cbou@mail.ru, davem@davemloft.net,
+        dtor@mail.ru, dwmw2@infradead.org, grant.likely@secretlab.ca,
+        gregkh@linuxfoundation.org, jkosina@suse.cz, jslaby@suse.cz,
+        khali@linux-fr.org, mchehab@redhat.com, perex@perex.cz,
+        sameo@linux.intel.com, tiwai@suse.de, w.sang@pengutronix.de
+Cc: linux-kernel@vger.kernel.org, sebott@linux.vnet.ibm.com,
+        gerald.schaefer@de.ibm.com, schwidefsky@de.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 06/15] drivers/gpio: add missing GENERIC_HARDIRQ dependency
+Date: Wed,  6 Feb 2013 17:23:54 +0100
+Message-Id: <1360167843-3587-7-git-send-email-heiko.carstens@de.ibm.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com>
+References: <1360167843-3587-1-git-send-email-heiko.carstens@de.ibm.com>
+x-cbid: 13020616-2966-0000-0000-000006A8997F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using 'sizeof' on array given as function argument returns size of a pointer
-rather than the size of array.
+The VIA VX855/VX875 GPIO and RDC R-321x GPIO support drivers select
+MFD_CORE which itself depends on GENERIC_HARDIRQ support.
+So add this dependency to these two drivers as well to prevent
+selection of MFD_CORE.
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- net/mac80211/cfg.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpio/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-index 661b878..af561d5 100644
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -2058,7 +2058,8 @@ static int ieee80211_set_mcast_rate(struct wiphy *wiphy, struct net_device *dev,
- {
- 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 8eafc4b..93aaadf 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -280,7 +280,7 @@ config GPIO_ICH
  
--	memcpy(sdata->vif.bss_conf.mcast_rate, rate, sizeof(rate));
-+	memcpy(sdata->vif.bss_conf.mcast_rate, rate,
-+			sizeof(int) * IEEE80211_NUM_BANDS);
+ config GPIO_VX855
+ 	tristate "VIA VX855/VX875 GPIO"
+-	depends on PCI
++	depends on PCI && GENERIC_HARDIRQS
+ 	select MFD_CORE
+ 	select MFD_VX855
+ 	help
+@@ -610,7 +610,7 @@ config GPIO_TIMBERDALE
  
- 	return 0;
- }
+ config GPIO_RDC321X
+ 	tristate "RDC R-321x GPIO support"
+-	depends on PCI
++	depends on PCI && GENERIC_HARDIRQS
+ 	select MFD_CORE
+ 	select MFD_RDC321X
+ 	help
 -- 
-1.7.9.5
+1.7.10.4
 
