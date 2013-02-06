@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab3BFOsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 09:48:08 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:59445 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212Ab3BFOrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 09:47:03 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r16EkrRu011385, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH 1/5] r8169: Remove firmware code
-Date: Wed, 6 Feb 2013 22:46:23 +0800
-Message-ID: <1360161987-3268-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.1
+	id S1757263Ab3BFOsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 09:48:25 -0500
+Received: from ozlabs.org ([203.10.76.45]:59052 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755511Ab3BFOsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 09:48:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Subject: [PATCH 0/3 v3] selftests: Add efivarfs tests
+Message-Id: <1360162088.142733.191120808822.0.gpush@pecola>
+In-Reply-To: <1360162088.142733.191120808822.0.gpush@pecola>
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Lingzhu Xiang <lxiang@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+From: Jeremy Kerr <jk@ozlabs.org>
+Date: Wed, 06 Feb 2013 22:48:08 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some codes are belong to binary codes and should be removed.
+Hi all,
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+The following patches add a small set of tests to the
+tools/testing/selftests directory. These cover some of the basic
+functionality of efivarfs.
+
+Comments welcome - changes 2 and 3 cover some behaviour that Matt and I
+have discussed, but I'd appreciate any wider comment on the semantics
+covered by these.
+
+Cheers,
+
+
+Jeremy
+
+--
+v2: Remove qemu check, add a couple of tests
+v3: Change expected empty read() behaviour to return EOF
+
 ---
- drivers/net/ethernet/realtek/r8169.c | 26 --------------------------
- 1 file changed, 26 deletions(-)
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 1170232..e811ab5 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3408,32 +3408,6 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
- 
- static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
- {
--	static const u16 mac_ocp_patch[] = {
--		0xe008, 0xe01b, 0xe01d, 0xe01f,
--		0xe021, 0xe023, 0xe025, 0xe027,
--		0x49d2, 0xf10d, 0x766c, 0x49e2,
--		0xf00a, 0x1ec0, 0x8ee1, 0xc60a,
--
--		0x77c0, 0x4870, 0x9fc0, 0x1ea0,
--		0xc707, 0x8ee1, 0x9d6c, 0xc603,
--		0xbe00, 0xb416, 0x0076, 0xe86c,
--		0xc602, 0xbe00, 0x0000, 0xc602,
--
--		0xbe00, 0x0000, 0xc602, 0xbe00,
--		0x0000, 0xc602, 0xbe00, 0x0000,
--		0xc602, 0xbe00, 0x0000, 0xc602,
--		0xbe00, 0x0000, 0xc602, 0xbe00,
--
--		0x0000, 0x0000, 0x0000, 0x0000
--	};
--	u32 i;
--
--	/* Patch code for GPHY reset */
--	for (i = 0; i < ARRAY_SIZE(mac_ocp_patch); i++)
--		r8168_mac_ocp_write(tp, 0xf800 + 2*i, mac_ocp_patch[i]);
--	r8168_mac_ocp_write(tp, 0xfc26, 0x8000);
--	r8168_mac_ocp_write(tp, 0xfc28, 0x0075);
--
- 	rtl_apply_firmware(tp);
- 
- 	if (r8168_phy_ocp_read(tp, 0xa460) & 0x0100)
--- 
-1.8.1
+Jeremy Kerr (3):
+      selftests: Add tests for efivarfs
+      selftests/efivarfs: Add empty file creation test
+      selftests/efivarfs: Add create-read test
 
