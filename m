@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab3BFGAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 01:00:00 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51493 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752089Ab3BFF6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:58:37 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>, <b-cousson@ti.com>,
-        <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-CC: <kishon@ti.com>
-Subject: [PATCH 3/5] ARM: OMAP2: MUSB: Specify omap4 has mailbox
-Date: Wed, 6 Feb 2013 11:28:11 +0530
-Message-ID: <1360130294-5976-4-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1360130294-5976-1-git-send-email-kishon@ti.com>
-References: <1360130294-5976-1-git-send-email-kishon@ti.com>
+	id S1752063Ab3BFGBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 01:01:16 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:47967 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750761Ab3BFGBN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 01:01:13 -0500
+X-Sasl-enc: aXOMGxnIwog2aGNwvJkSj7zQqSSc2LzXdo0gQ59LvZ5f 1360130472
+Date: Tue, 5 Feb 2013 22:03:27 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Joerg Roedel <joro@8bytes.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: linux-next: manual merge of the driver-core tree with the iommu
+ tree
+Message-ID: <20130206060327.GA3352@kroah.com>
+References: <20130206162523.c338c51f0d5fc31b20245184@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130206162523.c338c51f0d5fc31b20245184@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added has_mailbox to the musb platform data to specify that omap uses
-an external mailbox (in control module) to communicate with the musb
-core during device connect and disconnect.
+On Wed, Feb 06, 2013 at 04:25:23PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the driver-core tree got a conflict in
+> drivers/iommu/tegra-smmu.c between commit a6870e928d1b ("iommu/tegra:
+> smmu: Support variable MMIO ranges/blocks") from the iommu tree and
+> commit bc5e6dea81b0 ("iommu: Convert to devm_ioremap_resource()") from
+> the driver-core tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
----
- arch/arm/mach-omap2/usb-musb.c |    3 +++
- include/linux/usb/musb.h       |    2 ++
- 2 files changed, 5 insertions(+)
+Looks good to me, thanks.
 
-diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-index 7b33b37..9d27e3f 100644
---- a/arch/arm/mach-omap2/usb-musb.c
-+++ b/arch/arm/mach-omap2/usb-musb.c
-@@ -85,6 +85,9 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
- 	musb_plat.mode = board_data->mode;
- 	musb_plat.extvbus = board_data->extvbus;
- 
-+	if (cpu_is_omap44xx())
-+		musb_plat.has_mailbox = true;
-+
- 	if (soc_is_am35xx()) {
- 		oh_name = "am35x_otg_hs";
- 		name = "musb-am35x";
-diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
-index eb50525..053c268 100644
---- a/include/linux/usb/musb.h
-+++ b/include/linux/usb/musb.h
-@@ -99,6 +99,8 @@ struct musb_hdrc_platform_data {
- 	/* MUSB_HOST, MUSB_PERIPHERAL, or MUSB_OTG */
- 	u8		mode;
- 
-+	u8		has_mailbox:1;
-+
- 	/* for clk_get() */
- 	const char	*clock;
- 
--- 
-1.7.10.4
-
+greg k-h
