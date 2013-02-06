@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3BFKX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 05:23:58 -0500
-Received: from 8bytes.org ([85.214.48.195]:37178 "EHLO mail.8bytes.org"
+	id S1754462Ab3BFK0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 05:26:13 -0500
+Received: from 8bytes.org ([85.214.48.195]:37189 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab3BFKXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 05:23:55 -0500
-Date: Wed, 6 Feb 2013 11:23:50 +0100
+	id S1751231Ab3BFK0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 05:26:10 -0500
+Date: Wed, 6 Feb 2013 11:26:08 +0100
 From: Joerg Roedel <joro@8bytes.org>
-To: Hideki EIRAKU <hdk@igel.co.jp>
-Cc: lethal@linux-sh.org, magnus.damm@gmail.com, linux@arm.linux.org.uk,
-        horms@verge.net.au, laurent.pinchart@ideasonboard.com,
-        matsu@igel.co.jp, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        dhobsong@igel.co.jp, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 1/4] iommu/shmobile: Add iommu driver for Renesas
- IPMMU modules
-Message-ID: <20130206102348.GA2634@8bytes.org>
-References: <1358765669-14567-1-git-send-email-hdk@igel.co.jp>
- <1358765669-14567-2-git-send-email-hdk@igel.co.jp>
- <20130201135456.GG25591@8bytes.org>
- <20130205.194209.52400155.hdk@igel.co.jp>
+To: Stuart Yoder <b08248@gmail.com>
+Cc: Sethi Varun-B16395 <B16395@freescale.com>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] iommu: Add domain window handling functions
+Message-ID: <20130206102607.GB2634@8bytes.org>
+References: <1359983924-28952-1-git-send-email-joro@8bytes.org>
+ <1359983924-28952-5-git-send-email-joro@8bytes.org>
+ <CALRxmdCiSZgoqd8tp90kPCdA=s7SWZCTwKsFnWu7S5=U7+eRLQ@mail.gmail.com>
+ <20130204185650.GP25591@8bytes.org>
+ <CALRxmdD9Ock04AoUtF9FT_uY5C5Eb7cSPmtCM6WK=StNB_iYkQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130205.194209.52400155.hdk@igel.co.jp>
+In-Reply-To: <CALRxmdD9Ock04AoUtF9FT_uY5C5Eb7cSPmtCM6WK=StNB_iYkQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Feb  6 11:23:53 2013
-X-DSPAM-Confidence: 0.9993
+X-DSPAM-Processed: Wed Feb  6 11:26:09 2013
+X-DSPAM-Confidence: 0.9994
 X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51122f3922971615814882
+X-DSPAM-Signature: 51122fc122972026860519
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 05, 2013 at 07:42:09PM +0900, Hideki EIRAKU wrote:
-> From: Joerg Roedel <joro@8bytes.org>
-
-> > Why is it necessary to call dma_map_single() for IOMMU page-tables?
-> > usually the dma_* functions call into IOMMU drivers, so why are they
-> > used inside an IOMMU driver?
+On Mon, Feb 04, 2013 at 05:31:51PM -0600, Stuart Yoder wrote:
+> On Mon, Feb 4, 2013 at 12:56 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> > Okay. So if your architecture supports sizes over 2^32 then size_t
+> > probably is already 64bits, right?
 > 
-> I use dma_map_single() for flushing the page table to the IOMMU
-> device.  The dma_map_ops set by arch/arm/mm/dma-mapping.c are
-> per-device (unlike the intel-iommu).  The dma_* functions call into
-> IOMMU drivers if the device is attached by arm_iommu_attach_device(),
-> but I am using a NULL device here, so that shouldn't happen.
+> No, on a 32-bit platform size_t would generally be 32-bits.  But the PAMU
+> is independent of that.   I think we should just make it a u64.
 
-Okay, I applied the patches to a new arm/shmobile branch. Will push them
-out soon. The use of the dma_* functions is dangerous anyway (but it
-works for now). Please send a follow-on patch to replace the use of the
-dma_* functions in the driver with explicit flushing routines. This
-protects the code from any future changes in the dma-api implementation.
+Okay, you can find the patches in the 'core' branch of the iommu-tree.
+They are also included in my next branch. You can use them now to base
+the PAMU patches on it.
 
 
 	Joerg
