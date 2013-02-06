@@ -1,43 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751235Ab3BFFIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 00:08:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:48262 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab3BFFIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 00:08:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,613,1355126400"; 
-   d="scan'208";a="287176752"
-Message-ID: <5111E568.9020408@intel.com>
-Date: Wed, 06 Feb 2013 13:08:56 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, "Zhang, Rui" <rui.zhang@intel.com>
-Subject: Re: [patch v4 0/18] sched: simplified fork, release load avg and
- power awareness scheduling
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <510F1064.1060302@intel.com> <20130204110959.GE24173@gmail.com> <51106DE0.1060103@intel.com>
-In-Reply-To: <51106DE0.1060103@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751219Ab3BFFMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 00:12:39 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:57984 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab3BFFMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 00:12:38 -0500
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] X.509: Support parse long form of length octets in Authority Key Identifier
+Date: Wed,  6 Feb 2013 13:08:41 +0800
+Message-Id: <1360127321-8053-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BTW,
+Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
+Identifier Exception is:
 
-Since numa balance scheduling is also a kind of cpu locality policy, it
-is natural compatible with power aware scheduling.
+   AuthorityKeyIdentifier ::= SEQUENCE {
+      keyIdentifier             [0] KeyIdentifier           OPTIONAL,
+      authorityCertIssuer       [1] GeneralNames            OPTIONAL,
+      authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
 
-The v2/v3 of this patch had developed on tip/master, testing show above
-2 scheduling policy work together well.
+   KeyIdentifier ::= OCTET STRING
 
+When a certificate also provides
+authorityCertIssuer and authorityCertSerialNumber then the length of
+AuthorityKeyIdentifier SEQUENCE is likely to long form format.
+e.g.
+   The example certificate demos/tunala/A-server.pem in openssl source:
+
+X509v3 Authority Key Identifier:
+    keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
+    DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
+    serial:00
+
+Current parsing rule of OID_authorityKeyIdentifier only take care the
+short form format, it causes load certificate to modsign_keyring fail:
+
+[   12.061147] X.509: Extension: 47
+[   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
+
+So, this patch add the parsing rule for support long form format against
+Authority Key Identifier.
+
+Cc: David Howells <dhowells@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+---
+ crypto/asymmetric_keys/x509_cert_parser.c |   56 ++++++++++++++++++++++++----
+ 1 files changed, 48 insertions(+), 8 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 7fabc4c..7f6a152 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
+ 	return 0;
+ }
+ 
++/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
++#define SEQ_TAG_KEYID (ASN1_CONT << 6)
++
+ /*
+  * Process certificate extensions that are used to qualify the certificate.
+  */
+@@ -407,21 +410,58 @@ int x509_process_extension(void *context, size_t hdrlen,
+ 	}
+ 
+ 	if (ctx->last_oid == OID_authorityKeyIdentifier) {
++		size_t key_len;
++
+ 		/* Get hold of the CA key fingerprint */
+ 		if (vlen < 5)
+ 			return -EBADMSG;
+-		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
+-		    v[1] != vlen - 2 ||
+-		    v[2] != (ASN1_CONT << 6) ||
+-		    v[3] != vlen - 4)
++
++		/* Authority Key Identifier must be a Constructed SEQUENCE */
++		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
+ 			return -EBADMSG;
+-		v += 4;
+-		vlen -= 4;
+ 
+-		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
++		/* Authority Key Identifier is not indefinite length */
++		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
++			return -EBADMSG;
++
++		/* Short Form length */
++		if (vlen <= 127) {
++
++			if (v[1] != vlen - 2 ||
++			    v[2] != SEQ_TAG_KEYID ||
++			    v[3] != vlen - 4)
++				return -EBADMSG;
++
++			v += 4;
++			key_len = v[3];
++		} else {
++			/* Long Form length */
++			size_t seq_len = 0;
++			int sub = v[1] - 0x80;
++
++			if (sub > 2)
++				return -EBADMSG;
++
++			/* calculate the length from subsequent octet */
++			for (i = 0; i < sub; i++) {
++				seq_len <<= 8;
++				seq_len |= v[2 + i];
++			}
++
++			/* check vlen should not less then length of keyid */
++			if (seq_len != vlen - 2 - sub ||
++			    v[2 + sub] != SEQ_TAG_KEYID ||
++			    v[3 + sub] > vlen - 4 - sub)
++				return -EBADMSG;
++
++			v += (4 + sub);
++			key_len = v[3 + sub];
++		}
++
++		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
+ 		if (!f)
+ 			return -ENOMEM;
+-		for (i = 0; i < vlen; i++)
++		for (i = 0; i < key_len; i++)
+ 			sprintf(f + i * 2, "%02x", v[i]);
+ 		pr_debug("authority   %s\n", f);
+ 		ctx->cert->authority = f;
 -- 
-Thanks Alex
+1.6.4.2
+
