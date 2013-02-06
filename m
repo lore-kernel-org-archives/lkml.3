@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab3BFArQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 19:47:16 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:56623 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab3BFArL (ORCPT
+	id S1756767Ab3BFAro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 19:47:44 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:58636 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab3BFArl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 19:47:11 -0500
+	Tue, 5 Feb 2013 19:47:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7-dULYwWQ=f5CBCxOULKJE9=n6Ha4jkVKd8enspuYjTA@mail.gmail.com>
-References: <CAE9FiQXHG01NjnYNDbC-KEpbcvY-q4pBe97CxTOGS7W4vZQBYQ@mail.gmail.com>
-	<1359314629-18651-1-git-send-email-yinghai@kernel.org>
-	<CAErSpo6r_LNEtYB3j5ELb8NdHu0a6_YOVj8S32CmByGFUpSsbg@mail.gmail.com>
-	<CAE9FiQXg1YcPPJLCgPbKOKXHk-LRQv4bbBGH9jyuATQa2ANLkg@mail.gmail.com>
-	<CAE9FiQX2DbTO0qCzGO4iMTkU_mPM2oZL+R5UoZ5dj=as6MUAsw@mail.gmail.com>
-	<CAErSpo7-dULYwWQ=f5CBCxOULKJE9=n6Ha4jkVKd8enspuYjTA@mail.gmail.com>
-Date: Tue, 5 Feb 2013 16:47:10 -0800
-X-Google-Sender-Auth: THxPTaHOd_dLiaKcZZZ2bOgWxfg
-Message-ID: <CAE9FiQWvmK7N2z19B9ZiMyc_T6cJdpWoWr3mExpuwUA4ogBc3w@mail.gmail.com>
-Subject: Re: [PATCH v3 00/22] PCI: Iterate pci host bridge instead of pci root bus
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Tony Luck <tony.luck@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Originating-IP: [116.14.217.125]
+In-Reply-To: <s5hd2weacbe.wl%tiwai@suse.de>
+References: <CAMVG2suCiLak3CbeKZtEgjeJqw3=1fD3k9FMsm=tYE7h3cuVjQ@mail.gmail.com>
+	<s5hsj5aag7z.wl%tiwai@suse.de>
+	<CAMVG2stEPHuk-cNwZHjtnOP=PeXwF7SMxMSp=HVaOy9SzW2Dgw@mail.gmail.com>
+	<s5hobfyafeg.wl%tiwai@suse.de>
+	<s5hd2weacbe.wl%tiwai@suse.de>
+Date: Wed, 6 Feb 2013 08:47:41 +0800
+Message-ID: <CAMVG2ssBaD=W3mAecKjCH8+G-HiVpHqQ5iSoyA4n9_3Mgz=VWQ@mail.gmail.com>
+Subject: Re: 3.8-rc1 patch_cirrus 4.0 regression...
+From: Daniel J Blueman <daniel@quora.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 5, 2013 at 4:19 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+On 6 February 2013 01:40, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue, 05 Feb 2013 17:34:15 +0100,
+> Takashi Iwai wrote:
+>>
+>> At Wed, 6 Feb 2013 00:29:54 +0800,
+>> Daniel J Blueman wrote:
+>> >
+>> > On 6 February 2013 00:16, Takashi Iwai <tiwai@suse.de> wrote:
+>> > > At Wed, 6 Feb 2013 00:10:30 +0800,
+>> > > Daniel J Blueman wrote:
+>> > >>
+>> > >> Hi Takashi,
+>> > >>
+>> > >> The v3.8-rc kernels have regressed from v3.7 with the quad-speaker
+>> > >> arrangement on my Macbook Pro 10,1 - only the higher-frequency
+>> > >> speakers work despite the front and rear channels being exposed in the
+>> > >> mixer.
+>> > >
+>> > > Interesting.  So you have a machine with 4.0 built-in speaker instead
+>> > > of 2.1?  Then we need to add a device-specific flag for it.  Currently
+>> > > the driver assumes 2.1 system blindly because majority of machines
+>> > > have that.
+>> > >
+>> > > FWIW, the codec parser code has been totally rewritten for 3.9, so any
+>> > > patch to 3.8 won't be applied to 3.9 (and vice versa)...
+>> > >
+>> > > Could you give alsa-info.sh output on 3.8 kernel?  Then I'll try to
+>> > > cook it for 3.9 (and maybe backport to 3.8).
+>> >
+>> > Here's the output from the current alsa-info.sh on 3.8-rc6 with the
+>> > two cited patches reverted [1]; let me know if you'd like 3.8-rc6
+>> > pure.
+>>
+>> Thanks.
+>>
+>> > The sound is pretty impressive for a laptop when the low-frequecy
+>> > speakers are enabled.
+>>
+>> Which program are you using for testing the surrounds?
+>> I'm interested in it because the commit you reverted is basically
+>> providing only an additional information for the channel map, and it
+>> doesn't change anything else.  It implies that some applications are
+>> really referring to the chmap info.
 >
-> Maybe.  I'd rather not introduce for_each_pci_host_bridge() at all, if
-> we can avoid it.  Every place it's used is a place we have to audit to
-> make sure it's safe.  I think your audit above is correct and
-> complete, but it relies on way too much architecture knowledge.  It's
-> better if we can deduce correctness without knowing which arches
-> support hotplug and which CPUs support EDAC.
+> Or, it might be that the mixer value is simply not set correct.
 >
-> As soon as for_each_pci_host_bridge() is in the tree, those uses can
-> be copied to even more places.  It's a macro, so it's usable by any
-> module, even out-of-tree ones that we'll never see and can't fix.  So
-> we won't really have a good way to deprecate and remove it.
+> To be sure, could you try again 3.8-rc6 without reversing patches,
+> adjust "Speaker" and "Bass Speaker" volumes properly, and retest?
+> If it still doesn't work, please take alsa-info.sh snapshot at this
+> state for comparing with the previous result.
 
-Now we only have two references in modules.
+My apologies! We do now have "Bass Speaker" which affects both bass
+speakers. It was always being restored to level 0 and works when set
+up.
 
-drivers/edac/i7core_edac.c:     for_each_pci_host_bridge(host_bridge) {
-drivers/pci/hotplug/sgi_hotplug.c:      for_each_pci_host_bridge(host_bridge) {
+There is a "Subwoofer" slider in addition to "Balance" and "Fade" in
+the GNOME mixer UI which is greyed out; presumably this is intended as
+the same mixer control?
 
-for the sgi_hotplug.c, it should be same problem that have for acpiphp
-and pciehp.
-need to make it support pci host bridge hotplug anyway.
-
-for edac, we need to check Mauro about their plan.
-
-After those two are addressed, we can drop that EXPORT_SYMBOL_GPL for
-pci_get_next_host_bridge.
-
-We do have pci_get_domain_bus_and_slot() as export symbol.
-So we export pci_get_next_host_bridge should be ok now.
-and it would be better than export root buses list.
-
-Thanks
-
-Yinghai
+Dan
+-- 
+Daniel J Blueman
