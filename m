@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757847Ab3BFSF6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:05:58 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35682 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab3BFSFz (ORCPT
+	id S1757881Ab3BFSGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:06:06 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:53398 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757827Ab3BFSGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:05:55 -0500
-Message-ID: <51129B80.9090907@wwwdotorg.org>
-Date: Wed, 06 Feb 2013 11:05:52 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 6 Feb 2013 13:06:02 -0500
+Date: Wed, 6 Feb 2013 19:06:00 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH] backlight: as3711: fix compilation breakage
+Message-ID: <Pine.LNX.4.64.1302061904060.13474@axis700.grange>
 MIME-Version: 1.0
-To: "arm@kernel.org" <arm@kernel.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ARM: tegra: Fix build error w/ ARCH_TEGRA_114_SOC
- w/o ARCH_TEGRA_3x_SOC
-References: <1360167030-14159-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1360167030-14159-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:xioJNlu0OMHg892labiN5Ru3Z+WmNm9Z3I4oz2t8ko6
+ K3P8OUyEsKIsack06yI3dw77N3prLrrdgnDra1zr8QfZNP9DYB
+ P+9CbjSwPeNc3c/JoOUcYJ2R16HSGcOfCObFyo0kNbJQyqBfx3
+ ye/qKzJhzf4fC1b68wdOX0lVRRCxtDx9LbggQXKHKVF/uX5/pL
+ yP20iMwRZupbfgs+EVJxMGcGB7tDvUtQbsc7C7bIN+PCb5qZGk
+ 4xbS0CyP31ebTQhf1QyYw5mczWIPza41/6g6zSbp4I/M+X1ihD
+ n/kIHsQHFC6WMAjhJTFpnvGP1mKY+F//Shq5+Ystj7UM9Zjy6X
+ g1piAFYN/SJzm5UnpIGGrBa1atzjiG8EdawOF7Pgp71NiFu2Xp
+ YkeLz+eeK5S+A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 09:10 AM, Hiroshi Doyu wrote:
-> This patch fixes the build error when ARCH_TEGRA_114_SOC is enabled
-> and ARCH_TEGRA_3x_SOC is disabled.
-> 
-> This provides Tegra114 with its own tegra114_init_early() instead of
-> making use of tegra30_init_early() so that T114 build doesn't depend
-> on T3x anymore.
+Include the missing platform_device.h header to fix errors like
 
-Olof, Arnd,
+error: implicit declaration of function 'platform_set_drvdata'
 
-This patch fixes the (well, an) issue for me. Can you apply it directly
-to the arm-soc tree. I believe it should apply on top of the
-tegra-for-3.9-soc-t114 pull request I sent.
+and similar.
 
-Let me know if you need a resend, although it was CC'd to LAKML, so I
-assume you have it in your email history.
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+---
 
-BTW, I anticipate a few more fixes coming down the line:
+Please, push for 3.9
 
-1) Clock-related patch from Laxman so that UART C clock on Cardhu is set
-up correctly for Bluetooth. v1 was posted already, but I think a v2 is
-needed here.
+ drivers/video/backlight/as3711_bl.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-2) Another fix for Tegra20+Tegra114 w/o Tegra30 build fix from Hiroshi,
-related to drivers/amba/tegra-ahb.c, although there aren't any
-dependencies there, so perhaps that can go through Russell since he
-maintains that tree.
+diff --git a/drivers/video/backlight/as3711_bl.c b/drivers/video/backlight/as3711_bl.c
+index c6bc65d..41d52fe 100644
+--- a/drivers/video/backlight/as3711_bl.c
++++ b/drivers/video/backlight/as3711_bl.c
+@@ -17,6 +17,7 @@
+ #include <linux/kernel.h>
+ #include <linux/mfd/as3711.h>
+ #include <linux/module.h>
++#include <linux/platform_device.h>
+ #include <linux/regmap.h>
+ #include <linux/slab.h>
+ 
+-- 
+1.7.2.5
 
-3) Something related to fb2229a "ARM: 7634/1: uncompress debug support
-for multiplatform build" since that breaks tegra_defconfig, but I
-haven't had a chance to look into that yet.
-
-4) Something related to a boot failure related to crash in
-tegra_timer_interrupt(), which I'm just about to go investigate.
-
-Hopefully that's it...
