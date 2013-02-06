@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030215Ab3BFUDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:03:15 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:33181 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757990Ab3BFUDM (ORCPT
+	id S932143Ab3BFUDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:03:47 -0500
+Received: from mail-da0-f45.google.com ([209.85.210.45]:36135 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758007Ab3BFUDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Feb 2013 15:03:12 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-Subject: [PATCH 69/77] ocfs2: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:41 -0800
-Message-Id: <1360179649-22465-70-git-send-email-tj@kernel.org>
+        Arnd Bergmann <arnd@arndb.de>, Alex Dubov <oakad@yahoo.com>
+Subject: [PATCH 51/77] misc/tifm_core: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:23 -0800
+Message-Id: <1360179649-22465-52-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -26,58 +26,36 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Alex Dubov <oakad@yahoo.com>
 ---
- fs/ocfs2/cluster/tcp.c | 32 +++++++++++++-------------------
- 1 file changed, 13 insertions(+), 19 deletions(-)
+ drivers/misc/tifm_core.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ocfs2/cluster/tcp.c b/fs/ocfs2/cluster/tcp.c
-index a1d83c5..33b8924 100644
---- a/fs/ocfs2/cluster/tcp.c
-+++ b/fs/ocfs2/cluster/tcp.c
-@@ -304,28 +304,22 @@ static u8 o2net_num_from_nn(struct o2net_node *nn)
- 
- static int o2net_prep_nsw(struct o2net_node *nn, struct o2net_status_wait *nsw)
+diff --git a/drivers/misc/tifm_core.c b/drivers/misc/tifm_core.c
+index 0bd5349..0ab7c92 100644
+--- a/drivers/misc/tifm_core.c
++++ b/drivers/misc/tifm_core.c
+@@ -196,13 +196,14 @@ int tifm_add_adapter(struct tifm_adapter *fm)
  {
--	int ret = 0;
+ 	int rc;
+ 
+-	if (!idr_pre_get(&tifm_adapter_idr, GFP_KERNEL))
+-		return -ENOMEM;
 -
--	do {
--		if (!idr_pre_get(&nn->nn_status_idr, GFP_ATOMIC)) {
--			ret = -EAGAIN;
--			break;
--		}
--		spin_lock(&nn->nn_lock);
--		ret = idr_get_new(&nn->nn_status_idr, nsw, &nsw->ns_id);
--		if (ret == 0)
--			list_add_tail(&nsw->ns_node_item,
--				      &nn->nn_status_list);
--		spin_unlock(&nn->nn_lock);
--	} while (ret == -EAGAIN);
-+	int ret;
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&tifm_adapter_lock);
+-	rc = idr_get_new(&tifm_adapter_idr, fm, &fm->id);
++	rc = idr_alloc(&tifm_adapter_idr, fm, 0, 0, GFP_NOWAIT);
++	if (rc >= 0)
++		fm->id = rc;
+ 	spin_unlock(&tifm_adapter_lock);
+-	if (rc)
++	idr_preload_end();
++	if (rc < 0)
+ 		return rc;
  
--	if (ret == 0)  {
--		init_waitqueue_head(&nsw->ns_wq);
--		nsw->ns_sys_status = O2NET_ERR_NONE;
--		nsw->ns_status = 0;
-+	spin_lock(&nn->nn_lock);
-+	ret = idr_alloc(&nn->nn_status_idr, nsw, 0, 0, GFP_ATOMIC);
-+	if (ret >= 0) {
-+		nsw->ns_id = ret;
-+		list_add_tail(&nsw->ns_node_item, &nn->nn_status_list);
- 	}
-+	spin_unlock(&nn->nn_lock);
-+	if (ret < 0)
-+		return ret;
- 
--	return ret;
-+	init_waitqueue_head(&nsw->ns_wq);
-+	nsw->ns_sys_status = O2NET_ERR_NONE;
-+	nsw->ns_status = 0;
-+	return 0;
- }
- 
- static void o2net_complete_nsw_locked(struct o2net_node *nn,
+ 	dev_set_name(&fm->dev, "tifm%u", fm->id);
 -- 
 1.8.1
 
