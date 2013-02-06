@@ -1,123 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab3BFPTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:19:53 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:57132 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756951Ab3BFPTr (ORCPT
+	id S1757264Ab3BFPVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:21:14 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:61890 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756368Ab3BFPVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:19:47 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r16FJEku019355, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <dwmw2@infradead.org>, <ben@decadent.org.uk>
-CC: <romieu@fr.zoreil.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH firmware] rtl_nic: update firmware for RTL8168G
-Date: Wed, 6 Feb 2013 23:18:59 +0800
-Message-ID: <1360163939-3625-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.1
+	Wed, 6 Feb 2013 10:21:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <5112662D.1010406@tycho.nsa.gov>
+References: <CA+ydwtqgnMGuuHHWwj7jZh14WNdCFW_KA_APH-XZYX+RA-Ls1Q@mail.gmail.com>
+	<5112662D.1010406@tycho.nsa.gov>
+Date: Wed, 6 Feb 2013 17:21:08 +0200
+Message-ID: <CA+ydwtpBNinVYa3zxoGVWjQLemxTyqTCm=o8mPut-F-DZx1xVg@mail.gmail.com>
+Subject: Re: selinux_msg_queue_msgrcv() oops
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>,
+        linux-security-module@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File: rtl_nic/rtl8168g-2.fw
-Version: 0.0.1
+2013/2/6 Stephen Smalley <sds@tycho.nsa.gov>:
+> On 02/06/2013 07:56 AM, Tommi Rantala wrote:
+>>
+>> Hello,
+>>
+>> I'm hitting an oops in selinux_msg_queue_msgrcv() when fuzzing with
+>> Trinity as the root user (in a qemu VM):
+>
+>
+> NULL msg->security at that point is a bug in the ipc subsystem; SELinux is
+> just the messenger.  Normally msg->security is set for every allocated msg
+> by load_msg() -> security_msg_msg_alloc() ->
+> selinux_msg_msg_alloc_security(), and freed/cleared upon free_msg() ->
+> security_msg_msg_free() -> selinux_msg_msg_free_security().  Looking around,
+> I see copy_msg() introduced for checkpoint-restore initializes dst->security
+> to NULL but never sets it properly?
 
-This firmware supports new fw setting mothod for linux kernel.
+I am indeed building with CONFIG_CHECKPOINT_RESTORE=y, so your
+analysis seems to be correct.
 
-Add MAC OCP settings for:
- -phy reset
- -PXE in ALDPS
- -pwron sequence
- -OBFF
-
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- WHENCE                |   3 +++
- rtl_nic/rtl8168g-2.fw | Bin 0 -> 4896 bytes
- 2 files changed, 3 insertions(+)
- create mode 100644 rtl_nic/rtl8168g-2.fw
-
-diff --git a/WHENCE b/WHENCE
-index 96142c2..34a0bba 100644
---- a/WHENCE
-+++ b/WHENCE
-@@ -1841,6 +1841,9 @@ Version: 0.0.1
- File: rtl_nic/rtl8168g-1.fw
- Version: 0.0.3
- 
-+File: rtl_nic/rtl8168g-2.fw
-+Version: 0.0.1
-+
- Licence:
-  * Copyright © 2011, Realtek Semiconductor Corporation
-  *
-diff --git a/rtl_nic/rtl8168g-2.fw b/rtl_nic/rtl8168g-2.fw
-new file mode 100644
-index 0000000000000000000000000000000000000000..944d44e6a66a266ee2f92f4eb8215acbf58bf3c0
-GIT binary patch
-literal 4896
-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
-
-literal 0
-HcmV?d00001
-
--- 
-1.8.1
-
+>>
+>> [12578.053111] BUG: unable to handle kernel NULL pointer dereference
+>> at           (null)
+>> [12578.054025] IP: [<ffffffff8131e1da>]
+>> selinux_msg_queue_msgrcv+0xda/0x1e0
+>> [12578.054025] PGD 29961067 PUD 34dc5067 PMD 0
+>> [12578.054025] Oops: 0000 [#2] SMP
+>> [12578.054025] CPU 1
+>> [12578.054025] Pid: 23453, comm: trinity-child23 Tainted: G      D W
+>>   3.8.0-rc6+ #31 Bochs Bochs
+>> [12578.054025] RIP: 0010:[<ffffffff8131e1da>]  [<ffffffff8131e1da>]
+>> selinux_msg_queue_msgrcv+0xda/0x1e0
+>> [12578.054025] RSP: 0018:ffff88002b6b5e18  EFLAGS: 00010246
+>> [12578.054025] RAX: 0000000000000000 RBX: ffff88003132d410 RCX:
+>> 0000000000000001
+>> [12578.054025] RDX: ffff88000e8bc560 RSI: 0000000000000001 RDI:
+>> 0000000000000246
+>> [12578.054025] RBP: ffff88002b6b5e68 R08: 0000000000000000 R09:
+>> 0000000000000000
+>> [12578.054025] R10: ffff88000e8bc560 R11: 0000000000000000 R12:
+>> 0000000000000001
+>> [12578.054025] R13: 0000000000000000 R14: ffff880006449500 R15:
+>> ffff88003132d410
+>> [12578.054025] FS:  00007f7385059700(0000) GS:ffff88003e200000(0000)
+>> knlGS:0000000000000000
+>> [12578.054025] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [12578.054025] CR2: 0000000000000000 CR3: 00000000303a2000 CR4:
+>> 00000000000006e0
+>> [12578.054025] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+>> 0000000000000000
+>> [12578.054025] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+>> 0000000000000400
+>> [12578.054025] Process trinity-child23 (pid: 23453, threadinfo
+>> ffff88002b6b4000, task ffff88000e8bc560)
+>> [12578.054025] Stack:
+>> [12578.054025]  ffffffff8131e105 ffffffff81313f69 ffff88002b6b5e04
+>> ffffffff00000000
+>> [12578.054025]  ffffffff812fd6f5 ffff88003a89c1c0 0000000000000000
+>> 0000000000000001
+>> [12578.054025]  0000000000000000 ffff88003132d4c0 ffff88002b6b5e78
+>> ffffffff81314086
+>> [12578.054025] Call Trace:
+>> [12578.054025]  [<ffffffff8131e105>] ? selinux_msg_queue_msgrcv+0x5/0x1e0
+>> [12578.054025]  [<ffffffff81313f69>] ? security_ipc_permission+0x19/0x20
+>> [12578.054025]  [<ffffffff812fd6f5>] ? ipc_lock+0x5/0x1c0
+>> [12578.054025]  [<ffffffff81314086>] security_msg_queue_msgrcv+0x16/0x20
+>> [12578.054025]  [<ffffffff812ff93f>] do_msgrcv+0x1ef/0x6e0
+>> [12578.054025]  [<ffffffff812fe340>] ? load_msg+0x180/0x180
+>> [12578.054025]  [<ffffffff81373184>] ? lockdep_sys_exit_thunk+0x35/0x67
+>> [12578.054025]  [<ffffffff810fb236>] ? trace_hardirqs_on_caller+0x16/0x1a0
+>> [12578.054025]  [<ffffffff8137310e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>> [12578.054025]  [<ffffffff812ffe45>] sys_msgrcv+0x15/0x20
+>> [12578.054025]  [<ffffffff81cfe9d9>] system_call_fastpath+0x16/0x1b
+>> [12578.054025] Code: 4c 8d 45 c0 45 31 c9 b9 10 00 00 00 44 89 e7 4d
+>> 8b 6d 28 c6 45 c0 04 89 55 c8 8b 70 04 ba 1b 00 00 00 e8 fa 7a ff ff
+>> 85 c0 75 1d <41> 8b 75 00 4c 8d 45 c0 45 31 c9 b9 02 00 00 00 ba 1a 00
+>> 00 00
+>> [12578.054025] RIP  [<ffffffff8131e1da>]
+>> selinux_msg_queue_msgrcv+0xda/0x1e0
+>> [12578.054025]  RSP <ffff88002b6b5e18>
+>> [12578.054025] CR2: 0000000000000000
+>> [12578.142292] ---[ end trace 36aee1c7bfea7f83 ]---
+>>
+>>
+>> After adding:
+>>
+>> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+>> index 54aaa72..20cec57 100644
+>> --- a/security/selinux/hooks.c
+>> +++ b/security/selinux/hooks.c
+>> @@ -4982,9 +4982,12 @@ static int selinux_msg_queue_msgrcv(struct
+>> msg_queue *msq, struct msg_msg *msg,
+>>
+>>          rc = avc_has_perm(sid, isec->sid,
+>>                            SECCLASS_MSGQ, MSGQ__READ, &ad);
+>> -       if (!rc)
+>> +       if (!rc) {
+>> +               WARN(msec == NULL, "msec is NULL!");
+>> +
+>>                  rc = avc_has_perm(sid, msec->sid,
+>>                                    SECCLASS_MSG, MSG__RECEIVE, &ad);
+>> +       }
+>>          return rc;
+>>   }
+>>
+>>
+>> I see:
+>>
+>> [   43.103283] ------------[ cut here ]------------
+>> [   43.104236] WARNING: at
+>> /home/ttrantal/git/linux-2.6/security/selinux/hooks.c:4986
+>> selinux_msg_queue_msgrcv+0x1ff/0x210()
+>> [   43.106088] Hardware name: Bochs
+>> [   43.106640] msec is NULL!Pid: 2387, comm: trinity-child9 Not
+>> tainted 3.8.0-rc6+ #37
+>> [   43.107950] Call Trace:
+>> [   43.108393]  [<ffffffff8131e12f>] ?
+>> selinux_msg_queue_msgrcv+0x1ff/0x210
+>> [   43.109534]  [<ffffffff8109ac1a>] warn_slowpath_common+0x7a/0xb0
+>> [   43.110565]  [<ffffffff8109acc6>] warn_slowpath_fmt+0x46/0x50
+>> [   43.111561]  [<ffffffff8131e12f>] selinux_msg_queue_msgrcv+0x1ff/0x210
+>> [   43.112677]  [<ffffffff8131df35>] ? selinux_msg_queue_msgrcv+0x5/0x210
+>> [   43.113808]  [<ffffffff81313f99>] ? security_ipc_permission+0x19/0x20
+>> [   43.114919]  [<ffffffff812fd725>] ? ipc_lock+0x5/0x1c0
+>> [   43.115817]  [<ffffffff813140b6>] security_msg_queue_msgrcv+0x16/0x20
+>> [   43.116929]  [<ffffffff812ff96f>] do_msgrcv+0x1ef/0x6e0
+>> [   43.117909]  [<ffffffff812fe370>] ? load_msg+0x180/0x180
+>> [   43.118850]  [<ffffffff810fb35d>] ?
+>> trace_hardirqs_on_caller+0x10d/0x1a0
+>> [   43.120019]  [<ffffffff8137315e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>> [   43.121126]  [<ffffffff812ffe75>] sys_msgrcv+0x15/0x20
+>> [   43.122001]  [<ffffffff81cfea19>] system_call_fastpath+0x16/0x1b
+>> [   43.123044] ---[ end trace db5952f0fa3bedc7 ]---
+>> [   43.123815]
+>> [   43.124096] ===============================
+>> [   43.124804] [ INFO: suspicious RCU usage. ]
+>> [   43.125531] 3.8.0-rc6+ #37 Tainted: G        W
+>> [   43.126344] -------------------------------
+>> [   43.127083] /home/ttrantal/git/linux-2.6/include/linux/rcupdate.h:468
+>> Illegal context switch in RCU read-side critical section!
+>> [   43.129015]
+>> [   43.129015] other info that might help us debug this:
+>> [   43.129015]
+>> [   43.130367]
+>> [   43.130367] rcu_scheduler_active = 1, debug_locks = 0
+>> [   43.131481] 3 locks held by trinity-child9/2387:
+>> [   43.132266]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff812fd725>]
+>> ipc_lock+0x5/0x1c0
+>> [   43.133709]  #1:  (&(&new->lock)->rlock){+.+...}, at:
+>> [<ffffffff812fd7a1>] ipc_lock+0x81/0x1c0
+>> [   43.135294]  #2:  (&mm->mmap_sem){++++++}, at: [<ffffffff8108e1d4>]
+>> __do_page_fault+0x114/0x4e0
+>> [   43.136864]
+>> [   43.136864] stack backtrace:
+>> [   43.137619] Pid: 2387, comm: trinity-child9 Tainted: G        W
+>> 3.8.0-rc6+ #37
+>> [   43.138897] Call Trace:
+>> [   43.139338]  [<ffffffff810fdd1d>] lockdep_rcu_suspicious+0xfd/0x130
+>> [   43.140417]  [<ffffffff81cfb783>] __schedule+0x543/0x900
+>> [   43.141342]  [<ffffffff810d38ba>] __cond_resched+0x2a/0x40
+>> [   43.142291]  [<ffffffff8108e1d4>] ? __do_page_fault+0x114/0x4e0
+>> [   43.143440]  [<ffffffff81cfbc6f>] _cond_resched+0x2f/0x40
+>> [   43.144362]  [<ffffffff8108e1e1>] __do_page_fault+0x121/0x4e0
+>> [   43.145362]  [<ffffffff810fb3fd>] ? trace_hardirqs_on+0xd/0x10
+>> [   43.146316]  [<ffffffff8137319d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+>> [   43.147386]  [<ffffffff8108e5de>] do_page_fault+0xe/0x10
+>> [   43.148254]  [<ffffffff810889fa>] do_async_page_fault+0x2a/0xa0
+>> [   43.149239]  [<ffffffff81cfe138>] async_page_fault+0x28/0x30
+>> [   43.150167]  [<ffffffff8131e017>] ? selinux_msg_queue_msgrcv+0xe7/0x210
+>> [   43.151263]  [<ffffffff8131e12f>] ?
+>> selinux_msg_queue_msgrcv+0x1ff/0x210
+>> [   43.152357]  [<ffffffff8131df35>] ? selinux_msg_queue_msgrcv+0x5/0x210
+>> [   43.153475]  [<ffffffff81313f99>] ? security_ipc_permission+0x19/0x20
+>> [   43.154828]  [<ffffffff812fd725>] ? ipc_lock+0x5/0x1c0
+>> [   43.156052]  [<ffffffff813140b6>] security_msg_queue_msgrcv+0x16/0x20
+>> [   43.157586]  [<ffffffff812ff96f>] do_msgrcv+0x1ef/0x6e0
+>> [   43.158830]  [<ffffffff812fe370>] ? load_msg+0x180/0x180
+>> [   43.160131]  [<ffffffff810fb35d>] ?
+>> trace_hardirqs_on_caller+0x10d/0x1a0
+>> [   43.161736]  [<ffffffff8137315e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>> [   43.163238]  [<ffffffff812ffe75>] sys_msgrcv+0x15/0x20
+>> [   43.164453]  [<ffffffff81cfea19>] system_call_fastpath+0x16/0x1b
+>> [   43.176035] BUG: unable to handle kernel NULL pointer dereference
+>> at           (null)
+>> [   43.177016] IP: [<ffffffff8131e017>]
+>> selinux_msg_queue_msgrcv+0xe7/0x210
+>> [   43.177016] PGD 3189b067 PUD 3189c067 PMD 0
+>> [   43.177016] Oops: 0000 [#1] SMP
+>> [   43.177016] CPU 0
+>> [   43.177016] Pid: 2387, comm: trinity-child9 Tainted: G        W
+>> 3.8.0-rc6+ #37 Bochs Bochs
+>> [   43.177016] RIP: 0010:[<ffffffff8131e017>]  [<ffffffff8131e017>]
+>> selinux_msg_queue_msgrcv+0xe7/0x210
+>> [   43.177016] RSP: 0018:ffff8800318a7e18  EFLAGS: 00010296
+>> [   43.177016] RAX: 0000000000000000 RBX: ffff880032e0e810 RCX:
+>> 0000000000000006
+>> [   43.177016] RDX: 0000000000003e50 RSI: ffff88003b7c4c68 RDI:
+>> 0000000000000009
+>> [   43.177016] RBP: ffff8800318a7e68 R08: 0000000000000001 R09:
+>> 0000000000000000
+>> [   43.177016] R10: 0000000000000000 R11: 0000000000000288 R12:
+>> 0000000000000001
+>> [   43.177016] R13: 0000000000000000 R14: ffff88003b22ae80 R15:
+>> ffff880032e0e810
+>> [   43.177016] FS:  00007fc6ba864700(0000) GS:ffff88003fc00000(0000)
+>> knlGS:0000000000000000
+>> [   43.177016] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [   43.177016] CR2: 00007fc6ba6471f0 CR3: 0000000031898000 CR4:
+>> 00000000000006f0
+>> [   43.177016] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+>> 0000000000000000
+>> [   43.177016] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+>> 0000000000000400
+>> [   43.177016] Process trinity-child9 (pid: 2387, threadinfo
+>> ffff8800318a6000, task ffff88003b7c4560)
+>> [   43.177016] Stack:
+>> [   43.177016]  ffffffff8131df35 ffffffff81313f99 ffff8800318a7e04
+>> ffffffff5d6d982a
+>> [   43.177016]  ffffffff812fd725 ffff880039c675c0 0000000000000000
+>> 0000000000000001
+>> [   43.177016]  0000000000000000 ffff880032e0e8c0 ffff8800318a7e78
+>> ffffffff813140b6
+>> [   43.177016] Call Trace:
+>> [   43.177016]  [<ffffffff8131df35>] ? selinux_msg_queue_msgrcv+0x5/0x210
+>> [   43.177016]  [<ffffffff81313f99>] ? security_ipc_permission+0x19/0x20
+>> [   43.177016]  [<ffffffff812fd725>] ? ipc_lock+0x5/0x1c0
+>> [   43.177016]  [<ffffffff813140b6>] security_msg_queue_msgrcv+0x16/0x20
+>> [   43.177016]  [<ffffffff812ff96f>] do_msgrcv+0x1ef/0x6e0
+>> [   43.177016]  [<ffffffff812fe370>] ? load_msg+0x180/0x180
+>> [   43.177016]  [<ffffffff810fb35d>] ?
+>> trace_hardirqs_on_caller+0x10d/0x1a0
+>> [   43.177016]  [<ffffffff8137315e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>> [   43.177016]  [<ffffffff812ffe75>] sys_msgrcv+0x15/0x20
+>> [   43.177016]  [<ffffffff81cfea19>] system_call_fastpath+0x16/0x1b
+>> [   43.177016] Code: 00 00 00 44 89 e7 4d 8b 6d 28 c6 45 c0 04 89 55
+>> c8 8b 70 04 ba 1b 00 00 00 e8 f6 7c ff ff 85 c0 75 26 4d 85 ed 0f 84
+>> 00 01 00 00 <41> 8b 75 00 4c 8d 45 c0 45 31 c9 b9 02 00 00 00 ba 1a 00
+>> 00 00
+>> [   43.177016] RIP  [<ffffffff8131e017>]
+>> selinux_msg_queue_msgrcv+0xe7/0x210
+>> [   43.177016]  RSP <ffff8800318a7e18>
+>> [   43.177016] CR2: 0000000000000000
+>> [   43.228535] ---[ end trace db5952f0fa3bedc8 ]---
+>> [   68.106008] BUG: soft lockup - CPU#0 stuck for 22s!
+>> [trinity-child8:2382]
+>>
+>> Tommi
+>>
+>
