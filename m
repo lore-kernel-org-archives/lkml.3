@@ -1,240 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab3BFBFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 20:05:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25681 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab3BFBFu (ORCPT
+	id S1755630Ab3BFBKj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 20:10:39 -0500
+Received: from mail.candelatech.com ([208.74.158.172]:41085 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab3BFBKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 20:05:50 -0500
-X-Authority-Analysis: v=2.0 cv=f8jK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=RhnrrAETR_gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=0QcCaaeSes0A:10 a=0gaGLuUjSrvwK3xJ2rMA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1360112748.2621.25.camel@gandalf.local.home>
-Subject: [RFC][PATCH] printk: Remove separate printk_sched buffers and use
- printk buf instead
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        jslaby@suse.cz, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>
-Date: Tue, 05 Feb 2013 20:05:48 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Tue, 5 Feb 2013 20:10:37 -0500
+Message-ID: <5111AD8D.1080005@candelatech.com>
+Date: Tue, 05 Feb 2013 17:10:37 -0800
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Question on lockdep and MAX_LOCK_DEPTH
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ I sent this in a reply to another thread, but wanted a bit more attention to it ]
+I'm debugging something that could be my own bug in my wanlink module (but then
+again, haven't seen this on 3.5 kernels, and my module is
+basically un-changed since then).
 
-To prevent deadlocks with doing a printk inside the scheduler,
-printk_sched() was created. The issue is that printk has a console_sem
-that it can grab and release. The release does a wake up if there's a
-task pending on the sem, and this wake up grabs the rq locks that is
-held in the scheduler. This leads to a possible deadlock if the wake up
-uses the same rq as the one with the rq lock held already.
+I'm using lockdep, and keep seeing "BUG: MAX_LOCK_DEPTH too low".
+I tried changing the depth to 96 from 48, but it still hits.
 
-What printk_sched() does is to save the printk write in a per cpu buffer
-and sets the PRINTK_PENDING_SCHED flag. On a timer tick, if this flag is
-set, the printk() is done against the buffer.
+I also added debug_show_all_locks(); when this error
+case hits.  I was assuming that if lockdep depth is large,
+there would be lots of locks held..but that does not
+seem to be the case??
 
-There's a couple of issues with this approach.
 
-1) If two printk_sched()s are called before the tick, the second one
-will overwrite the first one.
 
-2) The temporary buffer is 512 bytes and is per cpu. This is a quite a
-bit of space wasted for something that is seldom used.
+===============================
+[ INFO: suspicious RCU usage. ]
+3.7.6+ #4 Tainted: G         C O
+-------------------------------
+/home/greearb/git/linux-3.7.dev.y/kernel/rcutree.c:360 Illegal idle entry in RCU read-side critical section.!
 
-In order to remove this, the printk_sched() can instead use the printk
-buffer instead, and delay the console_trylock()/console_unlock() to the
-tick.
+other info that might help us debug this:
 
-Because printk_sched() would then be taking the logbuf_lock, the
-logbuf_lock must not be held while doing anything that may call into the
-scheduler functions, which includes wake ups. Unfortunately, printk()
-also has a console_sem that it uses, and on release, the
-up(&console_sem) may do a wake up of any pending waiters. This must be
-avoided while holding the logbuf_lock.
 
-Luckily, there's not many places that do the unlock, or hold the
-logbuf_lock. By moving things around a little, the console_sem can be
-released without ever holding the logbuf_lock, and we can safely have
-printk_sched() use the printk buffer directly.
+RCU used illegally from idle CPU!
+rcu_scheduler_active = 1, debug_locks = 1
+RCU used illegally from extended quiescent state!
+1 lock held by swapper/1/0:
+  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff81489632>] rcu_read_lock+0x0/0x6f
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+stack backtrace:
+Pid: 0, comm: swapper/1 Tainted: G         C O 3.7.6+ #4
+Call Trace:
+  <IRQ>  [<ffffffff810cecbd>] lockdep_rcu_suspicious+0xfc/0x105
+  [<ffffffff810fe146>] rcu_eqs_enter_common+0xef/0x178
+  [<ffffffff810fe24e>] rcu_irq_exit+0x7f/0xb0
+  [<ffffffff8108edf5>] irq_exit+0xc0/0xcc
+  [<ffffffff8100b635>] do_IRQ+0x97/0xae
+  [<ffffffff815543b2>] common_interrupt+0x72/0x72
+  <EOI>  [<ffffffff81011082>] ? mwait_idle+0x77/0x9f
+  [<ffffffff81011079>] ? mwait_idle+0x6e/0x9f
+  [<ffffffff81011379>] cpu_idle+0x68/0xbc
+  [<ffffffff8154ce84>] start_secondary+0x1fc/0x203
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 357f714..ed630fa 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -219,6 +219,9 @@ struct log {
- /*
-  * The logbuf_lock protects kmsg buffer, indices, counters. It is also
-  * used in interesting ways to provide interlocking in console_unlock();
-+ * This can be taken within the scheduler's rq lock. It must be released
-+ * before calling console_unlock() or anything else that might wake up
-+ * a process.
-  */
- static DEFINE_RAW_SPINLOCK(logbuf_lock);
- 
-@@ -1343,30 +1346,46 @@ static inline int can_use_console(unsigned int cpu)
-  * interrupts disabled. It should return with 'lockbuf_lock'
-  * released but interrupts still disabled.
-  */
--static int console_trylock_for_printk(unsigned int cpu)
-+static int console_trylock_for_printk(unsigned int cpu, bool in_sched)
- 	__releases(&logbuf_lock)
- {
- 	int retval = 0, wake = 0;
- 
--	if (console_trylock()) {
--		retval = 1;
-+	/* if called from the scheduler, we can not call up() */
-+	if (in_sched)
-+		goto out;
- 
--		/*
--		 * If we can't use the console, we need to release
--		 * the console semaphore by hand to avoid flushing
--		 * the buffer. We need to hold the console semaphore
--		 * in order to do this test safely.
--		 */
--		if (!can_use_console(cpu)) {
--			console_locked = 0;
--			wake = 1;
--			retval = 0;
--		}
-+	if (down_trylock(&console_sem))
-+		goto out;
-+
-+	/*
-+	 * If we can't use the console, we need to release
-+	 * the console semaphore by hand to avoid flushing
-+	 * the buffer. We need to hold the console semaphore
-+	 * in order to do this test safely.
-+	 */
-+	if (console_suspended || !can_use_console(cpu)) {
-+		wake = 1;
-+		goto out;
- 	}
-+
-+	/* console is now locked */
-+
-+	console_locked = 1;
-+	console_may_schedule = 0;
-+	mutex_acquire(&console_lock_dep_map, 0, 1, _RET_IP_);
-+
-+	retval = 1;
-+
-+out:
- 	logbuf_cpu = UINT_MAX;
-+	/*
-+	 * The logbuf_lock must not be held when doing a wake up,
-+	 * which the up(&console_sem) can do.
-+	 */
-+	raw_spin_unlock(&logbuf_lock);
- 	if (wake)
- 		up(&console_sem);
--	raw_spin_unlock(&logbuf_lock);
- 	return retval;
- }
- 
-@@ -1495,11 +1514,17 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	static int recursion_bug;
- 	static char textbuf[LOG_LINE_MAX];
- 	char *text = textbuf;
--	size_t text_len;
-+	size_t text_len = 0;
- 	enum log_flags lflags = 0;
- 	unsigned long flags;
- 	int this_cpu;
- 	int printed_len = 0;
-+	bool in_sched = false;
-+
-+	if (level == -2) {
-+		level = -1;
-+		in_sched = true;
-+	}
- 
- 	boot_delay_msec(level);
- 	printk_delay();
-@@ -1545,7 +1570,12 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	 * The printf needs to come first; we need the syslog
- 	 * prefix which might be passed-in as a parameter.
- 	 */
--	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
-+	if (in_sched)
-+		text_len = scnprintf(text, sizeof(textbuf),
-+				     KERN_WARNING "[sched_delayed] ");
-+
-+	text_len += vscnprintf(text + text_len,
-+			       sizeof(textbuf) - text_len, fmt, args);
- 
- 	/* mark and strip a trailing newline */
- 	if (text_len && text[text_len-1] == '\n') {
-@@ -1620,7 +1650,7 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	 * The console_trylock_for_printk() function will release 'logbuf_lock'
- 	 * regardless of whether it actually gets the console semaphore or not.
- 	 */
--	if (console_trylock_for_printk(this_cpu))
-+	if (console_trylock_for_printk(this_cpu, in_sched))
- 		console_unlock();
- 
- 	lockdep_on();
-@@ -1962,18 +1992,20 @@ int is_console_locked(void)
- #define PRINTK_BUF_SIZE		512
- 
- #define PRINTK_PENDING_WAKEUP	0x01
--#define PRINTK_PENDING_SCHED	0x02
-+#define PRINTK_PENDING_OUTPUT	0x02
- 
- static DEFINE_PER_CPU(int, printk_pending);
--static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
- 
- void printk_tick(void)
- {
- 	if (__this_cpu_read(printk_pending)) {
- 		int pending = __this_cpu_xchg(printk_pending, 0);
--		if (pending & PRINTK_PENDING_SCHED) {
--			char *buf = __get_cpu_var(printk_sched_buf);
--			printk(KERN_WARNING "[sched_delayed] %s", buf);
-+		if (pending & PRINTK_PENDING_OUTPUT) {
-+			if (console_trylock())
-+				console_unlock();
-+			else
-+				/* Try again later */
-+				__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
- 		}
- 		if (pending & PRINTK_PENDING_WAKEUP)
- 			wake_up_interruptible(&log_wait);
-@@ -2458,20 +2490,14 @@ late_initcall(printk_late_init);
- 
- int printk_sched(const char *fmt, ...)
- {
--	unsigned long flags;
- 	va_list args;
--	char *buf;
- 	int r;
- 
--	local_irq_save(flags);
--	buf = __get_cpu_var(printk_sched_buf);
--
- 	va_start(args, fmt);
--	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
-+	r = vprintk_emit(0, -2, NULL, 0, fmt, args);
- 	va_end(args);
- 
--	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
--	local_irq_restore(flags);
-+	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
- 
- 	return r;
- }
+Showing all locks held in the system:
+1 lock held by bash/2481:
+  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
+1 lock held by mingetty/2853:
+  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
+1 lock held by mingetty/2857:
+  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
+1 lock held by mingetty/2862:
+  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
+1 lock held by mingetty/2865:
+  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
+1 lock held by mingetty/2867:
+  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
+1 lock held by mingetty/2869:
+  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
+1 lock held by bash/3017:
+  #0:  (&tty->atomic_read_lock){+.+...}, at: [<ffffffff813400a3>] n_tty_read+0x28d/0x785
 
+=============================================
+
+BUG: MAX_LOCK_DEPTH too low, depth: 96  max: 96!
+turning off the locking correctness validator.
+Pid: 0, comm: swapper/1 Tainted: G         C O 3.7.6+ #4
+Call Trace:
+  <IRQ>  [<ffffffff810d1e31>] __lock_acquire+0xe80/0xf06
+  [<ffffffff810cfbbe>] ? check_irq_usage+0xad/0xbe
+  [<ffffffff810d1f1b>] lock_acquire+0x64/0x81
+  [<ffffffff810acbf3>] ? cpu_cgroup_can_attach+0x66/0x66
+  [<ffffffff810acc26>] rcu_read_lock+0x33/0x6f
+  [<ffffffff810acbf3>] ? cpu_cgroup_can_attach+0x66/0x66
+  [<ffffffff810ad1a8>] ttwu_stat+0x60/0x11c
+  [<ffffffff810b1cbb>] try_to_wake_up+0x1e6/0x20b
+  [<ffffffff810b1ced>] default_wake_function+0xd/0xf
+  [<ffffffff810ab4c1>] __wake_up_common+0x49/0x7f
+  [<ffffffff810ac4e5>] __wake_up+0x34/0x48
+  [<ffffffffa05fce11>] handleRcvWlp+0xf4d/0xfd5 [wanlink]
+  [<ffffffff810d133a>] ? __lock_acquire+0x389/0xf06
+  [<ffffffffa05fd325>] wp_handle_rcv_pkt+0x1f5/0x243 [wanlink]
+  [<ffffffffa05fd51c>] handle_rcv+0x1a9/0x1dd [wanlink]
+  [<ffffffff8148a5f1>] deliver_skb+0x58/0x60
+  [<ffffffff8148ab00>] __netif_receive_skb+0x507/0x63c
+  [<ffffffff810100b6>] ? read_tsc+0x9/0x1b
+  [<ffffffff8148c939>] netif_receive_skb+0x56/0x8b
+  [<ffffffff8148cf64>] ? __napi_gro_receive+0xf3/0x102
+  [<ffffffff8148ca51>] napi_skb_finish+0x24/0x57
+  [<ffffffff8148d199>] napi_gro_receive+0x91/0x96
+  [<ffffffffa0231d31>] e1000_receive_skb+0x50/0x5b [e1000e]
+  [<ffffffffa023500c>] e1000_clean_rx_irq+0x29f/0x341 [e1000e]
+  [<ffffffffa02355c6>] e1000e_poll+0x7d/0x239 [e1000e]
+  [<ffffffff8148d31f>] net_rx_action+0xb2/0x1e2
+  [<ffffffff8108eeea>] ? __do_softirq+0x6d/0x17b
+  [<ffffffff8108ef28>] __do_softirq+0xab/0x17b
+  [<ffffffff810a6ed6>] ? hrtimer_interrupt+0x127/0x1e2
+  [<ffffffff8155a7fc>] call_softirq+0x1c/0x30
+  [<ffffffff8100bd46>] do_softirq+0x46/0x9e
+  [<ffffffff8108ed83>] irq_exit+0x4e/0xcc
+  [<ffffffff81027f73>] smp_apic_timer_interrupt+0x85/0x93
+  [<ffffffff8155a0b2>] apic_timer_interrupt+0x72/0x80
+  <EOI>  [<ffffffff81554477>] ? retint_restore_args+0x13/0x13
+  [<ffffffff81011082>] ? mwait_idle+0x77/0x9f
+  [<ffffffff81011079>] ? mwait_idle+0x6e/0x9f
+  [<ffffffff81011379>] cpu_idle+0x68/0xbc
+  [<ffffffff8154ce84>] start_secondary+0x1fc/0x203
+BUG: sleeping function called from invalid context at /home/greearb/git/linux-3.7.dev.y/kernel/mutex.c:269
+in_atomic(): 0, irqs_disabled(): 0, pid: 1375, name: rs:main Q:Reg
+INFO: lockdep is turned off.
+Pid: 1375, comm: rs:main Q:Reg Tainted: G         C O 3.7.6+ #4
+Call Trace:
+  [<ffffffff810adc9d>] __might_sleep+0x1a2/0x1ab
+  [<ffffffff81551969>] mutex_lock_nested+0x20/0x3b
+  [<ffffffff8133e243>] process_output+0x24/0x52
+  [<ffffffff8133fba3>] n_tty_write+0x273/0x356
+  [<ffffffff810b1ce0>] ? try_to_wake_up+0x20b/0x20b
+  [<ffffffff8133db38>] tty_write+0x19b/0x23a
+  [<ffffffff8133f930>] ? n_tty_ioctl+0xc6/0xc6
+  [<ffffffff8133dc61>] redirected_tty_write+0x8a/0x95
+  [<ffffffff81158d6c>] vfs_write+0xa9/0x105
+  [<ffffffff81158ead>] sys_write+0x54/0x89
+  [<ffffffff81559569>] system_call_fastpath+0x16/0x1b
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
