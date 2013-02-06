@@ -1,158 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab3BFICt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 03:02:49 -0500
-Received: from mail.atsec.com ([195.30.99.214]:51953 "EHLO mail.atsec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab3BFICs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 03:02:48 -0500
-Message-ID: <51120E26.7030400@atsec.com>
-Date: Wed, 06 Feb 2013 09:02:46 +0100
-From: Stephan Mueller <stephan.mueller@atsec.com>
-Organization: atsec information security GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Kyle McMartin <kyle@redhat.com>
-CC: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        rusty@rustcorp.com.au, jstancek@redhat.com,
-        herbert@gondor.hengli.com.au
-Subject: Re: [RFC PATCH] fips: check whether a module registering an alg or
- template is signed
-References: <20130122184357.GD6538@redacted.bos.redhat.com> <8615.1358940375@warthog.procyon.org.uk> <50FFFF48.6020608@atsec.com> <20130124190610.GI6538@redacted.bos.redhat.com> <5102781D.9000408@atsec.com> <20130205225830.GH3751@redacted.bos.redhat.com>
-In-Reply-To: <20130205225830.GH3751@redacted.bos.redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756763Ab3BFIER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 03:04:17 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:35395 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3BFIEP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 03:04:15 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Benoit Thebaudeau <benoit.thebaudeau@advansee.com>,
+        David Hardeman <david@hardeman.nu>, Trilok Soni <tsoni@codeaurora.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: [PATCH RESEND] media: rc: gpio-ir-recv: add support for device tree parsing
+Date: Wed,  6 Feb 2013 09:03:52 +0100
+Message-Id: <1360137832-13086-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1359400023-25804-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1359400023-25804-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.02.2013 23:58:30, +0100, Kyle McMartin <kyle@redhat.com> wrote:
+This patch adds device tree parsing for gpio_ir_recv platform_data and
+the mandatory binding documentation. It basically follows what we already
+have for e.g. gpio_keys. All required device tree properties are OS
+independent but optional properties allow linux specific support for rc
+protocols and maps.
 
-Hi Kyle,
+There was a similar patch sent by Matus Ujhelyi but that discussion
+died after the first reviews.
 
-> fips mode needs to prevent unsigned modules from registering crypto
-> algorithms, and currently panics if an unsigned module is attempted to
-> be loaded. Instead, forbid (by returning -EINVAL) registering a crypto
-> alg or template if fips mode is enabled and the module signature is not
-> valid.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Benoit Thebaudeau <benoit.thebaudeau@advansee.com>
+Cc: David Hardeman <david@hardeman.nu>
+Cc: Trilok Soni <tsoni@codeaurora.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-media@vger.kernel.org
+---
+ .../devicetree/bindings/media/gpio-ir-receiver.txt |   20 ++++++
+ drivers/media/rc/gpio-ir-recv.c                    |   68 +++++++++++++++++++-
+ 2 files changed, 86 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
 
-Just reading this paragraph, there is one missing puzzle piece: the
-*entire* kernel crypto API must shut down, even if only one kernel
-module with one cipher (or block chaining mode, ...) has a broken signature.
-
-The overall requirement is: if one self test fails, the entire FIPS
-140-2 crypto module must become unavailable. (please note and do not get
-confused by the overload of the term "module" -- we have the KOs the
-kernel loads, and we have something called a FIPS 140-2 module which is
-the entire crypto "library" subject to a FIPS 140-2 validation)
-
-This signature check is one self test required at runtime.
-
-I added comments inline into the patch.
-
-> 
-> crypto_sig_check should return 1 (and allow the registration) if any
-> of the following are true:
->  1/ fips is not enabled (but CONFIG_CRYPTO_FIPS is enabled.)
->  2/ the algorithm is built into the kernel (THIS_MODULE == NULL)
->  3/ the algorithm is in a module, and the module sig check passes
-> and fail in any of the other cases.
-> 
-> Checking in crypto_check_alg and crypto_register_template seems to hit
-> the callpoints as far as I can see.
-> 
-> Signed-off-by: Kyle McMartin <kyle@redhat.com>
-> 
-> ---
-> 
-> rusty,
-> 
-> How about something like this? It keeps the FIPS mess in the
-> crypto/fips.c file (aside from something that goes away entirely in the
-> !CONFIG_CRYPTO_FIPS case.)
-> 
-> regards, Kyle
-> 
-> --- a/crypto/algapi.c
-> +++ b/crypto/algapi.c
-> @@ -52,6 +52,9 @@ static int crypto_check_alg(struct crypto_alg *alg)
->  	if (alg->cra_priority < 0)
->  		return -EINVAL;
->  
-> +	if (!crypto_sig_check(alg->cra_module))
-> +		return -EINVAL;
-
-Instead of an EINVAL, the kernel either must panic(), or a global flag
-is introduced which is evaluated by every kernel crypto API call. If
-that flag is, say, false, none of the kernel crypto API calls must succeed.
-> +
->  	return crypto_set_driver_name(alg);
->  }
->  
-> @@ -435,6 +438,11 @@ int crypto_register_template(struct crypto_template *tmpl)
-
-
-I am wondering whether the modification of these two functions are
-sufficient. As I wrote in a previous email, there are a number of
-register functions the kernel crypto API exports and which are used.
-
->  			goto out;
->  	}
->  
-> +	if (!crypto_sig_check(tmpl->module)) {
-> +		err = -EINVAL;
-> +		goto out;
-> +	}
-> +
->  	list_add(&tmpl->list, &crypto_template_list);
->  	crypto_notify(CRYPTO_MSG_TMPL_REGISTER, tmpl);
->  	err = 0;
-> diff --git a/crypto/fips.c b/crypto/fips.c
-> index 5539700..2ebbe0f 100644
-> --- a/crypto/fips.c
-> +++ b/crypto/fips.c
-> @@ -15,6 +15,19 @@
->  int fips_enabled;
->  EXPORT_SYMBOL_GPL(fips_enabled);
->  
-> +/* forbid loading modules in fips mode if the module is not signed */
-> +int crypto_sig_check(struct module *m)
-> +{
-> +#if defined(CONFIG_MODULE_SIG)
-> +	if (!fips_enabled || !m || (m && m->sig_ok))
-> +		return 1;
-> +	else
-> +		return 0;
-
-This code looks good.
-
-> +#else
-> +	return 1;
-> +#endif
-> +}
-> +
->  /* Process kernel command-line parameter at boot time. fips=0 or fips=1 */
->  static int fips_enable(char *str)
->  {
-> diff --git a/crypto/internal.h b/crypto/internal.h
-> index 9ebedae..937bfaf 100644
-> --- a/crypto/internal.h
-> +++ b/crypto/internal.h
-> @@ -139,5 +139,14 @@ static inline void crypto_notify(unsigned long val, void *v)
->  	blocking_notifier_call_chain(&crypto_chain, val, v);
->  }
->  
-> +#if defined(CONFIG_CRYPTO_FIPS)
-> +int crypto_sig_check(struct module *m);
-> +#else
-> +static inline int crypto_sig_check(struct module *m)
-> +{
-> +	return 1;
-> +}
-> +#endif
-> +
->  #endif	/* _CRYPTO_INTERNAL_H */
->  
-> 
+diff --git a/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+new file mode 100644
+index 0000000..937760c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/gpio-ir-receiver.txt
+@@ -0,0 +1,20 @@
++Device-Tree bindings for GPIO IR receiver
++
++Required properties:
++	- compatible = "gpio-ir-receiver";
++	- gpios: OF device-tree gpio specification.
++
++Optional properties:
++	- linux,allowed-rc-protocols: Linux specific u64 bitmask of allowed
++	    rc protocols.
++	- linux,rc-map-name: Linux specific remote control map name.
++
++Example node:
++
++	ir: ir-receiver {
++		compatible = "gpio-ir-receiver";
++		gpios = <&gpio0 19 1>;
++		/* allow rc protocols 1-4 */
++		linux,allowed-rc-protocols = <0x00000000 0x0000001e>;
++		linux,rc-map-name = "rc-rc6-mce";
++	};
+diff --git a/drivers/media/rc/gpio-ir-recv.c b/drivers/media/rc/gpio-ir-recv.c
+index 4f71a7d..25e09fa 100644
+--- a/drivers/media/rc/gpio-ir-recv.c
++++ b/drivers/media/rc/gpio-ir-recv.c
+@@ -16,6 +16,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/gpio.h>
+ #include <linux/slab.h>
++#include <linux/of_gpio.h>
+ #include <linux/platform_device.h>
+ #include <linux/irq.h>
+ #include <media/rc-core.h>
+@@ -30,6 +31,63 @@ struct gpio_rc_dev {
+ 	bool active_low;
+ };
+ 
++#ifdef CONFIG_OF
++/*
++ * Translate OpenFirmware node properties into platform_data
++ */
++static struct gpio_ir_recv_platform_data *
++gpio_ir_recv_get_devtree_pdata(struct device *dev)
++{
++	struct device_node *np = dev->of_node;
++	struct gpio_ir_recv_platform_data *pdata;
++	enum of_gpio_flags flags;
++	int gpio;
++
++	if (!np)
++		return ERR_PTR(-ENODEV);
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	if (!of_find_property(np, "gpios", NULL)) {
++		dev_err(dev, "Found gpio-ir-receiver without gpios\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	gpio = of_get_gpio_flags(np, 0, &flags);
++	if (gpio < 0) {
++		if (gpio != -EPROBE_DEFER)
++			dev_err(dev, "Failed to get gpio flags, error: %d\n",
++				gpio);
++		return ERR_PTR(gpio);
++	}
++
++	pdata->gpio_nr = gpio;
++	pdata->active_low = (flags & OF_GPIO_ACTIVE_LOW) ? true : false;
++	pdata->map_name = of_get_property(np, "linux,rc-map-name", NULL);
++	of_property_read_u64(np, "linux,allowed-rc-protocols",
++			     &pdata->allowed_protos);
++
++	return pdata;
++}
++
++static struct of_device_id gpio_ir_recv_of_match[] = {
++	{ .compatible = "gpio-ir-receiver", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, gpio_ir_recv_of_match);
++
++#else /* !CONFIG_OF */
++
++static inline struct gpio_ir_recv_platform_data *
++gpio_ir_recv_get_devtree_pdata(struct device *dev)
++{
++	return ERR_PTR(-ENODEV);
++}
++
++#endif
++
+ static irqreturn_t gpio_ir_recv_irq(int irq, void *dev_id)
+ {
+ 	struct gpio_rc_dev *gpio_dev = dev_id;
+@@ -66,8 +124,11 @@ static int gpio_ir_recv_probe(struct platform_device *pdev)
+ 					pdev->dev.platform_data;
+ 	int rc;
+ 
+-	if (!pdata)
+-		return -EINVAL;
++	if (!pdata) {
++		pdata = gpio_ir_recv_get_devtree_pdata(&pdev->dev);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++	}
+ 
+ 	if (pdata->gpio_nr < 0)
+ 		return -EINVAL;
+@@ -195,6 +256,9 @@ static struct platform_driver gpio_ir_recv_driver = {
+ #ifdef CONFIG_PM
+ 		.pm	= &gpio_ir_recv_pm_ops,
+ #endif
++#ifdef CONFIG_OF
++		.of_match_table = of_match_ptr(gpio_ir_recv_of_match),
++#endif
+ 	},
+ };
+ module_platform_driver(gpio_ir_recv_driver);
+-- 
+1.7.10.4
 
