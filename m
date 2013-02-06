@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab3BFR76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 12:59:58 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:53946 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389Ab3BFR7z (ORCPT
+	id S1757847Ab3BFSF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:05:58 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35682 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab3BFSFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 12:59:55 -0500
-Message-ID: <51129A12.6020101@candelatech.com>
-Date: Wed, 06 Feb 2013 09:59:46 -0800
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 6 Feb 2013 13:05:55 -0500
+Message-ID: <51129B80.9090907@wwwdotorg.org>
+Date: Wed, 06 Feb 2013 11:05:52 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Cong Ding <dinggnu@gmail.com>, "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: mac80211/cfg.c: fix error using of sizeof()
-References: <1360167826-29265-1-git-send-email-dinggnu@gmail.com>  (sfid-20130206_172354_765098_665D60D0) <1360168022.7910.22.camel@jlt4.sipsolutions.net> <511298E8.7090801@candelatech.com>
-In-Reply-To: <511298E8.7090801@candelatech.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "arm@kernel.org" <arm@kernel.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ARM: tegra: Fix build error w/ ARCH_TEGRA_114_SOC
+ w/o ARCH_TEGRA_3x_SOC
+References: <1360167030-14159-1-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1360167030-14159-1-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 09:54 AM, Ben Greear wrote:
-> On 02/06/2013 08:27 AM, Johannes Berg wrote:
->> On Wed, 2013-02-06 at 17:23 +0100, Cong Ding wrote:
->>> Using 'sizeof' on array given as function argument returns size of a pointer
->>> rather than the size of array.
->>
->> Oops, yeah, Stephen Hemminger pointed this out a month or so ago and I
->> forgot to change it, thanks.
->
-> This needs to be back-ported for 3.7 stable?  Perhaps the code below
-> corresponds (from copy_mesh_setup)?
->
->
->      /* mcast rate setting in Mesh Node */
->      memcpy(sdata->vif.bss_conf.mcast_rate, setup->mcast_rate,
->                          sizeof(setup->mcast_rate));
+On 02/06/2013 09:10 AM, Hiroshi Doyu wrote:
+> This patch fixes the build error when ARCH_TEGRA_114_SOC is enabled
+> and ARCH_TEGRA_3x_SOC is disabled.
+> 
+> This provides Tegra114 with its own tegra114_init_early() instead of
+> making use of tegra30_init_early() so that T114 build doesn't depend
+> on T3x anymore.
 
-Nevermind..I think I'm wrong about that..the sizeof probably works fine
-here.  Sorry for the noise.
+Olof, Arnd,
 
-Ben
+This patch fixes the (well, an) issue for me. Can you apply it directly
+to the arm-soc tree. I believe it should apply on top of the
+tegra-for-3.9-soc-t114 pull request I sent.
 
->
-> Thanks,
-> Ben
->
+Let me know if you need a resend, although it was CC'd to LAKML, so I
+assume you have it in your email history.
 
+BTW, I anticipate a few more fixes coming down the line:
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+1) Clock-related patch from Laxman so that UART C clock on Cardhu is set
+up correctly for Bluetooth. v1 was posted already, but I think a v2 is
+needed here.
 
+2) Another fix for Tegra20+Tegra114 w/o Tegra30 build fix from Hiroshi,
+related to drivers/amba/tegra-ahb.c, although there aren't any
+dependencies there, so perhaps that can go through Russell since he
+maintains that tree.
+
+3) Something related to fb2229a "ARM: 7634/1: uncompress debug support
+for multiplatform build" since that breaks tegra_defconfig, but I
+haven't had a chance to look into that yet.
+
+4) Something related to a boot failure related to crash in
+tegra_timer_interrupt(), which I'm just about to go investigate.
+
+Hopefully that's it...
