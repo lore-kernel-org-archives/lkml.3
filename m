@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab3BFT6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:58:52 -0500
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:50098 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756893Ab3BFTuv (ORCPT
+	id S1758530Ab3BFT7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:59:17 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:42729 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758258Ab3BFTuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:50:51 -0500
+	Wed, 6 Feb 2013 14:50:46 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 54/77] macvtap: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:26 -0800
-Message-Id: <1360179649-22465-55-git-send-email-tj@kernel.org>
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 49/77] mfd: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:21 -0800
+Message-Id: <1360179649-22465-50-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -27,50 +26,37 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 ---
- drivers/net/macvtap.c | 21 +++++----------------
- 1 file changed, 5 insertions(+), 16 deletions(-)
+ drivers/mfd/rtsx_pcr.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index b181dfb..1814cfe 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -279,28 +279,17 @@ static int macvtap_receive(struct sk_buff *skb)
- static int macvtap_get_minor(struct macvlan_dev *vlan)
- {
- 	int retval = -ENOMEM;
--	int id;
- 
- 	mutex_lock(&minor_lock);
--	if (idr_pre_get(&minor_idr, GFP_KERNEL) == 0)
--		goto exit;
--
--	retval = idr_get_new_above(&minor_idr, vlan, 1, &id);
--	if (retval < 0) {
--		if (retval == -EAGAIN)
--			retval = -ENOMEM;
--		goto exit;
--	}
--	if (id < MACVTAP_NUM_DEVS) {
--		vlan->minor = id;
--	} else {
-+	retval = idr_alloc(&minor_idr, vlan, 1, MACVTAP_NUM_DEVS, GFP_KERNEL);
-+	if (retval >= 0) {
-+		vlan->minor = retval;
-+	} else if (retval == -ENOSPC) {
- 		printk(KERN_ERR "too many macvtap devices\n");
- 		retval = -EINVAL;
--		idr_remove(&minor_idr, id);
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 9016932..81d8b14 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1056,15 +1056,14 @@ static int rtsx_pci_probe(struct pci_dev *pcidev,
  	}
--exit:
- 	mutex_unlock(&minor_lock);
--	return retval;
-+	return retval < 0 ? retval : 0;
- }
+ 	handle->pcr = pcr;
  
- static void macvtap_free_minor(struct macvlan_dev *vlan)
+-	if (!idr_pre_get(&rtsx_pci_idr, GFP_KERNEL)) {
+-		ret = -ENOMEM;
+-		goto free_handle;
+-	}
+-
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&rtsx_pci_lock);
+-	ret = idr_get_new(&rtsx_pci_idr, pcr, &pcr->id);
++	ret = idr_alloc(&rtsx_pci_idr, pcr, 0, 0, GFP_NOWAIT);
++	if (ret >= 0)
++		pcr->id = ret;
+ 	spin_unlock(&rtsx_pci_lock);
+-	if (ret)
++	idr_preload_end();
++	if (ret < 0)
+ 		goto free_handle;
+ 
+ 	pcr->pci = pcidev;
 -- 
 1.8.1
 
