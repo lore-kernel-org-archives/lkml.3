@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758463Ab3BFT4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:56:39 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:42431 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030235Ab3BFTvG (ORCPT
+	id S1758560Ab3BFT5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:57:25 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:58604 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758479Ab3BFT5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:51:06 -0500
-From: Tejun Heo <tj@kernel.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        James Smart <james.smart@emulex.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH 63/77] scsi/lpfc: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:35 -0800
-Message-Id: <1360179649-22465-64-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
-References: <1360179649-22465-1-git-send-email-tj@kernel.org>
+	Wed, 6 Feb 2013 14:57:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130206195131.GD29163@infradead.org>
+References: <1360161962-9675-1-git-send-email-eranian@google.com>
+	<1360161962-9675-3-git-send-email-eranian@google.com>
+	<20130206195131.GD29163@infradead.org>
+Date: Wed, 6 Feb 2013 20:57:19 +0100
+Message-ID: <CABPqkBSz0qGm3ZkzSv=gTRmE2ZDjE9quWzJ63686xic4XgWqLA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] perf stat: add per processor socket count aggregation
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the much saner new idr interface.
-
-Only compile tested.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: James Smart <james.smart@emulex.com>
-Cc: linux-scsi@vger.kernel.org
----
- drivers/scsi/lpfc/lpfc_init.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index 26ca2ef..314b4f6 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -3165,14 +3165,10 @@ destroy_port(struct lpfc_vport *vport)
- int
- lpfc_get_instance(void)
- {
--	int instance = 0;
--
--	/* Assign an unused number */
--	if (!idr_pre_get(&lpfc_hba_index, GFP_KERNEL))
--		return -1;
--	if (idr_get_new(&lpfc_hba_index, NULL, &instance))
--		return -1;
--	return instance;
-+	int ret;
-+
-+	ret = idr_alloc(&lpfc_hba_index, NULL, 0, 0, GFP_KERNEL);
-+	return ret < 0 ? -1 : ret;
- }
- 
- /**
--- 
-1.8.1
-
+On Wed, Feb 6, 2013 at 8:51 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Wed, Feb 06, 2013 at 03:46:02PM +0100, Stephane Eranian escreveu:
+>>  tools/perf/builtin-stat.c |  126 +++++++++++++++++++++++++++++++++++++++++----
+>
+> Added the missing 'perf stat' man page entry based on the changeset
+> comments,
+>
+Arg, yes, forgot that. Thanks for fixing it.
