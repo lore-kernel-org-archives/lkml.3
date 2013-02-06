@@ -1,63 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab3BFKcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 05:32:24 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:51117 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab3BFKcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 05:32:23 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        Steve Bannister <Steve.Bannister@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-Subject: Re: [PATCH 0/4] CPUFreq: Implement per policy instances of governors
-Date: Wed, 06 Feb 2013 11:38:40 +0100
-Message-ID: <1713890.Dj4ufUrfMM@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc6; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpo=T+YJxkxyWJQ_SdsFHcY_Xv-SXy_mZNLe7a3CtDF-7gw@mail.gmail.com>
-References: <cover.1359976493.git.viresh.kumar@linaro.org> <CAP245DUMnSMSoXo2JoMu1CgNROQ2YT7kd7e9svWoZ_EG2QLi+Q@mail.gmail.com> <CAKohpo=T+YJxkxyWJQ_SdsFHcY_Xv-SXy_mZNLe7a3CtDF-7gw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756681Ab3BFKfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 05:35:45 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:37497 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab3BFKfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 05:35:44 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/4] spi: s3c64xx: added support for polling mode
+To: Girish K S <girishks2000@gmail.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1360105784-12282-3-git-send-email-ks.giri@samsung.com>
+References: <1360105784-12282-1-git-send-email-ks.giri@samsung.com> <1360105784-12282-3-git-send-email-ks.giri@samsung.com>
+Date: Wed, 06 Feb 2013 10:35:39 +0000
+Message-Id: <20130206103539.B3B283E1510@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 06, 2013 03:45:58 PM Viresh Kumar wrote:
-> On 6 February 2013 15:38, Amit Kucheria <amit.kucheria@linaro.org> wrote:
-> > On Wed, Feb 6, 2013 at 3:28 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >> I have pushed the complete patchset here:
-> >>
-> >> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-updates
-> >>
-> >
-> > Viresh, perhaps you should ask Stephen Rothwell to pull in your tree
-> > to get some more testing before Rafael pulls it in for 3.10?
+On Tue,  5 Feb 2013 15:09:42 -0800, Girish K S <girishks2000@gmail.com> wrote:
+> The 64xx spi driver supports partial polling mode.
+> Only the last chunk of the transfer length is transferred
+> or recieved in polling mode.
 > 
-> Its has been made clear by Rafael that these patches wouldn't make it for
-> 3.9 (though i wanted them to :) ), and so once the merge window is over
-> Rafael might pull them in and so they would reach Stephen's linux-next too...
+> Some SoC's that adopt this controller might not have have dma
+> interface. This patch adds support for complete polling mode
+> and gives flexibity for the user to select poll/dma mode.
 > 
-> I am not sure if sending a cpufreq pull request directly to Stephen is
-> preferred.
-> @Rafael: ??
+> Signed-off-by: Girish K S <ks.giri@samsung.com>
+> ---
+>  drivers/spi/spi-s3c64xx.c |   65 +++++++++++++++++++++------------------------
+>  1 file changed, 30 insertions(+), 35 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+> index b770f88..90770bd 100644
+> --- a/drivers/spi/spi-s3c64xx.c
+> +++ b/drivers/spi/spi-s3c64xx.c
+> @@ -345,19 +348,7 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
+>  
+>  	chcfg = readl(regs + S3C64XX_SPI_CH_CFG);
+>  	chcfg &= ~S3C64XX_SPI_CH_TXCH_ON;
+> -
+> -	if (dma_mode) {
+>  		chcfg &= ~S3C64XX_SPI_CH_RXCH_ON;
+> -	} else {
+> -		/* Always shift in data in FIFO, even if xfer is Tx only,
+> -		 * this helps setting PCKT_CNT value for generating clocks
+> -		 * as exactly needed.
+> -		 */
+> -		chcfg |= S3C64XX_SPI_CH_RXCH_ON;
+> -		writel(((xfer->len * 8 / sdd->cur_bpw) & 0xffff)
+> -					| S3C64XX_SPI_PACKET_CNT_EN,
+> -					regs + S3C64XX_SPI_PACKET_CNT);
+> -	}
 
-You may do that, if you want, but that's slightly confusing.
+The removes a block of code, but leaves the modification of chcfg where
+it is without fixing the indentation. I could also use some help
+understanding why this particular else block is moved down in the
+function.
 
-Also the policy is that material which is not going to be included into v3.9
-shouldn't be in linux-next before v3.9-rc1.
+>  	if (xfer->tx_buf != NULL) {
+>  		sdd->state |= TXBUSY;
+> @@ -385,6 +376,10 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
+>  
+>  	if (xfer->rx_buf != NULL) {
+>  		sdd->state |= RXBUSY;
+> +		chcfg |= S3C64XX_SPI_CH_RXCH_ON;
+> +		writel(((xfer->len * 8 / sdd->cur_bpw) & 0xffff)
+> +				| S3C64XX_SPI_PACKET_CNT_EN,
+> +				regs + S3C64XX_SPI_PACKET_CNT);
+>  
+>  		if (sdd->port_conf->high_speed && sdd->cur_speed >= 30000000UL
+>  					&& !(sdd->cur_mode & SPI_CPHA))
+> @@ -392,10 +387,6 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
+>  
+>  		if (dma_mode) {
+>  			modecfg |= S3C64XX_SPI_MODE_RXDMA_ON;
+> -			chcfg |= S3C64XX_SPI_CH_RXCH_ON;
+> -			writel(((xfer->len * 8 / sdd->cur_bpw) & 0xffff)
+> -					| S3C64XX_SPI_PACKET_CNT_EN,
+> -					regs + S3C64XX_SPI_PACKET_CNT);
+>  			prepare_dma(&sdd->rx_dma, xfer->len, xfer->rx_dma);
+>  		}
+>  	}
+> @@ -421,6 +412,9 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
+>  
+>  	cs = spi->controller_data;
+>  	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
+> +
+> +	/* Start the signals */
+> +	writel(0, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+>  }
+>  
+>  static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
+> @@ -480,16 +474,19 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
+>  
+>  		switch (sdd->cur_bpw) {
+>  		case 32:
+> -			ioread32_rep(regs + S3C64XX_SPI_RX_DATA,
+> -				xfer->rx_buf, xfer->len / 4);
+> +			for (val = 0; val < (xfer->len / 4); val++)
+> +				*((u32 *)xfer->rx_buf + val) =
+> +					ioread32(regs + S3C64XX_SPI_RX_DATA);
+>  			break;
+>  		case 16:
+> -			ioread16_rep(regs + S3C64XX_SPI_RX_DATA,
+> -				xfer->rx_buf, xfer->len / 2);
+> +			for (val = 0; val < (xfer->len / 2); val++)
+> +				*((u16 *)xfer->rx_buf + val) =
+> +					ioread16(regs + S3C64XX_SPI_RX_DATA);
+>  			break;
+>  		default:
+> -			ioread8_rep(regs + S3C64XX_SPI_RX_DATA,
+> -				xfer->rx_buf, xfer->len);
+> +			for (val = 0; val < xfer->len; val++)
+> +				*((u8 *)xfer->rx_buf + val) =
+> +					ioread8(regs + S3C64XX_SPI_RX_DATA);
 
-Moreover, for build testing it is sufficient to put it into a branch somewhere
-at git.kernel.org (as you have already noticed :-)).
+What are all of the above lines changed? That seems to have nothing to
+do with making the driver be albe to do polling transfers. Nor is it
+described in the patch description.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I think this patch needs some more work. It certainly need to be
+described better, and it appears that some of the changes really should be
+in a separate patch.
