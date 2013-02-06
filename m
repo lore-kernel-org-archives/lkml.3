@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab3BFSS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 13:18:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56423 "EHLO mx1.redhat.com"
+	id S1757898Ab3BFSTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 13:19:19 -0500
+Received: from smtp1.goneo.de ([212.90.139.80]:64038 "EHLO smtp1.goneo.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752107Ab3BFSS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 13:18:58 -0500
-Date: Wed, 6 Feb 2013 13:18:46 -0500
-From: Kyle McMartin <kmcmarti@redhat.com>
-To: Stephan Mueller <stephan.mueller@atsec.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        rusty@rustcorp.com.au, jstancek@redhat.com,
-        herbert@gondor.hengli.com.au
-Subject: Re: [RFC PATCH] fips: check whether a module registering an alg or
- template is signed
-Message-ID: <20130206181845.GL3751@redacted.bos.redhat.com>
-References: <20130122184357.GD6538@redacted.bos.redhat.com>
- <8615.1358940375@warthog.procyon.org.uk>
- <50FFFF48.6020608@atsec.com>
- <20130124190610.GI6538@redacted.bos.redhat.com>
- <5102781D.9000408@atsec.com>
- <20130205225830.GH3751@redacted.bos.redhat.com>
- <51120E26.7030400@atsec.com>
- <20130206161557.GJ3751@redacted.bos.redhat.com>
- <511296C9.8010102@atsec.com>
+	id S1757744Ab3BFSTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 13:19:16 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.744
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH RFC] misc/at24: distinguish between eeprom and fram chips
+Date: Wed, 6 Feb 2013 19:19:18 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+References: <201212041758.38600.poeschel@lemonage.de> <201212051043.07460.poeschel@lemonage.de> <20121205164153.GA5011@pengutronix.de>
+In-Reply-To: <20121205164153.GA5011@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511296C9.8010102@atsec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302061919.18501.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 06:45:45PM +0100, Stephan Mueller wrote:
-> Unfortunately there has already something terrible happened: an
-> additional piece of code loaded into the FIPS 140-2 module could not be
-> loaded because a self test failed. This is a terrible accident in FIPS
-> 140-2 speak. :-)
-> 
-> That means, the FIPS 140-2 module, aka kernel crypto API must become
-> unavailable. As one self test failed, the entire module must become
-> unavailable.
-> 
-> I am sorry, but there is no way around it. Just to quote the relevant
-> part from the FIPS 140-2 specification, section 4.9:
-> 
-> If a cryptographic module fails a self-test, the module shall enter an
-> error state and output an error indicator
-> via the status output interface. The cryptographic module shall not
-> perform any cryptographic operations
-> while in an error state. All data output via the data output interface
-> shall be inhibited when an error state
-> exists.
-> 
+On Wednesday 05 December 2012 at 17:41:53, Wolfram Sang wrote:
 
-OK. If Herbert and Rusty are ok with this, I'll send an additional patch
-moving the panic which should satisfy this requirement.
+> > > The method of accessing EEPROMs is used by way more chips than FRAMs.
+> > > So, I'd prefer to have the text updated more generic like "EEPROMs and
+> > > similar devices like RAMs, ROMs, etc...". Describing setting .flags in
+> > > Kconfig is overkill.
+> > 
+> > A patch updating Kconfig is below.
+> 
+> Looks good from a glimpse, will apply it later.
 
-> 
-> ==> the signature test we are discussing here is one of these self
-> tests, in particular a conditional self test defined in section 4.9.2 of
-> the FIPS 140-2 standard.
-> 
-> > necessary, I just didn't think it was. If Herbert doesn't object to this
-> > patch, I'd move the panic from kernel/module.c to here.
-> 
-> I am perfectly happy with the move of the code.
-> 
+Hello Wolfram,
 
-regards, Kyle
+what happend to this one ? It was a patch updating Kconfig help for at24.
+
+https://patchwork.kernel.org/patch/1840591/
+
+Regards,
+Lars
