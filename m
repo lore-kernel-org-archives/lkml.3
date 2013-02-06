@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab3BFWc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:32:56 -0500
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.50]:22320 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755439Ab3BFWcz (ORCPT
+	id S1758078Ab3BFWdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 17:33:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54470 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755439Ab3BFWc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 17:32:55 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-131.messagelabs.com!1360189964!23628952!19
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Received: 
-X-StarScan-Version: 6.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
-Organization: Vision Engraving Systems
-To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/11] sound/pcmcia: use module_pcmcia_driver() in pcmcia drivers
-Date: Wed, 6 Feb 2013 15:32:50 -0700
-User-Agent: KMail/1.13.5 (Linux/3.7.0; KDE/4.4.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 6 Feb 2013 17:32:57 -0500
+Date: Wed, 6 Feb 2013 14:32:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Tomas Henzl <thenzl@redhat.com>
+Subject: Re: [PATCH 21/77] block: fix synchronization and limit check in
+ blk_alloc_devt()
+Message-Id: <20130206143256.21a55902.akpm@linux-foundation.org>
+In-Reply-To: <20130206222755.GD2875@htj.dyndns.org>
+References: <1360179649-22465-1-git-send-email-tj@kernel.org>
+	<1360179649-22465-22-git-send-email-tj@kernel.org>
+	<20130206142422.b2f8eac6.akpm@linux-foundation.org>
+	<20130206222755.GD2875@htj.dyndns.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-ID: <201302061532.50523.hsweeten@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new module_pcmcia_driver() macro to remove the boilerplate
-module init/exit code in the pcmcia drivers.
+On Wed, 6 Feb 2013 14:27:55 -0800
+Tejun Heo <tj@kernel.org> wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
----
- sound/pcmcia/pdaudiocf/pdaudiocf.c | 15 +--------------
- sound/pcmcia/vx/vxpocket.c         | 14 +-------------
- 2 files changed, 2 insertions(+), 27 deletions(-)
+> Hello, Andrew.
+> 
+> On Wed, Feb 06, 2013 at 02:24:22PM -0800, Andrew Morton wrote:
+> > This gets all tangled up with
+> > http://ozlabs.org/~akpm/mmotm/broken-out/block-fix-ext_devt_idr-handling.patch,
+> > which appears to solve the same issue.
+> > 
+> > What to do?
+> 
+> Can you please drop 21 and 22?  Everything else shouldn't be affected
+> and we can sort these out later.  The actual deprecation patch is held
+> off for now anyway.
 
-diff --git a/sound/pcmcia/pdaudiocf/pdaudiocf.c b/sound/pcmcia/pdaudiocf/pdaudiocf.c
-index f9b5229..8f489de 100644
---- a/sound/pcmcia/pdaudiocf/pdaudiocf.c
-+++ b/sound/pcmcia/pdaudiocf/pdaudiocf.c
-@@ -295,18 +295,5 @@ static struct pcmcia_driver pdacf_cs_driver = {
- 	.suspend	= pdacf_suspend,
- 	.resume		= pdacf_resume,
- #endif
--
- };
--
--static int __init init_pdacf(void)
--{
--	return pcmcia_register_driver(&pdacf_cs_driver);
--}
--
--static void __exit exit_pdacf(void)
--{
--	pcmcia_unregister_driver(&pdacf_cs_driver);
--}
--
--module_init(init_pdacf);
--module_exit(exit_pdacf);
-+module_pcmcia_driver(pdacf_cs_driver);
-diff --git a/sound/pcmcia/vx/vxpocket.c b/sound/pcmcia/vx/vxpocket.c
-index 8f93504..d4db7ec 100644
---- a/sound/pcmcia/vx/vxpocket.c
-+++ b/sound/pcmcia/vx/vxpocket.c
-@@ -367,16 +367,4 @@ static struct pcmcia_driver vxp_cs_driver = {
- 	.resume		= vxp_resume,
- #endif
- };
--
--static int __init init_vxpocket(void)
--{
--	return pcmcia_register_driver(&vxp_cs_driver);
--}
--
--static void __exit exit_vxpocket(void)
--{
--	pcmcia_unregister_driver(&vxp_cs_driver);
--}
--
--module_init(init_vxpocket);
--module_exit(exit_vxpocket);
-+module_pcmcia_driver(vxp_cs_driver);
--- 
-1.8.1.1.293.gfe73786
+hm, I could.  Instead I merged your patch on top of Tomas's and marked
+Tomas's patch for -stable as well.  Sound OK?
 
