@@ -1,200 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3BFJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 04:18:25 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:39350 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab3BFJST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 04:18:19 -0500
-Date: Wed, 6 Feb 2013 10:20:30 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, intel-gfx@lists.freedesktop.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [Intel-gfx] [PATCH 3/3] drm/i915: support resume without VT
- switch v2
-Message-ID: <20130206092030.GH5813@phenom.ffwll.local>
-Mail-Followup-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-	linux-kernel@vger.kernel.org, rjw@sisk.pl,
-	intel-gfx@lists.freedesktop.org, linux-pm@vger.kernel.org
-References: <1359985042-2610-1-git-send-email-jbarnes@virtuousgeek.org>
- <1359985042-2610-3-git-send-email-jbarnes@virtuousgeek.org>
+	id S1752170Ab3BFJSl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 04:18:41 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:47313 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000Ab3BFJSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 04:18:35 -0500
+X-IronPort-AV: E=Sophos;i="4.84,614,1355068800"; 
+   d="scan'208";a="6696294"
+Message-ID: <51121FB7.1070205@cn.fujitsu.com>
+Date: Wed, 06 Feb 2013 17:17:43 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1359985042-2610-3-git-send-email-jbarnes@virtuousgeek.org>
-X-Operating-System: Linux phenom 3.7.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, akpm@linux-foundation.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
+ to avoid dependence
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com> <50D96543.6010903@parallels.com> <50DFD7F7.5090408@cn.fujitsu.com> <50ED8834.1090804@parallels.com> <5111C8EB.6090805@cn.fujitsu.com>
+In-Reply-To: <5111C8EB.6090805@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 17:17:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/06 17:17:11,
+	Serialize complete at 2013/02/06 17:17:11
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 01:37:22PM +0000, Jesse Barnes wrote:
-> Add support for resuming the suspend configuration at resume time to
-> avoid slow and ugly VT switches during suspend and resume.  Also emit a
-> hotplug event at resume time to make sure any potential configuration
-> changes (monitors coming and going, dock events) are handled properly.
-> 
-> v2: use new fb flag to indicate we don't need to VT switch
-> 
-> Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-> ---
->  drivers/gpu/drm/i915/i915_drv.c      |   28 +++++++++++++++++++++++++---
->  drivers/gpu/drm/i915/i915_drv.h      |    1 +
->  drivers/gpu/drm/i915/intel_display.c |   25 +++++++++++++++++++++++++
->  drivers/gpu/drm/i915/intel_fb.c      |    3 +++
->  4 files changed, 54 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-> index 1172658..7dbaa01 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.c
-> +++ b/drivers/gpu/drm/i915/i915_drv.c
-> @@ -483,8 +483,6 @@ static int i915_drm_freeze(struct drm_device *dev)
->  
->  		cancel_delayed_work_sync(&dev_priv->rps.delayed_resume_work);
->  
-> -		intel_modeset_disable(dev);
-> -
+Hi all,
 
-You can't just drop this without replacement I think, check git blame for
-why it's been added.
+On 02/06/2013 11:07 AM, Tang Chen wrote:
+> Hi Glauber, all,
+>
+> An old thing I want to discuss with you. :)
+>
+> On 01/09/2013 11:09 PM, Glauber Costa wrote:
+>>>>> memory can't be offlined when CONFIG_MEMCG is selected.
+>>>>> For example: there is a memory device on node 1. The address range
+>>>>> is [1G, 1.5G). You will find 4 new directories memory8, memory9,
+>>>>> memory10,
+>>>>> and memory11 under the directory /sys/devices/system/memory/.
+>>>>>
+>>>>> If CONFIG_MEMCG is selected, we will allocate memory to store page
+>>>>> cgroup
+>>>>> when we online pages. When we online memory8, the memory stored
+>>>>> page cgroup
+>>>>> is not provided by this memory device. But when we online memory9,
+>>>>> the memory
+>>>>> stored page cgroup may be provided by memory8. So we can't offline
+>>>>> memory8
+>>>>> now. We should offline the memory in the reversed order.
+>>>>>
+>>>>> When the memory device is hotremoved, we will auto offline memory
+>>>>> provided
+>>>>> by this memory device. But we don't know which memory is onlined
+>>>>> first, so
+>>>>> offlining memory may fail. In such case, iterate twice to offline
+>>>>> the memory.
+>>>>> 1st iterate: offline every non primary memory block.
+>>>>> 2nd iterate: offline primary (i.e. first added) memory block.
+>>>>>
+>>>>> This idea is suggested by KOSAKI Motohiro.
+>>>>>
+>>>>> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
+>>>>
+>>>> Maybe there is something here that I am missing - I admit that I came
+>>>> late to this one, but this really sounds like a very ugly hack, that
+>>>> really has no place in here.
+>>>>
+>>>> Retrying, of course, may make sense, if we have reasonable belief that
+>>>> we may now succeed. If this is the case, you need to document - in the
+>>>> code - while is that.
+>>>>
+>>>> The memcg argument, however, doesn't really cut it. Why can't we make
+>>>> all page_cgroup allocations local to the node they are describing? If
+>>>> memcg is the culprit here, we should fix it, and not retry. If there is
+>>>> still any benefit in retrying, then we retry being very specific
+>>>> about why.
+>>>
+>>> We try to make all page_cgroup allocations local to the node they are
+>>> describing
+>>> now. If the memory is the first memory onlined in this node, we will
+>>> allocate
+>>> it from the other node.
+>>>
+>>> For example, node1 has 4 memory blocks: 8-11, and we online it from 8
+>>> to 11
+>>> 1. memory block 8, page_cgroup allocations are in the other nodes
+>>> 2. memory block 9, page_cgroup allocations are in memory block 8
+>>>
+>>> So we should offline memory block 9 first. But we don't know in which
+>>> order
+>>> the user online the memory block.
+>>>
+>>> I think we can modify memcg like this:
+>>> allocate the memory from the memory block they are describing
+>>>
+>>> I am not sure it is OK to do so.
+>>
+>> I don't see a reason why not.
+>>
+>> You would have to tweak a bit the lookup function for page_cgroup, but
+>> assuming you will always have the pfns and limits, it should be easy
+>> to do.
+>>
+>> I think the only tricky part is that today we have a single
+>> node_page_cgroup, and we would of course have to have one per memory
+>> block. My assumption is that the number of memory blocks is limited and
+>> likely not very big. So even a static array would do.
+>>
+>
+> About the idea "allocate the memory from the memory block they are
+> describing",
+>
+> online_pages()
+> |-->memory_notify(MEM_GOING_ONLINE, &arg) ----------- memory of this
+> section is not in buddy yet.
+> |-->page_cgroup_callback()
+> |-->online_page_cgroup()
+> |-->init_section_page_cgroup()
+> |-->alloc_page_cgroup() --------- allocate page_cgroup from buddy system.
+>
+> When onlining pages, we allocate page_cgroup from buddy. And the being
+> onlined pages are not in
+> buddy yet. I think we can reserve some memory in the section for
+> page_cgroup, and return all the
+> rest to the buddy.
+>
+> But when the system is booting,
+>
+> start_kernel()
+> |-->setup_arch()
+> |-->mm_init()
+> | |-->mem_init()
+> | |-->numa_free_all_bootmem() -------------- all the pages are in buddy
+> system.
+> |-->page_cgroup_init()
+> |-->init_section_page_cgroup()
+> |-->alloc_page_cgroup() ------------------ I don't know how to reserve
+> memory in each section.
+>
+> So any idea about how to deal with it when the system is booting please?
+>
 
->  		drm_irq_uninstall(dev);
->  	}
->  
-> @@ -544,6 +542,24 @@ void intel_console_resume(struct work_struct *work)
->  	console_unlock();
->  }
->  
-> +static void intel_resume_hotplug(struct drm_device *dev)
-> +{
-> +	struct drm_mode_config *mode_config = &dev->mode_config;
-> +	struct intel_encoder *encoder;
-> +
-> +	mutex_lock(&mode_config->mutex);
-> +	DRM_DEBUG_KMS("running encoder hotplug functions\n");
-> +
-> +	list_for_each_entry(encoder, &mode_config->encoder_list, base.head)
-> +		if (encoder->hot_plug)
-> +			encoder->hot_plug(encoder);
-> +
-> +	mutex_unlock(&mode_config->mutex);
-> +
-> +	/* Just fire off a uevent and let userspace tell us what to do */
-> +	drm_helper_hpd_irq_event(dev);
-> +}
+How about this way.
 
-This should imo be in a separate patch, since afaict we don't bother with
-this right now. And I guess we should figure out how this should be done
-across drm drivers ...
+1) Add a new flag PAGE_CGROUP_INFO, like SECTION_INFO and MIX_SECTION_INFO.
+2) In sparse_init(), reserve some beginning pages of each section as 
+bootmem.
+3) In register_page_bootmem_info_section(), set these pages as
+      page->lru.next = PAGE_CGROUP_INFO;
 
-> +
->  static int __i915_drm_thaw(struct drm_device *dev)
->  {
->  	struct drm_i915_private *dev_priv = dev->dev_private;
-> @@ -563,8 +579,14 @@ static int __i915_drm_thaw(struct drm_device *dev)
->  		mutex_unlock(&dev->struct_mutex);
->  
->  		intel_modeset_init_hw(dev);
-> -		intel_modeset_setup_hw_state(dev, false);
+Then these pages will not go to buddy system.
 
-Since this doesn't add any delays (besides a few register reads), but adds
-tons of paranoid checks for our state-handling: Why drop it? Dropping this
-also explains why you get away with killing intel_modeset_disable without
-swimming in a see of WARN_ONs ;-)
+But I do worry about the fragment problem because part of each section will
+be used in the very beginning.
 
->  		drm_irq_install(dev);
-> +
-> +		/* Resume the modeset for every activated CRTC */
-> +		mutex_lock(&dev->mode_config.mutex);
-> +		intel_resume_force_mode(dev);
-> +		mutex_unlock(&dev->mode_config.mutex);
-> +
-> +		intel_resume_hotplug(dev);
->  	}
->  
->  	intel_opregion_init(dev);
-> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-> index 12ab3bd..c8b1896 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.h
-> +++ b/drivers/gpu/drm/i915/i915_drv.h
-> @@ -1680,6 +1680,7 @@ extern void gen6_set_rps(struct drm_device *dev, u8 val);
->  extern void intel_detect_pch(struct drm_device *dev);
->  extern int intel_trans_dp_port_sel(struct drm_crtc *crtc);
->  extern int intel_enable_rc6(const struct drm_device *dev);
-> +extern int intel_resume_force_mode(struct drm_device *dev);
->  
->  extern bool i915_semaphore_is_enabled(struct drm_device *dev);
->  int i915_reg_read_ioctl(struct drm_device *dev, void *data,
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index da1ad9c..a127877 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -9369,6 +9369,31 @@ void intel_modeset_cleanup(struct drm_device *dev)
->  	drm_mode_config_cleanup(dev);
->  }
->  
-> +int intel_resume_force_mode(struct drm_device *dev)
-> +{
-> +	struct drm_crtc *crtc;
-> +	struct drm_encoder *encoder;
-> +	struct drm_encoder_helper_funcs *encoder_funcs;
-> +	struct drm_crtc_helper_funcs *crtc_funcs;
-> +	int ret;
-> +
-> +	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-> +
-> +		if (!crtc->enabled) {
-> +			DRM_ERROR("skipping disabled crtc\n");
-> +			continue;
-> +		}
-> +
-> +		ret = intel_set_mode(crtc, &crtc->mode, crtc->x, crtc->y,
-> +				     crtc->fb);
-> +
-> +		if (ret == false)
-> +			DRM_ERROR("failed to set mode on crtc %p\n", crtc);
-> +	}
-> +
-> +	return 0;
-> +}
+Thanks. :)
 
-intel_modeset_setup_hw_state(dev, true); should do exactly this trick, see
-the lid notifier in intel_lvds.c. That presumes though that you don't kill
-the modeset state, which might require some changes in
-intel_modeset_disable.
-
-> +
->  /*
->   * Return which encoder is currently attached for connector.
->   */
-> diff --git a/drivers/gpu/drm/i915/intel_fb.c b/drivers/gpu/drm/i915/intel_fb.c
-> index 7b30b5c..d4955b5 100644
-> --- a/drivers/gpu/drm/i915/intel_fb.c
-> +++ b/drivers/gpu/drm/i915/intel_fb.c
-> @@ -148,6 +148,9 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
->  	}
->  	info->screen_size = size;
->  
-> +	/* This driver doesn't need a VT switch to restore the mode on resume */
-> +	info->skip_vt_switch = true;
-> +
->  //	memset(info->screen_base, 0, size);
-
-Follow-up patch to kill this // commented-line?
-
->  
->  	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
-> -- 
-> 1.7.9.5
-> 
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
-
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+>
+> And one more question, a memory section is 128MB in Linux. If we reserve
+> part of the them for page_cgroup,
+> then anyone who wants to allocate a contiguous memory larger than 128MB,
+> it will fail, right ?
+> Is it OK ?
+>
+> Thanks. :)
+>
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>
