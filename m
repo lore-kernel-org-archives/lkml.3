@@ -1,41 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab3BFPf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:35:29 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:59096 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756309Ab3BFPf2 (ORCPT
+	id S1757404Ab3BFPjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 10:39:18 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:44046 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755962Ab3BFPjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:35:28 -0500
-Date: Wed, 6 Feb 2013 19:35:24 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: akpm@linux-foundation.org, keescook@chromium.org,
-        serge.hallyn@canonical.com, ebiederm@xmission.com,
+	Wed, 6 Feb 2013 10:39:17 -0500
+Date: Wed, 6 Feb 2013 10:39:13 -0500
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, marcel@holtmann.org
-Subject: Re: [PATCH] kernel: arg2 is unsigned long which is never < 0
-Message-ID: <20130206153524.GU1712@moon>
-References: <511217F3.6050800@asianux.com>
- <20130206085653.GQ1712@moon>
- <51123236.3060001@asianux.com>
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [PATCH] PVH: remove code to map iomem from guest
+Message-ID: <20130206153910.GA23029@konrad-lan.dumpdata.com>
+References: <20130130145529.3900dca1@mantra.us.oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51123236.3060001@asianux.com>
+In-Reply-To: <20130130145529.3900dca1@mantra.us.oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 06:36:38PM +0800, Chen Gang wrote:
-...
+On Wed, Jan 30, 2013 at 02:55:29PM -0800, Mukesh Rathor wrote:
+> It was decided during xen patch review that xen map the iomem
+> transparently, so remove xen_set_clr_mmio_pvh_pte() and the sub
+> hypercall PHYSDEVOP_map_iomem.
 > 
-> result:
->   still use the macros of branch 1
->   and use branch 1 macros instead of branch 2 macros (need an additional patch).
 
-Oh, what a mess ;) The reason I used SUID_DUMPABLE_DISABLED -- because
-it's used in set_dumpable which is called directly from this prctl.
-I'm fine with either way, plain [0;1] is acceptable as well still
-I don;t like it.
+Grrrr..
+
+No Signed-off-by??
+
+> ---
+>  arch/x86/xen/mmu.c              |   14 --------------
+>  arch/x86/xen/setup.c            |   16 ++++------------
+>  include/xen/interface/physdev.h |   10 ----------
+>  3 files changed, 4 insertions(+), 36 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index b4be4c9..fbf6a63 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -333,20 +333,6 @@ static void xen_set_pte(pte_t *ptep, pte_t pteval)
+>  	__xen_set_pte(ptep, pteval);
+>  }
+>  
+> -void xen_set_clr_mmio_pvh_pte(unsigned long pfn, unsigned long mfn,
+> -			      int nr_mfns, int add_mapping)
+> -{
+> -	struct physdev_map_iomem iomem;
+> -
+> -	iomem.first_gfn = pfn;
+> -	iomem.first_mfn = mfn;
+> -	iomem.nr_mfns = nr_mfns;
+> -	iomem.add_mapping = add_mapping;
+> -
+> -	if (HYPERVISOR_physdev_op(PHYSDEVOP_map_iomem, &iomem))
+> -		BUG();
+> -}
+> -
+>  static void xen_set_pte_at(struct mm_struct *mm, unsigned long addr,
+>  		    pte_t *ptep, pte_t pteval)
+>  {
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index 7e93ec9..6532172 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -235,20 +235,12 @@ static void __init xen_set_identity_and_release_chunk(
+>  	*identity += set_phys_range_identity(start_pfn, end_pfn);
+>  }
+>  
+> -/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
+> - * are released as part of this 1:1 mapping hypercall back to the dom heap.
+> - * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
+> - */
+> -static void __init xen_pvh_identity_map_chunk(unsigned long start_pfn,
+> +/* PVH: xen has already mapped the IO space in the EPT/NPT for us, so we
+> + * just need to adjust the released and identity count */
+> +static void __init xen_pvh_adjust_stats(unsigned long start_pfn,
+>  		unsigned long end_pfn, unsigned long max_pfn,
+>  		unsigned long *released, unsigned long *identity)
+>  {
+> -	unsigned long pfn;
+> -	int numpfns = 1, add_mapping = 1;
+> -
+> -	for (pfn = start_pfn; pfn < end_pfn; pfn++)
+> -		xen_set_clr_mmio_pvh_pte(pfn, pfn, numpfns, add_mapping);
+> -
+>  	if (start_pfn <= max_pfn) {
+>  		unsigned long end = min(max_pfn_mapped, end_pfn);
+>  		*released += end - start_pfn;
+> @@ -288,7 +280,7 @@ static unsigned long __init xen_set_identity_and_release(
+>  
+>  			if (start_pfn < end_pfn) {
+>  				if (xlated_phys) {
+> -					xen_pvh_identity_map_chunk(start_pfn,
+> +					xen_pvh_adjust_stats(start_pfn,
+>  						end_pfn, nr_pages, &released, 
+>  						&identity);
+>  				} else {
+> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+> index 83050d3..1844d31 100644
+> --- a/include/xen/interface/physdev.h
+> +++ b/include/xen/interface/physdev.h
+> @@ -274,16 +274,6 @@ struct physdev_dbgp_op {
+>      } u;
+>  };
+>  
+> -#define PHYSDEVOP_map_iomem        30
+> -struct physdev_map_iomem {
+> -    /* IN */
+> -    uint64_t first_gfn;
+> -    uint64_t first_mfn;
+> -    uint32_t nr_mfns;
+> -    uint32_t add_mapping; /* 1 == add mapping;  0 == unmap */
+> -
+> -};
+> -
+>  /*
+>   * Notify that some PIRQ-bound event channels have been unmasked.
+>   * ** This command is obsolete since interface version 0x00030202 and is **
+> -- 
+> 1.7.2.3
+> 
