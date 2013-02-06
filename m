@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030195Ab3BFTuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:50:54 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:45564 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758254Ab3BFTuq (ORCPT
+	id S1030266Ab3BFTvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:51:14 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:41426 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030199Ab3BFTu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:50:46 -0500
+	Wed, 6 Feb 2013 14:50:56 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Rodolfo Giometti <giometti@linux.it>
-Subject: [PATCH 50/77] misc/c2port: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:22 -0800
-Message-Id: <1360179649-22465-51-git-send-email-tj@kernel.org>
+        Rodolfo Giometti <giometti@enneenne.com>
+Subject: [PATCH 57/77] pps: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:29 -0800
+Message-Id: <1360179649-22465-58-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -26,67 +26,82 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Rodolfo Giometti <giometti@linux.it>
+Cc: Rodolfo Giometti <giometti@enneenne.com>
 ---
- drivers/misc/c2port/core.c | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ drivers/pps/kapi.c |  2 +-
+ drivers/pps/pps.c  | 36 ++++++++++++++----------------------
+ 2 files changed, 15 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/misc/c2port/core.c b/drivers/misc/c2port/core.c
-index f428d86..f32550a 100644
---- a/drivers/misc/c2port/core.c
-+++ b/drivers/misc/c2port/core.c
-@@ -885,7 +885,7 @@ struct c2port_device *c2port_device_register(char *name,
- 					struct c2port_ops *ops, void *devdata)
- {
- 	struct c2port_device *c2dev;
--	int id, ret;
-+	int ret;
+diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+index f197e8e..cdad4d9 100644
+--- a/drivers/pps/kapi.c
++++ b/drivers/pps/kapi.c
+@@ -102,7 +102,7 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+ 		goto pps_register_source_exit;
+ 	}
  
- 	if (unlikely(!ops) || unlikely(!ops->access) || \
- 		unlikely(!ops->c2d_dir) || unlikely(!ops->c2ck_set) || \
-@@ -897,22 +897,18 @@ struct c2port_device *c2port_device_register(char *name,
- 	if (unlikely(!c2dev))
- 		return ERR_PTR(-ENOMEM);
+-	/* These initializations must be done before calling idr_get_new()
++	/* These initializations must be done before calling idr_alloc()
+ 	 * in order to avoid reces into pps_event().
+ 	 */
+ 	pps->params.api_version = PPS_API_VERS;
+diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
+index 2420d5a..de8e663 100644
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -290,29 +290,21 @@ int pps_register_cdev(struct pps_device *pps)
+ 	dev_t devt;
  
--	ret = idr_pre_get(&c2port_idr, GFP_KERNEL);
--	if (!ret) {
--		ret = -ENOMEM;
--		goto error_idr_get_new;
+ 	mutex_lock(&pps_idr_lock);
+-	/* Get new ID for the new PPS source */
+-	if (idr_pre_get(&pps_idr, GFP_KERNEL) == 0) {
+-		mutex_unlock(&pps_idr_lock);
+-		return -ENOMEM;
 -	}
 -
-+	idr_preload(GFP_KERNEL);
- 	spin_lock_irq(&c2port_idr_lock);
--	ret = idr_get_new(&c2port_idr, c2dev, &id);
-+	ret = idr_alloc(&c2port_idr, c2dev, 0, 0, GFP_NOWAIT);
- 	spin_unlock_irq(&c2port_idr_lock);
-+	idr_preload_end();
+-	/* Now really allocate the PPS source.
+-	 * After idr_get_new() calling the new source will be freely available
+-	 * into the kernel.
++	/*
++	 * Get new ID for the new PPS source.  After idr_alloc() calling
++	 * the new source will be freely available into the kernel.
+ 	 */
+-	err = idr_get_new(&pps_idr, pps, &pps->id);
+-	mutex_unlock(&pps_idr_lock);
+-
+-	if (err < 0)
+-		return err;
+-
+-	pps->id &= MAX_IDR_MASK;
+-	if (pps->id >= PPS_MAX_SOURCES) {
+-		pr_err("%s: too many PPS sources in the system\n",
+-					pps->info.name);
+-		err = -EBUSY;
+-		goto free_idr;
++	err = idr_alloc(&pps_idr, pps, 0, PPS_MAX_SOURCES, GFP_KERNEL);
++	if (err < 0) {
++		if (err == -ENOSPC) {
++			pr_err("%s: too many PPS sources in the system\n",
++			       pps->info.name);
++			err = -EBUSY;
++		}
++		goto out_unlock;
+ 	}
++	pps->id = err;
++	mutex_unlock(&pps_idr_lock);
  
- 	if (ret < 0)
--		goto error_idr_get_new;
--	c2dev->id = id;
-+		goto error_idr_alloc;
-+	c2dev->id = ret;
+ 	devt = MKDEV(MAJOR(pps_devt), pps->id);
  
- 	c2dev->dev = device_create(c2port_class, NULL, 0, c2dev,
--					"c2port%d", id);
-+				   "c2port%d", c2dev->id);
- 	if (unlikely(IS_ERR(c2dev->dev))) {
- 		ret = PTR_ERR(c2dev->dev);
- 		goto error_device_create;
-@@ -946,10 +942,10 @@ error_device_create_bin_file:
+@@ -345,8 +337,8 @@ del_cdev:
+ free_idr:
+ 	mutex_lock(&pps_idr_lock);
+ 	idr_remove(&pps_idr, pps->id);
++out_unlock:
+ 	mutex_unlock(&pps_idr_lock);
+-
+ 	return err;
+ }
  
- error_device_create:
- 	spin_lock_irq(&c2port_idr_lock);
--	idr_remove(&c2port_idr, id);
-+	idr_remove(&c2port_idr, c2dev->id);
- 	spin_unlock_irq(&c2port_idr_lock);
- 
--error_idr_get_new:
-+error_idr_alloc:
- 	kfree(c2dev);
- 
- 	return ERR_PTR(ret);
 -- 
 1.8.1
 
