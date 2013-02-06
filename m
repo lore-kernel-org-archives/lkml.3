@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab3BFGUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 01:20:25 -0500
-Received: from mail.candelatech.com ([208.74.158.172]:52826 "EHLO
+	id S1752069Ab3BFGX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 01:23:57 -0500
+Received: from mail.candelatech.com ([208.74.158.172]:39915 "EHLO
 	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab3BFGUX (ORCPT
+	with ESMTP id S1751891Ab3BFGX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 01:20:23 -0500
-Message-ID: <5111F623.1090606@candelatech.com>
-Date: Tue, 05 Feb 2013 22:20:19 -0800
+	Wed, 6 Feb 2013 01:23:56 -0500
+Message-ID: <5111F6F6.7010402@candelatech.com>
+Date: Tue, 05 Feb 2013 22:23:50 -0800
 From: Ben Greear <greearb@candelatech.com>
 Organization: Candela Technologies
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
 To: Steven Rostedt <rostedt@goodmis.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
 Subject: Re: Question on lockdep and MAX_LOCK_DEPTH
-References: <5111AD8D.1080005@candelatech.com> <20130206042611.GB9161@home.goodmis.org>
-In-Reply-To: <20130206042611.GB9161@home.goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <5111AD8D.1080005@candelatech.com>   <20130206015430.GA9161@home.goodmis.org>  <5111BF51.5010607@candelatech.com>  <1360119124.2621.37.camel@gandalf.local.home>  <5111CE60.4080403@candelatech.com> <1360125419.2621.39.camel@gandalf.local.home>
+In-Reply-To: <1360125419.2621.39.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 08:26 PM, Steven Rostedt wrote:
-> On Tue, Feb 05, 2013 at 05:10:37PM -0800, Ben Greear wrote:
->>
->>
->> ===============================
->> [ INFO: suspicious RCU usage. ]
->> 3.7.6+ #4 Tainted: G         C O
->> -------------------------------
->> /home/greearb/git/linux-3.7.dev.y/kernel/rcutree.c:360 Illegal idle entry in RCU read-side critical section.!
->>
->> other info that might help us debug this:
->>
->>
->> RCU used illegally from idle CPU!
->> rcu_scheduler_active = 1, debug_locks = 1
->> RCU used illegally from extended quiescent state!
->> 1 lock held by swapper/1/0:
->>   #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff81489632>] rcu_read_lock+0x0/0x6f
->>
->> stack backtrace:
->> Pid: 0, comm: swapper/1 Tainted: G         C O 3.7.6+ #4
->> Call Trace:
->>   <IRQ>  [<ffffffff810cecbd>] lockdep_rcu_suspicious+0xfc/0x105
->>   [<ffffffff810fe146>] rcu_eqs_enter_common+0xef/0x178
->>   [<ffffffff810fe24e>] rcu_irq_exit+0x7f/0xb0
->>   [<ffffffff8108edf5>] irq_exit+0xc0/0xcc
->>   [<ffffffff8100b635>] do_IRQ+0x97/0xae
->>   [<ffffffff815543b2>] common_interrupt+0x72/0x72
->>   <EOI>  [<ffffffff81011082>] ? mwait_idle+0x77/0x9f
->>   [<ffffffff81011079>] ? mwait_idle+0x6e/0x9f
->>   [<ffffffff81011379>] cpu_idle+0x68/0xbc
->>   [<ffffffff8154ce84>] start_secondary+0x1fc/0x203
+On 02/05/2013 08:36 PM, Steven Rostedt wrote:
+> On Tue, 2013-02-05 at 19:30 -0800, Ben Greear wrote:
 >
-> BTW, did the above error only happen when you added the dump of the
-> locks, or was it always there? Is this the bug you were trying to debug?
+>> It's huge, so here's a link:
+>>
+>> http://www.candelatech.com/~greearb/debug.tgz
+>>
+>
+> The trace shows that __netif_receive_skb() is grabbing an
+> rcu_read_lock() but never releasing it. But I don't see any possible way
+> that can be true in the code.
+>
+> Can you apply the following patch and run the trace again. I'd like to
+> see if the code is going in the path I expect it is.
 
-It's often there, at least..and was from the beginning, and I
-am interested in debugging it.
+I'll look at this in detail tomorrow.  I have a few patches in dev.c code, maybe
+I merged something badly....
 
 Thanks,
 Ben
-
-
 
 -- 
 Ben Greear <greearb@candelatech.com>
