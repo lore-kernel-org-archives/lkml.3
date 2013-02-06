@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216Ab3BFLR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 06:17:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55629 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab3BFLRy convert rfc822-to-8bit (ORCPT
+	id S1753844Ab3BFLTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 06:19:14 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:44345 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753171Ab3BFLTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 06:17:54 -0500
-From: "Patil, Rachna" <rachna@ti.com>
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Dmitry Torokhov <dtor@mail.ru>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v4 5/8] MFD: ti_am335x_tscadc: Add DT support
-Thread-Topic: [PATCH v4 5/8] MFD: ti_am335x_tscadc: Add DT support
-Thread-Index: AQHN+eU4Ait4NoO8mU2XgvHAUfkGNphhXFuAgABfUVCAANSOAIAA11hwgAlaobA=
-Date: Wed, 6 Feb 2013 11:17:23 +0000
-Message-ID: <4CE347531D4CA947960AF71FF095B9323E9B44E9@DBDE01.ent.ti.com>
-References: <1358999112-31192-1-git-send-email-rachna@ti.com>
- <1358999112-31192-6-git-send-email-rachna@ti.com>
- <A9839AA2-ABCD-4642-9766-D56824AC27AD@dominion.thruhere.net>
- <4CE347531D4CA947960AF71FF095B9323E9B1EE9@DBDE01.ent.ti.com>
- <79CD15C6BA57404B839C016229A409A83EBEFAE8@DBDE01.ent.ti.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 6 Feb 2013 06:19:10 -0500
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] HID: multitouch: do not use pointers towards hid-core
+Date: Wed,  6 Feb 2013 12:10:47 +0100
+Message-Id: <1360149047-23061-1-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Koen,
+The previous implementation registered a pointer towards hid-core
+to the value of contact count. This is not safe and may be difficult
+to debug if hid-core ever changes its implementation.
+The use of regular indexes is a better choice.
 
-> <SNIP>
-> > > > Since AM335x is DT only, why is there a platform data codepath and why is it the first branch it tries? And I guess the next question is related to the first: why doesn't it work when used with DT? When I copy over the nodes from the evm.dts to my board I get "tsc tsc: Missing platform data" in dmesg.
-> > > 
-> > > This IP came up 1st on AM335x, but it is not platform dependent. The driver can be used on other platforms where-in DT is not supported.
-> > > According to the maintainers platform data takes precedence over DT. Hence the order.
-> > > 
-> > 
-> > Rachana,
-> > 
-> > I see no point adding support for platform_data when you know that none of older platforms are going to use this driver and all future platforms _must_ follow device-tree model.
-> > 
-> > So I agree that you should remove board file dependency from the driver.
-> 
-> Ok. I will remove support for platform data in the next version of patches.
-> 
-> > 
-> > 
-> > > I do not see "Missing platform data" error msg in the latest driver. I am not able to trace from where this got populated.
-> > > 
-> > 
-> > Can you share the branch which you have tested?
-> 
-> https://github.com/patilrachna/linux/tree/v3.8_rc3_MFD_TSCADC_DT-v2
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+---
+ drivers/hid/hid-multitouch.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-Did you get a chance to test this branch?
-And can you also share your branch, on which you observed the issue.
-
-Regards,
-Rachna
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 28af54f..e22fbd3 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -84,7 +84,8 @@ struct mt_device {
+ 	struct mt_class mtclass;	/* our mt device class */
+ 	struct mt_fields *fields;	/* temporary placeholder for storing the
+ 					   multitouch fields */
+-	__s32 *contactcount;		/* contact count value in the report */
++	int cc_index;	/* contact count field index in the report */
++	int cc_value_index;	/* contact count value index in the field */
+ 	unsigned last_field_index;	/* last field index of the report */
+ 	unsigned last_slot_field;	/* the last field of a slot */
+ 	unsigned mt_report_id;	/* the report ID of the multitouch device */
+@@ -269,7 +270,7 @@ static ssize_t mt_set_quirks(struct device *dev,
+ 
+ 	td->mtclass.quirks = val;
+ 
+-	if (!td->contactcount)
++	if (td->cc_index < 0)
+ 		td->mtclass.quirks &= ~MT_QUIRK_CONTACT_CNT_ACCURATE;
+ 
+ 	return count;
+@@ -483,7 +484,8 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_CONTACTCOUNT:
+-			td->contactcount = field->value + usage->usage_index;
++			td->cc_index = field->index;
++			td->cc_value_index = usage->usage_index;
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_CONTACTMAX:
+@@ -701,8 +703,12 @@ static void mt_report(struct hid_device *hid, struct hid_report *report)
+ 	 * Includes multi-packet support where subsequent
+ 	 * packets are sent with zero contactcount.
+ 	 */
+-	if (td->contactcount && *td->contactcount)
+-		td->num_expected = *td->contactcount;
++	if (td->cc_index >= 0) {
++		struct hid_field *field = report->field[td->cc_index];
++		int value = field->value[td->cc_value_index];
++		if (value)
++			td->num_expected = value;
++	}
+ 
+ 	for (r = 0; r < report->maxfield; r++) {
+ 		field = report->field[r];
+@@ -786,7 +792,7 @@ static void mt_post_parse(struct mt_device *td)
+ 		td->last_slot_field = f->usages[field_count_per_touch - 1];
+ 	}
+ 
+-	if (!td->contactcount)
++	if (td->cc_index < 0)
+ 		cls->quirks &= ~MT_QUIRK_CONTACT_CNT_ACCURATE;
+ }
+ 
+@@ -845,6 +851,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	td->mtclass = *mtclass;
+ 	td->inputmode = -1;
+ 	td->maxcontact_report_id = -1;
++	td->cc_index = -1;
+ 	hid_set_drvdata(hdev, td);
+ 
+ 	td->fields = kzalloc(sizeof(struct mt_fields), GFP_KERNEL);
+-- 
+1.8.1
 
