@@ -1,223 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab3BFP5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 10:57:54 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:35268 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757495Ab3BFP5B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 10:57:01 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: George Spelvin <linux@horizon.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rodolfo Giometti <giometti@enneenne.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
-        William Hubbs <w.d.hubbs@gmail.com>,
-        Chris Brannon <chris@the-brannons.com>,
-        Kirk Reiser <kirk@braille.uwo.ca>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>
-Subject: [PATCH 1/4] pps: Decouple N_PPS from N_TTY
-Date: Wed,  6 Feb 2013 10:55:13 -0500
-Message-Id: <1360166116-30797-2-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1360166116-30797-1-git-send-email-peter@hurleysoftware.com>
-References: <20130204010303.24971.qmail@science.horizon.com>
- <1360166116-30797-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	id S1757518Ab3BFQBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:01:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48049 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755083Ab3BFQAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 11:00:54 -0500
+Date: Wed, 6 Feb 2013 17:00:51 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH for 3.2.34] memcg: do not trigger OOM if PF_NO_MEMCG_OOM is
+ set
+Message-ID: <20130206160051.GG10254@dhcp22.suse.cz>
+References: <20121230020947.AA002F34@pobox.sk>
+ <20121230110815.GA12940@dhcp22.suse.cz>
+ <20130125160723.FAE73567@pobox.sk>
+ <20130125163130.GF4721@dhcp22.suse.cz>
+ <20130205134937.GA22804@dhcp22.suse.cz>
+ <20130205154947.CD6411E2@pobox.sk>
+ <20130205160934.GB22804@dhcp22.suse.cz>
+ <20130206021721.1AE9E3C7@pobox.sk>
+ <20130206140119.GD10254@dhcp22.suse.cz>
+ <20130206142219.GF10254@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130206142219.GF10254@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PPS (Pulse-Per-Second) line discipline has developed a number of
-unhealthy attachments to core tty data and functions, ultimately leading
-to its breakage.
+On Wed 06-02-13 15:22:19, Michal Hocko wrote:
+> On Wed 06-02-13 15:01:19, Michal Hocko wrote:
+> > On Wed 06-02-13 02:17:21, azurIt wrote:
+> > > >5-memcg-fix-1.patch is not complete. It doesn't contain the folloup I
+> > > >mentioned in a follow up email. Here is the full patch:
+> > > 
+> > > 
+> > > Here is the log where OOM, again, killed MySQL server [search for "(mysqld)"]:
+> > > http://www.watchdog.sk/lkml/oom_mysqld6
+> > 
+> > [...]
+> > WARNING: at mm/memcontrol.c:2409 T.1149+0x2d9/0x610()
+> > Hardware name: S5000VSA
+> > gfp_mask:4304 nr_pages:1 oom:0 ret:2
+> > Pid: 3545, comm: apache2 Tainted: G        W    3.2.37-grsec #1
+> > Call Trace:
+> >  [<ffffffff8105502a>] warn_slowpath_common+0x7a/0xb0
+> >  [<ffffffff81055116>] warn_slowpath_fmt+0x46/0x50
+> >  [<ffffffff81108163>] ? mem_cgroup_margin+0x73/0xa0
+> >  [<ffffffff8110b6f9>] T.1149+0x2d9/0x610
+> >  [<ffffffff812af298>] ? blk_finish_plug+0x18/0x50
+> >  [<ffffffff8110c6b4>] mem_cgroup_cache_charge+0xc4/0xf0
+> >  [<ffffffff810ca6bf>] add_to_page_cache_locked+0x4f/0x140
+> >  [<ffffffff810ca7d2>] add_to_page_cache_lru+0x22/0x50
+> >  [<ffffffff810cad32>] filemap_fault+0x252/0x4f0
+> >  [<ffffffff810eab18>] __do_fault+0x78/0x5a0
+> >  [<ffffffff810edcb4>] handle_pte_fault+0x84/0x940
+> >  [<ffffffff810e2460>] ? vma_prio_tree_insert+0x30/0x50
+> >  [<ffffffff810f2508>] ? vma_link+0x88/0xe0
+> >  [<ffffffff810ee6a8>] handle_mm_fault+0x138/0x260
+> >  [<ffffffff8102709d>] do_page_fault+0x13d/0x460
+> >  [<ffffffff810f46fc>] ? do_mmap_pgoff+0x3dc/0x430
+> >  [<ffffffff815b61ff>] page_fault+0x1f/0x30
+> > ---[ end trace 8817670349022007 ]---
+> > apache2 invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0, oom_score_adj=0
+> > apache2 cpuset=uid mems_allowed=0
+> > Pid: 3545, comm: apache2 Tainted: G        W    3.2.37-grsec #1
+> > Call Trace:
+> >  [<ffffffff810ccd2e>] dump_header+0x7e/0x1e0
+> >  [<ffffffff810ccc2f>] ? find_lock_task_mm+0x2f/0x70
+> >  [<ffffffff810cd1f5>] oom_kill_process+0x85/0x2a0
+> >  [<ffffffff810cd8a5>] out_of_memory+0xe5/0x200
+> >  [<ffffffff810cda7d>] pagefault_out_of_memory+0xbd/0x110
+> >  [<ffffffff81026e76>] mm_fault_error+0xb6/0x1a0
+> >  [<ffffffff8102734e>] do_page_fault+0x3ee/0x460
+> >  [<ffffffff810f46fc>] ? do_mmap_pgoff+0x3dc/0x430
+> >  [<ffffffff815b61ff>] page_fault+0x1f/0x30
+> > 
+> > The first trace comes from the debugging WARN and it clearly points to
+> > a file fault path. __do_fault pre-charges a page in case we need to
+> > do CoW (copy-on-write) for the returned page. This one falls back to
+> > memcg OOM and never returns ENOMEM as I have mentioned earlier. 
+> > However, the fs fault handler (filemap_fault here) can fallback to
+> > page_cache_read if the readahead (do_sync_mmap_readahead) fails
+> > to get page to the page cache. And we can see this happening in
+> > the first trace. page_cache_read then calls add_to_page_cache_lru
+> > and eventually gets to add_to_page_cache_locked which calls
+> > mem_cgroup_cache_charge_no_oom so we will get ENOMEM if oom should
+> > happen. This ENOMEM gets to the fault handler and kaboom.
+> > 
+> > So the fix is really much more complex than I thought. Although
+> > add_to_page_cache_locked sounded like a good place it turned out to be
+> > not in fact.
+> > 
+> > We need something more clever appaerently. One way would be not misusing
+> > __GFP_NORETRY for GFP_MEMCG_NO_OOM and give it a real flag. We have 32
+> > bits for those flags in gfp_t so there should be some room there. 
+> > Or we could do this per task flag, same we do for NO_IO in the current
+> > -mm tree.
+> > The later one seems easier wrt. gfp_mask passing horror - e.g.
+> > __generic_file_aio_write doesn't pass flags and it can be called from
+> > unlocked contexts as well.
+> 
+> Ouch, PF_ flags space seem to be drained already because
+> task_struct::flags is just unsigned int so there is just one bit left. I
+> am not sure this is the best use for it. This will be a real pain!
 
-Remove header file linkage.
-Make ldisc api extension generic.
-Fix attendant build breakage in
-    drivers/staging/speakup/selection.c
-    drivers/tty/tty_buffer.c
-    drivers/tty/n_tty.c
+OK, so this something that should help you without any risk of false
+OOMs. I do not believe that something like that would be accepted
+upstream because it is really heavy. We will need to come up with
+something more clever for upstream.
+I have also added a warning which will trigger when the charge fails. If
+you see too many of those messages then there is something bad going on
+and the lack of OOM causes userspace to loop without getting any
+progress.
 
-Cc: William Hubbs <w.d.hubbs@gmail.com>
-Cc: Chris Brannon <chris@the-brannons.com>
-Cc: Kirk Reiser <kirk@braille.uwo.ca>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+So there you go - your personal patch ;) You can drop all other patches.
+Please note I have just compile tested it. But it should be pretty
+trivial to check it is correct
 ---
- drivers/pps/clients/pps-ldisc.c     |  8 +++++---
- drivers/staging/speakup/selection.c |  1 +
- drivers/tty/n_tty.c                 |  3 ++-
- drivers/tty/serial/serial_core.c    | 20 +++++++++-----------
- drivers/tty/tty_buffer.c            |  1 +
- include/linux/serial_core.h         |  1 -
- include/linux/tty_ldisc.h           | 11 ++++-------
- 7 files changed, 22 insertions(+), 23 deletions(-)
+>From 6f155187f77c971b45caf05dbc80ca9c20bc278c Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 6 Feb 2013 16:45:07 +0100
+Subject: [PATCH 1/2] memcg: do not trigger OOM if PF_NO_MEMCG_OOM is set
 
-diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
-index 79451f2..27d7ca1 100644
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -28,15 +28,17 @@
+memcg oom killer might deadlock if the process which falls down to
+mem_cgroup_handle_oom holds a lock which prevents other task to
+terminate because it is blocked on the very same lock.
+This can happen when a write system call needs to allocate a page but
+the allocation hits the memcg hard limit and there is nothing to reclaim
+(e.g. there is no swap or swap limit is hit as well and all cache pages
+have been reclaimed already) and the process selected by memcg OOM
+killer is blocked on i_mutex on the same inode (e.g. truncate it).
+
+Process A
+[<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
+[<ffffffff81121c90>] do_last+0x250/0xa30
+[<ffffffff81122547>] path_openat+0xd7/0x440
+[<ffffffff811229c9>] do_filp_open+0x49/0xa0
+[<ffffffff8110f7d6>] do_sys_open+0x106/0x240
+[<ffffffff8110f950>] sys_open+0x20/0x30
+[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+Process B
+[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+[<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+[<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
+[<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
+[<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
+[<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
+[<ffffffff81193a18>] ext3_write_begin+0x88/0x270
+[<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
+[<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
+[<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
+[<ffffffff8111156a>] do_sync_write+0xea/0x130
+[<ffffffff81112183>] vfs_write+0xf3/0x1f0
+[<ffffffff81112381>] sys_write+0x51/0x90
+[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+This is not a hard deadlock though because administrator can still
+intervene and increase the limit on the group which helps the writer to
+finish the allocation and release the lock.
+
+This patch heals the problem by forbidding OOM from dangerous context.
+Memcg charging code has no way to find out whether it is called from a
+locked context we have to help it via process flags. PF_OOM_ORIGIN flag
+removed recently will be reused for PF_NO_MEMCG_OOM which signals that
+the memcg OOM killer could lead to a deadlock.
+Only locked callers of __generic_file_aio_write are currently marked. I
+am pretty sure there are more places (I didn't check shmem and hugetlb
+uses fancy instantion mutex during page fault and filesystems might
+use some locks during the write) but I've ignored those as this will
+probably be just a user specific patch without any way to get upstream
+in the current form.
+
+Reported-by: azurIt <azurit@pobox.sk>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ drivers/staging/pohmelfs/inode.c |    2 ++
+ include/linux/sched.h            |    1 +
+ mm/filemap.c                     |    2 ++
+ mm/memcontrol.c                  |   18 ++++++++++++++----
+ 4 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/pohmelfs/inode.c b/drivers/staging/pohmelfs/inode.c
+index 7a19555..523de82e 100644
+--- a/drivers/staging/pohmelfs/inode.c
++++ b/drivers/staging/pohmelfs/inode.c
+@@ -921,7 +921,9 @@ ssize_t pohmelfs_write(struct file *file, const char __user *buf,
+ 	if (ret)
+ 		goto err_out_unlock;
  
- #define PPS_TTY_MAGIC		0x0001
++	current->flags |= PF_NO_MEMCG_OOM;
+ 	ret = __generic_file_aio_write(&kiocb, &iov, 1, &kiocb.ki_pos);
++	current->flags &= ~PF_NO_MEMCG_OOM;
+ 	*ppos = kiocb.ki_pos;
  
--static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
--				struct pps_event_time *ts)
-+static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status)
+ 	mutex_unlock(&inode->i_mutex);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e86bb4..f275c8f 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1781,6 +1781,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define PF_FROZEN	0x00010000	/* frozen for system suspend */
+ #define PF_FSTRANS	0x00020000	/* inside a filesystem transaction */
+ #define PF_KSWAPD	0x00040000	/* I am kswapd */
++#define PF_NO_MEMCG_OOM	0x00080000	/* Memcg OOM could lead to a deadlock */
+ #define PF_LESS_THROTTLE 0x00100000	/* Throttle me less: I clean memory */
+ #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
+ #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 556858c..58a316b 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2617,7 +2617,9 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 	blk_start_plug(&plug);
++	current->flags |= PF_NO_MEMCG_OOM;
+ 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
++	current->flags &= ~PF_NO_MEMCG_OOM;
+ 	mutex_unlock(&inode->i_mutex);
+ 
+ 	if (ret > 0 || ret == -EIOCBQUEUED) {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c8425b1..128b615 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2397,6 +2397,14 @@ done:
+ 	return 0;
+ nomem:
+ 	*ptr = NULL;
++	if (printk_ratelimit())
++		printk(KERN_WARNING"%s: task:%s pid:%d got ENOMEM without OOM for memcg:%p."
++				" If this message shows up very often for the"
++				" same task then there is a risk that the"
++				" process is not able to make any progress"
++				" because of the current limit. Try to enlarge"
++				" the hard limit.\n", __FUNCTION__,
++				current->comm, current->pid, memcg);
+ 	return -ENOMEM;
+ bypass:
+ 	*ptr = NULL;
+@@ -2703,7 +2711,7 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+ 	struct mem_cgroup *memcg = NULL;
+ 	unsigned int nr_pages = 1;
+ 	struct page_cgroup *pc;
+-	bool oom = true;
++	bool oom = !(current->flags & PF_NO_MEMCG_OOM);
+ 	int ret;
+ 
+ 	if (PageTransHuge(page)) {
+@@ -2770,6 +2778,7 @@ __mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *memcg,
+ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 				gfp_t gfp_mask)
  {
-+	struct pps_event_time ts;
- 	struct pps_device *pps = (struct pps_device *)tty->disc_data;
++	bool oom = !(current->flags & PF_NO_MEMCG_OOM);
+ 	struct mem_cgroup *memcg = NULL;
+ 	int ret;
  
-+	pps_get_ts(&ts);
-+
- 	BUG_ON(pps == NULL);
+@@ -2782,7 +2791,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 		mm = &init_mm;
  
- 	/* Now do the PPS event report */
--	pps_event(pps, ts, status ? PPS_CAPTUREASSERT :
-+	pps_event(pps, &ts, status ? PPS_CAPTUREASSERT :
- 			PPS_CAPTURECLEAR, NULL);
+ 	if (page_is_file_cache(page)) {
+-		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, true);
++		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, oom);
+ 		if (ret || !memcg)
+ 			return ret;
  
- 	dev_dbg(pps->dev, "PPS %s at %lu\n",
-diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
-index d6558fa..72afc05 100644
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -2,6 +2,7 @@
- #include <linux/consolemap.h>
- #include <linux/interrupt.h>
- #include <linux/sched.h>
-+#include <linux/device.h> /* for dev_warn */
- #include <linux/selection.h>
+@@ -2818,6 +2827,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 				 struct page *page,
+ 				 gfp_t mask, struct mem_cgroup **ptr)
+ {
++	bool oom = !(current->flags & PF_NO_MEMCG_OOM);
+ 	struct mem_cgroup *memcg;
+ 	int ret;
  
- #include "speakup.h"
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index e269296..911ccb5 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -49,6 +49,7 @@
- #include <linux/file.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
-+#include <linux/ratelimit.h>
- 
- 
- /* number of characters left in xmit buffer before select has we have room */
-@@ -2198,7 +2199,7 @@ struct tty_ldisc_ops tty_ldisc_N_TTY = {
-  *	n_tty_inherit_ops	-	inherit N_TTY methods
-  *	@ops: struct tty_ldisc_ops where to save N_TTY methods
-  *
-- *	Used by a generic struct tty_ldisc_ops to easily inherit N_TTY
-+ *	Enables 'subclass' line discipline to 'inherit' N_TTY
-  *	methods.
-  */
- 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index ca98a3f..457f1a6 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2726,31 +2726,29 @@ void uart_handle_dcd_change(struct uart_port *uport, unsigned int status)
- 	struct uart_state *state = uport->state;
- 	struct tty_port *port = &state->port;
- 	struct tty_ldisc *ld = NULL;
--	struct pps_event_time ts;
- 	struct tty_struct *tty = port->tty;
- 
--	if (tty)
--	        ld = tty_ldisc_ref(tty);
--	if (ld && ld->ops->dcd_change)
--		pps_get_ts(&ts);
--
- 	uport->icount.dcd++;
-+
- #ifdef CONFIG_HARD_PPS
- 	if ((uport->flags & UPF_HARDPPS_CD) && status)
- 		hardpps();
- #endif
- 
-+	if (tty) {
-+		ld = tty_ldisc_ref(tty);
-+		if (ld && ld->ops->dcd_change)
-+			ld->ops->dcd_change(tty, status);
-+		if (ld)
-+			tty_ldisc_deref(ld);
-+	}
-+
- 	if (port->flags & ASYNC_CHECK_CD) {
- 		if (status)
- 			wake_up_interruptible(&port->open_wait);
- 		else if (tty)
- 			tty_hangup(tty);
- 	}
--
--	if (ld && ld->ops->dcd_change)
--		ld->ops->dcd_change(tty, status, &ts);
--	if (ld)
--		tty_ldisc_deref(ld);
+@@ -2840,13 +2850,13 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 	if (!memcg)
+ 		goto charge_cur_mm;
+ 	*ptr = memcg;
+-	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, true);
++	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, oom);
+ 	css_put(&memcg->css);
+ 	return ret;
+ charge_cur_mm:
+ 	if (unlikely(!mm))
+ 		mm = &init_mm;
+-	return __mem_cgroup_try_charge(mm, mask, 1, ptr, true);
++	return __mem_cgroup_try_charge(mm, mask, 1, ptr, oom);
  }
- EXPORT_SYMBOL_GPL(uart_handle_dcd_change);
  
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 61ec4dd..bb11993 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -16,6 +16,7 @@
- #include <linux/bitops.h>
- #include <linux/delay.h>
- #include <linux/module.h>
-+#include <linux/ratelimit.h>
- 
- /**
-  *	tty_buffer_free_all		-	free buffers used by a tty
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index d971421..87d4bbc 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -29,7 +29,6 @@
- #include <linux/tty.h>
- #include <linux/mutex.h>
- #include <linux/sysrq.h>
--#include <linux/pps_kernel.h>
- #include <uapi/linux/serial_core.h>
- 
- struct uart_port;
-diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
-index fb79dd8d..455a0d7 100644
---- a/include/linux/tty_ldisc.h
-+++ b/include/linux/tty_ldisc.h
-@@ -100,16 +100,14 @@
-  *	seek to perform this action quickly but should wait until
-  *	any pending driver I/O is completed.
-  *
-- * void (*dcd_change)(struct tty_struct *tty, unsigned int status,
-- *			struct pps_event_time *ts)
-+ * void (*dcd_change)(struct tty_struct *tty, unsigned int status)
-  *
-- *	Tells the discipline that the DCD pin has changed its status and
-- *	the relative timestamp. Pointer ts cannot be NULL.
-+ *	Tells the discipline that the DCD pin has changed its status.
-+ *	Used exclusively by the N_PPS (Pulse-Per-Second) line discipline.
-  */
- 
- #include <linux/fs.h>
- #include <linux/wait.h>
--#include <linux/pps_kernel.h>
- #include <linux/wait.h>
- 
- struct tty_ldisc_ops {
-@@ -144,8 +142,7 @@ struct tty_ldisc_ops {
- 	void	(*receive_buf)(struct tty_struct *, const unsigned char *cp,
- 			       char *fp, int count);
- 	void	(*write_wakeup)(struct tty_struct *);
--	void	(*dcd_change)(struct tty_struct *, unsigned int,
--				struct pps_event_time *);
-+	void	(*dcd_change)(struct tty_struct *, unsigned int);
- 
- 	struct  module *owner;
- 	
+ static void
 -- 
-1.8.1.2
+1.7.10.4
 
+-- 
+Michal Hocko
+SUSE Labs
