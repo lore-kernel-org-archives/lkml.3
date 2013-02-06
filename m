@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab3BFA1I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Feb 2013 19:27:08 -0500
-Received: from mga01.intel.com ([192.55.52.88]:28260 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab3BFA1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Feb 2013 19:27:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,610,1355126400"; 
-   d="scan'208";a="287093879"
-Date: Tue, 5 Feb 2013 16:27:04 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] perf, x86: Support full width counting
-Message-ID: <20130206002704.GA11047@tassilo.jf.intel.com>
-References: <1360028954-16946-1-git-send-email-andi@firstfloor.org>
- <1360028954-16946-5-git-send-email-andi@firstfloor.org>
- <CABPqkBTyBJwaz+ON20nCM0jyQASoHXRDejtyNLJ1AoBSWS_tPA@mail.gmail.com>
+	id S1755707Ab3BFAiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Feb 2013 19:38:11 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:60600 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab3BFAiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Feb 2013 19:38:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTyBJwaz+ON20nCM0jyQASoHXRDejtyNLJ1AoBSWS_tPA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5111A23F.50300@wwwdotorg.org>
+References: <1360107777-17490-1-git-send-email-seanpaul@chromium.org>
+ <1360107777-17490-2-git-send-email-seanpaul@chromium.org> <5111A23F.50300@wwwdotorg.org>
+From: Sean Paul <seanpaul@chromium.org>
+Date: Tue, 5 Feb 2013 16:37:42 -0800
+Message-ID: <CAOw6vb+W3phFDJXp3gCx7y0N7mF4o2DpEfTGuNT1pGdKqiCGTg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] drm/exynos: Get HDMI version from device tree
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, dri-devel@lists.freedesktop.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "kgene.kim" <kgene.kim@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, InKi Dae <inki.dae@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Olof Johansson <olofj@chromium.org>,
+        RAHUL SHARMA <rahul.sharma@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's an updated patch. I'm not reposting the full series. 
-Also cut down on cc to spare the innocents.
+On Tue, Feb 5, 2013 at 4:22 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> n 02/05/2013 04:42 PM, Sean Paul wrote:
+>> Use the compatible string in the device tree to determine which
+>> registers/functions to use in the HDMI driver. Also changes the
+>> references from v13 to 4210 and v14 to 4212 to reflect the IP
+>> block version instead of the HDMI version.
+>
+>> diff --git a/Documentation/devicetree/bindings/drm/exynos/hdmi.txt b/Documentation/devicetree/bindings/drm/exynos/hdmi.txt
+>
+> Binding looks sane to me.
+>
+>> diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+>
+>>  #ifdef CONFIG_OF
+>>  static struct of_device_id hdmi_match_types[] = {
+>>       {
+>> -             .compatible = "samsung,exynos5-hdmi",
+>> -             .data   = (void *)HDMI_TYPE14,
+>> +             .compatible = "samsung,exynos4-hdmi",
+>>       }, {
+>>               /* end node */
+>>       }
+>
+> Why not fill in all the "base" compatible values there (I think you need
+> this anyway so that DTs don't all have to be compatible with
+> samsung,exynos4-hdmi), with .data containing the HDMI_VER_EXYNOS*
+> values, then ...
+>
 
----
+At the moment, all DTs have to be compatible with exynos4-hdmi since
+it provides the base for the current driver. The driver uses 4210 and
+4212 to differentiate between different register addresses and
+features, but most things are just exynos4-hdmi compatible.
 
- perf, x86: Support full width counting v2
+>> @@ -2218,17 +2217,18 @@ static int hdmi_probe(struct platform_device *pdev)
+>
+>> +
+>> +     if (of_device_is_compatible(dev->of_node, "samsung,exynos4210-hdmi"))
+>> +             hdata->version |= HDMI_VER_EXYNOS4210;
+>> +     if (of_device_is_compatible(dev->of_node, "samsung,exynos4212-hdmi"))
+>> +             hdata->version |= HDMI_VER_EXYNOS4212;
+>> +     if (of_device_is_compatible(dev->of_node, "samsung,exynos5250-hdmi"))
+>> +             hdata->version |= HDMI_VER_EXYNOS5250;
+>
+> Instead of that, do roughly:
+>
+>     match = of_match_device(hdmi_match_types, &pdev->dev);
+>     if (match)
+>         hdata->version |= (int)match->data;
+>
+> That way, it's all table-based. Any future additions to
+> hdmi_match_types[] won't require another if statement to be added to
+> probe().
 
-Recent Intel CPUs like Haswell and IvyBridge have a new alternative MSR
-range for perfctrs that allows writing the full counter width. Enable this
-range if the hardware reports it using a new capability bit.
+I don't think it's that easy. of_match_device returns the first match
+from the device table, so I'd still need to iterate through the
+matches. I could still break this out into a table, but I don't think
+of_match_device is the right way to probe it.
 
-This lowers the overhead of perf stat slightly because it has to do less
-interrupts to accumulate the counter value. On Haswell it also avoids some
-problems with TSX aborting when the end of the counter range is reached.
-
-v2: Print the feature at boot
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 433a59f..af41a77 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -163,6 +163,9 @@
- #define MSR_KNC_EVNTSEL0               0x00000028
- #define MSR_KNC_EVNTSEL1               0x00000029
- 
-+/* Alternative perfctr range with full access. */
-+#define MSR_IA32_PMC0			0x000004c1
-+
- /* AMD64 MSRs. Not complete. See the architecture manual for a more
-    complete list. */
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 1567b0d..ce2a863 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -278,6 +278,7 @@ union perf_capabilities {
- 		u64	pebs_arch_reg:1;
- 		u64	pebs_format:4;
- 		u64	smm_freeze:1;
-+		u64	fw_write:1;
- 	};
- 	u64	capabilities;
- };
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index aa48048..06dcc0c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2228,5 +2228,12 @@ __init int intel_pmu_init(void)
- 		}
- 	}
- 
-+	/* Support full width counters using alternative MSR range */
-+	if (x86_pmu.intel_cap.fw_write) {
-+		x86_pmu.max_period = x86_pmu.cntval_mask;
-+		x86_pmu.perfctr = MSR_IA32_PMC0;
-+		pr_cont("full-width counters, ");
-+	}
-+
- 	return 0;
- }
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Sean
