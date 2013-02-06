@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab3BFT44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 14:56:56 -0500
-Received: from contumacia.investici.org ([178.255.144.35]:24749 "EHLO
-	contumacia.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758107Ab3BFT4v (ORCPT
+	id S1758463Ab3BFT4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 14:56:39 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:42431 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030235Ab3BFTvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 14:56:51 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 contumacia.investici.org C1D3BE8AAF
-Date: Wed, 6 Feb 2013 20:55:57 +0100
-From: Antonio Quartulli <ordex@autistici.org>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, davem@davemloft.net,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] batman-adv: Remove unused variable
-Message-ID: <20130206195557.GC6008@ritirata.org>
-References: <1360168661-16871-1-git-send-email-emilgoode@gmail.com>
- <20130206172234.GB6008@ritirata.org>
- <1360173353.22154.4.camel@debian>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="+nBD6E3TurpgldQp"
-Content-Disposition: inline
-In-Reply-To: <1360173353.22154.4.camel@debian>
+	Wed, 6 Feb 2013 14:51:06 -0500
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        James Smart <james.smart@emulex.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH 63/77] scsi/lpfc: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:35 -0800
+Message-Id: <1360179649-22465-64-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
+References: <1360179649-22465-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert to the much saner new idr interface.
 
---+nBD6E3TurpgldQp
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Only compile tested.
 
-Hi Emil,
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: James Smart <james.smart@emulex.com>
+Cc: linux-scsi@vger.kernel.org
+---
+ drivers/scsi/lpfc/lpfc_init.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-On Wed, Feb 06, 2013 at 06:55:53 +0100, Emil Goode wrote:
-> Hi Antonio,
->=20
-> The commit ed242d01 is in the linux-next tree and my patch depends on
-> that commit.
->=20
+diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+index 26ca2ef..314b4f6 100644
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -3165,14 +3165,10 @@ destroy_port(struct lpfc_vport *vport)
+ int
+ lpfc_get_instance(void)
+ {
+-	int instance = 0;
+-
+-	/* Assign an unused number */
+-	if (!idr_pre_get(&lpfc_hba_index, GFP_KERNEL))
+-		return -1;
+-	if (idr_get_new(&lpfc_hba_index, NULL, &instance))
+-		return -1;
+-	return instance;
++	int ret;
++
++	ret = idr_alloc(&lpfc_hba_index, NULL, 0, 0, GFP_KERNEL);
++	return ret < 0 ? -1 : ret;
+ }
+ 
+ /**
+-- 
+1.8.1
 
-Yes, you are right. I was not aware of this commit, because the author
-did not CC us (neither netdev) even if he changed the code we maintain.
-
-As far as I can see that commit is in linux-next only.
-Therefore it must be applied there.
-
-However, I'd like you to change the commit message and write the full hash =
-of
-the commit you are referring to and its subject ("LIKE THIS"). This would m=
-ake
-it easier to find it.
-
-
-Regards,
-
-> Best regards, Emil
->=20
-> On Wed, 2013-02-06 at 18:22 +0100, Antonio Quartulli wrote:
-> > Hi Emil,
-> >=20
-> > On Wed, Feb 06, 2013 at 05:37:41 +0100, Emil Goode wrote:
-> > > The commit ed242d01 removed a node parameter from iterators.
-> > > This patch removes a hlist_node struct that is no longer used.
-> > >=20
-> > > Sparse gives a warning:
-> > >=20
-> > > net/batman-adv/originator.c:411:21: warning:
-> > > 	unused variable =E2=80=98node_tmp=E2=80=99 [-Wunused-variable]
-> > >=20
-> > > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> >=20
-> > On which tree did you base your patch?
-> > I cannot find the commit you are referring to (ed242d01) and the patch =
-does not
-> > apply (neither on net nor net-next).
-> >=20
-> > Other than that the variable is used a couple of lines below (in the co=
-de we
-> > have)...
-> >=20
-> > Regards,
-> >=20
->=20
->=20
-
---=20
-Antonio Quartulli
-
-=2E.each of us alone is worth nothing..
-Ernesto "Che" Guevara
-
---+nBD6E3TurpgldQp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRErVNAAoJEADl0hg6qKeO70sP+QGBVPOnKtLXmv6oTINvN3d/
-4v0tQwBtISlvGb5LUOy/bvXX/sQOk/T6XfRSC617pIvF5Xp4+2eZpPV9JfXTw5Mg
-FSG7PDHuWURSkTnQGsgQnEdBa4aVPYTDmKtGMdSe8QXnUGEwPdgZONTq1wxTrHyB
-E0ii2G63BRZKmnwFbuga71whoKNfaf0O6kU8EmSQeVPml3TB5Qg0meqBFgBU73TL
-KrAHbMlOWjska+VrPE/yEpfAdRJclvwxPn9ELhMPyf2jbAbik2cWHXLQTjJWkzpb
-2S2R0YomgsYflIZo0NJkpnCXQOI4yqzlfufn494SiOcc65AB3J8uCTPgTLfnUhYz
-QVquuy3lfQzoaoB/eGfjZUWXnrkiK5Sf+zEBMfobZMP5OS5+Lhx0dmr3BE1km6GV
-ZNvoJcl04ANF4snVBpGHz8e4T0ihbThJMBmjTlBnBuIo6gzp7McGWmc7rj2u2PNV
-Al1nXQTws0I2eDgldIKVJiUM3J0+F89N4axS52GyxtrU8ROcx9cBVAfe19Up+S8L
-gAq95umyJZhO/OVbk94Zjf2BpU5JLIH/j/nysLfbQkfcvkidtb1r+B47RcL957ty
-AjaIhIurwX+Ji+5NnoSvt/Cqmjk6kpFMyWdB9ahja3+bT8VfUGcV1MoiQjEJENkW
-r/zeYtay3MWysE/8PbuE
-=Qz3Y
------END PGP SIGNATURE-----
-
---+nBD6E3TurpgldQp--
