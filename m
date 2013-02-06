@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab3BFXQp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 18:16:45 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:38731 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163Ab3BFXQn (ORCPT
+	id S1758149Ab3BFX1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 18:27:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54400 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab3BFX1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 18:16:43 -0500
-Date: Wed, 6 Feb 2013 23:16:42 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-cc: Aaro Koskinen <aaro.koskinen@iki.fi>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH v5] watchdog: introduce retu_wdt driver
-In-Reply-To: <20130128151223.GH23053@blackmetal.musicnaut.iki.fi>
-Message-ID: <alpine.DEB.2.00.1302062315321.12769@utopia.booyaka.com>
-References: <1356641909-8598-1-git-send-email-aaro.koskinen@iki.fi> <20130128151223.GH23053@blackmetal.musicnaut.iki.fi>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 6 Feb 2013 18:27:52 -0500
+Message-ID: <5112E6F2.2050709@canonical.com>
+Date: Wed, 06 Feb 2013 18:27:46 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Ben Hutchings <ben@decadent.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        pkondeti@codeaurora.org, Greg KH <gregkh@linuxfoundation.org>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [REVERT][v3.x.y] EHCI: Update qTD next pointer in QH overlay
+ region during unlink
+References: <Pine.LNX.4.44L0.1302041702590.1756-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1302041702590.1756-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+On 02/04/2013 05:04 PM, Alan Stern wrote:
+> On Fri, 1 Feb 2013, Joseph Salisbury wrote:
+>
+>> Hi Alan,
+>>
+>> There is a tar file[0] attached to the bug report[1].  The tar file
+>> contains a few examples of failed and successful recording attempts
+>> while collecting usbmon traces.  There is a readme.txt file available
+>> after extracting the files.
+>>
+>> The bug reporter states that only the first recording after boot fails.
+>> Subsequent recordings succeed will succeed.
+>>
+>> Thanks again for reviewing this, Alan.  Just let me know if you would
+>> like any additional data or testing.
+>>
+>> Thanks,
+>>
+>> Joe
+>>
+>> [0]
+>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1088733/+attachment/3510887/+files/usbmon-1088733.tar.gz
+>> [1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1088733
+> I have replied to the original report at bugs.launchpad.net with a
+> diagnostic patch.  Maybe it will help indicate what's going wrong.
+>
+> Alan Stern
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+Hi Alan,
 
-On Mon, 28 Jan 2013, Aaro Koskinen wrote:
+The bug reporter collected some data[0] using your diagnostic patch.
 
-> On Thu, Dec 27, 2012 at 10:58:29PM +0200, Aaro Koskinen wrote:
-> > Introduce Retu watchdog driver.
-> 
-> Wim, any comments about this driver? Do you think it could be queued
-> for 3.9?
+Thanks again for all your help.
 
-It'd be really great if this could go in for v3.9.  Without it, Nokia N800 
-boards crash shortly after boot because the Retu watchdog isn't being 
-tickled :-(
+Joe
 
 
-- Paul
+[0] 
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1088733/+attachment/3516533/+files/usbmon-diag-1088733.tar.gz
+
+
