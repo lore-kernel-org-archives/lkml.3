@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758823Ab3BFVon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 16:44:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57291 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758763Ab3BFVod (ORCPT
+	id S1758809Ab3BFVoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 16:44:39 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33195
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758758Ab3BFVoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 16:44:33 -0500
+	Wed, 6 Feb 2013 16:44:32 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/17] perf tools: Fix perf_evsel::exclude_GH handling
-Date: Wed,  6 Feb 2013 18:44:15 -0300
-Message-Id: <1360187059-12661-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/17] perf sort: Check return value of strdup()
+Date: Wed,  6 Feb 2013 18:44:09 -0300
+Message-Id: <1360187059-12661-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1360187059-12661-1-git-send-email-acme@infradead.org>
 References: <1360187059-12661-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Let the perf_evsel::exclude_GH only prevent the reset of exclude_host
-and exclude_guest attributes in case they were already set.
+When setup_sorting() is called, 'str' is passed to strtok_r() but it's
+not checked to have a valid pointer.  As strtok_r() accepts NULL pointer
+on a first argument and use the third argument in that case, it can
+cause a trouble since our third argument, tmp, is not initialized.
 
-We cannot reset their values to 0, because they might have other
-defaults set by event_attr_init.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1359971803-2343-2-git-send-email-jolsa@redhat.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1360130237-9963-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c | 8 --------
- 1 file changed, 8 deletions(-)
+ tools/perf/util/sort.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 4e0f5c2..c84f48c 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -699,14 +699,6 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 	int exclude = eu | ek | eh;
- 	int exclude_GH = evsel ? evsel->exclude_GH : 0;
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index d8b4882..d41926c 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -570,6 +570,11 @@ int setup_sorting(void)
+ 	char *tmp, *tok, *str = strdup(sort_order);
+ 	int ret = 0;
  
--	/*
--	 * We are here for group and 'GH' was not set as event
--	 * modifier and whatever event/group modifier override
--	 * default 'GH' setup.
--	 */
--	if (evsel && !exclude_GH)
--		eH = eG = 0;
--
- 	memset(mod, 0, sizeof(*mod));
- 
- 	while (*str) {
++	if (str == NULL) {
++		error("Not enough memory to setup sort keys");
++		return -ENOMEM;
++	}
++
+ 	for (tok = strtok_r(str, ", ", &tmp);
+ 			tok; tok = strtok_r(NULL, ", ", &tmp)) {
+ 		ret = sort_dimension__add(tok);
 -- 
 1.8.1.1.361.gec3ae6e
 
