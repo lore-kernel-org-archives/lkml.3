@@ -1,308 +1,467 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab3BFQBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 11:01:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48049 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755083Ab3BFQAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Feb 2013 11:00:54 -0500
-Date: Wed, 6 Feb 2013 17:00:51 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH for 3.2.34] memcg: do not trigger OOM if PF_NO_MEMCG_OOM is
- set
-Message-ID: <20130206160051.GG10254@dhcp22.suse.cz>
-References: <20121230020947.AA002F34@pobox.sk>
- <20121230110815.GA12940@dhcp22.suse.cz>
- <20130125160723.FAE73567@pobox.sk>
- <20130125163130.GF4721@dhcp22.suse.cz>
- <20130205134937.GA22804@dhcp22.suse.cz>
- <20130205154947.CD6411E2@pobox.sk>
- <20130205160934.GB22804@dhcp22.suse.cz>
- <20130206021721.1AE9E3C7@pobox.sk>
- <20130206140119.GD10254@dhcp22.suse.cz>
- <20130206142219.GF10254@dhcp22.suse.cz>
+	id S1757547Ab3BFQEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 11:04:21 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:50762 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab3BFQET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 11:04:19 -0500
+Message-ID: <51127EFE.4030209@gmail.com>
+Date: Wed, 06 Feb 2013 10:04:14 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130206142219.GF10254@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Rob Herring <rob.herring@calxeda.com>, linux-rt-users@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH next] OF: convert devtree lock from rw_lock to raw spinlock
+References: <1359993921-18145-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1359993921-18145-1-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 06-02-13 15:22:19, Michal Hocko wrote:
-> On Wed 06-02-13 15:01:19, Michal Hocko wrote:
-> > On Wed 06-02-13 02:17:21, azurIt wrote:
-> > > >5-memcg-fix-1.patch is not complete. It doesn't contain the folloup I
-> > > >mentioned in a follow up email. Here is the full patch:
-> > > 
-> > > 
-> > > Here is the log where OOM, again, killed MySQL server [search for "(mysqld)"]:
-> > > http://www.watchdog.sk/lkml/oom_mysqld6
-> > 
-> > [...]
-> > WARNING: at mm/memcontrol.c:2409 T.1149+0x2d9/0x610()
-> > Hardware name: S5000VSA
-> > gfp_mask:4304 nr_pages:1 oom:0 ret:2
-> > Pid: 3545, comm: apache2 Tainted: G        W    3.2.37-grsec #1
-> > Call Trace:
-> >  [<ffffffff8105502a>] warn_slowpath_common+0x7a/0xb0
-> >  [<ffffffff81055116>] warn_slowpath_fmt+0x46/0x50
-> >  [<ffffffff81108163>] ? mem_cgroup_margin+0x73/0xa0
-> >  [<ffffffff8110b6f9>] T.1149+0x2d9/0x610
-> >  [<ffffffff812af298>] ? blk_finish_plug+0x18/0x50
-> >  [<ffffffff8110c6b4>] mem_cgroup_cache_charge+0xc4/0xf0
-> >  [<ffffffff810ca6bf>] add_to_page_cache_locked+0x4f/0x140
-> >  [<ffffffff810ca7d2>] add_to_page_cache_lru+0x22/0x50
-> >  [<ffffffff810cad32>] filemap_fault+0x252/0x4f0
-> >  [<ffffffff810eab18>] __do_fault+0x78/0x5a0
-> >  [<ffffffff810edcb4>] handle_pte_fault+0x84/0x940
-> >  [<ffffffff810e2460>] ? vma_prio_tree_insert+0x30/0x50
-> >  [<ffffffff810f2508>] ? vma_link+0x88/0xe0
-> >  [<ffffffff810ee6a8>] handle_mm_fault+0x138/0x260
-> >  [<ffffffff8102709d>] do_page_fault+0x13d/0x460
-> >  [<ffffffff810f46fc>] ? do_mmap_pgoff+0x3dc/0x430
-> >  [<ffffffff815b61ff>] page_fault+0x1f/0x30
-> > ---[ end trace 8817670349022007 ]---
-> > apache2 invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0, oom_score_adj=0
-> > apache2 cpuset=uid mems_allowed=0
-> > Pid: 3545, comm: apache2 Tainted: G        W    3.2.37-grsec #1
-> > Call Trace:
-> >  [<ffffffff810ccd2e>] dump_header+0x7e/0x1e0
-> >  [<ffffffff810ccc2f>] ? find_lock_task_mm+0x2f/0x70
-> >  [<ffffffff810cd1f5>] oom_kill_process+0x85/0x2a0
-> >  [<ffffffff810cd8a5>] out_of_memory+0xe5/0x200
-> >  [<ffffffff810cda7d>] pagefault_out_of_memory+0xbd/0x110
-> >  [<ffffffff81026e76>] mm_fault_error+0xb6/0x1a0
-> >  [<ffffffff8102734e>] do_page_fault+0x3ee/0x460
-> >  [<ffffffff810f46fc>] ? do_mmap_pgoff+0x3dc/0x430
-> >  [<ffffffff815b61ff>] page_fault+0x1f/0x30
-> > 
-> > The first trace comes from the debugging WARN and it clearly points to
-> > a file fault path. __do_fault pre-charges a page in case we need to
-> > do CoW (copy-on-write) for the returned page. This one falls back to
-> > memcg OOM and never returns ENOMEM as I have mentioned earlier. 
-> > However, the fs fault handler (filemap_fault here) can fallback to
-> > page_cache_read if the readahead (do_sync_mmap_readahead) fails
-> > to get page to the page cache. And we can see this happening in
-> > the first trace. page_cache_read then calls add_to_page_cache_lru
-> > and eventually gets to add_to_page_cache_locked which calls
-> > mem_cgroup_cache_charge_no_oom so we will get ENOMEM if oom should
-> > happen. This ENOMEM gets to the fault handler and kaboom.
-> > 
-> > So the fix is really much more complex than I thought. Although
-> > add_to_page_cache_locked sounded like a good place it turned out to be
-> > not in fact.
-> > 
-> > We need something more clever appaerently. One way would be not misusing
-> > __GFP_NORETRY for GFP_MEMCG_NO_OOM and give it a real flag. We have 32
-> > bits for those flags in gfp_t so there should be some room there. 
-> > Or we could do this per task flag, same we do for NO_IO in the current
-> > -mm tree.
-> > The later one seems easier wrt. gfp_mask passing horror - e.g.
-> > __generic_file_aio_write doesn't pass flags and it can be called from
-> > unlocked contexts as well.
+On 02/04/2013 10:05 AM, Paul Gortmaker wrote:
+> From: Thomas Gleixner <tglx@linutronix.de>
 > 
-> Ouch, PF_ flags space seem to be drained already because
-> task_struct::flags is just unsigned int so there is just one bit left. I
-> am not sure this is the best use for it. This will be a real pain!
+> With the locking cleanup in place (from "OF: Fixup resursive
+> locking code paths"), we can now do the conversion from the
+> rw_lock to a raw spinlock as required for preempt-rt.
+> 
+> The previous cleanup and the this conversion were originally
+> separate since they predated when mainline got raw spinlock (in
+> commit c2f21ce2e31286a "locking: Implement new raw_spinlock").
+> 
+> So, at that point in time, the cleanup was considered plausible
+> for mainline, but not this conversion.  In any case, we've kept
+> them separate as it makes for easier review and better bisection.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> [PG: taken from preempt-rt, update subject & add a commit log]
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+> 
+> [ Patch against linux-next of Feb4, where the recursive
+>   locking cleanup currently is.  Boot tested on ppc 8548,
+>   compile tested for sparc and arm defconfigs ]
+> 
 
-OK, so this something that should help you without any risk of false
-OOMs. I do not believe that something like that would be accepted
-upstream because it is really heavy. We will need to come up with
-something more clever for upstream.
-I have also added a warning which will trigger when the charge fails. If
-you see too many of those messages then there is something bad going on
-and the lack of OOM causes userspace to loop without getting any
-progress.
+Applied.
 
-So there you go - your personal patch ;) You can drop all other patches.
-Please note I have just compile tested it. But it should be pretty
-trivial to check it is correct
----
->From 6f155187f77c971b45caf05dbc80ca9c20bc278c Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 6 Feb 2013 16:45:07 +0100
-Subject: [PATCH 1/2] memcg: do not trigger OOM if PF_NO_MEMCG_OOM is set
+Rob
 
-memcg oom killer might deadlock if the process which falls down to
-mem_cgroup_handle_oom holds a lock which prevents other task to
-terminate because it is blocked on the very same lock.
-This can happen when a write system call needs to allocate a page but
-the allocation hits the memcg hard limit and there is nothing to reclaim
-(e.g. there is no swap or swap limit is hit as well and all cache pages
-have been reclaimed already) and the process selected by memcg OOM
-killer is blocked on i_mutex on the same inode (e.g. truncate it).
+>  arch/sparc/kernel/prom_common.c |  4 +-
+>  drivers/of/base.c               | 96 +++++++++++++++++++++++------------------
+>  include/linux/of.h              |  2 +-
+>  3 files changed, 57 insertions(+), 45 deletions(-)
+> 
+> diff --git a/arch/sparc/kernel/prom_common.c b/arch/sparc/kernel/prom_common.c
+> index 1303021..9f20566 100644
+> --- a/arch/sparc/kernel/prom_common.c
+> +++ b/arch/sparc/kernel/prom_common.c
+> @@ -64,7 +64,7 @@ int of_set_property(struct device_node *dp, const char *name, void *val, int len
+>  	err = -ENODEV;
+>  
+>  	mutex_lock(&of_set_property_mutex);
+> -	write_lock(&devtree_lock);
+> +	raw_spin_lock(&devtree_lock);
+>  	prevp = &dp->properties;
+>  	while (*prevp) {
+>  		struct property *prop = *prevp;
+> @@ -91,7 +91,7 @@ int of_set_property(struct device_node *dp, const char *name, void *val, int len
+>  		}
+>  		prevp = &(*prevp)->next;
+>  	}
+> -	write_unlock(&devtree_lock);
+> +	raw_spin_unlock(&devtree_lock);
+>  	mutex_unlock(&of_set_property_mutex);
+>  
+>  	/* XXX Upate procfs if necessary... */
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 16ee7a0..4a2f58b 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -55,7 +55,7 @@ static DEFINE_MUTEX(of_aliases_mutex);
+>  /* use when traversing tree through the allnext, child, sibling,
+>   * or parent members of struct device_node.
+>   */
+> -DEFINE_RWLOCK(devtree_lock);
+> +DEFINE_RAW_SPINLOCK(devtree_lock);
+>  
+>  int of_n_addr_cells(struct device_node *np)
+>  {
+> @@ -188,10 +188,11 @@ struct property *of_find_property(const struct device_node *np,
+>  				  int *lenp)
+>  {
+>  	struct property *pp;
+> +	unsigned long flags;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	pp = __of_find_property(np, name, lenp);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+>  	return pp;
+>  }
+> @@ -209,13 +210,13 @@ struct device_node *of_find_all_nodes(struct device_node *prev)
+>  {
+>  	struct device_node *np;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock(&devtree_lock);
+>  	np = prev ? prev->allnext : of_allnodes;
+>  	for (; np != NULL; np = np->allnext)
+>  		if (of_node_get(np))
+>  			break;
+>  	of_node_put(prev);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock(&devtree_lock);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_find_all_nodes);
+> @@ -274,11 +275,12 @@ static int __of_device_is_compatible(const struct device_node *device,
+>  int of_device_is_compatible(const struct device_node *device,
+>  		const char *compat)
+>  {
+> +	unsigned long flags;
+>  	int res;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	res = __of_device_is_compatible(device, compat);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return res;
+>  }
+>  EXPORT_SYMBOL(of_device_is_compatible);
+> @@ -340,13 +342,14 @@ EXPORT_SYMBOL(of_device_is_available);
+>  struct device_node *of_get_parent(const struct device_node *node)
+>  {
+>  	struct device_node *np;
+> +	unsigned long flags;
+>  
+>  	if (!node)
+>  		return NULL;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	np = of_node_get(node->parent);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_get_parent);
+> @@ -365,14 +368,15 @@ EXPORT_SYMBOL(of_get_parent);
+>  struct device_node *of_get_next_parent(struct device_node *node)
+>  {
+>  	struct device_node *parent;
+> +	unsigned long flags;
+>  
+>  	if (!node)
+>  		return NULL;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	parent = of_node_get(node->parent);
+>  	of_node_put(node);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return parent;
+>  }
+>  
+> @@ -388,14 +392,15 @@ struct device_node *of_get_next_child(const struct device_node *node,
+>  	struct device_node *prev)
+>  {
+>  	struct device_node *next;
+> +	unsigned long flags;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	next = prev ? prev->sibling : node->child;
+>  	for (; next; next = next->sibling)
+>  		if (of_node_get(next))
+>  			break;
+>  	of_node_put(prev);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return next;
+>  }
+>  EXPORT_SYMBOL(of_get_next_child);
+> @@ -413,7 +418,7 @@ struct device_node *of_get_next_available_child(const struct device_node *node,
+>  {
+>  	struct device_node *next;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock(&devtree_lock);
+>  	next = prev ? prev->sibling : node->child;
+>  	for (; next; next = next->sibling) {
+>  		if (!of_device_is_available(next))
+> @@ -422,7 +427,7 @@ struct device_node *of_get_next_available_child(const struct device_node *node,
+>  			break;
+>  	}
+>  	of_node_put(prev);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock(&devtree_lock);
+>  	return next;
+>  }
+>  EXPORT_SYMBOL(of_get_next_available_child);
+> @@ -460,14 +465,15 @@ EXPORT_SYMBOL(of_get_child_by_name);
+>  struct device_node *of_find_node_by_path(const char *path)
+>  {
+>  	struct device_node *np = of_allnodes;
+> +	unsigned long flags;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	for (; np; np = np->allnext) {
+>  		if (np->full_name && (of_node_cmp(np->full_name, path) == 0)
+>  		    && of_node_get(np))
+>  			break;
+>  	}
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_find_node_by_path);
+> @@ -487,15 +493,16 @@ struct device_node *of_find_node_by_name(struct device_node *from,
+>  	const char *name)
+>  {
+>  	struct device_node *np;
+> +	unsigned long flags;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	np = from ? from->allnext : of_allnodes;
+>  	for (; np; np = np->allnext)
+>  		if (np->name && (of_node_cmp(np->name, name) == 0)
+>  		    && of_node_get(np))
+>  			break;
+>  	of_node_put(from);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_find_node_by_name);
+> @@ -516,15 +523,16 @@ struct device_node *of_find_node_by_type(struct device_node *from,
+>  	const char *type)
+>  {
+>  	struct device_node *np;
+> +	unsigned long flags;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	np = from ? from->allnext : of_allnodes;
+>  	for (; np; np = np->allnext)
+>  		if (np->type && (of_node_cmp(np->type, type) == 0)
+>  		    && of_node_get(np))
+>  			break;
+>  	of_node_put(from);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_find_node_by_type);
+> @@ -547,8 +555,9 @@ struct device_node *of_find_compatible_node(struct device_node *from,
+>  	const char *type, const char *compatible)
+>  {
+>  	struct device_node *np;
+> +	unsigned long flags;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	np = from ? from->allnext : of_allnodes;
+>  	for (; np; np = np->allnext) {
+>  		if (type
+> @@ -559,7 +568,7 @@ struct device_node *of_find_compatible_node(struct device_node *from,
+>  			break;
+>  	}
+>  	of_node_put(from);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_find_compatible_node);
+> @@ -581,8 +590,9 @@ struct device_node *of_find_node_with_property(struct device_node *from,
+>  {
+>  	struct device_node *np;
+>  	struct property *pp;
+> +	unsigned long flags;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	np = from ? from->allnext : of_allnodes;
+>  	for (; np; np = np->allnext) {
+>  		for (pp = np->properties; pp; pp = pp->next) {
+> @@ -594,7 +604,7 @@ struct device_node *of_find_node_with_property(struct device_node *from,
+>  	}
+>  out:
+>  	of_node_put(from);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_find_node_with_property);
+> @@ -635,10 +645,11 @@ const struct of_device_id *of_match_node(const struct of_device_id *matches,
+>  					 const struct device_node *node)
+>  {
+>  	const struct of_device_id *match;
+> +	unsigned long flags;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	match = __of_match_node(matches, node);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return match;
+>  }
+>  EXPORT_SYMBOL(of_match_node);
+> @@ -662,11 +673,12 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
+>  {
+>  	struct device_node *np;
+>  	const struct of_device_id *m;
+> +	unsigned long flags;
+>  
+>  	if (match)
+>  		*match = NULL;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	np = from ? from->allnext : of_allnodes;
+>  	for (; np; np = np->allnext) {
+>  		m = __of_match_node(matches, np);
+> @@ -677,7 +689,7 @@ struct device_node *of_find_matching_node_and_match(struct device_node *from,
+>  		}
+>  	}
+>  	of_node_put(from);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_find_matching_node_and_match);
+> @@ -720,12 +732,12 @@ struct device_node *of_find_node_by_phandle(phandle handle)
+>  {
+>  	struct device_node *np;
+>  
+> -	read_lock(&devtree_lock);
+> +	raw_spin_lock(&devtree_lock);
+>  	for (np = of_allnodes; np; np = np->allnext)
+>  		if (np->phandle == handle)
+>  			break;
+>  	of_node_get(np);
+> -	read_unlock(&devtree_lock);
+> +	raw_spin_unlock(&devtree_lock);
+>  	return np;
+>  }
+>  EXPORT_SYMBOL(of_find_node_by_phandle);
+> @@ -1197,18 +1209,18 @@ int of_add_property(struct device_node *np, struct property *prop)
+>  		return rc;
+>  
+>  	prop->next = NULL;
+> -	write_lock_irqsave(&devtree_lock, flags);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	next = &np->properties;
+>  	while (*next) {
+>  		if (strcmp(prop->name, (*next)->name) == 0) {
+>  			/* duplicate ! don't insert it */
+> -			write_unlock_irqrestore(&devtree_lock, flags);
+> +			raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  			return -1;
+>  		}
+>  		next = &(*next)->next;
+>  	}
+>  	*next = prop;
+> -	write_unlock_irqrestore(&devtree_lock, flags);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+>  #ifdef CONFIG_PROC_DEVICETREE
+>  	/* try to add to proc as well if it was initialized */
+> @@ -1238,7 +1250,7 @@ int of_remove_property(struct device_node *np, struct property *prop)
+>  	if (rc)
+>  		return rc;
+>  
+> -	write_lock_irqsave(&devtree_lock, flags);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	next = &np->properties;
+>  	while (*next) {
+>  		if (*next == prop) {
+> @@ -1251,7 +1263,7 @@ int of_remove_property(struct device_node *np, struct property *prop)
+>  		}
+>  		next = &(*next)->next;
+>  	}
+> -	write_unlock_irqrestore(&devtree_lock, flags);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+>  	if (!found)
+>  		return -ENODEV;
+> @@ -1291,7 +1303,7 @@ int of_update_property(struct device_node *np, struct property *newprop)
+>  	if (!oldprop)
+>  		return of_add_property(np, newprop);
+>  
+> -	write_lock_irqsave(&devtree_lock, flags);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	next = &np->properties;
+>  	while (*next) {
+>  		if (*next == oldprop) {
+> @@ -1305,7 +1317,7 @@ int of_update_property(struct device_node *np, struct property *newprop)
+>  		}
+>  		next = &(*next)->next;
+>  	}
+> -	write_unlock_irqrestore(&devtree_lock, flags);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+>  	if (!found)
+>  		return -ENODEV;
+> @@ -1378,12 +1390,12 @@ int of_attach_node(struct device_node *np)
+>  	if (rc)
+>  		return rc;
+>  
+> -	write_lock_irqsave(&devtree_lock, flags);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  	np->sibling = np->parent->child;
+>  	np->allnext = of_allnodes;
+>  	np->parent->child = np;
+>  	of_allnodes = np;
+> -	write_unlock_irqrestore(&devtree_lock, flags);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+>  	of_add_proc_dt_entry(np);
+>  	return 0;
+> @@ -1426,7 +1438,7 @@ int of_detach_node(struct device_node *np)
+>  	if (rc)
+>  		return rc;
+>  
+> -	write_lock_irqsave(&devtree_lock, flags);
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+>  
+>  	if (of_node_check_flag(np, OF_DETACHED)) {
+>  		/* someone already detached it */
+> @@ -1463,7 +1475,7 @@ int of_detach_node(struct device_node *np)
+>  	}
+>  
+>  	of_node_set_flag(np, OF_DETACHED);
+> -	write_unlock_irqrestore(&devtree_lock, flags);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+>  	of_remove_proc_dt_entry(np);
+>  	return rc;
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 5ebcc5c..bb35c42 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -92,7 +92,7 @@ static inline void of_node_put(struct device_node *node) { }
+>  extern struct device_node *of_allnodes;
+>  extern struct device_node *of_chosen;
+>  extern struct device_node *of_aliases;
+> -extern rwlock_t devtree_lock;
+> +extern raw_spinlock_t devtree_lock;
+>  
+>  static inline bool of_have_populated_dt(void)
+>  {
+> 
 
-Process A
-[<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
-[<ffffffff81121c90>] do_last+0x250/0xa30
-[<ffffffff81122547>] path_openat+0xd7/0x440
-[<ffffffff811229c9>] do_filp_open+0x49/0xa0
-[<ffffffff8110f7d6>] do_sys_open+0x106/0x240
-[<ffffffff8110f950>] sys_open+0x20/0x30
-[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-Process B
-[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-[<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
-[<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
-[<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
-[<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
-[<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
-[<ffffffff81193a18>] ext3_write_begin+0x88/0x270
-[<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
-[<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
-[<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
-[<ffffffff8111156a>] do_sync_write+0xea/0x130
-[<ffffffff81112183>] vfs_write+0xf3/0x1f0
-[<ffffffff81112381>] sys_write+0x51/0x90
-[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-This is not a hard deadlock though because administrator can still
-intervene and increase the limit on the group which helps the writer to
-finish the allocation and release the lock.
-
-This patch heals the problem by forbidding OOM from dangerous context.
-Memcg charging code has no way to find out whether it is called from a
-locked context we have to help it via process flags. PF_OOM_ORIGIN flag
-removed recently will be reused for PF_NO_MEMCG_OOM which signals that
-the memcg OOM killer could lead to a deadlock.
-Only locked callers of __generic_file_aio_write are currently marked. I
-am pretty sure there are more places (I didn't check shmem and hugetlb
-uses fancy instantion mutex during page fault and filesystems might
-use some locks during the write) but I've ignored those as this will
-probably be just a user specific patch without any way to get upstream
-in the current form.
-
-Reported-by: azurIt <azurit@pobox.sk>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- drivers/staging/pohmelfs/inode.c |    2 ++
- include/linux/sched.h            |    1 +
- mm/filemap.c                     |    2 ++
- mm/memcontrol.c                  |   18 ++++++++++++++----
- 4 files changed, 19 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/pohmelfs/inode.c b/drivers/staging/pohmelfs/inode.c
-index 7a19555..523de82e 100644
---- a/drivers/staging/pohmelfs/inode.c
-+++ b/drivers/staging/pohmelfs/inode.c
-@@ -921,7 +921,9 @@ ssize_t pohmelfs_write(struct file *file, const char __user *buf,
- 	if (ret)
- 		goto err_out_unlock;
- 
-+	current->flags |= PF_NO_MEMCG_OOM;
- 	ret = __generic_file_aio_write(&kiocb, &iov, 1, &kiocb.ki_pos);
-+	current->flags &= ~PF_NO_MEMCG_OOM;
- 	*ppos = kiocb.ki_pos;
- 
- 	mutex_unlock(&inode->i_mutex);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e86bb4..f275c8f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1781,6 +1781,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define PF_FROZEN	0x00010000	/* frozen for system suspend */
- #define PF_FSTRANS	0x00020000	/* inside a filesystem transaction */
- #define PF_KSWAPD	0x00040000	/* I am kswapd */
-+#define PF_NO_MEMCG_OOM	0x00080000	/* Memcg OOM could lead to a deadlock */
- #define PF_LESS_THROTTLE 0x00100000	/* Throttle me less: I clean memory */
- #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
- #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 556858c..58a316b 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2617,7 +2617,9 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 
- 	mutex_lock(&inode->i_mutex);
- 	blk_start_plug(&plug);
-+	current->flags |= PF_NO_MEMCG_OOM;
- 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
-+	current->flags &= ~PF_NO_MEMCG_OOM;
- 	mutex_unlock(&inode->i_mutex);
- 
- 	if (ret > 0 || ret == -EIOCBQUEUED) {
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index c8425b1..128b615 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2397,6 +2397,14 @@ done:
- 	return 0;
- nomem:
- 	*ptr = NULL;
-+	if (printk_ratelimit())
-+		printk(KERN_WARNING"%s: task:%s pid:%d got ENOMEM without OOM for memcg:%p."
-+				" If this message shows up very often for the"
-+				" same task then there is a risk that the"
-+				" process is not able to make any progress"
-+				" because of the current limit. Try to enlarge"
-+				" the hard limit.\n", __FUNCTION__,
-+				current->comm, current->pid, memcg);
- 	return -ENOMEM;
- bypass:
- 	*ptr = NULL;
-@@ -2703,7 +2711,7 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
- 	struct mem_cgroup *memcg = NULL;
- 	unsigned int nr_pages = 1;
- 	struct page_cgroup *pc;
--	bool oom = true;
-+	bool oom = !(current->flags & PF_NO_MEMCG_OOM);
- 	int ret;
- 
- 	if (PageTransHuge(page)) {
-@@ -2770,6 +2778,7 @@ __mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *memcg,
- int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask)
- {
-+	bool oom = !(current->flags & PF_NO_MEMCG_OOM);
- 	struct mem_cgroup *memcg = NULL;
- 	int ret;
- 
-@@ -2782,7 +2791,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 		mm = &init_mm;
- 
- 	if (page_is_file_cache(page)) {
--		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, true);
-+		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, oom);
- 		if (ret || !memcg)
- 			return ret;
- 
-@@ -2818,6 +2827,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 				 struct page *page,
- 				 gfp_t mask, struct mem_cgroup **ptr)
- {
-+	bool oom = !(current->flags & PF_NO_MEMCG_OOM);
- 	struct mem_cgroup *memcg;
- 	int ret;
- 
-@@ -2840,13 +2850,13 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 	if (!memcg)
- 		goto charge_cur_mm;
- 	*ptr = memcg;
--	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, true);
-+	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, oom);
- 	css_put(&memcg->css);
- 	return ret;
- charge_cur_mm:
- 	if (unlikely(!mm))
- 		mm = &init_mm;
--	return __mem_cgroup_try_charge(mm, mask, 1, ptr, true);
-+	return __mem_cgroup_try_charge(mm, mask, 1, ptr, oom);
- }
- 
- static void
--- 
-1.7.10.4
-
--- 
-Michal Hocko
-SUSE Labs
