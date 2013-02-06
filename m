@@ -1,192 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab3BFWMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 17:12:13 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37506 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab3BFWMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932170Ab3BFWMJ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 6 Feb 2013 17:12:09 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: mingo@kernel.org, peterz@infradead.org
-Cc: jamie.iles@oracle.com, penberg@kernel.org, acme@ghostprotocols.net,
-        paulus@samba.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 01/11] liblockdep: remove the need for liblockdep_init
-Date: Wed,  6 Feb 2013 17:11:24 -0500
-Message-Id: <1360188694-25077-2-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
-References: <1360188694-25077-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Received: from terminus.zytor.com ([198.137.202.10]:37418 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082Ab3BFWMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Feb 2013 17:12:07 -0500
+Date: Wed, 6 Feb 2013 14:11:40 -0800
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-b22e79395c0fe4c86dd35745a929366034386ccc@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, drjones@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, drjones@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1360080351-3246-2-git-send-email-jolsa@redhat.com>
+References: <1360080351-3246-2-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf perl scripts:
+  Fix SIGALRM and pipe read race for rwtop
+Git-Commit-ID: b22e79395c0fe4c86dd35745a929366034386ccc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Feb 2013 14:11:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a constructor in the library instead of making the user manually
-call liblockdep_init().
+Commit-ID:  b22e79395c0fe4c86dd35745a929366034386ccc
+Gitweb:     http://git.kernel.org/tip/b22e79395c0fe4c86dd35745a929366034386ccc
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 5 Feb 2013 17:05:50 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 6 Feb 2013 18:09:27 -0300
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+perf perl scripts: Fix SIGALRM and pipe read race for rwtop
+
+Fixing rwtop script race. The issue is caused by rwtop script triggering
+SIGALRM and underneath pipe reading layer reporting error when
+interrupted.
+
+Fixing this by setting SA_RESTART for rwtop SIGALRM handler, which
+avoids interruption of the pipe reading layer.
+
+The discussion for this issue & fix is here:
+https://lkml.org/lkml/2012/9/18/123
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Original-patch-by: Andrew Jones <drjones@redhat.com>
+Cc: Andrew Jones <drjones@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1360080351-3246-2-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/lockdep/common.c                    | 2 +-
- tools/lib/lockdep/include/liblockdep/common.h | 1 -
- tools/lib/lockdep/tests/AA.c                  | 1 -
- tools/lib/lockdep/tests/ABBA.c                | 1 -
- tools/lib/lockdep/tests/ABBCCA.c              | 1 -
- tools/lib/lockdep/tests/ABBCCDDA.c            | 1 -
- tools/lib/lockdep/tests/ABCABC.c              | 1 -
- tools/lib/lockdep/tests/ABCDBCDA.c            | 1 -
- tools/lib/lockdep/tests/ABCDBDDA.c            | 1 -
- tools/lib/lockdep/tests/WW.c                  | 1 -
- tools/lib/lockdep/tests/unlock_balance.c      | 1 -
- tools/lib/lockdep/uinclude/linux/lockdep.h    | 1 -
- 12 files changed, 1 insertion(+), 12 deletions(-)
+ tools/perf/scripts/perl/rwtop.pl | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tools/lib/lockdep/common.c b/tools/lib/lockdep/common.c
-index 99d3b4b..d2946e0 100644
---- a/tools/lib/lockdep/common.c
-+++ b/tools/lib/lockdep/common.c
-@@ -10,7 +10,7 @@ __thread struct task_struct current_obj;
- bool debug_locks = true;
- bool debug_locks_silent;
+diff --git a/tools/perf/scripts/perl/rwtop.pl b/tools/perf/scripts/perl/rwtop.pl
+index 4bb3ecd..8b20787 100644
+--- a/tools/perf/scripts/perl/rwtop.pl
++++ b/tools/perf/scripts/perl/rwtop.pl
+@@ -17,6 +17,7 @@ use lib "$ENV{'PERF_EXEC_PATH'}/scripts/perl/Perf-Trace-Util/lib";
+ use lib "./Perf-Trace-Util/lib";
+ use Perf::Trace::Core;
+ use Perf::Trace::Util;
++use POSIX qw/SIGALRM SA_RESTART/;
  
--void liblockdep_init(void)
-+__attribute__((constructor)) static void liblockdep_init(void)
+ my $default_interval = 3;
+ my $nlines = 20;
+@@ -90,7 +91,10 @@ sub syscalls::sys_enter_write
+ 
+ sub trace_begin
  {
- 	lockdep_init();
+-    $SIG{ALRM} = \&set_print_pending;
++    my $sa = POSIX::SigAction->new(\&set_print_pending);
++    $sa->flags(SA_RESTART);
++    $sa->safe(1);
++    POSIX::sigaction(SIGALRM, $sa) or die "Can't set SIGALRM handler: $!\n";
+     alarm 1;
  }
-diff --git a/tools/lib/lockdep/include/liblockdep/common.h b/tools/lib/lockdep/include/liblockdep/common.h
-index b72f9c1..f6f7fec8 100644
---- a/tools/lib/lockdep/include/liblockdep/common.h
-+++ b/tools/lib/lockdep/include/liblockdep/common.h
-@@ -26,7 +26,6 @@ struct lockdep_map {
- #endif
- };
  
--void liblockdep_init(void);
- void liblockdep_set_thread(void);
- void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 			struct lock_class_key *key, int subclass);
-diff --git a/tools/lib/lockdep/tests/AA.c b/tools/lib/lockdep/tests/AA.c
-index 933d32f..3f71333 100644
---- a/tools/lib/lockdep/tests/AA.c
-+++ b/tools/lib/lockdep/tests/AA.c
-@@ -4,7 +4,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	pthread_mutex_init(&a, NULL);
-diff --git a/tools/lib/lockdep/tests/ABBA.c b/tools/lib/lockdep/tests/ABBA.c
-index 9f5146b..08d87a7 100644
---- a/tools/lib/lockdep/tests/ABBA.c
-+++ b/tools/lib/lockdep/tests/ABBA.c
-@@ -5,7 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	pthread_mutex_init(&a, NULL);
-diff --git a/tools/lib/lockdep/tests/ABBCCA.c b/tools/lib/lockdep/tests/ABBCCA.c
-index b7435d7..c5d0e5c 100644
---- a/tools/lib/lockdep/tests/ABBCCA.c
-+++ b/tools/lib/lockdep/tests/ABBCCA.c
-@@ -5,7 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b, c;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	pthread_mutex_init(&a, NULL);
-diff --git a/tools/lib/lockdep/tests/ABBCCDDA.c b/tools/lib/lockdep/tests/ABBCCDDA.c
-index 2425330..e12dc98 100644
---- a/tools/lib/lockdep/tests/ABBCCDDA.c
-+++ b/tools/lib/lockdep/tests/ABBCCDDA.c
-@@ -5,7 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b, c, d;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	pthread_mutex_init(&a, NULL);
-diff --git a/tools/lib/lockdep/tests/ABCABC.c b/tools/lib/lockdep/tests/ABCABC.c
-index 2ee30fe..70879c95 100644
---- a/tools/lib/lockdep/tests/ABCABC.c
-+++ b/tools/lib/lockdep/tests/ABCABC.c
-@@ -5,7 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b, c;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	pthread_mutex_init(&a, NULL);
-diff --git a/tools/lib/lockdep/tests/ABCDBCDA.c b/tools/lib/lockdep/tests/ABCDBCDA.c
-index 32d19d6..00cd676 100644
---- a/tools/lib/lockdep/tests/ABCDBCDA.c
-+++ b/tools/lib/lockdep/tests/ABCDBCDA.c
-@@ -5,7 +5,6 @@ void main(void)
- {
- 	liblockdep_pthread_mutex_t a, b, c, d;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	liblockdep_pthread_mutex_init(&a, NULL);
-diff --git a/tools/lib/lockdep/tests/ABCDBDDA.c b/tools/lib/lockdep/tests/ABCDBDDA.c
-index 850eaca..19b3ed1 100644
---- a/tools/lib/lockdep/tests/ABCDBDDA.c
-+++ b/tools/lib/lockdep/tests/ABCDBDDA.c
-@@ -5,7 +5,6 @@ void main(void)
- {
- 	pthread_mutex_t a, b, c, d;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	pthread_mutex_init(&a, NULL);
-diff --git a/tools/lib/lockdep/tests/WW.c b/tools/lib/lockdep/tests/WW.c
-index 4b1be0f..2467b13 100644
---- a/tools/lib/lockdep/tests/WW.c
-+++ b/tools/lib/lockdep/tests/WW.c
-@@ -4,7 +4,6 @@ void main(void)
- {
- 	pthread_rwlock_t a, b;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	pthread_rwlock_init(&a, NULL);
-diff --git a/tools/lib/lockdep/tests/unlock_balance.c b/tools/lib/lockdep/tests/unlock_balance.c
-index 9dfaf97..07a4c21 100644
---- a/tools/lib/lockdep/tests/unlock_balance.c
-+++ b/tools/lib/lockdep/tests/unlock_balance.c
-@@ -4,7 +4,6 @@ void main(void)
- {
- 	pthread_mutex_t a;
- 
--	liblockdep_init();
- 	liblockdep_set_thread();
- 
- 	pthread_mutex_init(&a, NULL);
-diff --git a/tools/lib/lockdep/uinclude/linux/lockdep.h b/tools/lib/lockdep/uinclude/linux/lockdep.h
-index 1ed83a5..611cb28 100644
---- a/tools/lib/lockdep/uinclude/linux/lockdep.h
-+++ b/tools/lib/lockdep/uinclude/linux/lockdep.h
-@@ -25,7 +25,6 @@ struct task_struct {
- extern __thread struct task_struct current_obj;
- #define current (&current_obj)
- 
--void liblockdep_init(void);
- void liblockdep_set_thread(void);
- 
- #define debug_locks_off() 1
--- 
-1.8.1.2
-
