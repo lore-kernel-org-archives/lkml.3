@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758618Ab3BFUB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Feb 2013 15:01:56 -0500
-Received: from mail-da0-f45.google.com ([209.85.210.45]:56757 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758338Ab3BFUBq (ORCPT
+	id S1758596Ab3BFUBv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Feb 2013 15:01:51 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:61913 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758228Ab3BFUBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Feb 2013 15:01:46 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 58/77] remoteproc: convert to idr_alloc()
-Date: Wed,  6 Feb 2013 11:40:30 -0800
-Message-Id: <1360179649-22465-59-git-send-email-tj@kernel.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: [PATCH 77/77] nfs4client: convert to idr_alloc()
+Date: Wed,  6 Feb 2013 11:40:49 -0800
+Message-Id: <1360179649-22465-78-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1360179649-22465-1-git-send-email-tj@kernel.org>
 References: <1360179649-22465-1-git-send-email-tj@kernel.org>
@@ -26,43 +27,40 @@ Convert to the much saner new idr interface.
 Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>
----
- drivers/remoteproc/remoteproc_core.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 634d367..29387df 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -199,11 +199,6 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
- 	/* actual size of vring (in bytes) */
- 	size = PAGE_ALIGN(vring_size(rvring->len, rvring->align));
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org
+---
+ fs/nfs/nfs4client.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/fs/nfs/nfs4client.c b/fs/nfs/nfs4client.c
+index 2e9779b..47d1008 100644
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -29,15 +29,14 @@ static int nfs_get_cb_ident_idr(struct nfs_client *clp, int minorversion)
  
--	if (!idr_pre_get(&rproc->notifyids, GFP_KERNEL)) {
--		dev_err(dev, "idr_pre_get failed\n");
--		return -ENOMEM;
--	}
--
- 	/*
- 	 * Allocate non-cacheable memory for the vring. In the future
- 	 * this call will also configure the IOMMU for us
-@@ -221,12 +216,13 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
- 	 * TODO: let the rproc know the notifyid of this vring
- 	 * TODO: support predefined notifyids (via resource table)
- 	 */
--	ret = idr_get_new(&rproc->notifyids, rvring, &notifyid);
-+	ret = idr_alloc(&rproc->notifyids, rvring, 0, 0, GFP_KERNEL);
- 	if (ret) {
--		dev_err(dev, "idr_get_new failed: %d\n", ret);
-+		dev_err(dev, "idr_alloc failed: %d\n", ret);
- 		dma_free_coherent(dev->parent, size, va, dma);
+ 	if (clp->rpc_ops->version != 4 || minorversion != 0)
  		return ret;
- 	}
-+	notifyid = ret;
+-retry:
+-	if (!idr_pre_get(&nn->cb_ident_idr, GFP_KERNEL))
+-		return -ENOMEM;
++	idr_preload(GFP_KERNEL);
+ 	spin_lock(&nn->nfs_client_lock);
+-	ret = idr_get_new(&nn->cb_ident_idr, clp, &clp->cl_cb_ident);
++	ret = idr_alloc(&nn->cb_ident_idr, clp, 0, 0, GFP_NOWAIT);
++	if (ret >= 0)
++		clp->cl_cb_ident = ret;
+ 	spin_unlock(&nn->nfs_client_lock);
+-	if (ret == -EAGAIN)
+-		goto retry;
+-	return ret;
++	idr_preload_end();
++	return ret < 0 ? ret : 0;
+ }
  
- 	/* Store largest notifyid */
- 	rproc->max_notifyid = max(rproc->max_notifyid, notifyid);
+ #ifdef CONFIG_NFS_V4_1
 -- 
 1.8.1
 
